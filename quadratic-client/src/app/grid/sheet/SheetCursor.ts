@@ -11,6 +11,7 @@ import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
+import type { Direction } from '@/app/quadratic-core/quadratic_core';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -259,8 +260,8 @@ export class SheetCursor {
     this.updatePosition(true);
   };
 
-  keyboardJumpSelectTo = (col: number, row: number) => {
-    this.jsSelection.keyboardJumpSelectTo(col, row, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
+  keyboardJumpSelectTo = (col: number, row: number, direction: Direction) => {
+    this.jsSelection.keyboardJumpSelectTo(col, row, direction, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
     this.updatePosition(true);
   };
 

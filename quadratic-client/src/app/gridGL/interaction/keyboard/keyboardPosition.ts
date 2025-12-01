@@ -63,8 +63,8 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
     return;
   }
 
-  const jumpCol = Math.max(1, Number(newPos.x));
-  const jumpRow = Math.max(1, Number(newPos.y));
+  let jumpCol = Math.max(1, Number(newPos.x));
+  let jumpRow = Math.max(1, Number(newPos.y));
 
   // Skip if position hasn't changed (e.g., at boundary)
   if (jumpCol === jumpStartX && jumpRow === jumpStartY) {
@@ -72,9 +72,7 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   }
 
   if (select) {
-    // Let Rust handle all selection logic including axis handling
-    // Rust's select_to will determine the correct start position and extend appropriately
-    cursor.keyboardJumpSelectTo(jumpCol, jumpRow);
+    cursor.keyboardJumpSelectTo(jumpCol, jumpRow, direction);
     ensureVisible({ x: jumpCol, y: jumpRow });
   } else {
     cursor.moveTo(jumpCol, jumpRow, { checkForTableRef: true, ensureVisible: { x: jumpCol, y: jumpRow } });

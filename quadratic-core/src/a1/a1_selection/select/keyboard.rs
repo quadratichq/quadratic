@@ -1,7 +1,7 @@
 use crate::{
     Pos, Rect,
     a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds},
-    grid::sheet::merge_cells::MergeCells,
+    grid::{js_types::Direction, sheet::merge_cells::MergeCells},
 };
 
 impl A1Selection {
@@ -10,6 +10,7 @@ impl A1Selection {
         &mut self,
         col: i64,
         row: i64,
+        direction: Direction,
         a1_context: &A1Context,
         merge_cells: &MergeCells,
     ) {
@@ -31,11 +32,18 @@ impl A1Selection {
                             range: range_converted,
                         };
                         // Recursively handle as sheet range
-                        self.keyboard_jump_select_to(col, row, a1_context, merge_cells);
+                        self.keyboard_jump_select_to(col, row, direction, a1_context, merge_cells);
                     }
                 }
                 CellRefRange::Sheet { range } => {
-                    keyboard_jump_select_sheet_range(range, self.cursor, col, row, merge_cells);
+                    keyboard_jump_select_sheet_range(
+                        range,
+                        self.cursor,
+                        col,
+                        row,
+                        direction,
+                        merge_cells,
+                    );
                 }
             }
         }
@@ -393,30 +401,118 @@ fn keyboard_jump_select_sheet_range(
     anchor: Pos,
     col: i64,
     row: i64,
-    _merge_cells: &MergeCells,
+    direction: Direction,
+    merge_cells: &MergeCells,
 ) {
     let mut rect = range.to_rect_unbounded();
 
-    // Only update x range if col has actually changed from anchor
-    // When moving vertically (anchor.x == col), preserve existing x range
+    // Get the selection end (opposite corner from anchor)
+    let selection_end = Pos {
+        x: if anchor.x == rect.min.x {
+            rect.max.x
+        } else {
+            rect.min.x
+        },
+        y: if anchor.y == rect.min.y {
+            rect.max.y
+        } else {
+            rect.min.y
+        },
+    };
+
+    // Apply fallback logic when jump lands on anchor position
+    // This handles cases where the content-based jump would result in no selection change
+    let (col, row) = match direction {
+        Direction::Up => {
+            // If jump landed on anchor row, fall back to row 1
+            if row == anchor.y {
+                (col, 1)
+            } else {
+                (col, row)
+            }
+        }
+        Direction::Down => {
+            // If jump landed on anchor row, fall back to one row past selection end
+            if row == anchor.y {
+                (col, selection_end.y + 1)
+            } else {
+                (col, row)
+            }
+        }
+        Direction::Left => {
+            // If jump landed on anchor column, fall back to column 1
+            if col == anchor.x {
+                (1, row)
+            } else {
+                (col, row)
+            }
+        }
+        Direction::Right => {
+            // If jump landed on anchor column, fall back to one column past selection end
+            if col == anchor.x {
+                (selection_end.x + 1, row)
+            } else {
+                (col, row)
+            }
+        }
+    };
+
+    let is_horizontal = matches!(direction, Direction::Left | Direction::Right);
+    let is_vertical = matches!(direction, Direction::Up | Direction::Down);
+
+    // Update x range based on jump target relative to anchor
     if anchor.x > col {
+        // Jumping left of anchor: extend left
         rect.min.x = col;
         rect.max.x = anchor.x;
     } else if anchor.x < col {
+        // Jumping right of anchor: extend right
         rect.max.x = col;
         rect.min.x = anchor.x;
+    } else if is_horizontal {
+        // Jumping horizontally but landed on anchor column: shrink to anchor column
+        rect.min.x = anchor.x;
+        rect.max.x = anchor.x;
     }
-    // Only update y range if row has actually changed from anchor
-    // When moving horizontally (anchor.y == row), preserve existing y range
+    // else: moving vertically (anchor.x == col), preserve existing x range
+
+    // Update y range based on jump target relative to anchor
     if anchor.y > row {
+        // Jumping above anchor: extend up
         rect.min.y = row;
         rect.max.y = anchor.y;
     } else if anchor.y < row {
+        // Jumping below anchor: extend down
         rect.max.y = row;
         rect.min.y = anchor.y;
+    } else if is_vertical {
+        // Jumping vertically but landed on anchor row: shrink to anchor row
+        rect.min.y = anchor.y;
+        rect.max.y = anchor.y;
     }
+    // else: moving horizontally (anchor.y == row), preserve existing y range
+
+    // Expand selection to include any partially overlapping merged cells
+    expand_to_include_merge_cells(&mut rect, merge_cells);
 
     *range = RefRangeBounds::new_relative_rect(rect);
+}
+
+/// Expands the rect to fully include any merged cells that partially overlap it
+fn expand_to_include_merge_cells(rect: &mut Rect, merge_cells: &MergeCells) {
+    loop {
+        let mut expanded = false;
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.union_in_place(merged_cell_rect);
+                expanded = true;
+            }
+        }
+        if !expanded {
+            break;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -953,28 +1049,142 @@ mod tests {
         let mut selection = A1Selection::test_a1("C5");
 
         // Jump select left to A5 (should create A5:C5)
-        selection.keyboard_jump_select_to(1, 5, &context, &merge_cells);
+        selection.keyboard_jump_select_to(1, 5, Direction::Left, &context, &merge_cells);
         assert_eq!(selection.test_to_string(), "A5:C5");
         assert_eq!(selection.cursor, Pos::test_a1("C5")); // cursor stays at C5
 
         // Jump select up to row 1 (should create A1:C5, preserving A-C columns)
-        selection.keyboard_jump_select_to(3, 1, &context, &merge_cells);
+        selection.keyboard_jump_select_to(3, 1, Direction::Up, &context, &merge_cells);
         assert_eq!(selection.test_to_string(), "A1:C5");
         assert_eq!(selection.cursor, Pos::test_a1("C5")); // cursor stays at C5
 
         // Test the reverse: start wide horizontally, then extend vertically the other way
         let mut selection = A1Selection::test_a1("C5");
-        selection.keyboard_jump_select_to(1, 5, &context, &merge_cells); // A5:C5
-        selection.keyboard_jump_select_to(3, 10, &context, &merge_cells); // Should be A5:C10
+        selection.keyboard_jump_select_to(1, 5, Direction::Left, &context, &merge_cells); // A5:C5
+        selection.keyboard_jump_select_to(3, 10, Direction::Down, &context, &merge_cells); // Should be A5:C10
         assert_eq!(selection.test_to_string(), "A5:C10");
 
         // Test preserving y range when jumping horizontally
         let mut selection = A1Selection::test_a1("C5");
-        selection.keyboard_jump_select_to(3, 1, &context, &merge_cells); // C1:C5
+        selection.keyboard_jump_select_to(3, 1, Direction::Up, &context, &merge_cells); // C1:C5
         assert_eq!(selection.test_to_string(), "C1:C5");
 
         // Now jump select right (should preserve 1-5 row range)
-        selection.keyboard_jump_select_to(10, 5, &context, &merge_cells); // Should be C1:J5
+        selection.keyboard_jump_select_to(10, 5, Direction::Right, &context, &merge_cells); // Should be C1:J5
         assert_eq!(selection.test_to_string(), "C1:J5");
+    }
+
+    /// Tests cmd+shift+arrow selection behavior with content at C4 and C5.
+    ///
+    /// Scenario:
+    /// 1. Content on C4 and C5
+    /// 2. Select C4:C5 (cursor at C4)
+    /// 3. cmd+shift+left should give A4:C5
+    /// 4. cmd+shift+up should give A1:C4 (preserving columns A-C, but Y resets to anchor row 4)
+    /// 5. From A4:C5, cmd+shift+right should give C4:D5
+    /// 6. cmd+shift+left should return to A4:C5
+    #[test]
+    fn test_keyboard_jump_select_from_multi_row_selection() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start with C4:C5 selection (cursor at C4)
+        let mut selection = A1Selection::test_a1("C4:C5");
+        assert_eq!(selection.cursor, Pos::test_a1("C4"));
+
+        // cmd+shift+left: jump to column A
+        // The frontend calculates jump target from selectionEnd (C5), jumping left lands at A5
+        // So we call keyboard_jump_select_to(1, 5)
+        selection.keyboard_jump_select_to(1, 5, Direction::Left, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:C5");
+
+        // cmd+shift+up: jump to row 1
+        // The frontend would normally jump from selectionEnd (C5) and find C4 (content boundary).
+        // Since that equals the cursor, frontend falls back to row 1.
+        // So we call keyboard_jump_select_to(3, 1)
+        // This preserves columns A-C but sets Y range from row 1 to anchor row 4
+        selection.keyboard_jump_select_to(3, 1, Direction::Up, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A1:C4"); // Preserves A-C columns, Y resets to anchor
+
+        // Now test the right+left sequence from A4:C5
+        let mut selection = A1Selection::test_a1("C4:C5");
+        selection.keyboard_jump_select_to(1, 5, Direction::Left, &context, &merge_cells); // A4:C5
+        assert_eq!(selection.test_to_string(), "A4:C5");
+
+        // cmd+shift+right: jump to column D
+        // The frontend calculates jump target from selectionEnd (C5), jumping right lands at D5
+        // So we call keyboard_jump_select_to(4, 5)
+        selection.keyboard_jump_select_to(4, 5, Direction::Right, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "C4:D5"); // Shrinks to cursor column C through D
+
+        // cmd+shift+left: jump back to column A
+        // The frontend calculates jump target from selectionEnd (D5), jumping left lands at A5
+        // So we call keyboard_jump_select_to(1, 5)
+        selection.keyboard_jump_select_to(1, 5, Direction::Left, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:C5"); // Should expand back to A through C
+    }
+
+    /// Tests that cmd+shift+arrow expands selection to include merged cells.
+    ///
+    /// Scenario: Merged cell at D4:F7, start at A4, cmd+shift+right to D4
+    /// should expand to include the full merge cell, resulting in A4:F7.
+    #[test]
+    fn test_keyboard_jump_select_expands_to_merge_cells() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell D4:F7
+        merge_cells.merge_cells(Rect::test_a1("D4:F7"));
+
+        // Start at A4
+        let mut selection = A1Selection::test_a1("A4");
+        assert_eq!(selection.cursor, Pos::test_a1("A4"));
+
+        // cmd+shift+right: jump to column D (where merge cell starts)
+        // The jump lands at D4, which is part of merged cell D4:F7
+        // Selection should expand to include the full merge cell
+        selection.keyboard_jump_select_to(4, 4, Direction::Right, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:F7"); // Expands to include full merge cell
+
+        // Test jumping into merge cell from above
+        let mut selection = A1Selection::test_a1("D1");
+        // cmd+shift+down: jump to row 4 (top of merge cell)
+        selection.keyboard_jump_select_to(4, 4, Direction::Down, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "D1:F7"); // Expands to include full merge cell
+
+        // Test jumping past merge cell
+        let mut selection = A1Selection::test_a1("A4");
+        // cmd+shift+right: jump to column H (past the merge cell)
+        selection.keyboard_jump_select_to(8, 4, Direction::Right, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:H7"); // Expands to include merge cell in path
+    }
+
+    /// Tests shrinking selection back through merged cells.
+    ///
+    /// Scenario: Merged cell at D4:F7, start at A4, extend right past merge cell,
+    /// then shrink back with cmd+shift+left.
+    #[test]
+    fn test_keyboard_jump_select_shrink_through_merge_cells() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell D4:F7
+        merge_cells.merge_cells(Rect::test_a1("D4:F7"));
+
+        // Start at A4
+        let mut selection = A1Selection::test_a1("A4");
+
+        // cmd+shift+right twice: first to merge cell, then past it
+        selection.keyboard_jump_select_to(4, 4, Direction::Right, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:F7"); // Includes merge cell
+
+        selection.keyboard_jump_select_to(7, 7, Direction::Right, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:G7"); // Past merge cell
+
+        // cmd+shift+left: should shrink back to merge cell boundary
+        selection.keyboard_jump_select_to(6, 7, Direction::Left, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:F7"); // Back to merge cell edge
+
+        // cmd+shift+left again: should shrink to anchor column
+        selection.keyboard_jump_select_to(1, 7, Direction::Left, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A4:A7"); // Shrink to anchor column
     }
 }
