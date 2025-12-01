@@ -5,7 +5,7 @@ import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureVisible, moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
-import type { Pos } from '@/app/quadratic-core/quadratic_core';
+import type { Pos } from '@/app/quadratic-core-types';
 import { Direction, jumpCursor, moveCursor } from '@/app/quadratic-core/quadratic_core';
 
 function setCursorPosition(x: number, y: number) {
