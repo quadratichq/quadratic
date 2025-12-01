@@ -20,14 +20,28 @@ class MicropipMock:
     async def install(self, package: str):
         import subprocess
         import shutil
+        import importlib
+        
+        # First check if the package is already installed
+        try:
+            importlib.import_module(package)
+            # Package already available, no need to install
+            return
+        except ImportError:
+            pass
+        
         # Use uv for fast package installation
         uv_exe = shutil.which("uv")
         if uv_exe:
-            subprocess.check_call([uv_exe, "pip", "install", "--user", package])
+            subprocess.check_call([uv_exe, "pip", "install", "--system", package])
         else:
             # Fallback to pip if uv is not available
-            import pip
-            pip.main(["install", package])
+            python_exe = shutil.which("python3") or shutil.which("python")
+            if python_exe:
+                subprocess.check_call([python_exe, "-m", "pip", "install", "--user", "--break-system-packages", package])
+            else:
+                import pip
+                pip.main(["install", package])
 
 # Create a fake module for micropip so that "import micropip" works
 _micropip_module = types.ModuleType('micropip')

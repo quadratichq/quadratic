@@ -64,7 +64,7 @@ impl Cluster {
         let mut docker = Docker::connect_with_socket_defaults()
             .map_err(|e| SharedError::Docker(DockerError::Connection(e.to_string())))?;
 
-        docker.set_timeout(Duration::from_secs(5));
+        docker.set_timeout(Duration::from_secs(60));
         Ok(docker)
     }
 
