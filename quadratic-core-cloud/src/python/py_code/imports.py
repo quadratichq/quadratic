@@ -2,7 +2,16 @@ import ast
 import subprocess
 import sys
 
+# Packages that should not be auto-installed because they are mocked or incompatible
+EXCLUDED_PACKAGES = {
+    'micropip',  # Mock implementation provided in quadratic.py (real micropip is Pyodide-only)
+}
+
 def auto_install(package):
+    # Skip auto-install for excluded packages
+    if package in EXCLUDED_PACKAGES:
+        return
+    
     try:
         __import__(package)
     except ImportError:

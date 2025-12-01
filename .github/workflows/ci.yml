@@ -90,6 +90,43 @@ jobs:
           curl -fsSL https://deno.land/install.sh | sh
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
 
+      - name: Setup Python for core-cloud tests
+        if: matrix.package == 'core-cloud'
+        uses: useblacksmith/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python development headers for core-cloud
+        if: matrix.package == 'core-cloud'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev libpython3.12-dev
+
+      - name: Install Python packages for core-cloud tests
+        if: matrix.package == 'core-cloud'
+        run: |
+          # Install uv for fast package installation
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          # Install Python packages needed for tests
+          uv pip install --system \
+            pandas \
+            numpy \
+            matplotlib \
+            seaborn \
+            scipy \
+            requests \
+            openpyxl \
+            xlsxwriter \
+            plotly \
+            scikit-learn \
+            statsmodels \
+            nltk \
+            regex \
+            faker \
+            yfinance
+
       - name: Test quadratic-${{ matrix.package }}
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
