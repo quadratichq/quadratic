@@ -1,5 +1,6 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import { useSpeechToText } from '@/app/ai/hooks/useSpeechToText';
 import { events } from '@/app/events/events';
 import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -17,7 +18,7 @@ import {
   useMentionsState,
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, MentionIcon, MicrophoneIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -459,6 +460,7 @@ export const AIUserMessageForm = memo(
             setContext={setContext}
             filesSupportedText={filesSupportedText}
             isAnalyst={isAnalyst}
+            messageIndex={messageIndex}
           />
         </form>
       </div>
@@ -537,6 +539,7 @@ interface AIUserMessageFormFooterProps {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
   isAnalyst: boolean;
+  messageIndex: number;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -557,7 +560,17 @@ const AIUserMessageFormFooter = memo(
     setContext,
     filesSupportedText,
     isAnalyst,
+    messageIndex,
   }: AIUserMessageFormFooterProps) => {
+    const isEmptyChat = useMemo(() => messageIndex === 0 && prompt.length === 0, [messageIndex, prompt.length]);
+
+    const { isRecording, isProcessing, error: sttError, toggleRecording } = useSpeechToText({
+      onTranscriptionComplete: (text) => {
+        setPrompt((prev) => (prev ? `${prev} ${text}` : text));
+        textareaRef.current?.focus();
+      },
+    });
+
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -569,6 +582,11 @@ const AIUserMessageFormFooter = memo(
     const disabledSubmit = useMemo(
       () => prompt.length === 0 || loading || waitingOnMessageIndex !== undefined,
       [prompt, loading, waitingOnMessageIndex]
+    );
+
+    const disabledMic = useMemo(
+      () => disabled || loading || waitingOnMessageIndex !== undefined || isProcessing,
+      [disabled, loading, waitingOnMessageIndex, isProcessing]
     );
 
     if (!show) {
@@ -622,26 +640,49 @@ const AIUserMessageFormFooter = memo(
           <div className="flex">
             <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
             <div className="flex items-center gap-3">
-              <ConditionalWrapper
-                condition={prompt.length !== 0}
-                Wrapper={({ children }) => (
-                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                    {children as React.ReactElement}
-                  </TooltipPopover>
-                )}
-              >
-                <Button
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleClickSubmit(e);
-                  }}
-                  disabled={disabledSubmit}
+              {isEmptyChat ? (
+                <ConditionalWrapper
+                  condition={true}
+                  Wrapper={({ children }) => (
+                    <TooltipPopover label={isRecording ? 'Stop recording' : 'Start voice input'}>
+                      {children as React.ReactElement}
+                    </TooltipPopover>
+                  )}
                 >
-                  <ArrowUpwardIcon />
-                </Button>
-              </ConditionalWrapper>
+                  <Button
+                    size="icon-sm"
+                    className={cn('rounded-full', isRecording && 'bg-destructive')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleRecording();
+                    }}
+                    disabled={disabledMic}
+                  >
+                    <MicrophoneIcon />
+                  </Button>
+                </ConditionalWrapper>
+              ) : (
+                <ConditionalWrapper
+                  condition={prompt.length !== 0}
+                  Wrapper={({ children }) => (
+                    <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                      {children as React.ReactElement}
+                    </TooltipPopover>
+                  )}
+                >
+                  <Button
+                    size="icon-sm"
+                    className="rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClickSubmit(e);
+                    }}
+                    disabled={disabledSubmit}
+                  >
+                    <ArrowUpwardIcon />
+                  </Button>
+                </ConditionalWrapper>
+              )}
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
+import { SpeechClient } from '@google-cloud/speech';
 import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
 import { OpenAI } from 'openai';
@@ -101,5 +102,14 @@ export const openRouter = new OpenAI({
   defaultHeaders: {
     'HTTP-Referer': 'https://quadratic.ai',
     'X-Title': 'Quadratic',
+  },
+});
+
+// google-cloud-sdk for speech-to-text
+export const speechClient = new SpeechClient({
+  projectId: GCP_PROJECT_ID,
+  credentials: {
+    client_email: GCP_CLIENT_EMAIL,
+    private_key: GCP_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   },
 });

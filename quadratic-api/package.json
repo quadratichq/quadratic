@@ -39,6 +39,7 @@
     "@aws-sdk/client-bedrock-runtime": "3.830.0",
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",
+    "@google-cloud/speech": "^6.0.0",
     "@google/genai": "1.5.1",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@ory/kratos-client": "^1.2.1",

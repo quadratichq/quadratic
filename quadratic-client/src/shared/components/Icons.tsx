@@ -479,6 +479,10 @@ export const MentionIcon: IconComponent = (props) => {
   return <Icon {...props}>alternate_email</Icon>;
 };
 
+export const MicrophoneIcon: IconComponent = (props) => {
+  return <Icon {...props}>mic</Icon>;
+};
+
 export const MenuIcon: IconComponent = (props) => {
   return <Icon {...props}>menu</Icon>;
 };

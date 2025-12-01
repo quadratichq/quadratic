@@ -527,6 +527,15 @@ export const ApiSchemas = {
     message: z.string(),
   }),
 
+  '/v0/ai/speech-to-text.POST.request': z.object({
+    audio: z.string(), // base64 encoded audio data
+    mimeType: z.string(), // e.g., 'audio/webm', 'audio/mp3', etc.
+    languageCode: z.string().optional(), // e.g., 'en-US', defaults to 'en-US'
+  }),
+  '/v0/ai/speech-to-text.POST.response': z.object({
+    text: z.string(),
+  }),
+
   '/v0/ai/codeRunError.PATCH.request': z.object({
     chatId: z.string().uuid(),
     messageIndex: z.number(),
