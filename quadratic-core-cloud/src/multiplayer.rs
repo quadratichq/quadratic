@@ -115,6 +115,7 @@ mod tests {
     use std::str::FromStr;
 
     #[tokio::test]
+    #[ignore] // Requires multiplayer service running (use `npm run docker:test` to run)
     async fn test_multiplayer() {
         let user_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();

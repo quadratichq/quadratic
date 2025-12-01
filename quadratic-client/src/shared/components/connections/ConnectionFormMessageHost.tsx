@@ -12,8 +12,8 @@ export function isLocalHostAddress(host: string): boolean {
   return false;
 }
 
-export const ConnectionFormMessageHost = ({ value }: { value: string }) => {
-  return isLocalHostAddress(value) ? (
+export const ConnectionFormMessageHost = ({ value }: { value: string | undefined }) => {
+  return value && isLocalHostAddress(value) ? (
     <p className="text-xs text-muted-foreground">
       Note: Quadratic runs in the cloud. Connecting to a local database requires SSH or self-hosting.
     </p>

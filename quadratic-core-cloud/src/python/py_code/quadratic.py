@@ -1,3 +1,6 @@
+import sys
+import types
+
 class Q:
     def __init__(self):
         pass
@@ -12,7 +15,8 @@ class Q:
 
 q = Q()
 
-class micropip:
+class MicropipMock:
+    """Mock implementation of micropip for use outside Pyodide/WASM environments"""
     async def install(self, package: str):
         import subprocess
         import shutil
@@ -25,5 +29,9 @@ class micropip:
             import pip
             pip.main(["install", package])
 
-micropip = micropip()
+# Create a fake module for micropip so that "import micropip" works
+_micropip_module = types.ModuleType('micropip')
+_micropip_instance = MicropipMock()
+_micropip_module.install = _micropip_instance.install
+sys.modules['micropip'] = _micropip_module
         
