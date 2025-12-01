@@ -204,7 +204,7 @@ class InlineEditorMonaco {
         textWrap = 'wrap';
         width = maxWidthDueToViewport;
         this.editor.updateOptions({
-          wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+          wordWrap: 'on',
           padding: { top: paddingTop, bottom: 0 },
         });
       }
