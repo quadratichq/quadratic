@@ -783,18 +783,6 @@ export const DesktopIcon: IconComponent = (props) => {
   return <Icon {...props}>computer</Icon>;
 };
 
-export const CloudSyncIcon: IconComponent = (props) => {
-  return <Icon {...props}>cloud_sync</Icon>;
-};
-
-export const CloudOffIcon: IconComponent = (props) => {
-  return <Icon {...props}>cloud_off</Icon>;
-};
-
-export const LinkOffIcon: IconComponent = (props) => {
-  return <Icon {...props}>link_off</Icon>;
-};
-
 export const SyncingDoneIcon: IconComponent = (props) => {
   return <Icon {...props}>cloud_done</Icon>;
 };
