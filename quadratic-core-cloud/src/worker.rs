@@ -78,7 +78,7 @@ impl WorkerStatus {
 ///
 /// Usage:
 ///
-/// ```rust
+/// ```rust,no_run
 /// // create worker
 /// // load file
 /// // establish ws connection
