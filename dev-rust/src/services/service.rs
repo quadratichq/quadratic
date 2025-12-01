@@ -222,6 +222,12 @@ pub trait Service: Send + Sync {
             cmd.env("npm_config_yes", "true");
             // Ensure npm uses local node_modules
             cmd.env("npm_config_prefer_offline", "true");
+            // Ensure npm output is not buffered (important for capturing logs)
+            cmd.env("FORCE_COLOR", "0"); // Disable colors for cleaner log parsing
+            // For Node.js processes, ensure unbuffered output
+            cmd.env("NODE_NO_WARNINGS", "1");
+            // Force unbuffered output for Node.js (important for capturing logs from npm/tsc)
+            cmd.env("NODE_OPTIONS", "--no-warnings");
         }
 
         // Set RUST_LOG

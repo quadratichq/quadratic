@@ -1,9 +1,9 @@
 use axum::{
-    extract::{ws::WebSocketUpgrade, Path, State},
-    http::{header, StatusCode},
+    Json, Router,
+    extract::{Path, State, ws::WebSocketUpgrade},
+    http::{StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
 };
 use futures::SinkExt;
 use serde_json::json;
@@ -12,12 +12,18 @@ use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 
 use crate::control::Control;
-use crate::types::{FilterRequest, LogMessage, ServiceInfo, SetPerfRequest, SetStateRequest, SetWatchRequest, StatusUpdate, ToggleRequest};
+use crate::types::{
+    FilterRequest, LogMessage, ServiceInfo, SetPerfRequest, SetStateRequest, SetWatchRequest,
+    StatusUpdate, ToggleRequest,
+};
 
 // Server startup time - changes when server restarts
 static SERVER_START_TIME: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
 
-pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_server(
+    control: Arc<RwLock<Control>>,
+    port: u16,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Initialize server start time
     SERVER_START_TIME.get_or_init(|| {
         std::time::SystemTime::now()
@@ -41,9 +47,18 @@ pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<()
         .route("/api/state", get(get_state).post(set_state))
         .route("/api/set-watch", post(set_watch))
         .route("/api/set-perf", post(set_perf))
-        .route("/api/static-hash", get(get_static_hash).head(get_static_hash_head))
-        .route("/api/server-version", get(get_server_version).head(get_server_version_head))
-        .route("/*path", get(serve_static_file).head(serve_static_file_head))
+        .route(
+            "/api/static-hash",
+            get(get_static_hash).head(get_static_hash_head),
+        )
+        .route(
+            "/api/server-version",
+            get(get_server_version).head(get_server_version_head),
+        )
+        .route(
+            "/*path",
+            get(serve_static_file).head(serve_static_file_head),
+        )
         .layer(CorsLayer::permissive())
         .with_state(control);
 
@@ -93,7 +108,8 @@ fn get_static_files_hash() -> axum::http::HeaderValue {
     include_str!("../static/ui.js").hash(&mut hasher);
 
     let etag = format!("\"{}\"", hasher.finish());
-    axum::http::HeaderValue::from_str(&etag).unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
+    axum::http::HeaderValue::from_str(&etag)
+        .unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
 }
 
 async fn get_static_hash_head() -> impl IntoResponse {
@@ -138,7 +154,8 @@ fn get_server_version_hash() -> axum::http::HeaderValue {
     include_str!("../static/ui.js").hash(&mut hasher);
 
     let etag = format!("\"{}\"", hasher.finish());
-    axum::http::HeaderValue::from_str(&etag).unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
+    axum::http::HeaderValue::from_str(&etag)
+        .unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
 }
 
 async fn get_server_version_head() -> impl IntoResponse {
@@ -166,8 +183,14 @@ fn get_static_file(path: &str) -> Option<(&'static str, &'static str)> {
         "styles.css" => Some((include_str!("../static/styles.css"), "text/css")),
         "state.js" => Some((include_str!("../static/state.js"), "application/javascript")),
         "utils.js" => Some((include_str!("../static/utils.js"), "application/javascript")),
-        "websocket.js" => Some((include_str!("../static/websocket.js"), "application/javascript")),
-        "services.js" => Some((include_str!("../static/services.js"), "application/javascript")),
+        "websocket.js" => Some((
+            include_str!("../static/websocket.js"),
+            "application/javascript",
+        )),
+        "services.js" => Some((
+            include_str!("../static/services.js"),
+            "application/javascript",
+        )),
         "logs.js" => Some((include_str!("../static/logs.js"), "application/javascript")),
         "api.js" => Some((include_str!("../static/api.js"), "application/javascript")),
         "ui.js" => Some((include_str!("../static/ui.js"), "application/javascript")),
@@ -183,7 +206,8 @@ fn get_file_etag(path: &str) -> Option<axum::http::HeaderValue> {
         let mut hasher = DefaultHasher::new();
         content.hash(&mut hasher);
         let etag = format!("\"{}\"", hasher.finish());
-        axum::http::HeaderValue::from_str(&etag).unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
+        axum::http::HeaderValue::from_str(&etag)
+            .unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
     })
 }
 
@@ -248,22 +272,34 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
     let hidden_for_logs = hidden_arc.clone();
     let tx_logs = tx.clone();
     tokio::spawn(async move {
-        while let Ok((service, message, timestamp, stream)) = log_receiver_clone.recv().await {
-            let hidden = hidden_for_logs.read().await;
-            if hidden.get(&service).copied().unwrap_or(false) {
-                continue;
-            }
-            drop(hidden);
+        loop {
+            match log_receiver_clone.recv().await {
+                Ok((service, message, timestamp, stream)) => {
+                    let hidden = hidden_for_logs.read().await;
+                    if hidden.get(&service).copied().unwrap_or(false) {
+                        continue;
+                    }
+                    drop(hidden);
 
-            let log_msg = LogMessage {
-                service,
-                message,
-                timestamp,
-                stream,
-            };
+                    let log_msg = LogMessage {
+                        service,
+                        message,
+                        timestamp,
+                        stream,
+                    };
 
-            if let Ok(json) = serde_json::to_string(&log_msg) {
-                let _ = tx_logs.send(axum::extract::ws::Message::Text(json));
+                    if let Ok(json) = serde_json::to_string(&log_msg) {
+                        let _ = tx_logs.send(axum::extract::ws::Message::Text(json));
+                    }
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                    // Receiver fell behind, continue receiving (some messages were missed)
+                    continue;
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                    // Channel closed, exit
+                    break;
+                }
             }
         }
     });
@@ -292,12 +328,14 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
             let services: Vec<ServiceInfo> = status
                 .iter()
                 .map(|(name, status)| {
-                    let service_config = crate::services::get_service_by_name(name)
-                        .map(|s| s.config());
-                    let has_watch_command = service_config.as_ref()
+                    let service_config =
+                        crate::services::get_service_by_name(name).map(|s| s.config());
+                    let has_watch_command = service_config
+                        .as_ref()
                         .map(|c| c.watch_command.is_some())
                         .unwrap_or(false);
-                    let has_perf_command = service_config.as_ref()
+                    let has_perf_command = service_config
+                        .as_ref()
                         .map(|c| c.perf_command.is_some())
                         .unwrap_or(false);
 
@@ -316,7 +354,8 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
             let update = StatusUpdate { services };
 
             if let Ok(json) = serde_json::to_string(&update) {
-                let _ = tx_status.send(axum::extract::ws::Message::Text(format!("status:{}", json)));
+                let _ =
+                    tx_status.send(axum::extract::ws::Message::Text(format!("status:{}", json)));
             }
         };
 
@@ -327,9 +366,18 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
         // Using a small debounce to avoid flooding on rapid changes
         loop {
             // Wait for a status change notification
-            if status_change_receiver.recv().await.is_err() {
-                // Channel closed, exit
-                break;
+            match status_change_receiver.recv().await {
+                Ok(()) => {
+                    // Got a status change notification
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                    // Receiver fell behind, but we still want to send the current status
+                    // Continue to send the update
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                    // Channel closed, exit
+                    break;
+                }
             }
 
             // Debounce: drain any additional notifications that arrived immediately after
@@ -399,12 +447,13 @@ async fn get_status(State(control): State<Arc<RwLock<Control>>>) -> impl IntoRes
     let services: Vec<ServiceInfo> = status
         .iter()
         .map(|(name, status)| {
-            let service_config = crate::services::get_service_by_name(name)
-                .map(|s| s.config());
-            let has_watch_command = service_config.as_ref()
+            let service_config = crate::services::get_service_by_name(name).map(|s| s.config());
+            let has_watch_command = service_config
+                .as_ref()
                 .map(|c| c.watch_command.is_some())
                 .unwrap_or(false);
-            let has_perf_command = service_config.as_ref()
+            let has_perf_command = service_config
+                .as_ref()
                 .map(|c| c.perf_command.is_some())
                 .unwrap_or(false);
 
@@ -534,7 +583,12 @@ async fn restart_service(
     if req.service == "shared" {
         let watching = ctrl.get_watching().await;
         if *watching.get("shared").unwrap_or(&false) {
-            return (StatusCode::OK, Json(json!({"success": true, "message": "Shared is in watch mode, skipping restart"})));
+            return (
+                StatusCode::OK,
+                Json(
+                    json!({"success": true, "message": "Shared is in watch mode, skipping restart"}),
+                ),
+            );
         }
     }
 
@@ -544,27 +598,21 @@ async fn restart_service(
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
-async fn restart_all_services(
-    State(control): State<Arc<RwLock<Control>>>,
-) -> impl IntoResponse {
+async fn restart_all_services(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
     let ctrl = control.read().await;
     ctrl.restart_all_services().await;
 
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
-async fn stop_all_services(
-    State(control): State<Arc<RwLock<Control>>>,
-) -> impl IntoResponse {
+async fn stop_all_services(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
     let ctrl = control.read().await;
     ctrl.stop_all_services().await;
 
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
-async fn check_target_sizes(
-    State(control): State<Arc<RwLock<Control>>>,
-) -> impl IntoResponse {
+async fn check_target_sizes(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
     let ctrl = control.read().await;
     let sizes = ctrl.check_target_sizes().await;
 
@@ -579,7 +627,10 @@ async fn check_target_sizes(
         })
         .collect();
 
-    (StatusCode::OK, Json(json!({"success": true, "sizes": results})))
+    (
+        StatusCode::OK,
+        Json(json!({"success": true, "sizes": results})),
+    )
 }
 
 async fn purge_target_directories(
@@ -587,15 +638,14 @@ async fn purge_target_directories(
 ) -> impl IntoResponse {
     let ctrl = control.read().await;
     match ctrl.purge_target_directories().await {
-        Ok(deleted) => {
-            (StatusCode::OK, Json(json!({"success": true, "deleted": deleted})))
-        }
-        Err(e) => {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "error": e.to_string()})),
-            )
-        }
+        Ok(deleted) => (
+            StatusCode::OK,
+            Json(json!({"success": true, "deleted": deleted})),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"success": false, "error": e.to_string()})),
+        ),
     }
 }
 

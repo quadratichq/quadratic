@@ -146,34 +146,60 @@ impl ServiceManager {
             return;
         };
 
-        // Kill existing process
-        self.kill_service(name).await;
+        // Check if there's an existing process before killing
+        let had_existing_process = {
+            let processes = self.processes.read().await;
+            processes.get(name).and_then(|p| p.as_ref()).is_some()
+        };
 
-        // For services with ports, proactively kill any processes on that port
+        // Only kill if there's an existing process
+        if had_existing_process {
+            self.kill_service(name).await;
+        }
+
+        // For services with ports, check if port is in use and kill if needed
         if let Some(port) = service.port() {
-            // Kill any processes still using the port (in case kill_service didn't catch them)
-            self.kill_processes_on_port(port).await;
+            // Only kill processes on port if we had an existing process or port is actually in use
+            if had_existing_process || !self.is_port_free(port).await {
+                // Kill any processes still using the port
+                self.kill_processes_on_port(port).await;
 
-            // Give the OS a moment to release the port after killing processes
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                // Give the OS a moment to release the port after killing processes
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-            // Wait up to 2 seconds for the port to be released
-            if !self.wait_for_port_free(port, 2000).await {
-                self.log(
-                    name,
-                    format!(
-                        "Warning: Port {} may still be in use, proceeding anyway",
-                        port
-                    ),
-                )
-                .await;
-            } else {
-                self.log(name, format!("Port {} is now free", port)).await;
+                // Wait up to 2 seconds for the port to be released
+                if !self.wait_for_port_free(port, 2000).await {
+                    self.log(
+                        name,
+                        format!(
+                            "Warning: Port {} may still be in use, proceeding anyway",
+                            port
+                        ),
+                    )
+                    .await;
+                } else {
+                    self.log(name, format!("Port {} is now free", port)).await;
+                }
             }
         }
 
         let watching = *self.watching.read().await.get(name).unwrap_or(&false);
         let base_dir = self.base_dir.clone();
+
+        // Log the command being run for debugging (especially for shared)
+        if name == "shared" {
+            let service_config = service.config();
+            let command = if watching {
+                service_config.watch_command.as_ref()
+            } else {
+                Some(&service_config.command)
+            };
+            if let Some(cmd) = command {
+                self.log(name, format!("Running command: {}", cmd.join(" ")))
+                    .await;
+            }
+        }
+
         let mut cmd = service.build_command(watching, perf, &base_dir);
 
         let mut child = match cmd.spawn() {
@@ -203,14 +229,14 @@ impl ServiceManager {
 
         // Handle stdout
         let stdout = child.stdout.take();
-        if let Some(stdout) = stdout {
+        let stdout_handle = if let Some(stdout) = stdout {
             let name = name.to_string();
             let sender = self.log_sender.clone();
             let status = self.status.clone();
             let service_config = service.config();
             let status_notifier = self.status_change_sender.clone();
 
-            tokio::spawn(async move {
+            Some(tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
                 let mut lines = reader.lines();
                 loop {
@@ -279,12 +305,17 @@ impl ServiceManager {
                         }
                     }
                 }
-            });
-        }
+            }))
+        } else {
+            None
+        };
 
         // Handle stderr
         let stderr = child.stderr.take();
-        if let Some(stderr) = stderr {
+        let stderr_handle = if let Some(stderr) = stderr {
+            if name == "shared" {
+                self.log(name, "Setting up stderr reader".to_string()).await;
+            }
             let name = name.to_string();
             let sender = self.log_sender.clone();
             let status = self.status.clone();
@@ -297,7 +328,7 @@ impl ServiceManager {
                 name == "core" || name == "multiplayer" || name == "files" || name == "connection";
             let error_patterns = service_config.error_patterns.clone();
 
-            tokio::spawn(async move {
+            Some(tokio::spawn(async move {
                 let reader = BufReader::new(stderr);
                 let mut lines = reader.lines();
                 loop {
@@ -374,13 +405,27 @@ impl ServiceManager {
                         }
                     }
                 }
-            });
-        }
+            }))
+        } else {
+            None
+        };
 
         // Store the process - the child's PID is its PGID due to pre_exec setpgid(0,0)
         {
             let mut processes = self.processes.write().await;
             processes.insert(name.to_string(), Some(child));
+        }
+
+        // For one-time commands (like shared compile or types), wait for reading tasks to finish
+        // This ensures all output is captured even if the process exits quickly
+        let is_one_time_command = (name == "shared" && !watching) || name == "types";
+        if is_one_time_command {
+            if let Some(handle) = stdout_handle {
+                let _ = handle.await;
+            }
+            if let Some(handle) = stderr_handle {
+                let _ = handle.await;
+            }
         }
     }
 
@@ -389,19 +434,22 @@ impl ServiceManager {
         let service_port = crate::services::get_service_by_name(name).and_then(|s| s.port());
         let service_cwd = crate::services::get_service_by_name(name).and_then(|s| s.cwd());
 
-        // For services with ports, also kill processes on that port first (catches child processes)
-        if let Some(port) = service_port {
-            self.kill_processes_on_port(port).await;
-        }
-
-        // For cargo-based services, also kill cargo and rustc processes in the service directory
-        if let Some(cwd) = service_cwd {
-            self.kill_cargo_processes(&cwd).await;
-        }
-
         // Kill the spawned process and its entire process group
         let mut processes = self.processes.write().await;
         if let Some(Some(mut child)) = processes.remove(name) {
+            let pid = child.id();
+            drop(processes); // Release the lock before async operations
+
+            // For services with ports, kill processes on that port first (catches child processes)
+            if let Some(port) = service_port {
+                self.kill_processes_on_port(port).await;
+            }
+
+            // For cargo-based services, also kill cargo and rustc processes in the service directory
+            if let Some(cwd) = service_cwd {
+                self.kill_cargo_processes(&cwd).await;
+            }
+
             // Check if the process already exited to avoid killing unrelated reused PIDs
             match child.try_wait() {
                 Ok(Some(status)) => {
@@ -423,8 +471,6 @@ impl ServiceManager {
                     .await;
                 }
             }
-            let pid = child.id();
-            drop(processes); // Release the lock before waiting
 
             let mut kill_succeeded = false;
 
@@ -827,7 +873,7 @@ impl ServiceManager {
         // Small delay to ensure cleanup completes
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-        // Now start the service - it will handle spawning and status updates
+        // Now start the service
         self.start_service(name).await;
     }
 
@@ -847,13 +893,18 @@ impl ServiceManager {
             status.keys().cloned().collect()
         };
 
-        // Restart all services
+        // Restart all services (including shared, regardless of watch mode)
         for service_name in service_names {
-            // Skip shared if it's in watch mode (same logic as restart_service)
+            // Log what we're doing for shared
             if service_name == "shared" {
                 let watching = self.watching.read().await;
-                if *watching.get("shared").unwrap_or(&false) {
-                    continue;
+                let is_watching = *watching.get("shared").unwrap_or(&false);
+                if is_watching {
+                    self.log("system", "Restarting shared (watch mode)".to_string())
+                        .await;
+                } else {
+                    self.log("system", "Restarting shared (compile mode)".to_string())
+                        .await;
                 }
             }
             self.restart_service(&service_name).await;
@@ -1007,6 +1058,14 @@ impl ServiceManager {
         watching.insert(name.to_string(), !current);
         drop(watching);
 
+        // Reset status from Killed to Stopped so start_service will run
+        {
+            let mut status = self.status.write().await;
+            if matches!(status.get(name), Some(ServiceStatus::Killed)) {
+                status.insert(name.to_string(), ServiceStatus::Stopped);
+            }
+        }
+
         // Restart the service
         self.start_service(name).await;
     }
@@ -1054,6 +1113,14 @@ impl ServiceManager {
         let mut watch_map = self.watching.write().await;
         watch_map.insert(name.to_string(), watching);
         drop(watch_map);
+
+        // Reset status from Killed to Stopped so start_service will run
+        {
+            let mut status = self.status.write().await;
+            if matches!(status.get(name), Some(ServiceStatus::Killed)) {
+                status.insert(name.to_string(), ServiceStatus::Stopped);
+            }
+        }
 
         // Restart the service with the appropriate command (watcher or non-watcher)
         self.start_service(name).await;
