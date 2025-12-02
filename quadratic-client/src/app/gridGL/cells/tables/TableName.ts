@@ -6,13 +6,12 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { timeAgoAndNextTimeout } from '@/shared/utils/timeAgo';
 import type { Point } from 'pixi.js';
 import { Assets, BitmapText, Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
-export const TABLE_NAME_FONT_SIZE = 14;
 const TABLE_MODIFIED_FONT_SIZE = 10;
 export const TABLE_NAME_PADDING = [4, 2];
 
@@ -41,7 +40,7 @@ export class TableName extends Container {
     super();
     this.table = table;
     this.background = this.addChild(new Graphics());
-    this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
+    this.text = this.addChild(new BitmapText('', { fontSize: DEFAULT_FONT_SIZE, fontName: 'OpenSans-Bold' }));
     this.symbol = this.addChild(new Sprite());
     if (table.codeCell.is_code) {
       this.modified = this.addChild(new BitmapText('', { fontSize: TABLE_MODIFIED_FONT_SIZE, fontName: 'OpenSans' }));

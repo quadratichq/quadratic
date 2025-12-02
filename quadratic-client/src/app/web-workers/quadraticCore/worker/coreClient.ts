@@ -183,6 +183,10 @@ class CoreClient {
         core.setItalic(e.data.selection, e.data.italic, e.data.cursor, e.data.isAi);
         return;
 
+      case 'clientCoreSetCellFontSize':
+        core.setFontSize(e.data.selection, e.data.fontSize, e.data.cursor, e.data.isAi);
+        return;
+
       case 'clientCoreSetCellTextColor':
         core.setTextColor(e.data.selection, e.data.color, e.data.cursor, e.data.isAi);
         return;
@@ -777,7 +781,7 @@ class CoreClient {
         this.send({
           type: 'coreClientResizeRows',
           id: e.data.id,
-          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi),
+          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi, e.data.clientResized),
         });
         return;
 

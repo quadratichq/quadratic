@@ -658,6 +658,16 @@ class QuadraticCore {
     });
   }
 
+  setFontSize(selection: string, fontSize: number, isAi: boolean) {
+    this.send({
+      type: 'clientCoreSetCellFontSize',
+      selection,
+      fontSize,
+      cursor: sheets.getCursorPosition(),
+      isAi,
+    });
+  }
+
   setTextColor(selection: string, color: string | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellTextColor',
@@ -1741,7 +1751,12 @@ class QuadraticCore {
     });
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], isAi: boolean): Promise<JsResponse | undefined> {
+  resizeRows(
+    sheetId: string,
+    rows: ColumnRowResize[],
+    isAi: boolean,
+    clientResized: boolean = true
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
@@ -1754,6 +1769,7 @@ class QuadraticCore {
         rows,
         cursor: sheets.getCursorPosition(),
         isAi,
+        clientResized,
       });
     });
   }

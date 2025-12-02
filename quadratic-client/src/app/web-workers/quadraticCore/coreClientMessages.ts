@@ -290,6 +290,14 @@ export interface ClientCoreSetCellItalic {
   isAi: boolean;
 }
 
+export interface ClientCoreSetCellFontSize {
+  type: 'clientCoreSetCellFontSize';
+  selection: string;
+  fontSize: number;
+  cursor: string;
+  isAi: boolean;
+}
+
 export interface ClientCoreSetCellFillColor {
   type: 'clientCoreSetCellFillColor';
   selection: string;
@@ -1390,6 +1398,7 @@ export interface ClientCoreResizeRows {
   rows: ColumnRowResize[];
   cursor: string;
   isAi: boolean;
+  clientResized: boolean;
 }
 
 export interface CoreClientResizeRows {
@@ -1511,6 +1520,7 @@ export type ClientCoreMessage =
   | ClientCoreSummarizeSelection
   | ClientCoreSetCellBold
   | ClientCoreSetCellItalic
+  | ClientCoreSetCellFontSize
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
