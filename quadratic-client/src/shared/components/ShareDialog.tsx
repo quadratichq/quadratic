@@ -433,7 +433,9 @@ function ManageMemberUpgradeWrapper({
 }) {
   const wrapInUpgrade = upgradeMember && upgradeMember.showUpgrade === true && upgradeMember.email === email;
   const submit = useSubmit();
-  const handleUpgrade = () => {
+  const handleUpgrade = useCallback(() => {
+    trackEvent('[FileSharing].inviteToTeam.upgrade');
+
     // Should never happen, since the component won't render, but to get the types
     // inferred correctly, we'll check for it.
     if (!upgradeMember) return;
@@ -448,7 +450,12 @@ function ManageMemberUpgradeWrapper({
 
     // Reset the upgrade member
     setUpgradeMember(null);
-  };
+  }, [upgradeMember, setUpgradeMember, submit, teamUuid]);
+
+  const handleCancel = useCallback(() => {
+    trackEvent('[FileSharing].inviteToTeam.cancel');
+    setUpgradeMember(null);
+  }, [setUpgradeMember]);
 
   if (!wrapInUpgrade) {
     return children;
@@ -468,7 +475,7 @@ function ManageMemberUpgradeWrapper({
         </p>
         <div className="mt-2 flex gap-2">
           <Button onClick={handleUpgrade}>Upgrade to team member</Button>
-          <Button variant="outline" onClick={() => setUpgradeMember(null)}>
+          <Button variant="outline" onClick={handleCancel}>
             Not now
           </Button>
         </div>
@@ -924,6 +931,7 @@ function ManageUser({
                 if (value === 'DELETE' && onDelete) {
                   onDelete(fetcherDelete.submit, userId);
                 } else if (value === 'UPGRADE' && onUpgradeToTeamMember) {
+                  trackEvent('[FileSharing].inviteToTeam.addFromRoleMenu');
                   onUpgradeToTeamMember();
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
