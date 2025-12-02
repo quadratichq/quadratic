@@ -77,35 +77,24 @@ beforeEach(async () => {
 
 afterEach(clearDb);
 
-describe('PATCH /v0/teams/:uuid/files/:fileUuid', () => {
+describe('POST /v0/files/:uuid/restore', () => {
   describe('bad requests', () => {
     it('responds with a 401 for unauthorized request', async () => {
       await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000001')
-        .send({ action: 'undelete' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/restore')
         .expect(401)
-        .expect(expectError);
-    });
-
-    it('responds with a 404 for requesting a team that does not exist', async () => {
-      await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-999999999999/files/00000000-0000-4000-8000-000000000001')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .send({ action: 'undelete' })
-        .expect(404)
         .expect(expectError);
     });
 
     it('responds with a 404 for requesting a file that does not exist', async () => {
       await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-999999999999')
+        .post('/v0/files/00000000-0000-4000-8000-999999999999/restore')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .send({ action: 'undelete' })
         .expect(404)
         .expect(expectError);
     });
 
-    it('responds with a 404 for requesting a file from a different team', async () => {
+    it('responds with a 403 for user without access to the file', async () => {
       // Create another team and file
       const user_4 = await createUser({ auth0Id: 'user_without_team' });
       const team2 = await createTeam({
@@ -132,60 +121,39 @@ describe('PATCH /v0/teams/:uuid/files/:fileUuid', () => {
         },
       });
 
+      // team_1_owner trying to restore a file from team2
       await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000003')
+        .post('/v0/files/00000000-0000-4000-8000-000000000003/restore')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .send({ action: 'undelete' })
-        .expect(404)
-        .expect(expectError);
-    });
-
-    it('responds with a 400 for trying to un-delete a non-deleted file', async () => {
-      await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000002')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .send({ action: 'undelete' })
-        .expect(400)
-        .expect(expectError);
-    });
-
-    it('responds with a 400 for invalid action', async () => {
-      await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000001')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .send({ action: 'invalid' })
-        .expect(400)
-        .expect(expectError);
-    });
-
-    it('responds with a 403 for requesting a team you do not have access to', async () => {
-      await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000001')
-        .set('Authorization', `Bearer ValidToken user_without_team`)
-        .send({ action: 'undelete' })
         .expect(403)
         .expect(expectError);
     });
 
-    it('responds with a 403 for viewer trying to un-delete', async () => {
+    it('responds with a 400 for trying to restore a non-deleted file', async () => {
       await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000001')
+        .post('/v0/files/00000000-0000-4000-8000-000000000002/restore')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(400)
+        .expect(expectError);
+    });
+
+    it('responds with a 403 for viewer trying to restore', async () => {
+      await request(app)
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/restore')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
-        .send({ action: 'undelete' })
         .expect(403)
         .expect(expectError);
     });
   });
 
   describe('valid requests', () => {
-    it('successfully un-deletes a file for team owner', async () => {
+    it('successfully restores a file for team owner', async () => {
       const response = await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000001')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/restore')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .send({ action: 'undelete' })
         .expect(200);
 
-      expect(response.body.message).toBe('File un-deleted successfully');
+      expect(response.body.message).toBe('File restored successfully');
       expect(response.body.file.uuid).toBe('00000000-0000-4000-8000-000000000001');
       expect(response.body.file.name).toBe('Deleted File');
       expect(response.body.file.deleted).toBe(false);
@@ -199,15 +167,15 @@ describe('PATCH /v0/teams/:uuid/files/:fileUuid', () => {
       expect(file?.deletedDate).toBe(null);
     });
 
-    it('successfully un-deletes a file for team editor', async () => {
+    it('successfully restores a file for team editor', async () => {
       const response = await request(app)
-        .patch('/v0/teams/00000000-0000-4000-8000-000000000001/files/00000000-0000-4000-8000-000000000001')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/restore')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
-        .send({ action: 'undelete' })
         .expect(200);
 
-      expect(response.body.message).toBe('File un-deleted successfully');
+      expect(response.body.message).toBe('File restored successfully');
       expect(response.body.file.deleted).toBe(false);
     });
   });
 });
+

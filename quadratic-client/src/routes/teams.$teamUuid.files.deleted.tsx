@@ -1,6 +1,7 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -13,6 +14,7 @@ import {
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
 import { timeAgo } from '@/shared/utils/timeAgo';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useMemo, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Navigate, redirect, useLoaderData } from 'react-router';
@@ -37,23 +39,21 @@ export const Component = () => {
   // const navigate = useNavigate();
   const [activeFileUuid, setActiveFileUuid] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const activeFile = useMemo(() => files.find(({ file }) => file.uuid === activeFileUuid), [activeFileUuid, files]);
 
-  const handleUndelete = async (fileUuid: string) => {
+  const handleRestore = async (fileUuid: string) => {
     setActiveFileUuid(fileUuid);
     setIsLoading(true);
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
-    // return;
-    apiClient.teams.files.deleted
-      .undelete(teamUuid, fileUuid)
-      .then((res) => {
+    apiClient.files
+      .restore(fileUuid)
+      .then((res: ApiTypes['/v0/files/:uuid/restore.POST.response']) => {
         window.location.href = ROUTES.FILE({ uuid: res.file.uuid });
         // navigate(ROUTES.FILE({ uuid: res.file.uuid }));
       })
       .catch(() => {
         setIsLoading(false);
-        // addGlobalSnackbar('Failed to restore file. Try again.', { severity: 'error' });
+        addGlobalSnackbar('Failed to restore file. Try again.', { severity: 'error' });
       });
   };
 
@@ -98,8 +98,12 @@ export const Component = () => {
                 </div>
               )}
             </div>
-
-            <span className="text-base">{file.name}</span>
+            <span className="flex flex-col items-start">
+              <span className="text-base">{file.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {file.ownerUserId === null ? 'Team' : 'Personal'} file
+              </span>
+            </span>
             <span className="ml-auto text-xs text-muted-foreground">Deleted {timeAgo(file.deletedDate)} by You</span>
           </button>
         ))}
@@ -130,7 +134,7 @@ export const Component = () => {
               <Button variant="outline" onClick={() => setActiveFileUuid('')} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button onClick={() => handleUndelete(activeFileUuid)} disabled={isLoading}>
+              <Button onClick={() => handleRestore(activeFileUuid)} disabled={isLoading}>
                 Restore & open
               </Button>
             </DialogFooter>

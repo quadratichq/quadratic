@@ -26,11 +26,18 @@ async function handler(req: Request, res: Response<any>) {
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
+  // Calculate the date 30 days ago
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   // Get deleted files for this team that the user has access to
   const dbFiles = await dbClient.file.findMany({
     where: {
       ownerTeamId: team.id,
       deleted: true,
+      deletedDate: {
+        gte: thirtyDaysAgo,
+      },
       // Don't return files that are private to other users
       // (one of these must return true)
       OR: [

@@ -91,13 +91,6 @@ export const apiClient = {
             ApiSchemas['/v0/teams/:uuid/files/deleted.GET.response']
           );
         },
-        undelete(teamUuid: string, fileUuid: string) {
-          return fetchFromApi(
-            `/v0/teams/${teamUuid}/files/${fileUuid}`,
-            { method: 'PATCH', body: JSON.stringify({ action: 'undelete' }) },
-            ApiSchemas['/v0/teams/:uuid/files/:fileUuid.PATCH.response']
-          );
-        },
       },
     },
     invites: {
@@ -200,6 +193,14 @@ export const apiClient = {
     delete(uuid: string) {
       trackEvent('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
+    },
+
+    restore(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/restore`,
+        { method: 'POST' },
+        ApiSchemas['/v0/files/:uuid/restore.POST.response']
+      );
     },
 
     async download(uuid: string, args: { checkpointDataUrl?: string } = {}) {

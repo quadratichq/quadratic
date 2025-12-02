@@ -43,7 +43,12 @@ beforeEach(async () => {
     ],
   });
 
-  // Create some deleted files
+  // Create some deleted files (within last 30 days)
+  const now = new Date();
+  const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+  const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+  const fortyDaysAgo = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000);
+
   await createFile({
     data: {
       creatorUserId: user_1.id,
@@ -51,7 +56,7 @@ beforeEach(async () => {
       name: 'Deleted Public File',
       uuid: '00000000-0000-4000-8000-000000000001',
       deleted: true,
-      deletedDate: new Date('2024-01-01'),
+      deletedDate: tenDaysAgo,
     },
   });
 
@@ -63,7 +68,19 @@ beforeEach(async () => {
       name: 'Deleted Private File',
       uuid: '00000000-0000-4000-8000-000000000002',
       deleted: true,
-      deletedDate: new Date('2024-01-02'),
+      deletedDate: fiveDaysAgo,
+    },
+  });
+
+  // Create a file deleted more than 30 days ago (should not appear in results)
+  await createFile({
+    data: {
+      creatorUserId: user_1.id,
+      ownerTeamId: team.id,
+      name: 'Old Deleted File',
+      uuid: '00000000-0000-4000-8000-000000000004',
+      deleted: true,
+      deletedDate: fortyDaysAgo,
     },
   });
 
@@ -145,6 +162,19 @@ describe('GET /v0/teams/:uuid/files/deleted', () => {
 
       const fileNames = response.body.map((item: any) => item.file.name);
       expect(fileNames).not.toContain('Active File');
+    });
+
+    it('only returns files deleted within the last 30 days', async () => {
+      const response = await request(app)
+        .get('/v0/teams/00000000-0000-4000-8000-000000000001/files/deleted')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200);
+
+      expect(response.body).toHaveLength(2);
+      const fileNames = response.body.map((item: any) => item.file.name);
+      expect(fileNames).toContain('Deleted Public File');
+      expect(fileNames).toContain('Deleted Private File');
+      expect(fileNames).not.toContain('Old Deleted File'); // Deleted 40 days ago
     });
   });
 });

@@ -562,10 +562,7 @@ export const ApiSchemas = {
       userMakingRequest: TeamUserMakingRequestSchema,
     })
   ),
-  '/v0/teams/:uuid/files/:fileUuid.PATCH.request': z.object({
-    action: z.literal('undelete'),
-  }),
-  '/v0/teams/:uuid/files/:fileUuid.PATCH.response': z.object({
+  '/v0/files/:uuid/restore.POST.response': z.object({
     message: z.string(),
     file: z.object({
       uuid: z.string().uuid(),
