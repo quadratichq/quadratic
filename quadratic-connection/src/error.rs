@@ -120,6 +120,7 @@ impl IntoResponse for ConnectionError {
             ConnectionError::Query(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
             ConnectionError::Connection(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
             ConnectionError::Proxy(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
+            ConnectionError::Ssh(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 
