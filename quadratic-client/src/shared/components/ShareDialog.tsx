@@ -432,23 +432,22 @@ function ManageMemberUpgradeWrapper({
   teamUuid: string;
 }) {
   const wrapInUpgrade = upgradeMember && upgradeMember.showUpgrade === true && upgradeMember.email === email;
-
-  // TODO: message for paid vs. free
-  const isPaid = true;
   const submit = useSubmit();
   const handleUpgrade = () => {
-    setUpgradeMember(null);
-    // Note: we set the type here so we can grep the codebase later for where
-    // we fire this action. But that means we have to manually cast the role
-    // until we can better set types for this part of the code.
+    // Should never happen, since the component won't render, but to get the types
+    // inferred correctly, we'll check for it.
+    if (!upgradeMember) return;
+
+    // Fire off the action
     const data: TeamAction['request.create-team-invite'] = {
       intent: 'create-team-invite',
-      // TODO: get types right here
-      email: upgradeMember?.email as string,
-      // TODO: get types right here
-      role: upgradeMember?.role as UserFileRole,
+      email: upgradeMember.email,
+      role: upgradeMember.role,
     };
     submit(data, { method: 'POST', action: ROUTES.TEAM(teamUuid), encType: 'application/json', navigate: false });
+
+    // Reset the upgrade member
+    setUpgradeMember(null);
   };
 
   if (!wrapInUpgrade) {
@@ -463,12 +462,10 @@ function ManageMemberUpgradeWrapper({
           <strong className="text-md font-semibold">Upgrade to team member?</strong> They’ll get access to this file as
           well as other team files. On Pro plans, they’ll also get access to paid features like increased AI usage.
         </p>
-        {isPaid && (
-          <p className="flex items-center gap-2 italic">
-            <GroupAddIcon />
-            Reminder: team members are billed per seat on Pro plans.
-          </p>
-        )}
+        <p className="flex items-center gap-2 italic">
+          <GroupAddIcon />
+          Reminder: team members are billed per seat on Pro plans.
+        </p>
         <div className="mt-2 flex gap-2">
           <Button onClick={handleUpgrade}>Upgrade to team member</Button>
           <Button variant="outline" onClick={() => setUpgradeMember(null)}>
