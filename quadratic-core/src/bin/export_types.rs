@@ -231,5 +231,6 @@ fn main() {
             s,
         )
         .expect("failed to write types file");
+        println!("Types exported successfully");
     }
 }
