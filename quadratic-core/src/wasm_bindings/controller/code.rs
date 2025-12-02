@@ -1,6 +1,23 @@
 use crate::a1::A1Selection;
+use serde::{Deserialize, Serialize};
 
 use super::*;
+
+/// Represents a single code operation for serialization
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CodeOperation {
+    pub x: i32,
+    pub y: i32,
+    pub sheet_id: String,
+    pub language: String,
+}
+
+/// Represents the code running state with current and pending operations
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CodeRunningState {
+    pub current: Option<CodeOperation>,
+    pub pending: Vec<CodeOperation>,
+}
 
 #[wasm_bindgen]
 impl GridController {

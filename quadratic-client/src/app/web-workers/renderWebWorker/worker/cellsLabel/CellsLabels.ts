@@ -369,13 +369,13 @@ export class CellsLabels {
         console.log(`[CellsTextHash] rendering hash with render cells: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
-    } else if (!isTransactionRunning && visibleDirtyHashes.length) {
+    } else if (visibleDirtyHashes.length) {
       const hash = visibleDirtyHashes[0];
       if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering visible: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
-    } else if (!isTransactionRunning && notVisibleDirtyHashes.length) {
+    } else if (notVisibleDirtyHashes.length) {
       const hash = notVisibleDirtyHashes[0].hash;
       if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering offscreen: ${hash.hashX}, ${hash.hashY}`);
