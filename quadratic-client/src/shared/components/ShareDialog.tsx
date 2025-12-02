@@ -781,6 +781,8 @@ export function InviteForm({
       }
 
       // Handle (optionally) upgrading the invite to a team member
+      // We use `as` here because we won't know the type since this is used
+      // for file and team invites (but we won't pass this function in a team context)
       setUpgradeMember?.({ email, role: role as UserFileRole });
     },
     [action, disallowedEmails, intent, submit, setUpgradeMember]
