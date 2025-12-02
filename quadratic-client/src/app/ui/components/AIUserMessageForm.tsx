@@ -613,6 +613,7 @@ const AIUserMessageFormFooter = memo(
                   disabled={disabled}
                   onClick={(e) => {
                     e.stopPropagation();
+                    trackEvent('[AIUserRules].openFromChat');
                     showSettingsDialog('ai');
                   }}
                 >
