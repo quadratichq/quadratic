@@ -313,6 +313,11 @@ function ShareFileDialogBody({
 
   const isTeamFile = useMemo(() => owner.type === 'team', [owner]);
 
+  const hasPermissionToUpgradeToTeamMember = useMemo(
+    () => data.userMakingRequest.teamRole === 'OWNER' || data.userMakingRequest.teamRole === 'EDITOR',
+    [data.userMakingRequest.teamRole]
+  );
+
   return (
     <>
       {filePermissions.includes('FILE_EDIT') && (
@@ -357,6 +362,7 @@ function ShareFileDialogBody({
           upgradeMember={upgradeMember}
           setUpgradeMember={setUpgradeMember}
           teamUuid={teamUuid}
+          hasPermissionToUpgradeToTeamMember={hasPermissionToUpgradeToTeamMember}
         >
           <ManageFileUser
             key={user.id}
@@ -365,12 +371,12 @@ function ShareFileDialogBody({
             user={user}
             canEditFile={canEditFile}
             action={action}
-            onUpgradeToTeamMember={
-              teamMemberEmails.includes(user.email)
-                ? undefined
-                : () => {
+            onAddToTeam={
+              hasPermissionToUpgradeToTeamMember && !teamMemberEmails.includes(user.email)
+                ? () => {
                     setUpgradeMember({ email: user.email, role: user.role, showUpgrade: true });
                   }
+                : undefined
             }
           />
         </ManageMemberUpgradeWrapper>
@@ -383,14 +389,15 @@ function ShareFileDialogBody({
           upgradeMember={upgradeMember}
           email={invite.email}
           teamUuid={teamUuid}
+          hasPermissionToUpgradeToTeamMember={hasPermissionToUpgradeToTeamMember}
         >
           <ManageInvite
             key={invite.id}
             invite={invite}
-            onUpgradeToTeamMember={
-              teamMemberEmails.includes(invite.email)
-                ? undefined
-                : () => setUpgradeMember({ email: invite.email, role: invite.role, showUpgrade: true })
+            onAddToTeam={
+              hasPermissionToUpgradeToTeamMember && !teamMemberEmails.includes(invite.email)
+                ? () => setUpgradeMember({ email: invite.email, role: invite.role, showUpgrade: true })
+                : undefined
             }
             onDelete={
               filePermissions.includes('FILE_EDIT')
@@ -424,12 +431,14 @@ function ManageMemberUpgradeWrapper({
   upgradeMember,
   setUpgradeMember,
   teamUuid,
+  hasPermissionToUpgradeToTeamMember,
 }: {
   children: ReactNode;
   email: string;
   upgradeMember: UpgradeMember;
   setUpgradeMember: SetUpgradeMember;
   teamUuid: string;
+  hasPermissionToUpgradeToTeamMember: boolean;
 }) {
   const wrapInUpgrade = upgradeMember && upgradeMember.showUpgrade === true && upgradeMember.email === email;
   const submit = useSubmit();
@@ -457,7 +466,7 @@ function ManageMemberUpgradeWrapper({
     setUpgradeMember(null);
   }, [setUpgradeMember]);
 
-  if (!wrapInUpgrade) {
+  if (!hasPermissionToUpgradeToTeamMember || !wrapInUpgrade) {
     return children;
   }
 
@@ -490,14 +499,14 @@ function ManageFileUser({
   canEditFile,
   action,
   publicLinkAccess,
-  onUpgradeToTeamMember,
+  onAddToTeam,
 }: {
   user: ShareUser;
   loggedInUserId: number;
   canEditFile: boolean;
   action: string;
   publicLinkAccess: PublicLinkAccess;
-  onUpgradeToTeamMember?: () => void;
+  onAddToTeam?: () => void;
 }) {
   const isLoggedInUser = user.id === loggedInUserId;
   const canDelete = isLoggedInUser ? true : canEditFile;
@@ -510,7 +519,7 @@ function ManageFileUser({
       isLoggedInUser={isLoggedInUser}
       user={user}
       roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
-      onUpgradeToTeamMember={onUpgradeToTeamMember}
+      onAddToTeam={onAddToTeam}
       onDelete={
         canDelete
           ? async (submit, userId) => {
@@ -868,7 +877,7 @@ function ManageUser({
   roles,
   onDelete,
   onUpdate,
-  onUpgradeToTeamMember,
+  onAddToTeam,
 }: {
   onDelete?: (submit: FetcherSubmitFunction, userId: string) => Promise<void>;
   onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
@@ -876,7 +885,7 @@ function ManageUser({
   isLoggedInUser: boolean;
   user: ShareUser;
   roles: (UserTeamRole | UserFileRole)[];
-  onUpgradeToTeamMember?: () => void;
+  onAddToTeam?: () => void;
 }) {
   const fetcherDelete = useFetcher();
   const fetcherUpdate = useFetcher();
@@ -930,9 +939,9 @@ function ManageUser({
               onValueChange={(value: 'DELETE' | 'UPGRADE' | (typeof roles)[0]) => {
                 if (value === 'DELETE' && onDelete) {
                   onDelete(fetcherDelete.submit, userId);
-                } else if (value === 'UPGRADE' && onUpgradeToTeamMember) {
+                } else if (value === 'UPGRADE' && onAddToTeam) {
                   trackEvent('[FileSharing].inviteToTeam.addFromRoleMenu');
-                  onUpgradeToTeamMember();
+                  onAddToTeam();
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
                   onUpdate(fetcherUpdate.submit, userId, role);
@@ -949,7 +958,7 @@ function ManageUser({
                     {getRoleLabel(role)}
                   </SelectItem>
                 ))}
-                {onUpgradeToTeamMember && (
+                {onAddToTeam && (
                   <>
                     <SelectSeparator />
                     <SelectItem value="UPGRADE">Add to team</SelectItem>
@@ -973,9 +982,9 @@ function ManageUser({
 function ManageInvite({
   invite,
   onDelete,
-  onUpgradeToTeamMember,
+  onAddToTeam,
 }: {
-  onUpgradeToTeamMember?: () => void;
+  onAddToTeam?: () => void;
   onDelete?: (submit: FetcherSubmitFunction, inviteId: string) => void;
   invite: {
     role: UserTeamRole | UserFileRole;
@@ -1012,8 +1021,8 @@ function ManageInvite({
             onValueChange={(value: string) => {
               if (value === 'DELETE' && onDelete) {
                 onDelete(deleteFetcher.submit, inviteId);
-              } else if (value === 'UPGRADE' && onUpgradeToTeamMember) {
-                onUpgradeToTeamMember();
+              } else if (value === 'UPGRADE' && onAddToTeam) {
+                onAddToTeam();
               }
             }}
           >
@@ -1024,7 +1033,7 @@ function ManageInvite({
             <SelectContent>
               <SelectItem value={role}>{label}</SelectItem>
 
-              {onUpgradeToTeamMember && (
+              {onAddToTeam && (
                 <>
                   <SelectSeparator />
                   <SelectItem value="UPGRADE">Add to team</SelectItem>
