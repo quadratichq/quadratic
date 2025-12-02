@@ -1,9 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import type { CellAlign, CellFormatSummary, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
+import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DEFAULT_FONT_SIZE, MAX_FONT_SIZE, MIN_FONT_SIZE } from '@/shared/constants/gridConstants';
-import type { ColorResult } from 'react-color';
 
 export const setFillColor = (color?: ColorResult) => {
   quadraticCore.setFillColor(sheets.getRustSelection(), color ? convertReactColorToString(color) : undefined, false);
