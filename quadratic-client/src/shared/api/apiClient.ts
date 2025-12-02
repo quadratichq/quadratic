@@ -51,16 +51,6 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
         );
       },
-      verifyCheckoutSession(uuid: string, sessionId: string) {
-        return fetchFromApi(
-          `/v0/teams/${uuid}/billing/checkout/verify`,
-          {
-            method: 'POST',
-            body: JSON.stringify({ sessionId }),
-          },
-          ApiSchemas['/v0/teams/:uuid/billing/checkout/verify.POST.response']
-        );
-      },
       getCheckoutSessionUrl(uuid: string, redirectUrlSuccess: string, redirectUrlCancel: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/billing/checkout/session?redirect-success=${encodeURIComponent(redirectUrlSuccess)}&redirect-cancel=${encodeURIComponent(redirectUrlCancel)}`,

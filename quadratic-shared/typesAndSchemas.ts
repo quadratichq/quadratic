@@ -461,13 +461,6 @@ export const ApiSchemas = {
   }),
   '/v0/teams/:uuid/billing/portal/session.GET.response': z.object({ url: z.string() }),
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
-  '/v0/teams/:uuid/billing/checkout/verify.POST.request': z.object({ sessionId: z.string() }),
-  '/v0/teams/:uuid/billing/checkout/verify.POST.response': z.object({
-    subscriptionActive: z.boolean(),
-    status: z.string().optional(),
-    sessionStatus: z.string().optional(),
-    error: z.string().optional(),
-  }),
   '/v0/teams/:uuid/billing/retention-discount.GET.response': z.object({
     isEligible: z.boolean(),
   }),
