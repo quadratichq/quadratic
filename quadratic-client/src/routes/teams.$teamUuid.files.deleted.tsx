@@ -1,4 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
@@ -14,16 +15,12 @@ import {
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { useMemo, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { redirect, useLoaderData } from 'react-router';
+import { Navigate, redirect, useLoaderData } from 'react-router';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const { params } = loaderArgs;
   const teamUuid = params.teamUuid;
-  if (!teamUuid) {
-    // TODO: sentry
-    console.error('[<TeamsRoute.Loader>] No teamUuid found');
-    return redirect('/');
-  }
+  if (!teamUuid) return redirect('/');
 
   const files = await apiClient.teams.files.deleted.list(teamUuid);
   return { teamUuid, files };
@@ -31,6 +28,12 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
 
 export const Component = () => {
   const { teamUuid, files } = useLoaderData<typeof loader>();
+  const {
+    activeTeam: {
+      userMakingRequest: { teamPermissions },
+    },
+  } = useDashboardRouteLoaderData();
+
   // const navigate = useNavigate();
   const [activeFileUuid, setActiveFileUuid] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -55,6 +58,11 @@ export const Component = () => {
   };
 
   console.log(files);
+
+  // No permission? Redirect to team page
+  if (!teamPermissions.includes('TEAM_EDIT')) {
+    return <Navigate to={ROUTES.TEAM(teamUuid)} />;
+  }
 
   return (
     <>
