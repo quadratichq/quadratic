@@ -144,7 +144,6 @@ export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
 
 export const ConnectionTypeDetailsPlaidSchema = z.object({
   access_token: z.string().min(1, { message: 'Required' }),
-  environment: z.enum(['sandbox', 'development', 'production']),
   start_date: z.string().date(),
   institution_name: z.string().optional(), // For display purposes
 });
@@ -243,4 +242,18 @@ export const ApiSchemasConnections = {
 
   // Get synced connection logs
   '/v0/teams/:uuid/connections/:connectionUuid/log.GET.response': z.array(SyncedConnectionLogSchema),
+
+  // Plaid integration endpoints
+  '/v0/teams/:uuid/plaid/link-token.POST.request': z.object({}),
+  '/v0/teams/:uuid/plaid/link-token.POST.response': z.object({
+    linkToken: z.string(),
+  }),
+
+  '/v0/teams/:uuid/plaid/exchange-token.POST.request': z.object({
+    publicToken: z.string(),
+  }),
+  '/v0/teams/:uuid/plaid/exchange-token.POST.response': z.object({
+    accessToken: z.string(),
+    itemId: z.string(),
+  }),
 };
