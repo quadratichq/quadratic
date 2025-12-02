@@ -25,15 +25,16 @@ export const GetCellData = memo(
       }
     }, [args, loading]);
 
-    let label = useMemo(
-      () =>
+    const label = useMemo(() => {
+      const verb = loading ? 'Reading' : 'Read';
+      return (
         (toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Reading data in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
-          : 'Reading data...') +
+          ? `${verb} data in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
+          : `${verb} data...`) +
         (toolArgs?.data?.page ? ` in page ${toolArgs.data.page + 1}` : '') +
-        '.',
-      [toolArgs?.data?.sheet_name, toolArgs?.data?.selection, toolArgs?.data?.page]
-    );
+        '.'
+      );
+    }, [toolArgs?.data?.sheet_name, toolArgs?.data?.selection, toolArgs?.data?.page, loading]);
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;

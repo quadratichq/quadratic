@@ -39,6 +39,7 @@ pub struct SheetFormatting {
     pub(crate) date_time: SheetFormattingType<String>,
     pub(crate) underline: SheetFormattingType<bool>,
     pub(crate) strike_through: SheetFormattingType<bool>,
+    pub(crate) font_size: SheetFormattingType<i16>,
 }
 
 impl SheetFormatting {
@@ -56,5 +57,6 @@ impl SheetFormatting {
             && self.date_time.is_all_default()
             && self.underline.is_all_default()
             && self.strike_through.is_all_default()
+            && self.font_size.is_all_default()
     }
 }

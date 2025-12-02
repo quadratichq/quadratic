@@ -29,14 +29,24 @@ export const SetFormulaCellValue = memo(
 
     if (loading) {
       return (
-        <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading={true} className={className} />
+        <ToolCard
+          icon={<LanguageIcon language="Formula" />}
+          label="Formula"
+          isLoading={true}
+          className={className}
+          compact
+        />
       );
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError className={className} />;
+      return (
+        <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError className={className} compact />
+      );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading className={className} />;
+      return (
+        <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading className={className} compact />
+      );
     }
 
     const { code_cell_position } = toolArgs.data;
@@ -46,6 +56,7 @@ export const SetFormulaCellValue = memo(
         label={'Formula'}
         description={code_cell_position}
         className={className}
+        compact
       />
     );
   }
