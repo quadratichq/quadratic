@@ -2,7 +2,7 @@ import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorIn
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { content } from '@/app/gridGL/pixiApp/Content';
-import { getConnectionKind, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getConnectionKind, getLanguage, isDatabaseConnection } from '@/app/helpers/codeCellLanguage';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -110,27 +110,15 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
     if (languageId === 'Formula') {
       // Formulas execute synchronously and can't be cancelled
       return () => {};
-    } else if (
-      languageId === 'Connection' ||
-      (languageId &&
-        [
-          'POSTGRES',
-          'MYSQL',
-          'MSSQL',
-          'SNOWFLAKE',
-          'COCKROACHDB',
-          'BIGQUERY',
-          'MARIADB',
-          'SUPABASE',
-          'NEON',
-          'MIXPANEL',
-        ].includes(languageId))
-    ) {
+    } else if (isDatabaseConnection(languageId)) {
       return () => quadraticCore.sendCancelExecution({ Connection: {} as any });
     } else if (languageId === 'Javascript') {
       return () => javascriptWebWorker.cancelExecution();
-    } else {
+    } else if (languageId === 'Python') {
       return () => pythonWebWorker.cancelExecution();
+    } else {
+      console.warn('Unhandled language in getCancelHandler', languageId);
+      return () => {};
     }
   };
 
@@ -162,8 +150,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
   };
 
   // Check if there are multiple cells running (current + awaiting, or multiple awaiting)
-  const totalRunningCells = (currentCodeRun ? 1 : 0) + awaitingCodeRuns.length;
-  const hasMultipleCellsRunning = totalRunningCells > 1;
+  const hasMultipleCellsRunning = running > 1;
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

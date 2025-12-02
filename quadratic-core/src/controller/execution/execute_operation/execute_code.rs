@@ -271,15 +271,7 @@ impl GridController {
 
             // Serialize current operation if present
             let current_op = current_ref.and_then(|(sheet_pos, language, _code)| {
-                let language_str = match language {
-                    CodeCellLanguage::Python => "Python".to_string(),
-                    CodeCellLanguage::Javascript => "Javascript".to_string(),
-                    CodeCellLanguage::Formula => "Formula".to_string(),
-                    CodeCellLanguage::Connection { kind, id } => {
-                        format!("Connection:{}:{}", kind, id)
-                    }
-                    _ => return None, // Only send for Python, JavaScript, Formula, and Connection
-                };
+                let language_str = language.as_string();
                 Some(CodeOperation {
                     x: sheet_pos.x as i32,
                     y: sheet_pos.y as i32,
@@ -297,9 +289,7 @@ impl GridController {
                 {
                     // Skip the currently executing operation if present
                     if let Some((current_sheet_pos, _, _)) = current_ref
-                        && pending_sheet_pos.sheet_id == current_sheet_pos.sheet_id
-                        && pending_sheet_pos.x == current_sheet_pos.x
-                        && pending_sheet_pos.y == current_sheet_pos.y
+                        && *pending_sheet_pos == *current_sheet_pos
                     {
                         continue;
                     }
@@ -310,24 +300,10 @@ impl GridController {
                             y: pending_sheet_pos.y,
                         };
                         if let Some(pending_code_run) = pending_sheet.code_run_at(&pos)
-                            && matches!(
-                                pending_code_run.language,
-                                CodeCellLanguage::Python
-                                    | CodeCellLanguage::Javascript
-                                    | CodeCellLanguage::Formula
-                                    | CodeCellLanguage::Connection { .. }
-                            )
+                            && pending_code_run.language.is_code_language()
                         {
                             // Serialize language as string for JSON
-                            let language_str = match &pending_code_run.language {
-                                CodeCellLanguage::Python => "Python".to_string(),
-                                CodeCellLanguage::Javascript => "Javascript".to_string(),
-                                CodeCellLanguage::Formula => "Formula".to_string(),
-                                CodeCellLanguage::Connection { kind, id } => {
-                                    format!("Connection:{}:{}", kind, id)
-                                }
-                                _ => continue,
-                            };
+                            let language_str = pending_code_run.language.as_string();
                             pending_ops.push(CodeOperation {
                                 x: pending_sheet_pos.x as i32,
                                 y: pending_sheet_pos.y as i32,

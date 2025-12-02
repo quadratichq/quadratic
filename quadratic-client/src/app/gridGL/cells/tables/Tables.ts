@@ -679,6 +679,55 @@ export class Tables extends Container<Table> {
 
   //#endregion
 
+  /// Clears running state for tables that are no longer in the new running state
+  private clearTablesNoLongerRunning = (
+    previousRunningState: string[],
+    newTables: { table: Table }[],
+    options?: { skipIfInPlayerState?: boolean }
+  ): void => {
+    for (const tablePos of previousRunningState) {
+      const [x, y] = tablePos.split(',');
+      const table = this.getTable(Number(x), Number(y));
+      if (table && !newTables.find((t) => t.table === table)) {
+        // Skip clearing if table is in player running state (player code takes precedence)
+        if (options?.skipIfInPlayerState && this.runningState.includes(`${table.codeCell.x},${table.codeCell.y}`)) {
+          continue;
+        }
+        table.outline.running = false;
+        table.outline.multiplayerUserColor = undefined;
+        table.running = false;
+        table.outline.update();
+        table.header.update(false);
+      }
+    }
+  };
+
+  /// Updates running state for tables that are now running
+  private updateRunningTables = (
+    newTables: { table: Table; running: true | 'awaiting'; userColor?: number }[],
+    options?: { clearMultiplayerColor?: boolean; updateHeaderConditionally?: boolean }
+  ): string[] => {
+    const newRunningState: string[] = [];
+    for (const table of newTables) {
+      const tableKey = `${table.table.codeCell.x},${table.table.codeCell.y}`;
+      table.table.outline.running = table.running;
+      table.table.running = table.running;
+      if (options?.clearMultiplayerColor) {
+        table.table.outline.multiplayerUserColor = undefined;
+      } else if (table.userColor !== undefined) {
+        table.table.outline.multiplayerUserColor = table.userColor;
+      }
+      table.table.outline.update();
+      if (options?.updateHeaderConditionally && table.table.codeCell.show_name) {
+        table.table.header.update(false);
+      } else if (!options?.updateHeaderConditionally) {
+        table.table.header.update(false);
+      }
+      newRunningState.push(tableKey);
+    }
+    return newRunningState;
+  };
+
   private updateRunningState = (current?: CodeRun, awaitingExecution?: CodeRun[]) => {
     if (!current && (!awaitingExecution || awaitingExecution.length === 0)) {
       // No code running - clear all running states
@@ -715,34 +764,13 @@ export class Tables extends Container<Table> {
     }
 
     // Clear tables that are no longer running
-    for (const tablePos of this.runningState) {
-      const [x, y] = tablePos.split(',');
-      const table = this.getTable(Number(x), Number(y));
-      if (table && !newTables.find((t) => t.table === table)) {
-        table.outline.running = false;
-        table.running = false;
-        table.outline.update();
-        table.header.update(false);
-      }
-    }
+    this.clearTablesNoLongerRunning(this.runningState, newTables);
 
     // Update all running tables (animation will be handled by update() method)
-    const newRunningState: string[] = [];
-    for (const table of newTables) {
-      const tableKey = `${table.table.codeCell.x},${table.table.codeCell.y}`;
-      // Always update running state (may have changed from awaiting to running or vice versa)
-      table.table.outline.running = table.running;
-      table.table.running = table.running;
-      // Clear multiplayer color when player code is running (player code takes precedence)
-      table.table.outline.multiplayerUserColor = undefined;
-      // Update outline to apply dimming effect
-      table.table.outline.update();
-      // Trigger header update to start rotation animation if needed
-      if (table.table.codeCell.show_name) {
-        table.table.header.update(false);
-      }
-      newRunningState.push(tableKey);
-    }
+    const newRunningState = this.updateRunningTables(newTables, {
+      clearMultiplayerColor: true,
+      updateHeaderConditionally: true,
+    });
     this.runningState = newRunningState;
 
     // Mark viewport as dirty to ensure animation loop continues, but only if tables are on the current sheet
@@ -778,33 +806,12 @@ export class Tables extends Container<Table> {
     });
 
     // Clear tables that are no longer running in multiplayer
-    for (const tablePos of this.multiplayerRunningState) {
-      const [x, y] = tablePos.split(',');
-      const table = this.getTable(Number(x), Number(y));
-      if (table && !newTables.find((t) => t.table === table)) {
-        // Only clear if it's not in player running state
-        if (!this.runningState.includes(`${table.codeCell.x},${table.codeCell.y}`)) {
-          table.outline.running = false;
-          table.outline.multiplayerUserColor = undefined;
-          table.running = false;
-          table.outline.update();
-          table.header.update(false);
-        }
-      }
-    }
+    this.clearTablesNoLongerRunning(this.multiplayerRunningState, newTables, {
+      skipIfInPlayerState: true,
+    });
 
     // Update tables that are now running in multiplayer
-    const newMultiplayerRunningState: string[] = [];
-    for (const table of newTables) {
-      const tableKey = `${table.table.codeCell.x},${table.table.codeCell.y}`;
-      // Update running state (may have changed from awaiting to running or vice versa)
-      table.table.outline.running = table.running;
-      table.table.outline.multiplayerUserColor = table.userColor;
-      table.table.running = table.running;
-      table.table.outline.update();
-      table.table.header.update(false);
-      newMultiplayerRunningState.push(tableKey);
-    }
+    const newMultiplayerRunningState = this.updateRunningTables(newTables);
     this.multiplayerRunningState = newMultiplayerRunningState;
   };
 
