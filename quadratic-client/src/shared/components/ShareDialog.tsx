@@ -363,6 +363,7 @@ function ShareFileDialogBody({
           setUpgradeMember={setUpgradeMember}
           teamUuid={teamUuid}
           hasPermissionToUpgradeToTeamMember={hasPermissionToUpgradeToTeamMember}
+          isInvite={false}
         >
           <ManageFileUser
             key={user.id}
@@ -390,6 +391,7 @@ function ShareFileDialogBody({
           email={invite.email}
           teamUuid={teamUuid}
           hasPermissionToUpgradeToTeamMember={hasPermissionToUpgradeToTeamMember}
+          isInvite={true}
         >
           <ManageInvite
             key={invite.id}
@@ -432,6 +434,7 @@ function ManageMemberUpgradeWrapper({
   setUpgradeMember,
   teamUuid,
   hasPermissionToUpgradeToTeamMember,
+  isInvite,
 }: {
   children: ReactNode;
   email: string;
@@ -439,6 +442,7 @@ function ManageMemberUpgradeWrapper({
   setUpgradeMember: SetUpgradeMember;
   teamUuid: string;
   hasPermissionToUpgradeToTeamMember: boolean;
+  isInvite: boolean;
 }) {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const wrapInUpgrade = upgradeMember && upgradeMember.showUpgrade === true && upgradeMember.email === email;
@@ -462,8 +466,8 @@ function ManageMemberUpgradeWrapper({
     setUpgradeMember(null);
 
     // Trigger a toast
-    addGlobalSnackbar('Invited to team.');
-  }, [upgradeMember, setUpgradeMember, submit, teamUuid, addGlobalSnackbar]);
+    addGlobalSnackbar(isInvite ? 'Invited to team.' : 'Added to team.');
+  }, [upgradeMember, setUpgradeMember, submit, teamUuid, addGlobalSnackbar, isInvite]);
 
   const handleCancel = useCallback(() => {
     trackEvent('[FileSharing].inviteToTeam.cancel');
