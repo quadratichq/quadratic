@@ -1312,11 +1312,18 @@ mod test {
         );
 
         // Test that longer symbols are matched before shorter ones
-        // "R$" should match before "R"
+        // "R$" should match before "R" for "R$123.45" (Brazilian Real)
         let value = String::from("R$123.45");
         assert_eq!(
             CellValue::unpack_currency(&value),
             Some((String::from("R$"), decimal_from_str("123.45").unwrap()))
+        );
+
+        // Test that "R 123" (South African Rand with space) correctly matches "R" and not "R$"
+        let value = String::from("R 123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R"), decimal_from_str("123.45").unwrap()))
         );
     }
 

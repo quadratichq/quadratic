@@ -245,8 +245,8 @@ async function outputGlyphs(openSansFontFile, notoSansFontFile) {
   const notoSansFont = await fontKit.open(notoSansFontFile);
 
   // Currency symbols that we need to ensure are included
-  // From quadratic-core/src/values/cellvalue.rs: "$", "€", "£", "¥", "₹", "₩", "₺", "₽"
-  const requiredCurrencySymbols = ['$', '€', '£', '¥', '₹', '₩', '₺', '₽'];
+  // From quadratic-core/src/values/cellvalue.rs and CURRENCY_OPTIONS: "$", "€", "£", "¥", "₹", "₩", "₺", "₽", "R", "ł" (from "zł")
+  const requiredCurrencySymbols = ['$', '€', '£', '¥', '₹', '₩', '₺', '₽', 'R', 'ł'];
 
   // Get all characters from Open Sans that have actual glyph data
   const openSansChars = [];

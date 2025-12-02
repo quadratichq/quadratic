@@ -366,23 +366,22 @@ export const TooltipContents = memo(({ label, keyboardShortcut }: { label: strin
 type CurrencyOption = {
   symbol: string;
   label: string;
-  description: string;
 };
 
 const CURRENCY_OPTIONS: CurrencyOption[] = [
-  { symbol: '$', label: '$ (Dollars)', description: '' },
-  { symbol: '€', label: '€ (Euros)', description: '' },
-  { symbol: '£', label: '£ (Pounds)', description: '' },
-  { symbol: '¥', label: '¥ (Yuan)', description: '' },
-  { symbol: 'CHF', label: 'CHF (Swiss Francs)', description: '' },
-  { symbol: '₹', label: '₹ (Indian Rupees)', description: '' },
-  { symbol: 'R$', label: 'R$ (Brazilian Reais)', description: '' },
-  { symbol: '₩', label: '₩ (South Korean Won)', description: '' },
-  { symbol: 'zł', label: 'zł (Polish Zloty)', description: '' },
-  { symbol: '₺', label: '₺ (Turkish Lira)', description: '' },
-  { symbol: '₽', label: '₽ (Russian Rubles)', description: '' },
-  { symbol: 'R', label: 'R (South African Rand)', description: '' },
-  { symbol: 'kr', label: 'kr (Norwegian Kroner)', description: '' },
+  { symbol: '$', label: '$ (Dollars)' },
+  { symbol: '€', label: '€ (Euros)' },
+  { symbol: '£', label: '£ (Pounds)' },
+  { symbol: '¥', label: '¥ (Yuan)' },
+  { symbol: 'CHF', label: 'CHF (Swiss Francs)' },
+  { symbol: '₹', label: '₹ (Indian Rupees)' },
+  { symbol: 'R$', label: 'R$ (Brazilian Reais)' },
+  { symbol: '₩', label: '₩ (South Korean Won)' },
+  { symbol: 'zł', label: 'zł (Polish Zloty)' },
+  { symbol: '₺', label: '₺ (Turkish Lira)' },
+  { symbol: '₽', label: '₽ (Russian Rubles)' },
+  { symbol: 'R', label: 'R (South African Rand)' },
+  { symbol: 'kr', label: 'kr (Norwegian Kroner)' },
 ];
 
 export const FormatCurrencyButton = memo(
@@ -407,7 +406,7 @@ export const FormatCurrencyButton = memo(
                 aria-label={hideLabel ? '' : 'Currency'}
                 variant="ghost"
                 className={cn(
-                  'flex h-7 min-w-[1.5rem] items-center justify-center rounded-l rounded-r-none px-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+                  'flex h-7 w-auto min-w-[1.5rem] items-center justify-center whitespace-nowrap rounded-l rounded-r-none px-1 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
                   isCurrency ? 'bg-accent' : ''
                 )}
                 onClick={() => {
