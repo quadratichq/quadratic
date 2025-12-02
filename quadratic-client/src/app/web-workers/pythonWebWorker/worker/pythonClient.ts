@@ -1,5 +1,4 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
   ClientPythonGetJwt,
@@ -67,16 +66,11 @@ class PythonClient {
     this.send({ type: 'pythonClientLoadError', error: message });
   }
 
-  sendPythonState(
-    state: LanguageState,
-    options?: { error?: string; current?: CodeRun; awaitingExecution?: CodeRun[] }
-  ) {
+  sendPythonState(state: LanguageState, error?: string) {
     this.send({
       type: 'pythonClientState',
       state,
-      error: options?.error,
-      current: options?.current,
-      awaitingExecution: options?.awaitingExecution,
+      error,
     });
   }
 

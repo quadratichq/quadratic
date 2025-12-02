@@ -13,6 +13,7 @@ import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/mu
 import type {
   ClientCoreGetJwt,
   ClientCoreMessage,
+  CodeRunningState,
   CoreClientMessage,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
@@ -60,6 +61,7 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
   };
 
 class CoreClient {
@@ -96,6 +98,7 @@ class CoreClient {
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
     self.sendContentCache = coreClient.sendContentCache;
+    self.sendCodeRunningState = coreClient.sendCodeRunningState;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
@@ -181,6 +184,10 @@ class CoreClient {
 
       case 'clientCoreSetCellItalic':
         core.setItalic(e.data.selection, e.data.italic, e.data.cursor, e.data.isAi);
+        return;
+
+      case 'clientCoreSetCellFontSize':
+        core.setFontSize(e.data.selection, e.data.fontSize, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellTextColor':
@@ -777,7 +784,7 @@ class CoreClient {
         this.send({
           type: 'coreClientResizeRows',
           id: e.data.id,
-          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi),
+          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi, e.data.clientResized),
         });
         return;
 
@@ -1016,6 +1023,15 @@ class CoreClient {
 
   sendContentCache = (sheetId: string, contentCache: Uint8Array) => {
     this.send({ type: 'coreClientContentCache', sheetId, contentCache }, contentCache.buffer);
+  };
+
+  sendCodeRunningState = (transactionId: string, codeOperations: string) => {
+    try {
+      const codeRunningState = JSON.parse(codeOperations) as CodeRunningState;
+      this.send({ type: 'coreClientCodeRunningState', transactionId, codeRunningState });
+    } catch (error) {
+      console.error('Failed to parse code running state:', error);
+    }
   };
 
   sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {

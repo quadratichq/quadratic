@@ -204,14 +204,13 @@ class Python {
   runPython = async (message: CorePythonRun): Promise<void> => {
     if (!this.pyodide || this.state !== 'ready' || this.transactionId) {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
+      // Send state update - Rust handles code running state via coreClientCodeRunningState
+      pythonClient.sendPythonState(this.state);
       return;
     }
 
     this.state = 'running';
-    pythonClient.sendPythonState(this.state, {
-      current: this.corePythonRunToCodeRun(message),
-      awaitingExecution: this.awaitingExecution,
-    });
+    pythonClient.sendPythonState(this.state);
 
     this.transactionId = message.transactionId;
 
@@ -325,7 +324,7 @@ class Python {
     codeResult = undefined;
 
     this.state = 'ready';
-    pythonClient.sendPythonState(this.state, { current: undefined });
+    pythonClient.sendPythonState(this.state);
     this.transactionId = undefined;
     return this.next();
   };

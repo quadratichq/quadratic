@@ -115,6 +115,8 @@ extern "C" {
     pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
     pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
 
+    pub fn jsCodeRunningState(transaction_id: String, code_operations: String);
+
     pub fn jsTimestamp() -> u64;
 }
 
@@ -541,6 +543,15 @@ pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTables
 #[allow(non_snake_case)]
 pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
     js_call("jsSendContentCache", format!("{sheet_id},{cache:?}"));
+}
+
+// For non-test builds, the extern functions declared above are used directly
+// No wrapper needed - they're already declared as pub fn in the extern block
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsCodeRunningState(_transaction_id: String, _code_operations: String) {
+    js_call("jsCodeRunningState", "code_running_state".to_string());
 }
 
 #[cfg(test)]
