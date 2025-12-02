@@ -293,6 +293,14 @@ function ShareFileDialogBody({
     [fetchers]
   );
 
+  const teamMemberEmails = useMemo(
+    () => [
+      ...users.filter((user) => user.isTeamMember).map((user) => user.email),
+      ...invites.filter((invite) => invite.isTeamMember).map((invite) => invite.email),
+    ],
+    [users, invites]
+  );
+
   const disallowedEmails: string[] = useMemo(
     () => [
       ...(owner.type === 'user' ? [owner.email] : []),
@@ -357,6 +365,13 @@ function ShareFileDialogBody({
             user={user}
             canEditFile={canEditFile}
             action={action}
+            onUpgradeToTeamMember={
+              teamMemberEmails.includes(user.email)
+                ? undefined
+                : () => {
+                    setUpgradeMember({ email: user.email, role: user.role, showUpgrade: true });
+                  }
+            }
           />
         </ManageMemberUpgradeWrapper>
       ))}
@@ -372,6 +387,11 @@ function ShareFileDialogBody({
           <ManageInvite
             key={invite.id}
             invite={invite}
+            onUpgradeToTeamMember={
+              teamMemberEmails.includes(invite.email)
+                ? undefined
+                : () => setUpgradeMember({ email: invite.email, role: invite.role, showUpgrade: true })
+            }
             onDelete={
               filePermissions.includes('FILE_EDIT')
                 ? (submit, inviteId) => {
@@ -466,12 +486,14 @@ function ManageFileUser({
   canEditFile,
   action,
   publicLinkAccess,
+  onUpgradeToTeamMember,
 }: {
   user: ShareUser;
   loggedInUserId: number;
   canEditFile: boolean;
   action: string;
   publicLinkAccess: PublicLinkAccess;
+  onUpgradeToTeamMember?: () => void;
 }) {
   const isLoggedInUser = user.id === loggedInUserId;
   const canDelete = isLoggedInUser ? true : canEditFile;
@@ -484,6 +506,7 @@ function ManageFileUser({
       isLoggedInUser={isLoggedInUser}
       user={user}
       roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
+      onUpgradeToTeamMember={onUpgradeToTeamMember}
       onDelete={
         canDelete
           ? async (submit, userId) => {
@@ -609,14 +632,13 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
   const [upgradeMember, setUpgradeMember] = useState<UpgradeMember>(null);
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data && fetcher.data.data) {
-      console.log('refreshed data');
-      const allEmails = [
-        ...fetcher.data.data.users.map((user) => user.email),
-        ...fetcher.data.data.invites.map((invite) => invite.email),
+      // Get list of people who aren't already team members and only show the
+      // upgrade UI if they aren't already members in the team
+      const potentialUpgradeEmails = [
+        ...fetcher.data.data.users.filter((user) => !user.isTeamMember).map((user) => user.email),
+        ...fetcher.data.data.invites.filter((invite) => !invite.isTeamMember).map((invite) => invite.email),
       ];
-
-      if (upgradeMember && upgradeMember.showUpgrade !== true && allEmails.includes(upgradeMember.email)) {
-        console.log('after refresh, show upgrade');
+      if (upgradeMember && upgradeMember.showUpgrade !== true && potentialUpgradeEmails.includes(upgradeMember.email)) {
         setUpgradeMember((prev) => (prev ? { ...prev, showUpgrade: true } : null));
       }
     }
@@ -840,6 +862,7 @@ function ManageUser({
   roles,
   onDelete,
   onUpdate,
+  onUpgradeToTeamMember,
 }: {
   onDelete?: (submit: FetcherSubmitFunction, userId: string) => Promise<void>;
   onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
@@ -847,6 +870,7 @@ function ManageUser({
   isLoggedInUser: boolean;
   user: ShareUser;
   roles: (UserTeamRole | UserFileRole)[];
+  onUpgradeToTeamMember?: () => void;
 }) {
   const fetcherDelete = useFetcher();
   const fetcherUpdate = useFetcher();
@@ -897,9 +921,11 @@ function ManageUser({
             )}
             <Select
               value={activeRole}
-              onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
+              onValueChange={(value: 'DELETE' | 'UPGRADE' | (typeof roles)[0]) => {
                 if (value === 'DELETE' && onDelete) {
                   onDelete(fetcherDelete.submit, userId);
+                } else if (value === 'UPGRADE' && onUpgradeToTeamMember) {
+                  onUpgradeToTeamMember();
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
                   onUpdate(fetcherUpdate.submit, userId, role);
@@ -916,6 +942,12 @@ function ManageUser({
                     {getRoleLabel(role)}
                   </SelectItem>
                 ))}
+                {onUpgradeToTeamMember && (
+                  <>
+                    <SelectSeparator />
+                    <SelectItem value="UPGRADE">Add to team</SelectItem>
+                  </>
+                )}
                 <SelectSeparator />
                 <SelectItem value="DELETE">{isLoggedInUser ? 'Leave' : 'Remove'}</SelectItem>
               </SelectContent>
@@ -934,7 +966,9 @@ function ManageUser({
 function ManageInvite({
   invite,
   onDelete,
+  onUpgradeToTeamMember,
 }: {
+  onUpgradeToTeamMember?: () => void;
   onDelete?: (submit: FetcherSubmitFunction, inviteId: string) => void;
   invite: {
     role: UserTeamRole | UserFileRole;
@@ -971,6 +1005,8 @@ function ManageInvite({
             onValueChange={(value: string) => {
               if (value === 'DELETE' && onDelete) {
                 onDelete(deleteFetcher.submit, inviteId);
+              } else if (value === 'UPGRADE' && onUpgradeToTeamMember) {
+                onUpgradeToTeamMember();
               }
             }}
           >
@@ -980,6 +1016,13 @@ function ManageInvite({
 
             <SelectContent>
               <SelectItem value={role}>{label}</SelectItem>
+
+              {onUpgradeToTeamMember && (
+                <>
+                  <SelectSeparator />
+                  <SelectItem value="UPGRADE">Add to team</SelectItem>
+                </>
+              )}
 
               {onDelete && (
                 <>
