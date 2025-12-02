@@ -270,14 +270,14 @@ impl GridController {
             let current_ref = current.as_ref();
 
             // Serialize current operation if present
-            let current_op = current_ref.and_then(|(sheet_pos, language, _code)| {
+            let current_op = current_ref.map(|(sheet_pos, language, _code)| {
                 let language_str = language.as_string();
-                Some(CodeOperation {
+                CodeOperation {
                     x: sheet_pos.x as i32,
                     y: sheet_pos.y as i32,
                     sheet_id: sheet_pos.sheet_id.to_string(),
                     language: language_str,
-                })
+                }
             });
 
             // Collect all pending operations
