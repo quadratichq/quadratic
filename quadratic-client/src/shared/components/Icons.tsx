@@ -295,6 +295,10 @@ export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
 
+export const EditNoteIcon: IconComponent = (props) => {
+  return <Icon {...props}>edit_note</Icon>;
+};
+
 export const EducationIcon: IconComponent = (props) => {
   return <Icon {...props}>school</Icon>;
 };

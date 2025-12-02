@@ -17,7 +17,8 @@ import {
   useMentionsState,
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import { ArrowUpwardIcon, BackspaceIcon, EditNoteIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -600,6 +601,22 @@ const AIUserMessageFormFooter = memo(
                   onClick={handleClickMention}
                 >
                   <MentionIcon />
+                </Button>
+              </TooltipPopover>
+            )}
+            {isAnalyst && (
+              <TooltipPopover label="AI user rules" fastMode={true}>
+                <Button
+                  size="icon-sm"
+                  className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    showSettingsDialog('ai');
+                  }}
+                >
+                  <EditNoteIcon />
                 </Button>
               </TooltipPopover>
             )}

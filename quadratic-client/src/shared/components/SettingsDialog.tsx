@@ -53,8 +53,9 @@ class TeamSettingsErrorBoundary extends Component<{ children: React.ReactNode },
 }
 
 export function SettingsDialog() {
-  const [open, setOpen] = useAtom(settingsDialogAtom);
-  const [activeTab, setActiveTab] = useState('general');
+  const [dialogState, setDialogState] = useAtom(settingsDialogAtom);
+  const open = dialogState.open;
+  const [activeTab, setActiveTab] = useState(dialogState.initialTab || 'general');
   const [shouldAnimateBadge, setShouldAnimateBadge] = useState(false);
   const [hideChangelogBadge, setHideChangelogBadge] = useState(false);
   const { teamData } = useTeamData();
@@ -63,6 +64,13 @@ export function SettingsDialog() {
   const { hasNewChangelog } = useChangelogNew();
   const hasTeamData = teamData !== null;
   const hasDebugAvailable = debugFlags.debugAvailable;
+
+  // Update activeTab when dialog opens with an initialTab
+  useEffect(() => {
+    if (open && dialogState.initialTab) {
+      setActiveTab(dialogState.initialTab);
+    }
+  }, [open, dialogState.initialTab]);
 
   const isOnPaidPlan = useMemo(() => {
     return teamData?.activeTeam?.billing?.status === 'ACTIVE';
@@ -108,7 +116,7 @@ export function SettingsDialog() {
   }, [open, showNewBadge]);
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
+    setDialogState({ open: newOpen, initialTab: newOpen ? dialogState.initialTab : undefined });
     if (newOpen) {
       trackEvent('[Settings].opened', {
         team_uuid: activeTeamUuid,
