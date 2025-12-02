@@ -97,14 +97,13 @@ export class Javascript {
   run = async (message: CoreJavascriptRun, withLineNumbers = true): Promise<void> => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
+      // Send state update - Rust handles code running state via coreClientCodeRunningState
+      javascriptClient.sendState(this.state);
       return;
     }
 
     this.state = 'running';
-    javascriptClient.sendState('running', {
-      current: this.coreJavascriptToCodeRun(message),
-      awaitingExecution: this.awaitingExecution,
-    });
+    javascriptClient.sendState('running');
 
     this.withLineNumbers = withLineNumbers;
 

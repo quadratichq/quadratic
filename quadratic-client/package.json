@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.21.2",
+  "version": "0.21.3",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -83,7 +83,6 @@
     "radix-ui": "^1.4.3",
     "react": "^18.3.1",
     "react-avatar-editor": "^14.0.0-beta.5",
-    "react-color": "^2.19.3",
     "react-day-picker": "^8.10.1",
     "react-device-detect": "^2.2.2",
     "react-dom": "^18.3.1",
@@ -108,7 +107,6 @@
     "@types/fontfaceobserver": "^2.1.3",
     "@types/react": "^19.1.1",
     "@types/react-avatar-editor": "^13.0.2",
-    "@types/react-color": "^3.0.13",
     "@types/react-dom": "^19.1.2",
     "@types/react-linkify": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^8.27.0",

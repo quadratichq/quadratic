@@ -1,10 +1,11 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { DateFormat } from '@/app/ui/components/DateFormat';
-import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { textFormatSetCurrency } from '@/app/ui/helpers/formatCells';
 import { useDefaultCurrency } from '@/app/ui/hooks/useDefaultCurrency';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
@@ -19,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { memo, type JSX, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type JSX, type ReactNode } from 'react';
 
 export const FormatSeparator = memo(() => {
   return <hr className="relative mx-1.5 h-6 w-[1px] bg-border" />;
@@ -67,7 +68,7 @@ export const FormatButtonDropdown = memo(
           </TooltipContent>
         </Tooltip>
         <DropdownMenuContent
-          className={cn('hover:bg-background', className)}
+          className={cn('w-fit min-w-fit px-4 hover:bg-background', className)}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
             focusGrid();
@@ -166,17 +167,91 @@ export const FormatButton = memo(
     actionArgs,
     checked,
     hideLabel,
+    enableHoldToRepeat = false,
   }: {
     action: T;
     actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
     checked?: boolean | null;
     hideLabel?: boolean;
+    enableHoldToRepeat?: boolean;
   }) => {
     const actionSpec = defaultActionSpec[action];
     const label = actionSpec.label();
     const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-    if (!Icon) return null;
     const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
+    const intervalRef = useRef<number | null>(null);
+    const timeoutRef = useRef<number | null>(null);
+    const [keyboardPressed, setKeyboardPressed] = useState(false);
+
+    // Listen for keyboard shortcut events to show visual feedback
+    useEffect(() => {
+      const handleKeyboardPress = (triggeredAction: string) => {
+        if (triggeredAction === action) {
+          setKeyboardPressed(true);
+          setTimeout(() => setKeyboardPressed(false), 150);
+        }
+      };
+
+      events.on('formatButtonKeyboard', handleKeyboardPress);
+      return () => {
+        events.off('formatButtonKeyboard', handleKeyboardPress);
+      };
+    }, [action]);
+
+    const executeAction = useCallback(() => {
+      trackEvent('[FormattingBar].button', { label });
+      actionSpec.run(actionArgs);
+    }, [actionSpec, actionArgs, label]);
+
+    const clearTimers = useCallback(() => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }, []);
+
+    const handleMouseDown = useCallback(
+      (e: React.MouseEvent) => {
+        if (!enableHoldToRepeat) return;
+
+        e.preventDefault();
+        // Execute once immediately
+        executeAction();
+
+        // Start repeating after a delay
+        timeoutRef.current = window.setTimeout(() => {
+          intervalRef.current = window.setInterval(() => {
+            executeAction();
+          }, 100); // Repeat every 100ms
+        }, 300); // Initial delay of 300ms
+      },
+      [enableHoldToRepeat, executeAction]
+    );
+
+    const handleMouseUp = useCallback(() => {
+      if (!enableHoldToRepeat) return;
+      clearTimers();
+      focusGrid();
+    }, [enableHoldToRepeat, clearTimers]);
+
+    const handleMouseLeave = useCallback(() => {
+      if (!enableHoldToRepeat) return;
+      clearTimers();
+    }, [enableHoldToRepeat, clearTimers]);
+
+    const handleClick = useCallback(() => {
+      if (!enableHoldToRepeat) {
+        executeAction();
+        focusGrid();
+      }
+    }, [enableHoldToRepeat, executeAction]);
+
+    if (!Icon) return null;
+
     return (
       <Tooltip>
         <TooltipTrigger asChild>
@@ -186,13 +261,12 @@ export const FormatButton = memo(
             size="icon-sm"
             className={cn(
               'flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
-              checked ? 'bg-accent' : ''
+              checked || keyboardPressed ? 'bg-accent' : ''
             )}
-            onClick={() => {
-              trackEvent('[FormattingBar].button', { label });
-              actionSpec.run(actionArgs);
-              focusGrid();
-            }}
+            onClick={handleClick}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
             data-testid={hideLabel ? '' : action}
           >
             <Icon />
@@ -206,61 +280,6 @@ export const FormatButton = memo(
   }
 );
 
-const ICON_OPACITY = 0.5;
-
-const FormatColorTextIcon = memo(({ color }: { color: string | undefined }) => {
-  return (
-    <div className="group flex h-5 w-5 items-center">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        enableBackground="new 0 0 24 24"
-        height="24"
-        viewBox="0 0 24 24"
-        width="24"
-      >
-        <rect fill="none" height="24" width="24" />
-        <path
-          opacity={ICON_OPACITY}
-          className="transition-opacity group-hover:opacity-100"
-          d="M2,20M5.49,17h2.42l1.27-3.58h5.65L16.09,17h2.42L13.25,3h-2.5L5.49,17z M9.91,11.39l2.03-5.79h0.12l2.03,5.79 H9.91z"
-        />
-        <path
-          fill={color}
-          opacity={color === undefined ? ICON_OPACITY : 1}
-          className="transition-opacity group-hover:opacity-100"
-          d="M2,20h20v4H2V20z"
-        />
-      </svg>
-    </div>
-  );
-});
-
-const FormatColorFillIcon = memo(({ color }: { color: string | undefined }) => {
-  return (
-    <div className="group flex h-5 w-5 items-center">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        enableBackground="new 0 0 24 24"
-        height="24"
-        viewBox="0 0 24 24"
-        width="24"
-      >
-        <g>
-          <rect fill="none" height="24" width="24" />
-        </g>
-        <g>
-          <path
-            opacity={ICON_OPACITY}
-            className="transition-opacity group-hover:opacity-100"
-            d="M16.56,8.94L7.62,0L6.21,1.41l2.38,2.38L3.44,8.94c-0.59,0.59-0.59,1.54,0,2.12l5.5,5.5C9.23,16.85,9.62,17,10,17 s0.77-0.15,1.06-0.44l5.5-5.5C17.15,10.48,17.15,9.53,16.56,8.94z M5.21,10L10,5.21L14.79,10H5.21z M19,11.5c0,0-2,2.17-2,3.5 c0,1.1,0.9,2,2,2s2-0.9,2-2C21,13.67,19,11.5,19,11.5z"
-          />
-          <path fill={color} opacity={color === undefined ? ICON_OPACITY : 1} d="M2,20h20v4H2V20z" />
-        </g>
-      </svg>
-    </div>
-  );
-});
-
 export const FormatColorPickerButton = memo(
   ({
     action,
@@ -273,23 +292,29 @@ export const FormatColorPickerButton = memo(
   }) => {
     const actionSpec = defaultActionSpec[action];
     const label = actionSpec.label();
-    const IconNode =
-      action === Action.FormatTextColor ? (
-        <FormatColorTextIcon color={activeColor} />
-      ) : (
-        <FormatColorFillIcon color={activeColor} />
-      );
+    const Icon = actionSpec.Icon;
+
+    const iconNode = Icon ? (
+      <div className="relative flex items-center justify-center">
+        <Icon />
+        <div
+          className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+          style={{ backgroundColor: activeColor ?? 'currentColor' }}
+        />
+      </div>
+    ) : null;
 
     return (
       <FormatButtonDropdown
         tooltipLabel={label}
-        IconNode={IconNode}
+        IconNode={iconNode}
         checked={activeColor !== undefined}
         hideLabel={hideLabel}
         action={action}
       >
         <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
-          <QColorPicker
+          <ColorPicker
+            color={activeColor}
             onChangeComplete={(color) => {
               actionSpec.run(color);
               focusGrid();
