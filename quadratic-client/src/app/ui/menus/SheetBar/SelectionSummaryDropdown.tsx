@@ -35,12 +35,27 @@ const setStoredType = (type: SummaryType) => {
   }
 };
 
+const MIN_WIDTH_TO_SHOW = 300;
+
 export const SelectionSummaryDropdown = () => {
   const [count, setCount] = useState<string | undefined>('');
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
   const [selectedType, setSelectedType] = useState<SummaryType>(getStoredType());
+  const [isVisible, setIsVisible] = useState(window.innerWidth >= MIN_WIDTH_TO_SHOW);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Hide on small screens
+  useEffect(() => {
+    const handleResize = () => {
+      setIsVisible(window.innerWidth >= MIN_WIDTH_TO_SHOW);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Run async calculations to get the count/avg/sum meta info
   const showSelectionSummary = useCallback(async () => {
@@ -161,6 +176,7 @@ export const SelectionSummaryDropdown = () => {
 
   const cursor = sheets.sheet.cursor;
   if (!cursor.isMultiCursor() && !cursor.isColumnRow()) return null;
+  if (!isVisible) return null;
 
   const availableTypes: SummaryType[] = [];
   if (count) availableTypes.push('count');
