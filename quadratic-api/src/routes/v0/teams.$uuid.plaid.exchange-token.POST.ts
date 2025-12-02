@@ -1,5 +1,7 @@
 import type { Response } from 'express';
+import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import { z } from 'zod';
+import { PLAID_CLIENT_ID, PLAID_ENVIRONMENT, PLAID_SECRET } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -12,29 +14,25 @@ export default [validateAccessToken, userMiddleware, handler];
 const schema = z.object({
   body: z.object({
     publicToken: z.string().min(1),
-    environment: z.enum(['sandbox', 'development', 'production']).default('sandbox'),
   }),
   params: z.object({ uuid: z.string().uuid() }),
 });
 
 /**
  * Exchange Plaid public token for access token
- * 
+ *
  * This endpoint receives the public token from Plaid Link (after user
  * successfully connects their account) and exchanges it for an access token
  * that can be used to fetch transaction data.
- * 
+ *
  * POST /v0/teams/:uuid/plaid/exchange-token
  */
-async function handler(
-  req: RequestWithUser,
-  res: Response<{ accessToken: string; itemId: string }>
-) {
+async function handler(req: RequestWithUser, res: Response<{ accessToken: string; itemId: string }>) {
   const {
     user: { id: userId },
   } = req;
   const {
-    body: { publicToken, environment },
+    body: { publicToken },
     params: { uuid },
   } = parseRequest(req, schema);
 
@@ -45,47 +43,37 @@ async function handler(
 
   // Check permissions
   if (!permissions.includes('TEAM_EDIT')) {
-    throw new ApiError(403, 'You don't have access to create connections for this team');
-  }
-
-  // Verify environment variables are set
-  const clientId = process.env.PLAID_CLIENT_ID;
-  const secret = process.env.PLAID_SECRET;
-
-  if (!clientId || !secret) {
-    console.error('Plaid credentials not configured');
-    throw new ApiError(500, 'Plaid integration not configured. Please set PLAID_CLIENT_ID and PLAID_SECRET environment variables.');
+    throw new ApiError(403, "You don't have access to create connections for this team");
   }
 
   try {
-    // TODO: Implement actual Plaid client integration
-    // 
-    // const plaidClient = new PlaidClient(
-    //   clientId,
-    //   secret,
-    //   environment
-    // );
-    // 
-    // const accessToken = await plaidClient.exchange_public_token(publicToken);
-    // 
-    // // Optionally get item info to check consent expiration
-    // const itemInfo = await plaidClient.get_item();
-    // const itemId = itemInfo.item_id;
-    //
-    // return res.status(200).json({ 
-    //   accessToken,
-    //   itemId,
-    // });
+    // Configure Plaid client with environment-specific settings
+    const configuration = new Configuration({
+      basePath: PlaidEnvironments[PLAID_ENVIRONMENT],
+      baseOptions: {
+        headers: {
+          'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
+          'PLAID-SECRET': PLAID_SECRET,
+        },
+      },
+    });
 
-    // For now, return a placeholder
-    // This will be replaced once the PlaidClient implementation is complete
-    throw new ApiError(
-      501,
-      'Plaid integration not yet implemented. Please complete the PlaidClient implementation in quadratic-rust-shared.'
-    );
+    const plaidClient = new PlaidApi(configuration);
+
+    // Exchange public token for access token
+    const exchangeResponse = await plaidClient.itemPublicTokenExchange({
+      public_token: publicToken,
+    });
+
+    const accessToken = exchangeResponse.data.access_token;
+    const itemId = exchangeResponse.data.item_id;
+
+    return res.status(200).json({
+      accessToken,
+      itemId,
+    });
   } catch (error) {
     console.error('Error exchanging Plaid public token:', error);
     throw new ApiError(500, 'Failed to exchange Plaid public token');
   }
 }
-

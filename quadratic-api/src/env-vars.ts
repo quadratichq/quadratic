@@ -52,7 +52,22 @@ export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
 export const STORAGE_TYPE = process.env.STORAGE_TYPE as string;
 export const AUTH_TYPE = process.env.AUTH_TYPE as string;
 export const LICENSE_KEY = process.env.LICENSE_KEY as string;
-['STRIPE_SECRET_KEY', 'ENCRYPTION_KEY', 'STORAGE_TYPE', 'AUTH_TYPE', 'LICENSE_KEY'].forEach(ensureEnvVarExists);
+export const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID as string;
+export const PLAID_SECRET = process.env.PLAID_SECRET as string;
+export const PLAID_ENVIRONMENT = (process.env.PLAID_ENVIRONMENT || 'sandbox') as
+  | 'sandbox'
+  | 'development'
+  | 'production';
+[
+  'STRIPE_SECRET_KEY',
+  'ENCRYPTION_KEY',
+  'STORAGE_TYPE',
+  'AUTH_TYPE',
+  'LICENSE_KEY',
+  'PLAID_CLIENT_ID',
+  'PLAID_SECRET',
+  'PLAID_ENVIRONMENT',
+].forEach(ensureEnvVarExists);
 
 // WorkOS
 export const WORKOS_CLIENT_ID = process.env.WORKOS_CLIENT_ID as string;

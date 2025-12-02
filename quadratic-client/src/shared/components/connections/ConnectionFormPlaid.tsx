@@ -1,3 +1,4 @@
+import { apiClient } from '@/shared/api/apiClient';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -7,7 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { usePlaidLink } from 'react-plaid-link';
 import { z } from 'zod';
 
 const ConnectionFormPlaidSchema = z.object({
@@ -15,7 +15,7 @@ const ConnectionFormPlaidSchema = z.object({
   type: z.literal(ConnectionTypeSchema.enum.PLAID),
   access_token: z.string().min(1, { message: 'You must connect a bank account' }),
   start_date: z.string().date(),
-  environment: z.enum(['sandbox', 'development', 'production']).default('sandbox'),
+  institution_name: z.string().optional(),
 });
 type FormValues = z.infer<typeof ConnectionFormPlaidSchema>;
 
@@ -29,7 +29,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     type: 'PLAID',
     access_token: connection?.typeDetails?.access_token || '',
     start_date: connection?.typeDetails?.start_date || defaultStartDate,
-    environment: connection?.typeDetails?.environment || 'sandbox',
+    institution_name: connection?.typeDetails?.institution_name || '',
   };
 
   const form = useForm<FormValues>({
@@ -47,98 +47,97 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   connection,
   teamUuid,
 }) => {
-  const [linkToken, setLinkToken] = useState<string | null>(null);
   const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [linkedInstitution, setLinkedInstitution] = useState<string | null>(
     connection?.typeDetails?.institution_name || null
   );
 
-  // Fetch link token from backend
-  const fetchLinkToken = useCallback(async () => {
+  // Fetch link token from backend and automatically open Plaid Link
+  const fetchLinkTokenAndOpen = useCallback(async () => {
     setIsLoadingToken(true);
     try {
-      // TODO: Replace with actual API endpoint
-      const response = await fetch(`/api/v0/teams/${teamUuid}/plaid/link-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          environment: form.getValues('environment'),
-        }),
+      const data = await apiClient.connections.plaid.createLinkToken({
+        teamUuid,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create link token');
-      }
+      // Automatically open popup with the link token
+      const width = 500;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
 
-      const data = await response.json();
-      setLinkToken(data.linkToken);
+      window.open(
+        `/plaid-link.html?linkToken=${encodeURIComponent(data.linkToken)}`,
+        'plaid-link',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
     } catch (error) {
       console.error('Error fetching link token:', error);
       // TODO: Show error to user
     } finally {
       setIsLoadingToken(false);
     }
-  }, [teamUuid, form]);
+  }, [teamUuid]);
 
-  // Handle successful Plaid Link
-  const onSuccess = useCallback(
-    async (publicToken: string, metadata: any) => {
-      try {
-        // Exchange public token for access token
-        // TODO: Replace with actual API endpoint
-        const response = await fetch(`/api/v0/teams/${teamUuid}/plaid/exchange-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+  // Handle messages from Plaid popup via BroadcastChannel
+  useEffect(() => {
+    const channel = new BroadcastChannel('plaid_link');
+
+    const handleMessage = async (event: MessageEvent) => {
+      console.log('Received BroadcastChannel message:', event.data);
+
+      if (event.data.type === 'PLAID_SUCCESS') {
+        console.log('Plaid success! Exchanging token...');
+        const { publicToken, metadata } = event.data;
+        try {
+          const data = await apiClient.connections.plaid.exchangeToken({
+            teamUuid,
             publicToken,
-            environment: form.getValues('environment'),
-          }),
-        });
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to exchange token');
+          console.log('Token exchange successful:', data);
+
+          // Set the access token in the form
+          form.setValue('access_token', data.accessToken);
+
+          // Store institution name in form and state
+          const institutionName = metadata.institution?.name || 'Bank Account';
+          form.setValue('institution_name', institutionName);
+          setLinkedInstitution(institutionName);
+
+          // Auto-populate connection name if empty
+          if (!form.getValues('name')) {
+            form.setValue('name', `${metadata.institution?.name || 'Bank'} Connection`);
+          }
+
+          console.log('Form updated with access token');
+        } catch (error) {
+          console.error('Error exchanging token:', error);
+          // TODO: Show error to user
         }
-
-        const data = await response.json();
-
-        // Set the access token in the form
-        form.setValue('access_token', data.accessToken);
-
-        // Store institution name for display
-        setLinkedInstitution(metadata.institution?.name || 'Bank Account');
-
-        // Auto-populate connection name if empty
-        if (!form.getValues('name')) {
-          form.setValue('name', `${metadata.institution?.name || 'Bank'} Connection`);
+      } else if (event.data.type === 'PLAID_EXIT') {
+        console.log('Plaid exit');
+        if (event.data.error) {
+          console.error('Plaid Link error:', event.data.error);
+          // TODO: Show error to user
         }
-      } catch (error) {
-        console.error('Error exchanging token:', error);
-        // TODO: Show error to user
       }
-    },
-    [teamUuid, form]
-  );
+    };
 
-  // Initialize Plaid Link
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess,
-    onExit: (err, metadata) => {
-      if (err) {
-        console.error('Plaid Link error:', err);
-        // TODO: Show error to user
-      }
-      // Reset link token so user can try again
-      setLinkToken(null);
-    },
-  });
+    channel.addEventListener('message', handleMessage);
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+    };
+  }, [teamUuid, form]);
 
   // Auto-fetch link token if editing existing connection
   useEffect(() => {
-    if (connection && !linkToken) {
-      fetchLinkToken();
+    if (connection) {
+      // For editing, we don't auto-open the popup
+      // User can click "Connect Bank Account" to relink if needed
     }
-  }, [connection, linkToken, fetchLinkToken]);
+  }, [connection]);
 
   const hasAccessToken = !!form.watch('access_token');
 
@@ -160,27 +159,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         />
 
         <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="environment"
-            render={({ field }) => (
-              <FormItem className="col-span-3">
-                <FormLabel>Environment</FormLabel>
-                <FormControl>
-                  <select {...field} className="w-full rounded-md border p-2" disabled={hasAccessToken}>
-                    <option value="sandbox">Sandbox (Testing)</option>
-                    <option value="development">Development</option>
-                    <option value="production">Production</option>
-                  </select>
-                </FormControl>
-                <FormMessage />
-                <p className="text-xs text-muted-foreground">
-                  Use Sandbox for testing with credentials: user_good / pass_good
-                </p>
-              </FormItem>
-            )}
-          />
-
           <div className="col-span-3">
             <FormLabel>Bank Account Connection</FormLabel>
             {hasAccessToken && linkedInstitution ? (
@@ -196,8 +174,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
                     size="sm"
                     onClick={() => {
                       form.setValue('access_token', '');
+                      form.setValue('institution_name', '');
                       setLinkedInstitution(null);
-                      setLinkToken(null);
                     }}
                   >
                     Disconnect
@@ -206,22 +184,15 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               </div>
             ) : (
               <div className="mt-2 space-y-2">
-                {!linkToken && (
-                  <Button
-                    type="button"
-                    onClick={fetchLinkToken}
-                    disabled={isLoadingToken}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    {isLoadingToken ? 'Initializing...' : 'Connect Bank Account'}
-                  </Button>
-                )}
-                {linkToken && (
-                  <Button type="button" onClick={() => open()} disabled={!ready} className="w-full">
-                    {ready ? 'Select Your Bank' : 'Loading Plaid Link...'}
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  onClick={fetchLinkTokenAndOpen}
+                  disabled={isLoadingToken}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {isLoadingToken ? 'Opening Plaid Link...' : 'Connect Bank Account'}
+                </Button>
                 <p className="text-xs text-muted-foreground">
                   Click to securely connect your bank account via Plaid. You'll be able to search for and select your
                   financial institution.
@@ -246,8 +217,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             )}
           />
 
-          {/* Hidden field for access_token */}
+          {/* Hidden fields */}
           <FormField control={form.control} name="access_token" render={() => <input type="hidden" />} />
+          <FormField control={form.control} name="institution_name" render={() => <input type="hidden" />} />
 
           <div className="col-span-3">
             <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">

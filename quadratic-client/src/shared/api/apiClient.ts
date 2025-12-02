@@ -457,6 +457,28 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response']
       );
     },
+    plaid: {
+      createLinkToken({ teamUuid }: { teamUuid: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/plaid/link-token`,
+          {
+            method: 'POST',
+            body: JSON.stringify({}),
+          },
+          ApiSchemas['/v0/teams/:uuid/plaid/link-token.POST.response']
+        );
+      },
+      exchangeToken({ teamUuid, publicToken }: { teamUuid: string; publicToken: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/plaid/exchange-token`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ publicToken }),
+          },
+          ApiSchemas['/v0/teams/:uuid/plaid/exchange-token.POST.response']
+        );
+      },
+    },
   },
 
   ai: {

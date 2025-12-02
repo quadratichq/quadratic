@@ -1,5 +1,7 @@
 import type { Response } from 'express';
+import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 import { z } from 'zod';
+import { PLAID_CLIENT_ID, PLAID_ENVIRONMENT, PLAID_SECRET } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -10,9 +12,7 @@ import { ApiError } from '../../utils/ApiError';
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
-  body: z.object({
-    environment: z.enum(['sandbox', 'development', 'production']).default('sandbox'),
-  }),
+  body: z.object({}),
   params: z.object({ uuid: z.string().uuid() }),
 });
 
@@ -32,7 +32,6 @@ async function handler(
     user: { id: userId },
   } = req;
   const {
-    body: { environment },
     params: { uuid },
   } = parseRequest(req, schema);
 
@@ -43,40 +42,38 @@ async function handler(
 
   // Check permissions
   if (!permissions.includes('TEAM_EDIT')) {
-    throw new ApiError(403, 'You don't have access to create connections for this team');
-  }
-
-  // Verify environment variables are set
-  const clientId = process.env.PLAID_CLIENT_ID;
-  const secret = process.env.PLAID_SECRET;
-
-  if (!clientId || !secret) {
-    console.error('Plaid credentials not configured');
-    throw new ApiError(500, 'Plaid integration not configured. Please set PLAID_CLIENT_ID and PLAID_SECRET environment variables.');
+    throw new ApiError(403, "You don't have access to create connections for this team");
   }
 
   try {
-    // TODO: Implement actual Plaid client integration
-    // 
-    // const plaidClient = new PlaidClient(
-    //   clientId,
-    //   secret,
-    //   environment
-    // );
-    // 
-    // const linkToken = await plaidClient.create_link_token(
-    //   userId.toString(),
-    //   'Quadratic'
-    // );
-    //
-    // return res.status(200).json({ linkToken });
+    // Configure Plaid client with environment-specific settings
+    const configuration = new Configuration({
+      basePath: PlaidEnvironments[PLAID_ENVIRONMENT],
+      baseOptions: {
+        headers: {
+          'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
+          'PLAID-SECRET': PLAID_SECRET,
+        },
+      },
+    });
 
-    // For now, return a placeholder
-    // This will be replaced once the PlaidClient implementation is complete
-    throw new ApiError(
-      501,
-      'Plaid integration not yet implemented. Please complete the PlaidClient implementation in quadratic-rust-shared.'
-    );
+    const plaidClient = new PlaidApi(configuration);
+
+    // Create link token
+    const request = {
+      user: {
+        client_user_id: userId.toString(),
+      },
+      client_name: 'Quadratic',
+      products: [Products.Transactions],
+      country_codes: [CountryCode.Us],
+      language: 'en',
+    };
+
+    const response = await plaidClient.linkTokenCreate(request);
+    const linkToken = response.data.link_token;
+
+    return res.status(200).json({ linkToken });
   } catch (error) {
     console.error('Error creating Plaid link token:', error);
     throw new ApiError(500, 'Failed to create Plaid link token');
