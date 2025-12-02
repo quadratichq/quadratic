@@ -440,6 +440,7 @@ function ManageMemberUpgradeWrapper({
   teamUuid: string;
   hasPermissionToUpgradeToTeamMember: boolean;
 }) {
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const wrapInUpgrade = upgradeMember && upgradeMember.showUpgrade === true && upgradeMember.email === email;
   const submit = useSubmit();
   const handleUpgrade = useCallback(() => {
@@ -459,7 +460,10 @@ function ManageMemberUpgradeWrapper({
 
     // Reset the upgrade member
     setUpgradeMember(null);
-  }, [upgradeMember, setUpgradeMember, submit, teamUuid]);
+
+    // Trigger a toast
+    addGlobalSnackbar('Invited to team.');
+  }, [upgradeMember, setUpgradeMember, submit, teamUuid, addGlobalSnackbar]);
 
   const handleCancel = useCallback(() => {
     trackEvent('[FileSharing].inviteToTeam.cancel');
