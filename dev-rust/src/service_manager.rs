@@ -94,22 +94,124 @@ impl ServiceManager {
         // Start core (needed for client)
         self.start_service("core").await;
 
-        // Start shared (needed for api)
+        // Start shared (needed for api) and wait for it to complete
         self.start_service("shared").await;
 
-        // Start client
+        // Wait for shared to complete before starting API
+        // This matches node dev behavior where shared -> db -> api
+        self.wait_for_service_success("shared").await;
+
+        // Run database migrations before starting API (matches node dev behavior)
+        self.run_db_migrations().await;
+
+        // Start client (can run in parallel with api)
         self.start_service("client").await;
 
         // Start python
         self.start_service("python").await;
 
-        // Start API (depends on shared)
+        // Start API (depends on shared and migrations)
         self.start_service("api").await;
 
-        // Start Rust services
+        // Wait for API to be ready before starting dependent services
+        self.wait_for_service_success("api").await;
+
+        // Start Rust services (depend on API)
         self.start_service("multiplayer").await;
         self.start_service("files").await;
         self.start_service("connection").await;
+    }
+
+    /// Wait for a service to reach Running status (or timeout after 60 seconds)
+    async fn wait_for_service_success(&self, name: &str) {
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(60);
+
+        loop {
+            {
+                let status = self.status.read().await;
+                match status.get(name) {
+                    Some(ServiceStatus::Running) => {
+                        self.log(name, format!("{} is ready", name)).await;
+                        return;
+                    }
+                    Some(ServiceStatus::Error) => {
+                        self.log(name, format!("{} failed, continuing anyway", name))
+                            .await;
+                        return;
+                    }
+                    Some(ServiceStatus::Killed) => {
+                        self.log(name, format!("{} was killed, skipping wait", name))
+                            .await;
+                        return;
+                    }
+                    _ => {}
+                }
+            }
+
+            if start.elapsed() > timeout {
+                self.log(
+                    name,
+                    format!("{} did not become ready within timeout, continuing", name),
+                )
+                .await;
+                return;
+            }
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+    }
+
+    /// Run database migrations (matches node dev runDb behavior)
+    async fn run_db_migrations(&self) {
+        self.log("db", "Running database migrations...".to_string())
+            .await;
+
+        // Update a pseudo-status for db (we don't have a separate db service)
+        // Just log the migration status
+
+        let output = Command::new("npm")
+            .args(["run", "prisma:migrate", "--workspace=quadratic-api"])
+            .current_dir(&self.base_dir)
+            .output()
+            .await;
+
+        match output {
+            Ok(o) => {
+                let stdout = String::from_utf8_lossy(&o.stdout);
+                let stderr = String::from_utf8_lossy(&o.stderr);
+
+                // Log the output
+                for line in stdout.lines() {
+                    if !line.trim().is_empty() {
+                        self.log("db", line.to_string()).await;
+                    }
+                }
+                for line in stderr.lines() {
+                    if !line.trim().is_empty() {
+                        self.log("db", line.to_string()).await;
+                    }
+                }
+
+                if o.status.success() {
+                    self.log(
+                        "db",
+                        "Database migrations completed successfully".to_string(),
+                    )
+                    .await;
+                } else {
+                    self.log(
+                        "db",
+                        "Database migrations failed, API may not work correctly".to_string(),
+                    )
+                    .await;
+                }
+            }
+            Err(e) => {
+                self.log("db", format!("Failed to run migrations: {}", e))
+                    .await;
+            }
+        }
     }
 
     pub async fn start_service(&self, name: &str) {

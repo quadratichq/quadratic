@@ -8,7 +8,7 @@ import {
   getValidationsToolCall,
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
-import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
@@ -42,7 +42,13 @@ import {
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
+import {
+  CELL_HEIGHT,
+  CELL_TEXT_MARGIN_LEFT,
+  CELL_WIDTH,
+  FONT_SIZE_DISPLAY_ADJUSTMENT,
+  MIN_CELL_WIDTH,
+} from '@/shared/constants/gridConstants';
 import Color from 'color';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -697,36 +703,46 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetTextFormats]: async (args) => {
     try {
-      const kind = args.number_type
-        ? expectedEnum<NumericFormatKind>(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL'])
-        : null;
       let numericFormat: NumericFormat | null = null;
-      if (kind) {
-        numericFormat = args.number_type
-          ? {
-              type: kind,
-              symbol: args.currency_symbol ?? null,
-            }
+      if (args.number_type !== undefined) {
+        const kind = args.number_type
+          ? expectedEnum<NumericFormatKind>(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL'])
           : null;
+        if (kind) {
+          numericFormat = {
+            type: kind,
+            symbol: args.currency_symbol ?? null,
+          };
+        } else {
+          numericFormat = null;
+        }
       }
-      const formatUpdates: FormatUpdate = {
-        ...defaultFormatUpdate(),
-        bold: args.bold ?? null,
-        italic: args.italic ?? null,
-        underline: args.underline ?? null,
-        strike_through: args.strike_through ?? null,
-        text_color: args.text_color ?? null,
-        fill_color: args.fill_color ?? null,
-        align: args.align ? expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']) : null,
-        vertical_align: args.vertical_align
-          ? expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom'])
-          : null,
-        wrap: args.wrap ? expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']) : null,
-        numeric_commas: args.numeric_commas ?? null,
-        numeric_format: numericFormat,
-        date_time: args.date_time ?? null,
-        font_size: args.font_size ?? null,
-      };
+      const formatUpdates = {
+        ...(args.bold !== undefined && { bold: args.bold }),
+        ...(args.italic !== undefined && { italic: args.italic }),
+        ...(args.underline !== undefined && { underline: args.underline }),
+        ...(args.strike_through !== undefined && { strike_through: args.strike_through }),
+        ...(args.text_color !== undefined && { text_color: args.text_color }),
+        ...(args.fill_color !== undefined && { fill_color: args.fill_color }),
+        ...(args.align !== undefined && {
+          align: args.align ? expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']) : null,
+        }),
+        ...(args.vertical_align !== undefined && {
+          vertical_align: args.vertical_align
+            ? expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom'])
+            : null,
+        }),
+        ...(args.wrap !== undefined && {
+          wrap: args.wrap ? expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']) : null,
+        }),
+        ...(args.numeric_commas !== undefined && { numeric_commas: args.numeric_commas }),
+        ...(args.number_type !== undefined && { numeric_format: numericFormat }),
+        ...(args.date_time !== undefined && { date_time: args.date_time }),
+        // Convert user-facing font size to internal (AI thinks in user-facing values like the UI)
+        ...(args.font_size !== undefined && {
+          font_size: args.font_size !== null ? args.font_size - FONT_SIZE_DISPLAY_ADJUSTMENT : null,
+        }),
+      } as FormatUpdate;
 
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
 

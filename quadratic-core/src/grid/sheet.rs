@@ -15,7 +15,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
-use crate::constants::SHEET_NAME;
+use crate::constants::{FONT_SIZE_DISPLAY_ADJUSTMENT, SHEET_NAME};
 use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
@@ -391,7 +391,9 @@ impl Sheet {
                 values.push(format!("date time is {}", date_time.clone()));
             }
             if let Some(font_size) = format.font_size {
-                values.push(format!("font size is {font_size}"));
+                // Convert internal font size to user-facing (AI thinks in user-facing values)
+                let display_font_size = font_size + FONT_SIZE_DISPLAY_ADJUSTMENT;
+                values.push(format!("font size is {display_font_size}"));
             }
 
             Some(values.join(", "))
