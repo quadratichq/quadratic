@@ -1,4 +1,5 @@
 import type { FormatUpdate } from '@/app/quadratic-core-types';
+import { FONT_SIZE_DISPLAY_ADJUSTMENT } from '@/shared/constants/gridConstants';
 
 export const defaultFormatUpdate = (): FormatUpdate => {
   return {
@@ -91,7 +92,11 @@ export const describeFormatUpdates = (formatUpdates: FormatUpdate, args: any): s
   if (formatUpdates.numeric_commas) updates.push(`commas: ${formatUpdates.numeric_commas}`);
   if (formatUpdates.numeric_format) updates.push(`numeric format: ${formatUpdates.numeric_format}`);
   if (formatUpdates.numeric_decimals) updates.push(`decimals: ${formatUpdates.numeric_decimals}`);
-  if (formatUpdates.font_size) updates.push(`font size: ${formatUpdates.font_size}`);
+  if (formatUpdates.font_size) {
+    // Convert internal font size back to user-facing value
+    const displayFontSize = formatUpdates.font_size + FONT_SIZE_DISPLAY_ADJUSTMENT;
+    updates.push(`font size: ${displayFontSize}`);
+  }
   if (updates.length === 0) {
     return `couldn't parse: ${JSON.stringify(args)}`;
   }
