@@ -451,6 +451,10 @@ export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
 };
 
+export const GroupAddIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_add</Icon>;
+};
+
 export const HistoryIcon: IconComponent = (props) => {
   return <Icon {...props}>history</Icon>;
 };
