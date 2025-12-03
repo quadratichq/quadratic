@@ -6,8 +6,12 @@ import { buildUrl } from './buildUrl.helpers';
  * Creates a new team, walks through the onboarding process, and navigates to the dashboard.
  */
 export const createNewTeamAndNavigateToDashboard = async (page: Page) => {
+  // Wait for the team switcher button to be visible before clicking
+  const teamSwitcherButton = page.locator(`[data-testid="team-switcher-button"]`);
+  await expect(teamSwitcherButton).toBeVisible({ timeout: 60 * 1000 });
+
   // Open dropdown
-  await page.locator(`[data-testid="team-switcher-button"]`).click({ timeout: 60 * 1000 });
+  await teamSwitcherButton.click({ timeout: 60 * 1000 });
 
   // Click "Create team"
   await page.locator(`[data-testid="create-team-button"]`).click({ timeout: 60 * 1000 });
