@@ -755,7 +755,7 @@ export const Component = () => {
               </div>
 
               {/* Data section */}
-              <div className="mb-6 space-y-3">
+              <div className="mb-4 space-y-1">
                 <h3 className="text-sm font-medium text-muted-foreground">Data</h3>
                 <div className="flex flex-wrap items-center gap-2">
                   {uploadedFiles.map((file, index) => (
@@ -832,7 +832,7 @@ export const Component = () => {
               </div>
 
               {/* Suggestions - above the chat */}
-              <div className="mb-6 space-y-3">
+              <div className="mb-4 space-y-1">
                 {location.pathname === ROUTES.FILES_CREATE_AI_WEB ? (
                   <>
                     <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
@@ -887,49 +887,59 @@ export const Component = () => {
               </div>
 
               {/* Chat box */}
-              <div
-                className={cn(
-                  'rounded-xl border border-border bg-background shadow-lg',
-                  (isGeneratingPlan || generatedPlan) && !isEditingPrompt && 'rounded-b-xl'
-                )}
-              >
-                <Textarea
-                  ref={promptTextareaRef}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => (isGeneratingPlan || generatedPlan) && setIsEditingPrompt(true)}
-                  placeholder="I want to create a spreadsheet that..."
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium text-muted-foreground">Prompt</h3>
+                <div
                   className={cn(
-                    'min-h-32 resize-none border-0 p-4 text-base shadow-none focus-visible:ring-0',
-                    (isGeneratingPlan || generatedPlan) && !isEditingPrompt ? 'rounded-xl' : 'rounded-t-xl',
-                    generatedPlan && !isEditingPrompt && 'cursor-pointer'
+                    'rounded-xl border border-border bg-background',
+                    (isGeneratingPlan || generatedPlan) && !isEditingPrompt ? 'rounded-b-xl shadow-none' : 'shadow-lg'
                   )}
-                />
-
-                {/* Actions footer - hide when plan exists and not editing */}
-                {(!isGeneratingPlan && !generatedPlan) || isEditingPrompt ? (
-                  <div className="flex items-center justify-end border-t border-border px-4 py-3">
-                    {!isGeneratingPlan && !generatedPlan ? (
-                      <Button onClick={handleGeneratePlan} disabled={!prompt.trim()} className="gap-2">
-                        <ArrowRightIcon className="h-4 w-4" />
-                        Generate Plan
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => {
-                          setIsEditingPrompt(false);
-                          handleGeneratePlan();
-                        }}
-                        disabled={!prompt.trim() || prompt === lastGeneratedPromptRef.current}
-                        className="gap-2"
-                      >
-                        <ReloadIcon className="h-4 w-4" />
-                        Regenerate Plan
-                      </Button>
+                >
+                  <Textarea
+                    ref={promptTextareaRef}
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => (isGeneratingPlan || generatedPlan) && setIsEditingPrompt(true)}
+                    onBlur={() => {
+                      if (prompt === lastGeneratedPromptRef.current) {
+                        setIsEditingPrompt(false);
+                      }
+                    }}
+                    placeholder="I want to create a spreadsheet that..."
+                    className={cn(
+                      'resize-none border-0 p-4 text-base shadow-none focus-visible:ring-0',
+                      (isGeneratingPlan || generatedPlan) && !isEditingPrompt
+                        ? 'min-h-16 rounded-xl'
+                        : 'min-h-32 rounded-t-xl',
+                      generatedPlan && !isEditingPrompt && 'cursor-pointer'
                     )}
-                  </div>
-                ) : null}
+                  />
+
+                  {/* Actions footer - hide when plan exists and not editing */}
+                  {(!isGeneratingPlan && !generatedPlan) || isEditingPrompt ? (
+                    <div className="flex items-center justify-end border-t border-border px-4 py-3">
+                      {!isGeneratingPlan && !generatedPlan ? (
+                        <Button onClick={handleGeneratePlan} disabled={!prompt.trim()} className="gap-2">
+                          <ArrowRightIcon className="h-4 w-4" />
+                          Generate Plan
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setIsEditingPrompt(false);
+                            handleGeneratePlan();
+                          }}
+                          disabled={!prompt.trim() || prompt === lastGeneratedPromptRef.current}
+                          className="gap-2"
+                        >
+                          <ReloadIcon className="h-4 w-4" />
+                          Regenerate Plan
+                        </Button>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               {/* Generated Plan Section */}
