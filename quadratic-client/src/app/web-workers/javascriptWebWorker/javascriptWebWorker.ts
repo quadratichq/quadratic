@@ -32,7 +32,8 @@ class JavascriptWebWorker {
 
       case 'javascriptClientState':
         this.state = message.data.state;
-        events.emit('javascriptState', message.data.state, message.data.current, message.data.awaitingExecution);
+        // Note: Don't emit codeRunningState here - Rust sends the unified state via coreClientCodeRunningState
+        // which includes all languages. Emitting here would overwrite the complete queue with only JS operations.
         break;
 
       case 'javascriptClientGetJwt':
@@ -62,7 +63,6 @@ class JavascriptWebWorker {
     trackEvent('[JavascriptWebWorker].restartFromUser');
     this.initWorker();
     quadraticCore.sendCancelExecution('Javascript');
-    events.emit('javascriptState', 'ready');
   };
 }
 

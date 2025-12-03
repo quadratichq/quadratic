@@ -1,5 +1,4 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type {
   ClientJavascriptGetJwt,
   ClientJavascriptMessage,
@@ -55,13 +54,11 @@ class JavascriptClient {
     this.send({ type: 'javascriptClientLoadError', error: message });
   }
 
-  sendState(state: LanguageState, options?: { error?: string; current?: CodeRun; awaitingExecution?: CodeRun[] }) {
+  sendState(state: LanguageState, error?: string) {
     this.send({
       type: 'javascriptClientState',
       state,
-      error: options?.error,
-      current: options?.current,
-      awaitingExecution: options?.awaitingExecution,
+      error,
     });
   }
 
