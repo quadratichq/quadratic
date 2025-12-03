@@ -11,7 +11,8 @@ import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-cor
 import { provideCompletionItems, provideHover } from '@/app/quadratic-core/quadratic_core';
 import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
-import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
@@ -34,9 +35,9 @@ window.MonacoEnvironment = {
   },
 };
 
-// Pixels needed when growing width to avoid monaco from scrolling the text
-// (determined by experimentation).
-const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+// Base padding for the inline editor width calculation at DEFAULT_FONT_SIZE font size.
+// This scales linearly with font size to ensure adequate space.
+const BASE_PADDING_FOR_WIDTH = 15;
 
 // Padding for the inline editor when calling keepCursorVisible, to keep the editor/cursor in view.
 export const PADDING_FOR_INLINE_EDITOR = 5;
@@ -189,9 +190,32 @@ class InlineEditorMonaco {
       scrollBeyondLastColumn: textWrap === 'clip' ? 5 : 0,
     });
 
-    const scrollWidth = textarea.scrollWidth;
-    // Only expand width for 'overflow' mode; 'wrap' and 'clip' stay constrained to cell width
-    width = textWrap === 'overflow' ? Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY) : width;
+    // Calculate padding that scales with font size
+    // Get the actual font size being used
+    const fontSize = this.editor.getOption(monaco.editor.EditorOption.fontSize);
+    const fontFamily = this.editor.getOption(monaco.editor.EditorOption.fontFamily);
+
+    // Measure the actual text width using canvas for accuracy
+    const text = this.editor.getValue();
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.font = `${fontSize}px ${fontFamily}`;
+      const metrics = context.measureText(text);
+      const measuredWidth = metrics.width;
+
+      // Add padding that scales linearly with font size
+      const fontScale = fontSize / DEFAULT_FONT_SIZE;
+      const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
+
+      width = textWrap !== 'overflow' ? width : Math.max(width, measuredWidth + scaledPadding);
+    } else {
+      // Fallback to scrollWidth if canvas is not available
+      const scrollWidth = textarea.scrollWidth;
+      const fontScale = fontSize / DEFAULT_FONT_SIZE;
+      const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
+      width = textWrap !== 'overflow' ? width : Math.max(width, scrollWidth + scaledPadding);
+    }
     height = Math.max(contentHeight, height);
 
     const viewportRectangle = pixiApp.getViewportRectangle();
@@ -276,6 +300,14 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in setFontFamily');
     }
     this.editor.updateOptions({ fontFamily });
+  }
+
+  setFontSize(fontSize: number) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setFontSize');
+    }
+    const lineHeight = (fontSize / DEFAULT_FONT_SIZE) * LINE_HEIGHT;
+    this.editor.updateOptions({ fontSize, lineHeight });
   }
 
   setUnderline(underline: boolean) {
@@ -522,7 +554,7 @@ class InlineEditorMonaco {
         autoFindInSelection: 'never',
         seedSearchStringFromSelection: 'never',
       },
-      fontSize: FONT_SIZE,
+      fontSize: DEFAULT_FONT_SIZE,
       lineHeight: LINE_HEIGHT,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
@@ -584,7 +616,11 @@ class InlineEditorMonaco {
     });
     this.editor.onDidChangeModelContent(() => {
       this.convertEmojis();
-      inlineEditorEvents.emit('valueChanged', this.get());
+      // Don't emit valueChanged if we're in the middle of emoji conversion
+      // as the conversion will trigger another model change that will emit
+      if (!this.processingEmojiConversion) {
+        inlineEditorEvents.emit('valueChanged', this.get());
+      }
     });
   }
 
@@ -657,8 +693,8 @@ class InlineEditorMonaco {
 
   // Converts emoji shortcodes like :smile: to actual emojis when not in formula mode
   private convertEmojis() {
-    // Skip if we're in formula mode, already processing, or emoji dropdown is showing
-    if (inlineEditorHandler.formula || this.processingEmojiConversion || this.emojiShowingList) {
+    // Skip if we're in formula mode or already processing
+    if (inlineEditorHandler.formula || this.processingEmojiConversion) {
       return;
     }
 
@@ -703,6 +739,12 @@ class InlineEditorMonaco {
         // Move cursor to after the emoji
         const newCursorPosition = model.getPositionAt(startOffset + emoji.length);
         this.editor.setPosition(newCursorPosition);
+
+        // Hide the emoji dropdown since we've completed the conversion
+        this.setShowingEmojiList(false);
+
+        // Emit valueChanged with the new value (with emoji)
+        inlineEditorEvents.emit('valueChanged', this.get());
 
         // Reset the flag after a short delay
         setTimeout(() => {

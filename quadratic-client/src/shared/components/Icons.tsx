@@ -407,6 +407,18 @@ export const FormatDateTimeIcon: IconComponent = (props) => {
   return <Icon {...props}>calendar_month</Icon>;
 };
 
+export const FormatFontSizeIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_fields</Icon>;
+};
+
+export const FormatFontSizeIncreaseIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_increase</Icon>;
+};
+
+export const FormatFontSizeDecreaseIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_decrease</Icon>;
+};
+
 export const FileCopyIcon: IconComponent = (props) => {
   return <Icon {...props}>file_copy</Icon>;
 };
@@ -433,6 +445,10 @@ export const GridActionIcon: IconComponent = (props) => {
 
 export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
+};
+
+export const GroupAddIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_add</Icon>;
 };
 
 export const HistoryIcon: IconComponent = (props) => {

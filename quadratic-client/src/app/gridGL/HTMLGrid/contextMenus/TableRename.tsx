@@ -1,9 +1,10 @@
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
+import { TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -77,7 +78,7 @@ export const TableRename = () => {
       className="reverse-selection origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{
         fontFamily: 'OpenSans-Bold, sans-serif',
-        fontSize: TABLE_NAME_FONT_SIZE,
+        fontSize: DEFAULT_FONT_SIZE,
         paddingLeft: TABLE_NAME_PADDING[0],
       }}
       onSave={handleSave}

@@ -308,7 +308,7 @@ function UserAvatar({
             boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
           }}
         >
-          <AIIcon className="text-white" />
+          <AIIcon className="relative top-[1px] text-white" />
         </div>
       ) : (
         <Avatar

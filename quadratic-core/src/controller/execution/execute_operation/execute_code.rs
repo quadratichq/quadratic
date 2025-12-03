@@ -6,6 +6,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::CodeCellLanguage,
+    wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
 use anyhow::Result;
 impl GridController {
@@ -20,6 +21,8 @@ impl GridController {
             return;
         }
 
+        // Collect new code cell positions to add
+        let mut new_code_cell_positions = Vec::new();
         self.get_dependent_code_cells(output)
             .iter()
             .for_each(|sheet_positions| {
@@ -27,20 +30,62 @@ impl GridController {
                     if !skip_compute
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
                     {
-                        // only add a compute operation if there isn't already one pending
+                        // only add if there isn't already one pending
                         if !transaction.operations.iter().any(|op| match op {
                             Operation::ComputeCode { sheet_pos } => {
                                 code_cell_sheet_pos == sheet_pos
                             }
                             _ => false,
                         }) {
-                            transaction.operations.push_back(Operation::ComputeCode {
-                                sheet_pos: *code_cell_sheet_pos,
-                            });
+                            new_code_cell_positions.push(*code_cell_sheet_pos);
                         }
                     }
                 });
             });
+
+        if new_code_cell_positions.is_empty() {
+            return;
+        }
+
+        // Collect all existing ComputeCode operations and their positions
+        let mut existing_code_positions = Vec::new();
+        let mut non_code_operations = Vec::new();
+
+        for op in transaction.operations.iter() {
+            match op {
+                Operation::ComputeCode { sheet_pos } => {
+                    existing_code_positions.push(*sheet_pos);
+                }
+                _ => {
+                    non_code_operations.push(op.clone());
+                }
+            }
+        }
+
+        // Combine existing and new code positions, then reorder based on dependencies
+        let mut all_code_positions = existing_code_positions;
+        all_code_positions.extend(new_code_cell_positions);
+
+        // Reorder all code operations based on dependencies
+        // Use the order_code_cells method from operations/code_cell.rs
+        let ordered_positions = self.order_code_cells(all_code_positions);
+
+        // Rebuild the operations queue:
+        // 1. Add all non-code operations first (they maintain their relative order)
+        // 2. Add all code operations in dependency order after non-code operations
+        let mut new_operations = std::collections::VecDeque::new();
+
+        // Add non-code operations first
+        for op in non_code_operations {
+            new_operations.push_back(op);
+        }
+
+        // Add code operations in dependency order after non-code operations
+        for pos in ordered_positions {
+            new_operations.push_back(Operation::ComputeCode { sheet_pos: pos });
+        }
+
+        transaction.operations = new_operations;
     }
 
     /// **Deprecated** and replaced with SetChartCellSize
@@ -169,24 +214,132 @@ impl GridController {
                 }
             };
 
+            // Clone for notification
+            let language_for_notify = language.clone();
+            let code_for_notify = code.clone();
+
+            // Send the current operation
             match language {
                 CodeCellLanguage::Python => {
                     self.run_python(transaction, sheet_pos, code);
+                    // Notify client about all code operations (current + pending)
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
                 }
                 CodeCellLanguage::Formula => {
+                    // Formulas execute synchronously, so notification happens before execution
+                    // via notify_next_operation_if_code in the control loop
                     self.run_formula(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
+                    // Notify client about all code operations (current + pending) BEFORE starting execution
+                    // This ensures the UI is updated before the connection operation starts executing
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
                     self.run_connection(transaction, sheet_pos, code, kind, id);
                 }
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
+                    // Notify client about all code operations (current + pending)
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
                 }
                 CodeCellLanguage::Import => {
                     dbgjs!(format!("Import code run found at {sheet_pos:?}"));
                     // no-op
                 }
             }
+        }
+    }
+
+    /// Notifies the client about all code operations (currently executing + pending)
+    /// If current is None, all operations are pending. If current is Some, that operation is running.
+    pub(crate) fn notify_code_running_state(
+        &self,
+        transaction: &PendingTransaction,
+        current: Option<(SheetPos, CodeCellLanguage, String)>,
+    ) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            // Store reference to current for later use
+            let current_ref = current.as_ref();
+
+            // Serialize current operation if present
+            let current_op = current_ref.map(|(sheet_pos, language, _code)| {
+                let language_str = language.as_string();
+                CodeOperation {
+                    x: sheet_pos.x as i32,
+                    y: sheet_pos.y as i32,
+                    sheet_id: sheet_pos.sheet_id.to_string(),
+                    language: language_str,
+                }
+            });
+
+            // Collect all pending operations
+            let mut pending_ops = Vec::new();
+            for pending_op in transaction.operations.iter() {
+                if let Operation::ComputeCode {
+                    sheet_pos: pending_sheet_pos,
+                } = pending_op
+                {
+                    // Skip the currently executing operation if present
+                    if let Some((current_sheet_pos, _, _)) = current_ref
+                        && *pending_sheet_pos == *current_sheet_pos
+                    {
+                        continue;
+                    }
+
+                    if let Some(pending_sheet) = self.try_sheet(pending_sheet_pos.sheet_id) {
+                        let pos = crate::Pos {
+                            x: pending_sheet_pos.x,
+                            y: pending_sheet_pos.y,
+                        };
+                        if let Some(pending_code_run) = pending_sheet.code_run_at(&pos)
+                            && pending_code_run.language.is_code_language()
+                        {
+                            // Serialize language as string for JSON
+                            let language_str = pending_code_run.language.as_string();
+                            pending_ops.push(CodeOperation {
+                                x: pending_sheet_pos.x as i32,
+                                y: pending_sheet_pos.y as i32,
+                                sheet_id: pending_sheet_pos.sheet_id.to_string(),
+                                language: language_str,
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Only send if there are operations (current or pending)
+            if current_op.is_some() || !pending_ops.is_empty() {
+                let state = CodeRunningState {
+                    current: current_op,
+                    pending: pending_ops,
+                };
+                let code_ops_json = serde_json::to_string(&state).unwrap_or_default();
+                crate::wasm_bindings::js::jsCodeRunningState(
+                    transaction.id.to_string(),
+                    code_ops_json,
+                );
+            }
+        }
+    }
+
+    /// Notifies the client that all code operations are complete (sends empty state)
+    pub(crate) fn notify_code_running_state_clear(&self, transaction: &PendingTransaction) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            // Send empty state to clear code running state
+            let state = CodeRunningState {
+                current: None,
+                pending: Vec::new(),
+            };
+            let code_ops_json = serde_json::to_string(&state).unwrap_or_default();
+            crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
         }
     }
 }
