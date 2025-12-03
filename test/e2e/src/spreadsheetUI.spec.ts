@@ -1451,7 +1451,7 @@ test('Sheet Actions', async ({ page }) => {
 
   // click on change color option
   await page.locator('[role="menuitem"]:has-text("Change color")').click({ timeout: 60 * 1000 });
-  await page.locator('[title="#6F258E"]').click({ timeout: 60 * 1000 });
+  await page.locator('[aria-label="Select color #6F258E"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // assert that the color has changed

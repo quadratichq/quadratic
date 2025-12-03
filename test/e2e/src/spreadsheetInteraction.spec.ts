@@ -314,7 +314,7 @@ test('Auto-Complete', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page
     .getByRole('menuitem')
-    .getByTitle('#E74C3C')
+    .locator('[aria-label="Select color #E74C3C"]')
     .click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 

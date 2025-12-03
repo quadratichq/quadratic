@@ -3,7 +3,7 @@ import { navigateOnSheet, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 
-test('Create New File', async ({ page }) => {
+test.only('Create New File', async ({ page }) => {
   //--------------------------------
   // Create New File
   //--------------------------------
