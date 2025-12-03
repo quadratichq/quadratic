@@ -24,8 +24,7 @@ async function handler(req: Request, res: Response<any>) {
     user: { id: userMakingRequestId },
   } = req as RequestWithUser;
 
-  // Get the file and verify permissions
-  // Note: getFile will throw if the file doesn't exist or user doesn't have access
+  // Get the file
   const {
     file,
     userMakingRequest: { filePermissions },
@@ -36,7 +35,7 @@ async function handler(req: Request, res: Response<any>) {
     throw new ApiError(400, 'File is not deleted');
   }
 
-  // For restore, we need FILE_DELETE permission (since we're reversing a delete)
+  // Ensure user has permission
   if (!filePermissions.includes('FILE_DELETE')) {
     throw new ApiError(403, 'Permission denied');
   }
