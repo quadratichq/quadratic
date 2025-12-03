@@ -67,6 +67,7 @@ impl GridController {
             transaction.operations.push_back(Operation::ResizeRows {
                 sheet_id,
                 row_heights,
+                client_resized: false, // Auto-resize mode
             });
         }
         self.start_transaction(&mut transaction);
@@ -396,6 +397,31 @@ mod tests {
             false,
         );
         assert_eq!(gc.sheet(sheet_id).offsets.row_height(6), 45f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+
+        // should trigger auto resize row heights for font size
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A7"),
+                FormatUpdate {
+                    font_size: Some(Some(24)),
+                    ..FormatUpdate::default()
+                },
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 7,
+            height: 46f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[7]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(7), 46f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
         // should not trigger auto resize row heights for other formats
