@@ -134,15 +134,18 @@ export const FormatButtonDropdownActions = memo(
     actions,
     actionArgs,
     hideLabel,
+    isChecked,
   }: {
     actions: T[];
     actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
     hideLabel?: boolean;
+    isChecked?: (action: T) => boolean;
   }) => {
     return actions.map((action, key) => {
       const actionSpec = defaultActionSpec[action];
       const label = hideLabel ? '' : actionSpec.label();
       const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+      const checked = isChecked ? isChecked(action) : false;
       return (
         <DropdownMenuItem
           key={key}
@@ -152,6 +155,7 @@ export const FormatButtonDropdownActions = memo(
           }}
           aria-label={hideLabel ? '' : label}
           data-testid={hideLabel ? '' : action}
+          className={cn('py-1.5', checked && 'bg-accent/70')}
         >
           {Icon && <Icon className="mr-2" />}
           {label}

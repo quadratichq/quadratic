@@ -238,6 +238,12 @@ export const AlignmentFormatting = memo(
             ]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatAlignHorizontalLeft) return props.formatSummary?.align === 'left';
+              if (action === Action.FormatAlignHorizontalCenter) return props.formatSummary?.align === 'center';
+              if (action === Action.FormatAlignHorizontalRight) return props.formatSummary?.align === 'right';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown
@@ -254,6 +260,12 @@ export const AlignmentFormatting = memo(
             ]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatAlignVerticalTop) return props.formatSummary?.verticalAlign === 'top';
+              if (action === Action.FormatAlignVerticalMiddle) return props.formatSummary?.verticalAlign === 'middle';
+              if (action === Action.FormatAlignVerticalBottom) return props.formatSummary?.verticalAlign === 'bottom';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown
@@ -266,6 +278,12 @@ export const AlignmentFormatting = memo(
             actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatTextWrapOverflow) return props.formatSummary?.wrap === 'overflow';
+              if (action === Action.FormatTextWrapWrap) return props.formatSummary?.wrap === 'wrap';
+              if (action === Action.FormatTextWrapClip) return props.formatSummary?.wrap === 'clip';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatSeparator />
