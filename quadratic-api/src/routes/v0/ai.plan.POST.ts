@@ -29,7 +29,7 @@ Generate a CONCISE plain text plan for the spreadsheet the user describes. Keep 
 IMPORTANT: Do NOT use any markdown formatting. No bullet points (•, -, *), no headers (#), no bold (**), no code blocks. Just plain text with simple line breaks.
 
 Structure your response as plain text:
-Overview: One sentence summary
+Goal: Restate the user's goal in one clear sentence
 
 Data needed:
 List the key columns/fields, one per line

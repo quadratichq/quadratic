@@ -94,10 +94,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
   // Build context description
   let contextDesc = '';
   if (context?.files && context.files.length > 0) {
-    contextDesc += `Files: ${context.files.map((f) => `${f.name} (${f.type})`).join(', ')}`;
+    const fileList = context.files.map((f) => f.name).join(', ');
+    contextDesc += `Attached files: ${fileList}`;
+
+    // Include file contents if available
+    for (const file of context.files) {
+      const fileWithContent = file as { name: string; type: string; content?: string };
+      if (fileWithContent.content) {
+        contextDesc += `\n\n--- File: ${file.name} ---\n${fileWithContent.content}\n--- End of ${file.name} ---`;
+      }
+    }
   }
   if (context?.connectionName) {
-    contextDesc += `${contextDesc ? '. ' : ''}Database: ${context.connectionName} (${context.connectionType || 'unknown type'})`;
+    contextDesc += `${contextDesc ? '\n\n' : ''}Selected database connection: ${context.connectionName} (${context.connectionType || 'unknown type'})`;
   }
 
   const messages = [

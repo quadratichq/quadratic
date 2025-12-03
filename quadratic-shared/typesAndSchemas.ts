@@ -548,7 +548,9 @@ export const ApiSchemas = {
   '/v0/ai/suggestions.POST.request': z.object({
     teamUuid: z.string().uuid(),
     context: z.object({
-      files: z.array(z.object({ name: z.string(), type: z.string() })).optional(),
+      files: z
+        .array(z.object({ name: z.string(), type: z.string(), content: z.string().optional() }))
+        .optional(),
       connectionName: z.string().optional(),
       connectionType: z.string().optional(),
     }),
