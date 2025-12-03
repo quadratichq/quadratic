@@ -57,6 +57,25 @@ interface SuggestedPrompt {
 const FILE_TYPES = ['.csv', '.xlsx', '.xls', '.parquet', '.parq', '.pqt'];
 const PDF_TYPES = ['.pdf'];
 
+const FILE_TYPE_NAMES: Record<string, string> = {
+  '.csv': 'CSV',
+  '.xlsx': 'Excel',
+  '.xls': 'Excel',
+  '.parquet': 'Parquet',
+  '.parq': 'Parquet',
+  '.pqt': 'Parquet',
+  '.pdf': 'PDF',
+};
+
+const getFileTypeDisplay = (extensions: string[]): string => {
+  const uniqueNames = new Set<string>();
+  extensions.forEach((ext) => {
+    const name = FILE_TYPE_NAMES[ext] || ext;
+    uniqueNames.add(name);
+  });
+  return Array.from(uniqueNames).join(', ');
+};
+
 const DEFAULT_SUGGESTIONS: SuggestedPrompt[] = [
   {
     title: 'Sales Dashboard',
@@ -534,7 +553,9 @@ export const Component = () => {
           <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-primary bg-background/90 px-12 py-8 shadow-lg">
             <UploadIcon className="h-12 w-12 text-primary" />
             <p className="text-lg font-semibold">Drop files here</p>
-            <p className="text-sm text-muted-foreground">Supported: {[...FILE_TYPES, ...PDF_TYPES].join(', ')}</p>
+            <p className="text-sm text-muted-foreground">
+              Supported: {getFileTypeDisplay([...FILE_TYPES, ...PDF_TYPES])}
+            </p>
           </div>
         </div>
       )}
@@ -600,7 +621,7 @@ export const Component = () => {
                   </div>
                   <CardHeader className="p-4">
                     <CardTitle className="text-sm group-hover:text-primary">Import File</CardTitle>
-                    <CardDescription className="text-xs">{FILE_TYPES.join(', ')}</CardDescription>
+                    <CardDescription className="text-xs">{getFileTypeDisplay(FILE_TYPES)}</CardDescription>
                   </CardHeader>
                 </Card>
 
@@ -619,13 +640,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => {
-                    if (connections.length > 0) {
-                      navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_CONNECTION));
-                    } else {
-                      navigate(ROUTES.TEAM_CONNECTIONS(teamUuid));
-                    }
-                  }}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_CONNECTION))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
                     <DatabaseIcon className="text-white" size="lg" />
@@ -659,7 +674,7 @@ export const Component = () => {
             <>
               <div className="mb-6 text-center">
                 <h1 className="mb-2 text-3xl font-bold">Import File</h1>
-                <p className="text-base text-muted-foreground">Upload a spreadsheet file to get started</p>
+                <p className="text-base text-muted-foreground">Upload a file to get started</p>
               </div>
 
               <div
@@ -680,7 +695,7 @@ export const Component = () => {
                 </div>
                 <p className="mb-2 text-lg font-semibold">Drop your file here</p>
                 <p className="mb-4 text-sm text-muted-foreground">or click to browse</p>
-                <p className="text-xs text-muted-foreground">Supported: {FILE_TYPES.join(', ')}</p>
+                <p className="text-xs text-muted-foreground">Supported: {getFileTypeDisplay(FILE_TYPES)}</p>
               </div>
             </>
           )}
@@ -725,23 +740,37 @@ export const Component = () => {
               </div>
 
               <div className="space-y-3">
-                {connections.map((connection) => (
-                  <Card
-                    key={connection.uuid}
-                    className="group cursor-pointer transition-all hover:border-primary hover:shadow-md"
-                    onClick={() => handleSelectConnection(connection)}
-                  >
-                    <CardHeader className="flex flex-row items-center gap-4 p-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-                        <LanguageIcon language={connection.type} />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base group-hover:text-primary">{connection.name}</CardTitle>
-                        <CardDescription className="text-sm">{connection.type}</CardDescription>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
+                {connections.length > 0 ? (
+                  connections.map((connection) => (
+                    <Card
+                      key={connection.uuid}
+                      className="group cursor-pointer transition-all hover:border-primary hover:shadow-md"
+                      onClick={() => handleSelectConnection(connection)}
+                    >
+                      <CardHeader className="flex flex-row items-center gap-4 p-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                          <LanguageIcon language={connection.type} />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base group-hover:text-primary">{connection.name}</CardTitle>
+                          <CardDescription className="text-sm">{connection.type}</CardDescription>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-8">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
+                      <DatabaseIcon className="text-green-500" size="lg" />
+                    </div>
+                    <p className="mb-2 text-lg font-semibold">No connections available</p>
+                    <p className="mb-4 text-sm text-muted-foreground">Create a connection to get started</p>
+                    <Button onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))} className="gap-2">
+                      <DatabaseIcon size="sm" />
+                      Add Connection
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -944,7 +973,7 @@ export const Component = () => {
 
               {/* Generated Plan Section */}
               {(isGeneratingPlan || generatedPlan || planError) && (
-                <div className="mt-6">
+                <div className="mt-6 space-y-1">
                   {planError && (
                     <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
                       <p className="text-sm font-medium">Error generating plan</p>
@@ -956,11 +985,8 @@ export const Component = () => {
                     </div>
                   )}
 
+                  <h3 className="text-sm font-medium text-muted-foreground">Generated Plan</h3>
                   <div className="rounded-xl border border-border bg-background shadow-lg">
-                    <div className="flex items-center border-b border-border px-4 py-3">
-                      <span className="text-sm font-medium">Generated Plan</span>
-                    </div>
-
                     {isGeneratingPlan && !generatedPlan ? (
                       <div className="flex min-h-64 items-center justify-center p-6">
                         <div className="flex flex-col items-center gap-3">
