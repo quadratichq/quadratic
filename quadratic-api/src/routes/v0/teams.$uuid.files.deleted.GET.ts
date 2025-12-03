@@ -73,7 +73,6 @@ async function handler(req: Request, res: Response<any>) {
       createdDate: file.createdDate.toISOString(),
       updatedDate: file.updatedDate.toISOString(),
       deletedDate: file.deletedDate?.toISOString() || null,
-      // publicLinkAccess: file.publicLinkAccess,
       thumbnail: file.thumbnail,
       creatorId: file.creatorUserId,
       ownerUserId: file.ownerUserId,

@@ -46,6 +46,7 @@ async function handler(req: Request, res: Response<any>) {
       uuid: fileUuid,
     },
     data: {
+      updatedDate: new Date(),
       deleted: false,
       deletedDate: null,
     },
