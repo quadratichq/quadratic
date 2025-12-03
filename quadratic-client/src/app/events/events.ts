@@ -22,7 +22,6 @@ import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import type {
@@ -83,10 +82,8 @@ interface EventTypes {
   renderCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
 
   pythonInit: (version: string) => void;
-  pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
   javascriptInit: (version: string) => void;
-  javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
-  connectionState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  codeRunningState: (current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
 
   updateCodeCells: (updateCodeCells: JsUpdateCodeCell[]) => void;
   updateImage: (message: CoreClientImage) => void;
@@ -178,6 +175,9 @@ interface EventTypes {
   aiAnalystReady: () => void;
 
   mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
+
+  // Formatting button keyboard triggers (for visual feedback)
+  formatButtonKeyboard: (action: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

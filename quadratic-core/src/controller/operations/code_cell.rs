@@ -333,7 +333,7 @@ impl GridController {
     }
 
     /// Orders code cells to ensure earlier computes do not depend on later computes.
-    fn order_code_cells(&self, code_cell_positions: Vec<SheetPos>) -> Vec<SheetPos> {
+    pub(crate) fn order_code_cells(&self, code_cell_positions: Vec<SheetPos>) -> Vec<SheetPos> {
         let mut ordered_positions = vec![];
 
         let nodes = code_cell_positions.iter().collect::<HashSet<_>>();
@@ -349,7 +349,7 @@ impl GridController {
         ordered_positions
     }
 
-    fn get_upstream_dependents(
+    pub(super) fn get_upstream_dependents(
         &self,
         sheet_pos: &SheetPos,
         seen: &mut HashSet<SheetPos>,

@@ -29,8 +29,18 @@ impl Sheet {
                     let rect = Rect::new(x1, y1, x2, y2);
                     dirty_hashes.extend(rect.to_hashes());
                     if needs_resize {
-                        let rows = self.get_rows_with_wrap_in_rect(rect, false);
-                        rows_to_resize.extend(rows);
+                        // Get all rows with content in the rect that need resizing
+                        let rows_with_content: Vec<i64> = self
+                            .columns
+                            .get_nondefault_rects_in_rect(rect)
+                            .flat_map(|(rect, _)| rect.y_range())
+                            .chain(
+                                self.data_tables
+                                    .get_nondefault_rects_in_rect(rect)
+                                    .flat_map(|rect| rect.y_range()),
+                            )
+                            .collect();
+                        rows_to_resize.extend(rows_with_content);
                     }
                 });
         }
@@ -134,13 +144,19 @@ impl Sheet {
         );
         self.format_transaction_changes(
             formats.underline.to_owned(),
-            false,
+            true,
             &mut dirty_hashes,
             &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.strike_through.to_owned(),
             false,
+            &mut dirty_hashes,
+            &mut rows_to_resize,
+        );
+        self.format_transaction_changes(
+            formats.font_size.to_owned(),
+            true,
             &mut dirty_hashes,
             &mut rows_to_resize,
         );

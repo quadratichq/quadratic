@@ -49,6 +49,7 @@ import type {
 } from '@/app/quadratic-core-types';
 import { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -59,7 +60,9 @@ import type {
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
+  CodeOperation,
   CoreClientAddSheetResponse,
+  CoreClientCodeExecutionState,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
   CoreClientDataTableFirstRowAsHeader,
@@ -197,8 +200,33 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);
       return;
-    } else if (e.data.type === 'coreClientConnectionState') {
-      events.emit('connectionState', e.data.state, e.data.current, e.data.awaitingExecution);
+    } else if (e.data.type === 'coreClientCodeRunningState') {
+      try {
+        const data = e.data as CoreClientCodeExecutionState;
+        const state = data.codeRunningState;
+
+        // Parse current operation if present
+        let current: CodeRun | undefined;
+        if (state.current) {
+          current = {
+            transactionId: data.transactionId,
+            sheetPos: { x: state.current.x, y: state.current.y, sheetId: state.current.sheet_id },
+            code: '', // Code is not needed for display, can be retrieved from grid if needed
+          };
+        }
+
+        // Parse pending operations
+        const awaitingExecution: CodeRun[] = state.pending.map((op: CodeOperation) => ({
+          transactionId: data.transactionId,
+          sheetPos: { x: op.x, y: op.y, sheetId: op.sheet_id },
+          code: '', // Code is not needed for display, can be retrieved from grid if needed
+        }));
+
+        // Emit unified code running state
+        events.emit('codeRunningState', current, awaitingExecution);
+      } catch (error) {
+        console.error('Failed to parse code running state:', error);
+      }
       return;
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);
@@ -661,6 +689,16 @@ class QuadraticCore {
       type: 'clientCoreSetCellItalic',
       selection,
       italic,
+      cursor: sheets.getCursorPosition(),
+      isAi,
+    });
+  }
+
+  setFontSize(selection: string, fontSize: number, isAi: boolean) {
+    this.send({
+      type: 'clientCoreSetCellFontSize',
+      selection,
+      fontSize,
       cursor: sheets.getCursorPosition(),
       isAi,
     });
@@ -1781,7 +1819,12 @@ class QuadraticCore {
     });
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], isAi: boolean): Promise<JsResponse | undefined> {
+  resizeRows(
+    sheetId: string,
+    rows: ColumnRowResize[],
+    isAi: boolean,
+    clientResized: boolean = true
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
@@ -1794,6 +1837,7 @@ class QuadraticCore {
         rows,
         cursor: sheets.getCursorPosition(),
         isAi,
+        clientResized,
       });
     });
   }

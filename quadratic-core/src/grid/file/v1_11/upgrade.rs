@@ -66,6 +66,27 @@ pub fn upgrade_output_value(value: current::OutputValueSchema) -> v1_12::OutputV
     }
 }
 
+fn upgrade_sheet_formatting(
+    formats: current::SheetFormattingSchema,
+) -> v1_12::SheetFormattingSchema {
+    v1_12::SheetFormattingSchema {
+        align: formats.align,
+        vertical_align: formats.vertical_align,
+        wrap: formats.wrap,
+        numeric_format: formats.numeric_format,
+        numeric_decimals: formats.numeric_decimals,
+        numeric_commas: formats.numeric_commas,
+        bold: formats.bold,
+        italic: formats.italic,
+        text_color: formats.text_color,
+        fill_color: formats.fill_color,
+        date_time: formats.date_time,
+        underline: formats.underline,
+        strike_through: formats.strike_through,
+        font_size: vec![], // New field in v1_12, default to empty
+    }
+}
+
 pub fn upgrade_table(table: current::DataTableSchema) -> v1_12::DataTableSchema {
     v1_12::DataTableSchema {
         kind: table.kind,
@@ -82,7 +103,7 @@ pub fn upgrade_table(table: current::DataTableSchema) -> v1_12::DataTableSchema 
         sort_dirty: table.sort_dirty,
         display_buffer: table.display_buffer,
         alternating_colors: table.alternating_colors,
-        formats: table.formats,
+        formats: table.formats.map(upgrade_sheet_formatting),
         borders: table.borders,
         chart_pixel_output: table.chart_pixel_output,
         chart_output: table.chart_output,
@@ -108,8 +129,8 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
         data_tables: upgrade_tables(sheet.data_tables),
         rows_resize: sheet.rows_resize,
         borders: sheet.borders,
-        formats: sheet.formats,
         merge_cells: v1_12::MergeCellsSchema::default(),
+        formats: upgrade_sheet_formatting(sheet.formats),
     }
 }
 

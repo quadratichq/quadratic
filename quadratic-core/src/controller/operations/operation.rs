@@ -311,6 +311,8 @@ pub enum Operation {
     ResizeRows {
         sheet_id: SheetId,
         row_heights: Vec<JsRowHeight>,
+        #[serde(default)]
+        client_resized: bool,
     },
 
     /// Changes the default row size

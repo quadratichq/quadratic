@@ -658,7 +658,12 @@ export class Control {
       } else {
         this.ui.print("db", "failed");
         this.status.db = "error";
-        this.quit("Failed to migrate database. Likely you will need to `npm run prisma:dev:reset`");
+        this.ui.print(
+          "db",
+          "Failed to migrate database. Likely you will need to `npm run prisma:dev:reset --workspace=quadratic-api`",
+          "red",
+        );
+        this.runApi();
       }
     });
   }

@@ -376,13 +376,13 @@ export class CellsLabels {
         console.log(`[CellsTextHash] rendering hash with render cells: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
-    } else if (!isTransactionRunning && visibleDirtyHashes.length) {
+    } else if (visibleDirtyHashes.length) {
       const hash = visibleDirtyHashes[0];
       if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering visible: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
-    } else if (!isTransactionRunning && notVisibleDirtyHashes.length) {
+    } else if (notVisibleDirtyHashes.length) {
       const hash = notVisibleDirtyHashes[0].hash;
       if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering offscreen: ${hash.hashX}, ${hash.hashY}`);
@@ -537,7 +537,7 @@ export class CellsLabels {
       }
     });
     await Promise.all(promises);
-    return max;
+    return Math.max(max, CELL_HEIGHT);
   }
 
   async rowMaxHeightsInHash(hashY: number): Promise<Map<number, number>> {
@@ -577,7 +577,8 @@ export class CellsLabels {
     });
     await Promise.all(promises);
     const jsRowHeights: JsRowHeight[] = rows.map((row) => {
-      const height = rowHeights.get(Number(row)) ?? CELL_HEIGHT;
+      const contentHeight = rowHeights.get(Number(row)) ?? 0;
+      const height = Math.max(contentHeight, CELL_HEIGHT);
       return { row, height };
     });
     const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(

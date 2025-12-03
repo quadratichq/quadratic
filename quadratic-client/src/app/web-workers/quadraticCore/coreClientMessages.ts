@@ -32,7 +32,6 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
@@ -68,15 +67,22 @@ export interface CoreClientMultiplayerState {
   state: MultiplayerState;
 }
 
-export interface CoreClientConnectionState {
-  type: 'coreClientConnectionState';
-  state: 'loading' | 'ready' | 'error' | 'running';
+export interface CodeOperation {
+  x: number;
+  y: number;
+  sheet_id: string;
+  language: string;
+}
 
-  // current cell being executed
-  current?: CodeRun;
+export interface CodeRunningState {
+  current: CodeOperation | null;
+  pending: CodeOperation[];
+}
 
-  // cells awaiting execution
-  awaitingExecution?: CodeRun[];
+export interface CoreClientCodeExecutionState {
+  type: 'coreClientCodeRunningState';
+  transactionId: string;
+  codeRunningState: CodeRunningState;
 }
 
 export interface ClientCoreInitPython {
@@ -286,6 +292,14 @@ export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
   selection: string;
   italic?: boolean;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface ClientCoreSetCellFontSize {
+  type: 'clientCoreSetCellFontSize';
+  selection: string;
+  fontSize: number;
   cursor: string;
   isAi: boolean;
 }
@@ -1418,6 +1432,7 @@ export interface ClientCoreResizeRows {
   rows: ColumnRowResize[];
   cursor: string;
   isAi: boolean;
+  clientResized: boolean;
 }
 
 export interface CoreClientResizeRows {
@@ -1545,6 +1560,7 @@ export type ClientCoreMessage =
   | ClientCoreSummarizeSelection
   | ClientCoreSetCellBold
   | ClientCoreSetCellItalic
+  | ClientCoreSetCellFontSize
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
@@ -1672,7 +1688,7 @@ export type CoreClientMessage =
   | CoreClientTransactionEnd
   | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState
-  | CoreClientConnectionState
+  | CoreClientCodeExecutionState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
   | CoreClientGetJwt

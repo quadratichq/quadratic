@@ -235,10 +235,6 @@ export class CellsTextHash {
       if (Array.isArray(dirty)) {
         cells = dirty;
       } else if (!this.loaded || dirty === true) {
-        if (isTransactionRunning) {
-          return false;
-        }
-
         try {
           cells = await renderCore.getRenderCells(
             this.cellsLabels.sheetId,
@@ -322,6 +318,7 @@ export class CellsTextHash {
 
     this.links = [];
     this.drawRects = [];
+    this.special.clear();
 
     this.labels.forEach((cellLabel) => this.checkClip(cellLabel));
 

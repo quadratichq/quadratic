@@ -1,4 +1,4 @@
-//! Draws the cursor, code cursor, and selection to the screen.
+//! Draws the cursor, code cursor, and selection to the screen
 
 import { hasPermissionToEditFile } from '@/app/actions';
 import { events, type DirtyObject } from '@/app/events/events';

@@ -7,7 +7,7 @@ members = [
   "quadratic-multiplayer",
   "quadratic-rust-shared",
 ]
-exclude = ["poc/number_type"]
+exclude = ["poc/number_type", "dev-rust"]
 
 [workspace.package]
 authors = ["Quadratic"]

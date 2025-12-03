@@ -228,6 +228,22 @@ impl GridController {
         Ok(())
     }
 
+    pub(crate) fn set_font_size(
+        &mut self,
+        selection: &A1Selection,
+        font_size: i16,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), JsValue> {
+        let format_update = FormatUpdate {
+            font_size: Some(Some(font_size)),
+            ..Default::default()
+        };
+        let ops = self.format_ops(selection, format_update, false);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
+        Ok(())
+    }
+
     pub(crate) fn set_cell_wrap(
         &mut self,
         selection: &A1Selection,

@@ -6,12 +6,15 @@ import { convertReactColorToString } from '@/app/helpers/convertColor';
 import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import {
   clearFormattingAndBorders,
+  decreaseFontSize,
+  increaseFontSize,
   mergeCells,
   removeNumericFormat,
   setAlign,
   setBold,
   setCellCommas,
   setFillColor,
+  setFontSize,
   setItalic,
   setStrikeThrough,
   setTextColor,
@@ -49,6 +52,9 @@ import {
   FormatColorFillIcon,
   FormatColorTextIcon,
   FormatDateTimeIcon,
+  FormatFontSizeDecreaseIcon,
+  FormatFontSizeIcon,
+  FormatFontSizeIncreaseIcon,
   FormatItalicIcon,
   FormatNumberAutomaticIcon,
   FormatStrikethroughIcon,
@@ -92,6 +98,9 @@ type FormatActionSpec = Pick<
   | Action.FormatTextWrapWrap
   | Action.FormatTextColor
   | Action.FormatFillColor
+  | Action.FormatFontSizeIncrease
+  | Action.FormatFontSizeDecrease
+  | Action.FormatFontSize
   | Action.FormatBorderAll
   | Action.FormatBorderOuter
   | Action.FormatBorderInner
@@ -116,6 +125,7 @@ type FormatActionSpec = Pick<
 export type FormatActionArgs = {
   [Action.FormatTextColor]?: ColorResult;
   [Action.FormatFillColor]?: ColorResult;
+  [Action.FormatFontSize]?: number;
   [Action.FormatBorderAll]: UseBordersResults;
   [Action.FormatBorderOuter]: UseBordersResults;
   [Action.FormatBorderInner]: UseBordersResults;
@@ -305,6 +315,29 @@ export const formatActionsSpec: FormatActionSpec = {
     Icon: FormatColorFillIcon,
     run: (color: FormatActionArgs[Action.FormatFillColor]) => {
       setFillColor(color);
+    },
+  },
+  [Action.FormatFontSizeIncrease]: {
+    label: () => 'Increase font size',
+    Icon: FormatFontSizeIncreaseIcon,
+    run: () => {
+      increaseFontSize();
+    },
+  },
+  [Action.FormatFontSizeDecrease]: {
+    label: () => 'Decrease font size',
+    Icon: FormatFontSizeDecreaseIcon,
+    run: () => {
+      decreaseFontSize();
+    },
+  },
+  [Action.FormatFontSize]: {
+    label: () => 'Font size',
+    Icon: FormatFontSizeIcon,
+    run: (fontSize: FormatActionArgs[Action.FormatFontSize]) => {
+      if (fontSize) {
+        setFontSize(fontSize);
+      }
     },
   },
   [Action.FormatBorderAll]: {
