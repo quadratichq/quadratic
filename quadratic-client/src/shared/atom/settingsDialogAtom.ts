@@ -1,11 +1,13 @@
 import { atom, getDefaultStore } from 'jotai';
 
-export const settingsDialogAtom = atom<boolean>(false);
+export type SettingsTab = 'general' | 'ai' | 'theme' | 'team' | 'team-members' | 'team-ai' | 'team-privacy' | 'debug';
 
-export const showSettingsDialog = () => {
-  getDefaultStore().set(settingsDialogAtom, true);
+export const settingsDialogAtom = atom<{ open: boolean; initialTab?: SettingsTab }>({ open: false });
+
+export const showSettingsDialog = (initialTab?: SettingsTab) => {
+  getDefaultStore().set(settingsDialogAtom, { open: true, initialTab });
 };
 
 export const hideSettingsDialog = () => {
-  getDefaultStore().set(settingsDialogAtom, false);
+  getDefaultStore().set(settingsDialogAtom, { open: false });
 };
