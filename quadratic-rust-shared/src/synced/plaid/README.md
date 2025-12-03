@@ -28,10 +28,20 @@ let client = PlaidClient::new(
 ### 2. Create a Link Token (Server-side)
 
 ```rust
+use plaid::model::Products;
+
+// Specify which products you need consent for
+let products = vec![
+    Products::Transactions,
+    Products::Investments,
+    Products::Liabilities,
+];
+
 // This token is sent to the frontend to initialize Plaid Link
 let link_token = client.create_link_token(
     "user_123",           // Your internal user ID
-    "Your App Name"       // App name shown in Plaid Link
+    "Your App Name",      // App name shown in Plaid Link
+    products,             // Products to request consent for
 ).await?;
 
 // Send link_token to frontend

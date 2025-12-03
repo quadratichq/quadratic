@@ -133,6 +133,7 @@ synced = [
   "arrow-json",
   "base64",
   "dotenv",
+  "environment",
   "google-analyticsdata1_beta",
   "httpclient",
   "httpmock",
@@ -145,6 +146,7 @@ synced = [
   "rustls",
   "tokio",
   "tokio-stream",
+  "tracing",
   "url",
   "yup-oauth2"
 ]

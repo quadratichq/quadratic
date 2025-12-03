@@ -21,8 +21,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use yup_oauth2::{ServiceAccountAuthenticator, ServiceAccountKey};
 
-use crate::synced::{DATE_FORMAT, SyncedConnectionKind, google_analytics::reports::REPORTS, today};
 use crate::{SharedError, synced::string_to_date};
+use crate::{
+    environment::Environment,
+    synced::{DATE_FORMAT, SyncedConnectionKind, google_analytics::reports::REPORTS, today},
+};
 use crate::{error::Result, synced::SyncedConnection};
 use crate::{parquet::utils::record_batch_to_parquet_bytes, synced::SyncedClient};
 
@@ -58,7 +61,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
         GoogleAnalyticsClient::streams()
     }
 
-    async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
+    async fn to_client(&self, _environment: Environment) -> Result<Box<dyn SyncedClient>> {
         let client = GoogleAnalyticsClient::new(
             self.service_account_configuration.clone(),
             self.property_id.clone(),

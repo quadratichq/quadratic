@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::{
     SharedError,
     arrow::object_store::{list_objects, upload_multipart},
+    environment::Environment,
     error::Result,
 };
 
@@ -38,7 +39,7 @@ pub trait SyncedConnection: Send + Sync {
     fn kind(&self) -> SyncedConnectionKind;
     fn start_date(&self) -> NaiveDate;
     fn streams(&self) -> Vec<&'static str>;
-    async fn to_client(&self) -> Result<Box<dyn SyncedClient>>;
+    async fn to_client(&self, environment: Environment) -> Result<Box<dyn SyncedClient>>;
 }
 
 #[async_trait]

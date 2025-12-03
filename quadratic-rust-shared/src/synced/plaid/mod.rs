@@ -3,24 +3,32 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::SharedError;
+use crate::environment::Environment;
 use crate::error::Result;
 use crate::synced::plaid::client::{PlaidClient, PlaidEnvironment};
 use crate::synced::{DATE_FORMAT, SyncedClient, SyncedConnection, SyncedConnectionKind};
 
 pub mod client;
+pub mod investments;
+pub mod liabilities;
 pub mod transactions;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlaidConnection {
-    pub environment: PlaidEnvironment,
-    pub client_id: String,
-    pub secret: String,
     pub start_date: String,
     /// Access token obtained after user links their account via Plaid Link
     pub access_token: String,
     /// Optional institution name for display purposes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub institution_name: Option<String>,
+
+    /// Optional values, set them fromenvironment variables    
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub environment: Option<PlaidEnvironment>,
 }
 
 #[async_trait]
@@ -43,12 +51,21 @@ impl SyncedConnection for PlaidConnection {
         PlaidClient::streams()
     }
 
-    async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
-        let client = PlaidClient::with_access_token(
-            &self.client_id,
-            &self.secret,
-            self.environment,
-            self.access_token.to_string(),
+    async fn to_client(&self, environment: Environment) -> Result<Box<dyn SyncedClient>> {
+        let client_id = self
+            .client_id
+            .as_ref()
+            .ok_or_else(|| SharedError::Synced("Client ID not set".to_string()))?;
+        let secret = self
+            .secret
+            .as_ref()
+            .ok_or_else(|| SharedError::Synced("Secret not set".to_string()))?;
+
+        let client = PlaidClient::new(
+            &client_id,
+            &secret,
+            environment.into(),
+            Some(self.access_token.to_string()),
         );
 
         Ok(Box::new(client))
@@ -69,17 +86,28 @@ pub struct PlaidConfigFromEnv {
     pub client_id: String,
     pub secret: String,
 }
-pub async fn new_plaid_client(add_access_token: bool) -> PlaidClient {
+pub async fn new_plaid_client(
+    add_access_token: bool,
+    products: Vec<plaid::model::Products>,
+) -> PlaidClient {
+    new_plaid_client_with_products(add_access_token, products).await
+}
+
+async fn new_plaid_client_with_products(
+    add_access_token: bool,
+    products: Vec<plaid::model::Products>,
+) -> PlaidClient {
     let credentials = PLAID_CREDENTIALS.lock().unwrap().to_string();
     let config = serde_json::from_str::<PlaidConfigFromEnv>(&credentials).unwrap();
-    let mut client = PlaidClient::new(&config.client_id, &config.secret, PlaidEnvironment::Sandbox);
+    let environment = PlaidEnvironment::Sandbox;
+    let mut client = PlaidClient::new(&config.client_id, &config.secret, environment, None);
 
     if add_access_token {
         let public_token_response = client
             .client
             .sandbox_public_token_create(
-                vec![plaid::model::Products::Transactions],
-                "ins_109508", // Chase - test institution
+                products,
+                "ins_109508", // First Platypus Bank - test institution (supports investments)
             )
             .await
             .expect("Failed to create sandbox public token. Check your credentials in .env.test");

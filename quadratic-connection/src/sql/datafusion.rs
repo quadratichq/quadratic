@@ -34,9 +34,12 @@ use crate::{
 macro_rules! test_handler {
     ($fn_name:ident, $connection_type:ty) => {
         pub(crate) async fn $fn_name(
+            state: Extension<Arc<State>>,
             Json(connection): Json<$connection_type>,
         ) -> Result<Json<TestResponse>> {
-            let client = connection.to_client().await?;
+            let client = connection
+                .to_client((**state).settings.environment.clone())
+                .await?;
             Ok(TestResponse::new(client.test_connection().await, None).into())
         }
     };
@@ -44,7 +47,20 @@ macro_rules! test_handler {
 
 test_handler!(test_google_analytics, GoogleAnalyticsConnection);
 test_handler!(test_mixpanel, MixpanelConnection);
-test_handler!(test_plaid, PlaidConnection);
+
+pub(crate) async fn test_plaid(
+    state: Extension<Arc<State>>,
+    Json(connection): Json<PlaidConnection>,
+) -> Result<Json<TestResponse>> {
+    let client = PlaidClient::new(
+        &state.settings.plaid_client_id,
+        &state.settings.plaid_secret,
+        state.settings.plaid_environment,
+        Some(connection.access_token),
+    );
+
+    Ok(TestResponse::new(client.test_connection().await, None).into())
+}
 
 /// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
@@ -152,8 +168,9 @@ mod tests {
     #[traced_test]
     #[ignore]
     async fn test_mixpanel_connection_success() {
+        let state = Extension(Arc::new(new_state().await));
         let connection = get_test_mixpanel_connection();
-        let response = test_mixpanel(Json(connection)).await.unwrap();
+        let response = test_mixpanel(state, Json(connection)).await.unwrap();
         assert!(response.0.connected);
     }
 

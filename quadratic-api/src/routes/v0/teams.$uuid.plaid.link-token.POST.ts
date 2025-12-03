@@ -59,13 +59,13 @@ async function handler(
 
     const plaidClient = new PlaidApi(configuration);
 
-    // Create link token
+    // Create link token with all products we want to support
     const request = {
       user: {
         client_user_id: userId.toString(),
       },
       client_name: 'Quadratic',
-      products: [Products.Transactions],
+      products: [Products.Transactions, Products.Investments, Products.Liabilities],
       country_codes: [CountryCode.Us],
       language: 'en',
     };
