@@ -3,9 +3,10 @@ import { FilesList, type FilesListUserFile } from '@/dashboard/components/FilesL
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { apiClient } from '@/shared/api/apiClient';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { FileIcon } from '@radix-ui/react-icons';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export const Component = () => {
   const {
@@ -19,6 +20,25 @@ export const Component = () => {
   } = useDashboardRouteLoaderData();
 
   const canEdit = teamPermissions.includes('TEAM_EDIT');
+
+  // Fetch "shared with me" files
+  const [sharedWithMeFiles, setSharedWithMeFiles] = useState<FilesListUserFile[]>([]);
+  useEffect(() => {
+    apiClient.files.list({ shared: 'with-me' }).then((files) => {
+      setSharedWithMeFiles(
+        files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
+          name,
+          thumbnail,
+          createdDate,
+          updatedDate,
+          uuid,
+          publicLinkAccess,
+          permissions: [],
+          isSharedWithMe: true,
+        }))
+      );
+    });
+  }, []);
 
   // Build a map of users by ID for creator info
   const usersById: Record<number, { name?: string; picture?: string; email?: string }> = useMemo(
@@ -39,7 +59,7 @@ export const Component = () => {
     [users]
   );
 
-  // Combine team files + personal files, sorted by last modified date
+  // Combine team files + personal files + shared with me files, sorted by last modified date
   const suggestedFiles = useMemo(() => {
     const allFiles: FilesListUserFile[] = [];
 
@@ -74,9 +94,17 @@ export const Component = () => {
       });
     });
 
+    // Add shared with me files (avoid duplicates by checking UUID)
+    const existingUuids = new Set(allFiles.map((f) => f.uuid));
+    sharedWithMeFiles.forEach((file) => {
+      if (!existingUuids.has(file.uuid)) {
+        allFiles.push(file);
+      }
+    });
+
     // Sort all files by last modified date (most recent first)
     return allFiles.sort((a, b) => new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime());
-  }, [teamFiles, filesPrivate, usersById, currentUser]);
+  }, [teamFiles, filesPrivate, usersById, currentUser, sharedWithMeFiles]);
 
   return (
     <div className="flex flex-grow flex-col">

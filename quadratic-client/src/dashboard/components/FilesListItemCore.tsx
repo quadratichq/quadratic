@@ -18,6 +18,7 @@ export function FilesListItemCore({
   hasNetworkError,
   isShared,
   isPrivate,
+  isSharedWithMe,
   viewPreferences,
   actions,
 }: {
@@ -31,6 +32,7 @@ export function FilesListItemCore({
   hasNetworkError?: boolean;
   isShared?: boolean;
   isPrivate?: boolean;
+  isSharedWithMe?: boolean;
   actions?: ReactNode;
 }) {
   const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
@@ -49,10 +51,16 @@ export function FilesListItemCore({
             <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
           ) : (
             <p className={`${TYPE.caption} flex flex-wrap items-center gap-1`}>
-              {isPrivate !== undefined && (
+              {isSharedWithMe ? (
                 <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
-                  {isPrivate ? 'Personal' : 'Team'}
+                  Shared with you
                 </Badge>
+              ) : (
+                isPrivate !== undefined && (
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
+                    {isPrivate ? 'Personal' : 'Team'}
+                  </Badge>
+                )
               )}
               {isShared && (
                 <span className={`after:mr-1 after:pl-1 after:content-['·']`}>

@@ -223,6 +223,7 @@ export function FilesListItemUserFile({
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
             isPrivate={file.isPrivate}
+            isSharedWithMe={file.isSharedWithMe}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>

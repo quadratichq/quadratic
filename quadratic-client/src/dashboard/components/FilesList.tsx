@@ -32,6 +32,8 @@ export type FilesListUserFile = {
   filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
   /** Whether this is a private file (true) or team file (false). Used to show a tag on the file card. */
   isPrivate?: boolean;
+  /** Whether this file was shared with the current user. */
+  isSharedWithMe?: boolean;
 };
 
 export function FilesList({
