@@ -22,7 +22,8 @@ const schema = z.object({
   body: ApiSchemas['/v0/ai/plan.POST.request'],
 });
 
-const SYSTEM_PROMPT = `You are an AI assistant helping users plan spreadsheets in Quadratic.
+const getSystemPrompt = (isWebSearch: boolean) => {
+  const basePrompt = `You are an AI assistant helping users plan spreadsheets in Quadratic.
 
 Generate a CONCISE plain text plan for the spreadsheet the user describes. Keep it short and actionable.
 
@@ -43,6 +44,15 @@ Steps:
 3. Third action
 
 Be brief. No lengthy explanations. Plain text only.`;
+
+  if (isWebSearch) {
+    return `${basePrompt}
+
+IMPORTANT: Use web search to find the data for this plan.`;
+  }
+
+  return basePrompt;
+};
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan.POST.response']>) {
   const {
@@ -124,10 +134,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
     contextInfo += `\n\nSelected database connection: ${context.connectionName} (${context.connectionType || 'unknown type'})`;
   }
 
+  const isWebSearch = context?.isWebSearch ?? false;
+  const systemPrompt = getSystemPrompt(isWebSearch);
+
   const messages = [
     {
       role: 'user' as const,
-      content: [{ type: 'text' as const, text: SYSTEM_PROMPT + contextInfo }],
+      content: [{ type: 'text' as const, text: systemPrompt + contextInfo }],
       contextType: 'userPrompt' as const,
     },
     {

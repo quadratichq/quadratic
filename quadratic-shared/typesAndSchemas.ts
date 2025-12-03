@@ -535,6 +535,7 @@ export const ApiSchemas = {
           .optional(),
         connectionName: z.string().optional(),
         connectionType: z.string().optional(),
+        isWebSearch: z.boolean().optional(),
       })
       .optional(),
   }),

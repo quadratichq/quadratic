@@ -368,6 +368,7 @@ export const Component = () => {
           files?: { name: string; type: string; content?: string }[];
           connectionName?: string;
           connectionType?: string;
+          isWebSearch?: boolean;
         } = {};
 
         if (uploadedFiles.length > 0) {
@@ -398,6 +399,9 @@ export const Component = () => {
         if (selectedConnection) {
           context.connectionName = selectedConnection.name;
           context.connectionType = selectedConnection.type;
+        }
+        if (location.pathname === ROUTES.FILES_CREATE_AI_WEB) {
+          context.isWebSearch = true;
         }
 
         const response = await fetch(endpoint, {
@@ -462,7 +466,7 @@ export const Component = () => {
         setIsGeneratingPlan(false);
       }
     },
-    [teamUuid, uploadedFiles, selectedConnection]
+    [teamUuid, uploadedFiles, selectedConnection, location.pathname]
   );
 
   const handleGeneratePlan = () => {
