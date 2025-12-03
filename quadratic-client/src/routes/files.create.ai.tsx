@@ -589,7 +589,7 @@ export const Component = () => {
           {step === 'data' && (
             <>
               <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Select Your Data</h1>
+                <h1 className="mb-2 text-3xl font-bold">Start with AI</h1>
                 <p className="text-base text-muted-foreground">Choose where your data comes from</p>
               </div>
 
