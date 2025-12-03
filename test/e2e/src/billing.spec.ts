@@ -191,7 +191,8 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+  // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -261,7 +262,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
     const cardNumberElement = page.locator(`text=${cardNumberPattern}`);
     await expect(cardNumberElement.first()).toBeVisible({ timeout: 30 * 1000 });
     initialPaymentNum = (await cardNumberElement.first().textContent()) || '';
-  } catch (error) {
+  } catch {
     // Fallback: try to find any text with •••• pattern
     const fallbackPattern = page.locator('text=/••••/').first();
     if (await fallbackPattern.isVisible({ timeout: 5 * 1000 }).catch(() => false)) {
@@ -292,7 +293,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
         initialPaymentExpiry = expiresText.replace(/Expires/i, '').trim();
       }
     }
-  } catch (error) {
+  } catch {
     // Fallback: look for date pattern near the card number
     try {
       // Find the card number element and look for expiration nearby
@@ -330,10 +331,10 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
 
     throw new Error(
       `Failed to extract payment method details from billing page. ` +
-      `Card number: "${initialPaymentNum || 'not found'}". ` +
-      `Expiration: "${initialPaymentExpiry || 'not found'}". ` +
-      `Page text preview: "${pageText?.substring(0, 500)}...". ` +
-      `Please verify the payment method is displayed correctly on the billing page.`
+        `Card number: "${initialPaymentNum || 'not found'}". ` +
+        `Expiration: "${initialPaymentExpiry || 'not found'}". ` +
+        `Page text preview: "${pageText?.substring(0, 500)}...". ` +
+        `Please verify the payment method is displayed correctly on the billing page.`
     );
   }
 
@@ -521,13 +522,17 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Assert that the team member count increased to 2
   expect(newMemberCount).toBe(2);
 
-  // Navigate to the billing management page
+  // Assert that the 'Cancel Subscription' button is visible on the Settings page
+  // Note: This button is on the Settings page, not on Stripe's billing portal
+  await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
+
+  // Navigate to the billing management page (redirects to Stripe's billing portal)
   await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
-  // Assert that the current page is the billing management page
+  // Assert that the current page is the billing management page (Stripe portal)
   await expect(page).toHaveTitle(/Billing/);
 
   // Assert a couple of key elements that confirm we're on the correct page
@@ -536,9 +541,6 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Assert the account email address is displayed on the billing page
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert that the 'Cancel Subscription' button appears
-  await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the page reflects the increased cost due to new members
   await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 60 * 1000 });

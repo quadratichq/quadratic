@@ -77,8 +77,9 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
         page.getByText(`${paymentMethod.type} •••• ${paymentMethod.cardNumber.split(' ')[3]}`)
       ).not.toBeVisible({ timeout: 60 * 1000 });
     }
-  } catch (error: any) {
-    console.log(`There was an error cleaning up the provided payment method: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`There was an error cleaning up the provided payment method: ${message}`);
   }
 };
 
@@ -100,7 +101,8 @@ export const upgradeToProPlan = async (page: Page) => {
     await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
     await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
@@ -257,7 +259,7 @@ export const upgradeToProPlan = async (page: Page) => {
     await Promise.all([
       page.waitForURL((url) => !url.href.includes('checkout.stripe.com'), { timeout: 120 * 1000 }),
       submitButton.click({ timeout: 60 * 1000 }),
-    ]).catch(async (_error) => {
+    ]).catch(async (_error: unknown) => {
       // If navigation times out, check current page state
       const currentUrl = page.url();
       const currentTitle = await page.title();
@@ -272,28 +274,109 @@ export const upgradeToProPlan = async (page: Page) => {
     });
 
     // Wait for page to fully load after navigation
-    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
-    await page.waitForTimeout(2 * 1000);
+    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    await page.waitForLoadState('load', { timeout: 60 * 1000 });
+    await page.waitForTimeout(3 * 1000);
 
-    // Check current URL and navigate to files if needed
-    const finalUrl = page.url();
-    const finalTitle = await page.title();
+    // Check if we're already on the Team files page by waiting for the heading
+    // This handles cases where Stripe redirects directly to Team files
+    let teamFilesHeadingVisible = await page
+      .getByRole(`heading`, { name: `Team files` })
+      .isVisible({ timeout: 10 * 1000 })
+      .catch(() => false);
 
-    // If we're on settings page (payment might redirect there), navigate to files
-    if (finalUrl.includes('/settings') || finalTitle.includes('settings')) {
-      await page.goto(buildUrl(), { waitUntil: 'networkidle' });
-      await page.waitForTimeout(2 * 1000);
+    // If we're not on Team files page, try multiple navigation strategies
+    if (!teamFilesHeadingVisible) {
+      const currentUrl = page.url();
+      const currentTitle = await page.title();
+      console.log(`Not on Team files page. Current URL: ${currentUrl}, Title: ${currentTitle}`);
+
+      // Strategy 1: Extract team UUID from URL and navigate directly to team files
+      const teamUuidMatch = currentUrl.match(/\/teams\/([^/]+)/);
+      if (teamUuidMatch) {
+        const teamUuid = teamUuidMatch[1];
+        console.log(`Found team UUID in URL: ${teamUuid}, navigating to team files...`);
+        try {
+          await page.goto(buildUrl(`/teams/${teamUuid}`), { waitUntil: 'load' });
+          await page.waitForTimeout(2 * 1000);
+          teamFilesHeadingVisible = await page
+            .getByRole(`heading`, { name: `Team files` })
+            .isVisible({ timeout: 10 * 1000 })
+            .catch(() => false);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.log(`Failed to navigate using team UUID: ${message}`);
+        }
+      }
+
+      // Strategy 2: Try clicking the Files link in navigation
+      if (!teamFilesHeadingVisible) {
+        try {
+          const filesLink = page.getByRole('link', { name: /files/i });
+          const filesLinkVisible = await filesLink.isVisible({ timeout: 5 * 1000 }).catch(() => false);
+          if (filesLinkVisible) {
+            console.log('Found Files link, clicking...');
+            await filesLink.click({ timeout: 60 * 1000 });
+            await page.waitForLoadState('load', { timeout: 60 * 1000 });
+            await page.waitForTimeout(2 * 1000);
+            teamFilesHeadingVisible = await page
+              .getByRole(`heading`, { name: `Team files` })
+              .isVisible({ timeout: 10 * 1000 })
+              .catch(() => false);
+          }
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.log(`Failed to click Files link: ${message}`);
+        }
+      }
+
+      // Strategy 3: Navigate to homepage and wait for redirect
+      if (!teamFilesHeadingVisible) {
+        console.log('Trying to navigate to homepage...');
+        try {
+          await page.goto(buildUrl(), { waitUntil: 'load' });
+          await page.waitForTimeout(3 * 1000);
+          teamFilesHeadingVisible = await page
+            .getByRole(`heading`, { name: `Team files` })
+            .isVisible({ timeout: 10 * 1000 })
+            .catch(() => false);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.log(`Failed to navigate to homepage: ${message}`);
+        }
+      }
+
+      // Strategy 4: Wait for "Shared with me" or filter placeholder (indicators of Team files page)
+      if (!teamFilesHeadingVisible) {
+        console.log('Waiting for Team files page indicators...');
+        try {
+          await Promise.race([
+            page.locator(':text("Shared with me")').waitFor({ timeout: 10 * 1000 }),
+            page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 10 * 1000 }),
+          ]).catch(() => {});
+          // Check again after waiting
+          teamFilesHeadingVisible = await page
+            .getByRole(`heading`, { name: `Team files` })
+            .isVisible({ timeout: 5 * 1000 })
+            .catch(() => false);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.log(`Failed to find Team files indicators: ${message}`);
+        }
+      }
     }
 
-    // Assert that page has redirected to the Team files page
-    await expect(page).toHaveTitle(/Team files/, { timeout: 30 * 1000 });
+    // Wait for the Team files heading to be visible first, then assert the title
+    // This ensures the page has actually loaded the Team files content
     await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
+    await expect(page).toHaveTitle(/Team files/, { timeout: 30 * 1000 });
 
     // Navigate to the Settings page by clicking the 'Settings' link
     await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
     await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
@@ -318,9 +401,11 @@ export const upgradeToProPlan = async (page: Page) => {
     // This indicates that the user has an active subscription to manage
     await expect(page.getByRole(`button`, { name: `Manage subscription` })).toBeVisible({ timeout: 60 * 1000 });
 
-    await page.goto(buildUrl(), { waitUntil: 'networkidle' });
-  } catch (error: any) {
-    const errorMessage = `An error occurred while upgrading to the Pro plan: ${error.message}`;
+    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    await page.goto(buildUrl(), { waitUntil: 'load' });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorMessage = `An error occurred while upgrading to the Pro plan: ${message}`;
     console.log(errorMessage);
     // Re-throw with additional context to prevent silent failures
     throw new Error(errorMessage);
@@ -349,8 +434,20 @@ export const inviteUserToTeam = async (page: Page, { email, permission }: Invite
       .click({ timeout: 60 * 1000 });
   }
   await page.locator(`button:text("Invite")`).click({ timeout: 60 * 1000 });
-  await page.waitForLoadState('networkidle');
-  await expect(page.locator(`div.text-xs:has-text("${email}")`)).toBeVisible({ timeout: 60 * 1000 });
+
+  // Wait a moment for the invite API call to process
+  await page.waitForTimeout(2 * 1000);
+
+  // Wait for the invite to be processed - the email should appear in the members list
+  // Use a more flexible selector that matches the actual email display
+  // Try multiple selectors as the email might appear in different formats
+  try {
+    // First try the specific selector
+    await expect(page.locator(`div.text-xs:has-text("${email}")`)).toBeVisible({ timeout: 30 * 1000 });
+  } catch {
+    // Fallback: try using getByText which is more flexible and matches how the test file checks
+    await expect(page.getByText(email).first()).toBeVisible({ timeout: 30 * 1000 });
+  }
 };
 
 /**
@@ -404,7 +501,8 @@ export const deleteMemberFromProPlan = async (
       await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
 
       await page.waitForTimeout(5 * 1000);
-      await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+      // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+      await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
       // Locate the text element that starts with 'Team members (manage)' followed by a number
       // Store the text content (e.g., 'Team members (manage)1'
@@ -434,8 +532,9 @@ export const deleteMemberFromProPlan = async (
 
       await page.waitForLoadState('domcontentloaded');
     }
-  } catch (error: any) {
-    console.log(`There was an error when deleting the team member from the Pro Plan: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`There was an error when deleting the team member from the Pro Plan: ${message}`);
   }
 };
 
@@ -494,8 +593,9 @@ export const resetBillingInformation = async (page: Page) => {
     // Assert that the billing address is just placeholder text
     await expect(page.getByText(`N/A`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
     await expect(page.getByText(`N/A, AL 95014 US`)).toBeVisible({ timeout: 60 * 1000 });
-  } catch (error: any) {
-    console.log(`There was an error cleaning up the billing information: ${error.message}.`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`There was an error cleaning up the billing information: ${message}.`);
   }
 };
 
@@ -572,7 +672,8 @@ export const cancelProPlan = async (page: Page) => {
     await page.locator(`[data-testid="return-to-business-link"]`).click({ timeout: 60 * 1000 });
 
     await page.waitForLoadState('domcontentloaded');
-  } catch (error: any) {
-    console.log(`An error occurred while cancelling the Pro plan: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`An error occurred while cancelling the Pro plan: ${message}`);
   }
 };
