@@ -30,13 +30,13 @@ export const AddDataTable = memo(
     const label = 'Table';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     const { top_left_position, table_name, table_data } = toolArgs.data;
@@ -45,13 +45,10 @@ export const AddDataTable = memo(
     return (
       <ToolCard
         icon={icon}
-        label={
-          <span>
-            {label} <span className="ml-1 font-normal text-muted-foreground">{table_name}</span>
-          </span>
-        }
-        description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
+        label={label}
+        description={`${table_name} • ${getRowColSentence({ rows, cols })} at ${top_left_position}`}
         className={className}
+        compact
       />
     );
   }

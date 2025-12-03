@@ -1,11 +1,37 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
-import { GridActionIcon } from '@/shared/components/Icons';
+import { FormatPaintIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
+
+function describeFormatting(data: SetTextFormatsResponse): string {
+  const formats: string[] = [];
+
+  if (data.bold === true) formats.push('bold');
+  if (data.bold === false) formats.push('not bold');
+  if (data.italic === true) formats.push('italic');
+  if (data.italic === false) formats.push('not italic');
+  if (data.underline === true) formats.push('underline');
+  if (data.underline === false) formats.push('no underline');
+  if (data.strike_through === true) formats.push('strikethrough');
+  if (data.strike_through === false) formats.push('no strikethrough');
+  if (data.text_color) formats.push(`text: ${data.text_color}`);
+  if (data.fill_color) formats.push(`fill: ${data.fill_color}`);
+  if (data.align) formats.push(`align: ${data.align}`);
+  if (data.vertical_align) formats.push(`v-align: ${data.vertical_align}`);
+  if (data.wrap) formats.push(`wrap: ${data.wrap}`);
+  if (data.numeric_commas === true) formats.push('commas');
+  if (data.numeric_commas === false) formats.push('no commas');
+  if (data.number_type) formats.push(data.number_type);
+  if (data.currency_symbol) formats.push(`currency: ${data.currency_symbol}`);
+  if (data.date_time) formats.push(`date: ${data.date_time}`);
+  if (data.font_size !== undefined && data.font_size !== null) formats.push(`size: ${data.font_size}pt`);
+
+  return formats.length > 0 ? formats.join(', ') : 'formatting';
+}
 
 export const SetTextFormats = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -26,8 +52,15 @@ export const SetTextFormats = memo(
       }
     }, [args, loading]);
 
-    const icon = <GridActionIcon />;
-    const label = 'Set text formats';
+    const icon = <FormatPaintIcon />;
+    const label = 'Formatting the sheet';
+
+    const description = useMemo(() => {
+      if (!toolArgs?.success || !toolArgs.data) return undefined;
+      const formatting = describeFormatting(toolArgs.data);
+      const range = toolArgs.data.selection;
+      return `${formatting} • ${range}`;
+    }, [toolArgs]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
@@ -39,6 +72,6 @@ export const SetTextFormats = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={toolArgs.data.selection} className={className} compact />;
+    return <ToolCard icon={icon} label={label} description={description} className={className} compact />;
   }
 );
