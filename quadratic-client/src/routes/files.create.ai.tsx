@@ -604,7 +604,7 @@ export const Component = () => {
                     <StarShineIcon className="text-white" size="lg" />
                   </div>
                   <CardHeader className="p-4">
-                    <CardTitle className="text-sm group-hover:text-primary">Start from Prompt</CardTitle>
+                    <CardTitle className="text-sm group-hover:text-primary">Generate from Prompt</CardTitle>
                     <CardDescription className="text-xs">Describe what you want</CardDescription>
                     <span className="mt-2 inline-block w-fit rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                       Recommended
