@@ -4,9 +4,6 @@ import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { EmptyState } from '@/shared/components/EmptyState';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import type { RecentFile } from '@/shared/utils/updateRecentFiles';
-import { RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
 import { FileIcon } from '@radix-ui/react-icons';
 import { useMemo } from 'react';
 
@@ -22,7 +19,6 @@ export const Component = () => {
   } = useDashboardRouteLoaderData();
 
   const canEdit = teamPermissions.includes('TEAM_EDIT');
-  const [recentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
 
   // Build a map of users by ID for creator info
   const usersById: Record<number, { name?: string; picture?: string; email?: string }> = useMemo(
@@ -43,14 +39,14 @@ export const Component = () => {
     [users]
   );
 
-  // Build a map of all available files (team + private) by UUID
-  const allFilesMap = useMemo(() => {
-    const map = new Map<string, FilesListUserFile>();
+  // Combine team files + personal files, sorted by last modified date
+  const suggestedFiles = useMemo(() => {
+    const allFiles: FilesListUserFile[] = [];
 
     // Add team files
     teamFiles.forEach(({ file, userMakingRequest }) => {
       const creator = usersById[file.creatorId];
-      map.set(file.uuid, {
+      allFiles.push({
         name: file.name,
         createdDate: file.createdDate,
         updatedDate: file.updatedDate,
@@ -63,9 +59,9 @@ export const Component = () => {
       });
     });
 
-    // Add private files (use current user as creator since these are the user's own files)
+    // Add personal files
     filesPrivate.forEach(({ file, userMakingRequest }) => {
-      map.set(file.uuid, {
+      allFiles.push({
         name: file.name,
         createdDate: file.createdDate,
         updatedDate: file.updatedDate,
@@ -78,41 +74,9 @@ export const Component = () => {
       });
     });
 
-    return map;
+    // Sort all files by last modified date (most recent first)
+    return allFiles.sort((a, b) => new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime());
   }, [teamFiles, filesPrivate, usersById, currentUser]);
-
-  // Get recent files: combine localStorage recent files with team files
-  const recentFilesWithDetails = useMemo(() => {
-    // Start with localStorage recent files that exist in our available files
-    const recentFromStorage = recentFiles
-      .filter((file) => file.name.trim().length > 0)
-      .map((recentFile) => allFilesMap.get(recentFile.uuid))
-      .filter((file): file is FilesListUserFile => file !== undefined);
-
-    // Get UUIDs of files already in the recent list
-    const recentUuids = new Set(recentFromStorage.map((f) => f.uuid));
-
-    // Add team files that aren't already in the recent list, sorted by last modified
-    const additionalTeamFiles = teamFiles
-      .map(({ file, userMakingRequest }) => {
-        const creator = usersById[file.creatorId];
-        return {
-          name: file.name,
-          createdDate: file.createdDate,
-          updatedDate: file.updatedDate,
-          thumbnail: file.thumbnail,
-          uuid: file.uuid,
-          publicLinkAccess: file.publicLinkAccess,
-          permissions: userMakingRequest.filePermissions,
-          creator,
-          isPrivate: false,
-        };
-      })
-      .filter((file) => !recentUuids.has(file.uuid))
-      .sort((a, b) => new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime());
-
-    return [...recentFromStorage, ...additionalTeamFiles];
-  }, [recentFiles, allFilesMap, teamFiles, usersById]);
 
   return (
     <div className="flex flex-grow flex-col">
@@ -124,14 +88,14 @@ export const Component = () => {
       />
 
       <section className="">
-        {recentFilesWithDetails.length === 0 ? (
+        {suggestedFiles.length === 0 ? (
           <EmptyState
             title="No suggested files"
             description="Files will appear here for quick access."
             Icon={FileIcon}
           />
         ) : (
-          <FilesList files={recentFilesWithDetails} teamUuid={teamUuid} isPrivate={false} />
+          <FilesList files={suggestedFiles} teamUuid={teamUuid} isPrivate={false} />
         )}
       </section>
     </div>
