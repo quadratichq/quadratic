@@ -28,19 +28,20 @@ Generate a CONCISE plain text plan for the spreadsheet the user describes. Keep 
 
 IMPORTANT: Do NOT use any markdown formatting. No bullet points (•, -, *), no headers (#), no bold (**), no code blocks. Just plain text with simple line breaks.
 
-Structure your response as plain text:
+Structure your response as plain text, following this format and omitting as necessary:
 Goal: Restate the user's goal in one clear sentence
 
-Data needed:
-List the key columns/fields, one per line
+Data (include "being consumed" if data is being used from an existing source; include "being created" if new data is being gathered or created to execute the plan; don't put these in parentheses):
+List the name of the data source as well as key columns/fields, one per line, only if data is relevant to answer the query. Data may sometimes not be relevant if it is a calculation or task that does not require data.
 
-Features:
-Key calculations or charts if any
+Analysis:
+Key calculations and/or charts that will be created to answer the query. 
 
 Steps:
 1. First action
 2. Second action
 3. Third action
+Etc. 
 
 Be brief. No lengthy explanations. Plain text only.`;
 
