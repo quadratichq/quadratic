@@ -50,7 +50,7 @@ export function FilesListItemCore({
           {hasNetworkError ? (
             <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
           ) : (
-            <div className={`${TYPE.caption} flex flex-nowrap items-center gap-1 truncate`}>
+            <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
               {isSharedWithMe ? (
                 <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
                   Shared with me
@@ -62,13 +62,15 @@ export function FilesListItemCore({
                   </Badge>
                 )
               )}
-              {isShared && (
-                <span className={`flex flex-nowrap items-center gap-0.5 after:mr-1 after:pl-1 after:content-['·']`}>
-                  <GlobeIcon className="relative inline h-3 w-3" /> Public
-                </span>
-              )}
+
               {description}
-            </div>
+
+              {isShared && (
+                <TooltipPopover label="Public">
+                  <GlobeIcon className="relative inline h-3 w-3" />
+                </TooltipPopover>
+              )}
+            </p>
           )}
         </div>
         {creator && creator.name && setFilterValue && (
