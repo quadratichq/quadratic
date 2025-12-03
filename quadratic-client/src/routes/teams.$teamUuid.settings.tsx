@@ -281,7 +281,7 @@ export const Component = () => {
                 <Link to={ROUTES.TEAM_FILES_DELETED(team.uuid)}>Recover deleted files</Link>
               </Button>
               <p className="mt-2 text-sm text-muted-foreground">
-                Files deleted in the last hour remain available for recovery.
+                Files deleted in the 30 days remain available for recovery.
               </p>
             </div>
           </SettingsRow>

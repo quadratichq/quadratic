@@ -4,16 +4,8 @@ import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/shadcn/ui/dialog';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Navigate, redirect, useLoaderData } from 'react-router';
 
@@ -33,20 +25,18 @@ export const Component = () => {
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();
-  const [activeFileUuid, setActiveFileUuid] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [activeFileRestoreUuid, setActiveFileRestoreUuid] = useState<string>('');
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const activeFile = useMemo(() => files.find(({ file }) => file.uuid === activeFileUuid), [activeFileUuid, files]);
   const handleRestoreAndRedirect = useCallback(
     async (fileUuid: string) => {
-      setActiveFileUuid(fileUuid);
-      setIsLoading(true);
+      setActiveFileRestoreUuid(fileUuid);
       try {
         const res = await apiClient.files.restore(fileUuid);
-        window.location.href = ROUTES.FILE({ uuid: res.file.uuid });
+        window.location.assign(ROUTES.FILE({ uuid: res.file.uuid }));
       } catch {
-        setIsLoading(false);
+        setActiveFileRestoreUuid('');
         addGlobalSnackbar('Failed to restore file. Try again.', { severity: 'error' });
       }
     },
@@ -60,15 +50,11 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Deleted files" />
+      <DashboardHeader title="Recover deleted files" />
       <div className="-mx-2 flex max-w-3xl flex-col">
         {files.length > 0 ? (
           files.map(({ file }, i) => (
-            <button
-              key={file.uuid}
-              className="flex flex-row items-center gap-3 rounded border-t border-transparent px-2 py-3 hover:bg-accent"
-              onClick={() => setActiveFileUuid(file.uuid)}
-            >
+            <div key={file.uuid} className="flex flex-row items-center gap-3 px-2 py-3">
               <div className={`hidden border border-border shadow-sm md:block`}>
                 {file.thumbnail ? (
                   <img
@@ -96,11 +82,23 @@ export const Component = () => {
               <span className="flex flex-col items-start">
                 <span className="text-base">{file.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {file.ownerUserId === null ? 'Team' : 'Personal'} file
+                  {file.ownerUserId === null ? 'Team' : 'Personal'} file · Deleted {timeAgo(file.deletedDate)} by You
                 </span>
               </span>
-              <span className="ml-auto text-xs text-muted-foreground">Deleted {timeAgo(file.deletedDate)} by You</span>
-            </button>
+              <span className="ml-auto hidden text-xs text-muted-foreground">
+                Deleted {timeAgo(file.deletedDate)} by You
+              </span>
+              <Button
+                disabled={Boolean(activeFileRestoreUuid)}
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                onClick={() => handleRestoreAndRedirect(file.uuid)}
+                loading={activeFileRestoreUuid === file.uuid}
+              >
+                Recover & open
+              </Button>
+            </div>
           ))
         ) : (
           <p className="mt-12 text-center text-sm text-muted-foreground">
@@ -108,38 +106,6 @@ export const Component = () => {
           </p>
         )}
       </div>
-      {activeFile && (
-        <Dialog open={true} onOpenChange={() => setActiveFileUuid('')}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Restore file</DialogTitle>
-              <DialogDescription>
-                This file will be restored to{' '}
-                {activeFile.file.ownerUserId === null ? 'the team’s files' : 'your personal files'}.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div>
-              {activeFile.file.thumbnail && (
-                <img
-                  crossOrigin="anonymous"
-                  src={activeFile.file.thumbnail}
-                  alt={activeFile.file.name}
-                  className="aspect-video rounded-md border border-border object-fill"
-                />
-              )}
-            </div>
-            <DialogFooter className="flex items-center">
-              <Button variant="outline" onClick={() => setActiveFileUuid('')} disabled={isLoading}>
-                Cancel
-              </Button>
-              <Button onClick={() => handleRestoreAndRedirect(activeFileUuid)} loading={isLoading}>
-                Restore & open
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 };
