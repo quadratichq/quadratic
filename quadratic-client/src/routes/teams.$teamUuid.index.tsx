@@ -113,11 +113,18 @@ export const Component = () => {
         actions={<div className="flex items-center gap-2">{canEdit && <NewFileButton isPrivate={false} />}</div>}
       />
 
-      {suggestedFiles.length === 0 ? (
-        <EmptyState title="No suggested files" description="Files will appear here for quick access." Icon={FileIcon} />
-      ) : (
-        <FilesList files={suggestedFiles} teamUuid={teamUuid} isPrivate={false} />
-      )}
+      <FilesList
+        files={suggestedFiles}
+        teamUuid={teamUuid}
+        isPrivate={false}
+        emptyState={
+          <EmptyState
+            title="No suggested files"
+            description="Files will appear here for quick access."
+            Icon={FileIcon}
+          />
+        }
+      />
     </div>
   );
 };
