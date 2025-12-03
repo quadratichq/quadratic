@@ -116,6 +116,15 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       await skipButton.click({ timeout: 60 * 1000 });
     }
   }
+
+  // Only run onboarding if the onboarding UI is present (fast check)
+  try {
+    await expect(page.getByRole(`img`, { name: `Quadratic onboarding` })).toBeVisible({ timeout: 2000 });
+    await handleOnboarding(page);
+  } catch {
+    // onboarding not present — continue
+  }
+
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
 
@@ -218,8 +227,8 @@ export const handleOnboarding = async (page: Page) => {
   await onboardingBtnTeamInvites.click({ timeout: 60 * 1000 });
   await onboardingBtnTeamInvites.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  // How they heard
-  const onboardingBtnHowTheyHeard = page.locator('[data-testid="onboarding-btn-source-other"]');
+  // How they heard - select the first referral source option (all share same testid)
+  const onboardingBtnHowTheyHeard = page.locator('[data-testid="onboarding-btn-source-other"]').first();
   await onboardingBtnHowTheyHeard.click({ timeout: 60 * 1000 });
   await onboardingBtnHowTheyHeard.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 

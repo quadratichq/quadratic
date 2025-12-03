@@ -162,7 +162,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Manage Billing - Add Payment Method', async ({ page }) => {
+test.only('Manage Billing - Add Payment Method', async ({ page }) => {
   //--------------------------------
   // Manage Billing - Add Payment Method
   //--------------------------------
