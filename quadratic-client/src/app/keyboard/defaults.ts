@@ -49,6 +49,10 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Cmd, Keys.Period]],
     windows: [[WindowsModifiers.Ctrl, Keys.Period]],
   },
+  [Action.ToggleMinimalUIMode]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.M]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.M]],
+  },
   [Action.CloseOverlay]: {
     mac: [[Keys.Escape]],
     windows: [[Keys.Escape]],

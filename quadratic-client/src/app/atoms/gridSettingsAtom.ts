@@ -14,6 +14,7 @@ export type GridSettings = {
   showA1Notation: boolean;
   showCodePeek: boolean;
   presentationMode: boolean;
+  minimalUIMode: boolean;
   showAIAnalystOnStartup: boolean;
   showScrollbars: boolean;
 };
@@ -25,6 +26,7 @@ export const defaultGridSettings: GridSettings = {
   showA1Notation: false,
   showCodePeek: false,
   presentationMode: false,
+  minimalUIMode: false,
   showAIAnalystOnStartup: true,
   showScrollbars: true,
 };
@@ -32,11 +34,11 @@ export const defaultGridSettings: GridSettings = {
 // Persist the GridSettings
 const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
   // Initialize from localStorage
-  // Note: presentationMode is always off on a fresh page reload
+  // Note: presentationMode and minimalUIMode are always off on a fresh page reload
   const savedValue = localStorage.getItem(SETTINGS_KEY);
   if (savedValue != null) {
     const settings = JSON.parse(savedValue);
-    const newSettings = { ...settings, presentationMode: false };
+    const newSettings = { ...settings, presentationMode: false, minimalUIMode: false };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     if (debugFlag('debugGridSettings'))
       console.log('[gridSettings] initializing with values from localStorage', newSettings);
@@ -83,6 +85,7 @@ export const showCellTypeOutlinesAtom = createSelector('showCellTypeOutlines');
 export const showA1NotationAtom = createSelector('showA1Notation');
 export const showCodePeekAtom = createSelector('showCodePeek');
 export const presentationModeAtom = createSelector('presentationMode');
+export const minimalUIModeAtom = createSelector('minimalUIMode');
 export const showScrollbarsAtom = createSelector('showScrollbars');
 
 // Custom selector for showAIAnalystOnStartup that also controls the AI panel visibility

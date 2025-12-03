@@ -6,7 +6,7 @@ import {
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { minimalUIModeAtom, presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
@@ -18,6 +18,7 @@ import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
+import { AIAnalystMinimal } from '@/app/ui/menus/AIAnalyst/AIAnalystMinimal';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
@@ -51,6 +52,7 @@ export default function QuadraticUI() {
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const minimalUIMode = useRecoilValue(minimalUIModeAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
@@ -114,8 +116,8 @@ export default function QuadraticUI() {
     >
       {!presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
-        {!presentationMode && <TopBar />}
-        {!presentationMode && !isEmbed && <Toolbar />}
+        {!presentationMode && !minimalUIMode && <TopBar />}
+        {!presentationMode && !minimalUIMode && !isEmbed && <Toolbar />}
 
         <div
           style={{
@@ -126,17 +128,18 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          {canEditFile && isAuthenticated && <AIAnalyst />}
-          {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
+          {canEditFile && isAuthenticated && !minimalUIMode && <AIAnalyst />}
+          {canEditFile && isAuthenticated && !minimalUIMode && <AIAnalystConnectionSchema />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
+            {canEditFile && isAuthenticated && minimalUIMode && <AIAnalystMinimal />}
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
         </div>
 
-        {!presentationMode && !isEmbed && <BottomBar />}
+        {!presentationMode && !minimalUIMode && !isEmbed && <BottomBar />}
       </div>
       {/* Global overlay menus */}
       {canEditFile && isAuthenticated && <AIGetFileName />}

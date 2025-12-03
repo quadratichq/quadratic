@@ -8,13 +8,22 @@ import {
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { minimalUIModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
+import {
+  AIIcon,
+  CollapseIcon,
+  DatabaseIcon,
+  ExpandIcon,
+  ManageSearch,
+  MemoryIcon,
+  SpinnerIcon,
+} from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
@@ -33,6 +42,7 @@ export const QuadraticSidebar = () => {
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const [minimalUIMode, setMinimalUIMode] = useRecoilState(minimalUIModeAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -101,6 +111,14 @@ export const QuadraticSidebar = () => {
         </SidebarTooltip>
       </div>
       <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
+        <SidebarTooltip
+          label={minimalUIMode ? 'Exit minimal UI' : 'Minimal UI'}
+          shortcut={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'M'}
+        >
+          <SidebarToggle pressed={minimalUIMode} onPressedChange={() => setMinimalUIMode((prev) => !prev)}>
+            {minimalUIMode ? <ExpandIcon /> : <CollapseIcon />}
+          </SidebarToggle>
+        </SidebarTooltip>
         <ThemePickerMenu />
       </div>
     </nav>

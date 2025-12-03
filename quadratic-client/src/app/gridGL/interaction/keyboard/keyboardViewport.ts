@@ -70,6 +70,12 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
     return true;
   }
 
+  // Toggle minimal UI mode
+  if (matchShortcut(Action.ToggleMinimalUIMode, event)) {
+    setGridSettings({ ...gridSettings, minimalUIMode: !gridSettings.minimalUIMode });
+    return true;
+  }
+
   // Close overlay
   if (matchShortcut(Action.CloseOverlay, event)) {
     // clear copy range if it is showing
@@ -78,8 +84,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
       return true;
     }
 
-    if (gridSettings.presentationMode) {
-      setGridSettings({ ...gridSettings, presentationMode: false });
+    if (gridSettings.presentationMode || gridSettings.minimalUIMode) {
+      setGridSettings({ ...gridSettings, presentationMode: false, minimalUIMode: false });
       return true;
     } else if (codeEditorState.showCodeEditor) {
       setCodeEditorState({

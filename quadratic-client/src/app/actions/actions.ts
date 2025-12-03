@@ -75,6 +75,7 @@ export enum Action {
   GridPanMode = 'grid_pan_mode',
   ShowCommandPalette = 'show_command_palette',
   TogglePresentationMode = 'toggle_presentation_mode',
+  ToggleMinimalUIMode = 'toggle_minimal_ui_mode',
   CloseOverlay = 'close_overlay',
   ShowGoToMenu = 'show_go_to_menu',
   ZoomIn = 'zoom_in',

@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import {
+  minimalUIModeAtom,
   presentationModeAtom,
   showAIAnalystOnStartupAtom,
   showCellTypeOutlinesAtom,
@@ -10,7 +11,7 @@ import {
 } from '@/app/atoms/gridSettingsAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
-import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
+import { CheckSmallIcon, CollapseIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
 import {
   MenubarContent,
   MenubarItem,
@@ -38,6 +39,7 @@ export const ViewMenubarMenu = () => {
   const [showScrollbars, setShowScrollbars] = useRecoilState(showScrollbarsAtom);
   const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
+  const setMinimalUIMode = useSetRecoilState(minimalUIModeAtom);
 
   return (
     <MenubarMenu>
@@ -87,6 +89,11 @@ export const ViewMenubarMenu = () => {
           <CropFreeIcon />
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>
+        </MenubarItem>
+        <MenubarItem onClick={() => setMinimalUIMode((prev) => !prev)}>
+          <CollapseIcon />
+          Minimal UI
+          <MenubarShortcut>{KeyboardSymbols.Command + KeyboardSymbols.Shift + 'M'}</MenubarShortcut>
         </MenubarItem>
         <MenubarSeparator />
       </MenubarContent>

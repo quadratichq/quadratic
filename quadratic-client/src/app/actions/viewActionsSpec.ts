@@ -24,6 +24,7 @@ type ViewActionSpec = Pick<
   | Action.GridPanMode
   | Action.ShowCommandPalette
   | Action.TogglePresentationMode
+  | Action.ToggleMinimalUIMode
   | Action.CloseOverlay
   | Action.SwitchSheetNext
   | Action.SwitchSheetPrevious
@@ -118,6 +119,16 @@ export const viewActionsSpec: ViewActionSpec = {
       }));
     },
   },
+  [Action.ToggleMinimalUIMode]: {
+    label: () => 'Toggle minimal UI',
+    run: () => {
+      if (!pixiAppSettings.setGridSettings) return;
+      pixiAppSettings.setGridSettings((prev) => ({
+        ...prev,
+        minimalUIMode: !prev.minimalUIMode,
+      }));
+    },
+  },
   [Action.CloseOverlay]: {
     label: () => 'Close overlay',
     run: () => {
@@ -125,6 +136,7 @@ export const viewActionsSpec: ViewActionSpec = {
         pixiAppSettings.setGridSettings((prev) => ({
           ...prev,
           presentationMode: false,
+          minimalUIMode: false,
         }));
       }
       if (pixiAppSettings.setEditorInteractionState) {

@@ -1,4 +1,5 @@
 import {
+  minimalUIModeAtom,
   presentationModeAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
@@ -94,6 +95,21 @@ const commands: CommandGroup = {
             action={() => setPresentationMode((prev) => !prev)}
             shortcut="."
             shortcutModifiers={[KeyboardSymbols.Command]}
+          />
+        );
+      },
+    },
+    {
+      label: 'Minimal UI',
+      Component: (props) => {
+        const [minimalUIMode, setMinimalUIMode] = useRecoilState(minimalUIModeAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<Checkbox checked={minimalUIMode} />}
+            action={() => setMinimalUIMode((prev: boolean) => !prev)}
+            shortcut="M"
+            shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
           />
         );
       },
