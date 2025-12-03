@@ -1008,7 +1008,7 @@ export const Component = () => {
 
                     <div className="flex items-center justify-between border-t border-border px-4 py-3">
                       <p className="text-xs text-muted-foreground">
-                        {isGeneratingPlan ? 'Please wait...' : 'Edit the plan above, then build when ready'}
+                        {isGeneratingPlan ? 'Please wait...' : 'Ready to create your spreadsheet?'}
                       </p>
                       <Button
                         ref={executeButtonRef}
