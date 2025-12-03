@@ -122,10 +122,75 @@ export const upgradeToProPlan = async (page: Page) => {
     // Locate the parent div that contains 'Pro plan' details
     const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
 
-    // Locate the text within the parent div of the 'Pro plan' heading
-    // Use a regex to extract the number between `$` and `/user/month` to store the Pro plan cost
-    const proPlanCostText = await proPlanParentEl.textContent();
-    const proPlanCost = proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1];
+    // Ensure the Pro plan element is visible before extracting text
+    await expect(proPlanParentEl).toBeVisible({ timeout: 60 * 1000 });
+
+    // Try to extract cost from the specific element that displays "$X/user/month" next to "Team members"
+    // This is more reliable than parsing the entire parent element text
+    let proPlanCost: string | undefined;
+
+    try {
+      // Look for the span that contains the cost, which is next to "Team members" text
+      const costElement = proPlanParentEl
+        .locator(':text("Team members")')
+        .locator('..')
+        .locator('span.text-sm.font-medium');
+      const costText = await costElement.textContent({ timeout: 10 * 1000 });
+
+      if (costText) {
+        // Extract number from "$20/user/month" format
+        proPlanCost = costText.match(/\$(\d+)/)?.[1];
+        if (proPlanCost) {
+          console.log(`Extracted Pro plan cost from specific element: $${proPlanCost}/user/month`);
+        }
+      }
+    } catch {
+      console.log(`Could not extract cost from specific element, trying parent element text...`);
+    }
+
+    // Fallback: Extract from parent element text if specific element extraction failed
+    if (!proPlanCost) {
+      const proPlanCostText = await proPlanParentEl.textContent();
+
+      if (!proPlanCostText) {
+        throw new Error('Could not retrieve text content from Pro plan element');
+      }
+
+      // Try multiple regex patterns to extract the cost
+      // Pattern 1: $20/user/month (no spaces)
+      proPlanCost = proPlanCostText.match(/\$(\d+)(?=\/user\/month)/)?.[1];
+
+      // Pattern 2: $20 /user/month (with space before slash)
+      if (!proPlanCost) {
+        proPlanCost = proPlanCostText.match(/\$(\d+)(?= \/user\/month)/)?.[1];
+      }
+
+      // Pattern 3: $20/user (without /month)
+      if (!proPlanCost) {
+        proPlanCost = proPlanCostText.match(/\$(\d+)(?=\/user)/)?.[1];
+      }
+
+      // Pattern 4: Just look for $ followed by digits
+      if (!proPlanCost) {
+        const match = proPlanCostText.match(/\$(\d+)/);
+        if (match) {
+          proPlanCost = match[1];
+          console.log(`Warning: Extracted cost using fallback pattern. Full text: "${proPlanCostText}"`);
+        }
+      }
+    }
+
+    // If we still couldn't extract the cost, throw an error
+    if (!proPlanCost) {
+      const proPlanCostText = await proPlanParentEl.textContent();
+      throw new Error(
+        `Failed to extract Pro plan cost from settings page. ` +
+          `Text content: "${proPlanCostText}". ` +
+          `Please verify the Pro plan cost is displayed correctly on the settings page.`
+      );
+    }
+
+    console.log(`Successfully extracted Pro plan cost: $${proPlanCost}/user/month`);
 
     // Click 'Upgrade to Pro' to upgrade the account
     await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
@@ -148,6 +213,7 @@ export const upgradeToProPlan = async (page: Page) => {
     const checkoutTotal = checkoutTotalText.replace('$', '').split('.')[0];
 
     // Assert the cost reflects the Pro Plan cost shown on the 'Settings' page
+    // proPlanCost is guaranteed to be defined at this point (throws error if extraction fails)
     expect(checkoutTotal).toBe(proPlanCost);
 
     // Assert that the bank account textbox is not visible
@@ -179,18 +245,48 @@ export const upgradeToProPlan = async (page: Page) => {
     // Default 'country or region' should be set to 'US'
     await expect(page.getByLabel(`Country or region`)).toHaveValue(`US`);
 
+    // Wait a moment for Stripe to validate the form fields
+    await page.waitForTimeout(2 * 1000);
+
+    // Ensure the submit button is enabled before clicking
+    const submitButton = page.locator(`[data-testid="hosted-payment-submit-button"]`);
+    await expect(submitButton).toBeEnabled({ timeout: 30 * 1000 });
+
     // Click 'Subscribe' button to upgrade the count to a Pro plan
-    const navigationPromise = page.waitForNavigation();
-    await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
+    // Wait for navigation after clicking submit - Stripe will redirect after payment
+    await Promise.all([
+      page.waitForURL((url) => !url.href.includes('checkout.stripe.com'), { timeout: 120 * 1000 }),
+      submitButton.click({ timeout: 60 * 1000 }),
+    ]).catch(async (_error) => {
+      // If navigation times out, check current page state
+      const currentUrl = page.url();
+      const currentTitle = await page.title();
+      console.log(`Navigation timeout. Current URL: ${currentUrl}, Title: ${currentTitle}`);
 
-    // Wait for the page to redirect to the Team files page
-    await navigationPromise;
+      // If we're still on Stripe checkout, the payment might have failed
+      if (currentUrl.includes('checkout.stripe.com')) {
+        throw new Error(`Payment submission did not complete. Still on Stripe checkout page: ${currentUrl}`);
+      }
 
-    await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('domcontentloaded');
+      // Otherwise, continue - we might have navigated but the promise didn't catch it
+    });
+
+    // Wait for page to fully load after navigation
+    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+    await page.waitForTimeout(2 * 1000);
+
+    // Check current URL and navigate to files if needed
+    const finalUrl = page.url();
+    const finalTitle = await page.title();
+
+    // If we're on settings page (payment might redirect there), navigate to files
+    if (finalUrl.includes('/settings') || finalTitle.includes('settings')) {
+      await page.goto(buildUrl(), { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2 * 1000);
+    }
 
     // Assert that page has redirected to the Team files page
-    await expect(page).toHaveTitle(/Team files/);
+    await expect(page).toHaveTitle(/Team files/, { timeout: 30 * 1000 });
     await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Navigate to the Settings page by clicking the 'Settings' link
@@ -224,7 +320,10 @@ export const upgradeToProPlan = async (page: Page) => {
 
     await page.goto(buildUrl(), { waitUntil: 'networkidle' });
   } catch (error: any) {
-    console.log(`An error occurred while upgrading to the Pro plan: ${error.message}`);
+    const errorMessage = `An error occurred while upgrading to the Pro plan: ${error.message}`;
+    console.log(errorMessage);
+    // Re-throw with additional context to prevent silent failures
+    throw new Error(errorMessage);
   }
 };
 

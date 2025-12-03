@@ -239,9 +239,105 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Assert the account email address is displayed on the billing page
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
+  // Wait for payment method content to appear (card type, card number, or expiration)
+  // This ensures the payment method card is fully loaded before we try to extract it
+  await Promise.race([
+    page.waitForSelector('text=/Visa|Mastercard|American Express|Discover/', { timeout: 30 * 1000 }).catch(() => null),
+    page.waitForSelector('text=/••••/', { timeout: 30 * 1000 }).catch(() => null),
+    page.waitForSelector('text=/Expires/', { timeout: 30 * 1000 }).catch(() => null),
+  ]);
+
+  // Additional wait for content to stabilize
+  await page.waitForTimeout(2 * 1000);
+
   // Store the credit card details from the initial payment method used to upgrade to Pro
-  const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
-  const [initialPaymentNum, , initialPaymentExpiry] = initialPaymentEl.split('\n');
+  // Instead of extracting from card elements, find the payment method details directly via text patterns
+
+  // Find the card number (format: Visa •••• 4242 or similar)
+  let initialPaymentNum = '';
+  try {
+    // Look for text that matches card number pattern (CardType •••• Last4Digits)
+    const cardNumberPattern = /(Visa|Mastercard|American Express|Discover)\s*••••\s*\d{4}/;
+    const cardNumberElement = page.locator(`text=${cardNumberPattern}`);
+    await expect(cardNumberElement.first()).toBeVisible({ timeout: 30 * 1000 });
+    initialPaymentNum = (await cardNumberElement.first().textContent()) || '';
+  } catch (error) {
+    // Fallback: try to find any text with •••• pattern
+    const fallbackPattern = page.locator('text=/••••/').first();
+    if (await fallbackPattern.isVisible({ timeout: 5 * 1000 }).catch(() => false)) {
+      const parentText = await fallbackPattern.locator('..').textContent();
+      if (parentText) {
+        const match = parentText.match(/(Visa|Mastercard|American Express|Discover)\s*••••\s*\d{4}/);
+        if (match) {
+          initialPaymentNum = match[0];
+        }
+      }
+    }
+  }
+
+  // Find the expiration date (format: Expires MM/YYYY or MM/YY)
+  let initialPaymentExpiry = '';
+  try {
+    // Try to find text containing "Expires" followed by a date
+    const expiresElement = page.getByText(/Expires\s+\d{2}\/\d{2,4}/).first();
+    await expect(expiresElement).toBeVisible({ timeout: 30 * 1000 });
+    const expiresText = await expiresElement.textContent();
+    if (expiresText) {
+      // Extract just the date part (MM/YYYY or MM/YY)
+      const dateMatch = expiresText.match(/(\d{2}\/\d{2,4})/);
+      if (dateMatch) {
+        initialPaymentExpiry = dateMatch[1];
+      } else {
+        // Fallback: remove "Expires" and trim
+        initialPaymentExpiry = expiresText.replace(/Expires/i, '').trim();
+      }
+    }
+  } catch (error) {
+    // Fallback: look for date pattern near the card number
+    try {
+      // Find the card number element and look for expiration nearby
+      const cardNumberElement = page.getByText(initialPaymentNum).first();
+      const parentText = await cardNumberElement.locator('..').locator('..').textContent();
+      if (parentText) {
+        const expiresMatch = parentText.match(/Expires\s+(\d{2}\/\d{2,4})/);
+        if (expiresMatch) {
+          initialPaymentExpiry = expiresMatch[1];
+        } else {
+          // Try to find any date pattern in the same area
+          const dateMatch = parentText.match(/(\d{2}\/\d{2,4})/);
+          if (dateMatch) {
+            initialPaymentExpiry = dateMatch[1];
+          }
+        }
+      }
+    } catch {
+      // Last fallback: search entire page for date pattern
+      const pageText = await page.locator('[data-testid="page-container-main"]').textContent();
+      if (pageText) {
+        // Look for "Expires" followed by date
+        const expiresMatch = pageText.match(/Expires\s+(\d{2}\/\d{2,4})/);
+        if (expiresMatch) {
+          initialPaymentExpiry = expiresMatch[1];
+        }
+      }
+    }
+  }
+
+  // Validate that we successfully extracted the payment method details
+  if (!initialPaymentNum || !initialPaymentExpiry) {
+    // Get page text for debugging
+    const pageText = await page.locator('[data-testid="page-container-main"]').textContent();
+
+    throw new Error(
+      `Failed to extract payment method details from billing page. ` +
+      `Card number: "${initialPaymentNum || 'not found'}". ` +
+      `Expiration: "${initialPaymentExpiry || 'not found'}". ` +
+      `Page text preview: "${pageText?.substring(0, 500)}...". ` +
+      `Please verify the payment method is displayed correctly on the billing page.`
+    );
+  }
+
+  console.log(`Successfully extracted payment method: ${initialPaymentNum}, expires ${initialPaymentExpiry}`);
 
   // Click 'Add payment method' to add an additional payment method
   await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 60 * 1000 });
@@ -367,7 +463,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Extract the cost from the parent div of 'Pro plan' (the number between `$` and `/user/month`)
   const proPlanCostText = await proPlanParentEl.textContent();
-  const proPlanCost = Number(proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1]);
+  const proPlanCost = Number(proPlanCostText?.match(/\$(\d+)(?=\/user\/month)/)?.[1]);
 
   // Assert that the Pro plan cost is $20 per user per month
   expect(proPlanCost).toBe(20);
