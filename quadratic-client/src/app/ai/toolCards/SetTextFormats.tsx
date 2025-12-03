@@ -11,20 +11,15 @@ function describeFormatting(data: SetTextFormatsResponse): string {
   const formats: string[] = [];
 
   if (data.bold === true) formats.push('bold');
-  if (data.bold === false) formats.push('not bold');
   if (data.italic === true) formats.push('italic');
-  if (data.italic === false) formats.push('not italic');
   if (data.underline === true) formats.push('underline');
-  if (data.underline === false) formats.push('no underline');
   if (data.strike_through === true) formats.push('strikethrough');
-  if (data.strike_through === false) formats.push('no strikethrough');
   if (data.text_color) formats.push(`text: ${data.text_color}`);
   if (data.fill_color) formats.push(`fill: ${data.fill_color}`);
   if (data.align) formats.push(`align: ${data.align}`);
   if (data.vertical_align) formats.push(`v-align: ${data.vertical_align}`);
   if (data.wrap) formats.push(`wrap: ${data.wrap}`);
   if (data.numeric_commas === true) formats.push('commas');
-  if (data.numeric_commas === false) formats.push('no commas');
   if (data.number_type) formats.push(data.number_type);
   if (data.currency_symbol) formats.push(`currency: ${data.currency_symbol}`);
   if (data.date_time) formats.push(`date: ${data.date_time}`);
@@ -53,13 +48,15 @@ export const SetTextFormats = memo(
     }, [args, loading]);
 
     const icon = <FormatPaintIcon />;
-    const label = 'Formatting the sheet';
+
+    const label = useMemo(() => {
+      const range = toolArgs?.success && toolArgs.data?.selection ? toolArgs.data.selection : '...';
+      return `Formatting ${range}`;
+    }, [toolArgs]);
 
     const description = useMemo(() => {
       if (!toolArgs?.success || !toolArgs.data) return undefined;
-      const formatting = describeFormatting(toolArgs.data);
-      const range = toolArgs.data.selection;
-      return `${formatting} • ${range}`;
+      return describeFormatting(toolArgs.data);
     }, [toolArgs]);
 
     if (loading) {
