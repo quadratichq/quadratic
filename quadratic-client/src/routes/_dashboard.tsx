@@ -70,7 +70,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   // user is explicitly looking at. Otherwise, fallback to the one in localstorage
   const teamUuid = params.teamUuid ? params.teamUuid : activeTeamUuid;
 
-  // If this was a request to the root of the app, re-route to the active team
+  // If this was a request to the root of the app, re-route to the team's home page
   // and set a flag to indicating that we're redirecting, that way we can figure
   // out if we need to reset the active team in localstorage (see `catch` below)
   const url = new URL(request.url);
