@@ -950,8 +950,8 @@ export const Component = () => {
                     <div className="flex items-center justify-end border-t border-border px-4 py-3">
                       {!isGeneratingPlan && !generatedPlan ? (
                         <Button onClick={handleGeneratePlan} disabled={!prompt.trim()} className="gap-2">
-                          <ArrowRightIcon className="h-4 w-4" />
                           Generate Plan
+                          <ArrowRightIcon className="h-4 w-4" />
                         </Button>
                       ) : (
                         <Button
@@ -1016,8 +1016,8 @@ export const Component = () => {
                         disabled={!generatedPlan.trim() || isGeneratingPlan || isExecuting}
                         className="gap-2"
                       >
-                        <ArrowRightIcon className="h-4 w-4" />
                         Build Spreadsheet
+                        <ArrowRightIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -1036,8 +1036,8 @@ export const Component = () => {
           <div className="mx-auto flex max-w-2xl items-center justify-between">
             <p className="text-sm text-muted-foreground">Ready to create your spreadsheet?</p>
             <Button onClick={handleExecutePlan} disabled={isExecuting} className="gap-2">
-              <ArrowRightIcon className="h-4 w-4" />
               Build Spreadsheet
+              <ArrowRightIcon className="h-4 w-4" />
             </Button>
           </div>
         </div>
