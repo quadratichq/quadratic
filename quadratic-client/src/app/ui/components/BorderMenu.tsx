@@ -2,7 +2,7 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { borderMenuAtom } from '@/app/atoms/borderMenuAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { useBorders } from '@/app/ui/hooks/useBorders';
 import { CheckSmallIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -99,7 +99,7 @@ export const BorderMenu = () => {
         </ToggleGroup.Root>
 
         <div className="color-picker-dropdown-menu w-1/2 border-l border-border pl-2 pt-2">
-          <QColorPicker
+          <ColorPicker
             color={borderMenuState.color}
             onChangeComplete={(color) => {
               borderColorSpec.run({ borders, color });
@@ -108,6 +108,8 @@ export const BorderMenu = () => {
               borders.clearBorders();
             }}
             removeColor
+            clearLabel="Clear borders"
+            showClearIcon={false}
           />
         </div>
       </div>

@@ -50,7 +50,11 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  await content.prepareForCopying({ sheetId, cull: screenRect });
+  await content.prepareForCopying({ sheetId, cull: screenRect, gridLines: true });
+
+  // Update gridlines for the specific rectangle before rendering
+  const gridLinesScale = pixiApp.viewport.scale.x * resolution;
+  content.gridLines.update(screenRect, gridLinesScale, true);
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
@@ -59,6 +63,8 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.render(content, { transform });
   const viewportBounds = pixiApp.viewport.getVisibleBounds();
   content.cleanUpAfterCopying(viewportBounds);
+  // Restore gridlines for the viewport
+  content.gridLines.update(undefined, undefined, true);
 
   // force a pixiApp rerender to clean up interactions (I think)
   pixiApp.setViewportDirty();
