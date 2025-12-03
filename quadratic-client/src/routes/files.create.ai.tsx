@@ -151,7 +151,7 @@ export const Component = () => {
         const token = await authClient.getTokenOrRedirect();
         const endpoint = `${apiClient.getApiUrl()}/v0/ai/suggestions`;
 
-        // Include file content for text-based files to get better suggestions
+        // Include file content for text-based files and PDFs to get better suggestions
         const filesWithContent = uploadedFiles.map((file) => {
           const isTextFile =
             file.type.startsWith('text/') ||
@@ -163,19 +163,37 @@ export const Component = () => {
             file.name.endsWith('.md') ||
             file.name.endsWith('.tsv');
 
+          const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+
           let content: string | undefined;
+          let contentEncoding: 'text' | 'base64' | undefined;
+
           if (isTextFile) {
             try {
               const decoder = new TextDecoder('utf-8');
               const fullContent = decoder.decode(file.data);
               // Limit content to first ~2000 chars for suggestions (just need headers/sample)
               content = fullContent.slice(0, 2000);
+              contentEncoding = 'text';
             } catch {
               // If decoding fails, skip content
             }
+          } else if (isPdf) {
+            try {
+              // Convert PDF to base64
+              const bytes = new Uint8Array(file.data);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+              }
+              content = btoa(binary);
+              contentEncoding = 'base64';
+            } catch {
+              // If encoding fails, skip content
+            }
           }
 
-          return { name: file.name, type: file.type, content };
+          return { name: file.name, type: file.type, content, contentEncoding };
         });
 
         const response = await fetch(endpoint, {

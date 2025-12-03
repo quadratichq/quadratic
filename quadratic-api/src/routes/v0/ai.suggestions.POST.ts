@@ -91,17 +91,39 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
     }
   }
 
-  // Build context description
+  // Build context description and content parts
   let contextDesc = '';
+  const contentParts: Array<
+    | { type: 'text'; text: string }
+    | { type: 'data'; mimeType: 'application/pdf'; data: string; fileName: string }
+  > = [];
+
   if (context?.files && context.files.length > 0) {
     const fileList = context.files.map((f) => f.name).join(', ');
     contextDesc += `Attached files: ${fileList}`;
 
     // Include file contents if available
     for (const file of context.files) {
-      const fileWithContent = file as { name: string; type: string; content?: string };
+      const fileWithContent = file as {
+        name: string;
+        type: string;
+        content?: string;
+        contentEncoding?: 'text' | 'base64';
+      };
       if (fileWithContent.content) {
-        contextDesc += `\n\n--- File: ${file.name} ---\n${fileWithContent.content}\n--- End of ${file.name} ---`;
+        if (fileWithContent.contentEncoding === 'base64') {
+          // PDF or other binary file - add as file part for Gemini
+          contentParts.push({
+            type: 'data',
+            mimeType: 'application/pdf',
+            data: fileWithContent.content,
+            fileName: file.name,
+          });
+          contextDesc += `\n\n[PDF file "${file.name}" attached above]`;
+        } else {
+          // Text file - include inline
+          contextDesc += `\n\n--- File: ${file.name} ---\n${fileWithContent.content}\n--- End of ${file.name} ---`;
+        }
       }
     }
   }
@@ -109,10 +131,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
     contextDesc += `${contextDesc ? '\n\n' : ''}Selected database connection: ${context.connectionName} (${context.connectionType || 'unknown type'})`;
   }
 
+  // Build message content - PDFs first, then text prompt
+  const messageContent: Array<
+    | { type: 'text'; text: string }
+    | { type: 'data'; mimeType: 'application/pdf'; data: string; fileName: string }
+  > = [
+    ...contentParts,
+    { type: 'text' as const, text: `${SYSTEM_PROMPT}\n\nContext: ${contextDesc}` },
+  ];
+
   const messages = [
     {
       role: 'user' as const,
-      content: [{ type: 'text' as const, text: `${SYSTEM_PROMPT}\n\nContext: ${contextDesc}` }],
+      content: messageContent,
       contextType: 'userPrompt' as const,
     },
   ];

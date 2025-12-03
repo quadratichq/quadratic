@@ -549,7 +549,14 @@ export const ApiSchemas = {
     teamUuid: z.string().uuid(),
     context: z.object({
       files: z
-        .array(z.object({ name: z.string(), type: z.string(), content: z.string().optional() }))
+        .array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            content: z.string().optional(),
+            contentEncoding: z.enum(['text', 'base64']).optional(),
+          })
+        )
         .optional(),
       connectionName: z.string().optional(),
       connectionType: z.string().optional(),
