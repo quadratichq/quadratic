@@ -23,7 +23,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { ArrowRightIcon, ChevronLeftIcon, ReloadIcon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { Link, useLoaderData, useLocation, useNavigate } from 'react-router';
+import { Link, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 type Step = 'data' | 'file-import' | 'pdf-import' | 'connection' | 'describe';
 
@@ -96,8 +96,15 @@ export const Component = () => {
   const { connections, teamUuid } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const step = getStepFromPath(location.pathname);
+  const isPrivate = searchParams.get('private') === 'true';
+
+  // Helper to preserve search params when navigating
+  const getRouteWithParams = (route: string) => {
+    return isPrivate ? `${route}?private=true` : route;
+  };
   const [prompt, setPrompt] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<SelectedConnection | null>(null);
@@ -272,7 +279,7 @@ export const Component = () => {
         );
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         if (shouldNavigate && step !== 'describe') {
-          navigate(ROUTES.FILES_CREATE_AI_PROMPT);
+          navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT));
         }
       }
     } catch (error) {
@@ -305,7 +312,7 @@ export const Component = () => {
         }))
       );
       setUploadedFiles(newFiles);
-      navigate(ROUTES.FILES_CREATE_AI_PROMPT);
+      navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT));
     }
   };
 
@@ -335,7 +342,7 @@ export const Component = () => {
       name: connection.name,
       type: connection.type,
     });
-    navigate(ROUTES.FILES_CREATE_AI_PROMPT);
+    navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT));
   };
 
   const generatePlan = useCallback(
@@ -493,7 +500,7 @@ export const Component = () => {
     navigate(
       ROUTES.CREATE_FILE(teamUuid, {
         prompt: generatedPlan,
-        private: true,
+        private: isPrivate,
         chatId,
       })
     );
@@ -570,7 +577,7 @@ export const Component = () => {
                 {/* Start from Prompt - First with Recommended badge */}
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(ROUTES.FILES_CREATE_AI_PROMPT)}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
                     <StarShineIcon className="text-white" size="lg" />
@@ -586,7 +593,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(ROUTES.FILES_CREATE_AI_FILE)}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_FILE))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-600">
                     <FileIcon className="text-white" size="lg" />
@@ -599,7 +606,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(ROUTES.FILES_CREATE_AI_PDF)}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PDF))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-red-500 to-orange-600">
                     <PDFIcon className="text-white" size="lg" />
@@ -614,7 +621,7 @@ export const Component = () => {
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
                   onClick={() => {
                     if (connections.length > 0) {
-                      navigate(ROUTES.FILES_CREATE_AI_CONNECTION);
+                      navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_CONNECTION));
                     } else {
                       navigate(ROUTES.TEAM_CONNECTIONS(teamUuid));
                     }
@@ -633,7 +640,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(ROUTES.FILES_CREATE_AI_WEB)}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_WEB))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600">
                     <SearchIcon className="text-white" size="lg" />

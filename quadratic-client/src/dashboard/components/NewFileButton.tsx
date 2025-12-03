@@ -41,20 +41,17 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
     <div className="flex gap-2">
       <Button
         variant="default"
-        asChild
         className="gap-2"
-        onClick={async (e) => {
+        onClick={async () => {
           const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
           if (hasReachedLimit) {
-            e.preventDefault();
             showUpgradeDialog('fileLimitReached');
             return;
           }
+          navigate(`${ROUTES.FILES_CREATE_AI}${isPrivate ? '?private=true' : ''}`);
         }}
       >
-        <Link to={ROUTES.FILES_CREATE_AI}>
-          Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
-        </Link>
+        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
       </Button>
       <Button
         variant="outline"
