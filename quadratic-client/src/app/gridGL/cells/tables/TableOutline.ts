@@ -3,6 +3,7 @@
 import { events } from '@/app/events/events';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
@@ -12,8 +13,16 @@ import { Graphics, Rectangle } from 'pixi.js';
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_FILL_ALPHA = 0.05;
 
+// opacity of the running table outline
+const RUNNING_ALPHA_TIME = 150;
+const RUNNING_ALPHA_MIN = 0.4;
+const RUNNING_ALPHA_MAX = 1.0;
+
 export class TableOutline extends Graphics {
   private table: Table;
+
+  running: boolean | 'awaiting' = false;
+  multiplayerUserColor?: number; // Color of the multiplayer user running code (if any)
 
   constructor(table: Table) {
     super();
@@ -29,8 +38,36 @@ export class TableOutline extends Graphics {
     super.destroy();
   };
 
-  update = () => {
+  update = (runningCount?: number) => {
     this.clear();
+
+    // Apply dimming effect when running OR awaiting (static dim, no animation)
+    if (this.running === true || this.running === 'awaiting') {
+      // If actually running, use animated dimming
+      if (this.running === true && runningCount) {
+        const running = runningCount % RUNNING_ALPHA_TIME;
+        let change = 0;
+        if (running < RUNNING_ALPHA_TIME / 2) {
+          change = running / (RUNNING_ALPHA_TIME / 2);
+        } else {
+          change = 1 - (running - RUNNING_ALPHA_TIME / 2) / (RUNNING_ALPHA_TIME / 2);
+        }
+        // Visibility goes from MAX (fully visible) to MIN (dimmed)
+        // Overlay alpha is inverted: 1 - visibility
+        const visibility = RUNNING_ALPHA_MIN + (RUNNING_ALPHA_MAX - RUNNING_ALPHA_MIN) * change;
+        const overlayAlpha = 1 - visibility;
+        this.beginFill(getCSSVariableTint('background'), overlayAlpha);
+        this.drawRect(0, 0, this.table.tableBounds.width, this.table.tableBounds.height);
+        this.endFill();
+      } else {
+        // If awaiting, use static dimming (average visibility, then invert for overlay)
+        const visibility = (RUNNING_ALPHA_MIN + RUNNING_ALPHA_MAX) / 2;
+        const overlayAlpha = 1 - visibility;
+        this.beginFill(getCSSVariableTint('background'), overlayAlpha);
+        this.drawRect(0, 0, this.table.tableBounds.width, this.table.tableBounds.height);
+        this.endFill();
+      }
+    }
 
     if (!pixiAppSettings.showCellTypeOutlines) return;
 
@@ -38,9 +75,15 @@ export class TableOutline extends Graphics {
     const width = 1;
     const chart = this.table.codeCell.state === 'HTML';
     if (!chart) {
+      // If multiplayer code is running, use the user's color for the outline
+      const outlineColor = this.multiplayerUserColor
+        ? this.multiplayerUserColor
+        : getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground');
+      const outlineWidth = this.multiplayerUserColor ? 2 : width; // Thicker outline for multiplayer
+
       this.lineStyle({
-        color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
-        width,
+        color: outlineColor,
+        width: outlineWidth,
         alignment: 0.5,
       });
       if (!this.table.active || !this.table.codeCell.spill_error) {
@@ -75,6 +118,8 @@ export class TableOutline extends Graphics {
         this.drawDashedRectangle(rectangle, colors.cellColorError);
       });
     }
+
+    pixiApp.setViewportDirty();
   };
 
   // draw a dashed and filled rectangle to identify the cause of the spill error

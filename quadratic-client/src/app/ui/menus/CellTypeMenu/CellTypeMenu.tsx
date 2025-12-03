@@ -49,7 +49,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
     searchStrings: ['js'],
     mode: 'Javascript',
     icon: <LanguageIcon language="Javascript" />,
-    experimental: true,
+    experimental: false,
   },
 ];
 

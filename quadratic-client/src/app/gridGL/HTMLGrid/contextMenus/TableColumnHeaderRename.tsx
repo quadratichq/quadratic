@@ -4,7 +4,7 @@ import { events } from '@/app/events/events';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { useRenameTableColumnName } from '@/app/ui/hooks/useRenameTableColumnName';
-import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -124,7 +124,7 @@ export const TableColumnHeaderRename = () => {
       className="darker-selection origin-bottom-left border-none text-sm text-primary-foreground outline-none"
       styles={{
         fontFamily: 'OpenSans-Bold, sans-serif',
-        fontSize: FONT_SIZE,
+        fontSize: DEFAULT_FONT_SIZE,
         color: 'var(--primary-foreground)',
         backgroundColor: 'var(--accent)',
         padding: '0 2px',

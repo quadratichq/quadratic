@@ -217,6 +217,7 @@ impl TrackedOperation {
             Operation::ResizeRows {
                 sheet_id,
                 row_heights,
+                ..
             } => Some(Self::RowsResized {
                 sheet_name: get_sheet_name(*sheet_id, gc),
                 count: row_heights.len(),
