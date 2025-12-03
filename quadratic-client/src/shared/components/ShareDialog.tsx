@@ -366,7 +366,6 @@ function ShareFileDialogBody({
           isInvite={false}
         >
           <ManageFileUser
-            key={user.id}
             publicLinkAccess={publicLinkAccess}
             loggedInUserId={loggedInUserId}
             user={user}
@@ -394,7 +393,6 @@ function ShareFileDialogBody({
           isInvite={true}
         >
           <ManageInvite
-            key={invite.id}
             invite={invite}
             onAddToTeam={
               hasPermissionToUpgradeToTeamMember && !teamMemberEmails.includes(invite.email)
