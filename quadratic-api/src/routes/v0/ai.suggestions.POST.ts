@@ -94,8 +94,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
   // Build context description and content parts
   let contextDesc = '';
   const contentParts: Array<
-    | { type: 'text'; text: string }
-    | { type: 'data'; mimeType: 'application/pdf'; data: string; fileName: string }
+    { type: 'text'; text: string } | { type: 'data'; mimeType: 'application/pdf'; data: string; fileName: string }
   > = [];
 
   if (context?.files && context.files.length > 0) {
@@ -133,12 +132,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
 
   // Build message content - PDFs first, then text prompt
   const messageContent: Array<
-    | { type: 'text'; text: string }
-    | { type: 'data'; mimeType: 'application/pdf'; data: string; fileName: string }
-  > = [
-    ...contentParts,
-    { type: 'text' as const, text: `${SYSTEM_PROMPT}\n\nContext: ${contextDesc}` },
-  ];
+    { type: 'text'; text: string } | { type: 'data'; mimeType: 'application/pdf'; data: string; fileName: string }
+  > = [...contentParts, { type: 'text' as const, text: `${SYSTEM_PROMPT}\n\nContext: ${contextDesc}` }];
 
   const messages = [
     {
