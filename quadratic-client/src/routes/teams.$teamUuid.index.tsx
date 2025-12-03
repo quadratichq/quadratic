@@ -6,9 +6,26 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { FileIcon } from '@radix-ui/react-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useLoaderData, type LoaderFunctionArgs } from 'react-router';
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const files = await apiClient.files.list({ shared: 'with-me' });
+  const sharedWithMeFiles = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
+    name,
+    thumbnail,
+    createdDate,
+    updatedDate,
+    uuid,
+    publicLinkAccess,
+    permissions: [],
+    isSharedWithMe: true,
+  }));
+  return { sharedWithMeFiles };
+};
 
 export const Component = () => {
+  const { sharedWithMeFiles } = useLoaderData<typeof loader>();
   const {
     activeTeam: {
       team: { uuid: teamUuid },
@@ -20,25 +37,6 @@ export const Component = () => {
   } = useDashboardRouteLoaderData();
 
   const canEdit = teamPermissions.includes('TEAM_EDIT');
-
-  // Fetch "shared with me" files
-  const [sharedWithMeFiles, setSharedWithMeFiles] = useState<FilesListUserFile[]>([]);
-  useEffect(() => {
-    apiClient.files.list({ shared: 'with-me' }).then((files) => {
-      setSharedWithMeFiles(
-        files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
-          name,
-          thumbnail,
-          createdDate,
-          updatedDate,
-          uuid,
-          publicLinkAccess,
-          permissions: [],
-          isSharedWithMe: true,
-        }))
-      );
-    });
-  }, []);
 
   // Build a map of users by ID for creator info
   const usersById: Record<number, { name?: string; picture?: string; email?: string }> = useMemo(
@@ -115,17 +113,11 @@ export const Component = () => {
         actions={<div className="flex items-center gap-2">{canEdit && <NewFileButton isPrivate={false} />}</div>}
       />
 
-      <section className="">
-        {suggestedFiles.length === 0 ? (
-          <EmptyState
-            title="No suggested files"
-            description="Files will appear here for quick access."
-            Icon={FileIcon}
-          />
-        ) : (
-          <FilesList files={suggestedFiles} teamUuid={teamUuid} isPrivate={false} />
-        )}
-      </section>
+      {suggestedFiles.length === 0 ? (
+        <EmptyState title="No suggested files" description="Files will appear here for quick access." Icon={FileIcon} />
+      ) : (
+        <FilesList files={suggestedFiles} teamUuid={teamUuid} isPrivate={false} />
+      )}
     </div>
   );
 };

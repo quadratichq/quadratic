@@ -91,10 +91,8 @@ export function FilesListItemUserFile({
   // If we're looking at the user's private files, make sure they have edit access to the team
   // If we're looking at a team, make sure they have edit access to the current team
   const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
-  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(activeTeamUuid)));
-  const isHomePage = file.isPrivate !== undefined;
-  const canMoveFiles =
-    (isTeamPrivateFilesRoute || isTeamPublicFilesRoute || isHomePage) && permissions.includes('FILE_MOVE');
+  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES(activeTeamUuid)));
+  const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
 
   // Determine if this is a private/personal file (for duplicate and move logic)
   const isFilePrivate = file.isPrivate ?? isTeamPrivateFilesRoute;
