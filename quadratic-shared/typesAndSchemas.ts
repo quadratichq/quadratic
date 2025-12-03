@@ -225,6 +225,7 @@ export const ApiSchemas = {
     file: FileSchema.pick({
       publicLinkAccess: true,
     }),
+    team: TeamSchema.pick({ name: true, uuid: true }),
     userMakingRequest: z.object({
       id: FileUserSchema.shape.id,
       filePermissions: z.array(FilePermissionSchema),
@@ -240,8 +241,10 @@ export const ApiSchemas = {
         type: z.literal('team'),
       }),
     ]),
-    users: z.array(FileUserSchema),
-    invites: z.array(z.object({ email: emailSchema, role: UserFileRoleSchema, id: z.number() })),
+    users: z.array(FileUserSchema.extend({ isTeamMember: z.boolean() })),
+    invites: z.array(
+      z.object({ email: emailSchema, role: UserFileRoleSchema, id: z.number(), isTeamMember: z.boolean() })
+    ),
   }),
   '/v0/files/:uuid/sharing.PATCH.request': z.object({
     publicLinkAccess: PublicLinkAccessSchema,
