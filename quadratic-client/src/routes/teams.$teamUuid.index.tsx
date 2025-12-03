@@ -109,7 +109,7 @@ export const Component = () => {
       <OnboardingBanner />
 
       <DashboardHeader
-        title="Suggested files"
+        title="Suggested sheets"
         actions={<div className="flex items-center gap-2">{canEdit && <NewFileButton isPrivate={false} />}</div>}
       />
 

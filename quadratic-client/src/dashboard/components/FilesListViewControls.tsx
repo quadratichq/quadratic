@@ -24,7 +24,7 @@ export function FilesListViewControls({
         <Input
           onChange={(e) => setFilterValue(e.target.value)}
           value={filterValue}
-          placeholder="Filter by file or creator name…"
+          placeholder="Filter by sheet or creator name…"
         />
         {filterValue && (
           <Button

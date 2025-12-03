@@ -38,7 +38,7 @@ export const Component = () => {
   return (
     <div className="flex flex-grow flex-col">
       <DashboardHeader
-        title="Team files"
+        title="Sheets"
         actions={
           <div className={`flex items-center gap-2`}>
             <div className="hidden lg:block">

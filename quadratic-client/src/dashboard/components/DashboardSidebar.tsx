@@ -107,30 +107,30 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <TeamSwitcher appIsLoading={isLoading} />
       </div>
       <div className={`flex flex-col px-3`}>
-        <div className="mb-4 grid gap-0.5">
+        <div className="grid gap-0.5">
           <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)}>
             <HomeIcon className={classNameIcons} />
             Home
           </SidebarNavLink>
-        </div>
-        <Type
-          as="h3"
-          variant="overline"
-          className={`mb-2 mt-1 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Team
-        </Type>
-        <div className="grid gap-0.5">
           <div className="relative">
             <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
               <FileIcon className={classNameIcons} />
-              Files
+              Sheets
             </SidebarNavLink>
             {canEditTeam && (
               <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
-                New file
+                New
               </SidebarNavLinkCreateButton>
             )}
+          </div>
+          <div className="relative">
+            <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
+              <FilePrivateIcon className={classNameIcons} />
+              Drafts
+            </SidebarNavLink>
+            <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
+              New
+            </SidebarNavLinkCreateButton>
           </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
@@ -148,35 +148,33 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               Settings
             </SidebarNavLink>
           )}
-        </div>
+          {!isOnPaidPlan && !isSettingsPage && (
+            <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
+              <div className="flex gap-2">
+                <RocketIcon className="h-5 w-5 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                  <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
+                </div>
+              </div>
 
-        <Type
-          as="h3"
-          variant="overline"
-          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Personal
-        </Type>
-        <div className="relative">
-          <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-            <FilePrivateIcon className={classNameIcons} />
-            My files
-          </SidebarNavLink>
-          <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
-            New personal file
-          </SidebarNavLinkCreateButton>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
+                    team_uuid: activeTeamUuid,
+                  });
+                  setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
+                }}
+              >
+                Upgrade to Pro
+              </Button>
+            </div>
+          )}
         </div>
-        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-          <FileSharedWithMeIcon className={classNameIcons} />
-          Shared with me
-        </SidebarNavLink>
-
-        <Type
-          as="h3"
-          className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Resources
-        </Type>
+      </div>
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEMPLATES}>
@@ -197,32 +195,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
-      </div>
-      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
-        {!isOnPaidPlan && !isSettingsPage && (
-          <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
-            <div className="flex gap-2">
-              <RocketIcon className="h-5 w-5 text-primary" />
-              <div className="flex flex-col">
-                <span className="font-semibold">Upgrade to Quadratic Pro</span>
-                <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
-              </div>
-            </div>
 
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                trackEvent('[DashboardSidebar].upgradeToProClicked', {
-                  team_uuid: activeTeamUuid,
-                });
-                setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
-              }}
-            >
-              Upgrade to Pro
-            </Button>
-          </div>
-        )}
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -250,9 +223,14 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Labs
           </SidebarNavLink>
         )}
+        <hr />
+        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+          <FileSharedWithMeIcon className={classNameIcons} />
+          Shared with me
+        </SidebarNavLink>
         <div className="flex items-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
+            <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 pl-2.5 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
               <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
                 {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
               </Avatar>

@@ -28,7 +28,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Files shared with me" />
+      <DashboardHeader title="Sheets shared with me" />
       <FilesList
         files={files}
         emptyState={

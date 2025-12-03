@@ -52,13 +52,13 @@ export function FilesListItemCore({
           ) : (
             <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
               {isSharedWithMe ? (
-                <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
+                <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
                   Shared with me
                 </Badge>
               ) : (
-                isPrivate !== undefined && (
-                  <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
-                    {isPrivate ? 'Personal' : 'Team'}
+                isPrivate === true && (
+                  <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
+                    Draft
                   </Badge>
                 )
               )}

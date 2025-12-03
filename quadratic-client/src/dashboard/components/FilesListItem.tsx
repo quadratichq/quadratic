@@ -255,7 +255,7 @@ export function FilesListItemUserFile({
                         window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
                       }}
                     >
-                      Open file history
+                      Open history
                     </DropdownMenuItem>
                   )}
                   {canMoveFiles && (

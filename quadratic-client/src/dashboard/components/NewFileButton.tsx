@@ -51,7 +51,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
         }}
       >
-        New file
+        New {isPrivate ? 'draft' : 'sheet'}
       </Button>
       <input
         ref={fileInputRef}
