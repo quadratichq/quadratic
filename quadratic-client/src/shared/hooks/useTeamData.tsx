@@ -89,12 +89,26 @@ export function useTeamData() {
   const fetchers = useFetchers();
   const previousActionCountRef = useRef(0);
   const reloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track completed user deletions to maintain optimistic state until reload
+  const completedDeleteUserIdsRef = useRef<Set<string>>(new Set());
+  // Track completed user updates to maintain optimistic state until reload
+  const completedUpdateUsersRef = useRef<Map<string, string>>(new Map()); // userId -> role
+  // Track base data user IDs to detect when fresh data arrives
+  const previousBaseUserIdsRef = useRef<string>('');
+
+  // Track completed team name updates for optimistic UI persistence
+  const completedTeamNameRef = useRef<string | null>(null);
 
   // Reload team data when team actions complete successfully
-  // Only reload for actions that need fresh data (invites), not for user updates/deletes which have good optimistic updates
   useEffect(() => {
-    // Only reload for invite actions - user updates/deletes have comprehensive optimistic updates
-    const actionsNeedingReload = ['create-team-invite', 'delete-team-invite'];
+    // Reload for team actions to ensure data stays in sync
+    const actionsNeedingReload = [
+      'create-team-invite',
+      'delete-team-invite',
+      'update-team-user',
+      'delete-team-user',
+      'update-team',
+    ];
 
     const completedActions = fetchers.filter((f) => {
       if (f.state !== 'idle' || !f.data || !isJsonObject(f.data) || !('ok' in f.data) || f.data.ok !== true) {
@@ -110,10 +124,56 @@ export function useTeamData() {
       return actionsNeedingReload.includes(json.intent);
     });
 
+    // Track completed user deletions for optimistic UI persistence
+    const newCompletedDeletes = fetchers.filter((f) => {
+      if (f.state !== 'idle' || !f.data || !isJsonObject(f.data) || !('ok' in f.data) || f.data.ok !== true) {
+        return false;
+      }
+      return f.key?.startsWith('delete-user-');
+    });
+    newCompletedDeletes.forEach((f) => {
+      const userId = f.key?.replace('delete-user-', '');
+      if (userId) {
+        completedDeleteUserIdsRef.current.add(userId);
+      }
+    });
+
+    // Track completed user updates for optimistic UI persistence
+    const newCompletedUpdates = fetchers.filter((f) => {
+      if (f.state !== 'idle' || !f.data || !isJsonObject(f.data) || !('ok' in f.data) || f.data.ok !== true) {
+        return false;
+      }
+      return f.key?.startsWith('update-user-') && isJsonObject(f.json) && 'role' in f.json;
+    });
+    newCompletedUpdates.forEach((f) => {
+      const userId = f.key?.replace('update-user-', '');
+      if (userId && isJsonObject(f.json) && 'role' in f.json) {
+        completedUpdateUsersRef.current.set(userId, String(f.json.role));
+      }
+    });
+
+    // Track completed team name updates for optimistic UI persistence
+    const completedTeamUpdate = fetchers.find((f) => {
+      if (f.state !== 'idle' || !f.data || !isJsonObject(f.data) || !('ok' in f.data) || f.data.ok !== true) {
+        return false;
+      }
+      if (f.key !== 'update-team' || !isJsonObject(f.json)) {
+        return false;
+      }
+      const json = f.json as { intent?: string; name?: string };
+      return json.intent === 'update-team' && 'name' in json;
+    });
+    if (completedTeamUpdate && isJsonObject(completedTeamUpdate.json)) {
+      const json = completedTeamUpdate.json as { name?: string };
+      if (json.name) {
+        completedTeamNameRef.current = String(json.name);
+      }
+    }
+
     const currentActionCount = completedActions.length;
 
-    // Only reload for invite actions, and only in file context (not dashboard)
-    // Dashboard already has fresh data from route revalidation
+    // In file context, reload via fetcher when team actions complete
+    // In dashboard context, React Router handles revalidation automatically
     if (
       currentActionCount > previousActionCountRef.current &&
       teamUuid &&
@@ -132,6 +192,9 @@ export function useTeamData() {
         if (teamFetcher.state === 'idle') {
           hasFetchedRef.current = false; // Reset so we can reload
           teamFetcher.load(ROUTES.API.TEAM(teamUuid));
+          // Clear the completed refs once reload is triggered - fresh data will replace them
+          completedDeleteUserIdsRef.current.clear();
+          completedUpdateUsersRef.current.clear();
         }
       }, 800);
     }
@@ -146,33 +209,80 @@ export function useTeamData() {
     };
   }, [fetchers, teamUuid, dashboardTeam, teamFetcher]);
 
+  // Clear completed action refs when base data changes (fresh data arrived)
+  const baseData = dashboardTeam ?? fetcherTeam ?? null;
+  const currentBaseUserIds = baseData?.users.map((u) => String(u.id)).join(',') ?? '';
+  const currentBaseTeamName = baseData?.team.name ?? '';
+  useEffect(() => {
+    if (currentBaseUserIds && currentBaseUserIds !== previousBaseUserIdsRef.current) {
+      previousBaseUserIdsRef.current = currentBaseUserIds;
+      completedDeleteUserIdsRef.current.clear();
+      completedUpdateUsersRef.current.clear();
+    }
+    // Clear team name ref when base data team name changes
+    if (currentBaseTeamName && completedTeamNameRef.current === currentBaseTeamName) {
+      completedTeamNameRef.current = null;
+    }
+  }, [currentBaseUserIds, currentBaseTeamName]);
+
   // Determine which data source to use and apply optimistic updates
   const teamData = useMemo(() => {
-    const baseData = dashboardTeam ?? fetcherTeam ?? null;
     if (!baseData) return null;
 
     // Apply optimistic updates from fetchers
     let optimisticData = { ...baseData };
 
-    // Watch for user role updates
+    // Watch for team name updates (both in-progress and completed)
+    const teamUpdateFetcher = fetchers.find((f) => {
+      if (f.key !== 'update-team' || !isJsonObject(f.json)) {
+        return false;
+      }
+      const json = f.json as { intent?: string; name?: string };
+      return json.intent === 'update-team' && 'name' in json;
+    });
+    if (teamUpdateFetcher && teamUpdateFetcher.state !== 'idle' && isJsonObject(teamUpdateFetcher.json)) {
+      // In-progress update
+      const json = teamUpdateFetcher.json as { name?: string };
+      if (json.name) {
+        optimisticData = {
+          ...optimisticData,
+          team: { ...optimisticData.team, name: String(json.name) },
+        };
+      }
+    } else if (completedTeamNameRef.current) {
+      // Completed update that hasn't been reloaded yet
+      optimisticData = {
+        ...optimisticData,
+        team: { ...optimisticData.team, name: completedTeamNameRef.current },
+      };
+    }
+
+    // Watch for user role updates (both in-progress and completed)
     const updateFetchers = fetchers.filter(
       (f) => f.key?.startsWith('update-user-') && f.state !== 'idle' && isJsonObject(f.json)
     );
-    if (updateFetchers.length > 0) {
-      optimisticData.users = optimisticData.users.map((user) => {
-        const userFetcher = updateFetchers.find((f) => f.key === `update-user-${user.id}`);
-        if (userFetcher && isJsonObject(userFetcher.json) && 'role' in userFetcher.json) {
-          return { ...user, role: userFetcher.json.role as typeof user.role };
-        }
-        return user;
-      });
-    }
+    optimisticData.users = optimisticData.users.map((user) => {
+      // First check in-progress updates
+      const userFetcher = updateFetchers.find((f) => f.key === `update-user-${user.id}`);
+      if (userFetcher && isJsonObject(userFetcher.json) && 'role' in userFetcher.json) {
+        return { ...user, role: userFetcher.json.role as typeof user.role };
+      }
+      // Then check completed updates that haven't been reloaded yet
+      const completedRole = completedUpdateUsersRef.current.get(String(user.id));
+      if (completedRole) {
+        return { ...user, role: completedRole as typeof user.role };
+      }
+      return user;
+    });
 
-    // Watch for user deletions
+    // Watch for user deletions (both in-progress and completed)
     const deleteFetchers = fetchers.filter((f) => f.key?.startsWith('delete-user-') && f.state !== 'idle');
-    if (deleteFetchers.length > 0) {
-      const deletingUserIds = deleteFetchers.map((f) => f.key?.replace('delete-user-', '')).filter(Boolean);
-      optimisticData.users = optimisticData.users.filter((user) => !deletingUserIds.includes(String(user.id)));
+    const deletingUserIds = new Set([
+      ...deleteFetchers.map((f) => f.key?.replace('delete-user-', '')).filter(Boolean),
+      ...completedDeleteUserIdsRef.current,
+    ]);
+    if (deletingUserIds.size > 0) {
+      optimisticData.users = optimisticData.users.filter((user) => !deletingUserIds.has(String(user.id)));
     }
 
     // Watch for invite deletions (optimistic)
@@ -269,7 +379,7 @@ export function useTeamData() {
     optimisticData.invites = optimisticData.invites.filter((invite) => !seenUserEmails.has(invite.email));
 
     return optimisticData;
-  }, [dashboardTeam, fetcherTeam, fetchers]);
+  }, [baseData, fetchers]);
 
   // Only show loading state on initial load, not on subsequent reloads
   // If we've loaded data before (hasLoadedDataRef) or have previous data (previousFetcherTeamRef),

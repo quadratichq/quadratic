@@ -1,6 +1,6 @@
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
-import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useUserAIRules } from '@/shared/hooks/useUserAIRules';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Separator } from '@/shared/shadcn/ui/separator';
@@ -12,41 +12,35 @@ import { useRecoilState } from 'recoil';
 
 export function AISettings() {
   const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
-  const [aiRules, setAiRules] = useState('');
-  const [savedAiRules, setSavedAiRules] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const { aiRules: preloadedAiRules, isLoading: isPreloading, saveAIRules } = useUserAIRules();
+  const [localAiRules, setLocalAiRules] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const hasUserRulesChanges = aiRules !== savedAiRules;
-
+  // Initialize local state from preloaded data once available
   useEffect(() => {
-    // Fetch user AI rules on mount
-    apiClient.user.aiRules
-      .get()
-      .then((response) => {
-        const rules = response.aiRules || '';
-        setAiRules(rules);
-        setSavedAiRules(rules);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch AI rules:', error);
-        addGlobalSnackbar('Failed to load AI rules', { severity: 'error' });
-        setIsLoading(false);
-      });
-  }, [addGlobalSnackbar]);
+    if (!isPreloading && localAiRules === null) {
+      setLocalAiRules(preloadedAiRules);
+    }
+  }, [isPreloading, preloadedAiRules, localAiRules]);
+
+  // The actual value being edited (local state takes precedence once initialized)
+  const aiRules = localAiRules ?? preloadedAiRules;
+  const hasUserRulesChanges = aiRules !== preloadedAiRules;
 
   const handleSaveUserRules = async () => {
     setIsSaving(true);
     try {
-      const response = await apiClient.user.aiRules.update({ aiRules: aiRules || null });
-      setSavedAiRules(response.aiRules || '');
-      trackEvent('[Settings].userAiRulesSaved', {
-        has_rules: Boolean(aiRules),
-        rules_length: aiRules?.length || 0,
-      });
-      addGlobalSnackbar('AI rules saved successfully', { severity: 'success' });
+      const success = await saveAIRules(aiRules || null);
+      if (success) {
+        trackEvent('[Settings].userAiRulesSaved', {
+          has_rules: Boolean(aiRules),
+          rules_length: aiRules?.length || 0,
+        });
+        addGlobalSnackbar('AI rules saved successfully', { severity: 'success' });
+      } else {
+        addGlobalSnackbar('Failed to save AI rules', { severity: 'error' });
+      }
     } catch (error) {
       console.error('Failed to save AI rules:', error);
       addGlobalSnackbar('Failed to save AI rules', { severity: 'error' });
@@ -56,14 +50,14 @@ export function AISettings() {
   };
 
   const handleCancelUserRules = () => {
-    setAiRules(savedAiRules);
+    setLocalAiRules(preloadedAiRules);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to save
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
-      if (hasUserRulesChanges && !isLoading && !isSaving) {
+      if (hasUserRulesChanges && !isPreloading && !isSaving) {
         handleSaveUserRules();
       }
     }
@@ -103,17 +97,17 @@ export function AISettings() {
           <Textarea
             id="ai-rules-editor"
             value={aiRules}
-            onChange={(e) => setAiRules(e.target.value)}
+            onChange={(e) => setLocalAiRules(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Enter your custom rules or instructions here..."
             className="min-h-[300px] font-mono text-sm"
           />
           {hasUserRulesChanges && (
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleCancelUserRules} disabled={isLoading}>
+              <Button variant="outline" onClick={handleCancelUserRules} disabled={isPreloading}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveUserRules} disabled={isLoading || isSaving}>
+              <Button onClick={handleSaveUserRules} disabled={isPreloading || isSaving}>
                 {isSaving ? 'Saving...' : 'Save'}
               </Button>
             </div>
