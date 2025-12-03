@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { DEFAULT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_MODEL_START_WITH_AI_PLAN } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
@@ -137,7 +137,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
     },
   ];
 
-  const modelKey = DEFAULT_MODEL;
+  const modelKey = DEFAULT_MODEL_START_WITH_AI_PLAN;
   const { stream } = getModelOptions(modelKey, { useStream: true, source: 'AIAnalyst' });
 
   try {
