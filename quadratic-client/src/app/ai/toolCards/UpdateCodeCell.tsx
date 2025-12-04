@@ -1,5 +1,6 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -104,7 +105,15 @@ export const UpdateCodeCell = memo(
     }, [toolArgs, args]);
 
     const language = getLanguage(codeCell.language);
-    const label = loading ? 'Writing code' : `Wrote code ${language}`;
+    const label = loading ? 'Updating code' : `Updated code ${language}`;
+
+    const handleClick = useCallback(() => {
+      try {
+        sheets.sheet.cursor.moveTo(codeCell.pos.x, codeCell.pos.y);
+      } catch (e) {
+        console.warn('Failed to select cell:', e);
+      }
+    }, [codeCell.pos.x, codeCell.pos.y]);
 
     if (loading) {
       return (
@@ -120,7 +129,9 @@ export const UpdateCodeCell = memo(
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="" />} label="Wrote code" hasError className={className} compact />;
+      return (
+        <ToolCard icon={<LanguageIcon language="" />} label="Updated code" hasError className={className} compact />
+      );
     } else if (!toolArgs || !toolArgs.data) {
       return <ToolCard isLoading className={className} compact />;
     }
@@ -156,6 +167,7 @@ export const UpdateCodeCell = memo(
           }
           className={className}
           compact
+          onClick={handleClick}
         />
 
         {showCode && (

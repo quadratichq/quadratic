@@ -9,7 +9,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
@@ -98,6 +98,19 @@ export const SetFormulaCellValue = memo(
 
     const label = loading ? 'Writing formula' : 'Wrote formula';
 
+    const handleClick = useCallback(() => {
+      if (!toolArgs?.success || !toolArgs.data?.code_cell_position) return;
+      try {
+        const sheetId = toolArgs.data.sheet_name
+          ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
+        sheets.changeSelection(selection);
+      } catch (e) {
+        console.warn('Failed to select range:', e);
+      }
+    }, [toolArgs]);
+
     if (loading) {
       return (
         <ToolCard
@@ -163,6 +176,7 @@ export const SetFormulaCellValue = memo(
         }
         className={className}
         compact
+        onClick={handleClick}
       />
     );
   }

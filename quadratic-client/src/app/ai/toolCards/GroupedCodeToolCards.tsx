@@ -41,12 +41,32 @@ export const GroupedCodeToolCards = memo(({ toolCalls, className }: GroupedCodeT
   }, [toolCalls]);
 
   const label = useMemo(() => {
-    const verb = isLoading ? 'Writing' : 'Wrote';
-    const count = toolCalls.length;
-    const fileText = count === 1 ? 'file' : 'files';
     const sheetText = sheetInfo ? ` in ${sheetInfo}` : '';
-    return `${verb} ${count} code ${fileText}${sheetText}`;
-  }, [isLoading, toolCalls.length, sheetInfo]);
+
+    // Count new vs updated code cells
+    const newCount = toolCalls.filter(
+      (tc) => tc.name === AITool.SetCodeCellValue || tc.name === AITool.SetFormulaCellValue
+    ).length;
+    const updateCount = toolCalls.filter((tc) => tc.name === AITool.UpdateCodeCell).length;
+
+    if (isLoading) {
+      const total = toolCalls.length;
+      const cellText = total === 1 ? 'cell' : 'cells';
+      return `Writing ${total} code ${cellText}${sheetText}`;
+    }
+
+    // Build a descriptive label
+    const total = toolCalls.length;
+    const cellText = total === 1 ? 'cell' : 'cells';
+
+    if (newCount > 0 && updateCount > 0) {
+      return `Wrote ${newCount}, updated ${updateCount} code ${cellText}${sheetText}`;
+    } else if (updateCount > 0) {
+      return `Updated ${updateCount} code ${cellText}${sheetText}`;
+    } else {
+      return `Wrote ${newCount} code ${cellText}${sheetText}`;
+    }
+  }, [isLoading, toolCalls, sheetInfo]);
 
   return (
     <div className={cn('flex flex-col', className)}>

@@ -13,6 +13,7 @@ export const ToolCard = memo(
     isLoading,
     compact,
     outlined,
+    onClick,
   }: {
     icon?: React.ReactNode;
     label?: string | React.ReactNode;
@@ -23,6 +24,7 @@ export const ToolCard = memo(
     isLoading?: boolean;
     compact?: boolean;
     outlined?: boolean;
+    onClick?: () => void;
   }) => {
     // Compact mode: render as inline text
     if (compact) {
@@ -31,8 +33,10 @@ export const ToolCard = memo(
           className={cn(
             'flex min-w-0 select-none items-center gap-1.5 text-[13px] text-foreground',
             outlined && 'rounded border border-border bg-background px-2 py-1 shadow-sm',
+            onClick && 'cursor-pointer hover:text-foreground/80',
             className
           )}
+          onClick={onClick}
         >
           {icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</div>}
           <span className="min-w-0 truncate">
