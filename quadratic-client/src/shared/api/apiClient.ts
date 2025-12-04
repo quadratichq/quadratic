@@ -14,10 +14,10 @@ export const apiClient = {
     list() {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
-    async get(uuid: string, options?: { shouldUpdateBilling?: boolean }) {
+    async get(uuid: string, options?: { updateBilling?: boolean }) {
       const queryParams = new URLSearchParams();
-      if (options?.shouldUpdateBilling) {
-        queryParams.set('subscription', 'created');
+      if (options?.updateBilling) {
+        queryParams.set('updateBilling', 'true');
       }
       const queryString = queryParams.toString();
       const url = `/v0/teams/${uuid}${queryString ? `?${queryString}` : ''}`;
@@ -136,10 +136,10 @@ export const apiClient = {
       const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
-    async get(uuid: string, options?: { shouldUpdateBilling?: boolean }) {
+    async get(uuid: string, options?: { updateBilling?: boolean }) {
       const queryParams = new URLSearchParams();
-      if (options?.shouldUpdateBilling) {
-        queryParams.set('subscription', 'created');
+      if (options?.updateBilling) {
+        queryParams.set('updateBilling', 'true');
       }
       const queryString = queryParams.toString();
       const url = `/v0/files/${uuid}${queryString ? `?${queryString}` : ''}`;

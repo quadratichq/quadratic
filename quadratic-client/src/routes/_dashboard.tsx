@@ -81,7 +81,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   }
 
   // Check if we're checking for subscription updates (for verification)
-  const shouldUpdateBilling = url.searchParams.get('subscription') === 'created';
+  const updateBilling = url.searchParams.get('subscription') === 'created';
 
   /**
    * Get the initial data
@@ -95,7 +95,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
    * Get data for the active team
    */
   const activeTeam = await apiClient.teams
-    .get(teamUuid, { shouldUpdateBilling })
+    .get(teamUuid, { updateBilling })
     .then((data) => {
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {

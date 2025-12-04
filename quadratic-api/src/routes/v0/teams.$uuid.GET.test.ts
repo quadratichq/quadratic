@@ -192,7 +192,7 @@ describe('GET /v0/teams/:uuid', () => {
         });
     });
 
-    it('does not call updateBilling when subscription query param is not present', async () => {
+    it('does not call updateBilling when updateBilling query param is not present', async () => {
       await request(app)
         .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -201,7 +201,7 @@ describe('GET /v0/teams/:uuid', () => {
       expect(mockCustomersRetrieve).not.toHaveBeenCalled();
     });
 
-    it('calls updateBilling when subscription=created query param is present', async () => {
+    it('calls updateBilling when updateBilling=true query param is present', async () => {
       const team = await dbClient.team.findUniqueOrThrow({
         where: { uuid: '00000000-0000-4000-8000-000000000001' },
       });
@@ -222,7 +222,7 @@ describe('GET /v0/teams/:uuid', () => {
       });
 
       await request(app)
-        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?subscription=created`)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?updateBilling=true`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200);
 
@@ -234,7 +234,7 @@ describe('GET /v0/teams/:uuid', () => {
 
     it('does not call updateBilling when team has no Stripe customer', async () => {
       await request(app)
-        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?subscription=created`)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?updateBilling=true`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200);
 

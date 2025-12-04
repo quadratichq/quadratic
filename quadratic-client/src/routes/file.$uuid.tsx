@@ -64,13 +64,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const loadFileFromApi = async (
     uuid: string,
     isVersionHistoryPreview: boolean,
-    shouldUpdateBilling?: boolean
+    updateBilling?: boolean
   ): Promise<FileData | Response> => {
     // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
     let data: ApiTypes['/v0/files/:uuid.GET.response'];
     try {
       startupTimer.start('file.loader.files.get');
-      data = await apiClient.files.get(uuid, { shouldUpdateBilling });
+      data = await apiClient.files.get(uuid, { updateBilling });
       startupTimer.end('file.loader.files.get');
     } catch (error: any) {
       const isLoggedIn = await authClient.isAuthenticated();
@@ -103,10 +103,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const isVersionHistoryPreview = checkpointId !== null;
 
   // Check if we're checking for subscription updates (for verification)
-  const shouldUpdateBilling = searchParams.get('subscription') === 'created';
+  const updateBilling = searchParams.get('subscription') === 'created';
 
   const [data] = await Promise.all([
-    loadFileFromApi(uuid, isVersionHistoryPreview, shouldUpdateBilling),
+    loadFileFromApi(uuid, isVersionHistoryPreview, updateBilling),
     loadPixi(),
     initWorkers(),
     initializeCoreClient(),

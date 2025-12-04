@@ -37,7 +37,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   // Update billing info to ensure we have the latest subscription status
   // Only do this if we're checking for a subscription update after checkout
-  if (req.query.subscription === 'created') {
+  if (req.query.updateBilling === 'true') {
     await updateBilling(team);
   }
 
