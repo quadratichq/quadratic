@@ -18,7 +18,7 @@ import { AIIcon, CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { isContentText, isUserPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
+import { isAIPromptMessage, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -83,7 +83,7 @@ export const AIAnalystMinimal = memo(() => {
       // Find new assistant messages
       for (let i = lastProcessedIndex.current + 1; i < messagesCount; i++) {
         const message = messages[i];
-        if (message.role === 'assistant' && !isUserPromptMessage(message)) {
+        if (isAIPromptMessage(message)) {
           // Extract text content from the message
           const textContent = message.content
             .filter(isContentText)
@@ -140,17 +140,13 @@ export const AIAnalystMinimal = memo(() => {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-end pb-12">
       {/* Fading messages container */}
-      <div className="pointer-events-auto mb-4 flex flex-col items-center gap-2">
-        {displayedMessages.map((msg) => (
-          <FadingMessage key={msg.id} text={msg.text} onFadeComplete={() => handleFadeComplete(msg.id)} />
-        ))}
-        {loading && (
-          <div className="flex items-center gap-2 rounded-lg bg-background/95 px-4 py-3 shadow-lg ring-1 ring-border/50 backdrop-blur-sm">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-            <span className="text-sm text-muted-foreground">Thinking...</span>
-          </div>
-        )}
-      </div>
+      {displayedMessages.length > 0 && (
+        <div className="pointer-events-auto mb-4 flex flex-col items-center gap-2">
+          {displayedMessages.map((msg) => (
+            <FadingMessage key={msg.id} text={msg.text} onFadeComplete={() => handleFadeComplete(msg.id)} />
+          ))}
+        </div>
+      )}
 
       {/* Chat input */}
       <div className="pointer-events-auto w-full max-w-2xl px-4">
@@ -158,6 +154,12 @@ export const AIAnalystMinimal = memo(() => {
           <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
             <AIIcon className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">AI Assistant</span>
+            {loading && (
+              <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                <span className="text-xs text-muted-foreground">Thinking...</span>
+              </div>
+            )}
             <Button variant="ghost" size="icon-sm" className="ml-auto h-6 w-6" onClick={() => setShowAIAnalyst(false)}>
               <CloseIcon className="h-4 w-4" />
             </Button>

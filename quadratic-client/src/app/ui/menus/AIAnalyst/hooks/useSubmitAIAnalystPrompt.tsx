@@ -268,6 +268,7 @@ export function useSubmitAIAnalystPrompt() {
           });
 
           set(aiAnalystWaitingOnMessageIndexAtom, undefined);
+          multiplayer.setAIUser(false);
         });
         set(aiAnalystAbortControllerAtom, abortController);
 
@@ -526,6 +527,7 @@ export function useSubmitAIAnalystPrompt() {
 
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
+        multiplayer.setAIUser(false);
       },
     [
       aiModel.modelKey,
