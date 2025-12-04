@@ -24,11 +24,8 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { Avatar } from '@/shared/components/Avatar';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { displayInitials } from '@/shared/utils/userUtil';
 import {
   createTextContent,
   getUserPromptMessages,
@@ -57,7 +54,6 @@ function getToolGroupType(toolName: string): ToolGroupType {
 }
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
-  const { loggedInUser } = useRootRouteLoaderData();
   const { debug, debugFlags } = useDebugFlags();
   const debugShowAIInternalContext = useMemo(() => debugFlags.getFlag('debugShowAIInternalContext'), [debugFlags]);
   const debugAIAnalystChatEditing = useMemo(
@@ -343,7 +339,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 <ImportFilesToGrid content={message.content} />
               ) : null
             ) : isUserPromptMessage(message) ? (
-              <div className="flex items-start justify-end gap-2 px-2">
+              <div className="flex justify-end px-2">
                 <div className="w-[75%]">
                   <AIAnalystUserMessageForm
                     initialContent={message.content}
@@ -361,14 +357,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                     uiContext="analyst-edit-chat"
                   />
                 </div>
-                <Avatar
-                  alt={loggedInUser?.name ?? 'User'}
-                  src={loggedInUser?.picture ?? ''}
-                  size="xs"
-                  className="mt-1 shrink-0"
-                >
-                  {displayInitials(loggedInUser)}
-                </Avatar>
               </div>
             ) : isToolResultMessage(message) ? (
               message.content.map((result, resultIndex) => (
