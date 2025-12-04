@@ -70,43 +70,43 @@ impl CellValues {
         let width_i64 = match rect.max.x.checked_sub(rect.min.x) {
             Some(diff) => match diff.checked_add(1) {
                 Some(w) => w,
-                None => return vec![vec![None; 0]; 0], // Overflow in width calculation
+                None => return vec![], // Overflow in width calculation
             },
-            None => return vec![vec![None; 0]; 0], // Overflow in width calculation
+            None => return vec![], // Overflow in width calculation
         };
 
         let height_i64 = match rect.max.y.checked_sub(rect.min.y) {
             Some(diff) => match diff.checked_add(1) {
                 Some(h) => h,
-                None => return vec![vec![None; 0]; 0], // Overflow in height calculation
+                None => return vec![], // Overflow in height calculation
             },
-            None => return vec![vec![None; 0]; 0], // Overflow in height calculation
+            None => return vec![], // Overflow in height calculation
         };
 
         // Check for negative or zero dimensions
         if width_i64 <= 0 || height_i64 <= 0 {
-            return vec![vec![None; 0]; 0];
+            return vec![];
         }
 
         // Convert to usize with overflow checking - use a reasonable maximum to prevent capacity overflow
         const MAX_DIMENSION: i64 = 1_000_000; // Reasonable maximum to prevent overflow
         if width_i64 > MAX_DIMENSION || height_i64 > MAX_DIMENSION {
-            return vec![vec![None; 0]; 0];
+            return vec![];
         }
 
         let width_usize = match usize::try_from(width_i64) {
             Ok(w) => w,
-            _ => return vec![vec![None; 0]; 0],
+            _ => return vec![],
         };
 
         let height_usize = match usize::try_from(height_i64) {
             Ok(h) => h,
-            _ => return vec![vec![None; 0]; 0],
+            _ => return vec![],
         };
 
         // Check if total capacity would overflow
         if width_usize.checked_mul(height_usize).is_none() {
-            return vec![vec![None; 0]; 0];
+            return vec![];
         }
 
         let mut values = vec![vec![None; height_usize]; width_usize];
@@ -125,12 +125,12 @@ impl CellValues {
         for (x_index, x) in rect.x_range().enumerate() {
             for (y_index, y) in rect.y_range().enumerate() {
                 // Check if this coordinate is within the clamped (intersected) rect
-                if clamped_rect.contains(Pos { x, y }) {
-                    if let (Ok(new_x), Ok(new_y)) = (u32::try_from(x), u32::try_from(y)) {
-                        if new_x < self.w && new_y < self.h {
-                            values[x_index][y_index] = self.remove(new_x, new_y);
-                        }
-                    }
+                if clamped_rect.contains(Pos { x, y })
+                    && let (Ok(new_x), Ok(new_y)) = (u32::try_from(x), u32::try_from(y))
+                    && new_x < self.w
+                    && new_y < self.h
+                {
+                    values[x_index][y_index] = self.remove(new_x, new_y);
                 }
             }
         }
