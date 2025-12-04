@@ -1,9 +1,9 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { parseFullJson, parsePartialJson } from '@/app/shared/utils/SafeJsonParsing';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
@@ -136,7 +136,7 @@ export const SetCodeCellValue = memo(
         return (
           <ToolCard
             icon={<LanguageIcon language={language ?? ''} />}
-            label={language}
+            label="Writing code"
             description={
               `${estimatedNumberOfLines} line` +
               (estimatedNumberOfLines === 1 ? '' : 's') +
@@ -144,22 +144,23 @@ export const SetCodeCellValue = memo(
             }
             isLoading={true}
             className={className}
+            compact
           />
         );
       }
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError className={className} />;
+      return <ToolCard icon={<LanguageIcon language="" />} label="Wrote code" hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard isLoading className={className} />;
+      return <ToolCard isLoading className={className} compact />;
     }
 
     const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
     return (
       <ToolCard
         icon={<LanguageIcon language={code_cell_language} />}
-        label={code_cell_name || code_cell_language}
+        label={`Wrote code ${code_cell_name || code_cell_language}`}
         description={
           `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
         }
@@ -199,6 +200,7 @@ export const SetCodeCellValue = memo(
           ) : undefined
         }
         className={className}
+        compact
       />
     );
   }

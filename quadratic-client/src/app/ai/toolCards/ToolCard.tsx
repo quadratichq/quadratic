@@ -12,6 +12,7 @@ export const ToolCard = memo(
     actions,
     isLoading,
     compact,
+    outlined,
   }: {
     icon?: React.ReactNode;
     label?: string | React.ReactNode;
@@ -21,13 +22,20 @@ export const ToolCard = memo(
     actions?: React.ReactNode;
     isLoading?: boolean;
     compact?: boolean;
+    outlined?: boolean;
   }) => {
     // Compact mode: render as inline text
     if (compact) {
       return (
-        <div className={cn('flex min-w-0 select-none items-center gap-1.5 text-sm text-foreground', className)}>
+        <div
+          className={cn(
+            'flex min-w-0 select-none items-center gap-1.5 text-[13px] text-foreground',
+            outlined && 'rounded border border-border bg-background px-2 py-1 shadow-sm',
+            className
+          )}
+        >
           {icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</div>}
-          <span className="truncate">
+          <span className="min-w-0 truncate">
             {label}
             {description && (
               <>
@@ -37,6 +45,7 @@ export const ToolCard = memo(
             )}
           </span>
           {hasError && <span className="text-destructive"> (error)</span>}
+          {actions && <div className="ml-auto flex shrink-0 items-center">{actions}</div>}
         </div>
       );
     }

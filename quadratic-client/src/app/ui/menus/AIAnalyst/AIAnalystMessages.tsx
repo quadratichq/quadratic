@@ -23,12 +23,15 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { Avatar } from '@/shared/components/Avatar';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { displayInitials } from '@/shared/utils/userUtil';
 import {
   createTextContent,
   getLastAIPromptMessageIndex,
@@ -50,6 +53,7 @@ type AIAnalystMessagesProps = {
 };
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
+  const { loggedInUser } = useRootRouteLoaderData();
   const { debug, debugFlags } = useDebugFlags();
   const debugShowAIInternalContext = useMemo(() => debugFlags.getFlag('debugShowAIInternalContext'), [debugFlags]);
   const debugAIAnalystChatEditing = useMemo(
@@ -166,7 +170,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-2 overflow-y-auto px-2 pb-8 outline-none"
+      className="flex select-text flex-col gap-4 overflow-y-auto px-2 pb-8 outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -195,7 +199,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           <div
             key={`${index}-${message.role}-${message.contextType}-${message.content}`}
             className={cn(
-              'flex flex-col gap-2',
+              'flex flex-col gap-3',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
               ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
@@ -212,21 +216,33 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 <ImportFilesToGrid content={message.content} />
               ) : null
             ) : isUserPromptMessage(message) ? (
-              <AIAnalystUserMessageForm
-                initialContent={message.content}
-                initialContext={message.context}
-                textareaRef={textareaRef}
-                messageIndex={index}
-                onContentChange={
-                  debugAIAnalystChatEditing &&
-                  ((content) => {
-                    const newMessages = [...messages];
-                    newMessages[index] = { ...message, content };
-                    setMessages(newMessages);
-                  })
-                }
-                uiContext="analyst-edit-chat"
-              />
+              <div className="flex items-start justify-end gap-2 px-2">
+                <div className="w-[75%]">
+                  <AIAnalystUserMessageForm
+                    initialContent={message.content}
+                    initialContext={message.context}
+                    textareaRef={textareaRef}
+                    messageIndex={index}
+                    onContentChange={
+                      debugAIAnalystChatEditing &&
+                      ((content) => {
+                        const newMessages = [...messages];
+                        newMessages[index] = { ...message, content };
+                        setMessages(newMessages);
+                      })
+                    }
+                    uiContext="analyst-edit-chat"
+                  />
+                </div>
+                <Avatar
+                  alt={loggedInUser?.name ?? 'User'}
+                  src={loggedInUser?.picture ?? ''}
+                  size="xs"
+                  className="mt-1 shrink-0"
+                >
+                  {displayInitials(loggedInUser)}
+                </Avatar>
+              </div>
             ) : isToolResultMessage(message) ? (
               message.content.map((result, resultIndex) => (
                 <AIAnalystUserMessageForm
