@@ -95,8 +95,9 @@ describe('POST /v0/files/:uuid/restore', () => {
     });
 
     it('responds with a 403 for user without access to the file', async () => {
-      // Create another team and file
-      const user_4 = await createUser({ auth0Id: 'user_without_team' });
+      // Get the existing user without team access
+      const user_4 = await dbClient.user.findUnique({ where: { auth0Id: 'user_without_team' } });
+      if (!user_4) throw new Error('user_4 not found');
       const team2 = await createTeam({
         team: {
           name: 'Test Team 2',
