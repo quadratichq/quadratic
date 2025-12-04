@@ -28,7 +28,7 @@ export const AddLogicalValidation = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Add logical validations';
+    const label = loading ? 'Adding logical validation' : 'Added logical validation';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

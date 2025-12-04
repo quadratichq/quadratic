@@ -27,7 +27,7 @@ export const SetCellValues = memo(
     }, [args, loading]);
 
     const icon = <TableRowsIcon />;
-    const label = 'Data';
+    const label = loading ? 'Inserting data' : 'Inserted data';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

@@ -28,7 +28,7 @@ export const TextSearch = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Text search';
+    const label = loading ? 'Searching text' : 'Searched text';
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;
@@ -41,7 +41,7 @@ export const TextSearch = memo(
     }
 
     return (
-      <ToolCard icon={icon} label={label} description={`Searched "${toolArgs.data.query}".`} className={className} />
+      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.query}"`} className={className} />
     );
   }
 );

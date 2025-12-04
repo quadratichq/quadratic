@@ -27,7 +27,7 @@ export const SetBorders = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Set borders';
+    const label = loading ? 'Setting borders' : 'Set borders';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

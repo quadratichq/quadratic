@@ -27,7 +27,7 @@ export const AddDataTable = memo(
     }, [args, loading]);
 
     const icon = <TableIcon />;
-    const label = 'Table';
+    const label = loading ? 'Inserting table' : 'Inserted table';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

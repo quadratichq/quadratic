@@ -51,8 +51,9 @@ export const SetTextFormats = memo(
 
     const label = useMemo(() => {
       const range = toolArgs?.success && toolArgs.data?.selection ? toolArgs.data.selection : '...';
-      return `Formatting ${range}`;
-    }, [toolArgs]);
+      const verb = loading ? 'Formatting' : 'Formatted';
+      return `${verb} ${range}`;
+    }, [toolArgs, loading]);
 
     const description = useMemo(() => {
       if (!toolArgs?.success || !toolArgs.data) return undefined;

@@ -25,14 +25,14 @@ export const ToolCard = memo(
     // Compact mode: render as inline text
     if (compact) {
       return (
-        <div className={cn('flex min-w-0 select-none items-center gap-1.5 text-xs text-muted-foreground', className)}>
+        <div className={cn('flex min-w-0 select-none items-center gap-1.5 text-sm text-foreground', className)}>
           {icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</div>}
           <span className="truncate">
             {label}
             {description && (
               <>
                 {' '}
-                <span className="text-muted-foreground/70">• {description}</span>
+                <span className="text-muted-foreground">• {description}</span>
               </>
             )}
           </span>

@@ -27,7 +27,7 @@ export const InsertColumns = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Insert columns';
+    const label = loading ? 'Inserting columns' : 'Inserted columns';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

@@ -27,7 +27,7 @@ export const AddMessage = memo(
     }, [args, loading]);
 
     const icon = <TableIcon />;
-    const label = 'Add Message';
+    const label = loading ? 'Adding message' : 'Added message';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
@@ -42,13 +42,10 @@ export const AddMessage = memo(
     return (
       <ToolCard
         icon={icon}
-        label={
-          <span>
-            {label} <span className="ml-1 font-normal text-muted-foreground">{toolArgs.data.selection}</span>
-          </span>
-        }
+        label={label}
         description={toolArgs.data.selection}
         className={className}
+        compact
       />
     );
   }

@@ -27,11 +27,13 @@ export const SetFormulaCellValue = memo(
       }
     }, [args, loading]);
 
+    const label = loading ? 'Inserting formula' : 'Inserted formula';
+
     if (loading) {
       return (
         <ToolCard
           icon={<LanguageIcon language="Formula" />}
-          label="Formula"
+          label={label}
           isLoading={true}
           className={className}
           compact
@@ -41,11 +43,11 @@ export const SetFormulaCellValue = memo(
 
     if (!!toolArgs && !toolArgs.success) {
       return (
-        <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError className={className} compact />
+        <ToolCard icon={<LanguageIcon language="Formula" />} label={label} hasError className={className} compact />
       );
     } else if (!toolArgs || !toolArgs.data) {
       return (
-        <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading className={className} compact />
+        <ToolCard icon={<LanguageIcon language="Formula" />} label={label} isLoading className={className} compact />
       );
     }
 
@@ -53,7 +55,7 @@ export const SetFormulaCellValue = memo(
     return (
       <ToolCard
         icon={<LanguageIcon language="Formula" />}
-        label={'Formula'}
+        label={label}
         description={code_cell_position}
         className={className}
         compact
