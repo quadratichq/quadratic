@@ -135,33 +135,68 @@ type UploadFileOptions = {
   query?: string;
 };
 export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath }: UploadFileOptions) => {
-  // Click Import
-  await page.locator(`button:text-is("Import ")`).click({ timeout: 60 * 1000 });
-
   // If options include filepath use that, otherwise use default
   const filePath = fullFilePath ?? path.join(process.cwd(), './data/', `${fileName}.${fileType}`);
 
-  // Select file
-  page.once('filechooser', (chooser) => {
-    chooser.setFiles(filePath).catch(console.error);
-  });
+  // Click Import button to open the dropdown menu
+  await page.getByRole('button', { name: /^Import/ }).click({ timeout: 60 * 1000 });
 
-  // Click Local File option
-  await page.locator(`[role="menuitem"]:has-text("Local File")`).click({ timeout: 60 * 1000 });
+  // Wait for menu to appear
+  await page.locator(`[role="menuitem"]:has-text("Local file")`).waitFor({ state: 'visible', timeout: 10 * 1000 });
 
-  await page.waitForTimeout(2000);
+  // Use Promise.all to properly handle the file chooser event
+  // This ensures we don't miss the filechooser event
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser', { timeout: 30 * 1000 }),
+    page.locator(`[role="menuitem"]:has-text("Local file")`).click({ timeout: 60 * 1000 }),
+  ]);
 
-  // Wait for file import dialog to finish loading
-  await expect(page.locator(`[role="alertdialog"] h2:has-text("Import files")`)).not.toBeVisible({
-    timeout: 1 * 60 * 1000,
-  });
+  // Set the file(s) on the file chooser
+  await fileChooser.setFiles(filePath);
 
+  // For single file uploads, the app navigates directly to /file/ after upload completes.
+  // The import progress dialog may appear very briefly or not at all before navigation.
+  // Wait for the URL to change to /file/ which indicates successful import and navigation.
+  await page.waitForURL((url) => url.pathname.startsWith('/file/'), { timeout: 2 * 60 * 1000 });
+
+  // After navigation, wait for the page to load
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.waitForLoadState('networkidle');
 
-  // Confirm file is uploaded
+  // Check for error messages first
+  const errorIndicators = [
+    page.locator('text=File not found'),
+    page.locator('text=Permission denied'),
+    page.locator('text=Failed to load file'),
+    page.locator('text=File validation failed'),
+  ];
+
+  for (const errorIndicator of errorIndicators) {
+    const isVisible = await errorIndicator.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isVisible) {
+      throw new Error(`File upload failed: Error message detected on page`);
+    }
+  }
+
+  // Wait for file name button to appear (indicates file has loaded)
+  // The file might be named "Untitled" initially or use the uploaded filename
+  // Try to wait for either the uploaded filename or "Untitled"
+  try {
+    await page.getByRole('button', { name: fileName }).waitFor({ timeout: 10 * 1000 });
+  } catch {
+    // If filename doesn't match, try "Untitled"
+    try {
+      await page.getByRole('button', { name: 'Untitled' }).waitFor({ timeout: 10 * 1000 });
+    } catch {
+      // If neither appears, continue - file might have different name or canvas check will catch issues
+    }
+  }
+
+  // Confirm file is uploaded - wait for canvas to be visible
+  // This is the ultimate indicator that the file has loaded
   await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({
     timeout: 60 * 1000,
   });

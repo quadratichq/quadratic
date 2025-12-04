@@ -94,6 +94,10 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   await handleHumanCheck(page);
 
+  // Wait for the redirect from /login-result to complete before checking loading state
+  // The /login-result route redirects immediately, so we need to wait for the final destination
+  await page.waitForURL((url) => !url.pathname.includes('/login-result'), { timeout: 2 * 60 * 1000 });
+
   await handleOnboarding(page);
 
   await handleQuadraticLoading(page);
@@ -126,7 +130,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   }
 
   // wait for shared with me visibility on dashboard
-  await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
+  // Use a more specific locator to target the navigation link, not file badges
+  await page.locator('a[href="/files/shared-with-me"]').waitFor({ timeout: 2 * 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
