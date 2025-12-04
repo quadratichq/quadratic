@@ -2,7 +2,6 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { changelogDialogAtom, showChangelogDialog } from '@/shared/atom/changelogDialogAtom';
 import { settingsDialogAtom } from '@/shared/atom/settingsDialogAtom';
-import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import {
   AIIcon,
   CodeIcon,
@@ -16,13 +15,11 @@ import { Type } from '@/shared/components/Type';
 import { VERSION } from '@/shared/constants/appConstants';
 import { useChangelogNew } from '@/shared/hooks/useChangelogNew';
 import { useTeamData } from '@/shared/hooks/useTeamData';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { RocketIcon } from '@radix-ui/react-icons';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import { Component, useEffect, useMemo, useState } from 'react';
 import { AISettings } from './SettingsTabs/AISettings';
 import { DebugSettings } from './SettingsTabs/DebugSettings';
@@ -60,7 +57,6 @@ export function SettingsDialog() {
   const [hideChangelogBadge, setHideChangelogBadge] = useState(false);
   const { teamData } = useTeamData();
   const { debugFlags } = useDebugFlags();
-  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const { hasNewChangelog } = useChangelogNew();
   const hasTeamData = teamData !== null;
   const hasDebugAvailable = debugFlags.debugAvailable;
@@ -74,10 +70,6 @@ export function SettingsDialog() {
       setActiveTab('general');
     }
   }, [open, dialogState.initialTab]);
-
-  const isOnPaidPlan = useMemo(() => {
-    return teamData?.activeTeam?.billing?.status === 'ACTIVE';
-  }, [teamData]);
 
   const activeTeamUuid = useMemo(() => {
     return teamData?.activeTeam?.team?.uuid;
@@ -247,34 +239,7 @@ export function SettingsDialog() {
                 )}
                 {/* Add more tabs here as needed */}
               </TabsList>
-              {!isOnPaidPlan && hasTeamData && activeTeamUuid ? (
-                <div className="mt-auto px-4 pb-3">
-                  <div className="flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
-                    <div className="flex gap-2">
-                      <RocketIcon className="h-5 w-5 text-primary" />
-                      <div className="flex flex-col">
-                        <span className="font-semibold">Upgrade to Quadratic Pro</span>
-                        <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
-                      </div>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        trackEvent('[Settings].upgradeToProClicked', {
-                          team_uuid: activeTeamUuid,
-                        });
-                        setShowUpgradeDialog({ open: true, eventSource: 'SettingsDialog' });
-                      }}
-                    >
-                      Upgrade to Pro
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-auto" />
-              )}
+              <div className="mt-auto" />
               <div className="border-t border-border px-4 py-3">
                 <div className="space-y-1">
                   <h3 className="text-sm font-semibold">Quadratic</h3>

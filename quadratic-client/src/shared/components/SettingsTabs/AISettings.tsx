@@ -100,7 +100,7 @@ export function AISettings() {
             onChange={(e) => setLocalAiRules(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Enter your custom rules or instructions here..."
-            className="min-h-[300px] font-mono text-sm"
+            className="min-h-[300px] text-sm"
           />
           {hasUserRulesChanges && (
             <div className="flex justify-end gap-2">

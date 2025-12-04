@@ -91,9 +91,7 @@ export function ChangelogDialog() {
                       className={cn(
                         'w-full rounded-md px-3 py-2 text-left text-sm transition-colors',
                         'hover:bg-background/50',
-                        selectedVersion === entry.version
-                          ? 'bg-background font-semibold text-foreground'
-                          : 'text-muted-foreground'
+                        selectedVersion === entry.version ? 'bg-background text-foreground' : 'text-muted-foreground'
                       )}
                     >
                       <div className="font-medium">v{entry.version}</div>
