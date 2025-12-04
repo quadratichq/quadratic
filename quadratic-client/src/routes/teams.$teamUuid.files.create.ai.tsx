@@ -5,7 +5,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { AttachFileIcon, DatabaseIcon, FileIcon, PDFIcon, SearchIcon, StarShineIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/shadcn/ui/card';
@@ -23,7 +23,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { ArrowRightIcon, ChevronLeftIcon, ReloadIcon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { Link, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, redirect, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 type Step = 'data' | 'file-import' | 'pdf-import' | 'connection' | 'describe';
 
@@ -110,6 +110,12 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   if (!teamUuid) throw new Error('Team UUID is required');
 
   const teamData = await apiClient.teams.get(teamUuid);
+
+  // Ensure the user has editor permissions (viewers cannot create files)
+  if (!teamData.userMakingRequest.teamPermissions.includes('TEAM_EDIT')) {
+    const message = encodeURIComponent('You can only view this team. Editors and owners can create files.');
+    return redirect(`/?${SEARCH_PARAMS.SNACKBAR_MSG.KEY}=${message}`);
+  }
 
   return {
     connections: teamData.connections,
