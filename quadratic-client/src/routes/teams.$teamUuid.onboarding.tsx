@@ -181,7 +181,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   }
 
   // When done, we'll send people to the AI create flow
-  const newFilePath = ROUTES.FILES_CREATE_AI;
+  const newFilePath = ROUTES.TEAM_FILES_CREATE_AI(teamUuid);
 
   // If the user wants to upgrade to Pro, we'll send them to Stripe first
   if (result.data && result.data['team-plan'] === 'pro') {

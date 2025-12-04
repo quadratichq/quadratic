@@ -27,11 +27,15 @@ import { Link, useLoaderData, useLocation, useNavigate, useSearchParams } from '
 
 type Step = 'data' | 'file-import' | 'pdf-import' | 'connection' | 'describe';
 
-const getStepFromPath = (pathname: string): Step => {
-  if (pathname === ROUTES.FILES_CREATE_AI_FILE) return 'file-import';
-  if (pathname === ROUTES.FILES_CREATE_AI_PDF) return 'pdf-import';
-  if (pathname === ROUTES.FILES_CREATE_AI_CONNECTION) return 'connection';
-  if (pathname === ROUTES.FILES_CREATE_AI_PROMPT || pathname === ROUTES.FILES_CREATE_AI_WEB) return 'describe';
+const getStepFromPath = (pathname: string, teamUuid: string): Step => {
+  if (pathname === ROUTES.TEAM_FILES_CREATE_AI_FILE(teamUuid)) return 'file-import';
+  if (pathname === ROUTES.TEAM_FILES_CREATE_AI_PDF(teamUuid)) return 'pdf-import';
+  if (pathname === ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)) return 'connection';
+  if (
+    pathname === ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid) ||
+    pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid)
+  )
+    return 'describe';
   return 'data';
 };
 
@@ -101,8 +105,11 @@ const WEB_SEARCH_EXAMPLES: string[] = [
 ];
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
-  const teamData = await apiClient.teams.get(activeTeamUuid);
+  await requireAuth(loaderArgs.request);
+  const teamUuid = loaderArgs.params.teamUuid;
+  if (!teamUuid) throw new Error('Team UUID is required');
+
+  const teamData = await apiClient.teams.get(teamUuid);
 
   return {
     connections: teamData.connections,
@@ -117,7 +124,7 @@ export const Component = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const step = getStepFromPath(location.pathname);
+  const step = getStepFromPath(location.pathname, teamUuid);
   const isPrivate = searchParams.get('private') === 'true';
 
   // Helper to preserve search params when navigating
@@ -298,7 +305,7 @@ export const Component = () => {
         );
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         if (shouldNavigate && step !== 'describe') {
-          navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT));
+          navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
         }
       }
     } catch (error) {
@@ -331,7 +338,7 @@ export const Component = () => {
         }))
       );
       setUploadedFiles(newFiles);
-      navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT));
+      navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
     }
   };
 
@@ -361,7 +368,7 @@ export const Component = () => {
       name: connection.name,
       type: connection.type,
     });
-    navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT));
+    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
   };
 
   const generatePlan = useCallback(
@@ -598,7 +605,7 @@ export const Component = () => {
                 {/* Start from Prompt - First with Recommended badge */}
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PROMPT))}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
                     <StarShineIcon className="text-white" size="lg" />
@@ -614,7 +621,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_FILE))}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_FILE(teamUuid)))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-600">
                     <FileIcon className="text-white" size="lg" />
@@ -627,7 +634,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_PDF))}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PDF(teamUuid)))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-red-500 to-orange-600">
                     <PDFIcon className="text-white" size="lg" />
@@ -640,7 +647,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_CONNECTION))}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
                     <DatabaseIcon className="text-white" size="lg" />
@@ -655,7 +662,7 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.FILES_CREATE_AI_WEB))}
+                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid)))}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600">
                     <SearchIcon className="text-white" size="lg" />
@@ -862,7 +869,7 @@ export const Component = () => {
 
               {/* Suggestions - above the chat */}
               <div className="mb-4 space-y-1">
-                {location.pathname === ROUTES.FILES_CREATE_AI_WEB ? (
+                {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
                   <>
                     <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
                     <div className="flex flex-col gap-2">
