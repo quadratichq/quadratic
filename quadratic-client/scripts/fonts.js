@@ -253,7 +253,16 @@ async function outputGlyphs(openSansFontFile, notoSansFontFile) {
   openSansFont.characterSet.forEach((value) => {
     if (value && value !== ' ' && openSansFont.hasGlyphForCodePoint(value)) {
       const glyph = openSansFont.getGlyph(value);
-      if (glyph && glyph.path && glyph.path.commands && glyph.path.commands.length > 0) {
+      // Include glyphs that have either:
+      // 1. Path commands (simple glyphs with drawing commands)
+      // 2. Components (composite glyphs that reference other glyphs)
+      // 3. A path object (some glyphs may have path without commands array)
+      if (
+        glyph &&
+        ((glyph.path && glyph.path.commands && glyph.path.commands.length > 0) ||
+          (glyph.components && glyph.components.length > 0) ||
+          glyph.path) // Include if glyph has a path object (covers cases like 'b')
+      ) {
         openSansChars.push(String.fromCharCode(value));
       }
     }
