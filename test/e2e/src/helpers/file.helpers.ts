@@ -15,9 +15,15 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
   await page.waitForLoadState('networkidle');
 
-  // Name file
-  await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
-  await page.keyboard.type(fileName);
+  // Wait for canvas to be visible (indicates file editor has loaded)
+  await page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 60 * 1000 });
+
+  // Name file - wait for the Untitled button to be visible before clicking
+  await page.locator(`button:has-text("Untitled")`).waitFor({ state: 'visible', timeout: 60 * 1000 });
+  await page.locator(`button:has-text("Untitled")`).click({ timeout: 60000 });
+  // Wait for the input field to appear after clicking
+  await page.locator(`[value="Untitled"]`).waitFor({ state: 'visible', timeout: 10 * 1000 });
+  await page.locator(`[value="Untitled"]`).fill(fileName);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000);
 
