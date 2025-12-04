@@ -179,7 +179,6 @@ export const Component = () => {
       addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
-      newSearchParams.delete('session_id');
       setSearchParams(newSearchParams, { replace: true });
     }
   }, [searchParams, setSearchParams, addGlobalSnackbar]);
