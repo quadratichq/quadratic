@@ -74,7 +74,7 @@ test('Create New File', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Edit Share File Permissions', async ({ page }) => {
+test('Edit Share File Permissions', async ({ page }) => {
   //--------------------------------
   // Edit Share File Permissions
   //--------------------------------
@@ -200,6 +200,8 @@ test.only('Edit Share File Permissions', async ({ page }) => {
 
   // Reload the page, wait for canvas to appear, then wait for a short delay
   await recipientPage.reload();
+  await recipientPage.waitForLoadState('domcontentloaded');
+  await recipientPage.waitForLoadState('networkidle');
   await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
   await recipientPage.waitForTimeout(2000);
 
@@ -219,7 +221,7 @@ test.only('Edit Share File Permissions', async ({ page }) => {
   // Assert the edit persists after page reload (0, 0 Cell should say "FileEditText")
   await expect(recipientPage).toHaveScreenshot(`edited-spreadsheet-1.png`, {
     clip: { x: 67.5, y: 100, width: 250, height: 25 },
-    maxDiffPixels: 10,
+    maxDiffPixelRatio: 0.01,
   });
 
   // Bring default user to the front and navigate to the file

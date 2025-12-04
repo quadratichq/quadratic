@@ -139,7 +139,9 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
   const filePath = fullFilePath ?? path.join(process.cwd(), './data/', `${fileName}.${fileType}`);
 
   // Click Import button to open the dropdown menu
-  await page.getByRole('button', { name: /^Import/ }).click({ timeout: 60 * 1000 });
+  // Target the dropdown trigger button (with aria-haspopup) to avoid strict mode violation
+  // The dropdown trigger has aria-haspopup="menu" and name "Import arrow_drop_down"
+  await page.getByRole('button', { name: 'Import arrow_drop_down' }).click({ timeout: 60 * 1000 });
 
   // Wait for menu to appear
   await page.locator(`[role="menuitem"]:has-text("Local file")`).waitFor({ state: 'visible', timeout: 10 * 1000 });
