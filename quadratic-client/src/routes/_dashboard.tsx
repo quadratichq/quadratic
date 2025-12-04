@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
-import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { handleSentryReplays } from '@/shared/utils/sentry';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -176,12 +176,13 @@ export const Component = () => {
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
+      trackEvent('[Billing].success', { team_uuid: activeTeamUuid });
       addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, addGlobalSnackbar]);
+  }, [searchParams, setSearchParams, addGlobalSnackbar, activeTeamUuid]);
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {

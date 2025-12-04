@@ -20,7 +20,7 @@ import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { handleSentryReplays } from '@/shared/utils/sentry';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
@@ -222,12 +222,13 @@ export const Component = memo(() => {
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
+      trackEvent('[Billing].success', { team_uuid: teamUuid });
       addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, addGlobalSnackbar]);
+  }, [searchParams, setSearchParams, addGlobalSnackbar, teamUuid]);
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
