@@ -31,24 +31,13 @@ export const SetCellValues = memo(
     const icon = <TableRowsIcon />;
     const label = loading ? 'Inserting data' : 'Inserted data';
 
-    if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
-    }
-
-    if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
-    } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
-    }
-
-    const { top_left_position, cell_values, sheet_name } = toolArgs.data;
-    const rows = cell_values.length;
-    const cols = cell_values.reduce((max, row) => Math.max(max, row.length), 0);
-
     const handleClick = useCallback(() => {
+      if (!toolArgs?.success || !toolArgs.data) return;
+      const { top_left_position, cell_values, sheet_name } = toolArgs.data;
+      const rows = cell_values.length;
+      const cols = cell_values.reduce((max, row) => Math.max(max, row.length), 0);
       try {
         const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-        // Parse the top_left_position to get x,y and calculate the range
         const startSelection = sheets.stringToSelection(top_left_position, sheetId);
         const { x, y } = startSelection.getCursor();
         const endX = x + cols - 1;
@@ -59,7 +48,21 @@ export const SetCellValues = memo(
       } catch (e) {
         console.warn('Failed to select range:', e);
       }
-    }, [top_left_position, sheet_name, rows, cols]);
+    }, [toolArgs]);
+
+    if (loading) {
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+    }
+
+    if (!!toolArgs && !toolArgs.success) {
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
+    } else if (!toolArgs || !toolArgs.data) {
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+    }
+
+    const { top_left_position, cell_values } = toolArgs.data;
+    const rows = cell_values.length;
+    const cols = cell_values.reduce((max, row) => Math.max(max, row.length), 0);
 
     return (
       <ToolCard

@@ -39,14 +39,6 @@ export const AddMessage = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description={toolArgs.data.selection}
-        className={className}
-        compact
-      />
-    );
+    return <ToolCard icon={icon} label={label} description={toolArgs.data.selection} className={className} compact />;
   }
 );

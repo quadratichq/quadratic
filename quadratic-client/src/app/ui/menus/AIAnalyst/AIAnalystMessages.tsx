@@ -4,7 +4,6 @@ import { GroupedFormattingToolCards, isFormattingTool } from '@/app/ai/toolCards
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
-  aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
@@ -26,17 +25,12 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { apiClient } from '@/shared/api/apiClient';
 import { Avatar } from '@/shared/components/Avatar';
-import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { displayInitials } from '@/shared/utils/userUtil';
 import {
   createTextContent,
-  getLastAIPromptMessageIndex,
   getUserPromptMessages,
   isContentGoogleSearchInternal,
   isContentImportFilesToGridInternal,
@@ -445,8 +439,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         );
       })}
 
-      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
-
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
       <PDFImportLoading />
@@ -464,75 +456,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       />
 
       <AILoading loading={loading} />
-    </div>
-  );
-});
-
-const FeedbackButtons = memo(() => {
-  // true=positive, false=negative, null=neutral
-  const [like, setLike] = useState<boolean | null>(null);
-
-  const logFeedback = useRecoilCallback(
-    ({ snapshot }) =>
-      (newLike: boolean | null) => {
-        // Log it to mixpanel
-        trackEvent('[AIAnalyst].feedback', { like: newLike });
-
-        // Otherwise, log it to our DB
-        const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
-        const messageIndex = getLastAIPromptMessageIndex(messages);
-        if (messageIndex < 0) return;
-
-        const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
-        apiClient.ai.feedback({
-          chatId,
-          messageIndex,
-          like: newLike,
-        });
-      },
-    [apiClient]
-  );
-
-  return (
-    <div className="relative flex flex-row items-center px-2">
-      <TooltipPopover label="Good response">
-        <Button
-          onClick={() => {
-            setLike((prev) => {
-              const newLike = prev === true ? null : true;
-              logFeedback(newLike);
-              return newLike;
-            });
-          }}
-          variant="ghost"
-          size="icon-sm"
-          className={cn('select-none hover:text-success', like === true ? 'text-success' : 'text-muted-foreground')}
-          disabled={like === false}
-        >
-          <ThumbUpIcon className="scale-75" />
-        </Button>
-      </TooltipPopover>
-
-      <TooltipPopover label="Bad response">
-        <Button
-          onClick={() => {
-            setLike((prev) => {
-              const newLike = prev === false ? null : false;
-              logFeedback(newLike);
-              return newLike;
-            });
-          }}
-          variant="ghost"
-          size="icon-sm"
-          className={cn(
-            'select-none hover:text-destructive',
-            like === false ? 'text-destructive' : 'text-muted-foreground'
-          )}
-          disabled={like === true}
-        >
-          <ThumbDownIcon className="scale-75" />
-        </Button>
-      </TooltipPopover>
     </div>
   );
 });

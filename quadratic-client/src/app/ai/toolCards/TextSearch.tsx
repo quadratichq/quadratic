@@ -40,8 +40,6 @@ export const TextSearch = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.query}"`} className={className} />
-    );
+    return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.query}"`} className={className} />;
   }
 );
