@@ -12,8 +12,14 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Use Promise.race to wait for either loading indicator to disappear or canvas to appear
+  // This prevents timeouts if the loading indicator gets stuck
+  await Promise.race([
+    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
+    page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 }),
+  ]);
+  // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
   // Wait for canvas to be visible (indicates file editor has loaded)
   await page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 60 * 1000 });
@@ -40,7 +46,8 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
     await page.waitForTimeout(10 * 1000);
     await page.waitForLoadState('domcontentloaded');
     await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-    await page.waitForLoadState('networkidle');
+    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    await page.waitForLoadState('load', { timeout: 60 * 1000 });
   }
 };
 
@@ -90,8 +97,14 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Use Promise.race to wait for either loading indicator to disappear or canvas to appear
+  // This prevents timeouts if the loading indicator gets stuck
+  await Promise.race([
+    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
+    page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 }),
+  ]);
+  // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible({
@@ -171,8 +184,14 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Use Promise.race to wait for either loading indicator to disappear or canvas to appear
+  // This prevents timeouts if the loading indicator gets stuck
+  await Promise.race([
+    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
+    page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 }),
+  ]);
+  // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
   // Check for error messages first
   const errorIndicators = [

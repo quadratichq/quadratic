@@ -827,7 +827,8 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+  // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -860,7 +861,8 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+  // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
