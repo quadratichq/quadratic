@@ -18,7 +18,15 @@ import type { z } from 'zod';
 type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
 
 export const SetCodeCellValue = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+  ({
+    toolCall: { arguments: args, loading },
+    className,
+    isUpdate,
+  }: {
+    toolCall: AIToolCall;
+    className: string;
+    isUpdate?: boolean;
+  }) => {
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
@@ -149,7 +157,7 @@ export const SetCodeCellValue = memo(
         return (
           <ToolCard
             icon={<LanguageIcon language={language ?? ''} />}
-            label="Writing code"
+            label={isUpdate ? 'Updating code' : 'Writing code'}
             description={
               `${estimatedNumberOfLines} line` +
               (estimatedNumberOfLines === 1 ? '' : 's') +
@@ -164,7 +172,15 @@ export const SetCodeCellValue = memo(
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="" />} label="Wrote code" hasError className={className} compact />;
+      return (
+        <ToolCard
+          icon={<LanguageIcon language="" />}
+          label={isUpdate ? 'Updated code' : 'Wrote code'}
+          hasError
+          className={className}
+          compact
+        />
+      );
     } else if (!toolArgs || !toolArgs.data) {
       return <ToolCard isLoading className={className} compact />;
     }
@@ -173,7 +189,7 @@ export const SetCodeCellValue = memo(
     return (
       <ToolCard
         icon={<LanguageIcon language={code_cell_language} />}
-        label={`Wrote code ${code_cell_name || code_cell_language}`}
+        label={`${isUpdate ? 'Updated' : 'Wrote'} code ${code_cell_name || code_cell_language}`}
         description={
           `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
         }

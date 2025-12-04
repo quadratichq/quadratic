@@ -52,9 +52,10 @@ import { memo } from 'react';
 type AIToolCardProps = {
   toolCall: AIToolCall;
   className?: string;
+  isUpdate?: boolean; // For code tools: true if this is updating an existing cell
 };
 
-export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
+export const AIToolCard = memo(({ toolCall, className, isUpdate }: AIToolCardProps) => {
   if (!Object.values(AITool).includes(toolCall.name as AITool)) {
     return null;
   }
@@ -67,7 +68,7 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
     case AITool.GetCodeCellValue:
       return <GetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
-      return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
+      return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} isUpdate={isUpdate} />;
     case AITool.GetDatabaseSchemas:
       return <GetDatabaseSchemas toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetSQLCodeCellValue:

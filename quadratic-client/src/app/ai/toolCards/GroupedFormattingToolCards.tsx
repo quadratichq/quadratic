@@ -19,7 +19,7 @@ interface GroupedFormattingToolCardsProps {
 }
 
 export const GroupedFormattingToolCards = memo(({ toolCalls, className }: GroupedFormattingToolCardsProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const isLoading = toolCalls.some((tc) => tc.loading);
 
