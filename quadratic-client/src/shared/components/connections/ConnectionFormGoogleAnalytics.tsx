@@ -106,7 +106,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               Data Sync Status
             </label>
             {connection && (
-              <p className="mb-4 mt-2 text-xs text-red-500">
+              <p className="mb-4 mt-2 text-xs">
                 <SyncedConnection
                   connectionUuid={connection.uuid}
                   teamUuid={teamUuid}

@@ -12,7 +12,7 @@ use quadratic_rust_shared::{
     synced::{
         SyncedConnection, SyncedConnectionKind, chunk_date_range, dates_to_sync,
         google_analytics::client::GoogleAnalyticsConnection, mixpanel::MixpanelConnection,
-        object_store_path, plaid::PlaidConnection, upload,
+        object_store_path, plaid::PlaidConnection, upload, write_synced_markers,
     },
 };
 use serde::{Serialize, de::DeserializeOwned};
@@ -138,6 +138,7 @@ pub(crate) async fn process_synced_connection<
 
     let streams = connection.streams();
     let streams_len = streams.len();
+    let mut connection_started = false;
 
     let client = match connection.kind() {
         // we need to manually assemble the PlaidClient b/c API doesn't store the client_id or secret
@@ -150,30 +151,6 @@ pub(crate) async fn process_synced_connection<
                 .await?
         }
     };
-
-    tracing::info!(
-        "Processing {connection_name} connection {} with {} stream(s): {:?}",
-        connection_id,
-        streams_len,
-        streams
-    );
-
-    // add the connection to the cache
-    state
-        .clone()
-        .stats
-        .lock()
-        .await
-        .increment_num_connections_processing();
-    start_connection_status(
-        state.clone(),
-        connection_id,
-        synced_connection_id,
-        run_id,
-        connection.kind(),
-        sync_kind.clone(),
-    )
-    .await?;
 
     // Process each stream/table
     for stream in streams {
@@ -202,6 +179,34 @@ pub(crate) async fn process_synced_connection<
 
         if sync_kind == SyncKind::Daily {
             date_ranges = vec![(today, today)];
+        }
+
+        // Only start the connection status when we have confirmed work to do
+        if !connection_started {
+            connection_started = true;
+
+            tracing::info!(
+                "Processing {connection_name} connection {} with {} stream(s): {:?}",
+                connection_id,
+                streams_len,
+                connection.streams()
+            );
+
+            state
+                .clone()
+                .stats
+                .lock()
+                .await
+                .increment_num_connections_processing();
+            start_connection_status(
+                state.clone(),
+                connection_id,
+                synced_connection_id,
+                run_id,
+                connection.kind(),
+                sync_kind.clone(),
+            )
+            .await?;
         }
 
         tracing::info!(
@@ -272,6 +277,20 @@ pub(crate) async fn process_synced_connection<
                             ))
                         })?;
 
+                // If no files were uploaded, write marker files so we don't re-sync these dates
+                if num_files == 0 {
+                    write_synced_markers(&object_store, &prefix, chunk_start, chunk_end)
+                        .await
+                        .map_err(|e| {
+                            FilesError::SyncedConnection(format!(
+                                "Failed to write synced markers for stream '{}' chunk {}: {}",
+                                stream,
+                                chunk_index + 1,
+                                e
+                            ))
+                        })?;
+                }
+
                 total_files_processed += num_files;
 
                 tracing::trace!(
@@ -306,21 +325,24 @@ pub(crate) async fn process_synced_connection<
         .await?;
     }
 
-    tracing::info!(
-        "Fnished processing {} streams with {} files for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
-        streams_len,
-        total_files_processed,
-        connection_id,
-        sync_kind,
-        start_time.elapsed()
-    );
+    // Only log and decrement if we actually started processing
+    if connection_started {
+        tracing::info!(
+            "Fnished processing {} streams with {} files for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
+            streams_len,
+            total_files_processed,
+            connection_id,
+            sync_kind,
+            start_time.elapsed()
+        );
 
-    state
-        .clone()
-        .stats
-        .lock()
-        .await
-        .decrement_num_connections_processing();
+        state
+            .clone()
+            .stats
+            .lock()
+            .await
+            .decrement_num_connections_processing();
+    }
 
     Ok(())
 }

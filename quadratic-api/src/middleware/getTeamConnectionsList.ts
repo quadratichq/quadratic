@@ -11,16 +11,15 @@ export function getTeamConnectionsList({
   })[];
   settingShowConnectionDemo: boolean;
 }): ConnectionList {
-  const connections = dbConnections.map((connection) => ({
+  const connections: ConnectionList = dbConnections.map((connection) => ({
     uuid: connection.uuid,
     name: connection.name,
     createdDate: connection.createdDate.toISOString(),
     type: connection.type,
     semanticDescription: connection.semanticDescription || undefined,
     isDemo: false,
-    syncedConnectionPercentCompleted: connection.SyncedConnection?.percentCompleted ?? 0,
-    syncedConnectionUpdatedDate:
-      connection.SyncedConnection?.updatedDate?.toISOString() ?? connection.createdDate.toISOString(),
+    syncedConnectionPercentCompleted: connection.SyncedConnection?.percentCompleted,
+    syncedConnectionUpdatedDate: connection.SyncedConnection?.updatedDate?.toISOString(),
   }));
 
   if (connectionDemo && settingShowConnectionDemo) {
@@ -32,7 +31,7 @@ export function getTeamConnectionsList({
       semanticDescription: connectionDemo.semanticDescription || undefined,
       isDemo: true,
       syncedConnectionPercentCompleted: 0,
-      syncedConnectionUpdatedDate: connectionDemo.createdDate,
+      syncedConnectionUpdatedDate: undefined,
     });
   }
 
