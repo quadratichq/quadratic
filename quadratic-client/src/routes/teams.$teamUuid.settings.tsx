@@ -278,7 +278,12 @@ export const Component = () => {
             </Type>
             <div>
               <Button variant="outline" asChild>
-                <Link to={ROUTES.TEAM_FILES_DELETED(team.uuid)}>Recover deleted files</Link>
+                <Link
+                  to={ROUTES.TEAM_FILES_DELETED(team.uuid)}
+                  onClick={() => trackEvent('[TeamSettings].viewDeletedFiles')}
+                >
+                  Recover deleted files
+                </Link>
               </Button>
               <p className="mt-2 text-sm text-muted-foreground">
                 Files deleted in the 30 days remain available for recovery.

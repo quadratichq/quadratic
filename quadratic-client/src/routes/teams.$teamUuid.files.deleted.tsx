@@ -4,6 +4,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { useCallback, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
@@ -31,6 +32,7 @@ export const Component = () => {
 
   const handleRestoreAndRedirect = useCallback(
     async (fileUuid: string) => {
+      trackEvent('[Files].recoverDeletedFile', { id: fileUuid });
       setActiveFileRestoreUuid(fileUuid);
       try {
         const res = await apiClient.files.restore(fileUuid);
