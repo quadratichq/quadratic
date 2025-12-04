@@ -31,7 +31,7 @@ export const ToolCard = memo(
       return (
         <div
           className={cn(
-            'flex min-w-0 select-none items-center gap-1.5 text-[13px] text-foreground',
+            'flex min-w-0 select-none items-center gap-1.5 text-sm text-muted-foreground',
             outlined && 'rounded border border-border bg-background px-2 py-1 shadow-sm',
             onClick && 'cursor-pointer hover:text-foreground/80',
             className

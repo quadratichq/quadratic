@@ -50,7 +50,7 @@ export const GroupedFormattingToolCards = memo(({ toolCalls, className }: Groupe
   return (
     <div className={cn('flex flex-col', className)}>
       <div
-        className="flex cursor-pointer select-none items-center gap-1.5 text-[13px] text-foreground hover:text-foreground/80"
+        className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <FormatPaintIcon />
@@ -72,4 +72,3 @@ export const GroupedFormattingToolCards = memo(({ toolCalls, className }: Groupe
     </div>
   );
 });
-
