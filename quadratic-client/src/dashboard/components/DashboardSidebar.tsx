@@ -20,6 +20,7 @@ import {
   FilePrivateIcon,
   FileSharedWithMeIcon,
   GroupIcon,
+  HomeIcon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
@@ -106,6 +107,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <TeamSwitcher appIsLoading={isLoading} />
       </div>
       <div className={`flex flex-col px-3`}>
+        <div className="mb-4 grid gap-0.5">
+          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)}>
+            <HomeIcon className={classNameIcons} />
+            Home
+          </SidebarNavLink>
+        </div>
         <Type
           as="h3"
           variant="overline"
@@ -115,7 +122,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
+            <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>

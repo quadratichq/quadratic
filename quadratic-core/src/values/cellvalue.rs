@@ -15,8 +15,12 @@ use crate::{
     grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
 };
 
-// todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
+// Currency symbols ordered by length (longest first) to avoid partial matches
+// e.g., "R$" must be checked before "R" to correctly parse "R$123"
+const CURRENCY_SYMBOLS: &[&str] = &[
+    "CHF", "R$", "kr", "zł", // Multi-character symbols first
+    "$", "€", "£", "¥", "₹", "₩", "₺", "₽", "R", // Single-character symbols
+];
 const PERCENTAGE_SYMBOL: char = '%';
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -396,11 +400,13 @@ impl CellValue {
             value.strip_prefix("-").unwrap_or(value),
         );
 
-        let stripped = CURRENCY_SYMBOLS
-            .chars()
-            .fold(absolute_value, |acc: &str, char| {
-                acc.strip_prefix(char).unwrap_or(acc)
-            });
+        let mut stripped = absolute_value;
+        for symbol in CURRENCY_SYMBOLS {
+            if let Some(remaining) = stripped.strip_prefix(symbol) {
+                stripped = remaining;
+                break; // Only strip the first matching symbol
+            }
+        }
 
         if is_negative {
             if let Some(stripped) = stripped.strip_prefix("-") {
@@ -428,16 +434,16 @@ impl CellValue {
                 }),
         );
 
-        for char in CURRENCY_SYMBOLS.chars() {
+        for symbol in CURRENCY_SYMBOLS {
             if let Some(stripped) = absolute_value
-                .strip_prefix(char)
+                .strip_prefix(symbol)
                 .map(|stripped| stripped.trim())
             {
                 let without_commas =
                     CellValue::strip_commas(&CellValue::strip_parentheses(stripped));
                 if let Ok(bd) = decimal_from_str(&without_commas) {
                     let bd = if is_negative { -bd } else { bd };
-                    return Some((char.to_string(), bd));
+                    return Some((symbol.to_string(), bd));
                 }
             }
         }
@@ -1285,6 +1291,40 @@ mod test {
 
         let value = String::from("$123.123abc");
         assert_eq!(CellValue::unpack_currency(&value), None);
+
+        // Test multi-character currency symbols
+        let value = String::from("CHF123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("CHF"), decimal_from_str("123.45").unwrap()))
+        );
+
+        let value = String::from("R$123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R$"), decimal_from_str("123.45").unwrap()))
+        );
+
+        let value = String::from("kr123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("kr"), decimal_from_str("123.45").unwrap()))
+        );
+
+        // Test that longer symbols are matched before shorter ones
+        // "R$" should match before "R" for "R$123.45" (Brazilian Real)
+        let value = String::from("R$123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R$"), decimal_from_str("123.45").unwrap()))
+        );
+
+        // Test that "R 123" (South African Rand with space) correctly matches "R" and not "R$"
+        let value = String::from("R 123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R"), decimal_from_str("123.45").unwrap()))
+        );
     }
 
     #[test]

@@ -66,6 +66,10 @@ const HORIZONTAL_LINE_THICKNESS = 1;
 const UNDERLINE_OFFSET = 52;
 const STRIKE_THROUGH_OFFSET = 32;
 
+// Minimum vertical padding from cell edges before vertical alignment takes effect.
+// For cells without enough space (like default height), text is centered instead.
+const CELL_VERTICAL_PADDING = 2.5;
+
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 export const LINE_HEIGHT = 16;
@@ -238,7 +242,7 @@ export class CellLabel {
     this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
     this.align = cell.align ?? 'left';
-    this.verticalAlign = cell.verticalAlign ?? 'top';
+    this.verticalAlign = cell.verticalAlign ?? 'bottom';
     this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : (cell.wrap ?? 'overflow');
     this.underline = cell.underline ?? this.link;
     this.strikeThrough = !!cell.strikeThrough;
@@ -361,16 +365,36 @@ export class CellLabel {
       this.position = new Point(this.AABB.left, this.AABB.top);
     }
 
-    if (this.verticalAlign === 'bottom') {
-      const actualTop = this.AABB.bottom - this.textHeight;
+    // Calculate available space for vertical positioning
+    const availableSpace = this.AABB.height - this.textHeight;
+
+    // The default extra space in a cell (constant regardless of font size).
+    // When cells auto-grow with font size, they maintain this same extra space.
+    const defaultExtraSpace = CELL_HEIGHT - LINE_HEIGHT;
+
+    // If available space is at or below the default extra space, center the text.
+    // This matches behavior in other spreadsheets for default-height cells.
+    if (availableSpace <= defaultExtraSpace) {
+      const actualTop = this.AABB.top + Math.max(0, availableSpace / 2);
       this.position.y = actualTop;
-      this.actualTop = this.position.y;
-    } else if (this.verticalAlign === 'middle') {
-      const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
-      this.position.y = Math.max(actualTop, this.AABB.top);
-      this.actualTop = this.position.y;
+      this.actualTop = actualTop;
     } else {
-      this.actualTop = this.position.y;
+      // Apply vertical alignment with padding from edges (scaled to font size)
+      const verticalPadding = (CELL_VERTICAL_PADDING / LINE_HEIGHT) * this.lineHeight;
+      if (this.verticalAlign === 'bottom') {
+        const actualTop = this.AABB.bottom - this.textHeight - verticalPadding;
+        this.position.y = actualTop;
+        this.actualTop = actualTop;
+      } else if (this.verticalAlign === 'middle') {
+        const actualTop = this.AABB.top + availableSpace / 2;
+        this.position.y = actualTop;
+        this.actualTop = actualTop;
+      } else {
+        // 'top' alignment
+        const actualTop = this.AABB.top + verticalPadding;
+        this.position.y = actualTop;
+        this.actualTop = actualTop;
+      }
     }
     this.actualBottom = Math.min(this.AABB.bottom, this.position.y + this.textHeight);
   };

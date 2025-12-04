@@ -2,7 +2,7 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 32;
+export const DEFAULT_MODEL_VERSION = 33;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
@@ -244,6 +244,21 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: false,
+    imageSupport: true,
+  },
+  'vertexai:gemini-3-pro-preview': {
+    ...AI_RATES.gemini_2_5_pro_rate,
+    model: 'gemini-3-pro-preview',
+    displayName: '3.0 Pro',
+    displayProvider: 'Gemini',
+    temperature: 0.1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'others',
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
@@ -516,6 +531,46 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 2.5,
     rate_per_million_cache_write_tokens: 0,
   },
+  'azure-openai:gpt-5.1-codex': {
+    model: 'gpt-5.1-codex',
+    backupModelKey: 'openai:gpt-5-codex',
+    displayName: 'GPT-5.1-Codex',
+    displayProvider: 'OpenAI',
+    temperature: 1,
+    max_tokens: 128000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'others',
+    provider: 'azure-openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 1.25,
+    rate_per_million_output_tokens: 10,
+    rate_per_million_cache_read_tokens: 0.125,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:gpt-5.1': {
+    model: 'gpt-5.1',
+    backupModelKey: 'openai:gpt-5-2025-08-07',
+    displayName: 'GPT-5.1',
+    displayProvider: 'OpenAI',
+    temperature: 1,
+    max_tokens: 128000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'others',
+    provider: 'azure-openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 2.5,
+    rate_per_million_output_tokens: 20,
+    rate_per_million_cache_read_tokens: 0.25,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'azure-openai:gpt-5-codex': {
     model: 'gpt-5-codex',
     backupModelKey: 'openai:gpt-5-codex',
@@ -525,7 +580,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'others',
+    mode: 'disabled',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -545,7 +600,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'others',
+    mode: 'disabled',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
