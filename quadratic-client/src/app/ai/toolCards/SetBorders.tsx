@@ -1,5 +1,5 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
-import { GridActionIcon } from '@/shared/components/Icons';
+import { FormatPaintIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -26,8 +26,8 @@ export const SetBorders = memo(
       }
     }, [args, loading]);
 
-    const icon = <GridActionIcon />;
-    const label = loading ? 'Setting borders' : 'Set borders';
+    const icon = <FormatPaintIcon />;
+    const label = loading ? 'Formatting borders' : 'Formatted borders';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

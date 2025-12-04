@@ -1,4 +1,6 @@
 import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
+import { GroupedCodeToolCards, isCodeTool } from '@/app/ai/toolCards/GroupedCodeToolCards';
+import { GroupedFormattingToolCards, isFormattingTool } from '@/app/ai/toolCards/GroupedFormattingToolCards';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
@@ -44,13 +46,21 @@ import {
   isToolResultMessage,
   isUserPromptMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolCall, ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
+
+type ToolGroupType = 'code' | 'formatting' | 'other';
+
+function getToolGroupType(toolName: string): ToolGroupType {
+  if (isCodeTool(toolName)) return 'code';
+  if (isFormattingTool(toolName)) return 'formatting';
+  return 'other';
+}
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
   const { loggedInUser } = useRootRouteLoaderData();
@@ -64,6 +74,115 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const [messages, setMessages] = useRecoilState(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+
+  // Pre-process messages to identify groups of consecutive tool calls across messages
+  // Returns a map of messageIndex -> { isGroupStart, groupToolCalls, skipToolCalls }
+  const toolGroupInfo = useMemo(() => {
+    const info = new Map<
+      number,
+      { isGroupStart: boolean; groupType: ToolGroupType | null; groupToolCalls: AIToolCall[]; skipToolCalls: boolean }
+    >();
+
+    let currentGroupStart: number | null = null;
+    let currentGroupType: ToolGroupType | null = null;
+    let currentGroupToolCalls: AIToolCall[] = [];
+
+    messages.forEach((message, index) => {
+      // Only process assistant messages with userPrompt context and tool calls
+      // All other messages (toolResult, internal context, etc.) are ignored without breaking the group
+      if (!(message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0)) {
+        return;
+      }
+
+      // Check if all tool calls in this message are of the same groupable type
+      const firstToolType = getToolGroupType(message.toolCalls[0].name);
+      const isGroupableType = firstToolType === 'code' || firstToolType === 'formatting';
+      const allSameType =
+        isGroupableType && message.toolCalls.every((tc) => getToolGroupType(tc.name) === firstToolType);
+
+      if (allSameType) {
+        if (currentGroupType === firstToolType) {
+          // Continue the current group
+          currentGroupToolCalls.push(...message.toolCalls);
+          info.set(index, { isGroupStart: false, groupType: null, groupToolCalls: [], skipToolCalls: true });
+        } else {
+          // Finalize previous group if exists
+          if (currentGroupStart !== null && currentGroupToolCalls.length > 1) {
+            const existing = info.get(currentGroupStart);
+            if (existing) {
+              existing.groupToolCalls = currentGroupToolCalls;
+            }
+          }
+          // Start a new group
+          currentGroupStart = index;
+          currentGroupType = firstToolType;
+          currentGroupToolCalls = [...message.toolCalls];
+          info.set(index, { isGroupStart: true, groupType: firstToolType, groupToolCalls: [], skipToolCalls: false });
+        }
+      } else {
+        // Non-groupable tool calls, finalize any existing group
+        if (currentGroupStart !== null && currentGroupToolCalls.length > 1) {
+          const existing = info.get(currentGroupStart);
+          if (existing) {
+            existing.groupToolCalls = currentGroupToolCalls;
+          }
+        }
+        currentGroupStart = null;
+        currentGroupType = null;
+        currentGroupToolCalls = [];
+        info.set(index, { isGroupStart: false, groupType: null, groupToolCalls: [], skipToolCalls: false });
+      }
+    });
+
+    // Finalize last group
+    if (currentGroupStart !== null && currentGroupToolCalls.length > 1) {
+      const existing = info.get(currentGroupStart);
+      if (existing) {
+        existing.groupToolCalls = currentGroupToolCalls;
+      }
+    }
+
+    return info;
+  }, [messages]);
+
+  const renderToolCalls = useCallback(
+    (
+      messageIndex: number,
+      toolCalls: AIToolCall[],
+      debugAIAnalystChatEditing: boolean | undefined,
+      messages: ChatMessage[],
+      setMessages: (messages: ChatMessage[]) => void
+    ) => {
+      const groupInfo = toolGroupInfo.get(messageIndex);
+
+      // Skip tool calls if they're part of a group that starts in an earlier message
+      if (groupInfo?.skipToolCalls) {
+        return null;
+      }
+
+      // If this is the start of a cross-message group, render the grouped component
+      if (groupInfo?.groupToolCalls && groupInfo.groupToolCalls.length > 1) {
+        if (groupInfo.groupType === 'code') {
+          return <GroupedCodeToolCards toolCalls={groupInfo.groupToolCalls} className="tool-card" />;
+        } else if (groupInfo.groupType === 'formatting') {
+          return <GroupedFormattingToolCards toolCalls={groupInfo.groupToolCalls} className="tool-card" />;
+        }
+      }
+
+      // Otherwise, render normally (handles single tool calls and non-groupable tools)
+      return (
+        <GroupedToolCalls
+          toolCalls={toolCalls}
+          messageIndex={messageIndex}
+          debugAIAnalystChatEditing={debugAIAnalystChatEditing}
+          messages={messages}
+          setMessages={setMessages}
+        />
+      );
+    },
+    [toolGroupInfo]
+  );
+
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
   const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
@@ -192,6 +311,20 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           return null;
         }
 
+        // Check if this message's tool calls are being skipped as part of a group
+        const groupInfo = toolGroupInfo.get(index);
+        const toolCallsSkipped = groupInfo?.skipToolCalls === true;
+
+        // If tool calls are skipped and message has no visible content, skip the entire message
+        if (
+          toolCallsSkipped &&
+          message.role === 'assistant' &&
+          'content' in message &&
+          message.content.every((item) => !isContentText(item) || !item.text.trim())
+        ) {
+          return null;
+        }
+
         const isCurrentMessage = index === messagesCount - 1;
         const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
@@ -305,22 +438,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall, toolCallIndex) => (
-                    <AIToolCardEditable
-                      key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
-                      toolCall={toolCall}
-                      onToolCallChange={
-                        debugAIAnalystChatEditing &&
-                        ((newToolCall) => {
-                          const newMessage = { ...message, toolCalls: [...message.toolCalls] };
-                          newMessage.toolCalls[toolCallIndex] = newToolCall;
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
-                  ))}
+                  renderToolCalls(index, message.toolCalls, debugAIAnalystChatEditing, messages, setMessages)}
               </>
             )}
           </div>
@@ -488,3 +606,89 @@ const WebSearchLoading = memo(() => {
 
   return <ToolCardQuery className="px-2" label="Searching the web." isLoading={webSearchLoading} />;
 });
+
+// Helper component to group consecutive code tool calls
+interface GroupedToolCallsProps {
+  toolCalls: AIToolCall[];
+  messageIndex: number;
+  debugAIAnalystChatEditing: boolean | undefined;
+  messages: any;
+  setMessages: (messages: any) => void;
+}
+
+const GroupedToolCalls = memo(
+  ({ toolCalls, messageIndex, debugAIAnalystChatEditing, messages, setMessages }: GroupedToolCallsProps) => {
+    // Group consecutive tools of the same type together
+    const groupedItems: Array<{ type: ToolGroupType; toolCalls: AIToolCall[]; startIndex: number }> = [];
+
+    let currentGroup: { type: ToolGroupType; toolCalls: AIToolCall[]; startIndex: number } | null = null;
+
+    toolCalls.forEach((toolCall, idx) => {
+      const groupType = getToolGroupType(toolCall.name);
+
+      if (!currentGroup || currentGroup.type !== groupType) {
+        if (currentGroup) {
+          groupedItems.push(currentGroup);
+        }
+        currentGroup = { type: groupType, toolCalls: [toolCall], startIndex: idx };
+      } else {
+        currentGroup.toolCalls.push(toolCall);
+      }
+    });
+
+    if (currentGroup) {
+      groupedItems.push(currentGroup);
+    }
+
+    return (
+      <>
+        {groupedItems.map((group, groupIdx) => {
+          // Render grouped code tools
+          if (group.type === 'code' && group.toolCalls.length > 1) {
+            return (
+              <GroupedCodeToolCards
+                key={`group-code-${messageIndex}-${groupIdx}`}
+                toolCalls={group.toolCalls}
+                className="tool-card"
+              />
+            );
+          }
+
+          // Render grouped formatting tools
+          if (group.type === 'formatting' && group.toolCalls.length > 1) {
+            return (
+              <GroupedFormattingToolCards
+                key={`group-formatting-${messageIndex}-${groupIdx}`}
+                toolCalls={group.toolCalls}
+                className="tool-card"
+              />
+            );
+          }
+
+          // Render individual tool cards
+          return group.toolCalls.map((toolCall, idx) => {
+            const toolCallIndex = group.startIndex + idx;
+            return (
+              <AIToolCardEditable
+                key={`${messageIndex}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
+                toolCall={toolCall}
+                onToolCallChange={
+                  debugAIAnalystChatEditing
+                    ? (newToolCall) => {
+                        const message = messages[messageIndex];
+                        const newMessage = { ...message, toolCalls: [...message.toolCalls] };
+                        newMessage.toolCalls[toolCallIndex] = newToolCall;
+                        const newMessages = [...messages];
+                        newMessages[messageIndex] = newMessage;
+                        setMessages(newMessages);
+                      }
+                    : undefined
+                }
+              />
+            );
+          });
+        })}
+      </>
+    );
+  }
+);
