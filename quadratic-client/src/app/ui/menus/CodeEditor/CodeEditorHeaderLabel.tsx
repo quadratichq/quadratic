@@ -186,15 +186,12 @@ export function CodeEditorHeaderLabel() {
           {currentConnection && (
             <span className="truncate px-1 after:ml-1 after:content-['·']">{currentConnection.name}</span>
           )}
-          <button
-            className="max-w-full rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
-            onClick={focusCellRef}
-          >
+          <button className="max-w-full rounded text-left hover:cursor-pointer hover:bg-accent" onClick={focusCellRef}>
             {cellRef}
 
             {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
-              <span className="ml-2">
-                {` · `}
+              <span className="ml-1">
+                {`· `}
                 <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
               </span>
             )}

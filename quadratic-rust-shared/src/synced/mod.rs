@@ -89,19 +89,30 @@ fn string_to_date(string_date: &str) -> Result<NaiveDate> {
     NaiveDate::parse_from_str(string_date, DATE_FORMAT).map_err(synced_error)
 }
 
-/// Parse a date from a string.
+/// Valid file extensions for synced data
+const SYNCED_EXTENSIONS: [&str; 2] = [".parquet", ".synced"];
+
+/// Parse a date from a string, removing known extensions.
 fn parse_file_date(string_date: &str) -> Result<NaiveDate> {
-    // remove .parquet from the end of the string
-    let string_date = string_date.to_ascii_lowercase().replace(".parquet", "");
-    let date = string_to_date(&string_date)?;
+    let mut clean_date = string_date.to_ascii_lowercase();
+    for ext in SYNCED_EXTENSIONS {
+        clean_date = clean_date.replace(ext, "");
+    }
+    let date = string_to_date(&clean_date)?;
 
     Ok(date)
 }
 
 /// Get the date from the location of the file.
+/// Recognizes both .parquet files (with data) and .synced marker files (no data).
 fn get_date_from_location(location: &str) -> Result<NaiveDate> {
-    if !location.to_ascii_lowercase().contains(".parquet") {
-        return Err(synced_error("Not a parquet file"));
+    let location_lower = location.to_ascii_lowercase();
+    let has_valid_extension = SYNCED_EXTENSIONS
+        .iter()
+        .any(|ext| location_lower.contains(ext));
+
+    if !has_valid_extension {
+        return Err(synced_error("Not a synced file"));
     }
 
     let parts = location.split('/').collect::<Vec<&str>>();
@@ -309,6 +320,35 @@ pub async fn upload(
     }
 
     Ok(num_files)
+}
+
+/// Write marker files to S3 for dates that were synced but had no data.
+/// This prevents re-syncing these dates on subsequent runs.
+pub async fn write_synced_markers(
+    object_store: &Arc<dyn ObjectStore>,
+    prefix: &str,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> Result<()> {
+    let mut current_date = start_date;
+
+    while current_date <= end_date {
+        let file_name = format!("{}/{}.synced", prefix, current_date.format(DATE_FORMAT));
+
+        // Write an empty marker file
+        upload_multipart(object_store, &file_name, &Bytes::new())
+            .await
+            .map_err(|e| {
+                SharedError::Synced(format!(
+                    "Failed to write synced marker {} to S3: {}",
+                    file_name, e
+                ))
+            })?;
+
+        current_date += chrono::Duration::days(1);
+    }
+
+    Ok(())
 }
 
 pub fn deserialize_int_to_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
