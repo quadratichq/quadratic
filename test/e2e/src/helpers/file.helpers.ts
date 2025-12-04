@@ -12,17 +12,22 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
-  // Use Promise.race to wait for either loading indicator to disappear or canvas to appear
-  // This prevents timeouts if the loading indicator gets stuck
-  await Promise.race([
-    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
+  // Wait for canvas to appear (primary indicator that file editor has loaded)
+  // Also wait for loading indicator to disappear in parallel, but don't fail if it doesn't
+  const [canvasResult, loadingResult] = await Promise.allSettled([
     page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 }),
+    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
   ]);
+  // Canvas must appear - if it didn't, throw an error
+  if (canvasResult.status === 'rejected') {
+    throw new Error(`Canvas did not appear within timeout: ${canvasResult.reason}`);
+  }
+  // Loading indicator is optional - log if it didn't disappear but don't fail
+  if (loadingResult.status === 'rejected') {
+    // Loading indicator may get stuck, but canvas appearing is what matters
+  }
   // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
   await page.waitForLoadState('load', { timeout: 60 * 1000 });
-
-  // Wait for canvas to be visible (indicates file editor has loaded)
-  await page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 60 * 1000 });
 
   // Name file - wait for the Untitled button to be visible before clicking
   await page.locator(`button:has-text("Untitled")`).waitFor({ state: 'visible', timeout: 60 * 1000 });
@@ -97,12 +102,20 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
-  // Use Promise.race to wait for either loading indicator to disappear or canvas to appear
-  // This prevents timeouts if the loading indicator gets stuck
-  await Promise.race([
-    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
+  // Wait for canvas to appear (primary indicator that file editor has loaded)
+  // Also wait for loading indicator to disappear in parallel, but don't fail if it doesn't
+  const [canvasResult, loadingResult] = await Promise.allSettled([
     page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 }),
+    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
   ]);
+  // Canvas must appear - if it didn't, throw an error
+  if (canvasResult.status === 'rejected') {
+    throw new Error(`Canvas did not appear within timeout: ${canvasResult.reason}`);
+  }
+  // Loading indicator is optional - log if it didn't disappear but don't fail
+  if (loadingResult.status === 'rejected') {
+    // Loading indicator may get stuck, but canvas appearing is what matters
+  }
   // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
   await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
@@ -184,12 +197,20 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
-  // Use Promise.race to wait for either loading indicator to disappear or canvas to appear
-  // This prevents timeouts if the loading indicator gets stuck
-  await Promise.race([
-    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
+  // Wait for canvas to appear (primary indicator that file editor has loaded)
+  // Also wait for loading indicator to disappear in parallel, but don't fail if it doesn't
+  const [canvasResult, loadingResult] = await Promise.allSettled([
     page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 }),
+    quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 }),
   ]);
+  // Canvas must appear - if it didn't, throw an error
+  if (canvasResult.status === 'rejected') {
+    throw new Error(`Canvas did not appear within timeout: ${canvasResult.reason}`);
+  }
+  // Loading indicator is optional - log if it didn't disappear but don't fail
+  if (loadingResult.status === 'rejected') {
+    // Loading indicator may get stuck, but canvas appearing is what matters
+  }
   // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
   await page.waitForLoadState('load', { timeout: 60 * 1000 });
 

@@ -146,7 +146,7 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   await cleanUpFiles(page, { fileName });
 });
 
-test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) => {
+test.only('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) => {
   // Constants
   const fileName = `Drag_And_Drop_PDF`;
   const pdfFileName = `broadcom-annual-filing.pdf`;

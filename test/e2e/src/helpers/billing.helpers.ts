@@ -142,12 +142,9 @@ export const upgradeToProPlan = async (page: Page) => {
       if (costText) {
         // Extract number from "$20/user/month" format
         proPlanCost = costText.match(/\$(\d+)/)?.[1];
-        if (proPlanCost) {
-          console.log(`Extracted Pro plan cost from specific element: $${proPlanCost}/user/month`);
-        }
       }
     } catch {
-      console.log(`Could not extract cost from specific element, trying parent element text...`);
+      // Fallback to parent element text extraction
     }
 
     // Fallback: Extract from parent element text if specific element extraction failed
@@ -177,7 +174,6 @@ export const upgradeToProPlan = async (page: Page) => {
         const match = proPlanCostText.match(/\$(\d+)/);
         if (match) {
           proPlanCost = match[1];
-          console.log(`Warning: Extracted cost using fallback pattern. Full text: "${proPlanCostText}"`);
         }
       }
     }
@@ -191,8 +187,6 @@ export const upgradeToProPlan = async (page: Page) => {
           `Please verify the Pro plan cost is displayed correctly on the settings page.`
       );
     }
-
-    console.log(`Successfully extracted Pro plan cost: $${proPlanCost}/user/month`);
 
     // Click 'Upgrade to Pro' to upgrade the account
     await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
@@ -271,8 +265,6 @@ export const upgradeToProPlan = async (page: Page) => {
     ]).catch(async (_error: unknown) => {
       // If navigation times out, check current page state
       const currentUrl = page.url();
-      const currentTitle = await page.title();
-      console.log(`Navigation timeout. Current URL: ${currentUrl}, Title: ${currentTitle}`);
 
       // If we're still on Stripe checkout, the payment might have failed
       if (currentUrl.includes('checkout.stripe.com')) {
@@ -290,7 +282,6 @@ export const upgradeToProPlan = async (page: Page) => {
       currentUrl.includes('pay.quadratichq.com') ||
       (currentUrl.includes('stripe.com') && !currentUrl.includes('quadratichq.com'))
     ) {
-      console.log('On Stripe payment page, looking for return link...');
       try {
         // Wait a moment for the page to fully load
         await page.waitForTimeout(2 * 1000);
@@ -314,7 +305,6 @@ export const upgradeToProPlan = async (page: Page) => {
               const href = await returnLink.getAttribute('href').catch(() => null);
               // Only click if it's a Quadratic link or relative path
               if (href && (href.includes('quadratichq.com') || href.startsWith('/'))) {
-                console.log(`Found return link with selector: ${selector}, clicking...`);
                 await returnLink.click({ timeout: 60 * 1000 });
                 await page.waitForLoadState('load', { timeout: 60 * 1000 });
                 await page.waitForTimeout(3 * 1000);
@@ -330,13 +320,10 @@ export const upgradeToProPlan = async (page: Page) => {
 
         if (!returnLinkClicked) {
           // If no return link found, try navigating to homepage
-          console.log('No return link found, navigating to homepage...');
           await page.goto(buildUrl(), { waitUntil: 'load' });
           await page.waitForTimeout(3 * 1000);
         }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(`Failed to handle Stripe payment page: ${message}`);
+      } catch {
         // Try navigating to homepage as fallback
         await page.goto(buildUrl(), { waitUntil: 'load' });
         await page.waitForTimeout(3 * 1000);
