@@ -21,4 +21,4 @@ export const VERSION = import.meta.env.VITE_VERSION;
 
 // Font version constant - shared between font generation script and runtime code
 // Update this when fonts are regenerated to bust cache
-export const FONT_VERSION = '1.0.0';
+export const FONT_VERSION = '1.0.1';
