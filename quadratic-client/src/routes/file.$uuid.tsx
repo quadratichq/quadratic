@@ -15,13 +15,10 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/a
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
-import {
-  usePendingSubscriptionConfirmation,
-  useSubscriptionVerification,
-} from '@/shared/hooks/useSubscriptionVerification';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
@@ -32,7 +29,16 @@ import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
-import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
+import {
+  Link,
+  Outlet,
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useParams,
+  useRouteError,
+  useSearchParams,
+} from 'react-router';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 
@@ -206,16 +212,23 @@ export const Component = memo(() => {
   );
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
-  const pendingConfirmation = usePendingSubscriptionConfirmation();
-  useEffect(() => {
-    // Don't overwrite optimistic paid status if we're waiting for server confirmation
-    if (!pendingConfirmation) {
-      setIsOnPaidPlan(isOnPaidPlan);
-    }
-  }, [isOnPaidPlan, setIsOnPaidPlan, pendingConfirmation]);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Verify billing status after checkout (only runs if billing data is available)
-  useSubscriptionVerification(isOnPaidPlan, teamUuid);
+  useEffect(() => {
+    setIsOnPaidPlan(isOnPaidPlan);
+  }, [isOnPaidPlan, setIsOnPaidPlan]);
+
+  // Handle subscription success: show toast and clean up URL params
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('subscription');
+      newSearchParams.delete('session_id');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, addGlobalSnackbar]);
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed

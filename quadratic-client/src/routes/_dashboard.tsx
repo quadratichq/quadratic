@@ -4,12 +4,12 @@ import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MenuIcon } from '@/shared/components/Icons';
 import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
-import { useSubscriptionVerification } from '@/shared/hooks/useSubscriptionVerification';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -156,12 +156,13 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const {
     activeTeam: {
       userMakingRequest: { teamRole: userMakingRequestTeamRole },
@@ -172,8 +173,16 @@ export const Component = () => {
   } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
-  // Verify billing status after checkout (only runs if billing data is available)
-  useSubscriptionVerification(billingStatus === 'ACTIVE', activeTeamUuid);
+  // Handle subscription success: show toast and clean up URL params
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('subscription');
+      newSearchParams.delete('session_id');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, addGlobalSnackbar]);
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
