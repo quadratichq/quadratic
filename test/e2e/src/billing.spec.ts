@@ -598,6 +598,9 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   // Manage Billing - Cancel Subscription
   //--------------------------------
 
+  // Log into Quadratic
+  await logIn(page, { emailPrefix: 'e2e_cancel_subscription' });
+
   // Create new team
   await createNewTeamAndNavigateToDashboard(page);
 

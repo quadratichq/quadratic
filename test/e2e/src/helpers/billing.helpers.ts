@@ -256,8 +256,17 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // Click 'Subscribe' button to upgrade the count to a Pro plan
     // Wait for navigation after clicking submit - Stripe will redirect after payment
+    // Stripe may redirect to pay.quadratichq.com (success page) or directly to Quadratic
     await Promise.all([
-      page.waitForURL((url) => !url.href.includes('checkout.stripe.com'), { timeout: 120 * 1000 }),
+      page.waitForURL(
+        (url) => {
+          const hostname = url.hostname;
+          // Wait for navigation away from checkout.stripe.com
+          // This could be to pay.quadratichq.com (Stripe success page) or directly to Quadratic
+          return !hostname.includes('checkout.stripe.com');
+        },
+        { timeout: 120 * 1000 }
+      ),
       submitButton.click({ timeout: 60 * 1000 }),
     ]).catch(async (_error: unknown) => {
       // If navigation times out, check current page state
@@ -269,105 +278,98 @@ export const upgradeToProPlan = async (page: Page) => {
       if (currentUrl.includes('checkout.stripe.com')) {
         throw new Error(`Payment submission did not complete. Still on Stripe checkout page: ${currentUrl}`);
       }
-
-      // Otherwise, continue - we might have navigated but the promise didn't catch it
     });
 
     // Wait for page to fully load after navigation
-    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
     await page.waitForLoadState('load', { timeout: 60 * 1000 });
-    await page.waitForTimeout(3 * 1000);
+    await page.waitForTimeout(2 * 1000);
 
-    // Check if we're already on the Team files page by waiting for the heading
-    // This handles cases where Stripe redirects directly to Team files
-    let teamFilesHeadingVisible = await page
-      .getByRole(`heading`, { name: `Team files` })
-      .isVisible({ timeout: 10 * 1000 })
-      .catch(() => false);
+    // Check if we're on a Stripe payment success page and need to return to Quadratic
+    const currentUrl = page.url();
+    if (
+      currentUrl.includes('pay.quadratichq.com') ||
+      (currentUrl.includes('stripe.com') && !currentUrl.includes('quadratichq.com'))
+    ) {
+      console.log('On Stripe payment page, looking for return link...');
+      try {
+        // Wait a moment for the page to fully load
+        await page.waitForTimeout(2 * 1000);
 
-    // If we're not on Team files page, try multiple navigation strategies
-    if (!teamFilesHeadingVisible) {
-      const currentUrl = page.url();
-      const currentTitle = await page.title();
-      console.log(`Not on Team files page. Current URL: ${currentUrl}, Title: ${currentTitle}`);
+        // Look for "Return to [business name]" link or similar return link
+        // Try multiple selectors for the return link
+        const returnLinkSelectors = [
+          'a[href*="quadratichq.com"]',
+          'a:has-text("Return")',
+          'a:has-text("Back")',
+          '[data-testid="return-to-business-link"]',
+          'a[href^="/"]',
+        ];
 
-      // Strategy 1: Extract team UUID from URL and navigate directly to team files
-      const teamUuidMatch = currentUrl.match(/\/teams\/([^/]+)/);
-      if (teamUuidMatch) {
-        const teamUuid = teamUuidMatch[1];
-        console.log(`Found team UUID in URL: ${teamUuid}, navigating to team files...`);
-        try {
-          await page.goto(buildUrl(`/teams/${teamUuid}`), { waitUntil: 'load' });
-          await page.waitForTimeout(2 * 1000);
-          teamFilesHeadingVisible = await page
-            .getByRole(`heading`, { name: `Team files` })
-            .isVisible({ timeout: 10 * 1000 })
-            .catch(() => false);
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.log(`Failed to navigate using team UUID: ${message}`);
-        }
-      }
-
-      // Strategy 2: Try clicking the Files link in navigation
-      if (!teamFilesHeadingVisible) {
-        try {
-          const filesLink = page.getByRole('link', { name: /files/i });
-          const filesLinkVisible = await filesLink.isVisible({ timeout: 5 * 1000 }).catch(() => false);
-          if (filesLinkVisible) {
-            console.log('Found Files link, clicking...');
-            await filesLink.click({ timeout: 60 * 1000 });
-            await page.waitForLoadState('load', { timeout: 60 * 1000 });
-            await page.waitForTimeout(2 * 1000);
-            teamFilesHeadingVisible = await page
-              .getByRole(`heading`, { name: `Team files` })
-              .isVisible({ timeout: 10 * 1000 })
-              .catch(() => false);
+        let returnLinkClicked = false;
+        for (const selector of returnLinkSelectors) {
+          try {
+            const returnLink = page.locator(selector).first();
+            const returnLinkVisible = await returnLink.isVisible({ timeout: 5 * 1000 }).catch(() => false);
+            if (returnLinkVisible) {
+              const href = await returnLink.getAttribute('href').catch(() => null);
+              // Only click if it's a Quadratic link or relative path
+              if (href && (href.includes('quadratichq.com') || href.startsWith('/'))) {
+                console.log(`Found return link with selector: ${selector}, clicking...`);
+                await returnLink.click({ timeout: 60 * 1000 });
+                await page.waitForLoadState('load', { timeout: 60 * 1000 });
+                await page.waitForTimeout(3 * 1000);
+                returnLinkClicked = true;
+                break;
+              }
+            }
+          } catch {
+            // Try next selector
+            continue;
           }
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.log(`Failed to click Files link: ${message}`);
         }
-      }
 
-      // Strategy 3: Navigate to homepage and wait for redirect
-      if (!teamFilesHeadingVisible) {
-        console.log('Trying to navigate to homepage...');
-        try {
+        if (!returnLinkClicked) {
+          // If no return link found, try navigating to homepage
+          console.log('No return link found, navigating to homepage...');
           await page.goto(buildUrl(), { waitUntil: 'load' });
           await page.waitForTimeout(3 * 1000);
-          teamFilesHeadingVisible = await page
-            .getByRole(`heading`, { name: `Team files` })
-            .isVisible({ timeout: 10 * 1000 })
-            .catch(() => false);
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.log(`Failed to navigate to homepage: ${message}`);
         }
-      }
-
-      // Strategy 4: Wait for "Shared with me" or filter placeholder (indicators of Team files page)
-      if (!teamFilesHeadingVisible) {
-        console.log('Waiting for Team files page indicators...');
-        try {
-          await Promise.race([
-            page.locator(':text("Shared with me")').waitFor({ timeout: 10 * 1000 }),
-            page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 10 * 1000 }),
-          ]).catch(() => {});
-          // Check again after waiting
-          teamFilesHeadingVisible = await page
-            .getByRole(`heading`, { name: `Team files` })
-            .isVisible({ timeout: 5 * 1000 })
-            .catch(() => false);
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.log(`Failed to find Team files indicators: ${message}`);
-        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.log(`Failed to handle Stripe payment page: ${message}`);
+        // Try navigating to homepage as fallback
+        await page.goto(buildUrl(), { waitUntil: 'load' });
+        await page.waitForTimeout(3 * 1000);
       }
     }
 
-    // Wait for the Team files heading to be visible first, then assert the title
-    // This ensures the page has actually loaded the Team files content
+    // Wait for page to fully load after navigation
+    await page.waitForLoadState('load', { timeout: 60 * 1000 });
+    await page.waitForTimeout(2 * 1000);
+
+    // Check if we're already on the Team files page
+    const isOnTeamFilesPage = await page
+      .getByRole(`heading`, { name: `Team files` })
+      .isVisible({ timeout: 5 * 1000 })
+      .catch(() => false);
+
+    // If not on Team files page, click the Files link in the sidebar to navigate there
+    if (!isOnTeamFilesPage) {
+      // Wait for the sidebar navigation to be visible
+      await page.locator('nav').waitFor({ timeout: 10 * 1000 });
+
+      // Click the Files link in the sidebar navigation
+      // The accessible name is "draft Files" (includes the icon name)
+      const filesLink = page.getByRole('link', { name: 'draft Files' });
+      await expect(filesLink).toBeVisible({ timeout: 10 * 1000 });
+      await filesLink.click({ timeout: 60 * 1000 });
+
+      // Wait for navigation to complete
+      await page.waitForLoadState('load', { timeout: 60 * 1000 });
+      await page.waitForTimeout(2 * 1000);
+    }
+
+    // Assert we're on the Team files page
     await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
     await expect(page).toHaveTitle(/Team files/, { timeout: 30 * 1000 });
 
