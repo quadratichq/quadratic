@@ -340,7 +340,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ) : null
             ) : isUserPromptMessage(message) ? (
               <div className="flex justify-end px-2">
-                <div className="w-[75%]">
+                <div className="w-[90%]">
                   <AIAnalystUserMessageForm
                     initialContent={message.content}
                     initialContext={message.context}

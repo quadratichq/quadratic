@@ -9,7 +9,15 @@ import type { z } from 'zod';
 type SetBordersResponse = z.infer<(typeof aiToolsSpec)[AITool.SetBorders]['responseSchema']>;
 
 export const SetBorders = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+  ({
+    toolCall: { arguments: args, loading },
+    className,
+    hideIcon,
+  }: {
+    toolCall: AIToolCall;
+    className: string;
+    hideIcon?: boolean;
+  }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetBordersResponse, SetBordersResponse>>();
 
     useEffect(() => {
@@ -58,7 +66,7 @@ export const SetBorders = memo(
     }, [toolArgs]);
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact hideIcon={hideIcon} />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
@@ -70,10 +78,11 @@ export const SetBorders = memo(
           description={toolArgs.error.message}
           className={className}
           compact
+          hideIcon={hideIcon}
         />
       );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact hideIcon={hideIcon} />;
     }
 
     return (
@@ -84,6 +93,7 @@ export const SetBorders = memo(
         className={className}
         compact
         onClick={handleClick}
+        hideIcon={hideIcon}
       />
     );
   }

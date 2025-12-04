@@ -30,7 +30,15 @@ function describeFormatting(data: SetTextFormatsResponse): string {
 }
 
 export const SetTextFormats = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+  ({
+    toolCall: { arguments: args, loading },
+    className,
+    hideIcon,
+  }: {
+    toolCall: AIToolCall;
+    className: string;
+    hideIcon?: boolean;
+  }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
 
     useEffect(() => {
@@ -75,13 +83,13 @@ export const SetTextFormats = memo(
     }, [toolArgs]);
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact hideIcon={hideIcon} />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact hideIcon={hideIcon} />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact hideIcon={hideIcon} />;
     }
 
     return (
@@ -92,6 +100,7 @@ export const SetTextFormats = memo(
         className={className}
         compact
         onClick={handleClick}
+        hideIcon={hideIcon}
       />
     );
   }

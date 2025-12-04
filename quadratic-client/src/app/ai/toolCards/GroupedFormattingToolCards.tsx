@@ -63,9 +63,14 @@ export const GroupedFormattingToolCards = memo(({ toolCalls, className }: Groupe
       </div>
 
       {isExpanded && (
-        <div className="mt-2 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
+        <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
           {toolCalls.map((toolCall, index) => (
-            <AIToolCard key={`${index}-${toolCall.id}-${toolCall.name}`} toolCall={toolCall} className="tool-card" />
+            <AIToolCard
+              key={`${index}-${toolCall.id}-${toolCall.name}`}
+              toolCall={toolCall}
+              className="tool-card"
+              hideIcon
+            />
           ))}
         </div>
       )}

@@ -22,10 +22,12 @@ export const SetCodeCellValue = memo(
     toolCall: { arguments: args, loading },
     className,
     isUpdate,
+    hideIcon,
   }: {
     toolCall: AIToolCall;
     className: string;
     isUpdate?: boolean;
+    hideIcon?: boolean;
   }) => {
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
@@ -166,6 +168,7 @@ export const SetCodeCellValue = memo(
             isLoading={true}
             className={className}
             compact
+            hideIcon={hideIcon}
           />
         );
       }
@@ -179,10 +182,11 @@ export const SetCodeCellValue = memo(
           hasError
           className={className}
           compact
+          hideIcon={hideIcon}
         />
       );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard isLoading className={className} compact />;
+      return <ToolCard isLoading className={className} compact hideIcon={hideIcon} />;
     }
 
     const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
@@ -231,6 +235,7 @@ export const SetCodeCellValue = memo(
         className={className}
         compact
         onClick={handleClick}
+        hideIcon={hideIcon}
       />
     );
   }

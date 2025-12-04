@@ -53,9 +53,10 @@ type AIToolCardProps = {
   toolCall: AIToolCall;
   className?: string;
   isUpdate?: boolean; // For code tools: true if this is updating an existing cell
+  hideIcon?: boolean; // Hide icon when nested in a group
 };
 
-export const AIToolCard = memo(({ toolCall, className, isUpdate }: AIToolCardProps) => {
+export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIToolCardProps) => {
   if (!Object.values(AITool).includes(toolCall.name as AITool)) {
     return null;
   }
@@ -68,13 +69,20 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate }: AIToolCardPro
     case AITool.GetCodeCellValue:
       return <GetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
-      return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} isUpdate={isUpdate} />;
+      return (
+        <SetCodeCellValue
+          toolCall={toolCall}
+          className={cn('tool-card', className)}
+          isUpdate={isUpdate}
+          hideIcon={hideIcon}
+        />
+      );
     case AITool.GetDatabaseSchemas:
       return <GetDatabaseSchemas toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetSQLCodeCellValue:
       return <SetSQLCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetFormulaCellValue:
-      return <SetFormulaCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
+      return <SetFormulaCellValue toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
     case AITool.MoveCells:
       return <MoveCells toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.DeleteCells:
@@ -88,7 +96,7 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate }: AIToolCardPro
     case AITool.GetCellData:
       return <GetCellData toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetTextFormats:
-      return <SetTextFormats toolCall={toolCall} className={cn('tool-card', className)} />;
+      return <SetTextFormats toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
     case AITool.GetTextFormats:
       return <GetTextFormats toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ConvertToTable:
@@ -118,7 +126,7 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate }: AIToolCardPro
     case AITool.ResizeRows:
       return <ResizeRows toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetBorders:
-      return <SetBorders toolCall={toolCall} className={cn('tool-card', className)} />;
+      return <SetBorders toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
     case AITool.InsertColumns:
       return <InsertColumns toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.InsertRows:

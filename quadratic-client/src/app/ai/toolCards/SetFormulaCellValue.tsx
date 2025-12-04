@@ -16,7 +16,15 @@ import type { z } from 'zod';
 type SetFormulaCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetFormulaCellValue]['responseSchema']>;
 
 export const SetFormulaCellValue = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+  ({
+    toolCall: { arguments: args, loading },
+    className,
+    hideIcon,
+  }: {
+    toolCall: AIToolCall;
+    className: string;
+    hideIcon?: boolean;
+  }) => {
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
@@ -119,17 +127,32 @@ export const SetFormulaCellValue = memo(
           isLoading={true}
           className={className}
           compact
+          hideIcon={hideIcon}
         />
       );
     }
 
     if (!!toolArgs && !toolArgs.success) {
       return (
-        <ToolCard icon={<LanguageIcon language="Formula" />} label={label} hasError className={className} compact />
+        <ToolCard
+          icon={<LanguageIcon language="Formula" />}
+          label={label}
+          hasError
+          className={className}
+          compact
+          hideIcon={hideIcon}
+        />
       );
     } else if (!toolArgs || !toolArgs.data) {
       return (
-        <ToolCard icon={<LanguageIcon language="Formula" />} label={label} isLoading className={className} compact />
+        <ToolCard
+          icon={<LanguageIcon language="Formula" />}
+          label={label}
+          isLoading
+          className={className}
+          compact
+          hideIcon={hideIcon}
+        />
       );
     }
 
@@ -177,6 +200,7 @@ export const SetFormulaCellValue = memo(
         className={className}
         compact
         onClick={handleClick}
+        hideIcon={hideIcon}
       />
     );
   }
