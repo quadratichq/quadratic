@@ -20,7 +20,12 @@ const AIProvidersSchema = z.enum([
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4-5@20250929', 'claude-haiku-4-5@20251001']);
-const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']);
+const VertexAIModelSchema = z.enum([
+  'gemini-3-pro-preview',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-pro',
+]);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
@@ -35,7 +40,15 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
-const AzureOpenAIModelSchema = z.enum(['gpt-5-codex', 'gpt-5', 'gpt-4.1', 'gpt-4.1-mini', 'o3']);
+const AzureOpenAIModelSchema = z.enum([
+  'gpt-5.1-codex',
+  'gpt-5.1',
+  'gpt-5-codex',
+  'gpt-5',
+  'gpt-4.1',
+  'gpt-4.1-mini',
+  'o3',
+]);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum([
   'Qwen/Qwen3-Coder-480B-A35B-Instruct',
@@ -81,6 +94,7 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
 const VertexAIModelKeySchema = z.enum([
+  'vertexai:gemini-3-pro-preview',
   'vertexai:gemini-2.5-flash:thinking-toggle-off',
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-off',
@@ -121,6 +135,8 @@ const OpenAIModelKeySchema = z.enum([
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const AzureOpenAIModelKeySchema = z.enum([
+  'azure-openai:gpt-5.1-codex',
+  'azure-openai:gpt-5.1',
   'azure-openai:gpt-5-codex',
   'azure-openai:gpt-5',
   'azure-openai:gpt-4.1',

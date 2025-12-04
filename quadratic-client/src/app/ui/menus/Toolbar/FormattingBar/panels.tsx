@@ -14,6 +14,7 @@ import {
   FormatButtonDropdownActions,
   FormatButtonPopover,
   FormatColorPickerButton,
+  FormatCurrencyButton,
   FormatDateAndTimePickerButton,
   FormatSeparator,
 } from '@/app/ui/menus/Toolbar/FormattingBar/components';
@@ -51,12 +52,7 @@ export const NumberFormatting = memo(
       />
       <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} hideLabel={props.hideLabel} />
       <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} hideLabel={props.hideLabel} />
-      <FormatButton
-        action={Action.FormatNumberCurrency}
-        actionArgs={undefined}
-        checked={props.formatSummary?.numericFormat?.type === 'CURRENCY'}
-        hideLabel={props.hideLabel}
-      />
+      <FormatCurrencyButton formatSummary={props.formatSummary} hideLabel={props.hideLabel} />
       <FormatButton
         action={Action.FormatNumberPercent}
         actionArgs={undefined}
@@ -242,6 +238,12 @@ export const AlignmentFormatting = memo(
             ]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatAlignHorizontalLeft) return props.formatSummary?.align === 'left';
+              if (action === Action.FormatAlignHorizontalCenter) return props.formatSummary?.align === 'center';
+              if (action === Action.FormatAlignHorizontalRight) return props.formatSummary?.align === 'right';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown
@@ -258,6 +260,12 @@ export const AlignmentFormatting = memo(
             ]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatAlignVerticalTop) return props.formatSummary?.verticalAlign === 'top';
+              if (action === Action.FormatAlignVerticalMiddle) return props.formatSummary?.verticalAlign === 'middle';
+              if (action === Action.FormatAlignVerticalBottom) return props.formatSummary?.verticalAlign === 'bottom';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown
@@ -270,6 +278,12 @@ export const AlignmentFormatting = memo(
             actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatTextWrapOverflow) return props.formatSummary?.wrap === 'overflow';
+              if (action === Action.FormatTextWrapWrap) return props.formatSummary?.wrap === 'wrap';
+              if (action === Action.FormatTextWrapClip) return props.formatSummary?.wrap === 'clip';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatSeparator />
