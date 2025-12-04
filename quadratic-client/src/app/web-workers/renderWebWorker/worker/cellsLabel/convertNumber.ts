@@ -10,34 +10,30 @@ interface CurrencyFormat {
 
 function getCurrencyFormat(symbol: string): CurrencyFormat {
   switch (symbol) {
+    // Symbols at start with no space
     case '$':
-      return { atEnd: false, space: false };
     case '€':
-      return { atEnd: false, space: false };
     case '£':
-      return { atEnd: false, space: false };
     case '¥':
-      return { atEnd: false, space: false };
-    case 'CHF':
-      return { atEnd: true, space: true };
     case '₹':
-      return { atEnd: false, space: false };
-    case 'R$':
-      return { atEnd: false, space: true };
     case '₩':
-      return { atEnd: false, space: false };
-    case 'zł':
-      return { atEnd: true, space: true };
     case '₺':
-      return { atEnd: false, space: false };
-    case '₽':
-      return { atEnd: true, space: true };
     case 'R':
       return { atEnd: false, space: false };
+
+    // Symbols at end with space
+    case 'CHF':
+    case 'zł':
+    case '₽':
     case 'kr':
       return { atEnd: true, space: true };
+
+    // Symbols at start with space
+    case 'R$':
+      return { atEnd: false, space: true };
+
+    // Default: start position, no space
     default:
-      // Default: start position, no space
       return { atEnd: false, space: false };
   }
 }
