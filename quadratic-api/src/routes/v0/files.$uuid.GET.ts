@@ -47,7 +47,6 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
 
   // Update billing info to ensure we have the latest subscription status
   // Only do this if we're checking for a subscription update after checkout
-  let teamForBillingCheck = ownerTeam;
   if (req.query.updateBilling === 'true') {
     await updateBilling(ownerTeam);
     // Re-fetch the team to get the updated subscription status
@@ -55,11 +54,14 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       where: { id: ownerTeam.id },
     });
     if (updatedTeam) {
-      teamForBillingCheck = updatedTeam;
+      // Update the ownerTeam's billing fields with fresh data from DB
+      ownerTeam.stripeSubscriptionStatus = updatedTeam.stripeSubscriptionStatus;
+      ownerTeam.stripeCurrentPeriodEnd = updatedTeam.stripeCurrentPeriodEnd;
+      ownerTeam.stripeSubscriptionId = updatedTeam.stripeSubscriptionId;
     }
   }
 
-  const isOnPaidPlan = await getIsOnPaidPlan(teamForBillingCheck);
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
