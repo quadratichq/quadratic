@@ -81,7 +81,12 @@ export const ConnectionStatusIcon = () => {
     }
     icon = <SyncingInProgressIcon className={'text-muted-foreground hover:text-foreground'} />;
   } else {
-    tooltip = 'Recent changes only saved locally';
+    const isOffline = syncState === 'no internet' || syncState === 'waiting to reconnect';
+    if (isOffline) {
+      tooltip = 'Network offline • Recent changes only saved locally';
+    } else {
+      tooltip = 'Recent changes only saved locally';
+    }
     icon = <SyncingAlertIcon className={'text-destructive'} />;
   }
 

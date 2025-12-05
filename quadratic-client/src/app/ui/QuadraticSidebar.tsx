@@ -12,7 +12,7 @@ import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDi
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
-import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
+import { KernelMenu } from '@/app/ui/menus/KernelMenu/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
