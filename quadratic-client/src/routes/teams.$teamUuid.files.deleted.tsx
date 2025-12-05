@@ -55,7 +55,7 @@ export const Component = () => {
       <DashboardHeader title="Recover deleted files" />
       <div className="-mx-2 flex max-w-3xl flex-col">
         {files.length > 0 ? (
-          files.map(({ file }, i) => (
+          files.map((file, i) => (
             <div key={file.uuid} className="flex flex-row items-center gap-3 px-2 py-3">
               <div className={`hidden border border-border shadow-sm md:block`}>
                 {file.thumbnail ? (
@@ -84,7 +84,7 @@ export const Component = () => {
               <span className="flex flex-col items-start">
                 <span className="text-base">{file.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {file.ownerUserId === null ? 'Team' : 'Personal'} file · Deleted {timeAgo(file.deletedDate)} by You
+                  {file.ownerUserId === null ? 'Team' : 'Personal'} file · Deleted {timeAgo(file.deletedDate)}
                 </span>
               </span>
               <span className="ml-auto hidden text-xs text-muted-foreground">

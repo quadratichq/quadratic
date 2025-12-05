@@ -552,17 +552,11 @@ export const ApiSchemas = {
    */
   '/v0/teams/:uuid/files/deleted.GET.response': z.array(
     z.object({
-      file: z.object({
-        uuid: z.string().uuid(),
-        name: z.string(),
-        createdDate: z.string().datetime(),
-        updatedDate: z.string().datetime(),
-        deletedDate: z.string().datetime(),
-        creatorId: z.number(),
-        ownerUserId: z.number().nullable(),
-        thumbnail: z.string().url().nullable(),
-      }),
-      userMakingRequest: TeamUserMakingRequestSchema,
+      uuid: z.string().uuid(),
+      name: z.string(),
+      deletedDate: z.string().datetime(),
+      ownerUserId: z.number().nullable(),
+      thumbnail: z.string().url().nullable(),
     })
   ),
   '/v0/files/:uuid/restore.POST.response': z.object({

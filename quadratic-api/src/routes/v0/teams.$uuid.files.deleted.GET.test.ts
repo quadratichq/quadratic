@@ -134,13 +134,12 @@ describe('GET /v0/teams/:uuid/files/deleted', () => {
       expect(response.body).toHaveLength(2);
 
       // Should be ordered by deletedDate desc (most recent first)
-      expect(response.body[0].file.name).toBe('Deleted Private File');
-      expect(response.body[1].file.name).toBe('Deleted Public File');
+      expect(response.body[0].name).toBe('Deleted Private File');
+      expect(response.body[1].name).toBe('Deleted Public File');
 
       // Check that both files are marked as deleted
       response.body.forEach((item: any) => {
-        expect(item.file.deletedDate).toBeTruthy();
-        expect(item.userMakingRequest.filePermissions).toBeDefined();
+        expect(item.deletedDate).toBeTruthy();
       });
     });
 
@@ -151,7 +150,7 @@ describe('GET /v0/teams/:uuid/files/deleted', () => {
         .expect(200);
 
       expect(response.body).toHaveLength(1); // Only public deleted file
-      expect(response.body[0].file.name).toBe('Deleted Public File');
+      expect(response.body[0].name).toBe('Deleted Public File');
     });
 
     it('does not include non-deleted files', async () => {
@@ -160,7 +159,7 @@ describe('GET /v0/teams/:uuid/files/deleted', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200);
 
-      const fileNames = response.body.map((item: any) => item.file.name);
+      const fileNames = response.body.map((item: any) => item.name);
       expect(fileNames).not.toContain('Active File');
     });
 
@@ -171,7 +170,7 @@ describe('GET /v0/teams/:uuid/files/deleted', () => {
         .expect(200);
 
       expect(response.body).toHaveLength(2);
-      const fileNames = response.body.map((item: any) => item.file.name);
+      const fileNames = response.body.map((item: any) => item.name);
       expect(fileNames).toContain('Deleted Public File');
       expect(fileNames).toContain('Deleted Private File');
       expect(fileNames).not.toContain('Old Deleted File'); // Deleted 40 days ago

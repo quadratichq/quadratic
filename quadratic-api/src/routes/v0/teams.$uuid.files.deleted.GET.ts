@@ -8,7 +8,6 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
-import { getFilePermissions } from '../../utils/permissions';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -25,7 +24,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/fil
   const {
     user: { id: userMakingRequestId },
   } = req as RequestWithUser;
-  const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
+  const { team } = await getTeam({ uuid, userId: userMakingRequestId });
 
   // Calculate the date 30 days ago
   const thirtyDaysAgo = new Date();
@@ -46,13 +45,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/fil
         { ownerUserId: userMakingRequestId }, // Private files to the user
       ],
     },
-    include: {
-      UserFileRole: {
-        where: {
-          userId: userMakingRequestId,
-        },
-      },
-    },
     orderBy: {
       deletedDate: 'desc', // Most recently deleted first
     },
@@ -68,26 +60,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/fil
   );
 
   const response = dbFiles.map((file) => ({
-    file: {
-      uuid: file.uuid,
-      name: file.name,
-      createdDate: file.createdDate.toISOString(),
-      updatedDate: file.updatedDate.toISOString(),
-      deletedDate: file.deletedDate?.toISOString() || null,
-      thumbnail: file.thumbnail,
-      creatorId: file.creatorUserId,
-      ownerUserId: file.ownerUserId,
-    },
-    userMakingRequest: {
-      filePermissions: getFilePermissions({
-        publicLinkAccess: file.publicLinkAccess,
-        userFileRelationship: {
-          context: file.ownerUserId === userMakingRequestId ? 'private-to-me' : 'public-to-team',
-          teamRole: userMakingRequest.role,
-          fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
-        },
-      }),
-    },
+    uuid: file.uuid,
+    name: file.name,
+    deletedDate: file.deletedDate!.toISOString(),
+    ownerUserId: file.ownerUserId,
+    thumbnail: file.thumbnail,
   }));
 
   return res.status(200).json(response);
