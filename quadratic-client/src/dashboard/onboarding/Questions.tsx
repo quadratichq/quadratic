@@ -461,7 +461,7 @@ export const questionsById: Record<
                 loading={isSubmittingFree}
                 onClick={() => trackNextQuestionClick(props.id)}
               >
-                Open Quadratic
+                Use Quadratic for free
               </Button>
             </FreePlan>
             <ProPlan className={className}>

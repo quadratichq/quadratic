@@ -1,7 +1,7 @@
 import type { Response } from 'express';
+import { DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
@@ -14,9 +14,7 @@ import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
 import logger from '../../utils/logger';
-
-// Use Gemini for fast, non-streaming suggestions
-const SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
+import { getTeamPermissions } from '../../utils/permissions';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
@@ -72,6 +70,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
 
   if (!userTeamRole) {
     throw new ApiError(403, 'User is not a member of this team');
+  }
+
+  // Ensure the user has at least editor permissions (viewers cannot create files)
+  const teamPermissions = getTeamPermissions(userTeamRole.role);
+  if (!teamPermissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'User does not have permission to create files in this team');
   }
 
   let exceededBillingLimit = false;
@@ -143,7 +147,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
     },
   ];
 
-  logger.info('Starting AI suggestions request', { contextDesc, model: SUGGESTIONS_MODEL });
+  logger.info('Starting AI suggestions request', { contextDesc, model: DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS });
 
   // Create abort controller with timeout
   const abortController = new AbortController();
@@ -154,7 +158,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
 
   try {
     const parsedResponse = await handleAIRequest({
-      modelKey: SUGGESTIONS_MODEL,
+      modelKey: DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS,
       args: {
         messages,
         useStream: false,

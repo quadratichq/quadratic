@@ -26,6 +26,13 @@ export const ROUTES = {
   FILES_CREATE_AI_PDF: '/files/create/ai/pdf',
   FILES_CREATE_AI_CONNECTION: '/files/create/ai/connection',
   FILES_CREATE_AI_WEB: '/files/create/ai/web',
+  // Team-based AI creation routes (these are the actual routes)
+  TEAM_FILES_CREATE_AI: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai`,
+  TEAM_FILES_CREATE_AI_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/file`,
+  TEAM_FILES_CREATE_AI_PROMPT: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/prompt`,
+  TEAM_FILES_CREATE_AI_PDF: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/pdf`,
+  TEAM_FILES_CREATE_AI_CONNECTION: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/connection`,
+  TEAM_FILES_CREATE_AI_WEB: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/web`,
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {
