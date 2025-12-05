@@ -463,20 +463,21 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       }
                     />
                   ) : isContentText(item) ? (
-                    <Markdown
-                      key={`${index}-${contentIndex}-${item.type}`}
-                      text={item.text}
-                      onChange={
-                        debugAIAnalystChatEditing &&
-                        ((text) => {
-                          const newMessage = { ...message, content: [...message.content] };
-                          newMessage.content[contentIndex] = { ...item, text };
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
+                    <div key={`${index}-${contentIndex}-${item.type}`} className="max-w-[90%]">
+                      <Markdown
+                        text={item.text}
+                        onChange={
+                          debugAIAnalystChatEditing &&
+                          ((text) => {
+                            const newMessage = { ...message, content: [...message.content] };
+                            newMessage.content[contentIndex] = { ...item, text };
+                            const newMessages = [...messages];
+                            (newMessages as typeof messages)[index] = newMessage as typeof message;
+                            setMessages(newMessages);
+                          })
+                        }
+                      />
+                    </div>
                   ) : null
                 )}
 
