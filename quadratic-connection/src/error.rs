@@ -47,11 +47,7 @@ pub enum ConnectionError {
     #[error("Proxy error: {0}")]
     Proxy(String),
 
-<<<<<<< HEAD
-    #[error("Error communicating with the Quadratic API: {0}")]
-=======
     #[error("Quadratic API error: {0}")]
->>>>>>> origin/google-analytics-connection
     QuadraticApi(String),
 
     #[error("Query error: {0}")]
