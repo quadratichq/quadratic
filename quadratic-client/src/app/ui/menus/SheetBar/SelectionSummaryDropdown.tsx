@@ -190,7 +190,7 @@ export const SelectionSummaryDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-8 shrink-0 items-center gap-1 border-t border-border bg-accent px-2 text-xs text-muted-foreground hover:bg-border focus:outline-none"
+        className="flex h-8 shrink-0 items-center gap-1 border-l border-t border-border px-2 text-xs text-muted-foreground hover:bg-accent focus:outline-none"
         onPointerDown={(e) => {
           e.stopPropagation();
         }}
