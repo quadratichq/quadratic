@@ -245,16 +245,13 @@ impl ServiceManager {
     }
 
     pub async fn start_service_with_perf(&self, name: &str, perf: bool) {
-        eprintln!("DEBUG: start_service_with_perf called for {}", name);
         if *self.quitting.read().await {
-            eprintln!("DEBUG: start_service_with_perf - quitting is true, returning early");
             return;
         }
 
         // Handle checks service specially - run checks and exit
         // This is before the Killed check because checks should always run when clicked
         if name == "checks" {
-            eprintln!("DEBUG: Running checks service");
             let checks = Checks::new(
                 self.log_sender.clone(),
                 self.status.clone(),
@@ -262,7 +259,6 @@ impl ServiceManager {
                 self.base_dir.clone(),
             );
             checks.run().await;
-            eprintln!("DEBUG: Checks service completed");
             return;
         }
 
@@ -693,8 +689,22 @@ impl ServiceManager {
         // Kill all services using centralized logic
         self.kill_manager.kill_services(services, 5000).await;
 
-        // Small delay to ensure cleanup completes
-        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+        // Wait for ALL ports to be free before starting any service
+        // This prevents "port already in use" errors
+        for service in crate::services::get_services() {
+            if let Some(port) = service.port {
+                if !crate::kill::wait_for_port_free(port, 3000).await {
+                    self.log(
+                        "system",
+                        format!(
+                            "Warning: Port {} may still be in use, proceeding anyway",
+                            port
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
 
         // Now start all services in the proper dependency order
         self.start_all_services().await;
@@ -704,12 +714,10 @@ impl ServiceManager {
     }
 
     pub async fn stop_all_services(&self) {
-        eprintln!("DEBUG: stop_all_services called");
         self.log("system", "Stopping all services...".to_string())
             .await;
 
         // Mark all services as Killed immediately (so UI updates right away)
-        // Do this BEFORE collecting services to avoid blocking on locks
         {
             let mut status = self.status.write().await;
             for name in status.keys().cloned().collect::<Vec<_>>() {
@@ -717,54 +725,29 @@ impl ServiceManager {
             }
         }
         self.notify_status_change();
-        eprintln!("DEBUG: stop_all_services - statuses set to Killed, spawning kill task");
 
-        // Spawn the entire kill operation as background task - don't await, return immediately
-        // This prevents blocking the server/websocket connections
-        let processes = self.processes.clone();
-        let status = self.status.clone();
-        let km = self.kill_manager.clone();
-        let log_sender = self.log_sender.clone();
+        // Collect services to kill
+        let services = self.collect_services_to_kill().await;
 
-        tokio::spawn(async move {
-            // Collect services to kill (inside the spawned task to avoid blocking)
-            let services = {
-                let mut procs = processes.write().await;
-                let stat = status.read().await;
-                let mut services = Vec::new();
+        // Kill all services and WAIT for completion
+        // This ensures ports are freed before any subsequent restart
+        self.kill_manager.kill_services(services, 5000).await;
 
-                for name in stat.keys() {
-                    let pid = procs.remove(name).flatten().and_then(|c| c.id());
-                    let service = crate::services::get_service_by_name(name);
-                    let port = service.as_ref().and_then(|s| s.port());
-                    let cwd = service.and_then(|s| s.cwd());
-
-                    if pid.is_some() || port.is_some() || cwd.is_some() {
-                        services.push(ServiceKillInfo {
-                            name: name.clone(),
-                            pid,
-                            port,
-                            cwd,
-                        });
-                    }
+        // Wait for all ports to be free
+        for service in crate::services::get_services() {
+            if let Some(port) = service.port {
+                if !crate::kill::wait_for_port_free(port, 2000).await {
+                    self.log(
+                        "system",
+                        format!("Warning: Port {} may still be in use", port),
+                    )
+                    .await;
                 }
-                services
-            };
+            }
+        }
 
-            km.kill_services(services, 5000).await;
-
-            // Log completion
-            let timestamp = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
-            let _ = log_sender.send((
-                "system".to_string(),
-                "All services stopped.".to_string(),
-                timestamp,
-                "stdout".to_string(),
-            ));
-        });
+        self.log("system", "All services stopped.".to_string())
+            .await;
     }
 
     pub async fn kill_all_services(&self) {

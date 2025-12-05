@@ -126,8 +126,6 @@ impl Control {
 
     // Delegate service management methods to ServiceManager
     pub async fn restart_service(&self, name: &str) {
-        eprintln!("DEBUG: Control::restart_service called for {}", name);
-
         // Handle perf mode for core service
         let perf = if name == "core" {
             *self.perf.read().await
@@ -146,18 +144,17 @@ impl Control {
             status_guard.insert(name.to_string(), crate::types::ServiceStatus::Stopped);
         }
 
-        // Small delay to ensure cleanup completes
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        // Wait for port to be free if this service has a port
+        if let Some(service) = crate::services::get_service_by_name(name) {
+            if let Some(port) = service.port() {
+                crate::kill::wait_for_port_free(port, 2000).await;
+            }
+        }
 
-        eprintln!(
-            "DEBUG: Control::restart_service calling start_service_with_perf for {}",
-            name
-        );
         // Start the service with the correct perf mode
         self.service_manager
             .start_service_with_perf(name, perf)
             .await;
-        eprintln!("DEBUG: Control::restart_service completed for {}", name);
     }
 
     pub async fn restart_all_services(&self) {

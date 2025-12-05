@@ -610,6 +610,7 @@ async fn restart_service(
 }
 
 async fn restart_all_services(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
+    eprintln!("DEBUG: /api/restart-all endpoint called");
     // Spawn as background task to not block the HTTP response
     let control_clone = control.clone();
     tokio::spawn(async move {
@@ -621,6 +622,7 @@ async fn restart_all_services(State(control): State<Arc<RwLock<Control>>>) -> im
 }
 
 async fn stop_all_services(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
+    eprintln!("DEBUG: /api/stop-all endpoint called");
     // Spawn as background task to not block the HTTP response
     let control_clone = control.clone();
     tokio::spawn(async move {
