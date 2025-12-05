@@ -6,6 +6,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::currency;
 use super::number::decimal_from_str;
 use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
@@ -15,8 +16,6 @@ use crate::{
     grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
 };
 
-// todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -264,17 +263,17 @@ impl CellValue {
                 };
                 match numeric_format.kind {
                     NumericFormatKind::Currency => {
-                        let mut currency = if n.is_sign_negative() {
-                            number = number.trim_start_matches('-').to_string();
-                            String::from("-")
-                        } else {
-                            String::new()
-                        };
                         if let Some(symbol) = numeric_format.symbol.as_ref() {
-                            currency.push_str(&symbol.clone());
+                            let is_negative = n.is_sign_negative();
+                            let number_str = if is_negative {
+                                number.trim_start_matches('-').to_string()
+                            } else {
+                                number.clone()
+                            };
+                            currency::format_currency(&number_str, symbol, is_negative)
+                        } else {
+                            number
                         }
-                        currency.push_str(&number);
-                        currency
                     }
                     NumericFormatKind::Percentage => {
                         number.push('%');
@@ -391,57 +390,11 @@ impl CellValue {
     }
 
     fn strip_currency(value: &str) -> String {
-        let (is_negative, absolute_value) = (
-            value.starts_with("-"),
-            value.strip_prefix("-").unwrap_or(value),
-        );
-
-        let stripped = CURRENCY_SYMBOLS
-            .chars()
-            .fold(absolute_value, |acc: &str, char| {
-                acc.strip_prefix(char).unwrap_or(acc)
-            });
-
-        if is_negative {
-            if let Some(stripped) = stripped.strip_prefix("-") {
-                stripped.trim().to_string()
-            } else {
-                format!("-{}", stripped.trim())
-            }
-        } else {
-            stripped.to_string()
-        }
+        currency::strip_currency(value)
     }
 
     pub fn unpack_currency(s: &str) -> Option<(String, Decimal)> {
-        if s.is_empty() {
-            return None;
-        }
-
-        let without_parentheses = CellValue::strip_parentheses(s);
-        let (is_negative, absolute_value) = (
-            without_parentheses.starts_with("-"),
-            without_parentheses
-                .strip_prefix("-")
-                .map_or(without_parentheses.as_str(), |absolute_value| {
-                    absolute_value.trim()
-                }),
-        );
-
-        for char in CURRENCY_SYMBOLS.chars() {
-            if let Some(stripped) = absolute_value
-                .strip_prefix(char)
-                .map(|stripped| stripped.trim())
-            {
-                let without_commas =
-                    CellValue::strip_commas(&CellValue::strip_parentheses(stripped));
-                if let Ok(bd) = decimal_from_str(&without_commas) {
-                    let bd = if is_negative { -bd } else { bd };
-                    return Some((char.to_string(), bd));
-                }
-            }
-        }
-        None
+        currency::unpack_currency(s)
     }
 
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
@@ -1285,6 +1238,40 @@ mod test {
 
         let value = String::from("$123.123abc");
         assert_eq!(CellValue::unpack_currency(&value), None);
+
+        // Test multi-character currency symbols
+        let value = String::from("CHF123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("CHF"), decimal_from_str("123.45").unwrap()))
+        );
+
+        let value = String::from("R$123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R$"), decimal_from_str("123.45").unwrap()))
+        );
+
+        let value = String::from("kr123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("kr"), decimal_from_str("123.45").unwrap()))
+        );
+
+        // Test that longer symbols are matched before shorter ones
+        // "R$" should match before "R" for "R$123.45" (Brazilian Real)
+        let value = String::from("R$123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R$"), decimal_from_str("123.45").unwrap()))
+        );
+
+        // Test that "R 123" (South African Rand with space) correctly matches "R" and not "R$"
+        let value = String::from("R 123.45");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("R"), decimal_from_str("123.45").unwrap()))
+        );
     }
 
     #[test]

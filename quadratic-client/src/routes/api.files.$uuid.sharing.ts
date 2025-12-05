@@ -3,12 +3,12 @@ import type { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchema
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { redirectDocument } from 'react-router';
 
-type Loader = {
+export type FilesSharingLoader = {
   ok: boolean;
   data?: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
 };
 
-export const loader = async ({ params }: LoaderFunctionArgs): Promise<Loader> => {
+export const loader = async ({ params }: LoaderFunctionArgs): Promise<FilesSharingLoader> => {
   const { uuid } = params as { uuid: string };
 
   try {

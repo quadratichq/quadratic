@@ -65,7 +65,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.0.0",
-    "color": "^4.2.3",
+    "color": "3.2.0",
     "dexie": "^4.0.11",
     "esbuild-wasm": "0.25.3",
     "eventemitter3": "^5.0.1",
@@ -143,7 +143,8 @@
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9",
-    "vscode-languageserver-types": "^3.17.5"
+    "vscode-languageserver-types": "^3.17.5",
+    "xml2js": "^0.6.2"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.12.0"

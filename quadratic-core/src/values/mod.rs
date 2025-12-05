@@ -10,6 +10,7 @@ pub mod arrow;
 pub mod cell_values;
 pub mod cellvalue;
 mod convert;
+mod currency;
 pub mod date_time;
 pub mod empty_values_cache;
 mod from_js;
