@@ -4,6 +4,7 @@ import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MenuIcon } from '@/shared/components/Icons';
 import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -14,7 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
-import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { handleSentryReplays } from '@/shared/utils/sentry';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -79,6 +80,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
     throw redirect(ROUTES.TEAM(teamUuid) + url.search);
   }
 
+  // Check if we're checking for subscription updates (for verification)
+  const updateBilling = url.searchParams.get('subscription') === 'created';
+
   /**
    * Get the initial data
    */
@@ -91,7 +95,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
    * Get data for the active team
    */
   const activeTeam = await apiClient.teams
-    .get(teamUuid)
+    .get(teamUuid, { updateBilling })
     .then((data) => {
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {
@@ -152,12 +156,13 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const {
     activeTeam: {
       userMakingRequest: { teamRole: userMakingRequestTeamRole },
@@ -167,6 +172,17 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+
+  // Handle subscription success: show toast and clean up URL params
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      trackEvent('[Billing].success', { team_uuid: activeTeamUuid });
+      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('subscription');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, addGlobalSnackbar, activeTeamUuid]);
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
