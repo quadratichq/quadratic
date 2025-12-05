@@ -7,13 +7,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::RwLock;
-use tokio::sync::broadcast;
+use tokio::sync::{Mutex, broadcast};
 
 pub struct ServiceManager {
     processes: Arc<RwLock<HashMap<String, Option<Child>>>>,
     status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
     watching: Arc<RwLock<HashMap<String, bool>>>,
     quitting: Arc<RwLock<bool>>,
+    /// Per-service mutex to prevent concurrent starts of the same service.
+    /// This prevents race conditions where multiple restarts could spawn multiple processes.
+    service_locks: Arc<RwLock<HashMap<String, Arc<Mutex<()>>>>>,
     log_sender: broadcast::Sender<(String, String, u64, String)>,
     status_change_sender: broadcast::Sender<()>, // Notifies when status changes
     base_dir: std::path::PathBuf,
@@ -38,16 +41,40 @@ impl ServiceManager {
 
         let (status_change_sender, _) = broadcast::channel(100);
 
+        // Create per-service locks
+        let mut service_locks = HashMap::new();
+        for service in crate::services::get_services() {
+            service_locks.insert(service.name.clone(), Arc::new(Mutex::new(())));
+        }
+
         Self {
             processes: Arc::new(RwLock::new(HashMap::new())),
             status: Arc::new(RwLock::new(status)),
             watching: Arc::new(RwLock::new(watching)),
             quitting: Arc::new(RwLock::new(false)),
+            service_locks: Arc::new(RwLock::new(service_locks)),
             log_sender,
             status_change_sender,
             base_dir,
             kill_manager: Arc::new(KillManager::new()),
         }
+    }
+
+    /// Get the lock for a service, creating it if it doesn't exist.
+    async fn get_service_lock(&self, name: &str) -> Arc<Mutex<()>> {
+        // First try to get existing lock
+        {
+            let locks = self.service_locks.read().await;
+            if let Some(lock) = locks.get(name) {
+                return lock.clone();
+            }
+        }
+        // Create new lock if needed
+        let mut locks = self.service_locks.write().await;
+        locks
+            .entry(name.to_string())
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone()
     }
 
     pub fn get_status(&self) -> Arc<RwLock<HashMap<String, ServiceStatus>>> {
@@ -218,7 +245,24 @@ impl ServiceManager {
     }
 
     pub async fn start_service_with_perf(&self, name: &str, perf: bool) {
+        eprintln!("DEBUG: start_service_with_perf called for {}", name);
         if *self.quitting.read().await {
+            eprintln!("DEBUG: start_service_with_perf - quitting is true, returning early");
+            return;
+        }
+
+        // Handle checks service specially - run checks and exit
+        // This is before the Killed check because checks should always run when clicked
+        if name == "checks" {
+            eprintln!("DEBUG: Running checks service");
+            let checks = Checks::new(
+                self.log_sender.clone(),
+                self.status.clone(),
+                self.status_change_sender.clone(),
+                self.base_dir.clone(),
+            );
+            checks.run().await;
+            eprintln!("DEBUG: Checks service completed");
             return;
         }
 
@@ -230,39 +274,40 @@ impl ServiceManager {
             }
         }
 
-        // Handle checks service specially - run checks and exit
-        if name == "checks" {
-            let checks = Checks::new(
-                self.log_sender.clone(),
-                self.status.clone(),
-                self.status_change_sender.clone(),
-                self.base_dir.clone(),
-            );
-            checks.run().await;
-            return;
-        }
-
         let service = crate::services::get_service_by_name(name);
         let Some(service) = service else {
             return;
         };
 
-        // Check if there's an existing process before killing
-        let had_existing_process = {
-            let processes = self.processes.read().await;
-            processes.get(name).and_then(|p| p.as_ref()).is_some()
-        };
+        // Acquire per-service lock to prevent concurrent starts of the same service.
+        // This prevents race conditions where multiple restarts (e.g., from file watchers)
+        // could spawn multiple processes on the same port.
+        let lock = self.get_service_lock(name).await;
+        let _guard = lock.lock().await;
 
-        // Only kill if there's an existing process
-        if had_existing_process {
-            self.kill_service(name).await;
+        // Re-check status after acquiring lock (another start might have completed)
+        {
+            let status = self.status.read().await;
+            if matches!(status.get(name), Some(ServiceStatus::Killed)) {
+                return;
+            }
         }
 
-        // For services with ports, check if port is in use and kill if needed
+        // Kill any existing process for this service
+        {
+            let processes = self.processes.read().await;
+            if processes.get(name).and_then(|p| p.as_ref()).is_some() {
+                drop(processes); // Release read lock before calling kill_service
+                self.kill_service(name).await;
+            }
+        }
+
+        // For services with ports, ALWAYS ensure the port is free before starting.
+        // Don't rely on had_existing_process - another process could be using the port.
         if let Some(port) = service.port() {
-            // Only kill processes on port if we had an existing process or port is actually in use
-            if had_existing_process || !crate::kill::is_port_free(port).await {
-                // Kill any processes still using the port (runs in subprocess)
+            // Always check and kill processes on the port
+            if !crate::kill::is_port_free(port).await {
+                // Kill any processes using the port (runs in subprocess)
                 if let Err(e) = self.kill_manager.kill_port(port).await {
                     self.log(name, format!("Warning: kill_port failed: {}", e))
                         .await;
@@ -270,20 +315,25 @@ impl ServiceManager {
 
                 // Give the OS a moment to release the port after killing processes
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            }
 
-                // Wait up to 2 seconds for the port to be released
-                if !crate::kill::wait_for_port_free(port, 2000).await {
-                    self.log(
-                        name,
-                        format!(
-                            "Warning: Port {} may still be in use, proceeding anyway",
-                            port
-                        ),
-                    )
-                    .await;
-                } else {
-                    self.log(name, format!("Port {} is now free", port)).await;
+            // Wait up to 3 seconds for the port to be released (increased from 2s)
+            if !crate::kill::wait_for_port_free(port, 3000).await {
+                self.log(
+                    name,
+                    format!(
+                        "Error: Port {} is still in use after 3 seconds, aborting start",
+                        port
+                    ),
+                )
+                .await;
+                // Set status to error since we can't start
+                {
+                    let mut status = self.status.write().await;
+                    status.insert(name.to_string(), ServiceStatus::Error);
                 }
+                self.notify_status_change();
+                return;
             }
         }
 
@@ -654,13 +704,12 @@ impl ServiceManager {
     }
 
     pub async fn stop_all_services(&self) {
+        eprintln!("DEBUG: stop_all_services called");
         self.log("system", "Stopping all services...".to_string())
             .await;
 
-        // Collect services to kill
-        let services = self.collect_services_to_kill().await;
-
         // Mark all services as Killed immediately (so UI updates right away)
+        // Do this BEFORE collecting services to avoid blocking on locks
         {
             let mut status = self.status.write().await;
             for name in status.keys().cloned().collect::<Vec<_>>() {
@@ -668,12 +717,40 @@ impl ServiceManager {
             }
         }
         self.notify_status_change();
+        eprintln!("DEBUG: stop_all_services - statuses set to Killed, spawning kill task");
 
-        // Spawn kills as background task - don't await, return immediately
+        // Spawn the entire kill operation as background task - don't await, return immediately
         // This prevents blocking the server/websocket connections
+        let processes = self.processes.clone();
+        let status = self.status.clone();
         let km = self.kill_manager.clone();
         let log_sender = self.log_sender.clone();
+
         tokio::spawn(async move {
+            // Collect services to kill (inside the spawned task to avoid blocking)
+            let services = {
+                let mut procs = processes.write().await;
+                let stat = status.read().await;
+                let mut services = Vec::new();
+
+                for name in stat.keys() {
+                    let pid = procs.remove(name).flatten().and_then(|c| c.id());
+                    let service = crate::services::get_service_by_name(name);
+                    let port = service.as_ref().and_then(|s| s.port());
+                    let cwd = service.and_then(|s| s.cwd());
+
+                    if pid.is_some() || port.is_some() || cwd.is_some() {
+                        services.push(ServiceKillInfo {
+                            name: name.clone(),
+                            pid,
+                            port,
+                            cwd,
+                        });
+                    }
+                }
+                services
+            };
+
             km.kill_services(services, 5000).await;
 
             // Log completion
@@ -729,6 +806,10 @@ impl ServiceManager {
     }
 
     pub async fn kill_service_toggle(&self, name: &str) {
+        // Acquire per-service lock to prevent racing with concurrent starts
+        let lock = self.get_service_lock(name).await;
+        let _guard = lock.lock().await;
+
         let current = {
             let status = self.status.read().await;
             status.get(name).cloned().unwrap_or(ServiceStatus::Stopped)
@@ -741,6 +822,8 @@ impl ServiceManager {
                 status.insert(name.to_string(), ServiceStatus::Stopped);
             }
             self.notify_status_change();
+            // Release lock before calling start_service (which will acquire it)
+            drop(_guard);
             self.start_service(name).await;
         } else {
             // Kill the service
