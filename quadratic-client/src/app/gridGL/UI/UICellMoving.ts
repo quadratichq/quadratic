@@ -1,9 +1,9 @@
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { content } from '@/app/gridGL/pixiApp/Content';
+import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/moveInvalid';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { Container, Graphics, type Point, type Rectangle } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
 const MOVING_THICKNESS = 2;
 const COL_ROW_ALPHA = 0.25;
@@ -11,7 +11,6 @@ const INVALID_ALPHA = 0.3; // Opacity for invalid drop zones
 
 export class UICellMoving extends Container {
   private graphics: Graphics;
-  private overlaps?: Point[];
   dirty = false;
 
   constructor() {
@@ -33,132 +32,19 @@ export class UICellMoving extends Container {
     }
   };
 
-  // Check if a cell is within the original rectangle (for table moves)
-  static isInOriginalRect(x: number, y: number, original?: Rectangle): boolean {
-    if (!original) return false;
-    return (
-      x >= original.left &&
-      x < original.left + original.width &&
-      y >= original.top &&
-      y < original.top + original.height
-    );
-  }
-
-  // Check if a cell is in a code table (not a data/import table)
-  static isInCodeTable(x: number, y: number): boolean {
-    const table = content.cellsSheet.tables.getTableIntersects({ x, y });
-    if (!table) return false;
-
-    // Code tables have language !== 'Import', data tables have language === 'Import'
-    return table.codeCell.language !== 'Import';
-  }
-
-  // Check if a cell is in a different table than the original
-  // Only returns true if we're moving a table (original is set) and dropping into a different table
-  static isInDifferentTable(x: number, y: number, original?: Rectangle): boolean {
-    // If there's no original, we're not moving a table, so it's valid to drop into a table
-    if (!original) return false;
-
-    const table = content.cellsSheet.tables.getTableIntersects({ x, y });
-    if (!table) return false;
-
-    // Check if this table's position matches the original rectangle
-    // The original rectangle represents the table's bounds
-    const tableX = table.codeCell.x;
-    const tableY = table.codeCell.y;
-
-    // If the table's origin matches the original rectangle's origin, it's the same table
-    return !(tableX === original.left && tableY === original.top);
-  }
-
   // Check if the destination is over a table header (invalid drop zone)
   private isDestinationInvalid(): boolean {
     const moving = pixiApp.pointer.pointerCellMoving.movingCells;
     if (!moving) return false;
 
-    const destX = moving.toColumn ?? 0;
-    const destY = moving.toRow ?? 0;
-    const isMovingColumns = moving.colRows === 'columns';
-    const isMovingRows = moving.colRows === 'rows';
-    const original = moving.original;
-
-    if (isMovingColumns) {
-      // Moving columns: check all rows in the destination column range
-      const destWidth = moving.width ?? 1;
-      const bounds = sheets.sheet.bounds;
-      const maxRow = bounds.type === 'nonEmpty' ? Number(bounds.max.y) : 1;
-
-      for (let x = destX; x < destX + destWidth; x++) {
-        for (let y = 1; y <= maxRow; y++) {
-          // Skip if this cell is in the original position (allowing drop on itself)
-          if (UICellMoving.isInOriginalRect(x, y, original)) {
-            continue;
-          }
-          // Check if dropping into a code table (not allowed for any content)
-          if (UICellMoving.isInCodeTable(x, y)) {
-            return true;
-          }
-          // Check if dropping into another table (only invalid when moving a table)
-          if (UICellMoving.isInDifferentTable(x, y, original)) {
-            return true;
-          }
-          if (content.cellsSheet.tables.isInTableHeader({ x, y })) {
-            return true;
-          }
-        }
-      }
-    } else if (isMovingRows) {
-      // Moving rows: check all columns in the destination row range
-      const destHeight = moving.height ?? 1;
-      const bounds = sheets.sheet.bounds;
-      const maxCol = bounds.type === 'nonEmpty' ? Number(bounds.max.x) : 1;
-
-      for (let y = destY; y < destY + destHeight; y++) {
-        for (let x = 1; x <= maxCol; x++) {
-          // Skip if this cell is in the original position (allowing drop on itself)
-          if (UICellMoving.isInOriginalRect(x, y, original)) {
-            continue;
-          }
-          // Check if dropping into a code table (not allowed for any content)
-          if (UICellMoving.isInCodeTable(x, y)) {
-            return true;
-          }
-          // Check if dropping into another table (only invalid when moving a table)
-          if (UICellMoving.isInDifferentTable(x, y, original)) {
-            return true;
-          }
-          if (content.cellsSheet.tables.isInTableHeader({ x, y })) {
-            return true;
-          }
-        }
-      }
-    } else {
-      // Regular cell move: check the specific rectangle
-      const destWidth = moving.width ?? 1;
-      const destHeight = moving.height ?? 1;
-
-      for (let x = destX; x < destX + destWidth; x++) {
-        for (let y = destY; y < destY + destHeight; y++) {
-          // Skip if this cell is in the original position (allowing drop on itself)
-          if (UICellMoving.isInOriginalRect(x, y, original)) {
-            continue;
-          }
-          // Check if dropping into a code table (not allowed for any content)
-          if (UICellMoving.isInCodeTable(x, y)) {
-            return true;
-          }
-          // Check if dropping into another table (only invalid when moving a table)
-          if (UICellMoving.isInDifferentTable(x, y, original)) {
-            return true;
-          }
-          if (content.cellsSheet.tables.isInTableHeader({ x, y })) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
+    return checkMoveDestinationInvalid(
+      moving.toColumn ?? 0,
+      moving.toRow ?? 0,
+      moving.width ?? 1,
+      moving.height ?? 1,
+      moving.colRows,
+      moving.original
+    );
   }
 
   // determines whether the move is legal (not sure we want this feature)

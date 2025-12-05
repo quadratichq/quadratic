@@ -3,10 +3,10 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/moveInvalid';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -272,107 +272,18 @@ export class PointerCellMoving {
           this.movingCells.height ?? 1
         );
 
-        // Check if any cell in the destination rectangle is over a table header
-        const destX = this.movingCells.toColumn ?? 0;
-        const destY = this.movingCells.toRow ?? 0;
-        const isMovingColumns = this.movingCells.colRows === 'columns';
-        const isMovingRows = this.movingCells.colRows === 'rows';
-        const original = this.movingCells.original;
+        // Check if any cell in the destination rectangle is an invalid drop zone
+        const isInvalidDestination = checkMoveDestinationInvalid(
+          this.movingCells.toColumn ?? 0,
+          this.movingCells.toRow ?? 0,
+          this.movingCells.width ?? 1,
+          this.movingCells.height ?? 1,
+          this.movingCells.colRows,
+          this.movingCells.original
+        );
 
-        // For column/row moves, we need to check the entire column/row range
-        // For regular cell moves, check the specific rectangle
-        let isOverTableHeader = false;
-
-        if (isMovingColumns) {
-          // Moving columns: check all rows in the destination column range
-          const destWidth = this.movingCells.width ?? 1;
-          const bounds = sheets.sheet.bounds;
-          const maxRow = bounds.type === 'nonEmpty' ? Number(bounds.max.y) : 1;
-
-          for (let x = destX; x < destX + destWidth; x++) {
-            for (let y = 1; y <= maxRow; y++) {
-              // Skip if this cell is in the original position (allowing drop on itself)
-              if (UICellMoving.isInOriginalRect(x, y, original)) {
-                continue;
-              }
-              // Check if dropping into a code table (not allowed for any content)
-              if (UICellMoving.isInCodeTable(x, y)) {
-                isOverTableHeader = true;
-                break;
-              }
-              // Check if dropping into another table (only invalid when moving a table)
-              if (UICellMoving.isInDifferentTable(x, y, original)) {
-                isOverTableHeader = true;
-                break;
-              }
-              if (content.cellsSheet.tables.isInTableHeader({ x, y })) {
-                isOverTableHeader = true;
-                break;
-              }
-            }
-            if (isOverTableHeader) break;
-          }
-        } else if (isMovingRows) {
-          // Moving rows: check all columns in the destination row range
-          const destHeight = this.movingCells.height ?? 1;
-          const bounds = sheets.sheet.bounds;
-          const maxCol = bounds.type === 'nonEmpty' ? Number(bounds.max.x) : 1;
-
-          for (let y = destY; y < destY + destHeight; y++) {
-            for (let x = 1; x <= maxCol; x++) {
-              // Skip if this cell is in the original position (allowing drop on itself)
-              if (UICellMoving.isInOriginalRect(x, y, original)) {
-                continue;
-              }
-              // Check if dropping into a code table (not allowed for any content)
-              if (UICellMoving.isInCodeTable(x, y)) {
-                isOverTableHeader = true;
-                break;
-              }
-              // Check if dropping into another table (only invalid when moving a table)
-              if (UICellMoving.isInDifferentTable(x, y, original)) {
-                isOverTableHeader = true;
-                break;
-              }
-              if (content.cellsSheet.tables.isInTableHeader({ x, y })) {
-                isOverTableHeader = true;
-                break;
-              }
-            }
-            if (isOverTableHeader) break;
-          }
-        } else {
-          // Regular cell move: check the specific rectangle
-          const destWidth = this.movingCells.width ?? 1;
-          const destHeight = this.movingCells.height ?? 1;
-
-          for (let x = destX; x < destX + destWidth; x++) {
-            for (let y = destY; y < destY + destHeight; y++) {
-              // Skip if this cell is in the original position (allowing drop on itself)
-              if (UICellMoving.isInOriginalRect(x, y, original)) {
-                continue;
-              }
-              // Check if dropping into a code table (not allowed for any content)
-              if (UICellMoving.isInCodeTable(x, y)) {
-                isOverTableHeader = true;
-                break;
-              }
-              // Check if dropping into another table (only invalid when moving a table)
-              if (UICellMoving.isInDifferentTable(x, y, original)) {
-                isOverTableHeader = true;
-                break;
-              }
-              if (content.cellsSheet.tables.isInTableHeader({ x, y })) {
-                isOverTableHeader = true;
-                break;
-              }
-            }
-            if (isOverTableHeader) break;
-          }
-        }
-
-        // Don't allow dropping if over a table header
-        if (isOverTableHeader) {
+        // Don't allow dropping if destination is invalid
+        if (isInvalidDestination) {
           this.reset();
           return true;
         }
