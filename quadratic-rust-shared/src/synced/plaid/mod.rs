@@ -62,8 +62,8 @@ impl SyncedConnection for PlaidConnection {
             .ok_or_else(|| SharedError::Synced("Secret not set".to_string()))?;
 
         let client = PlaidClient::new(
-            &client_id,
-            &secret,
+            client_id,
+            secret,
             environment.into(),
             Some(self.access_token.to_string()),
         );

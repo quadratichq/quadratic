@@ -15,7 +15,7 @@ use crate::error::Result;
 use crate::synced::{DATE_FORMAT, SyncedClient};
 use crate::utils::json::flatten_to_json;
 
-pub static PLAIV_VERSION: &'static str = "2020-09-14";
+pub static PLAIV_VERSION: &str = "2020-09-14";
 
 #[derive(Debug, Clone, Copy, EnumString, Display, Serialize, Deserialize)]
 #[strum(serialize_all = "lowercase")]
@@ -203,14 +203,13 @@ impl PlaidClient {
             });
 
             // Merge extra options if provided
-            if let Some(extra) = &extra_options {
-                if let (Some(opts), Some(extra_obj)) = (options.as_object_mut(), extra.as_object())
+            if let Some(extra) = &extra_options
+                && let (Some(opts), Some(extra_obj)) = (options.as_object_mut(), extra.as_object())
                 {
                     for (k, v) in extra_obj {
                         opts.insert(k.clone(), v.clone());
                     }
                 }
-            }
 
             let response = self
                 .raw_request(
