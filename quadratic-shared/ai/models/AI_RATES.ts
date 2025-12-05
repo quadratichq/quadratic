@@ -30,3 +30,9 @@ export const claude_haiku_4_5_20251001_rate: AIRates = {
   rate_per_million_cache_read_tokens: 0.1,
   rate_per_million_cache_write_tokens: 1.25,
 };
+export const claude_opus_4_5_20250514_rate: AIRates = {
+  rate_per_million_input_tokens: 15,
+  rate_per_million_output_tokens: 75,
+  rate_per_million_cache_read_tokens: 1.5,
+  rate_per_million_cache_write_tokens: 18.75,
+};
