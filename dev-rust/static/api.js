@@ -30,7 +30,8 @@ async function togglePerf() {
 
 async function toggleFilter(service) {
     try {
-        const newState = !services[service]?.hidden ?? false;
+        const currentState = services[service]?.hidden ?? false;
+        const newState = !currentState;
         await fetch('/api/filter', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
