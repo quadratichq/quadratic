@@ -4,7 +4,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 // Tool names that should be grouped together as "code" tools
 const CODE_TOOL_NAMES = new Set([AITool.SetCodeCellValue, AITool.UpdateCodeCell, AITool.SetFormulaCellValue]);
@@ -16,12 +16,20 @@ export function isCodeTool(toolName: string): boolean {
 interface GroupedCodeToolCardsProps {
   toolCalls: AIToolCall[];
   className?: string;
+  isComplete?: boolean;
 }
 
-export const GroupedCodeToolCards = memo(({ toolCalls, className }: GroupedCodeToolCardsProps) => {
+export const GroupedCodeToolCards = memo(({ toolCalls, className, isComplete }: GroupedCodeToolCardsProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const isLoading = toolCalls.some((tc) => tc.loading);
+
+  // Auto-collapse when the group is complete (a non-groupable tool came after)
+  useEffect(() => {
+    if (isComplete) {
+      setIsExpanded(false);
+    }
+  }, [isComplete]);
 
   // Try to extract sheet name from the first tool call
   const sheetInfo = useMemo(() => {

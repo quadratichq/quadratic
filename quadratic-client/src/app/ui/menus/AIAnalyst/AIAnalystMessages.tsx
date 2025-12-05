@@ -66,11 +66,17 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   // Pre-process messages to identify groups of consecutive tool calls across messages
-  // Returns a map of messageIndex -> { isGroupStart, groupToolCalls, skipToolCalls }
+  // Returns a map of messageIndex -> { isGroupStart, groupToolCalls, skipToolCalls, isGroupComplete }
   const toolGroupInfo = useMemo(() => {
     const info = new Map<
       number,
-      { isGroupStart: boolean; groupType: ToolGroupType | null; groupToolCalls: AIToolCall[]; skipToolCalls: boolean }
+      {
+        isGroupStart: boolean;
+        groupType: ToolGroupType | null;
+        groupToolCalls: AIToolCall[];
+        skipToolCalls: boolean;
+        isGroupComplete: boolean;
+      }
     >();
 
     let currentGroupStart: number | null = null;
@@ -78,9 +84,31 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     let currentGroupToolCalls: AIToolCall[] = [];
 
     messages.forEach((message, index) => {
-      // Only process assistant messages with userPrompt context and tool calls
-      // All other messages (toolResult, internal context, etc.) are ignored without breaking the group
-      if (!(message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0)) {
+      // Skip toolResult and internal context messages - they don't affect grouping
+      if (message.role === 'user' && message.contextType === 'toolResult') {
+        return;
+      }
+      if (message.role !== 'assistant' || message.contextType !== 'userPrompt') {
+        return;
+      }
+
+      // Check if this message has text content (which would end the group)
+      const hasTextContent =
+        'content' in message &&
+        message.content.some((item) => isContentText(item) && (item as { text: string }).text.trim().length > 0);
+
+      // If message has no tool calls but has text, finalize any existing group
+      if (message.toolCalls.length === 0) {
+        if (hasTextContent && currentGroupStart !== null && currentGroupToolCalls.length > 1) {
+          const existing = info.get(currentGroupStart);
+          if (existing) {
+            existing.groupToolCalls = currentGroupToolCalls;
+            existing.isGroupComplete = true; // Group is complete because text followed
+          }
+          currentGroupStart = null;
+          currentGroupType = null;
+          currentGroupToolCalls = [];
+        }
         return;
       }
 
@@ -94,41 +122,62 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         if (currentGroupType === firstToolType) {
           // Continue the current group
           currentGroupToolCalls.push(...message.toolCalls);
-          info.set(index, { isGroupStart: false, groupType: null, groupToolCalls: [], skipToolCalls: true });
+          info.set(index, {
+            isGroupStart: false,
+            groupType: null,
+            groupToolCalls: [],
+            skipToolCalls: true,
+            isGroupComplete: false,
+          });
         } else {
-          // Finalize previous group if exists
+          // Finalize previous group if exists (and mark as complete since a different type came after)
           if (currentGroupStart !== null && currentGroupToolCalls.length > 1) {
             const existing = info.get(currentGroupStart);
             if (existing) {
               existing.groupToolCalls = currentGroupToolCalls;
+              existing.isGroupComplete = true; // Group is complete because a different type followed
             }
           }
           // Start a new group
           currentGroupStart = index;
           currentGroupType = firstToolType;
           currentGroupToolCalls = [...message.toolCalls];
-          info.set(index, { isGroupStart: true, groupType: firstToolType, groupToolCalls: [], skipToolCalls: false });
+          info.set(index, {
+            isGroupStart: true,
+            groupType: firstToolType,
+            groupToolCalls: [],
+            skipToolCalls: false,
+            isGroupComplete: false,
+          });
         }
       } else {
-        // Non-groupable tool calls, finalize any existing group
+        // Non-groupable tool calls or text content, finalize any existing group (and mark as complete)
         if (currentGroupStart !== null && currentGroupToolCalls.length > 1) {
           const existing = info.get(currentGroupStart);
           if (existing) {
             existing.groupToolCalls = currentGroupToolCalls;
+            existing.isGroupComplete = true; // Group is complete because a non-groupable type followed
           }
         }
         currentGroupStart = null;
         currentGroupType = null;
         currentGroupToolCalls = [];
-        info.set(index, { isGroupStart: false, groupType: null, groupToolCalls: [], skipToolCalls: false });
+        info.set(index, {
+          isGroupStart: false,
+          groupType: null,
+          groupToolCalls: [],
+          skipToolCalls: false,
+          isGroupComplete: false,
+        });
       }
     });
 
-    // Finalize last group
+    // Finalize last group (but don't mark as complete - it might still be growing)
     if (currentGroupStart !== null && currentGroupToolCalls.length > 1) {
       const existing = info.get(currentGroupStart);
       if (existing) {
         existing.groupToolCalls = currentGroupToolCalls;
+        // isGroupComplete stays false - the group is at the end and might still grow
       }
     }
 
@@ -153,9 +202,21 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       // If this is the start of a cross-message group, render the grouped component
       if (groupInfo?.groupToolCalls && groupInfo.groupToolCalls.length > 1) {
         if (groupInfo.groupType === 'code') {
-          return <GroupedCodeToolCards toolCalls={groupInfo.groupToolCalls} className="tool-card" />;
+          return (
+            <GroupedCodeToolCards
+              toolCalls={groupInfo.groupToolCalls}
+              className="tool-card"
+              isComplete={groupInfo.isGroupComplete}
+            />
+          );
         } else if (groupInfo.groupType === 'formatting') {
-          return <GroupedFormattingToolCards toolCalls={groupInfo.groupToolCalls} className="tool-card" />;
+          return (
+            <GroupedFormattingToolCards
+              toolCalls={groupInfo.groupToolCalls}
+              className="tool-card"
+              isComplete={groupInfo.isGroupComplete}
+            />
+          );
         }
       }
 
