@@ -1,6 +1,6 @@
 use crate::checks::Checks;
+use crate::kill::{KillManager, ServiceKillInfo};
 use crate::types::ServiceStatus;
-use futures::future;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -8,9 +8,6 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::RwLock;
 use tokio::sync::broadcast;
-
-#[cfg(unix)]
-use nix::unistd::Pid;
 
 pub struct ServiceManager {
     processes: Arc<RwLock<HashMap<String, Option<Child>>>>,
@@ -20,6 +17,7 @@ pub struct ServiceManager {
     log_sender: broadcast::Sender<(String, String, u64, String)>,
     status_change_sender: broadcast::Sender<()>, // Notifies when status changes
     base_dir: std::path::PathBuf,
+    kill_manager: Arc<KillManager>,
 }
 
 impl ServiceManager {
@@ -48,6 +46,7 @@ impl ServiceManager {
             log_sender,
             status_change_sender,
             base_dir,
+            kill_manager: Arc::new(KillManager::new()),
         }
     }
 
@@ -262,15 +261,18 @@ impl ServiceManager {
         // For services with ports, check if port is in use and kill if needed
         if let Some(port) = service.port() {
             // Only kill processes on port if we had an existing process or port is actually in use
-            if had_existing_process || !self.is_port_free(port).await {
-                // Kill any processes still using the port
-                self.kill_processes_on_port(port).await;
+            if had_existing_process || !crate::kill::is_port_free(port).await {
+                // Kill any processes still using the port (runs in subprocess)
+                if let Err(e) = self.kill_manager.kill_port(port).await {
+                    self.log(name, format!("Warning: kill_port failed: {}", e))
+                        .await;
+                }
 
                 // Give the OS a moment to release the port after killing processes
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
                 // Wait up to 2 seconds for the port to be released
-                if !self.wait_for_port_free(port, 2000).await {
+                if !crate::kill::wait_for_port_free(port, 2000).await {
                     self.log(
                         name,
                         format!(
@@ -532,94 +534,40 @@ impl ServiceManager {
     }
 
     pub async fn kill_service(&self, name: &str) {
-        // Get the service's port and cwd before killing (for fallback)
-        let service_port = crate::services::get_service_by_name(name).and_then(|s| s.port());
-        let service_cwd = crate::services::get_service_by_name(name).and_then(|s| s.cwd());
+        // Get service info for killing
+        let service = crate::services::get_service_by_name(name);
+        let port = service.as_ref().and_then(|s| s.port());
+        let cwd = service.and_then(|s| s.cwd());
 
-        // Kill the spawned process and its entire process group
-        let mut processes = self.processes.write().await;
-        if let Some(Some(mut child)) = processes.remove(name) {
-            let pid = child.id();
-            drop(processes); // Release the lock before async operations
+        // Remove and get the process handle
+        let child = {
+            let mut processes = self.processes.write().await;
+            processes.remove(name).flatten()
+        };
 
-            // For services with ports, kill processes on that port first (catches child processes)
-            if let Some(port) = service_port {
-                self.kill_processes_on_port(port).await;
-            }
+        let pid = child.as_ref().and_then(|c| c.id());
 
-            // For cargo-based services, also kill cargo and rustc processes in the service directory
-            if let Some(cwd) = service_cwd {
-                self.kill_cargo_processes(&cwd).await;
-            }
+        // Build kill info if there's something to kill
+        let info = if pid.is_some() || port.is_some() || cwd.is_some() {
+            Some(ServiceKillInfo {
+                name: name.to_string(),
+                pid,
+                port,
+                cwd,
+            })
+        } else {
+            None
+        };
 
-            // Check if the process already exited to avoid killing unrelated reused PIDs
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    self.log(
-                        name,
-                        format!("Process already exited with status: {:?}", status.code()),
-                    )
-                    .await;
-                    return;
-                }
-                Ok(None) => {
-                    // Still running, continue with kill logic
-                }
-                Err(e) => {
-                    self.log(
-                        name,
-                        format!("Failed to check process state before killing: {}", e),
-                    )
-                    .await;
-                }
-            }
+        // Run kill subprocess if there's something to kill
+        if let Some(ref info) = info {
+            self.kill_manager.kill_service(info).await;
+        }
 
-            let mut kill_succeeded = false;
-
-            #[cfg(unix)]
-            {
-                // The child's PID is its PGID due to unsafe_pre_exec setpgid(0,0)
-                // Kill the entire process group using kill with negative PID
-                if let Some(pid) = pid {
-                    // Safety check: don't kill our own process
-                    let current_pid = nix::unistd::getpid();
-                    if pid as i32 == current_pid.as_raw() {
-                        eprintln!(
-                            "ERROR: Attempted to kill process {} which is dev-rust itself! Aborting for {}.",
-                            pid, name
-                        );
-                        return;
-                    }
-
-                    // Kill the entire process group (PGID = PID due to setpgid in unsafe_pre_exec)
-                    // Using negative PID tells kill() to kill the process group
-                    match nix::sys::signal::kill(
-                        Pid::from_raw(-(pid as i32)),
-                        nix::sys::signal::Signal::SIGKILL,
-                    ) {
-                        Ok(()) => {
-                            kill_succeeded = true;
-                        }
-                        Err(e) => {
-                            self.log(
-                                name,
-                                format!("Warning: Failed to kill process group: {}", e),
-                            )
-                            .await;
-                            kill_succeeded = false;
-                        }
-                    }
-                }
-            }
-            #[cfg(not(unix))]
-            {
-                // On Windows, just kill the process
-                kill_succeeded = child.kill().is_ok();
-            }
-
-            // Wait for the process to fully exit with a timeout
+        // Wait for the child process to exit (if we had one)
+        if let Some(mut child) = child {
             let wait_result =
-                tokio::time::timeout(tokio::time::Duration::from_secs(5), child.wait()).await;
+                tokio::time::timeout(tokio::time::Duration::from_secs(2), child.wait()).await;
 
             match wait_result {
                 Ok(Ok(status)) => {
@@ -634,325 +582,40 @@ impl ServiceManager {
                         .await;
                 }
                 Err(_) => {
-                    self.log(
-                        name,
-                        "Process did not exit within timeout, but continuing anyway".to_string(),
-                    )
-                    .await;
-                }
-            }
-
-            // Verify the process is actually gone (Unix only)
-            #[cfg(unix)]
-            {
-                if let Some(pid) = pid {
-                    // Check if the process still exists
-                    let check_result = nix::sys::signal::kill(
-                        Pid::from_raw(pid as i32),
-                        nix::sys::signal::Signal::SIGCONT, // Use SIGCONT (harmless) to check if process exists
-                    );
-                    if check_result.is_ok() {
-                        // Process still exists, try killing again
-                        self.log(
-                            name,
-                            format!("Process {} still exists, sending SIGKILL again", pid),
-                        )
-                        .await;
-                        match nix::sys::signal::kill(
-                            Pid::from_raw(-(pid as i32)),
-                            nix::sys::signal::Signal::SIGKILL,
-                        ) {
-                            Ok(()) => {
-                                kill_succeeded = true;
-                            }
-                            Err(_) => {
-                                kill_succeeded = false;
-                            }
-                        }
-                        // Wait a bit more
-                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    } else {
-                        // Process is gone, kill succeeded
-                        kill_succeeded = true;
+                    // Timeout waiting - try one more kill
+                    if let Some(ref info) = info {
+                        self.kill_manager.kill_service(info).await;
                     }
-                }
-            }
-
-            // If we failed to kill the process and the service has a port, kill all processes on that port
-            if !kill_succeeded {
-                if let Some(port) = service_port {
-                    self.log(
-                        name,
-                        format!(
-                            "Failed to kill process, killing all processes on port {}",
-                            port
-                        ),
-                    )
-                    .await;
-                    self.kill_processes_on_port(port).await;
-                } else {
-                    self.log(
-                        name,
-                        "Failed to kill process and service has no port to fall back to"
-                            .to_string(),
-                    )
-                    .await;
                 }
             }
         }
     }
 
-    async fn is_port_free(&self, port: u16) -> bool {
-        #[cfg(unix)]
-        {
-            // Check if any process is using the port
-            let output = Command::new("lsof")
-                .args(["-ti", &format!("tcp:{}", port)])
-                .output()
-                .await;
+    /// Collect kill info for all running services and remove them from processes map.
+    /// Only includes services that have something to kill (pid, port, or cwd).
+    async fn collect_services_to_kill(&self) -> Vec<ServiceKillInfo> {
+        let mut services = Vec::new();
+        let mut processes = self.processes.write().await;
+        let status = self.status.read().await;
 
-            if let Ok(output) = output {
-                output.stdout.is_empty()
-            } else {
-                // If lsof fails, assume port might be in use (conservative)
-                false
+        for name in status.keys() {
+            let pid = processes.remove(name).flatten().and_then(|c| c.id());
+            let service = crate::services::get_service_by_name(name);
+            let port = service.as_ref().and_then(|s| s.port());
+            let cwd = service.and_then(|s| s.cwd());
+
+            // Only include if there's something to kill
+            if pid.is_some() || port.is_some() || cwd.is_some() {
+                services.push(ServiceKillInfo {
+                    name: name.clone(),
+                    pid,
+                    port,
+                    cwd,
+                });
             }
         }
-        #[cfg(not(unix))]
-        {
-            // On Windows, try to bind to the port to check if it's free
-            use std::net::TcpListener;
-            TcpListener::bind(format!("127.0.0.1:{}", port)).is_ok()
-        }
-    }
 
-    async fn wait_for_port_free(&self, port: u16, timeout_ms: u64) -> bool {
-        let start = std::time::Instant::now();
-        let timeout = std::time::Duration::from_millis(timeout_ms);
-
-        while start.elapsed() < timeout {
-            if self.is_port_free(port).await {
-                return true;
-            }
-            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-        }
-        false
-    }
-
-    async fn kill_cargo_processes(&self, cwd: &str) {
-        #[cfg(unix)]
-        {
-            // Extract the package name from cwd (e.g., "quadratic-files" from "quadratic-files")
-            let package_name = cwd.split('/').next_back().unwrap_or(cwd);
-            // Convert to crate name format (replace - with _)
-            let crate_name = package_name.replace('-', "_");
-
-            // Find cargo processes related to this specific package
-            // Match patterns like "cargo.*quadratic-files" or "cargo.*-p quadratic-files"
-            let pattern = format!("cargo.*{}", package_name);
-            let output = Command::new("pgrep").args(["-f", &pattern]).output().await;
-
-            if let Ok(output) = output {
-                let pids_str = String::from_utf8_lossy(&output.stdout);
-                let current_pid = nix::unistd::getpid().as_raw();
-
-                for pid_str in pids_str.trim().split('\n').filter(|s| !s.is_empty()) {
-                    if let Ok(pid) = pid_str.trim().parse::<i32>() {
-                        if pid == current_pid {
-                            continue;
-                        }
-
-                        // Kill the process and its process group
-                        // Try process group first (more thorough)
-                        let _ = nix::sys::signal::kill(
-                            Pid::from_raw(-pid), // Negative PID kills process group
-                            nix::sys::signal::Signal::SIGKILL,
-                        );
-                        // Also kill the process directly as fallback
-                        let _ = nix::sys::signal::kill(
-                            Pid::from_raw(pid),
-                            nix::sys::signal::Signal::SIGKILL,
-                        );
-                    }
-                }
-            }
-
-            // Kill rustc processes that are compiling this specific crate
-            // rustc uses crate names (underscores) like "--crate-name quadratic_files"
-            let rustc_pattern = format!("--crate-name {}", crate_name);
-            let rustc_output = Command::new("pgrep")
-                .args(["-f", &rustc_pattern])
-                .output()
-                .await;
-
-            if let Ok(rustc_output) = rustc_output {
-                let pids_str = String::from_utf8_lossy(&rustc_output.stdout);
-                let current_pid = nix::unistd::getpid().as_raw();
-
-                for pid_str in pids_str.trim().split('\n').filter(|s| !s.is_empty()) {
-                    if let Ok(pid) = pid_str.trim().parse::<i32>() {
-                        if pid == current_pid {
-                            continue;
-                        }
-                        // Kill rustc processes related to this crate
-                        let _ = nix::sys::signal::kill(
-                            Pid::from_raw(pid),
-                            nix::sys::signal::Signal::SIGKILL,
-                        );
-                    }
-                }
-            }
-        }
-        #[cfg(not(unix))]
-        {
-            // On Windows, cargo processes are handled differently
-            // The port-based killing should be sufficient
-        }
-    }
-
-    async fn kill_processes_on_port(&self, port: u16) {
-        #[cfg(unix)]
-        {
-            // Use lsof to find all processes using the port
-            let output = Command::new("lsof")
-                .args(["-ti", &format!("tcp:{}", port)])
-                .output()
-                .await;
-
-            if let Ok(output) = output {
-                let pids_str = String::from_utf8_lossy(&output.stdout);
-                let pids: Vec<&str> = pids_str
-                    .trim()
-                    .split('\n')
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                if pids.is_empty() {
-                    self.log("system", format!("No processes found on port {}", port))
-                        .await;
-                    return;
-                }
-
-                // Safety check: don't kill our own process
-                let current_pid = nix::unistd::getpid().as_raw();
-
-                for pid_str in pids {
-                    if let Ok(pid) = pid_str.trim().parse::<i32>() {
-                        // Don't kill our own process
-                        if pid == current_pid {
-                            self.log(
-                                "system",
-                                format!("Skipping our own process {} on port {}", pid, port),
-                            )
-                            .await;
-                            continue;
-                        }
-
-                        // Kill the process
-                        match nix::sys::signal::kill(
-                            Pid::from_raw(pid),
-                            nix::sys::signal::Signal::SIGKILL,
-                        ) {
-                            Ok(()) => {
-                                self.log(
-                                    "system",
-                                    format!("Killed process {} on port {}", pid, port),
-                                )
-                                .await;
-                            }
-                            Err(e) => {
-                                self.log(
-                                    "system",
-                                    format!(
-                                        "Failed to kill process {} on port {}: {}",
-                                        pid, port, e
-                                    ),
-                                )
-                                .await;
-                            }
-                        }
-                    }
-                }
-            } else {
-                self.log(
-                    "system",
-                    format!(
-                        "Failed to find processes on port {}: lsof command failed",
-                        port
-                    ),
-                )
-                .await;
-            }
-        }
-        #[cfg(not(unix))]
-        {
-            // On Windows, use netstat and taskkill
-            // Find processes using the port
-            let output = Command::new("netstat").args(["-ano"]).output().await;
-
-            if let Ok(output) = output {
-                let output_str = String::from_utf8_lossy(&output.stdout);
-                let port_str = format!(":{}", port);
-
-                // Parse netstat output to find PIDs
-                let mut pids = Vec::new();
-                for line in output_str.lines() {
-                    if line.contains(&port_str) && line.contains("LISTENING") {
-                        // Extract PID from the last column
-                        let parts: Vec<&str> = line.split_whitespace().collect();
-                        if let Some(pid_str) = parts.last() {
-                            if let Ok(pid) = pid_str.parse::<u32>() {
-                                pids.push(pid);
-                            }
-                        }
-                    }
-                }
-
-                if pids.is_empty() {
-                    self.log("system", format!("No processes found on port {}", port))
-                        .await;
-                    return;
-                }
-
-                // Kill each process
-                for pid in pids {
-                    let output = Command::new("taskkill")
-                        .args(["/F", "/PID", &pid.to_string()])
-                        .output()
-                        .await;
-
-                    match output {
-                        Ok(output) if output.status.success() => {
-                            self.log("system", format!("Killed process {} on port {}", pid, port))
-                                .await;
-                        }
-                        Ok(_) => {
-                            self.log(
-                                "system",
-                                format!("Failed to kill process {} on port {}", pid, port),
-                            )
-                            .await;
-                        }
-                        Err(e) => {
-                            self.log(
-                                "system",
-                                format!("Error killing process {} on port {}: {}", pid, port, e),
-                            )
-                            .await;
-                        }
-                    }
-                }
-            } else {
-                self.log(
-                    "system",
-                    format!(
-                        "Failed to find processes on port {}: netstat command failed",
-                        port
-                    ),
-                )
-                .await;
-            }
-        }
+        services
     }
 
     pub async fn restart_all_services(&self) {
@@ -965,95 +628,10 @@ impl ServiceManager {
         self.log("system", "Restarting all services...".to_string())
             .await;
 
-        // First, kill all services in parallel (fast)
-        #[cfg(unix)]
-        let mut pids_and_ports: Vec<(String, Option<u32>, Option<u16>)> = Vec::new();
-        #[cfg(not(unix))]
-        let mut processes_to_kill: Vec<(String, Child, Option<u16>)> = Vec::new();
+        // Collect services to kill
+        let services = self.collect_services_to_kill().await;
 
-        {
-            let mut processes = self.processes.write().await;
-            let status = self.status.read().await;
-
-            for name in status.keys() {
-                #[cfg(unix)]
-                {
-                    if let Some(Some(child)) = processes.remove(name) {
-                        let pid = child.id();
-                        let port =
-                            crate::services::get_service_by_name(name).and_then(|s| s.port());
-                        pids_and_ports.push((name.clone(), pid, port));
-                    }
-                }
-                #[cfg(not(unix))]
-                {
-                    if let Some(Some(child)) = processes.remove(name) {
-                        let port =
-                            crate::services::get_service_by_name(name).and_then(|s| s.port());
-                        processes_to_kill.push((name.clone(), child, port));
-                    }
-                }
-            }
-        }
-
-        // Kill all processes in parallel
-        let mut kill_futures = Vec::new();
-
-        #[cfg(unix)]
-        {
-            for (_name, pid, port) in pids_and_ports {
-                kill_futures.push(async move {
-                    if let Some(pid) = pid {
-                        let current_pid = nix::unistd::getpid();
-                        if pid as i32 != current_pid.as_raw() {
-                            let _ = nix::sys::signal::kill(
-                                Pid::from_raw(-(pid as i32)),
-                                nix::sys::signal::Signal::SIGKILL,
-                            );
-                        }
-                    }
-
-                    if let Some(port) = port
-                        && let Ok(output) = Command::new("lsof")
-                            .args(["-ti", &format!("tcp:{}", port)])
-                            .output()
-                            .await
-                    {
-                        let pids_str = String::from_utf8_lossy(&output.stdout);
-                        let current_pid = nix::unistd::getpid().as_raw();
-                        for pid_str in pids_str.trim().split('\n') {
-                            if let Ok(pid) = pid_str.trim().parse::<i32>()
-                                && pid != current_pid
-                            {
-                                let _ = nix::sys::signal::kill(
-                                    Pid::from_raw(pid),
-                                    nix::sys::signal::Signal::SIGKILL,
-                                );
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        #[cfg(not(unix))]
-        {
-            for (_name, mut child, _port) in processes_to_kill {
-                kill_futures.push(async move {
-                    let _ = child.kill();
-                });
-            }
-        }
-
-        // Execute all kills in parallel with a timeout
-        tokio::time::timeout(
-            tokio::time::Duration::from_millis(500),
-            future::join_all(kill_futures),
-        )
-        .await
-        .ok();
-
-        // Reset all service statuses to Stopped
+        // Reset all service statuses to Stopped immediately
         {
             let mut status = self.status.write().await;
             for name in status.keys().cloned().collect::<Vec<_>>() {
@@ -1062,8 +640,11 @@ impl ServiceManager {
         }
         self.notify_status_change();
 
+        // Kill all services using centralized logic
+        self.kill_manager.kill_services(services, 5000).await;
+
         // Small delay to ensure cleanup completes
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
         // Now start all services in the proper dependency order
         self.start_all_services().await;
@@ -1076,100 +657,10 @@ impl ServiceManager {
         self.log("system", "Stopping all services...".to_string())
             .await;
 
-        // Collect all processes to kill - similar to kill_all_services but without setting quitting flag
-        #[cfg(not(unix))]
-        let mut processes_to_kill: Vec<(String, Child, Option<u16>)> = Vec::new();
-        #[cfg(unix)]
-        let mut pids_and_ports: Vec<(String, Option<u32>, Option<u16>)> = Vec::new();
+        // Collect services to kill
+        let services = self.collect_services_to_kill().await;
 
-        {
-            let mut processes = self.processes.write().await;
-            let status = self.status.read().await;
-
-            for name in status.keys() {
-                #[cfg(unix)]
-                {
-                    if let Some(Some(child)) = processes.remove(name) {
-                        let pid = child.id();
-                        let port =
-                            crate::services::get_service_by_name(name).and_then(|s| s.port());
-                        pids_and_ports.push((name.clone(), pid, port));
-                    }
-                }
-                #[cfg(not(unix))]
-                {
-                    if let Some(Some(child)) = processes.remove(name) {
-                        let port =
-                            crate::services::get_service_by_name(name).and_then(|s| s.port());
-                        processes_to_kill.push((name.clone(), child, port));
-                    }
-                }
-            }
-        }
-
-        // Kill all processes in parallel
-        let mut kill_futures = Vec::new();
-
-        #[cfg(unix)]
-        {
-            for (_name, pid, port) in pids_and_ports {
-                kill_futures.push(async move {
-                    if let Some(pid) = pid {
-                        // Safety check: don't kill our own process
-                        let current_pid = nix::unistd::getpid();
-                        if pid as i32 == current_pid.as_raw() {
-                            return;
-                        }
-
-                        // Kill the entire process group (PGID = PID due to setpgid)
-                        let _ = nix::sys::signal::kill(
-                            Pid::from_raw(-(pid as i32)),
-                            nix::sys::signal::Signal::SIGKILL,
-                        );
-                    }
-
-                    // Also kill any processes on the port (in case of lingering processes)
-                    if let Some(port) = port
-                        && let Ok(output) = Command::new("lsof")
-                            .args(["-ti", &format!("tcp:{}", port)])
-                            .output()
-                            .await
-                    {
-                        let pids_str = String::from_utf8_lossy(&output.stdout);
-                        let current_pid = nix::unistd::getpid().as_raw();
-                        for pid_str in pids_str.trim().split('\n') {
-                            if let Ok(pid) = pid_str.trim().parse::<i32>()
-                                && pid != current_pid
-                            {
-                                let _ = nix::sys::signal::kill(
-                                    Pid::from_raw(pid),
-                                    nix::sys::signal::Signal::SIGKILL,
-                                );
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        #[cfg(not(unix))]
-        {
-            for (_name, mut child, _port) in processes_to_kill {
-                kill_futures.push(async move {
-                    let _ = child.kill();
-                });
-            }
-        }
-
-        // Execute all kills in parallel with a timeout
-        tokio::time::timeout(
-            tokio::time::Duration::from_millis(500),
-            future::join_all(kill_futures),
-        )
-        .await
-        .ok();
-
-        // Mark all services as Killed (so they can be restarted)
+        // Mark all services as Killed immediately (so UI updates right away)
         {
             let mut status = self.status.write().await;
             for name in status.keys().cloned().collect::<Vec<_>>() {
@@ -1178,8 +669,25 @@ impl ServiceManager {
         }
         self.notify_status_change();
 
-        self.log("system", "All services stopped.".to_string())
-            .await;
+        // Spawn kills as background task - don't await, return immediately
+        // This prevents blocking the server/websocket connections
+        let km = self.kill_manager.clone();
+        let log_sender = self.log_sender.clone();
+        tokio::spawn(async move {
+            km.kill_services(services, 5000).await;
+
+            // Log completion
+            let timestamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            let _ = log_sender.send((
+                "system".to_string(),
+                "All services stopped.".to_string(),
+                timestamp,
+                "stdout".to_string(),
+            ));
+        });
     }
 
     pub async fn kill_all_services(&self) {
@@ -1192,107 +700,11 @@ impl ServiceManager {
         self.log("system", "Shutting down all services...".to_string())
             .await;
 
-        // Collect all processes to kill - we need to keep Child handles for Windows
-        #[cfg(not(unix))]
-        let mut processes_to_kill: Vec<(String, Child, Option<u16>)> = Vec::new();
-        #[cfg(unix)]
-        let mut pids_and_ports: Vec<(String, Option<u32>, Option<u16>)> = Vec::new();
+        // Collect services to kill
+        let services = self.collect_services_to_kill().await;
 
-        {
-            let mut processes = self.processes.write().await;
-            let status = self.status.read().await;
-
-            for name in status.keys() {
-                #[cfg(unix)]
-                {
-                    if let Some(Some(child)) = processes.remove(name) {
-                        let pid = child.id();
-                        let port =
-                            crate::services::get_service_by_name(name).and_then(|s| s.port());
-                        // On Unix, we can kill by PID, so we don't need the Child handle
-                        pids_and_ports.push((name.clone(), pid, port));
-                    }
-                }
-                #[cfg(not(unix))]
-                {
-                    if let Some(Some(mut child)) = processes.remove(name) {
-                        let port =
-                            crate::services::get_service_by_name(name).and_then(|s| s.port());
-                        // On Windows, we need the Child handle to kill
-                        processes_to_kill.push((name.clone(), child, port));
-                    }
-                }
-            }
-        }
-
-        // Kill all processes in parallel
-        let mut kill_futures = Vec::new();
-
-        #[cfg(unix)]
-        {
-            // On Unix, kill by PID (fast, no need to wait for Child)
-            for (_name, pid, port) in pids_and_ports {
-                kill_futures.push(async move {
-                    if let Some(pid) = pid {
-                        // Safety check: don't kill our own process
-                        let current_pid = nix::unistd::getpid();
-                        if pid as i32 == current_pid.as_raw() {
-                            return;
-                        }
-
-                        // Kill the entire process group (PGID = PID due to setpgid)
-                        let _ = nix::sys::signal::kill(
-                            Pid::from_raw(-(pid as i32)),
-                            nix::sys::signal::Signal::SIGKILL,
-                        );
-                    }
-
-                    // Also kill any processes on the port (in case of lingering processes)
-                    if let Some(port) = port
-                        && let Ok(output) = Command::new("lsof")
-                            .args(["-ti", &format!("tcp:{}", port)])
-                            .output()
-                            .await
-                    {
-                        let pids_str = String::from_utf8_lossy(&output.stdout);
-                        let current_pid = nix::unistd::getpid().as_raw();
-                        for pid_str in pids_str.trim().split('\n') {
-                            if let Ok(pid) = pid_str.trim().parse::<i32>()
-                                && pid != current_pid
-                            {
-                                let _ = nix::sys::signal::kill(
-                                    Pid::from_raw(pid),
-                                    nix::sys::signal::Signal::SIGKILL,
-                                );
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        #[cfg(not(unix))]
-        {
-            // On Windows, kill using Child handles
-            for (name, mut child, port) in processes_to_kill {
-                kill_futures.push(async move {
-                    let _ = child.kill();
-                    // On Windows, also try port-based killing as fallback
-                    if let Some(port) = port {
-                        // Port killing on Windows would go here if needed
-                        // For now, child.kill() should be sufficient
-                    }
-                });
-            }
-        }
-
-        // Execute all kills in parallel with a short timeout
-        tokio::time::timeout(
-            tokio::time::Duration::from_millis(500),
-            future::join_all(kill_futures),
-        )
-        .await
-        .ok();
+        // Kill all services using centralized logic
+        self.kill_manager.kill_services(services, 5000).await;
 
         self.log("system", "All services stopped.".to_string())
             .await;

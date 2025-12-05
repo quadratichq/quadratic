@@ -494,8 +494,13 @@ async fn kill_service(
     State(control): State<Arc<RwLock<Control>>>,
     Json(req): Json<ToggleRequest>,
 ) -> impl IntoResponse {
-    let ctrl = control.read().await;
-    ctrl.kill_service_toggle(&req.service).await;
+    // Spawn as background task to not block the HTTP response
+    let control_clone = control.clone();
+    let service = req.service.clone();
+    tokio::spawn(async move {
+        let ctrl = control_clone.read().await;
+        ctrl.kill_service_toggle(&service).await;
+    });
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
@@ -591,23 +596,37 @@ async fn restart_service(
             );
         }
     }
+    drop(ctrl);
 
-    // Restart the service
-    ctrl.restart_service(&req.service).await;
+    // Spawn restart as background task to not block the HTTP response
+    let control_clone = control.clone();
+    let service = req.service.clone();
+    tokio::spawn(async move {
+        let ctrl = control_clone.read().await;
+        ctrl.restart_service(&service).await;
+    });
 
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
 async fn restart_all_services(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
-    let ctrl = control.read().await;
-    ctrl.restart_all_services().await;
+    // Spawn as background task to not block the HTTP response
+    let control_clone = control.clone();
+    tokio::spawn(async move {
+        let ctrl = control_clone.read().await;
+        ctrl.restart_all_services().await;
+    });
 
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
 async fn stop_all_services(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResponse {
-    let ctrl = control.read().await;
-    ctrl.stop_all_services().await;
+    // Spawn as background task to not block the HTTP response
+    let control_clone = control.clone();
+    tokio::spawn(async move {
+        let ctrl = control_clone.read().await;
+        ctrl.stop_all_services().await;
+    });
 
     (StatusCode::OK, Json(json!({"success": true})))
 }

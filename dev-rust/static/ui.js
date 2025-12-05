@@ -133,7 +133,7 @@ function animateFavicon(timestamp) {
     // Calculate rotation based on elapsed time
     // 240 degrees per second = consistent speed across all refresh rates
     const deltaTime = currentTime - faviconLastTime;
-    const degreesPerSecond = 240;
+    const degreesPerSecond = 200;
     const rotationIncrement = (degreesPerSecond * deltaTime) / 1000;
 
     faviconRotation = (faviconRotation + rotationIncrement) % 360;
