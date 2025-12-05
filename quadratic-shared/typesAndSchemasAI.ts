@@ -22,7 +22,7 @@ const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum([
   'claude-sonnet-4-5@20250929',
   'claude-haiku-4-5@20251001',
-  'claude-opus-4-5@20250514',
+  'claude-opus-4-5@20251124',
 ]);
 const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
@@ -34,7 +34,7 @@ const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum([
   'claude-sonnet-4-5-20250929',
   'claude-haiku-4-5-20251001',
-  'claude-opus-4-5-20250514',
+  'claude-opus-4-5-20251124',
 ]);
 const OpenAIModelSchema = z.enum([
   'gpt-5-codex',
@@ -85,9 +85,9 @@ const VertexAIAnthropicModelKeySchema = z.enum([
   'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-off',
   'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on',
   'vertexai-anthropic:claude-haiku-4-5@20251001',
-  'vertexai-anthropic:claude-opus-4-5@20250514:thinking-toggle-off',
-  'vertexai-anthropic:claude-opus-4-5@20250514:thinking-toggle-on',
-  'vertexai-anthropic:claude-opus-4-5@20250514',
+  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-off',
+  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-on',
+  'vertexai-anthropic:claude-opus-4-5@20251124',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 

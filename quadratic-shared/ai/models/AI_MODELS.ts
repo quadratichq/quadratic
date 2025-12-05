@@ -117,9 +117,9 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-5@20250514:thinking-toggle-off': {
-    ...AI_RATES.claude_opus_4_5_20250514_rate,
-    model: 'claude-opus-4-5@20250514',
+  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-off': {
+    ...AI_RATES.claude_opus_4_5_20251124_rate,
+    model: 'claude-opus-4-5@20251124',
     backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-off',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
@@ -134,9 +134,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-5@20250514:thinking-toggle-on': {
-    ...AI_RATES.claude_opus_4_5_20250514_rate,
-    model: 'claude-opus-4-5@20250514',
+  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-on': {
+    ...AI_RATES.claude_opus_4_5_20251124_rate,
+    model: 'claude-opus-4-5@20251124',
     backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-on',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
@@ -151,9 +151,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-5@20250514': {
-    ...AI_RATES.claude_opus_4_5_20250514_rate,
-    model: 'claude-opus-4-5@20250514',
+  'vertexai-anthropic:claude-opus-4-5@20251124': {
+    ...AI_RATES.claude_opus_4_5_20251124_rate,
+    model: 'claude-opus-4-5@20251124',
     backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-on',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
@@ -468,8 +468,8 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
   },
   'anthropic:claude-opus-4.5:thinking-toggle-off': {
-    ...AI_RATES.claude_opus_4_5_20250514_rate,
-    model: 'claude-opus-4-5-20250514',
+    ...AI_RATES.claude_opus_4_5_20251124_rate,
+    model: 'claude-opus-4-5-20251124',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -484,8 +484,8 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
   },
   'anthropic:claude-opus-4.5:thinking-toggle-on': {
-    ...AI_RATES.claude_opus_4_5_20250514_rate,
-    model: 'claude-opus-4-5-20250514',
+    ...AI_RATES.claude_opus_4_5_20251124_rate,
+    model: 'claude-opus-4-5-20251124',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 1,
