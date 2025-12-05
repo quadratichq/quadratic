@@ -84,6 +84,7 @@ impl Sheet {
             underline: format.underline,
             strike_through: format.strike_through,
             numeric_format: format.numeric_format,
+            font_size: format.font_size,
         }
     }
 
@@ -110,6 +111,7 @@ impl Sheet {
         let mut fill_color: Option<Option<String>> = None;
         let mut underline: Option<Option<bool>> = None;
         let mut strike_through: Option<Option<bool>> = None;
+        let mut font_size: Option<Option<i16>> = None;
 
         selection.ranges.iter().for_each(|range| {
             // convert table ranges to sheet ranges to make this easier
@@ -138,6 +140,7 @@ impl Sheet {
             check_format!(fill_color, self.formats.fill_color, range);
             check_format!(underline, self.formats.underline, range);
             check_format!(strike_through, self.formats.strike_through, range);
+            check_format!(font_size, self.formats.font_size, range);
 
             if let Some(rect) = range.to_rect() {
                 self.data_tables_intersect_rect_sorted(rect)
@@ -162,6 +165,7 @@ impl Sheet {
                             check_format!(fill_color, formats.fill_color, range);
                             check_format!(underline, formats.underline, range);
                             check_format!(strike_through, formats.strike_through, range);
+                            check_format!(font_size, formats.font_size, range);
                         }
                     });
             }
@@ -181,6 +185,7 @@ impl Sheet {
             date_time: None,
             cell_type: None,
             numeric_format: numeric_format.and_then(|x| x),
+            font_size: font_size.and_then(|x| x),
         }
     }
 }

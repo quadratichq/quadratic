@@ -679,6 +679,7 @@ export class Control {
         if (e.code === "ENOENT") {
           resolve("not found");
         }
+<<<<<<< HEAD
       });
       postgres.on("close", (code) => {
         resolve(code === 0);
@@ -695,4 +696,176 @@ export class Control {
     this.runPython();
     this.runShared();
   }
+=======
+        else {
+            this.connection = spawn("cargo", this.cli.options.connection
+                ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
+                : ["run", "-p", "quadratic-connection", "--target-dir=target"], {
+                signal: this.signals.connection.signal,
+                cwd: "quadratic-connection",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        this.ui.printOutput("connection", (data) => {
+            this.handleResponse("connection", data, {
+                success: "listening on",
+                error: ["error[", "error:", "failed to compile", "npm ERR!", "Compiling failed", "Exit status: 1"],
+                start: "    Compiling",
+            });
+        });
+        this.connection.on("exit", (code) => {
+            // Only set error status if exit code indicates failure and status wasn't already set to success
+            if (code !== 0 && code !== null && this.status.connection !== true) {
+                this.status.connection = "error";
+                this.ui.print("connection", "exited with error code", "red");
+            }
+            this.connection = undefined;
+        });
+    }
+    async restartConnection() {
+        this.cli.options.connection = !this.cli.options.connection;
+        if (this.connection) {
+            this.runConnection();
+        }
+    }
+    async killConnection() {
+        if (this.status.connection === "killed") {
+            this.status.connection = false;
+            this.ui.print("connection", "restarting...");
+            this.runConnection();
+        }
+        else {
+            if (this.connection) {
+                await this.kill("connection");
+                this.ui.print("connection", "killed", "red");
+            }
+            this.status.connection = "killed";
+        }
+    }
+    async runPython() {
+        if (this.quitting)
+            return;
+        this.status.python = false;
+        await this.kill("python");
+        this.ui.print("python");
+        this.signals.python = new AbortController();
+        this.python = spawn("npm", ["run", this.cli.options.python ? "watch:python" : "build:python"], { signal: this.signals.python.signal });
+        this.ui.printOutput("python", (data) => this.handleResponse("python", data, {
+            success: "Python complete",
+            error: "Python error!",
+            start: "quadratic-kernels/python-wasm/",
+        }));
+    }
+    async restartPython() {
+        this.cli.options.python = !this.cli.options.python;
+        this.runPython();
+    }
+    async runDb() {
+        if (this.quitting)
+            return;
+        this.ui.print("db", "checking migration...");
+        this.status.db = false;
+        await this.kill("db");
+        this.db = spawn("npm", [
+            "run",
+            "prisma:migrate",
+            "--workspace=quadratic-api",
+        ]);
+        this.ui.printOutput("db");
+        this.db.once("exit", (code) => {
+            if (code === 0) {
+                this.ui.print("db", "migration completed");
+                this.status.db = true;
+                this.runApi();
+            }
+            else {
+                this.ui.print("db", "failed");
+                this.status.db = "error";
+                this.ui.print("db", "Failed to migrate database. Likely you will need to `npm run prisma:dev:reset --workspace=quadratic-api`", "red");
+                this.runApi();
+            }
+        });
+    }
+    runNpmInstall() {
+        if (this.quitting)
+            return;
+        this.ui.print("npm", "installing...");
+        this.npm = spawn("npm", ["install"]);
+        this.npm.on("close", (code) => {
+            if (code === 0) {
+                this.ui.print("npm", "installation completed");
+                this.status.npm = true;
+            }
+            else {
+                this.ui.print("npm", "installation failed");
+                this.status.npm = "error";
+            }
+            this.runClient();
+        });
+    }
+    runRust() {
+        if (this.quitting)
+            return;
+        this.ui.print("rust", "installing...");
+        this.rust = spawn("rustup", ["show"]);
+        this.rust.on("close", (code) => {
+            if (code === 0) {
+                this.ui.print("rust", "completed");
+                this.status.rust = true;
+            }
+            else {
+                this.ui.print("rust", "failed");
+                this.status.rust = "error";
+            }
+            this.runTypes();
+            this.runCore();
+        });
+    }
+    isRedisRunning() {
+        return new Promise((resolve) => {
+            if (this.quitting)
+                resolve(false);
+            const servicesLocal = this.cli.options.servicesLocal;
+            const redis = servicesLocal
+                ? spawn("redis-cli", ["ping"])
+                : spawn("docker", ["exec", "redis", "redis-cli", "ping"]);
+            redis.on("error", (e) => {
+                if (e.code === "ENOENT") {
+                    resolve("not found");
+                }
+            });
+            redis.on("close", (code) => {
+                resolve(code === 0);
+            });
+        });
+    }
+    isPostgresRunning() {
+        return new Promise((resolve) => {
+            if (this.quitting)
+                resolve(false);
+            const servicesLocal = this.cli.options.servicesLocal;
+            const postgres = servicesLocal
+                ? spawn("pg_isready")
+                : spawn("docker", ["exec", "postgres", "pg_isready"]);
+            postgres.on("error", (e) => {
+                if (e.code === "ENOENT") {
+                    resolve("not found");
+                }
+            });
+            postgres.on("close", (code) => {
+                resolve(code === 0);
+            });
+        });
+    }
+    async start(ui) {
+        this.ui = ui;
+        await this.checkServices();
+        // If checkServices() found errors, quit() was called and process will exit
+        // Only continue if services are running
+        this.runNpmInstall();
+        this.runRust();
+        this.runPython();
+        this.runShared();
+    }
+>>>>>>> origin/google-analytics-connection
 }

@@ -1,6 +1,54 @@
 import type { JsNumber } from '@/app/quadratic-core-types';
 import BigNumber from 'bignumber.js';
 
+// Currency formatting rules: position (start/end) and spacing
+// This matches the Rust implementation in quadratic-core/src/values/currency.rs
+interface CurrencyFormat {
+  atEnd: boolean;
+  space: boolean;
+}
+
+function getCurrencyFormat(symbol: string): CurrencyFormat {
+  switch (symbol) {
+    // Symbols at start with no space
+    case '$':
+    case '€':
+    case '£':
+    case '¥':
+    case '₹':
+    case '₩':
+    case '₺':
+    case 'R':
+      return { atEnd: false, space: false };
+
+    // Symbols at end with space
+    case 'CHF':
+    case 'zł':
+    case '₽':
+    case 'kr':
+      return { atEnd: true, space: true };
+
+    // Symbols at start with space
+    case 'R$':
+      return { atEnd: false, space: true };
+
+    // Default: start position, no space
+    default:
+      return { atEnd: false, space: false };
+  }
+}
+
+function formatCurrency(number: string, symbol: string, isNegative: boolean): string {
+  const format = getCurrencyFormat(symbol);
+  const space = format.space ? ' ' : '';
+
+  if (format.atEnd) {
+    return isNegative ? `-${number}${space}${symbol}` : `${number}${space}${symbol}`;
+  } else {
+    return isNegative ? `-${symbol}${space}${number}` : `${symbol}${space}${number}`;
+  }
+}
+
 // Converts a number to a string with the given cell formatting
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
   let number = new BigNumber(n);
@@ -36,7 +84,20 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   if (format.format?.type === 'CURRENCY') {
     if (format.format.symbol) {
-      options.prefix += format.format.symbol;
+      // Use custom currency formatting that matches Rust implementation
+      const numberStr =
+        currentFractionDigits !== undefined
+          ? number.abs().toFormat(currentFractionDigits, {
+              decimalSeparator: options.decimalSeparator,
+              groupSeparator: options.groupSeparator,
+              groupSize: options.groupSize,
+            })
+          : number.abs().toFormat({
+              decimalSeparator: options.decimalSeparator,
+              groupSeparator: options.groupSeparator,
+              groupSize: options.groupSize,
+            });
+      return formatCurrency(numberStr, format.format.symbol, isNegative);
     } else {
       throw new Error('Expected format.symbol to be defined in convertNumber.ts');
     }

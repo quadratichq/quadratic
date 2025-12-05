@@ -87,6 +87,8 @@ export enum Keys {
   Comma = ',',
   Period = '.',
   Slash = '/',
+  LessThan = '<',
+  GreaterThan = '>',
   NumpadPlus = 'NumpadAdd',
   NumpadMinus = 'NumpadSubtract',
   NumpadMultiply = 'NumpadMultiply',

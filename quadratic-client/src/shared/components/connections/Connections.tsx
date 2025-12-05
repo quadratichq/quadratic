@@ -1,3 +1,4 @@
+import { isDatabaseConnection } from '@/app/helpers/codeCellLanguage';
 import {
   getToggleShowConnectionDemoAction,
   type CreateConnectionAction,
@@ -325,22 +326,11 @@ const ConnectionBreadcrumbs = memo(
 function getInitialConnectionState(searchParams: URLSearchParams): ConnectionState {
   const type = searchParams.get('initial-connection-type');
   const uuid = searchParams.get('initial-connection-uuid');
-  if (
-    type === 'MYSQL' ||
-    type === 'POSTGRES' ||
-    type === 'MSSQL' ||
-    type === 'SNOWFLAKE' ||
-    type === 'COCKROACHDB' ||
-    type === 'BIGQUERY' ||
-    type === 'MARIADB' ||
-    type === 'SUPABASE' ||
-    type === 'NEON' ||
-    type === 'MIXPANEL'
-  ) {
+  if (type && isDatabaseConnection(type)) {
     if (uuid) {
-      return { view: 'edit', uuid, type };
+      return { view: 'edit', uuid, type: type as ConnectionType };
     }
-    return { view: 'create', type };
+    return { view: 'create', type: type as ConnectionType };
   }
 
   return { view: 'list' };

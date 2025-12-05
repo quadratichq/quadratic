@@ -1,8 +1,8 @@
 import type { Rgba } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
+import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import Color from 'color';
-import type { ColorResult } from 'react-color';
 
 const convertColorSendAnalyticsError = (from: string, error: Error | unknown) => {
   sendAnalyticsError('convertColor', from, error);

@@ -1,5 +1,8 @@
 {
   "extends": ["react-app", "react-app/jest"],
+  "parserOptions": {
+    "warnOnUnsupportedTypeScriptVersion": false
+  },
   "plugins": ["eslint-plugin-react-compiler", "prettier"],
   "rules": {
     "no-unused-vars": "off",
