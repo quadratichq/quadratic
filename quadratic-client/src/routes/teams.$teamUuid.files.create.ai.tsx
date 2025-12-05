@@ -20,6 +20,7 @@ import {
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ArrowRightIcon, ChevronLeftIcon, ReloadIcon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
@@ -132,6 +133,11 @@ export const Component = () => {
 
   const step = getStepFromPath(location.pathname, teamUuid);
   const isPrivate = searchParams.get('private') === 'true';
+
+  // Track page load
+  useEffect(() => {
+    trackEvent('[StartWithAI].loaded', { step });
+  }, [step]);
 
   // Helper to preserve search params when navigating
   const getRouteWithParams = (route: string) => {
@@ -309,6 +315,10 @@ export const Component = () => {
             type: file.type,
           }))
         );
+        trackEvent('[StartWithAI].addFile', {
+          fileCount: newFiles.length,
+          fileTypes: newFiles.map((f) => f.type),
+        });
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         if (shouldNavigate && step !== 'describe') {
           navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
@@ -343,6 +353,11 @@ export const Component = () => {
           type: file.type,
         }))
       );
+      trackEvent('[StartWithAI].addFile', {
+        fileCount: newFiles.length,
+        fileTypes: newFiles.map((f) => f.type),
+        method: 'drag-drop',
+      });
       setUploadedFiles(newFiles);
       navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
     }
@@ -369,6 +384,7 @@ export const Component = () => {
   };
 
   const handleSelectConnection = (connection: (typeof connections)[0]) => {
+    trackEvent('[StartWithAI].addConnection', { connectionType: connection.type });
     setSelectedConnection({
       uuid: connection.uuid,
       name: connection.name,
@@ -380,6 +396,12 @@ export const Component = () => {
   const generatePlan = useCallback(
     async (promptText: string) => {
       if (!promptText.trim()) return;
+
+      trackEvent('[StartWithAI].generatePlan', {
+        hasFiles: uploadedFiles.length > 0,
+        hasConnection: !!selectedConnection,
+        promptLength: promptText.length,
+      });
 
       lastGeneratedPromptRef.current = promptText;
       setIsEditingPrompt(false);
@@ -489,6 +511,9 @@ export const Component = () => {
           return;
         }
         console.error('Error generating plan:', error);
+        trackEvent('[StartWithAI].generatePlanError', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
         setPlanError(error instanceof Error ? error.message : 'Failed to generate plan');
       } finally {
         setIsGeneratingPlan(false);
@@ -503,7 +528,10 @@ export const Component = () => {
   };
 
   const handleSubmitPrompt = useCallback(
-    (promptText: string) => {
+    (promptText: string, isSuggestion = false) => {
+      if (isSuggestion) {
+        trackEvent('[StartWithAI].selectSuggestion', { promptLength: promptText.length });
+      }
       setPrompt(promptText);
       generatePlan(promptText);
     },
@@ -512,6 +540,14 @@ export const Component = () => {
 
   const handleExecutePlan = async () => {
     if (!generatedPlan.trim() || isExecuting) return;
+
+    trackEvent('[StartWithAI].buildSpreadsheet', {
+      hasFiles: uploadedFiles.length > 0,
+      hasConnection: !!selectedConnection,
+      planLength: generatedPlan.length,
+      isPrivate,
+    });
+
     setIsExecuting(true);
 
     // Save files to IndexedDB so they can be picked up by the spreadsheet
@@ -539,6 +575,7 @@ export const Component = () => {
   };
 
   const handleRegeneratePlan = () => {
+    trackEvent('[StartWithAI].regeneratePlan');
     generatePlan(prompt);
   };
 
@@ -611,7 +648,10 @@ export const Component = () => {
                 {/* Start from Prompt - First with Recommended badge */}
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)))}
+                  onClick={() => {
+                    trackEvent('[StartWithAI].selectDataSource', { source: 'prompt' });
+                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
+                  }}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
                     <StarShineIcon className="text-white" size="lg" />
@@ -627,7 +667,10 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_FILE(teamUuid)))}
+                  onClick={() => {
+                    trackEvent('[StartWithAI].selectDataSource', { source: 'file' });
+                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_FILE(teamUuid)));
+                  }}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-600">
                     <FileIcon className="text-white" size="lg" />
@@ -640,7 +683,10 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PDF(teamUuid)))}
+                  onClick={() => {
+                    trackEvent('[StartWithAI].selectDataSource', { source: 'pdf' });
+                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PDF(teamUuid)));
+                  }}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-red-500 to-orange-600">
                     <PDFIcon className="text-white" size="lg" />
@@ -653,7 +699,10 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)))}
+                  onClick={() => {
+                    trackEvent('[StartWithAI].selectDataSource', { source: 'connection' });
+                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)));
+                  }}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
                     <DatabaseIcon className="text-white" size="lg" />
@@ -668,7 +717,10 @@ export const Component = () => {
 
                 <Card
                   className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid)))}
+                  onClick={() => {
+                    trackEvent('[StartWithAI].selectDataSource', { source: 'web' });
+                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid)));
+                  }}
                 >
                   <div className="flex h-24 items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600">
                     <SearchIcon className="text-white" size="lg" />
@@ -883,7 +935,7 @@ export const Component = () => {
                         <button
                           key={index}
                           className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
-                          onClick={() => handleSubmitPrompt(query)}
+                          onClick={() => handleSubmitPrompt(query, true)}
                         >
                           <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
                           <span className="text-sm group-hover:text-primary">{query}</span>
@@ -915,7 +967,7 @@ export const Component = () => {
                             <button
                               key={index}
                               className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
-                              onClick={() => handleSubmitPrompt(suggestion.prompt)}
+                              onClick={() => handleSubmitPrompt(suggestion.prompt, true)}
                             >
                               <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
                                 {suggestion.title}

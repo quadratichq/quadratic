@@ -182,6 +182,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   // A/B test: 10% of users go to the AI create flow, 90% go directly to a new file
   const useAiCreateFlow = Math.random() < 0.1;
+  trackEvent('[Onboarding].postOnboardingFlow', { flow: useAiCreateFlow ? 'startWithAi' : 'newFile' });
   const newFilePath = useAiCreateFlow
     ? ROUTES.TEAM_FILES_CREATE_AI(teamUuid)
     : ROUTES.CREATE_FILE(teamUuid, { private: false });
