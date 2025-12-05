@@ -20,6 +20,7 @@ import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
+import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
@@ -134,6 +135,7 @@ export default function QuadraticUI() {
             {!presentationMode && <SheetBar />}
             <FloatingFPS />
             <FloatingTopLeftPosition />
+            <Coordinates />
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />

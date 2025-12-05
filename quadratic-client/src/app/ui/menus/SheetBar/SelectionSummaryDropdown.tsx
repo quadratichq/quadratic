@@ -190,13 +190,13 @@ export const SelectionSummaryDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-8 items-center gap-1 border-t border-border bg-accent px-2 text-xs text-muted-foreground hover:bg-border focus:outline-none"
+        className="flex h-8 shrink-0 items-center gap-1 border-t border-border bg-accent px-2 text-xs text-muted-foreground hover:bg-border focus:outline-none"
         onPointerDown={(e) => {
           e.stopPropagation();
         }}
       >
-        <span>{displayValue}</span>
-        <ArrowDropDownIcon className="h-3 w-3" />
+        <span className="whitespace-nowrap">{displayValue}</span>
+        <ArrowDropDownIcon className="h-3 w-3 shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
         <DropdownMenuRadioGroup

@@ -396,6 +396,30 @@ export const SheetBar = memo((): JSX.Element => {
     };
   }, [handlePointerMove, handlePointerUp]);
 
+  // Handle wheel scrolling with preventDefault support
+  useEffect(() => {
+    const element = sheetTabRef.current;
+    if (!element) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Handle both horizontal (deltaX) and vertical (deltaY) scrolling
+      // Vertical scrolling on trackpads should scroll horizontally
+      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+
+      if (delta !== 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        element.scrollLeft += delta;
+      }
+    };
+
+    // Use non-passive listener so we can preventDefault
+    element.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      element.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   const [forceRename, setForceRename] = useState<string | undefined>();
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
@@ -422,11 +446,6 @@ export const SheetBar = memo((): JSX.Element => {
       <div
         ref={sheetTabsRef}
         className="-ml-[1px] flex flex-shrink flex-grow flex-row overflow-hidden pt-[1px] shadow-[inset_0_1px_0_hsl(var(--border))]"
-        onWheel={(e) => {
-          if (sheetTabRef.current && e.deltaX) {
-            sheetTabRef.current.scrollLeft += e.deltaX;
-          }
-        }}
       >
         {sheets.map((sheet) => (
           <SheetBarTab
@@ -445,7 +464,7 @@ export const SheetBar = memo((): JSX.Element => {
         ))}
       </div>
 
-      <div className="flex border-t border-border">
+      <div className="flex shrink-0 border-t border-border">
         <SheetBarButton
           buttonRef={leftRef}
           onPointerDown={() => handleArrowDown(-1)}
@@ -465,7 +484,9 @@ export const SheetBar = memo((): JSX.Element => {
         </SheetBarButton>
       </div>
 
-      <SelectionSummaryDropdown />
+      <div className="shrink-0">
+        <SelectionSummaryDropdown />
+      </div>
     </div>
   );
 });
