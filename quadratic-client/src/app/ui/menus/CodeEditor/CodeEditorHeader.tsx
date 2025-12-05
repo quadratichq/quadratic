@@ -18,7 +18,6 @@ import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRun
 import type { PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import {
   CloseIcon,
@@ -68,7 +67,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
     // update running computation for player
-    const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const playerState = (current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (
         current &&
         current.sheetPos.sheetId === sheets.current &&
@@ -121,14 +120,10 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       }
     };
 
-    events.on('pythonState', playerState);
-    events.on('javascriptState', playerState);
-    events.on('connectionState', playerState);
+    events.on('codeRunningState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
-      events.off('pythonState', playerState);
-      events.off('javascriptState', playerState);
-      events.off('connectionState', playerState);
+      events.off('codeRunningState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);

@@ -459,7 +459,8 @@ export class PointerHeading {
     }
     if (resizing.length) {
       const sheetId = sheets.current;
-      quadraticCore.resizeRows(sheetId, resizing, false);
+      // Pass clientResized: false so rows will auto-recalculate on font size changes
+      quadraticCore.resizeRows(sheetId, resizing, false, false);
     }
   }
 }
