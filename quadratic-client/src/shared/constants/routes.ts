@@ -21,11 +21,6 @@ export const ROUTES = {
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   FILES_CREATE: '/files/create',
   FILES_CREATE_AI: '/files/create/ai',
-  FILES_CREATE_AI_FILE: '/files/create/ai/file',
-  FILES_CREATE_AI_PROMPT: '/files/create/ai/prompt',
-  FILES_CREATE_AI_PDF: '/files/create/ai/pdf',
-  FILES_CREATE_AI_CONNECTION: '/files/create/ai/connection',
-  FILES_CREATE_AI_WEB: '/files/create/ai/web',
   // Team-based AI creation routes (these are the actual routes)
   TEAM_FILES_CREATE_AI: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai`,
   TEAM_FILES_CREATE_AI_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/file`,
