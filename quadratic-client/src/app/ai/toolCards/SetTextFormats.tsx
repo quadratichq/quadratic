@@ -1,26 +1,6 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { sheets } from '@/app/grid/controller/Sheets';
-import {
-  CurrencyIcon,
-  FormatAlignCenterIcon,
-  FormatAlignLeftIcon,
-  FormatAlignRightIcon,
-  FormatBoldIcon,
-  FormatColorFillIcon,
-  FormatColorTextIcon,
-  FormatDateTimeIcon,
-  FormatFontSizeIcon,
-  FormatItalicIcon,
-  FormatPaintIcon,
-  FormatStrikethroughIcon,
-  FormatTextWrapIcon,
-  FormatToggleCommasIcon,
-  FormatUnderlinedIcon,
-  PercentIcon,
-  VerticalAlignBottomIcon,
-  VerticalAlignMiddleIcon,
-  VerticalAlignTopIcon,
-} from '@/shared/components/Icons';
+import { FormatPaintIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -29,7 +9,6 @@ import type { z } from 'zod';
 type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
 
 interface FormatItem {
-  icon: React.ReactNode;
   label: string;
   colorSwatch?: string;
 }
@@ -37,40 +16,20 @@ interface FormatItem {
 function getFormattingItems(data: SetTextFormatsResponse): FormatItem[] {
   const items: FormatItem[] = [];
 
-  if (data.bold === true) items.push({ icon: <FormatBoldIcon className="text-xs" />, label: 'Bold' });
-  if (data.italic === true) items.push({ icon: <FormatItalicIcon className="text-xs" />, label: 'Italic' });
-  if (data.underline === true) items.push({ icon: <FormatUnderlinedIcon className="text-xs" />, label: 'Underline' });
-  if (data.strike_through === true)
-    items.push({ icon: <FormatStrikethroughIcon className="text-xs" />, label: 'Strikethrough' });
-  if (data.text_color)
-    items.push({
-      icon: <FormatColorTextIcon className="text-xs" />,
-      label: data.text_color,
-      colorSwatch: data.text_color,
-    });
-  if (data.fill_color)
-    items.push({
-      icon: <FormatColorFillIcon className="text-xs" />,
-      label: data.fill_color,
-      colorSwatch: data.fill_color,
-    });
-  if (data.align === 'left') items.push({ icon: <FormatAlignLeftIcon className="text-xs" />, label: 'Left' });
-  if (data.align === 'center') items.push({ icon: <FormatAlignCenterIcon className="text-xs" />, label: 'Center' });
-  if (data.align === 'right') items.push({ icon: <FormatAlignRightIcon className="text-xs" />, label: 'Right' });
-  if (data.vertical_align === 'top') items.push({ icon: <VerticalAlignTopIcon className="text-xs" />, label: 'Top' });
-  if (data.vertical_align === 'middle')
-    items.push({ icon: <VerticalAlignMiddleIcon className="text-xs" />, label: 'Middle' });
-  if (data.vertical_align === 'bottom')
-    items.push({ icon: <VerticalAlignBottomIcon className="text-xs" />, label: 'Bottom' });
-  if (data.wrap) items.push({ icon: <FormatTextWrapIcon className="text-xs" />, label: data.wrap });
-  if (data.numeric_commas === true)
-    items.push({ icon: <FormatToggleCommasIcon className="text-xs" />, label: 'Commas' });
-  if (data.number_type === 'percentage') items.push({ icon: <PercentIcon className="text-xs" />, label: 'Percent' });
-  if (data.number_type === 'currency' || data.currency_symbol)
-    items.push({ icon: <CurrencyIcon className="text-xs" />, label: data.currency_symbol || 'Currency' });
-  if (data.date_time) items.push({ icon: <FormatDateTimeIcon className="text-xs" />, label: data.date_time });
-  if (data.font_size !== undefined && data.font_size !== null)
-    items.push({ icon: <FormatFontSizeIcon className="text-xs" />, label: `${data.font_size}pt` });
+  if (data.bold === true) items.push({ label: 'bold' });
+  if (data.italic === true) items.push({ label: 'italic' });
+  if (data.underline === true) items.push({ label: 'underline' });
+  if (data.strike_through === true) items.push({ label: 'strikethrough' });
+  if (data.text_color) items.push({ label: 'text', colorSwatch: data.text_color });
+  if (data.fill_color) items.push({ label: 'fill', colorSwatch: data.fill_color });
+  if (data.align) items.push({ label: `align: ${data.align}` });
+  if (data.vertical_align) items.push({ label: `v-align: ${data.vertical_align}` });
+  if (data.wrap) items.push({ label: `wrap: ${data.wrap}` });
+  if (data.numeric_commas === true) items.push({ label: 'commas' });
+  if (data.number_type) items.push({ label: data.number_type });
+  if (data.currency_symbol) items.push({ label: `currency: ${data.currency_symbol}` });
+  if (data.date_time) items.push({ label: `date: ${data.date_time}` });
+  if (data.font_size !== undefined && data.font_size !== null) items.push({ label: `${data.font_size}pt` });
 
   return items;
 }
@@ -118,18 +77,17 @@ export const SetTextFormats = memo(
     const description = useMemo(() => {
       if (formattingItems.length === 0) return undefined;
       return (
-        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className="inline-flex flex-wrap items-center gap-x-1">
           {formattingItems.map((item, index) => (
-            <span key={index} className="inline-flex items-center gap-0.5">
-              {item.icon}
-              {item.colorSwatch ? (
+            <span key={index} className="inline-flex items-center">
+              {item.label}
+              {item.colorSwatch && (
                 <span
-                  className="inline-block h-3 w-3 rounded-sm border border-border"
+                  className="ml-0.5 inline-block h-3 w-3 rounded-sm border border-border"
                   style={{ backgroundColor: item.colorSwatch }}
                 />
-              ) : (
-                <span>{item.label}</span>
               )}
+              {index < formattingItems.length - 1 && <span className="mr-0.5">,</span>}
             </span>
           ))}
         </span>

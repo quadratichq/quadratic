@@ -40,7 +40,16 @@ export const SetBorders = memo(
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
-        return `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}"!` : ''}${toolArgs.data.selection} ${toolArgs.data.color} ${toolArgs.data.line} ${toolArgs.data.border_selection}`;
+        const range = `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}"!` : ''}${toolArgs.data.selection}`;
+        const color = toolArgs.data.color;
+        const details = `${toolArgs.data.line} ${toolArgs.data.border_selection}`;
+        return (
+          <span className="inline-flex items-center gap-1">
+            {range}
+            <span className="inline-block h-3 w-3 rounded-sm border border-border" style={{ backgroundColor: color }} />
+            {details}
+          </span>
+        );
       }
       return '';
     }, [
