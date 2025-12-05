@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -17,7 +18,7 @@ const schema = z.object({
   }),
 });
 
-async function handler(req: Request, res: Response<any>) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/files/deleted.GET.response']>) {
   const {
     params: { uuid },
   } = parseRequest(req, schema);

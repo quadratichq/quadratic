@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
@@ -16,7 +17,7 @@ const schema = z.object({
   }),
 });
 
-async function handler(req: Request, res: Response<any>) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/restore.POST.response']>) {
   const {
     params: { uuid: fileUuid },
   } = parseRequest(req, schema);
@@ -58,7 +59,7 @@ async function handler(req: Request, res: Response<any>) {
       uuid: updatedFile.uuid,
       name: updatedFile.name,
       deleted: updatedFile.deleted,
-      deletedDate: updatedFile.deletedDate,
+      deletedDate: updatedFile.deletedDate?.toISOString() || null,
     },
   };
 
