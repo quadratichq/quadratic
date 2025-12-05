@@ -400,25 +400,21 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 <ImportFilesToGrid content={message.content} />
               ) : null
             ) : isUserPromptMessage(message) ? (
-              <div className="flex justify-end px-2">
-                <div className="w-[90%]">
-                  <AIAnalystUserMessageForm
-                    initialContent={message.content}
-                    initialContext={message.context}
-                    textareaRef={textareaRef}
-                    messageIndex={index}
-                    onContentChange={
-                      debugAIAnalystChatEditing &&
-                      ((content) => {
-                        const newMessages = [...messages];
-                        newMessages[index] = { ...message, content };
-                        setMessages(newMessages);
-                      })
-                    }
-                    uiContext="analyst-edit-chat"
-                  />
-                </div>
-              </div>
+              <AIAnalystUserMessageForm
+                initialContent={message.content}
+                initialContext={message.context}
+                textareaRef={textareaRef}
+                messageIndex={index}
+                onContentChange={
+                  debugAIAnalystChatEditing &&
+                  ((content) => {
+                    const newMessages = [...messages];
+                    newMessages[index] = { ...message, content };
+                    setMessages(newMessages);
+                  })
+                }
+                uiContext="analyst-edit-chat"
+              />
             ) : isToolResultMessage(message) ? (
               message.content.map((result, resultIndex) => (
                 <AIAnalystUserMessageForm
@@ -463,21 +459,20 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       }
                     />
                   ) : isContentText(item) ? (
-                    <div key={`${index}-${contentIndex}-${item.type}`} className="max-w-[90%]">
-                      <Markdown
-                        text={item.text}
-                        onChange={
-                          debugAIAnalystChatEditing &&
-                          ((text) => {
-                            const newMessage = { ...message, content: [...message.content] };
-                            newMessage.content[contentIndex] = { ...item, text };
-                            const newMessages = [...messages];
-                            (newMessages as typeof messages)[index] = newMessage as typeof message;
-                            setMessages(newMessages);
-                          })
-                        }
-                      />
-                    </div>
+                    <Markdown
+                      key={`${index}-${contentIndex}-${item.type}`}
+                      text={item.text}
+                      onChange={
+                        debugAIAnalystChatEditing &&
+                        ((text) => {
+                          const newMessage = { ...message, content: [...message.content] };
+                          newMessage.content[contentIndex] = { ...item, text };
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
+                    />
                   ) : null
                 )}
 
