@@ -1,24 +1,50 @@
 import { FreePlan, ProPlan } from '@/dashboard/billing/BillingPlans';
 import {
   ControlCheckboxInputOther,
-  ControlCheckboxStacked,
+  // ControlCheckboxStacked,
   ControlLinkInline,
   ControlLinkStacked,
 } from '@/dashboard/onboarding/Controls';
 import { useOnboardingLoaderData } from '@/routes/teams.$teamUuid.onboarding';
-import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
+// import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ArrowRightIcon, DesktopIcon, EducationIcon, PersonalIcon, WorkIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
 const FETCHER_KEY = 'onboarding-form-submission';
 const RESET_FORM_DELAY = 600;
+
+const roleOptionsByValue = {
+  'data-analytics': 'Data / Analytics',
+  product: 'Product',
+  finance: 'Finance',
+  'c-suite-management': 'C-Suite / Management',
+  marketing: 'Marketing',
+  sales: 'Sales',
+  'software-development': 'Software Development',
+  engineering: 'Engineering',
+  'ml-ai': 'Machine Learning / AI',
+  other: 'Other',
+};
+
+const referralSourceOptionsByValue = {
+  search: 'Search engine (e.g. Google)',
+  youtube: 'YouTube',
+  'twitter-x': 'Twitter (X)',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  linkedin: 'LinkedIn',
+  'word-of-mouth': 'Word of Mouth / Referral',
+  email: 'Email',
+  'paid-advertising': 'Paid advertising',
+  other: 'Other',
+};
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -98,26 +124,20 @@ export const questionsById: Record<
     title: 'What best describes your role?',
     excludeForUse: ['personal'],
     Form: (props) => {
-      const optionsByValue = {
-        'data-analytics': 'Data / Analytics',
-        product: 'Product',
-        finance: 'Finance',
-        'c-suite-management': 'C-Suite / Management',
-        marketing: 'Marketing',
-        sales: 'Sales',
-        'software-development': 'Software Development',
-        engineering: 'Engineering',
-        'ml-ai': 'Machine Learning / AI',
-        other: 'Other',
-      };
       const [searchParams] = useSearchParams();
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
+
+      // Randomize options order (keeping 'other' last) once per mount
+      const shuffledOptions = useMemo(
+        () => shuffleOptionsKeepOtherLast(Object.entries(roleOptionsByValue) as [string, string][]),
+        []
+      );
 
       return (
         <Question title={props.title}>
           <QuestionForm>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(optionsByValue).map(([value, label]) =>
+              {shuffledOptions.map(([value, label]) =>
                 value === 'other' ? (
                   <ControlCheckboxInputOther
                     key={value}
@@ -187,91 +207,91 @@ export const questionsById: Record<
   },
 
   // Shared
-  'connections[]': {
-    title: 'What data sources are you interested in connecting to?',
-    // subtitle: 'Select all you are interested in.',
-    Form: (props) => {
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      const [searchParams] = useSearchParams();
+  // 'connections[]': {
+  //   title: 'What data sources are you interested in connecting to?',
+  //   // subtitle: 'Select all you are interested in.',
+  //   Form: (props) => {
+  //     const [other, setOther] = useRecoilState(otherCheckboxAtom);
+  //     const [searchParams] = useSearchParams();
 
-      // Build options array with proper type inference
-      const options: Array<{
-        name: string;
-        value: string;
-        Logo: React.ComponentType;
-      }> = [
-        ...(Object.keys(connectionsByType) as Array<keyof typeof connectionsByType>).map((key) => ({
-          name: connectionsByType[key].name,
-          value: key,
-          Logo: connectionsByType[key].Logo,
-        })),
-        ...(Object.keys(potentialConnectionsByType) as Array<keyof typeof potentialConnectionsByType>).map((key) => ({
-          name: potentialConnectionsByType[key].name,
-          value: key,
-          Logo: potentialConnectionsByType[key].Logo,
-        })),
-      ];
+  //     // Build options array with proper type inference
+  //     const options: Array<{
+  //       name: string;
+  //       value: string;
+  //       Logo: React.ComponentType;
+  //     }> = [
+  //       ...(Object.keys(connectionsByType) as Array<keyof typeof connectionsByType>).map((key) => ({
+  //         name: connectionsByType[key].name,
+  //         value: key,
+  //         Logo: connectionsByType[key].Logo,
+  //       })),
+  //       ...(Object.keys(potentialConnectionsByType) as Array<keyof typeof potentialConnectionsByType>).map((key) => ({
+  //         name: potentialConnectionsByType[key].name,
+  //         value: key,
+  //         Logo: potentialConnectionsByType[key].Logo,
+  //       })),
+  //     ];
 
-      // This is a bit messy, but we just want to move mixpanel to being down by
-      // the other SaaS options, so put it right before Salesforce.
-      const mixpanelIndex = options.findIndex((opt) => opt.value === 'MIXPANEL');
-      const salesforceIndex = options.findIndex((opt) => opt.value === 'SALESFORCE');
-      const optionsSorted = [...options];
-      if (mixpanelIndex !== -1 && salesforceIndex !== -1) {
-        const mixpanel = optionsSorted.splice(mixpanelIndex, 1)[0];
-        const newSalesforceIndex = optionsSorted.findIndex((opt) => opt.value === 'SALESFORCE');
-        optionsSorted.splice(newSalesforceIndex, 0, mixpanel);
-      }
+  //     // This is a bit messy, but we just want to move mixpanel to being down by
+  //     // the other SaaS options, so put it right before Salesforce.
+  //     const mixpanelIndex = options.findIndex((opt) => opt.value === 'MIXPANEL');
+  //     const salesforceIndex = options.findIndex((opt) => opt.value === 'SALESFORCE');
+  //     const optionsSorted = [...options];
+  //     if (mixpanelIndex !== -1 && salesforceIndex !== -1) {
+  //       const mixpanel = optionsSorted.splice(mixpanelIndex, 1)[0];
+  //       const newSalesforceIndex = optionsSorted.findIndex((opt) => opt.value === 'SALESFORCE');
+  //       optionsSorted.splice(newSalesforceIndex, 0, mixpanel);
+  //     }
 
-      return (
-        <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm>
-            <p className="flex items-center justify-center pb-4">
-              <Button variant="link" size="lg" asChild>
-                <Link to={`./?${searchParams.toString()}&${props.id}=`}>Skip, i'm not interested in any of these.</Link>
-              </Button>
-            </p>
+  //     return (
+  //       <Question title={props.title} subtitle={props.subtitle}>
+  //         <QuestionForm>
+  //           <p className="flex items-center justify-center pb-4">
+  //             <Button variant="link" size="lg" asChild>
+  //               <Link to={`./?${searchParams.toString()}&${props.id}=`}>Skip, i'm not interested in any of these.</Link>
+  //             </Button>
+  //           </p>
 
-            <div className="grid grid-cols-3 gap-2">
-              {optionsSorted.map(({ name, value, Logo }) => {
-                return value === 'OTHER' ? (
-                  <ControlCheckboxInputOther
-                    key={value}
-                    id={props.id}
-                    value={value.toLowerCase()}
-                    checked={other}
-                    onChange={setOther}
-                    stacked
-                  >
-                    <Logo />
-                  </ControlCheckboxInputOther>
-                ) : (
-                  <ControlCheckboxStacked name={props.id} value={value} key={value}>
-                    <Logo />
-                  </ControlCheckboxStacked>
-                );
-              })}
-            </div>
+  //           <div className="grid grid-cols-3 gap-2">
+  //             {optionsSorted.map(({ name, value, Logo }) => {
+  //               return value === 'OTHER' ? (
+  //                 <ControlCheckboxInputOther
+  //                   key={value}
+  //                   id={props.id}
+  //                   value={value.toLowerCase()}
+  //                   checked={other}
+  //                   onChange={setOther}
+  //                   stacked
+  //                 >
+  //                   <Logo />
+  //                 </ControlCheckboxInputOther>
+  //               ) : (
+  //                 <ControlCheckboxStacked name={props.id} value={value} key={value}>
+  //                   <Logo />
+  //                 </ControlCheckboxStacked>
+  //               );
+  //             })}
+  //           </div>
 
-            {/* Allows submission of empty values */}
-            <input type="hidden" name={props.id} value="" />
+  //           {/* Allows submission of empty values */}
+  //           <input type="hidden" name={props.id} value="" />
 
-            <QuestionFormFooter>
-              <BackButton />
-              <Button
-                type="submit"
-                size="lg"
-                data-testid="onboarding-btn-connections-next"
-                onClick={() => trackNextQuestionClick(props.id)}
-              >
-                Next
-              </Button>
-            </QuestionFormFooter>
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
+  //           <QuestionFormFooter>
+  //             <BackButton />
+  //             <Button
+  //               type="submit"
+  //               size="lg"
+  //               data-testid="onboarding-btn-connections-next"
+  //               onClick={() => trackNextQuestionClick(props.id)}
+  //             >
+  //               Next
+  //             </Button>
+  //           </QuestionFormFooter>
+  //         </QuestionForm>
+  //       </Question>
+  //     );
+  //   },
+  // },
   'team-name': {
     title: 'What’s your team name?',
     subtitle: 'This will appear as the name of your workspace in the app.',
@@ -380,25 +400,20 @@ export const questionsById: Record<
   'referral-source': {
     title: 'How did you hear about Quadratic?',
     Form: (props) => {
-      const optionsByValue = {
-        search: 'Search engine (e.g. Google)',
-        youtube: 'YouTube',
-        'twitter-x': 'Twitter (X)',
-        instagram: 'Instagram',
-        tiktok: 'TikTok',
-        linkedin: 'LinkedIn',
-        'word-of-mouth': 'Word of Mouth / Referral',
-        email: 'Email',
-        'paid-advertising': 'Paid advertising',
-        other: 'Other',
-      };
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [searchParams] = useSearchParams();
+
+      // Randomize options order (keeping 'other' last) once per mount
+      const shuffledOptions = useMemo(
+        () => shuffleOptionsKeepOtherLast(Object.entries(referralSourceOptionsByValue) as [string, string][]),
+        []
+      );
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(optionsByValue).map(([value, label]) =>
+              {shuffledOptions.map(([value, label]) =>
                 value === 'other' ? (
                   <ControlCheckboxInputOther
                     key={value}
@@ -669,4 +684,26 @@ function getDefaultUsername(username: string) {
     }
   }
   return out;
+}
+
+/**
+ * Fisher-Yates shuffle algorithm to randomize an array
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
+ * Shuffles options but keeps 'other' at the end
+ */
+function shuffleOptionsKeepOtherLast<T extends [string, string]>(entries: T[]): T[] {
+  const other = entries.find(([key]) => key === 'other');
+  const rest = entries.filter(([key]) => key !== 'other');
+  const shuffled = shuffleArray(rest);
+  return other ? [...shuffled, other] : shuffled;
 }

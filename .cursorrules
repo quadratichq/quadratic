@@ -1,0 +1,19 @@
+---
+
+Preserve Smart Quotes
+
+When editing UI text copy, preserve typographically correct “smart quotes” (a.k.a. curly quotes).
+
+Reference: https://smartquotesforsmartpeople.com
+
+- Double quotes: `“` and `”` (U+201C and U+201D)
+- Single quotes: `‘` and `’` (U+2018 and U+2019)
+
+Do **not** replace these with straight/dumb quotes (`"` and `'`) unless:
+
+1. Explicitly asked to do so
+2. The context requires ASCII-only characters (e.g., code syntax, JSON keys, shell commands, etc.)
+
+Smart quotes are intentional and improve readability in prose, UI text, and documentation.
+
+---
