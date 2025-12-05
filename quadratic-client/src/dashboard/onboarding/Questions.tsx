@@ -128,10 +128,7 @@ export const questionsById: Record<
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
 
       // Randomize options order (keeping 'other' last) once per mount
-      const shuffledOptions = useMemo(
-        () => shuffleOptionsKeepOtherLast(Object.entries(roleOptionsByValue) as [string, string][]),
-        []
-      );
+      const shuffledOptions = useMemo(() => shuffleOptionsKeepOtherLast(Object.entries(roleOptionsByValue)), []);
 
       return (
         <Question title={props.title}>
@@ -405,7 +402,7 @@ export const questionsById: Record<
 
       // Randomize options order (keeping 'other' last) once per mount
       const shuffledOptions = useMemo(
-        () => shuffleOptionsKeepOtherLast(Object.entries(referralSourceOptionsByValue) as [string, string][]),
+        () => shuffleOptionsKeepOtherLast(Object.entries(referralSourceOptionsByValue)),
         []
       );
 
@@ -689,7 +686,7 @@ function getDefaultUsername(username: string) {
 /**
  * Fisher-Yates shuffle algorithm to randomize an array
  */
-function shuffleArray<T>(array: T[]): T[] {
+function shuffleArray<T>(array: T[]) {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -701,7 +698,7 @@ function shuffleArray<T>(array: T[]): T[] {
 /**
  * Shuffles options but keeps 'other' at the end
  */
-function shuffleOptionsKeepOtherLast<T extends [string, string]>(entries: T[]): T[] {
+function shuffleOptionsKeepOtherLast(entries: [string, string][]) {
   const other = entries.find(([key]) => key === 'other');
   const rest = entries.filter(([key]) => key !== 'other');
   const shuffled = shuffleArray(rest);
