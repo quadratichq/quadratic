@@ -20,6 +20,7 @@ import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/us
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import BigNumber from 'bignumber.js';
@@ -373,6 +374,24 @@ class InlineEditorHandler {
       }
     }
     inlineEditorMonaco.setFontFamily(fontFamily);
+
+    // Set font size from format summary
+    const fontSize = this.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
+    inlineEditorMonaco.setFontSize(fontSize);
+  };
+
+  // Refreshes the format summary and updates the font display in the inline editor
+  refreshFontSize = async () => {
+    if (!this.location) return;
+
+    this.formatSummary = await quadraticCore.getCellFormatSummary(
+      this.location.sheetId,
+      this.location.x,
+      this.location.y
+    );
+
+    this.updateFont();
+    this.updateMonacoCellLayout();
   };
 
   // Handles updates to the Monaco editor cursor position
@@ -404,7 +423,7 @@ class InlineEditorHandler {
     const cellContentHeight = height - cellOutlineOffset * 2;
     const align = this.formatSummary?.align ?? 'left';
     const verticalAlign = this.formatSummary?.verticalAlign ?? 'top';
-    const wrap = this.formatSummary?.wrap ?? 'overflow';
+    const wrap = this.formatSummary?.wrap ?? (this.codeCell ? 'clip' : 'overflow');
     const underline = this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
     const strikeThrough = this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(

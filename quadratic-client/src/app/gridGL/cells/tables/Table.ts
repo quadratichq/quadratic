@@ -13,8 +13,8 @@ import type { Point } from 'pixi.js';
 import { Container, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
-  private outline: TableOutline;
   public active = false;
+  outline: TableOutline;
 
   // Header is either a child of Table or, when it is sticky, a child of
   // pixiApp.overHeadings.
@@ -29,6 +29,9 @@ export class Table extends Container {
   tableCursor: string | undefined;
 
   imageHtmlGridBounds?: [number, number];
+
+  // whether the code cell is currently running
+  running: boolean | 'awaiting' = false;
 
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();

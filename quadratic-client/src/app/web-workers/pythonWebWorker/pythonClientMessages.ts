@@ -1,5 +1,3 @@
-import type { CodeRun } from '@/app/web-workers/CodeRun';
-
 export interface PythonClientLoadError {
   type: 'pythonClientLoadError';
   error?: string;
@@ -8,12 +6,6 @@ export interface PythonClientLoadError {
 export interface PythonClientState {
   type: 'pythonClientState';
   state: 'loading' | 'ready' | 'error' | 'running';
-
-  // current cell being executed
-  current?: CodeRun;
-
-  // cells awaiting execution
-  awaitingExecution?: CodeRun[];
 
   // error loading Python
   error?: string;

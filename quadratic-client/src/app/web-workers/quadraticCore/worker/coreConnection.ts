@@ -1,7 +1,6 @@
 import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { ConnectionKind } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
@@ -27,22 +26,6 @@ class CoreConnection {
     self.sendConnection = this.sendConnection;
 
     if (await debugFlagWait('debugWebWorkers')) console.log('[coreConnection] initialized.');
-  };
-
-  private send(message: any) {
-    self.postMessage(message);
-  }
-
-  private sendConnectionState = (
-    state: LanguageState,
-    options?: { current?: CodeRun; awaitingExecution?: CodeRun[] }
-  ) => {
-    this.send({
-      type: 'coreClientConnectionState',
-      state,
-      current: options?.current,
-      awaitingExecution: options?.awaitingExecution,
-    });
   };
 
   private sendConnection = async (
@@ -77,8 +60,6 @@ class CoreConnection {
     let signal = this.controller.signal;
 
     try {
-      this.sendConnectionState('running', { current: codeRun });
-
       if (core.teamUuid) {
         const response = await fetch(url, {
           signal,
@@ -106,7 +87,6 @@ class CoreConnection {
 
       // send the parquet bytes to core
       core.connectionComplete(transactionId, buffer, std_out, std_err?.replace(/\\/g, '').replace(/"/g, ''), extra);
-      this.sendConnectionState('ready');
       this.lastTransactionId = undefined;
     } catch (e) {
       console.error(`Error fetching ${url}`, e);
@@ -133,7 +113,6 @@ class CoreConnection {
       const std_err = 'Execution cancelled by user';
       const extra = undefined;
       core.connectionComplete(this.lastTransactionId, buffer, std_out, std_err, extra);
-      this.sendConnectionState('ready');
       this.lastTransactionId = undefined;
     }
   };

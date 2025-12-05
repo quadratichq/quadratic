@@ -123,3 +123,19 @@ export const translateLanguageForAI = (language: CodeCellLanguage): string => {
 
   return 'Python';
 };
+
+/**
+ * Check if a languageId represents a database connection type.
+ * This includes both the generic 'Connection' type and specific database connection types.
+ */
+export const isDatabaseConnection = (languageId?: string): boolean => {
+  if (!languageId) return false;
+  if (languageId === 'Connection') return true;
+
+  // Check if it's one of the connection types defined in codeCellsById
+  const connectionTypes = Object.keys(codeCellsById).filter(
+    (key) => codeCellsById[key as CodeCellIds].type === 'connection'
+  ) as CodeCellIds[];
+
+  return connectionTypes.includes(languageId as CodeCellIds);
+};

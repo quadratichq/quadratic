@@ -38,7 +38,20 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
     },
     include: {
       ownerUser: true,
-      ownerTeam: true,
+      ownerTeam: {
+        include: {
+          UserTeamRole: {
+            select: {
+              userId: true,
+            },
+          },
+          TeamInvite: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      },
       UserFileRole: {
         include: {
           user: true,
@@ -59,6 +72,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   }
   const dbInvites = dbFile.FileInvite;
   const dbUsers = dbFile.UserFileRole;
+
+  // Build sets for quick team membership lookups
+  const teamMemberIds = new Set(dbFile.ownerTeam.UserTeamRole.map((utr) => utr.userId));
+  const teamInviteEmails = new Set(dbFile.ownerTeam.TeamInvite.map((ti) => ti.email));
 
   // Lookup extra user info in Auth0
   const usersToSearchFor: UsersRequest[] = dbUsers.map(({ user }) => user);
@@ -96,11 +113,20 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
     file: {
       publicLinkAccess,
     },
+    team: {
+      name: dbFile.ownerTeam.name,
+      uuid: dbFile.ownerTeam.uuid,
+    },
     users: dbUsers.map(({ user: { id }, role }) => {
       const { email, name, picture } = usersById[id];
-      return { id, email, name, picture, role };
+      return { id, email, name, picture, role, isTeamMember: teamMemberIds.has(id) };
     }),
-    invites: dbInvites.map(({ id, email, role }) => ({ id, email, role })),
+    invites: dbInvites.map(({ id, email, role }) => ({
+      id,
+      email,
+      role,
+      isTeamMember: teamInviteEmails.has(email),
+    })),
     userMakingRequest: {
       id: userId,
       filePermissions: userMakingRequest.filePermissions,

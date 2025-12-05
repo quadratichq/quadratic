@@ -1,7 +1,6 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
-import { ConnectionFormAICheckbox } from '@/shared/components/connections/ConnectionFormAICheckbox';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
@@ -9,7 +8,7 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { useFetcher, useSubmit } from 'react-router';
 
@@ -118,16 +117,8 @@ function ConnectionFormWrapper({
   const { ConnectionForm } = connectionsByType[type];
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
-  // Require the user check the acknowledge box (but this is not tracked in the form state)
-  const [aiCheckboxChecked, setAiCheckboxChecked] = useState(false);
-  const showError = form.formState.isSubmitted && !aiCheckboxChecked;
-
   // This is a middleware that tests the connection before saving
   const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
-    if (!aiCheckboxChecked) {
-      return;
-    }
-
     if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
       props.handleSubmitForm(formValues);
       return;
@@ -156,14 +147,7 @@ function ConnectionFormWrapper({
   };
 
   return (
-    <ConnectionForm
-      handleSubmitForm={handleSubmitMiddleware}
-      form={form}
-      connection={props.connection}
-      teamUuid={teamUuid}
-    >
-      <ConnectionFormAICheckbox value={aiCheckboxChecked} setValue={setAiCheckboxChecked} showError={showError} />
-
+    <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
       <ConnectionFormActions
         form={form}
         handleCancelForm={props.handleCancelForm}
