@@ -6,7 +6,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { DataTableSort } from '@/app/quadratic-core-types';
-import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { LINE_HEIGHT, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { DEFAULT_FONT_SIZE, SORT_BUTTON_PADDING, SORT_BUTTON_RADIUS } from '@/shared/constants/gridConstants';
 import type { Point } from 'pixi.js';
 import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
@@ -69,7 +69,16 @@ export class TableColumnHeader extends Container {
     );
     this.clipName(name, width);
     this.drawSortButton(width, height, sort);
-    this.columnName.position.set(OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
+
+    // Calculate available space for vertical positioning (use LINE_HEIGHT like CellLabel)
+    const textHeight = LINE_HEIGHT;
+    const availableSpace = this.h - textHeight;
+
+    // Calculate vertical position
+    const yPos = Math.max(0, availableSpace / 2);
+
+    this.columnName.anchor.set(0, 0);
+    this.columnName.position.set(OPEN_SANS_FIX.x, OPEN_SANS_FIX.y + yPos);
   }
 
   // tests the width of the text and clips it if it is too wide
