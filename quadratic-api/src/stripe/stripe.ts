@@ -82,7 +82,12 @@ export const createBillingPortalSession = async (teamUuid: string, returnUrlBase
   });
 };
 
-export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrl: URL) => {
+export const createCheckoutSession = async (
+  teamUuid: string,
+  priceId: string,
+  redirectUrlSuccess: string,
+  redirectUrlCancel: string
+) => {
   const team = await dbClient.team.findUnique({
     where: {
       uuid: teamUuid,
@@ -103,9 +108,9 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
   //
   // Stripe will swap out the `session_id` value, but you can't URL encode it or
   // it won't work. So we have to manually set it.
-  const successUrl = new URL(returnUrl);
-  successUrl.searchParams.set('subscription', 'created');
-  const successUrlStr = successUrl.toString() + '&session_id={CHECKOUT_SESSION_ID}';
+  const url = new URL(redirectUrlSuccess);
+  url.searchParams.set('subscription', 'created');
+  const redirectUrlSuccessWithTracking = url.toString() + '&session_id={CHECKOUT_SESSION_ID}';
 
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
@@ -117,8 +122,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url: successUrlStr,
-    cancel_url: returnUrl.toString(),
+    success_url: redirectUrlSuccessWithTracking,
+    cancel_url: redirectUrlCancel,
   });
 };
 
@@ -135,7 +140,7 @@ export const getMonthlyPriceId = async () => {
   return data[0].id;
 };
 
-const updateTeamStatus = async (
+export const updateTeamStatus = async (
   stripeSubscriptionId: string,
   status: Stripe.Subscription.Status,
   customerId: string,

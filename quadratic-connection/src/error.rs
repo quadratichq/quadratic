@@ -38,11 +38,17 @@ pub enum ConnectionError {
     #[error("Invalid token: {0}")]
     InvalidToken(String),
 
+    #[error("Network error: {0}")]
+    Network(String),
+
     #[error("Error parsing: {0}")]
     Parse(String),
 
     #[error("Proxy error: {0}")]
     Proxy(String),
+
+    #[error("Quadratic API error: {0}")]
+    QuadraticApi(String),
 
     #[error("Query error: {0}")]
     Query(String),
@@ -55,6 +61,9 @@ pub enum ConnectionError {
 
     #[error("SSH error: {0}")]
     Ssh(String),
+
+    #[error("Storage error: {0}")]
+    Storage(String),
 
     #[error("Synced error: {0}")]
     Synced(String),
@@ -76,7 +85,29 @@ impl From<SharedError> for ConnectionError {
         match error {
             SharedError::Auth(error) => ConnectionError::Authentication(error.to_string()),
             SharedError::Sql(error) => ConnectionError::Query(error.to_string()),
-            SharedError::QuadraticApi(error) => ConnectionError::Connection(error.to_string()),
+            SharedError::QuadraticApi(error) => ConnectionError::QuadraticApi(error.to_string()),
+
+            // Data format errors
+            SharedError::Arrow(error) => ConnectionError::Query(format!("Arrow error: {}", error)),
+            SharedError::Parquet(error) => {
+                ConnectionError::Query(format!("Parquet error: {}", error))
+            }
+
+            // Infrastructure errors
+            SharedError::Storage(error) => ConnectionError::Storage(error.to_string()),
+            SharedError::Net(error) => ConnectionError::Network(error.to_string()),
+            SharedError::Synced(error) => ConnectionError::Synced(error.to_string()),
+
+            // Generic errors
+            SharedError::Serialization(error) => {
+                ConnectionError::Unknown(format!("Serialization error: {}", error))
+            }
+            SharedError::Request(error) => {
+                ConnectionError::Unknown(format!("Request error: {}", error))
+            }
+            SharedError::Uuid(error) => ConnectionError::Unknown(format!("UUID error: {}", error)),
+            SharedError::Generic(error) => ConnectionError::Unknown(error),
+
             _ => ConnectionError::Unknown(error.to_string()),
         }
     }
@@ -111,16 +142,38 @@ impl From<jsonwebtoken::errors::Error> for ConnectionError {
 impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
         let (status, error) = match &self {
-            ConnectionError::InternalServer(error) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
-            }
+            // 400 Bad Request - Client Errors
+            ConnectionError::Query(error)
+            | ConnectionError::Proxy(error)
+            | ConnectionError::Header(error)
+            | ConnectionError::Parse(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
+
+            // 401 Unauthorized - Auth Errors
             ConnectionError::Authentication(error) | ConnectionError::InvalidToken(error) => {
                 (StatusCode::UNAUTHORIZED, clean_errors(error))
             }
-            ConnectionError::Query(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
+
+            // 404 Not Found - Resource Not Found
             ConnectionError::Connection(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
-            ConnectionError::Proxy(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
+
+            // 424 Failed Dependency - External Service Errors
+            ConnectionError::Ssh(error)
+            | ConnectionError::Request(error)
+            | ConnectionError::Network(error)
+            | ConnectionError::CreateObjectStore(error) => {
+                (StatusCode::FAILED_DEPENDENCY, clean_errors(error))
+            }
+
+            // 500 Internal Server Error - Server Errors
+            ConnectionError::InternalServer(error)
+            | ConnectionError::Config(error)
+            | ConnectionError::Serialization(error)
+            | ConnectionError::Storage(error)
+            | ConnectionError::Synced(error)
+            | ConnectionError::Unknown(error)
+            | ConnectionError::QuadraticApi(error) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
+            }
         };
 
         tracing::warn!("{} {}: {:?}", status, error, self);

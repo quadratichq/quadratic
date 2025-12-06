@@ -40,16 +40,16 @@ venv/*
 .idea
 
 # Generated Rust files
-/target
-quadratic-connection/target/
-quadratic-core/target/
+**/target
 quadratic-core/tmp.txt
-quadratic-files/target/
 quadratic-files/storage
+<<<<<<< HEAD
 quadratic-multiplayer/target/
 quadratic-rust-shared/target/
 poc/**/target/
 quadratic-cloud-controller/target/
+=======
+>>>>>>> origin/qa
 
 quadratic-rust-shared/src/auto_gen_path.rs
 
@@ -104,3 +104,7 @@ jmeter.log
 
 # ai
 /finetuning
+
+# rust-dev
+dev-rust-state.json
+**/dev-rust-state.json

@@ -1,3 +1,4 @@
+import { ConnectionFormCredentialsHelper } from '@/shared/components/connections/ConnectionFormCredentialsHelper';
 import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
@@ -137,6 +138,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
+        <ConnectionFormCredentialsHelper />
 
         <ConnectionFormSemantic form={form} />
 

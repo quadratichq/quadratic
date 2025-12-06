@@ -37,15 +37,15 @@ export const MoveCells = memo(
     }, [toolArgs?.data?.source_selection_rect, toolArgs?.data?.target_top_left_position, toolArgs?.success]);
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={description} className={className} />;
+    return <ToolCard icon={icon} label={label} description={description} className={className} compact />;
   }
 );

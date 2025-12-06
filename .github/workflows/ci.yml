@@ -69,6 +69,9 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -181,6 +184,9 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -230,6 +236,9 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -313,6 +322,9 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -343,6 +355,9 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3

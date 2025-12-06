@@ -32,6 +32,7 @@ pub struct SheetFormatUpdates {
     pub date_time: SheetFormatUpdatesType<String>,
     pub underline: SheetFormatUpdatesType<bool>,
     pub strike_through: SheetFormatUpdatesType<bool>,
+    pub font_size: SheetFormatUpdatesType<i16>,
 }
 
 impl SheetFormatUpdates {
@@ -66,6 +67,7 @@ impl SheetFormatUpdates {
             date_time: Self::apply_selection(selection, update.date_time),
             underline: Self::apply_selection(selection, update.underline),
             strike_through: Self::apply_selection(selection, update.strike_through),
+            font_size: Self::apply_selection(selection, update.font_size),
         }
     }
 
@@ -118,6 +120,7 @@ impl SheetFormatUpdates {
                 &formats.strike_through,
                 selection,
             ),
+            font_size: Self::from_sheet_formatting_selection_item(&formats.font_size, selection),
         }
     }
 
@@ -193,6 +196,11 @@ impl SheetFormatUpdates {
                 rect,
                 clear_on_none,
             ),
+            font_size: Self::from_sheet_formatting_rect_item(
+                &formats.font_size,
+                rect,
+                clear_on_none,
+            ),
         }
     }
 
@@ -251,6 +259,7 @@ impl SheetFormatUpdates {
                 .strike_through
                 .as_ref()
                 .is_none_or(|a| a.is_all_default())
+            && self.font_size.as_ref().is_none_or(|a| a.is_all_default())
     }
 
     /// Sets a single format for a cell
@@ -309,6 +318,7 @@ impl SheetFormatUpdates {
             date_time: Self::format_update_item(&self.date_time, pos),
             underline: Self::format_update_item(&self.underline, pos),
             strike_through: Self::format_update_item(&self.strike_through, pos),
+            font_size: Self::format_update_item(&self.font_size, pos),
             render_size: None,
         }
     }
@@ -353,6 +363,7 @@ impl SheetFormatUpdates {
         Self::set_format_rect_item(&mut self.date_time, rect, update.date_time);
         Self::set_format_rect_item(&mut self.underline, rect, update.underline);
         Self::set_format_rect_item(&mut self.strike_through, rect, update.strike_through);
+        Self::set_format_rect_item(&mut self.font_size, rect, update.font_size);
     }
 
     fn transfer_format_rect_item<T>(
@@ -392,6 +403,7 @@ impl SheetFormatUpdates {
         Self::transfer_format_rect_item(&mut self.date_time, rect, &mut other.date_time);
         Self::transfer_format_rect_item(&mut self.underline, rect, &mut other.underline);
         Self::transfer_format_rect_item(&mut self.strike_through, rect, &mut other.strike_through);
+        Self::transfer_format_rect_item(&mut self.font_size, rect, &mut other.font_size);
     }
 
     fn translate_rect_item<T>(item: &mut SheetFormatUpdatesType<T>, x: i64, y: i64)
@@ -416,6 +428,7 @@ impl SheetFormatUpdates {
         Self::translate_rect_item(&mut self.date_time, x, y);
         Self::translate_rect_item(&mut self.underline, x, y);
         Self::translate_rect_item(&mut self.strike_through, x, y);
+        Self::translate_rect_item(&mut self.font_size, x, y);
     }
 
     /// Merges another SheetFormatUpdates into this one.
@@ -449,6 +462,7 @@ impl SheetFormatUpdates {
         Self::merge_item(&mut self.date_time, &other.date_time);
         Self::merge_item(&mut self.underline, &other.underline);
         Self::merge_item(&mut self.strike_through, &other.strike_through);
+        Self::merge_item(&mut self.font_size, &other.font_size);
     }
 
     /// Whether the update includes any fill color changes
@@ -510,6 +524,9 @@ impl SheetFormatUpdates {
                 .bounding_rect()
                 .map(|rect| bounds.add_rect(rect))
         });
+        self.font_size
+            .as_ref()
+            .and_then(|font_size| font_size.bounding_rect().map(|rect| bounds.add_rect(rect)));
 
         bounds.into()
     }
@@ -592,6 +609,7 @@ impl SheetFormatUpdates {
             date_time: Self::copy_row_item(&self.date_time, row),
             underline: Self::copy_row_item(&self.underline, row),
             strike_through: Self::copy_row_item(&self.strike_through, row),
+            font_size: Self::copy_row_item(&self.font_size, row),
         };
 
         if updates.is_default() {

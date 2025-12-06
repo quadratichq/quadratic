@@ -8,6 +8,7 @@ export const DOCUMENTATION_FILES_URL = `${DOCUMENTATION_URL}/spreadsheet/files`;
 export const DOCUMENTATION_OFFLINE = `${DOCUMENTATION_URL}/spreadsheet/files#local-saving`;
 export const DOCUMENTATION_CONNECTIONS_URL = `${DOCUMENTATION_URL}/connections`;
 export const DOCUMENTATION_CONNECTIONS_IP_LIST_URL = `${DOCUMENTATION_CONNECTIONS_URL}/security#ip-allow-list`;
+export const DOCUMENTATION_CONNECTIONS_DATABASE_ACCESS_URL = `${DOCUMENTATION_CONNECTIONS_URL}/security#database-access`;
 export const DOCUMENTATION_BROWSER_COMPATIBILITY_URL = `${DOCUMENTATION_URL}/spreadsheet/browser-compatibility`;
 export const DOCUMENTATION_DATE_TIME_FORMATTING = `${DOCUMENTATION_URL}/spreadsheet/date-time-formatting`;
 export const DOCUMENTATION_NEGATIVE_OFFSETS = `${DOCUMENTATION_URL}/spreadsheet/negative-offsets`;

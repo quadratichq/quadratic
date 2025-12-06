@@ -415,6 +415,18 @@ export const FormatDateTimeIcon: IconComponent = (props) => {
   return <Icon {...props}>calendar_month</Icon>;
 };
 
+export const FormatFontSizeIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_fields</Icon>;
+};
+
+export const FormatFontSizeIncreaseIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_increase</Icon>;
+};
+
+export const FormatFontSizeDecreaseIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_decrease</Icon>;
+};
+
 export const FileCopyIcon: IconComponent = (props) => {
   return <Icon {...props}>file_copy</Icon>;
 };
@@ -441,6 +453,14 @@ export const GridActionIcon: IconComponent = (props) => {
 
 export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
+};
+
+export const HomeIcon: IconComponent = (props) => {
+  return <Icon {...props}>home</Icon>;
+};
+
+export const GroupAddIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_add</Icon>;
 };
 
 export const HistoryIcon: IconComponent = (props) => {
@@ -755,6 +775,10 @@ export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
 };
 
+export const TeamIcon: IconComponent = (props) => {
+  return <Icon {...props}>groups</Icon>;
+};
+
 export const GenericLanguageIcon: IconComponent = (props) => {
   return <Icon {...props}>subject</Icon>;
 };
@@ -785,4 +809,8 @@ export const ScheduledTasksIcon: IconComponent = (props) => {
 
 export const WarningIcon: IconComponent = (props) => {
   return <Icon {...props}>warning</Icon>;
+};
+
+export const DesktopIcon: IconComponent = (props) => {
+  return <Icon {...props}>computer</Icon>;
 };
