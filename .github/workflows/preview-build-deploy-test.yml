@@ -581,7 +581,7 @@ jobs:
         verify_deployed_version,
         test-e2e-start-comment,
       ]
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     container:
       image: mcr.microsoft.com/playwright:v1.55.0-noble
       options: --user root

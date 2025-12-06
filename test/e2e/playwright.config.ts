@@ -21,7 +21,7 @@ export default defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
     ? [['blob']]
-    : [['list'], ['html'], ['json', { outputFile: 'playwright-report/report.json' }]],
+    : [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'playwright-report/report.json' }]],
   /* Configure custom snapshot path template */
   snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

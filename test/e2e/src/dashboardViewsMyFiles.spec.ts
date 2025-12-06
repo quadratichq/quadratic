@@ -72,8 +72,20 @@ test('Dashboard Views - My Files', async ({ page }) => {
     await expect(gridButton).not.toBeEnabled({ timeout: 5000 });
   }
 
-  // Wait for the grid view to load
-  await page.waitForTimeout(2000);
+  // Wait for the grid view to be applied - wait for the ul to have grid classes
+  await expect(page.locator('ul').first()).toHaveClass(/grid/, { timeout: 30 * 1000 });
+
+  // Wait for the image width attribute to be removed (grid view doesn't set width)
+  // In parallel runs, the UI might take longer to update
+  await page.waitForFunction(
+    () => {
+      const firstLi = document.querySelector('ul > li');
+      if (!firstLi) return false;
+      const img = firstLi.querySelector('img');
+      return img && !img.getAttribute('width');
+    },
+    { timeout: 30 * 1000 }
+  );
 
   //--------------------------------
   // Assert:
@@ -422,8 +434,20 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
     await expect(gridButton).not.toBeEnabled({ timeout: 5000 });
   }
 
-  // Wait for the grid view to load
-  await sharedUserPage.waitForTimeout(2000);
+  // Wait for the grid view to be applied - wait for the ul to have grid classes
+  await expect(sharedUserPage.locator('ul').first()).toHaveClass(/grid/, { timeout: 30 * 1000 });
+
+  // Wait for the image width attribute to be removed (grid view doesn't set width)
+  // In parallel runs, the UI might take longer to update
+  await sharedUserPage.waitForFunction(
+    () => {
+      const firstLi = document.querySelector('ul > li');
+      if (!firstLi) return false;
+      const img = firstLi.querySelector('img');
+      return img && !img.getAttribute('width');
+    },
+    { timeout: 30 * 1000 }
+  );
 
   //--------------------------------
   // Assert:

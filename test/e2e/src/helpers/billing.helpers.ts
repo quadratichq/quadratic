@@ -187,10 +187,48 @@ export const upgradeToProPlan = async (page: Page) => {
     }
 
     // Click 'Upgrade to Pro' to upgrade the account
-    await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
+    // Use Promise.all to wait for both the click and navigation
+    await Promise.all([
+      page.waitForURL((url) => url.hostname.includes('stripe.com') || url.hostname.includes('pay.quadratichq.com'), {
+        timeout: 2 * 60 * 1000,
+      }),
+      page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 }),
+    ]).catch(async (error: unknown) => {
+      // If navigation times out, check if we're already on a Stripe page
+      const currentUrl = page.url();
+      const isStripePage = currentUrl.includes('stripe.com') || currentUrl.includes('pay.quadratichq.com');
+
+      if (!isStripePage) {
+        // Check if the button click might have opened a new window/tab
+        // Or if there was an error preventing navigation
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Failed to navigate to Stripe checkout page after clicking Upgrade to Pro. ` +
+            `Current URL: ${currentUrl}. Error: ${errorMessage}`
+        );
+      }
+      // If we're already on a Stripe page, continue - navigation might have happened very quickly
+    });
+
+    // Wait for the page to fully load
+    await page.waitForLoadState('domcontentloaded', { timeout: 60 * 1000 });
+    await page.waitForLoadState('load', { timeout: 60 * 1000 });
 
     // Assert that page was redirected to a Stripe integrated payment page
-    await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });
+    // The "Powered by Stripe" link may not always be present on pay.quadratichq.com pages
+    // So we check for it, but also verify we're on a Stripe page by checking for other Stripe elements
+    const poweredByStripe = page.getByRole(`link`, { name: `Powered by Stripe` });
+    const poweredByStripeVisible = await poweredByStripe.isVisible({ timeout: 10 * 1000 }).catch(() => false);
+
+    if (!poweredByStripeVisible) {
+      // If "Powered by Stripe" isn't visible, verify we're on a Stripe page by checking for other indicators
+      const currentUrl = page.url();
+      const isStripePage = currentUrl.includes('stripe.com') || currentUrl.includes('pay.quadratichq.com');
+      if (!isStripePage) {
+        throw new Error(`Expected Stripe checkout page but got: ${currentUrl}`);
+      }
+      // On pay.quadratichq.com, the page structure might be different, so we'll verify with other elements below
+    }
 
     // Assert that subscription page is for Team billing
     await expect(page.locator(`[data-testid="product-summary-name"]`)).toHaveText(`Subscribe to Team`);

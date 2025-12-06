@@ -740,11 +740,31 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   // Click 'Manage billing' to reach the billing management page
   await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
-  await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('domcontentloaded');
+  // Wait for navigation to Stripe billing portal
+  // The page may redirect to Stripe's billing portal, so wait for URL change or Stripe domain
+  await page
+    .waitForURL(
+      (url) =>
+        url.pathname.includes('/billing') ||
+        url.hostname.includes('stripe.com') ||
+        url.hostname.includes('billing.stripe.com'),
+      { timeout: 60 * 1000 }
+    )
+    .catch(() => {
+      // If URL doesn't change, continue - might be same-origin billing page
+    });
+
+  // Wait for page to fully load
+  await page.waitForLoadState('domcontentloaded', { timeout: 60 * 1000 });
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
+
+  // Wait for key elements to appear first, which ensures the page is ready
+  // This is more reliable than waiting for title, especially in parallel runs
+  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the current page is the billing management page
-  await expect(page).toHaveTitle(/Billing/);
+  // Increased timeout and made it more flexible since title might load after content
+  await expect(page).toHaveTitle(/Billing/, { timeout: 30 * 1000 });
 
   // Assert a couple of key elements that confirm we're on the correct page
   await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });

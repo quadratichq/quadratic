@@ -100,3 +100,5 @@ jmeter.log
 
 # rust-dev
 **/dev-rust-state.json
+# Playwright passed tests cache
+**/.passed-tests-cache.json

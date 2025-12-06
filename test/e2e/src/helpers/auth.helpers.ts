@@ -135,9 +135,35 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
     // onboarding not present — continue
   }
 
+  // Ensure we're on the files/dashboard page before waiting for "Shared with me"
+  // Check if we're already on the files page, if not navigate there
+  const isOnFilesPage = await page
+    .locator('[placeholder="Filter by file or creator name…"]')
+    .isVisible({ timeout: 5 * 1000 })
+    .catch(() => false);
+
+  if (!isOnFilesPage) {
+    // Try to navigate to files page via sidebar
+    try {
+      const filesLink = page.getByRole('link', { name: 'draft Files' });
+      await expect(filesLink).toBeVisible({ timeout: 30 * 1000 });
+      await filesLink.click({ timeout: 60 * 1000 });
+      await handleQuadraticLoading(page);
+      // Wait for the filter to appear to confirm we're on the files page
+      await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
+    } catch {
+      // If navigation fails, try waiting for URL to be on files page
+      await page.waitForURL((url) => url.pathname.includes('/files') || url.pathname === '/', { timeout: 30 * 1000 });
+    }
+  }
+
+  // Wait for page to be ready
+  await page.waitForLoadState('domcontentloaded', { timeout: 60 * 1000 });
+
   // wait for shared with me visibility on dashboard
   // Use a more specific locator to target the navigation link, not file badges
-  await page.locator('a[href="/files/shared-with-me"]').waitFor({ timeout: 2 * 60 * 1000 });
+  // Wait for it to be visible, not just attached to DOM
+  await page.locator('a[href="/files/shared-with-me"]').waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
