@@ -88,8 +88,11 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   // Handle optional captcha/anti-bot step if present
   await handleHumanCheck(page);
 
-  await page.waitForURL((url) => !url.pathname.startsWith('/password'), { timeout: 2 * 60 * 1000 });
-  await page.locator(`[name="password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
+  // Wait for the password field to appear - this is more reliable than waiting for URL changes
+  // The password field may appear on the same page or after a redirect to /password
+  const passwordField = page.locator(`[name="password"]`);
+  await passwordField.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
+  await passwordField.fill(USER_PASSWORD, { timeout: 60 * 1000 });
   await page.locator('button[value="password"]').click({ timeout: 60 * 1000 });
 
   await handleHumanCheck(page);

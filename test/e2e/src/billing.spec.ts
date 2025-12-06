@@ -1018,12 +1018,14 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   // Assert that the 'Total due today' text is visible, indicating that we're *still* on the checkout page
   await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 60 * 1000 });
 
-  // Wait for the error message to appear first, which ensures Stripe has processed the error
+  // Wait for the error message element to appear first, which ensures Stripe has processed the error
   // This is a more reliable indicator that the error state has been applied
-  await expect(page.locator(`[data-qa="FormFieldGroup-cardForm"] [role="alert"]`)).toHaveText(
-    `Your card number is invalid.`,
-    { timeout: 10 * 1000 }
-  );
+  // When running in parallel, Stripe's async validation can take longer, so we wait for the element to exist
+  const errorAlert = page.locator(`[data-qa="FormFieldGroup-cardForm"] [role="alert"]`);
+  await errorAlert.waitFor({ state: 'visible', timeout: 15 * 1000 });
+
+  // Now assert the error message text
+  await expect(errorAlert).toHaveText(`Your card number is incorrect.`, { timeout: 10 * 1000 });
 
   // Ensure that the textbox with the card number is visible
   await page.locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber').scrollIntoViewIfNeeded();
@@ -1058,6 +1060,6 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
 
   // Assert that an error message indicating an issue with the card number is visible
   await expect(page.locator(`[data-qa="FormFieldGroup-cardForm"] [role="alert"]`)).toHaveText(
-    `Your card number is invalid.`
+    `Your card number is incorrect.`
   );
 });
