@@ -1,7 +1,7 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
 //! The width and height may grow as needed.
 
-use crate::{Array, ArraySize, CellValue, Rect};
+use crate::{Array, ArraySize, CellValue, Pos, Rect};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -65,12 +65,73 @@ impl CellValues {
     }
 
     pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<Option<CellValue>>> {
-        let mut values = vec![vec![None; rect.height() as usize]; rect.width() as usize];
+        // Compute width and height using checked arithmetic to prevent overflow
+        // Calculate width/height manually to avoid potential overflow
+        let width_i64 = match rect.max.x.checked_sub(rect.min.x) {
+            Some(diff) => match diff.checked_add(1) {
+                Some(w) => w,
+                None => return vec![], // Overflow in width calculation
+            },
+            None => return vec![], // Overflow in width calculation
+        };
+
+        let height_i64 = match rect.max.y.checked_sub(rect.min.y) {
+            Some(diff) => match diff.checked_add(1) {
+                Some(h) => h,
+                None => return vec![], // Overflow in height calculation
+            },
+            None => return vec![], // Overflow in height calculation
+        };
+
+        // Check for negative or zero dimensions
+        if width_i64 <= 0 || height_i64 <= 0 {
+            return vec![];
+        }
+
+        // Convert to usize with overflow checking - use a reasonable maximum to prevent capacity overflow
+        const MAX_DIMENSION: i64 = 1_000_000; // Reasonable maximum to prevent overflow
+        if width_i64 > MAX_DIMENSION || height_i64 > MAX_DIMENSION {
+            return vec![];
+        }
+
+        let width_usize = match usize::try_from(width_i64) {
+            Ok(w) => w,
+            _ => return vec![],
+        };
+
+        let height_usize = match usize::try_from(height_i64) {
+            Ok(h) => h,
+            _ => return vec![],
+        };
+
+        // Check if total capacity would overflow
+        if width_usize.checked_mul(height_usize).is_none() {
+            return vec![];
+        }
+
+        let mut values = vec![vec![None; height_usize]; width_usize];
+
+        // Clamp the rect to the bounds of this CellValues structure (0..w, 0..h)
+        let bounds_rect = Rect::from_numbers(0, 0, self.w as i64, self.h as i64);
+        let clamped_rect = match rect.intersection(&bounds_rect) {
+            Some(intersected) => intersected,
+            None => {
+                // Rect is completely outside bounds, return all None values
+                return values;
+            }
+        };
+
+        // Only populate cells that are within bounds
         for (x_index, x) in rect.x_range().enumerate() {
             for (y_index, y) in rect.y_range().enumerate() {
-                let new_x = u32::try_from(x).unwrap_or(0);
-                let new_y = u32::try_from(y).unwrap_or(0);
-                values[x_index][y_index] = self.remove(new_x, new_y);
+                // Check if this coordinate is within the clamped (intersected) rect
+                if clamped_rect.contains(Pos { x, y })
+                    && let (Ok(new_x), Ok(new_y)) = (u32::try_from(x), u32::try_from(y))
+                    && new_x < self.w
+                    && new_y < self.h
+                {
+                    values[x_index][y_index] = self.remove(new_x, new_y);
+                }
             }
         }
         values
@@ -103,7 +164,9 @@ impl CellValues {
     }
 
     pub fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
-        self.columns[x as usize].remove(&(y as u64))
+        self.columns
+            .get_mut(x as usize)
+            .and_then(|col| col.remove(&(y as u64)))
     }
 
     pub fn size(&self) -> u32 {
@@ -177,6 +240,10 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
 /// This is a different format the the `Vec<Vec<CellValue>>` impl above.
 impl From<Vec<Vec<Option<CellValue>>>> for CellValues {
     fn from(values: Vec<Vec<Option<CellValue>>>) -> Self {
+        if values.is_empty() || values[0].is_empty() {
+            return CellValues::new(0, 0);
+        }
+
         let w = values.len() as u32;
         let h = values[0].len() as u32;
         let mut cell_values = CellValues::new(w, h);
@@ -278,6 +345,16 @@ mod test {
     }
 
     #[test]
+    fn remove_out_of_bounds() {
+        let mut cell_values = CellValues::new(2, 3);
+        // Removing from out-of-bounds x should return None, not panic
+        assert_eq!(cell_values.remove(5, 0), None);
+        assert_eq!(cell_values.remove(2, 0), None);
+        // Removing from valid x but out-of-bounds y should return None
+        assert_eq!(cell_values.remove(0, 10), None);
+    }
+
+    #[test]
     fn get_except_blank() {
         let mut cell_values = CellValues::new(2, 3);
         cell_values.set(0, 0, CellValue::from("a"));
@@ -373,6 +450,21 @@ mod test {
     }
 
     #[test]
+    fn cell_values_from_empty_vec_of_vec_of_option() {
+        // Test that empty vectors don't panic
+        let empty: Vec<Vec<Option<CellValue>>> = vec![];
+        let cell_values = CellValues::from(empty);
+        assert_eq!(cell_values.w, 0);
+        assert_eq!(cell_values.h, 0);
+
+        // Test that vectors with empty inner vectors don't panic
+        let empty_inner: Vec<Vec<Option<CellValue>>> = vec![vec![]];
+        let cell_values = CellValues::from(empty_inner);
+        assert_eq!(cell_values.w, 0);
+        assert_eq!(cell_values.h, 0);
+    }
+
+    #[test]
     fn test_get_row() {
         let cell_values = CellValues::from(vec![
             vec!["a", "b", "c"], // column 0
@@ -412,5 +504,30 @@ mod test {
             row2,
             vec![CellValue::from("c"), CellValue::Blank, CellValue::from("h"),]
         );
+    }
+
+    #[test]
+    fn get_rect_out_of_bounds() {
+        let mut cell_values = CellValues::new(2, 3);
+        cell_values.set(0, 0, CellValue::from("a"));
+        cell_values.set(1, 1, CellValue::from("b"));
+
+        // Test get_rect with rect that extends beyond the CellValues bounds
+        // This should not panic, but return None for out-of-bounds cells
+        let rect = Rect::from_numbers(0, 0, 5, 5); // Extends beyond w=2, h=3
+        let result = cell_values.get_rect(rect);
+
+        // Should have 5x5 = 25 cells
+        assert_eq!(result.len(), 5);
+        assert_eq!(result[0].len(), 5);
+
+        // First cell should be Some("a")
+        assert_eq!(result[0][0], Some(CellValue::from("a")));
+        // Second row, second column should be Some("b")
+        assert_eq!(result[1][1], Some(CellValue::from("b")));
+        // Out-of-bounds cells should be None
+        assert_eq!(result[2][0], None);
+        assert_eq!(result[0][3], None);
+        assert_eq!(result[4][4], None);
     }
 }
