@@ -215,11 +215,6 @@ export const handleOnboarding = async (page: Page) => {
   await onboardingBtnUsePersonal.click({ timeout: 60 * 1000 });
   await onboardingBtnUsePersonal.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  // Connections
-  const onboardingBtnConnections = page.locator('[data-testid="onboarding-btn-connections-next"]');
-  await onboardingBtnConnections.click({ timeout: 60 * 1000 });
-  await onboardingBtnConnections.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-
   // Team name
   const onboardingInputTeamName = page.locator('[data-testid="onboarding-input-team-name"]');
   await onboardingInputTeamName.fill('E2E Test Team', { timeout: 60 * 1000 });
@@ -240,9 +235,13 @@ export const handleOnboarding = async (page: Page) => {
   // Team plan
   const onboardingBtnTeamPlanFree = page.locator('[data-testid="onboarding-btn-team-plan-free"]');
   await onboardingBtnTeamPlanFree.click({ timeout: 60 * 1000 });
-  await onboardingBtnTeamPlanFree.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  await handleQuadraticLoading(page);
+  // After the last step, onboarding redirects to a new file page
+  // Wait for navigation away from the onboarding page instead of waiting for loading state
+  await page.waitForURL((url) => !url.pathname.includes('/onboarding'), { timeout: 2 * 60 * 1000 });
+
+  // Wait for the new page to load
+  await page.waitForLoadState('load', { timeout: 60 * 1000 });
 };
 
 export const handleQuadraticLoading = async (page: Page) => {
