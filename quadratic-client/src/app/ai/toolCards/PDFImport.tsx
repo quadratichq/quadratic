@@ -39,6 +39,8 @@ export const PDFImport = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={`${toolArgs.data.file_name}`} className={className} compact />;
+    return (
+      <ToolCard icon={icon} label={label} description={`${toolArgs.data.file_name}`} className={className} compact />
+    );
   }
 );
