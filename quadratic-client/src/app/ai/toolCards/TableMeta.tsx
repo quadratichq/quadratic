@@ -30,13 +30,13 @@ export const TableMeta = memo(
     const label = 'Table changes';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     let description = `Table at ${toolArgs.data.table_location}`;
@@ -58,6 +58,6 @@ export const TableMeta = memo(
     }
     description += ` ${actions.join(', ')}`;
 
-    return <ToolCard icon={icon} label={label} description={description} className={className} />;
+    return <ToolCard icon={icon} label={label} description={description} className={className} compact />;
   }
 );
