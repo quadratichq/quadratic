@@ -206,7 +206,10 @@ pub(crate) async fn serve() -> Result<()> {
     });
 
     // in a separate thread, sync connections
-    init_sync_workers(state.clone()).await?;
+    // Disabled for preview/QA environments
+    if false {
+        init_sync_workers(state.clone()).await?;
+    }
 
     axum::serve(
         listener,
