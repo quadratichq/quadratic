@@ -12,10 +12,11 @@ export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
   const canvasHasFocus = (await page.locator('#QuadraticCanvasID:focus-within').count()) > 0;
   if (!canvasHasFocus) {
     await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
+    // Wait for canvas to receive focus after click
+    await expect(page.locator('#QuadraticCanvasID')).toBeFocused({ timeout: 5 * 1000 });
   }
-  await page.waitForTimeout(2 * 1000);
   await page.keyboard.press('Control+G');
-  await page.waitForSelector('[data-testid="goto-menu"]', { timeout: 2 * 1000 });
+  await page.waitForSelector('[data-testid="goto-menu"]', { timeout: 5 * 1000 });
   await page.keyboard.type(a1);
   await page.keyboard.press('Enter');
   await assertSelection(page, { a1 });
@@ -26,7 +27,8 @@ export const setValueInCell = async (page: Page, a1: string, value: string) => {
   await page.keyboard.press('Enter', { delay: 250 });
   await page.keyboard.type(value, { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
-  await page.waitForTimeout(2 * 1000);
+  // Wait for cell edit mode to close (indicates value was accepted)
+  await expect(page.locator('#cell-edit')).toBeHidden({ timeout: 10 * 1000 });
 };
 
 /**
@@ -51,17 +53,18 @@ export const assertCellValue = async (page: Page, { a1, value }: AssertCellValue
   await page.keyboard.press('Enter');
   await expect(page.locator('#cell-edit')).toHaveAttribute('data-test-value', value, { timeout: 10 * 1000 });
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(5 * 1000);
+  // Wait for cell edit mode to close
+  await expect(page.locator('#cell-edit')).toBeHidden({ timeout: 10 * 1000 });
 };
 
 export const sheetRefreshPage = async (page: Page) => {
   await page.reload();
 
   const quadraticLoading = page.locator('html[data-loading-start]');
-  await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for canvas to be visible (indicates sheet is ready)
+  await page.locator('#QuadraticCanvasID').waitFor({ state: 'visible', timeout: 60 * 1000 });
 
   // Close AI chat box as needed
   try {
@@ -96,7 +99,8 @@ export const assertValidationMessage = async (page: Page, { a1, title, message }
 export const changeSheet = async (page: Page, sheetName: string) => {
   const button = page.locator(`[data-test-sheet-name="${sheetName}"]`);
   await button.click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(2 * 1000);
+  // Wait for the sheet to become active
+  await assertActiveSheetName(page, sheetName);
 };
 
 export const assertActiveSheetName = async (page: Page, sheetName: string) => {
@@ -133,7 +137,8 @@ export const copyToClipboard = async (page: Page, a1?: string) => {
   }
   // Copy the text in the cells
   await page.keyboard.press('Control+C', { delay: 250 });
-  await page.waitForTimeout(5 * 1000);
+  // Brief wait for clipboard operation to complete - clipboard APIs are async but fast
+  await page.waitForTimeout(500);
 };
 
 export const pasteFromClipboard = async (page: Page, a1?: string) => {
@@ -142,5 +147,6 @@ export const pasteFromClipboard = async (page: Page, a1?: string) => {
   }
   // Paste the text in the cells
   await page.keyboard.press('Control+V', { delay: 250 });
-  await page.waitForTimeout(5 * 1000);
+  // Brief wait for paste operation to complete - the calling test should verify the result
+  await page.waitForTimeout(500);
 };

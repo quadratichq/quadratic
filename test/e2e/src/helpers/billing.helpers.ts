@@ -36,7 +36,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
       await page.getByRole(`menuitem`, { name: `Make default` }).click({ timeout: 60 * 1000 });
 
       // Wait for dropdown to be hidden
-      await page.waitForTimeout(5 * 1000);
+      await page.locator('[data-test="menu-contents"]').waitFor({ state: 'hidden', timeout: 10 * 1000 });
 
       // Remove the newly added payment method (Mastercard)
       await page.locator(`[data-testid="overflow-menu-button"]`).click({ timeout: 60 * 1000 });
@@ -59,9 +59,8 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
         .locator(`[data-test="PaymentInstrumentActionsDetatchModalConfirmButton"]`)
         .click({ timeout: 60 * 1000 });
 
-      // **Assert that payment method was deleted:
-      // Wait for page to update
-      await page.waitForTimeout(5 * 1000);
+      // Wait for the delete dialog to close
+      await page.locator(`.Dialog-header`).waitFor({ state: 'hidden', timeout: 10 * 1000 });
 
       // Assert that there is only 1 card element representing the initial card
       const afterCleanupCardCount = await page
@@ -100,14 +99,13 @@ export const upgradeToProPlan = async (page: Page) => {
     // Navigate to the Settings page by clicking the 'Settings' link
     await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
-    await page.waitForTimeout(5 * 1000);
-    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    // Wait for Settings page to load
     await page.waitForLoadState('load', { timeout: 60 * 1000 });
+    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
     await expect(page).toHaveTitle(/settings/);
-    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Locate the parent div that contains 'Free plan'
     const freePlanParentEl = page.locator(`:text("Free plan")`).locator('..');
@@ -247,10 +245,7 @@ export const upgradeToProPlan = async (page: Page) => {
     // Default 'country or region' should be set to 'US'
     await expect(page.getByLabel(`Country or region`)).toHaveValue(`US`);
 
-    // Wait a moment for Stripe to validate the form fields
-    await page.waitForTimeout(2 * 1000);
-
-    // Ensure the submit button is enabled before clicking
+    // Ensure the submit button is enabled before clicking (Stripe validates form fields)
     const submitButton = page.locator(`[data-testid="hosted-payment-submit-button"]`);
     await expect(submitButton).toBeEnabled({ timeout: 30 * 1000 });
 
@@ -280,7 +275,6 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // Wait for page to fully load after navigation
     await page.waitForLoadState('load', { timeout: 60 * 1000 });
-    await page.waitForTimeout(2 * 1000);
 
     // Check if we're on a Stripe payment success page and need to return to Quadratic
     const currentUrl = page.url();
@@ -289,9 +283,6 @@ export const upgradeToProPlan = async (page: Page) => {
       (currentUrl.includes('stripe.com') && !currentUrl.includes('quadratichq.com'))
     ) {
       try {
-        // Wait a moment for the page to fully load
-        await page.waitForTimeout(2 * 1000);
-
         // Look for "Return to [business name]" link or similar return link
         // Try multiple selectors for the return link
         const returnLinkSelectors = [
@@ -313,7 +304,6 @@ export const upgradeToProPlan = async (page: Page) => {
               if (href && (href.includes('quadratichq.com') || href.startsWith('/'))) {
                 await returnLink.click({ timeout: 60 * 1000 });
                 await page.waitForLoadState('load', { timeout: 60 * 1000 });
-                await page.waitForTimeout(3 * 1000);
                 returnLinkClicked = true;
                 break;
               }
@@ -327,18 +317,18 @@ export const upgradeToProPlan = async (page: Page) => {
         if (!returnLinkClicked) {
           // If no return link found, try navigating to homepage
           await page.goto(buildUrl(), { waitUntil: 'load' });
-          await page.waitForTimeout(3 * 1000);
         }
       } catch {
         // Try navigating to homepage as fallback
         await page.goto(buildUrl(), { waitUntil: 'load' });
-        await page.waitForTimeout(3 * 1000);
       }
     }
 
     // Wait for page to fully load after navigation
     await page.waitForLoadState('load', { timeout: 60 * 1000 });
-    await page.waitForTimeout(2 * 1000);
+
+    // Wait for page to be fully loaded after Stripe redirect
+    await page.waitForLoadState('domcontentloaded', { timeout: 60 * 1000 });
 
     // Check if we're already on the Team files page
     const isOnTeamFilesPage = await page
@@ -348,18 +338,17 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // If not on Team files page, click the Files link in the sidebar to navigate there
     if (!isOnTeamFilesPage) {
-      // Wait for the sidebar navigation to be visible
-      await page.locator('nav').waitFor({ timeout: 10 * 1000 });
+      // Wait for the sidebar navigation to be visible (longer timeout after Stripe redirect)
+      await page.locator('nav').waitFor({ timeout: 60 * 1000 });
 
       // Click the Files link in the sidebar navigation
       // The accessible name is "draft Files" (includes the icon name)
       const filesLink = page.getByRole('link', { name: 'draft Files' });
-      await expect(filesLink).toBeVisible({ timeout: 10 * 1000 });
+      await expect(filesLink).toBeVisible({ timeout: 30 * 1000 });
       await filesLink.click({ timeout: 60 * 1000 });
 
-      // Wait for navigation to complete
-      await page.waitForLoadState('load', { timeout: 60 * 1000 });
-      await page.waitForTimeout(2 * 1000);
+      // Wait for Team files heading to appear
+      await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
     }
 
     // Assert we're on the Team files page
@@ -369,14 +358,13 @@ export const upgradeToProPlan = async (page: Page) => {
     // Navigate to the Settings page by clicking the 'Settings' link
     await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
-    await page.waitForTimeout(5 * 1000);
-    // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+    // Wait for Settings page to load
     await page.waitForLoadState('load', { timeout: 60 * 1000 });
+    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
     await expect(page).toHaveTitle(/settings/);
-    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the 'Free plan' is no longer accompanied by the 'Current plan' flag
     // freePlanParentEl is declared 'Arrange' step
@@ -429,9 +417,6 @@ export const inviteUserToTeam = async (page: Page, { email, permission }: Invite
       .click({ timeout: 60 * 1000 });
   }
   await page.locator(`button:text("Invite")`).click({ timeout: 60 * 1000 });
-
-  // Wait a moment for the invite API call to process
-  await page.waitForTimeout(2 * 1000);
 
   // Wait for the invite to be processed - the email should appear in the members list
   // Use a more flexible selector that matches the actual email display
@@ -495,9 +480,9 @@ export const deleteMemberFromProPlan = async (
       // Navigate back to Settings page
       await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
 
-      await page.waitForTimeout(5 * 1000);
-      // Use 'load' instead of 'networkidle' as it's more reliable and doesn't depend on background requests
+      // Wait for Settings page to load
       await page.waitForLoadState('load', { timeout: 60 * 1000 });
+      await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
       // Locate the text element that starts with 'Team members (manage)' followed by a number
       // Store the text content (e.g., 'Team members (manage)1'
@@ -618,8 +603,9 @@ export const cancelProPlan = async (page: Page) => {
     // Click 'Manage billing' to reach the billing management page
     await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
-    await page.waitForTimeout(5 * 1000);
+    // Wait for billing page to load
     await page.waitForLoadState('domcontentloaded');
+    await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the current page is the billing management page
     // Check for information that includes: current subscription, payment methods, billing info and invoice history

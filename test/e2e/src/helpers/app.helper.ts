@@ -13,10 +13,12 @@ export const typeInCell = async (page: Page, { a1, text }: TypeInCellOptions) =>
   await gotoCells(page, { a1 });
   // type some text
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(2 * 1000);
+  // Wait for cell edit mode to open
+  await expect(page.locator('#cell-edit')).toBeVisible({ timeout: 5 * 1000 });
   await page.keyboard.type(text, { delay: 250 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(2 * 1000);
+  // Wait for cell edit mode to close (value accepted)
+  await expect(page.locator('#cell-edit')).toBeHidden({ timeout: 10 * 1000 });
 };
 
 /**
@@ -35,7 +37,6 @@ export const navigateOnSheet = async (
   if (!skipCanvasClick) {
     try {
       await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
-      await page.waitForTimeout(100);
     } catch (err) {
       console.error(err);
     }
@@ -59,23 +60,25 @@ export const navigateOnSheet = async (
   const columnDifference = targetColumnNumber - currentColumn;
   const columnDirection = columnDifference > 0 ? 'ArrowRight' : 'ArrowLeft';
 
-  // Navigate columns
+  // Navigate columns - press all keys then wait for final position
   for (let i = 0; i < Math.abs(columnDifference); i++) {
     await page.keyboard.press(columnDirection);
-    await page.waitForTimeout(200);
   }
 
   // Determine the direction and magnitude for row navigation
   const rowDifference = targetRow - currentRow; // Adjusted target row
   const rowDirection = rowDifference > 0 ? 'ArrowDown' : 'ArrowUp';
 
-  // Navigate rows
+  // Navigate rows - press all keys then wait for final position
   for (let j = 0; j < Math.abs(rowDifference); j++) {
     await page.keyboard.press(rowDirection);
-    await page.waitForTimeout(200);
   }
 
-  await page.waitForTimeout(5 * 1000);
+  // Wait for cursor to reach the target position
+  const targetColumnLetter =
+    typeof targetColumn === 'string' ? targetColumn.toUpperCase() : String.fromCharCode(64 + targetColumn);
+  const expectedPosition = `${targetColumnLetter}${targetRow}`;
+  await expect(page.locator('[data-testid="cursor-position"]')).toHaveValue(expectedPosition, { timeout: 10 * 1000 });
 };
 
 /**
@@ -185,7 +188,8 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
   // filter file by name
   await page.locator('[placeholder="Filter by name"]').waitFor();
   await page.locator('[placeholder="Filter by name"]').fill(connectionName);
-  await page.waitForTimeout(2500);
+  // Wait for filter debounce - this is a legitimate delay for debounced input
+  await page.waitForTimeout(1500);
 
   const connectionNameLocator = page.locator(`span[data-testid="connection-name-${connectionName}"]`);
 
@@ -201,10 +205,12 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
       .first()
       .click({ timeout: 60 * 1000 });
     await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
-    await page.waitForTimeout(1000);
+    // Wait for confirmation dialog to appear
+    await page.getByRole(`button`, { name: `Delete` }).waitFor({ state: 'visible', timeout: 10 * 1000 });
     // Confirm delete action
     await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
-    await page.waitForTimeout(1000);
+    // Wait for the connection to be removed from the list
+    await page.waitForTimeout(500);
   }
 
   expect(await connectionNameLocator.count()).toBe(0);
@@ -220,13 +226,14 @@ type ShowCodeEditorConsoleOptions = {
 export const showCodeEditorConsole = async (page: Page, { targetColumn, targetRow }: ShowCodeEditorConsoleOptions) => {
   // Move cursor to target cell
   await navigateOnSheet(page, { targetColumn, targetRow });
-  await page.waitForTimeout(3000);
 
   // Press / to open code editor
   await page.keyboard.press('/');
-  await page.waitForTimeout(3000);
+  // Wait for code editor to appear
+  await page.locator('[id="QuadraticCodeEditorID"]').waitFor({ state: 'visible', timeout: 10 * 1000 });
 
-  // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(3000);
+  // Click on 'Console' tab and wait for it to be selected
+  const consoleTab = page.getByRole(`tab`, { name: `Console` });
+  await consoleTab.click({ timeout: 60 * 1000 });
+  await expect(consoleTab).toHaveAttribute('aria-selected', 'true', { timeout: 5 * 1000 });
 };

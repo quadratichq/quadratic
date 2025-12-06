@@ -24,7 +24,8 @@ const handleHumanCheck = async (page: Page) => {
       const checkbox = turnstileFrame.locator('input[type="checkbox"]').first();
       if (await checkbox.isVisible({ timeout: 2000 }).catch(() => false)) {
         await checkbox.click({ timeout: 5000 });
-        await page.waitForTimeout(2000);
+        // Wait for human check to complete
+        await humanCheckHeader.waitFor({ state: 'hidden', timeout: 10 * 1000 });
         return;
       }
     } catch {
@@ -37,7 +38,8 @@ const handleHumanCheck = async (page: Page) => {
       const cfCheckbox = cfFrame.locator('input[type="checkbox"], .cb-i').first();
       if (await cfCheckbox.isVisible({ timeout: 2000 }).catch(() => false)) {
         await cfCheckbox.click({ timeout: 5000 });
-        await page.waitForTimeout(2000);
+        // Wait for human check to complete
+        await humanCheckHeader.waitFor({ state: 'hidden', timeout: 10 * 1000 });
         return;
       }
     } catch {
@@ -48,7 +50,8 @@ const handleHumanCheck = async (page: Page) => {
     const verifyCheckbox = page.getByRole('checkbox', { name: /verify you are human/i });
     if (await verifyCheckbox.isVisible({ timeout: 1000 }).catch(() => false)) {
       await verifyCheckbox.check({ timeout: 5000 });
-      await page.waitForTimeout(750);
+      // Wait for human check to complete
+      await humanCheckHeader.waitFor({ state: 'hidden', timeout: 10 * 1000 });
       return;
     }
 
@@ -111,8 +114,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   if (isDashboardLinkVisible) {
     await dashboardLink.click({ timeout: 60 * 1000 });
     await handleQuadraticLoading(page);
-    // Wait a while to ensure navigation completes
-    await page.waitForTimeout(5 * 1000);
+    // Wait for dashboard filter to appear (indicates we're on the files page)
+    await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
   }
 
   // If onboarding video is shown, click "Skip" to proceed

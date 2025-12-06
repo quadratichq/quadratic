@@ -9,6 +9,9 @@
     "ensure-users": "tsx scripts/ensureUserExists.ts",
     "test": "npm run lint:ts && npx playwright test",
     "test:bail": "npm run lint:ts && npx playwright test -x",
+    "test:last-failed": "npm run lint:ts && npx playwright test --last-failed",
+    "test:skip-passed": "npm run lint:ts && tsx scripts/runSkipPassed.ts",
+    "test:skip-passed:clear": "tsx scripts/runSkipPassed.ts --clear-cache",
     "test:ui": "npm run lint:ts && npx playwright test --ui",
     "test:headed": "npm run lint:ts && npx playwright test --headed",
     "test:debug": "npm run lint:ts && npx playwright test --debug",
@@ -16,7 +19,10 @@
     "test:update": "npm run lint:ts && npx playwright test --update-snapshots",
     "docker:test": "docker compose run --rm playwright npm run test",
     "docker:update": "docker compose run --rm playwright npm run test:update",
-    "docker:bail": "docker compose run --rm playwright npm run test:bail"
+    "docker:bail": "docker compose run --rm playwright npm run test:bail",
+    "docker:last-failed": "docker compose run --rm playwright npm run test:last-failed",
+    "docker:skip-passed": "docker compose run --rm playwright npm run test:skip-passed",
+    "docker:skip-passed:clear": "docker compose run --rm playwright npm run test:skip-passed:clear"
   },
   "keywords": [],
   "engines": {

@@ -1006,7 +1006,15 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   // Click 'Subscribe' button to upgrade the count to a Pro plan
   await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
 
+  // Wait for Stripe to process the form submission
+  // In parallel runs, Stripe's validation can take longer, so we wait for network activity to settle
+  // Wait for network idle to ensure Stripe's API validation calls have completed
   await page.waitForLoadState('domcontentloaded');
+  // Also wait for network idle with a shorter timeout, but don't fail if it doesn't complete
+  // This helps ensure Stripe's async validation API calls finish
+  await page.waitForLoadState('networkidle', { timeout: 10 * 1000 }).catch(() => {
+    // Network idle might not be reached if there are ongoing background requests - that's okay
+  });
 
   //--------------------------------
   // Assert:
@@ -1021,8 +1029,9 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   // Wait for the error message element to appear first, which ensures Stripe has processed the error
   // This is a more reliable indicator that the error state has been applied
   // When running in parallel, Stripe's async validation can take longer, so we wait for the element to exist
+  // Increased timeout to 30 seconds to account for slower API responses in parallel test runs
   const errorAlert = page.locator(`[data-qa="FormFieldGroup-cardForm"] [role="alert"]`);
-  await errorAlert.waitFor({ state: 'visible', timeout: 15 * 1000 });
+  await errorAlert.waitFor({ state: 'visible', timeout: 30 * 1000 });
 
   // Now assert the error message text
   await expect(errorAlert).toHaveText(`Your card number is incorrect.`, { timeout: 10 * 1000 });
