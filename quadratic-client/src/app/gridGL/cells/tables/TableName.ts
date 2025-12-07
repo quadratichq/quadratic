@@ -195,7 +195,7 @@ export class TableName extends Container {
     const yPos = Math.max(0, availableSpace / 2);
 
     this.text.position.set(
-      OPEN_SANS_FIX.x + (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
+      TABLE_NAME_PADDING[0] + OPEN_SANS_FIX.x + (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
       OPEN_SANS_FIX.y + yPos
     );
 
