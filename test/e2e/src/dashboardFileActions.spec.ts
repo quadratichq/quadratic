@@ -392,10 +392,24 @@ test('File Actions - Dashboard', async ({ page }) => {
     .nth(1)
     .click({ timeout: 60 * 1000 });
 
+  // Wait for the menu to close (indicating the action was triggered)
+  await page
+    .locator('[role="menuitem"]')
+    .waitFor({ state: 'hidden', timeout: 10 * 1000 })
+    .catch(() => {
+      // Menu might already be closed, continue
+    });
+
+  // Wait for the move operation to complete and the file list to update
+  // React Router should revalidate the loader after the fetcher action completes,
+  // but this may take a moment. We wait a bit for the API call and UI update.
+  await page.waitForTimeout(3 * 1000);
+
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the file is no longer visible
+  // The file list loader should revalidate after the move, removing the file from the current view
   await expect(page.locator(`a[href*="/file/"]:has(:text-is("${fileActionsName}"))`)).not.toBeVisible({
     timeout: 60 * 1000,
   });

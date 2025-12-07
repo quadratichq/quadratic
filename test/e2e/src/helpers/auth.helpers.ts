@@ -145,15 +145,19 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   if (!isOnFilesPage) {
     // Try to navigate to files page via sidebar
     try {
-      const filesLink = page.getByRole('link', { name: 'draft Files' });
+      const filesLink = page.getByRole('link', { name: 'Files' });
       await expect(filesLink).toBeVisible({ timeout: 30 * 1000 });
       await filesLink.click({ timeout: 60 * 1000 });
       await handleQuadraticLoading(page);
       // Wait for the filter to appear to confirm we're on the files page
       await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
     } catch {
-      // If navigation fails, try waiting for URL to be on files page
-      await page.waitForURL((url) => url.pathname.includes('/files') || url.pathname === '/', { timeout: 30 * 1000 });
+      // If navigation fails, try waiting for URL to be on files page or team page
+      // Users are often redirected to /teams/{uuid} after login, which is also valid
+      await page.waitForURL(
+        (url) => url.pathname.includes('/files') || url.pathname === '/' || url.pathname.startsWith('/teams/'),
+        { timeout: 30 * 1000 }
+      );
     }
   }
 
