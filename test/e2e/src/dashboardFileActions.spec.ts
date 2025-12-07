@@ -523,6 +523,9 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // await createNewTeamByURL(user1Page, { teamName });
 
   await user1Page.bringToFront();
+  // Wait for page to stabilize after switching focus from parallel logins
+  await user1Page.waitForTimeout(1000);
+
   const date = Date.now();
   // Clean up file
   const fileName = `Share_Files - ${date}`;

@@ -6,8 +6,15 @@ type CreateFileOptions = {
   skipNavigateBack?: boolean;
 };
 export const createFile = async (page: Page, { fileName, skipNavigateBack = false }: CreateFileOptions) => {
+  // Wait for page to be stable before interacting
+  await page.waitForLoadState('domcontentloaded');
+
+  // Wait for the New File button to be visible and clickable
+  const newFileButton = page.locator(`button:text-is("New file")`);
+  await newFileButton.waitFor({ state: 'visible', timeout: 30 * 1000 });
+
   // Click New File
-  await page.locator(`button:text-is("New file")`).click({ timeout: 30 * 1000 });
+  await newFileButton.click({ timeout: 30 * 1000 });
 
   // After clicking "New file", the app navigates to /files/create first, then to /file/{id} once the file is created
   // We need to wait for the navigation to the actual file editor page

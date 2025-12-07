@@ -55,7 +55,11 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
-          args: ['--platform=linux'],
+          args: [
+            '--platform=linux',
+            // Treat host.docker.internal as secure context for Web Crypto API (crypto.subtle)
+            '--unsafely-treat-insecure-origin-as-secure=http://host.docker.internal:3000',
+          ],
         },
         userAgent:
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.25 Safari/537.36',

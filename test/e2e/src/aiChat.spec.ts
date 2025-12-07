@@ -32,8 +32,13 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   //--------------------------------
   // Upload both PDFs via the attach button
   //--------------------------------
-  // Click on the Chat icon in left sidebar
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
+  // Wait for app to fully stabilize after navigation
+  await page.waitForTimeout(2000);
+
+  // Click on the Chat icon in left sidebar - wait for button to be visible and stable before clicking
+  const aiButton = page.getByRole(`button`, { name: `auto_awesome` });
+  await aiButton.waitFor({ state: 'visible', timeout: 60 * 1000 });
+  await aiButton.click({ timeout: 60 * 1000 });
 
   // Upload "broadcom-annual-filing.pdf"
   const broadcomFile = `broadcom-annual-filing.pdf`;
@@ -175,8 +180,13 @@ test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) 
   //--------------------------------
   // Drag and Drop the Broadcom File Into AI Chat
   //--------------------------------
-  // Open the ai tool
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
+  // Wait for app to fully stabilize after navigation
+  await page.waitForTimeout(2000);
+
+  // Open the ai tool - wait for button to be visible and stable before clicking
+  const aiButton = page.getByRole(`button`, { name: `auto_awesome` });
+  await aiButton.waitFor({ state: 'visible', timeout: 60 * 1000 });
+  await aiButton.click({ timeout: 60 * 1000 });
 
   // Open the file chooser
   page.once('filechooser', (chooser) => {
