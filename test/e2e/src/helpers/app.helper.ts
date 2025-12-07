@@ -13,27 +13,12 @@ export const typeInCell = async (page: Page, { a1, text }: TypeInCellOptions) =>
   await gotoCells(page, { a1 });
   // type some text
   await page.keyboard.press('Enter');
-
-  // Wait for cell edit mode element to be attached to DOM first
-  await page.locator('#cell-edit').waitFor({ state: 'attached', timeout: 10 * 1000 });
-
-  // Wait for cell edit mode to become visible
-  // In parallel runs, this might take longer. For read-only files, it might not become visible at all
-  // Use a longer timeout and handle the case where it might not become visible
-  try {
-    await expect(page.locator('#cell-edit')).toBeVisible({ timeout: 15 * 1000 });
-    // Cell edit mode is visible, proceed with typing
-    await page.keyboard.type(text, { delay: 250 });
-    await page.keyboard.press('Enter');
-    // Wait for cell edit mode to close (value accepted)
-    await expect(page.locator('#cell-edit')).toBeHidden({ timeout: 10 * 1000 });
-  } catch {
-    // Cell edit mode didn't become visible (likely read-only file or timing issue)
-    // Try typing anyway - for read-only files, this should be ignored
-    // For timing issues, the typing might still work
-    await page.keyboard.type(text, { delay: 250 });
-    await page.keyboard.press('Enter');
-  }
+  // Wait for cell edit mode to open
+  await expect(page.locator('#cell-edit')).toBeVisible({ timeout: 5 * 1000 });
+  await page.keyboard.type(text, { delay: 250 });
+  await page.keyboard.press('Enter');
+  // Wait for cell edit mode to close (value accepted)
+  await expect(page.locator('#cell-edit')).toBeHidden({ timeout: 10 * 1000 });
 };
 
 /**
