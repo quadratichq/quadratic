@@ -795,7 +795,7 @@ test('Number Formatting', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
+test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   // Constants
   const fileName = 'Text Wrap and Vertical Align';
 
