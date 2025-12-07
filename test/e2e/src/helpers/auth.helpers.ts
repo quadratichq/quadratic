@@ -78,7 +78,13 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   });
 
   // Try to navigate to our URL
-  await page.goto(buildUrl(options?.route ?? '/'));
+  // When no route is provided, navigate to '/' without query params to ensure
+  // login redirects to dashboard (not a previous redirectTo value)
+  const route = options?.route ?? '/';
+  const url = buildUrl(route);
+  // Remove any query parameters when navigating to '/' to ensure clean redirect
+  const finalUrl = route === '/' ? url.split('?')[0] : url;
+  await page.goto(finalUrl);
   await loginPage.waitFor({ timeout: 2 * 60 * 1000 });
 
   // fill out log in page and log in
