@@ -537,14 +537,16 @@ export function Questions() {
               const { Form, ...props } = questionsById[id];
               const isASubsequentQuestion =
                 currentIndex === 0 ? true : currentQuestionStackIds.indexOf(id) > currentIndex;
+              const isCurrentQuestion = id === currentId;
               return (
                 <div
                   key={id}
+                  aria-hidden={!isCurrentQuestion}
                   className={cn(
                     'absolute inset-0 transition-all duration-500 ease-in-out',
                     'transform',
                     // Current question
-                    id === currentId
+                    isCurrentQuestion
                       ? 'z-10 translate-x-0 opacity-100'
                       : // Next question(s)
                         isASubsequentQuestion

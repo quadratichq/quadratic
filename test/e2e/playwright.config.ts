@@ -16,8 +16,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests. */
-  workers: process.env.CI ? 1 : 5,
+  /* Opt out of parallel tests. Use 1 worker for localhost to avoid resource conflicts */
+  workers: process.env.CI ? 1 : (process.env.E2E_URL || 'http://localhost:3000').includes('localhost') ? 1 : 10,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
     ? [['blob']]
