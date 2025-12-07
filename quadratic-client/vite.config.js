@@ -76,6 +76,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 3000,
+      allowedHosts: ['host.docker.internal'],
       // uncomment once we have a way to hot reload web workers on wasm changes
       // watch: {
       //   ignored: [
