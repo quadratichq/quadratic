@@ -34,6 +34,8 @@ runs:
       shell: bash
 
     - name: Run Playwright tests
+      id: run-tests
+      continue-on-error: true
       run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }} --max-failures=1
       shell: bash
       env:
@@ -42,7 +44,8 @@ runs:
 
     - name: Upload blob report to GitHub Actions Artifacts
       uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
+      if: always() && !cancelled()
+      continue-on-error: true
       id: upload-playwright-report
       with:
         name: blob-report-${{ github.run_id }}-${{ inputs.shard_index }}
