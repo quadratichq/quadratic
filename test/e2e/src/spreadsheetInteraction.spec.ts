@@ -8,7 +8,7 @@ import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helper
 import { gotoCells } from './helpers/sheet.helper';
 import { waitForAppReady } from './helpers/wait.helpers';
 
-test.only('Appearance Customization', async ({ page }) => {
+test('Appearance Customization', async ({ page }) => {
   //--------------------------------
   // Dark Customization
   //--------------------------------
