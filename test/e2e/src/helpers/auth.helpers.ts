@@ -201,10 +201,7 @@ export const handleOnboarding = async (page: Page) => {
   await onboardingBtnUsePersonal.click({ timeout: 60 * 1000 });
   await onboardingBtnUsePersonal.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  // Connections
-  const onboardingBtnConnections = page.locator('[data-testid="onboarding-btn-connections-next"]');
-  await onboardingBtnConnections.click({ timeout: 60 * 1000 });
-  await onboardingBtnConnections.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Connections page is disabled in e2e tests
 
   // Team name
   const onboardingInputTeamName = page.locator('[data-testid="onboarding-input-team-name"]');
