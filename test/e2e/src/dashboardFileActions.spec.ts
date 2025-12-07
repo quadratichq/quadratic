@@ -47,7 +47,7 @@ test('Create New File', async ({ page }) => {
   await page.mouse.move(300, 500);
   await page.mouse.up();
   await page.locator(`[data-testid="format_fill_color"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[title="#E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
+  await page.locator(`[aria-label="Select color #E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
 
   // Ensure the cell color is updated (you can add specific assertions if needed)
   await page.waitForTimeout(5 * 1000); // Give some time for the update

@@ -277,7 +277,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.locator('[data-testid="format_fill_color"]').click({ timeout: 60 * 1000 });
 
   // Select a color
-  await page.locator(`[title="#E74C3C"]`).click({ force: true });
+  await page.locator(`[aria-label="Select color #E74C3C"]`).click({ force: true });
 
   //--------------------------------
   // Assert:

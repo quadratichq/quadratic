@@ -313,10 +313,7 @@ test('Auto-Complete', async ({ page }) => {
   await page.waitForTimeout(3000);
   await page.locator('[aria-label="Text color"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
-  await page
-    .getByRole('menuitem')
-    .getByTitle('#E74C3C')
-    .click({ timeout: 60 * 1000 });
+  await page.locator(`[aria-label="Select color #E74C3C"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Prepare to drag from bottom-right corner of cell
