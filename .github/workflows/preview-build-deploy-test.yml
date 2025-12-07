@@ -682,13 +682,14 @@ jobs:
           echo "Moving files to all-blob-reports directory..."
 
           # Move all files from subdirectories to the target directory
-          find temp-download -type f -exec mv {} all-blob-reports/ \;
+          # Use find with -print0 and xargs for better handling, or allow find to return non-zero
+          find temp-download -type f -exec mv {} all-blob-reports/ \; || true
 
           # Clean up
           rm -rf temp-download
 
           # Verify download
-          file_count=$(find all-blob-reports -type f | wc -l)
+          file_count=$(find all-blob-reports -type f 2>/dev/null | wc -l)
           echo "Downloaded $file_count blob report files"
 
           if [ "$file_count" -eq 0 ]; then
@@ -702,7 +703,7 @@ jobs:
         run: |
           set -e
 
-          file_count=$(find all-blob-reports -type f | wc -l)
+          file_count=$(find all-blob-reports -type f 2>/dev/null | wc -l)
           if [ "$file_count" -eq 0 ]; then
             echo "No blob reports to merge. Skipping."
             exit 0
