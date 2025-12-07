@@ -8,7 +8,7 @@ import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helper
 import { gotoCells } from './helpers/sheet.helper';
 import { waitForAppReady } from './helpers/wait.helpers';
 
-test('Appearance Customization', async ({ page }) => {
+test.only('Appearance Customization', async ({ page }) => {
   //--------------------------------
   // Dark Customization
   //--------------------------------
@@ -26,11 +26,11 @@ test('Appearance Customization', async ({ page }) => {
   // const teamName = `Appearance Customization - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName: newTeamName });
 
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
   await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible({ timeout: 60 * 1000 });
 
   // Reset current theme
   await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
@@ -1247,9 +1247,9 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // const teamName = `Drag Drop Excel - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
   await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
 
   // Clean up files
@@ -2441,10 +2441,10 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
   await createFile(page, { fileName });
 
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
 
   await navigateIntoFile(page, { fileName });
 
@@ -3442,10 +3442,10 @@ test('Scroll between sheets', async ({ page }) => {
 
   await createFile(page, { fileName });
 
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
 
   await navigateIntoFile(page, { fileName });
 
@@ -4227,11 +4227,11 @@ test('Theme Customization', async ({ page }) => {
   // Arrange:
   //--------------------------------
 
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
   await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
 
   //--------------------------------
   // Act:
@@ -4365,10 +4365,10 @@ test('Theme Customization from Sheet', async ({ page }) => {
   //--------------------------------
   // Theme Customization from Sheet
   //--------------------------------
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
 
   // Reset current theme
   await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
@@ -4604,10 +4604,10 @@ test('Theme Customization from Sheet', async ({ page }) => {
   // Return home for cleanup
   await page.locator(`[href="/"]`).click({ timeout: 60 * 1000 });
 
-  // Assert Quadratic team files page and logged in status
+  // Assert Quadratic dashboard page and logged in status
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Team files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
 
   // Cleanup any files with fileName
   await cleanUpFiles(page, { fileName });
