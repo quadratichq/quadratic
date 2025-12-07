@@ -153,13 +153,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         onboardingResponses: result.data,
         name: result.data['team-name'],
       });
-      // Also send everything to Mixpanel
-      const uploadResponsesToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
-      const [serverResult, mixpanelResult] = await Promise.allSettled([
-        uploadResponsesPromise,
-        uploadResponsesToMixpanelPromise,
-        uploadInvitesPromise,
-      ]);
+      // Fire-and-forget analytics - don't block user experience
+      trackEvent('[Onboarding].submit', result.data);
+      const [serverResult] = await Promise.allSettled([uploadResponsesPromise, uploadInvitesPromise]);
 
       if (serverResult.status === 'rejected') {
         captureException({
@@ -167,17 +163,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           level: 'error',
           extra: {
             error: serverResult.reason,
-          },
-        });
-        sentryPromises.push(flush(2000));
-      }
-
-      if (mixpanelResult.status === 'rejected') {
-        captureException({
-          message: 'Failed to upload user onboarding responses to Mixpanel',
-          level: 'error',
-          extra: {
-            error: mixpanelResult.reason,
           },
         });
         sentryPromises.push(flush(2000));

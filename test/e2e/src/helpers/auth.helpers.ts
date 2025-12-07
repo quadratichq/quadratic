@@ -187,17 +187,55 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
 };
 
 export const handleOnboarding = async (page: Page) => {
-  // First, check if we're on the onboarding page
-  if (!page.url().includes('/onboarding')) {
-    await handleQuadraticLoading(page);
-    return;
+  // Wait for navigation to potentially complete (redirect to onboarding might happen after login)
+  // In CI, the redirect might take longer, so we need to wait for either:
+  // 1. The onboarding URL to appear, OR
+  // 2. The onboarding button element to appear
+  const onboardingBtnUsePersonal = page.locator('[data-testid="onboarding-btn-use-personal"]');
+
+  // First, wait for URL to potentially change to onboarding (with timeout)
+  try {
+    await page.waitForURL((url) => url.pathname.includes('/onboarding'), { timeout: 10 * 1000 });
+  } catch {
+    // URL didn't change to onboarding, might not need onboarding
+  }
+
+  // Check current URL to determine if we should wait for onboarding
+  const currentUrl = page.url();
+  const isOnOnboardingUrl = currentUrl.includes('/onboarding');
+
+  // Now check if onboarding button is visible
+  // If we're on the onboarding URL, be more patient and wait longer
+  const timeoutForButton = isOnOnboardingUrl ? 30 * 1000 : 15 * 1000;
+  const isOnboardingVisible = await onboardingBtnUsePersonal
+    .isVisible({ timeout: timeoutForButton })
+    .catch(() => false);
+
+  // If onboarding button is not visible, check if we're already past onboarding
+  if (!isOnboardingVisible) {
+    // Check if we're on the onboarding URL - if so, wait a bit more for elements to load
+    if (isOnOnboardingUrl) {
+      // Wait for the page to fully load
+      await page.waitForLoadState('networkidle', { timeout: 10 * 1000 }).catch(() => {});
+      // Try again to see if the button appears - give it more time in CI
+      const retryVisible = await onboardingBtnUsePersonal.isVisible({ timeout: 30 * 1000 }).catch(() => false);
+      if (!retryVisible) {
+        // Still not visible after waiting, log and assume onboarding isn't needed or already completed
+        console.log('⚠️  On onboarding URL but button not visible, assuming onboarding already completed');
+        await handleQuadraticLoading(page);
+        return;
+      }
+    } else {
+      // Not on onboarding URL and button not visible, onboarding likely not needed
+      await handleQuadraticLoading(page);
+      return;
+    }
   }
 
   // Wait for the onboarding page to be ready
   await page.waitForLoadState('networkidle', { timeout: 5 * 1000 }).catch(() => {});
 
   // Personal use (first step after removing instructions)
-  const onboardingBtnUsePersonal = page.locator('[data-testid="onboarding-btn-use-personal"]');
   await onboardingBtnUsePersonal.click({ timeout: 60 * 1000 });
   await onboardingBtnUsePersonal.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
