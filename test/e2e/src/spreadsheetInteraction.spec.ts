@@ -6,6 +6,7 @@ import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { gotoCells } from './helpers/sheet.helper';
+import { waitForAppReady } from './helpers/wait.helpers';
 
 test('Appearance Customization', async ({ page }) => {
   //--------------------------------
@@ -1478,12 +1479,8 @@ test('File - Open Recent', async ({ page }) => {
   await createFile(page, { fileName: fileName1 });
   await createFile(page, { fileName: fileName2 });
 
-  // Navigate into the first file we made
+  // Navigate into the first file we made (navigateIntoFile already waits for load)
   await navigateIntoFile(page, { fileName: fileName1 });
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  const quadraticLoading = page.locator('html[data-loading-start]');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -1494,9 +1491,6 @@ test('File - Open Recent', async ({ page }) => {
 
   // Click "Open Recent"
   await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1507,9 +1501,7 @@ test('File - Open Recent', async ({ page }) => {
 
   // Click into our file to continue assertions
   await page.getByRole(`menuitem`, { name: `${fileName2}` }).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await waitForAppReady(page);
 
   // Assert we navigate to the correct page we created
   await expect(page.locator(`button:text("${fileName2}")`)).toBeVisible();
@@ -2647,7 +2639,6 @@ test('Log Out From Sheet', async ({ page }) => {
 
   // Select Log Out
   await page.getByRole(`menuitem`, { name: `Log out` }).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
   //--------------------------------
@@ -2655,7 +2646,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Assert you are on the Login page via text assertions
-  await expect(page.getByText(`Sign in to Quadratic`)).toBeVisible({ timeout: 2000 });
+  await expect(page.getByText(`Sign in to Quadratic`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Log back in to delete the file we created
   await logIn(page, { emailPrefix: `e2e_sheet_logout` });
@@ -4284,11 +4275,9 @@ test('Theme Customization', async ({ page }) => {
     // Assert the 'New File' button has the expected accent color
     await expect(newFileButtonEl).toHaveCSS(`background-color`, theme.color);
 
-    // Reload the page
+    // Reload the page (removed redundant 10s waitForTimeout)
     await page.reload();
-    await page.waitForTimeout(10 * 1000);
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // Assert selected accent colors persists after reload (using the same assertions)
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
@@ -4305,11 +4294,9 @@ test('Theme Customization', async ({ page }) => {
     // Assert the 'Invite' button has the expected accent color on the 'Members' page
     await expect(inviteButtonEl).toHaveCSS(`background-color`, theme.color);
 
-    // Navigate to the 'Settings' page and assert page
+    // Navigate to the 'Settings' page and assert page (removed redundant 10s waitForTimeout)
     await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
-    await page.waitForTimeout(10 * 1000);
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
     await expect(page.locator('span:has-text("refresh").animate-spin.opacity-0')).toBeVisible();
     await expect(page).toHaveTitle(/Team settings - Quadratic/);
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
