@@ -660,18 +660,26 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        timeout-minutes: 20
         run: |
+          set -e
+
           # Create temp directory for download
           mkdir -p temp-download
+          mkdir -p all-blob-reports
 
-          # Download all matching artifacts
+          echo "Starting download of blob reports from run ${{ github.run_id }}..."
+
+          # Download all matching artifacts with progress
+          # Use --concurrent flag if available (gh CLI v2.40+)
           gh run download ${{ github.run_id }} \
             --repo ${{ github.repository }} \
             --pattern "blob-report-${{ github.run_id }}-*" \
-            --dir temp-download
+            --dir temp-download || {
+              echo "Warning: Some artifacts may have failed to download"
+            }
 
-          # Create the target directory
-          mkdir -p all-blob-reports
+          echo "Moving files to all-blob-reports directory..."
 
           # Move all files from subdirectories to the target directory
           find temp-download -type f -exec mv {} all-blob-reports/ \;
@@ -680,11 +688,35 @@ jobs:
           rm -rf temp-download
 
           # Verify download
-          echo "Downloaded $(find all-blob-reports -type f | wc -l) files"
+          file_count=$(find all-blob-reports -type f | wc -l)
+          echo "Downloaded $file_count blob report files"
+
+          if [ "$file_count" -eq 0 ]; then
+            echo "Warning: No blob reports found. Skipping merge."
+            exit 0
+          fi
 
       - name: Merge into HTML Report
         if: ${{ !cancelled() }}
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        timeout-minutes: 10
+        run: |
+          set -e
+
+          file_count=$(find all-blob-reports -type f | wc -l)
+          if [ "$file_count" -eq 0 ]; then
+            echo "No blob reports to merge. Skipping."
+            exit 0
+          fi
+
+          echo "Merging $file_count blob reports into HTML report..."
+          npx playwright merge-reports --reporter html ./all-blob-reports || {
+            echo "Warning: Report merge failed or incomplete. Continuing..."
+            # Create a minimal report directory if merge fails
+            mkdir -p playwright-report
+            echo "Report merge encountered issues. Check individual blob reports." > playwright-report/index.html || true
+          }
+
+          echo "Report merge completed"
 
       - name: Configure AWS Credentials
         if: ${{ !cancelled() }}
