@@ -425,7 +425,7 @@ export const questionsById: Record<
                   <Link
                     to={`./?${searchParams.toString()}&${props.id}=${value}`}
                     key={value}
-                    data-testid={`onboarding-btn-source-other`}
+                    data-testid={`onboarding-btn-source-${value}`}
                     onClick={() => trackNextQuestionClick(props.id)}
                   >
                     <ControlLinkInline>{label}</ControlLinkInline>

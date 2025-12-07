@@ -253,8 +253,8 @@ export const handleOnboarding = async (page: Page) => {
   await onboardingBtnTeamInvites.click({ timeout: 60 * 1000 });
   await onboardingBtnTeamInvites.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  // How they heard
-  const onboardingBtnHowTheyHeard = page.locator('[data-testid="onboarding-btn-source-other"]');
+  // How they heard - click any referral source option (they're randomized, so we pick the first one)
+  const onboardingBtnHowTheyHeard = page.locator('[data-testid^="onboarding-btn-source-"]').first();
   await onboardingBtnHowTheyHeard.click({ timeout: 60 * 1000 });
   await onboardingBtnHowTheyHeard.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
