@@ -521,6 +521,62 @@ export const ApiSchemas = {
     })
   ),
 
+  // AI Plan generation (for creating new files, no existing file required)
+  '/v0/ai/plan.POST.request': z.object({
+    teamUuid: z.string().uuid(),
+    prompt: z.string().min(1),
+    context: z
+      .object({
+        files: z
+          .array(
+            z.object({
+              name: z.string(),
+              type: z.string(),
+              content: z.string().optional(),
+            })
+          )
+          .optional(),
+        connectionName: z.string().optional(),
+        connectionType: z.string().optional(),
+      })
+      .optional(),
+  }),
+  '/v0/ai/plan.POST.response': z.object({
+    plan: z.string(),
+    isOnPaidPlan: z.boolean(),
+    exceededBillingLimit: z.boolean(),
+  }),
+
+  // AI Suggestions generation (for creating new files, no existing file required)
+  '/v0/ai/suggestions.POST.request': z.object({
+    teamUuid: z.string().uuid(),
+    context: z.object({
+      files: z
+        .array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            content: z.string().optional(),
+            contentEncoding: z.enum(['text', 'base64']).optional(),
+          })
+        )
+        .optional(),
+      connectionName: z.string().optional(),
+      connectionType: z.string().optional(),
+    }),
+  }),
+  '/v0/ai/suggestions.POST.response': z.object({
+    suggestions: z.array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+        prompt: z.string(),
+      })
+    ),
+    isOnPaidPlan: z.boolean(),
+    exceededBillingLimit: z.boolean(),
+  }),
+
   '/v0/ai/feedback.PATCH.request': z.object({
     chatId: z.string().uuid(),
     messageIndex: z.number(),

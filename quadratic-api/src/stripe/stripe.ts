@@ -140,7 +140,7 @@ export const getMonthlyPriceId = async () => {
   return data[0].id;
 };
 
-const updateTeamStatus = async (
+export const updateTeamStatus = async (
   stripeSubscriptionId: string,
   status: Stripe.Subscription.Status,
   customerId: string,

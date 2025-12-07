@@ -99,6 +99,8 @@ jmeter.log
 /finetuning
 
 # rust-dev
+dev-rust-state.json
 **/dev-rust-state.json
+
 # Playwright passed tests cache
 **/.passed-tests-cache.json
