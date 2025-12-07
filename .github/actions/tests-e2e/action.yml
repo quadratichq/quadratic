@@ -34,7 +34,7 @@ runs:
       shell: bash
 
     - name: Run Playwright tests
-      run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
+      run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }} --max-failures=1
       shell: bash
       env:
         CI: true
