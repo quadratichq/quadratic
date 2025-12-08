@@ -153,6 +153,8 @@ export class CellLabel {
   private columnHeader: boolean;
 
   emojis: RenderEmoji[];
+  specialType?: 'Checkbox' | 'List';
+  checkboxValue?: boolean;
 
   private getText = (cell: JsRenderCell) => {
     let text = '';
@@ -248,6 +250,8 @@ export class CellLabel {
     this.strikeThrough = !!cell.strikeThrough;
     this.tableName = !!cell.tableName;
     this.columnHeader = !!cell.columnHeader;
+    this.specialType = cell.special === 'Checkbox' || cell.special === 'List' ? cell.special : undefined;
+    this.checkboxValue = cell.special === 'Checkbox' ? cell.value === 'true' : undefined;
     this.updateCellLimits();
   }
 
