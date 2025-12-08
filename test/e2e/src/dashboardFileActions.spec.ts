@@ -121,7 +121,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   await page.waitForTimeout(3000);
 
   // Navigate back to team files page
-  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="file-location-link-team-files"]').click({ timeout: 60 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
