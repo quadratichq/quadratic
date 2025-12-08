@@ -1253,7 +1253,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 
   // Assert that there are no files
-  await expect(page.getByRole(`heading`, { name: `No files` })).toBeVisible();
+  await expect(page.getByRole(`heading`, { name: `No suggested files` })).toBeVisible();
   await expect(
     page.getByText(
       `You don’t have any files yet. Create a new file or drag and drop a CSV, Excel, Parquet, or Quadratic file here.`
