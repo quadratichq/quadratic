@@ -1,5 +1,5 @@
 import { AIToolCard } from '@/app/ai/toolCards/AIToolCard';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { CodeIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -115,7 +115,7 @@ export const GroupedCodeToolCards = memo(({ toolCalls, className, isComplete }: 
         className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <LanguageIcon language="Python" />
+        <CodeIcon className="h-4 w-4" />
         <span>{label}</span>
         {isExpanded ? (
           <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
