@@ -261,7 +261,9 @@ export class TableName extends Container {
     } else {
       this.modified.visible = true;
       this.modified.anchor.set(0, 0.5);
-      this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
+      // Center vertically with the main text (text anchor is at top, modified anchor is at center)
+      const textCenterY = this.text.y + LINE_HEIGHT / 2;
+      this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, textCenterY);
     }
   };
 
