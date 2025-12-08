@@ -1,5 +1,21 @@
 # Cloud Controller
 
+Infra for quadratic-cloud-controller.
+
+## Configuration Keys
+
+| Config Key | Example Value | Source |
+|------------|---------------|--------|
+| `cloud-controller-subdomain` | `"cloud-controller"` | Command line |
+| `cloud-controller-ecr-repo-name` | `"quadratic-cloud-controller"` | Command line |
+| `cloud-worker-ecr-repo-name` | `"quadratic-cloud-worker"` | Command line |
+| `cloud-controller-pulumi-esc-environment-name` | `"cloud-controller-prod"` | Command line |
+| `cloud-controller-instance-size` | `"m5.2xlarge"` | ESC (has default) |
+| `cloud-controller-root-volume-size` | `100` | ESC (has default) |
+
+
+## Network Diagram
+
 ```draw
                                     ┌─────────────────────────────────────────┐
                                     │         EC2 Instance (m5.2xlarge)       │
