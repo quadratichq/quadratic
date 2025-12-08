@@ -174,7 +174,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             New personal file
           </SidebarNavLinkCreateButton>
         </div>
-        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME} data-testid="dashboard-sidebar-shared-with-me-link">
           <FileSharedWithMeIcon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>

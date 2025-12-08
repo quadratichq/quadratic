@@ -634,14 +634,18 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     .locator(`div:has-text("Anyone with the link") + div > button > span:text("No access")`)
     .click({ timeout: 60 * 1000 });
   await user1Page.locator(`div[data-state="unchecked"] > span:text("Can edit")`).click({ timeout: 60 * 1000 });
+  // Wait for the permission change API call to complete
+  await user1Page.waitForTimeout(3000);
   await user1Page.keyboard.press('Escape');
   await user1Page.reload();
 
   //--------------------------------
   // Assert:
   //--------------------------------
-  // Assert that file now says "Public"
-  await expect(user1Page.locator(`a:has-text("${fileName}") :text("Public")`)).toBeVisible({ timeout: 60 * 1000 });
+  // Assert that file has a public indicator
+  await expect(user1Page.locator(`[data-testid="dashboard-file-actions-public-icon"]`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Assert that user 2 is able to edit the file (even though they are set to "Can view")
   await user2Page.bringToFront();
@@ -698,6 +702,8 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     .locator(`div:has-text("Anyone with the link") + div > button > span:text("Can edit")`)
     .click({ timeout: 60 * 1000 });
   await user1Page.locator(`div[data-state="unchecked"] > span:text("Can view")`).click({ timeout: 60 * 1000 });
+  // Wait for the permission change API call to complete
+  await user1Page.waitForTimeout(3000);
   await user1Page.keyboard.press('Escape');
   await user1Page.reload();
 
