@@ -156,10 +156,11 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <SidebarTooltip label="Spreadsheet status">
         <DropdownMenuTrigger asChild>
-          <SidebarToggle pressed={isOpen}>
+          <SidebarToggle pressed={isOpen} data-testid="kernel-menu">
             {triggerIcon}
             {(transactionsInfo.length > 0 || running > 0) && (
               <div
+                data-testid="kernel-menu-busy"
                 className={cn(
                   'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-background',
                   running > 0 ? 'right-0 top-0 h-4 w-4' : 'right-1 top-1 h-2 w-2'

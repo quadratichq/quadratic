@@ -47,7 +47,7 @@ test('Create New File', async ({ page }) => {
   await page.mouse.move(300, 500);
   await page.mouse.up();
   await page.locator(`[data-testid="format_fill_color"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[title="#E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
+  await page.locator(`[aria-label="Select color #E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
 
   // Ensure the cell color is updated (you can add specific assertions if needed)
   await page.waitForTimeout(5 * 1000); // Give some time for the update
@@ -319,11 +319,12 @@ test('File Actions - Dashboard', async ({ page }) => {
   // const teamName = `Test File Actions - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
-  // Cleanup any duplicate copies
+  // Cleanup any duplicate copies (including "(Copy)" variants from previous failed runs)
   await cleanUpFiles(page, {
     fileName: fileActionsName,
     skipFilterClear: true,
   });
+  await cleanUpFiles(page, { fileName: `${fileActionsName} (Copy)`, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: renamedFile, skipFilterClear: true });
 
   // Create files
@@ -465,11 +466,12 @@ test('File Actions - Dashboard', async ({ page }) => {
   // Assert that the file is no longer visible
   await expect(page.locator(`a:has(:text-is("${renamedFile}"))`)).not.toBeVisible({ timeout: 60 * 1000 });
 
-  // Clean up newly created files
+  // Clean up newly created files (including any "(Copy)" variants)
   await cleanUpFiles(page, {
     fileName: fileActionsName,
     skipFilterClear: true,
   });
+  await cleanUpFiles(page, { fileName: `${fileActionsName} (Copy)`, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: renamedFile, skipFilterClear: true });
 });
 
