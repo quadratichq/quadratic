@@ -56,7 +56,7 @@ test('Create New File', async ({ page }) => {
   await page.waitForTimeout(5 * 1000); // Give some time for the update
 
   // Navigate to files page
-  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="file-location-link-team-files"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
