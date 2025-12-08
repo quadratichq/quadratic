@@ -1,9 +1,6 @@
 import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-// updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 33;
-
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
@@ -117,9 +114,9 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-off': {
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off': {
     ...AI_RATES.claude_opus_4_5_20251124_rate,
-    model: 'claude-opus-4-5@20251124',
+    model: 'claude-opus-4-5@20251101',
     backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-off',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
@@ -134,9 +131,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-on': {
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on': {
     ...AI_RATES.claude_opus_4_5_20251124_rate,
-    model: 'claude-opus-4-5@20251124',
+    model: 'claude-opus-4-5@20251101',
     backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-on',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
@@ -151,9 +148,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-5@20251124': {
+  'vertexai-anthropic:claude-opus-4-5@20251101': {
     ...AI_RATES.claude_opus_4_5_20251124_rate,
-    model: 'claude-opus-4-5@20251124',
+    model: 'claude-opus-4-5@20251101',
     backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-on',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',

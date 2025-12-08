@@ -22,7 +22,7 @@ const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum([
   'claude-sonnet-4-5@20250929',
   'claude-haiku-4-5@20251001',
-  'claude-opus-4-5@20251124',
+  'claude-opus-4-5@20251101',
 ]);
 const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
@@ -85,9 +85,9 @@ const VertexAIAnthropicModelKeySchema = z.enum([
   'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-off',
   'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on',
   'vertexai-anthropic:claude-haiku-4-5@20251001',
-  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-off',
-  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-on',
-  'vertexai-anthropic:claude-opus-4-5@20251124',
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off',
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on',
+  'vertexai-anthropic:claude-opus-4-5@20251101',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
