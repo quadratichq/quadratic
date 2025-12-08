@@ -142,3 +142,11 @@ export const pasteFromClipboard = async (page: Page, a1?: string) => {
   await page.keyboard.press('Control+V', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
 };
+
+/**
+ * Waits for the kernel menu to be idle (no running code and no transactions).
+ * The busy badge is visible when there are running code cells or pending transactions.
+ */
+export const waitForKernelMenuIdle = async (page: Page, timeout = 60 * 1000) => {
+  await expect(page.locator('[data-testid="kernel-menu-busy"]')).toBeHidden({ timeout });
+};

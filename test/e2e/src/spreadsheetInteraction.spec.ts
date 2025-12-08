@@ -5,7 +5,7 @@ import * as xlsx from 'xlsx';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { gotoCells } from './helpers/sheet.helper';
+import { gotoCells, waitForKernelMenuIdle } from './helpers/sheet.helper';
 import { waitForAppReady } from './helpers/wait.helpers';
 
 test('Appearance Customization', async ({ page }) => {
@@ -467,7 +467,7 @@ test('Auto-Complete', async ({ page }) => {
   // Verify auto-complete behavior for Python expressions
 
   // Check if cells have been auto-completed with the Python result as expected
-  await page.waitForTimeout(5000);
+  await waitForKernelMenuIdle(page);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('python-expanded-autocomplete.png');
 
   // Prepare to contract the selection
