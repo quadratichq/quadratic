@@ -122,6 +122,18 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       await skipButton.click({ timeout: 60 * 1000 });
     }
   }
+
+  // If "Start with AI" screen is shown, go back to dashboard
+  const startWithAiHeader = page.locator('h1:has-text("Start with AI")');
+  if (await startWithAiHeader.isVisible({ timeout: 2000 }).catch(() => false)) {
+    // Click the Quadratic logo to go back to dashboard
+    await page
+      .locator('a[href="/"]')
+      .first()
+      .click({ timeout: 60 * 1000 });
+    await handleQuadraticLoading(page);
+  }
+
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
 
@@ -177,11 +189,27 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
 
   await handleQuadraticLoading(page);
 
-  // Wait for canvas to be visible
-  await page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 });
+  // After onboarding, user may land on canvas or "Start with AI" screen
+  const canvasLocator = page.locator(`#QuadraticCanvasID`);
+  const startWithAiHeader = page.locator('h1:has-text("Start with AI")');
 
-  // Click on dashboard
-  await page.locator('nav a[href="/"]').click({ timeout: 2 * 60 * 1000 });
+  // Wait for either canvas or "Start with AI" screen
+  await Promise.race([
+    canvasLocator.waitFor({ timeout: 2 * 60 * 1000 }),
+    startWithAiHeader.waitFor({ timeout: 2 * 60 * 1000 }),
+  ]);
+
+  // If on "Start with AI" screen, go back to dashboard
+  if (await startWithAiHeader.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await page
+      .locator('a[href="/"]')
+      .first()
+      .click({ timeout: 60 * 1000 });
+    await handleQuadraticLoading(page);
+  } else {
+    // Click on dashboard from canvas
+    await page.locator('nav a[href="/"]').click({ timeout: 2 * 60 * 1000 });
+  }
 
   // Wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
