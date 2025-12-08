@@ -31,6 +31,8 @@ jobs:
 
             Provide detailed feedback using inline comments for specific issues.
 
+            Only leave comments related to negative feedback. 
+
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
             --model claude-opus-4-5
