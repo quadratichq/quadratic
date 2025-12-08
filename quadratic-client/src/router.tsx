@@ -87,6 +87,29 @@ export const router = createBrowserRouter(
          */}
         <Route path="education/enroll" lazy={() => import('./routes/education.enroll')} />
         <Route path={ROUTES.FILES_CREATE} lazy={() => import('./routes/files.create')} />
+        <Route path={ROUTES.FILES_CREATE_AI} lazy={() => import('./routes/files.create.ai')} />
+        {/* Team-based AI creation routes */}
+        <Route path="teams/:teamUuid/files/create/ai" lazy={() => import('./routes/teams.$teamUuid.files.create.ai')} />
+        <Route
+          path="teams/:teamUuid/files/create/ai/prompt"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/file"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/pdf"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/connection"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/web"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
         <Route path="teams/:teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
         <Route path="team/*" lazy={() => import('./routes/team.$')} />
 

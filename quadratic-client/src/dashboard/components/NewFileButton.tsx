@@ -38,9 +38,23 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
 
   return (
-    <div className="flex flex-row-reverse gap-2">
+    <div className="flex gap-2">
       <Button
         variant="default"
+        className="gap-2"
+        onClick={async () => {
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          if (hasReachedLimit) {
+            showUpgradeDialog('fileLimitReached');
+            return;
+          }
+          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+        }}
+      >
+        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
+      </Button>
+      <Button
+        variant="outline"
         onClick={async (e) => {
           e.preventDefault();
           const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);

@@ -15,11 +15,12 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/a
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { handleSentryReplays } from '@/shared/utils/sentry';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
@@ -28,7 +29,16 @@ import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
-import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
+import {
+  Link,
+  Outlet,
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useParams,
+  useRouteError,
+  useSearchParams,
+} from 'react-router';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 
@@ -51,12 +61,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   };
 
   // load file information from the api
-  const loadFileFromApi = async (uuid: string, isVersionHistoryPreview: boolean): Promise<FileData | Response> => {
+  const loadFileFromApi = async (
+    uuid: string,
+    isVersionHistoryPreview: boolean,
+    updateBilling?: boolean
+  ): Promise<FileData | Response> => {
     // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
     let data: ApiTypes['/v0/files/:uuid.GET.response'];
     try {
       startupTimer.start('file.loader.files.get');
-      data = await apiClient.files.get(uuid);
+      data = await apiClient.files.get(uuid, { updateBilling });
       startupTimer.end('file.loader.files.get');
     } catch (error: any) {
       const isLoggedIn = await authClient.isAuthenticated();
@@ -88,8 +102,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
   const isVersionHistoryPreview = checkpointId !== null;
 
+  // Check if we're checking for subscription updates (for verification)
+  const updateBilling = searchParams.get('subscription') === 'created';
+
   const [data] = await Promise.all([
-    loadFileFromApi(uuid, isVersionHistoryPreview),
+    loadFileFromApi(uuid, isVersionHistoryPreview, updateBilling),
     loadPixi(),
     initWorkers(),
     initializeCoreClient(),
@@ -206,9 +223,23 @@ export const Component = memo(() => {
   );
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
+
+  // Handle subscription success: show toast and clean up URL params
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      trackEvent('[Billing].success', { team_uuid: teamUuid });
+      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('subscription');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, addGlobalSnackbar, teamUuid]);
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
