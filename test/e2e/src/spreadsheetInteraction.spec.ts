@@ -4232,7 +4232,8 @@ test('Theme Customization', async ({ page }) => {
 
   // Homepage elements for accent color changes
   const upgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
-  const newFileButtonEl = page.getByRole(`button`, { name: `New file` });
+  // The "Start with AI" button contains nested content (span with "AI"), so we match the full accessible name
+  const startWithAIButtonEl = page.getByRole(`button`, { name: `Start with AI` });
   const upgradeTextSVG = page.getByRole(`navigation`).locator(`svg`);
 
   // Member page elements for accent color changes
@@ -4266,7 +4267,7 @@ test('Theme Customization', async ({ page }) => {
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
 
     // Assert the 'New File' button has the expected accent color
-    await expect(newFileButtonEl).toHaveCSS(`background-color`, theme.color);
+    await expect(startWithAIButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Reload the page (removed redundant 10s waitForTimeout)
     await page.reload();
@@ -4276,7 +4277,7 @@ test('Theme Customization', async ({ page }) => {
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
     await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
-    await expect(newFileButtonEl).toHaveCSS(`background-color`, theme.color);
+    await expect(startWithAIButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Navigate to the 'Members' page and assert page
     await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
@@ -4295,7 +4296,8 @@ test('Theme Customization', async ({ page }) => {
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
 
     // Assert the 'Upgrade to Pro' button has the expected accent color
-    const settingsUpgradeButtonEl = page.locator('[data-testid="upgrade-to-pro-button-on-team-settings"]');
+    // The BillingPlans component renders this button with data-testid="billing-upgrade-to-pro-button"
+    const settingsUpgradeButtonEl = page.locator('[data-testid="billing-upgrade-to-pro-button"]');
     await expect(settingsUpgradeButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Assert the 'Privacy' switch toggle has the expected accent color
@@ -4368,7 +4370,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await page.getByRole(`button`, { name: `discover_tune system` }).click({ timeout: 60 * 1000 });
 
   // Assert that there are no files
-  await expect(page.getByRole(`heading`, { name: `No files` })).toBeVisible();
+  await expect(page.getByRole(`heading`, { name: `No suggested files` })).toBeVisible();
   await expect(
     page.getByText(
       `You don’t have any files yet. Create a new file or drag and drop a CSV, Excel, Parquet, or Quadratic file here.`
