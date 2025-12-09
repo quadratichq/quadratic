@@ -257,8 +257,6 @@ export const handleOnboarding = async (page: Page) => {
       // Try again to see if the button appears - give it more time in CI
       const retryVisible = await onboardingBtnUsePersonal.isVisible({ timeout: 30 * 1000 }).catch(() => false);
       if (!retryVisible) {
-        // Still not visible after waiting, log and assume onboarding isn't needed or already completed
-        console.log('⚠️  On onboarding URL but button not visible, assuming onboarding already completed');
         await handleQuadraticLoading(page);
         return;
       }
