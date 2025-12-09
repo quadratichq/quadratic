@@ -9,6 +9,22 @@ type LogInOptions = {
   route?: string;
 };
 
+const handleQuadraticLoading = async (page: Page) => {
+  await page.locator('html[data-loading-start]').waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+};
+
+const handleStartWithAi = async (page: Page) => {
+  const startWithAiHeader = page.locator('h1:has-text("Start with AI")');
+  if (await startWithAiHeader.isVisible({ timeout: 2000 }).catch(() => false)) {
+    // Click the Quadratic logo to go back to dashboard
+    await page
+      .locator('a[href="/"]')
+      .first()
+      .click({ timeout: 60 * 1000 });
+    await handleQuadraticLoading(page);
+  }
+};
+
 const handleHumanCheck = async (page: Page) => {
   const humanCheckHeader = page.locator('text=Before continuing, we need to be sure');
   if (await humanCheckHeader.isVisible({ timeout: 1500 }).catch(() => false)) {
@@ -124,15 +140,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   }
 
   // If "Start with AI" screen is shown, go back to dashboard
-  const startWithAiHeader = page.locator('h1:has-text("Start with AI")');
-  if (await startWithAiHeader.isVisible({ timeout: 2000 }).catch(() => false)) {
-    // Click the Quadratic logo to go back to dashboard
-    await page
-      .locator('a[href="/"]')
-      .first()
-      .click({ timeout: 60 * 1000 });
-    await handleQuadraticLoading(page);
-  }
+  await handleStartWithAi(page);
 
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
@@ -199,15 +207,10 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
     startWithAiHeader.waitFor({ timeout: 2 * 60 * 1000 }),
   ]);
 
-  // If on "Start with AI" screen, go back to dashboard
+  // If on "Start with AI" screen, go back to dashboard; otherwise click nav link from canvas
   if (await startWithAiHeader.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await page
-      .locator('a[href="/"]')
-      .first()
-      .click({ timeout: 60 * 1000 });
-    await handleQuadraticLoading(page);
+    await handleStartWithAi(page);
   } else {
-    // Click on dashboard from canvas
     await page.locator('nav a[href="/"]').click({ timeout: 2 * 60 * 1000 });
   }
 
@@ -298,8 +301,4 @@ export const handleOnboarding = async (page: Page) => {
   await onboardingBtnTeamPlanFree.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   await handleQuadraticLoading(page);
-};
-
-export const handleQuadraticLoading = async (page: Page) => {
-  await page.locator('html[data-loading-start]').waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 };
