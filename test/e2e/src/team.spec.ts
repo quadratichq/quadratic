@@ -888,7 +888,7 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
 
   // Click into permissions file
   await canEditUserPage
-    .locator(`:text("${testPermissionFile}Modified")`)
+    .locator(`:text("${testPermissionFile}")`)
     .first()
     .click({ timeout: 60 * 1000 });
 
@@ -1036,7 +1036,7 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
 
   // Click into permissions file
   await canViewUserPage
-    .locator(`:text("${testPermissionFile}Modified")`)
+    .locator(`:text("${testPermissionFile}")`)
     .first()
     .click({ timeout: 60 * 1000 });
 
