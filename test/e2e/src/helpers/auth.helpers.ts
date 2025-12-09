@@ -143,7 +143,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await handleStartWithAi(page);
 
   // wait for shared with me visibility on dashboard
-  await page.locator('[data-testid="shared-with-me-link"]').waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator('[data-testid="dashboard-sidebar-shared-with-me-link"]').waitFor({ timeout: 2 * 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
@@ -215,7 +215,7 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   }
 
   // Wait for shared with me visibility on dashboard
-  await page.locator('[data-testid="shared-with-me-link"]').waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
 
   // Assert we are on the teams page
   await expect(page).toHaveURL(/teams/, { timeout: 60 * 1000 });
@@ -299,6 +299,13 @@ export const handleOnboarding = async (page: Page) => {
   const onboardingBtnTeamPlanFree = page.locator('[data-testid="onboarding-btn-team-plan-free"]');
   await onboardingBtnTeamPlanFree.click({ timeout: 60 * 1000 });
   await onboardingBtnTeamPlanFree.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+
+  // Handle case where user ends up on /files/create/ai (A/B test route)
+  // Redirect to /files/create instead
+  const currentUrlAfterOnboarding = page.url();
+  if (currentUrlAfterOnboarding.includes('files/create/ai')) {
+    await page.goto(buildUrl('/files/create'));
+  }
 
   await handleQuadraticLoading(page);
 };
