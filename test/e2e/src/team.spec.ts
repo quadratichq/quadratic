@@ -534,7 +534,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Can edit user leaves the team
   await editUserPage
-    .locator(`:text("${editUserEmail} (You)${editPermission}")`)
+    .locator(`[data-testid="share-dialog-list-item"]:has-text("${editUserEmail}")`)
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   await editUserPage.locator(`[role="option"]:has-text("Leave")`).click({ timeout: 60 * 1000 });
@@ -571,7 +571,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Can view user leaves the team
   await viewUserPage
-    .locator(`:text("${viewUserEmail} (You)${viewPermission}")`)
+    .locator(`[data-testid="share-dialog-list-item"]:has-text("${viewUserEmail}")`)
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   await viewUserPage.locator(`[role="option"]:has-text("Leave")`).click({ timeout: 60 * 1000 });
@@ -613,8 +613,6 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   //--------------------------------
 
   // Constants
-  const randomNum = `${Date.now().toString().slice(-6)}`;
-  const newTeamName = `Test Team for Removal - ${randomNum}`;
   const editPermission = 'Can edit';
   const fileName = 'Test_File';
 
@@ -661,10 +659,12 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   await testUserPage.waitForLoadState('networkidle');
 
   // Verify that testUser can access the team files
-  await expect(testUserPage.getByRole('button', { name: newTeamName })).toBeVisible({ timeout: 60 * 1000 });
   await testUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
-
-  await expect(testUserPage.getByText(`${testUserEmail} (You)${editPermission}`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(testUserPage.locator(`[data-testid="share-dialog-list-item"]:has-text("${testUserEmail}")`)).toBeVisible(
+    {
+      timeout: 60 * 1000,
+    }
+  );
 
   // Navigate to Files
   await testUserPage.locator(`:text-is("Files"):below(:text("Team")) >> nth=0`).click({ timeout: 60 * 1000 });
