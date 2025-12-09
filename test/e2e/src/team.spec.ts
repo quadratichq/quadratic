@@ -497,7 +497,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Owner leaves the team
   await ownerPage
-    .locator(`:text("${ownerEmail} (You)${ownerPermission}")`)
+    .locator(`[data-testid="share-dialog-list-item"]:has-text("${ownerEmail}")`)
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   await ownerPage.locator(`[role="option"]:has-text("Leave")`).click({ timeout: 60 * 1000 });

@@ -253,7 +253,9 @@ export const inviteUserToTeam = async (page: Page, { email, permission }: Invite
   }
   await page.locator(`button:text("Invite")`).click({ timeout: 60 * 1000 });
   await page.waitForLoadState('networkidle');
-  await expect(page.locator(`div.text-xs:has-text("${email}")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="share-dialog-list-item"]:has-text("${email}")`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 };
 
 /**
