@@ -166,7 +166,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             New personal file
           </SidebarNavLinkCreateButton>
         </div>
-        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME} dataTestId="shared-with-me-link">
           <FileSharedWithMeIcon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>
@@ -334,6 +334,7 @@ function SidebarNavLink({
   isLogo,
   onClick,
   target,
+  dataTestId,
 }: {
   to: string;
   children: ReactNode;
@@ -343,6 +344,7 @@ function SidebarNavLink({
   isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
+  dataTestId?: string;
 }) {
   const location = useLocation();
   const navigation = useNavigation();
@@ -400,6 +402,7 @@ function SidebarNavLink({
       className={classes}
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
+      {...(dataTestId ? { 'data-testid': dataTestId } : {})}
       {...dropProps}
     >
       {children}
