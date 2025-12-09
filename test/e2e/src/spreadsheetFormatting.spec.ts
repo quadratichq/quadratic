@@ -4,7 +4,7 @@ import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { clickMoreFormattingIcon } from './helpers/format.helper';
 
-test.only('Cell Formatting', async ({ page }) => {
+test('Cell Formatting', async ({ page }) => {
   // Constants
   const fileName = 'Cell_Formatting';
   const fileType = 'grid';
