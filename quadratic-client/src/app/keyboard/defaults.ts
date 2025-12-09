@@ -141,6 +141,26 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Cmd, Keys.Five]],
     windows: [[WindowsModifiers.Ctrl, Keys.Five]],
   },
+  [Action.FormatFontSizeIncrease]: {
+    mac: [
+      [MacModifiers.Cmd, MacModifiers.Shift, Keys.Period],
+      [MacModifiers.Cmd, Keys.GreaterThan],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Period],
+      [WindowsModifiers.Ctrl, Keys.GreaterThan],
+    ],
+  },
+  [Action.FormatFontSizeDecrease]: {
+    mac: [
+      [MacModifiers.Cmd, MacModifiers.Shift, Keys.Comma],
+      [MacModifiers.Cmd, Keys.LessThan],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Comma],
+      [WindowsModifiers.Ctrl, Keys.LessThan],
+    ],
+  },
   [Action.FillRight]: {
     mac: [[MacModifiers.Cmd, Keys.R]],
     windows: [[WindowsModifiers.Ctrl, Keys.R]],

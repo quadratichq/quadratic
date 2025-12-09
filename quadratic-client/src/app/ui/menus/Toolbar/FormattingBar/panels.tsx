@@ -5,6 +5,7 @@
 //! measuring the widths.
 
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import {
@@ -13,11 +14,13 @@ import {
   FormatButtonDropdownActions,
   FormatButtonPopover,
   FormatColorPickerButton,
+  FormatCurrencyButton,
   FormatDateAndTimePickerButton,
   FormatSeparator,
 } from '@/app/ui/menus/Toolbar/FormattingBar/components';
 import {
   BorderAllIcon,
+  CheckIcon,
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
   FormatAlignRightIcon,
@@ -29,6 +32,8 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
+import { DEFAULT_FONT_SIZE, FONT_SIZES, FONT_SIZE_DISPLAY_ADJUSTMENT } from '@/shared/constants/gridConstants';
+import { DropdownMenuItem } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { ToggleGroup } from 'radix-ui';
 import { forwardRef, memo } from 'react';
@@ -47,12 +52,7 @@ export const NumberFormatting = memo(
       />
       <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} hideLabel={props.hideLabel} />
       <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} hideLabel={props.hideLabel} />
-      <FormatButton
-        action={Action.FormatNumberCurrency}
-        actionArgs={undefined}
-        checked={props.formatSummary?.numericFormat?.type === 'CURRENCY'}
-        hideLabel={props.hideLabel}
-      />
+      <FormatCurrencyButton formatSummary={props.formatSummary} hideLabel={props.hideLabel} />
       <FormatButton
         action={Action.FormatNumberPercent}
         actionArgs={undefined}
@@ -114,6 +114,72 @@ export const TextFormatting = memo(
   ))
 );
 
+export const FontSizeFormatting = memo(
+  forwardRef<
+    HTMLDivElement | null,
+    { className?: string; formatSummary?: CellFormatSummary | undefined; hideLabel?: boolean }
+  >((props, ref) => {
+    const currentFontSize = props.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
+    const displayFontSize = currentFontSize + FONT_SIZE_DISPLAY_ADJUSTMENT;
+
+    return (
+      <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
+        <div className="flex items-center -space-x-px">
+          <FormatButton
+            action={Action.FormatFontSizeDecrease}
+            actionArgs={undefined}
+            hideLabel={props.hideLabel}
+            enableHoldToRepeat={true}
+          />
+          <FormatButtonDropdown
+            action="font-size"
+            tooltipLabel="Font size"
+            Icon={null}
+            IconNode={<span className="text-xs">{displayFontSize}</span>}
+            hideLabel={props.hideLabel}
+          >
+            <div className="max-h-full overflow-y-auto">
+              {FONT_SIZES.map((displaySize) => {
+                const actionSpec = defaultActionSpec[Action.FormatFontSize];
+                // Convert display value (user-facing) to internal value
+                const internalSize = displaySize - FONT_SIZE_DISPLAY_ADJUSTMENT;
+                const defaultDisplaySize = DEFAULT_FONT_SIZE + FONT_SIZE_DISPLAY_ADJUSTMENT;
+                const isDefault = displaySize === defaultDisplaySize;
+                const isSelected = displaySize === displayFontSize;
+                return (
+                  <DropdownMenuItem
+                    key={displaySize}
+                    onClick={() => {
+                      actionSpec.run(internalSize);
+                    }}
+                    aria-label={
+                      props.hideLabel
+                        ? ''
+                        : `${displaySize}px${isDefault ? ' (default)' : ''}${isSelected ? ' (selected)' : ''}`
+                    }
+                    className="py-1.5"
+                  >
+                    <CheckIcon className={cn('mr-2 flex-shrink-0', isSelected ? 'visible' : 'invisible opacity-0')} />
+                    {displaySize}
+                    {isDefault && <span className="ml-1 text-muted-foreground">(default)</span>}
+                  </DropdownMenuItem>
+                );
+              })}
+            </div>
+          </FormatButtonDropdown>
+          <FormatButton
+            action={Action.FormatFontSizeIncrease}
+            actionArgs={undefined}
+            hideLabel={props.hideLabel}
+            enableHoldToRepeat={true}
+          />
+        </div>
+        <FormatSeparator />
+      </div>
+    );
+  })
+);
+
 export const FillAndBorderFormatting = memo(
   forwardRef<
     HTMLDivElement | null,
@@ -172,6 +238,12 @@ export const AlignmentFormatting = memo(
             ]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatAlignHorizontalLeft) return props.formatSummary?.align === 'left';
+              if (action === Action.FormatAlignHorizontalCenter) return props.formatSummary?.align === 'center';
+              if (action === Action.FormatAlignHorizontalRight) return props.formatSummary?.align === 'right';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown
@@ -188,6 +260,12 @@ export const AlignmentFormatting = memo(
             ]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatAlignVerticalTop) return props.formatSummary?.verticalAlign === 'top';
+              if (action === Action.FormatAlignVerticalMiddle) return props.formatSummary?.verticalAlign === 'middle';
+              if (action === Action.FormatAlignVerticalBottom) return props.formatSummary?.verticalAlign === 'bottom';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown
@@ -200,6 +278,12 @@ export const AlignmentFormatting = memo(
             actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
             actionArgs={undefined}
             hideLabel={props.hideLabel}
+            isChecked={(action) => {
+              if (action === Action.FormatTextWrapOverflow) return props.formatSummary?.wrap === 'overflow';
+              if (action === Action.FormatTextWrapWrap) return props.formatSummary?.wrap === 'wrap';
+              if (action === Action.FormatTextWrapClip) return props.formatSummary?.wrap === 'clip';
+              return false;
+            }}
           />
         </FormatButtonDropdown>
         <FormatSeparator />
@@ -224,6 +308,7 @@ export const FormatMoreButton = memo(
         className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
         onValueChange={() => props.setShowMore(!props.showMore)}
         ref={ref}
+        data-testid="more-formatting-icon"
       >
         <MoreVertIcon />
       </ToggleGroup.Root>

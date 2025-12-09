@@ -86,6 +86,29 @@ export const router = createBrowserRouter(
          */}
         <Route path="education/enroll" lazy={() => import('./routes/education.enroll')} />
         <Route path={ROUTES.FILES_CREATE} lazy={() => import('./routes/files.create')} />
+        <Route path={ROUTES.FILES_CREATE_AI} lazy={() => import('./routes/files.create.ai')} />
+        {/* Team-based AI creation routes */}
+        <Route path="teams/:teamUuid/files/create/ai" lazy={() => import('./routes/teams.$teamUuid.files.create.ai')} />
+        <Route
+          path="teams/:teamUuid/files/create/ai/prompt"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/file"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/pdf"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/connection"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
+        <Route
+          path="teams/:teamUuid/files/create/ai/web"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
+        />
         <Route path="teams/:teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
         <Route path="team/*" lazy={() => import('./routes/team.$')} />
 
@@ -115,6 +138,7 @@ export const router = createBrowserRouter(
             <Route index element={<Navigate to="/" replace />} />
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
               <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+              <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
               <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />

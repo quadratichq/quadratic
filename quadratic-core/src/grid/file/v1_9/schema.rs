@@ -1,3 +1,5 @@
+#![allow(dead_code)] // necessary because old schema may not be used anymore
+
 use crate::grid::file::v1_8;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

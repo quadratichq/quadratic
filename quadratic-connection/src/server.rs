@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 use tokio::time;
 use tower_http::{
+    classify::{ServerErrorsAsFailures, SharedClassifier},
     cors::{Any, CorsLayer},
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::{DefaultMakeSpan, TraceLayer},
@@ -186,10 +187,28 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         // cors
         .layer(cors)
         //
-        // logger
+        // logger - classify only 5xx as failures
         .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+            TraceLayer::new(SharedClassifier::new(ServerErrorsAsFailures::new()))
+                .make_span_with(DefaultMakeSpan::default().include_headers(true))
+                .on_response(
+                    |response: &Response, latency: Duration, _span: &tracing::Span| {
+                        let status = response.status();
+                        if status.is_server_error() {
+                            tracing::error!(
+                                status = status.as_u16(),
+                                latency_ms = latency.as_millis(),
+                                "response failed"
+                            );
+                        } else if status.is_client_error() {
+                            tracing::warn!(
+                                status = status.as_u16(),
+                                latency_ms = latency.as_millis(),
+                                "client error"
+                            );
+                        }
+                    },
+                ),
         )
         //
         // don't show authorization header in logs

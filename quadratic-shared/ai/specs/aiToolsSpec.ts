@@ -340,6 +340,7 @@ export const AIToolsArgsSchema = {
     number_type: stringNullableOptionalSchema,
     currency_symbol: stringNullableOptionalSchema,
     date_time: stringNullableOptionalSchema,
+    font_size: z.number().nullable().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
     sheet_name: stringNullableOptionalSchema,
@@ -1318,6 +1319,7 @@ If too large, the results will include page information:\n
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 There must be at least one non-null format to set.\n
+You can set bold, italic, underline, strike through, text/fill colors, alignment, wrapping, numeric formats, date formats, and font size.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 `,
     parameters: {
@@ -1335,19 +1337,19 @@ When you are formatting multiple, non-contiguous cells, or cells not in a rectan
         },
         bold: {
           type: ['boolean', 'null'],
-          description: 'Whether to set the cell to bold',
+          description: 'Whether to set the cell to bold. Set to null to remove bold formatting.',
         },
         italic: {
           type: ['boolean', 'null'],
-          description: 'Whether to set the cell to italic',
+          description: 'Whether to set the cell to italic. Set to null to remove italic formatting.',
         },
         underline: {
           type: ['boolean', 'null'],
-          description: 'Whether to set the cell to underline',
+          description: 'Whether to set the cell to underline. Set to null to remove underline formatting.',
         },
         strike_through: {
           type: ['boolean', 'null'],
-          description: 'Whether to set the cell to strike through',
+          description: 'Whether to set the cell to strike through. Set to null to remove strike through formatting.',
         },
         text_color: {
           type: ['string', 'null'],
@@ -1361,34 +1363,43 @@ When you are formatting multiple, non-contiguous cells, or cells not in a rectan
         },
         align: {
           type: ['string', 'null'],
-          description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
+          description:
+            'The horizontal alignment of the text, this can be one of "left", "center", "right". Set to null to remove alignment formatting.',
         },
         vertical_align: {
           type: ['string', 'null'],
-          description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
+          description:
+            'The vertical alignment of the text, this can be one of "top", "middle", "bottom". Set to null to remove vertical alignment formatting.',
         },
         wrap: {
           type: ['string', 'null'],
-          description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
+          description:
+            'The wrapping of the text, this can be one of "wrap", "clip", "overflow". Set to null to remove wrap formatting.',
         },
         numeric_commas: {
           type: ['boolean', 'null'],
           description:
-            'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
+            'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas. Set to null to remove comma formatting.',
         },
         number_type: {
           type: ['string', 'null'],
           description:
-            'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
+            'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol. Set to null to remove number type formatting.',
         },
         currency_symbol: {
           type: ['string', 'null'],
           description:
-            'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
+            'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR. Set to null to remove currency symbol.',
         },
         date_time: {
           type: ['string', 'null'],
-          description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
+          description:
+            'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y". Set to null to remove date/time formatting.',
+        },
+        font_size: {
+          type: ['number', 'null'],
+          description:
+            'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting. This field is required and must always be included in the tool call.',
         },
       },
       required: [
@@ -1407,6 +1418,7 @@ When you are formatting multiple, non-contiguous cells, or cells not in a rectan
         'number_type',
         'currency_symbol',
         'date_time',
+        'font_size',
       ],
       additionalProperties: false,
     },
@@ -1414,7 +1426,7 @@ When you are formatting multiple, non-contiguous cells, or cells not in a rectan
     prompt: `The set_text_formats tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
 Here are the formats you can set:\n
 - bold, italics, underline, or strike through\n
-- text color and fill color using hex format, for example, #FF0000 for red\n
+- text color and fill color using hex format, for example, #FF0000 for red. To remove colors, set to an empty string.\n
 - horizontal alignment, this can be one of "left", "center", "right"\n
 - vertical alignment, this can be one of "top", "middle", "bottom"\n
 - wrapping, this can be one of "wrap", "clip", "overflow"\n
@@ -1422,6 +1434,8 @@ Here are the formats you can set:\n
 - number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
 - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
 - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
+- font_size, the size of the font in points (default is 10)\n
+To clear/remove a format, set the value to null (or empty string for colors). Omit fields you don't want to change.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 There must be at least one format to set.\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
