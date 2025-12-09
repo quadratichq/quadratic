@@ -1254,18 +1254,14 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
 
   // Assert that there are no files
   await expect(page.getByRole(`heading`, { name: `No suggested files` })).toBeVisible();
-  await expect(
-    page.getByText(
-      `You don’t have any files yet. Create a new file or drag and drop a CSV, Excel, Parquet, or Quadratic file here.`
-    )
-  ).toBeVisible();
+  await expect(page.getByText(`No suggested files`)).toBeVisible();
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Locate the initial drop targets
-  const initiateDropEl = page.getByText(`You don’t have any files yet`);
+  const initiateDropEl = page.getByText(`No suggested files`);
   const dropTarget = page.locator('#file-drag-drop div').first();
 
   // Create DataTransfer and file inside browser context to allow drag and drop
