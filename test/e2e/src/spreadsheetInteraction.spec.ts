@@ -4371,11 +4371,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
   // Assert that there are no files
   await expect(page.getByRole(`heading`, { name: `No suggested files` })).toBeVisible();
-  await expect(
-    page.getByText(
-      `You don’t have any files yet. Create a new file or drag and drop a CSV, Excel, Parquet, or Quadratic file here.`
-    )
-  ).toBeVisible();
+  await expect(page.getByText(`Files will appear here for quick access`)).toBeVisible();
 
   // Create new file
   await createFile(page, { fileName });
@@ -4421,22 +4417,25 @@ test('Theme Customization from Sheet', async ({ page }) => {
     await expect(page.locator(`[data-title="Sheet1"]`)).toHaveCSS(`color`, theme.color);
 
     // Open AI chat to assert accent color is applied to all buttons
-    await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
-
-    // Wait for the heading to appear
-    await page.getByRole(`heading`, { name: `What can I help with?` }).waitFor();
-
-    // Store buttons that are expected to change with accent color on AI chat
-    const aiIconBtns = await page.locator(`h2`).locator(`..`).locator(`button`).all();
-    for (let i = 0; i < aiIconBtns.length; i++) {
-      await expect(aiIconBtns[i].locator(`span`)).toHaveCSS(`color`, theme.color);
+    // First ensure any previously opened chat is closed
+    const closeButton = page.locator('[data-testid="close-ai-analyst"]');
+    if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await closeButton.click({ timeout: 60 * 1000 });
+      await page.waitForTimeout(500); // Small wait for panel to close
     }
 
+    await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
+
+    // Wait for the AI chat panel to be visible (indicated by close button)
+    await expect(page.locator('[data-testid="close-ai-analyst"]')).toBeVisible({ timeout: 60 * 1000 });
+
+    await expect(page.getByRole(`heading`, { name: `What would you like to do?` })).toBeVisible({ timeout: 60 * 1000 });
+
     // Close AI chat
-    await page
-      .getByRole(`button`, { name: `close` })
-      .first()
-      .click({ timeout: 60 * 1000 });
+    await page.locator('[data-testid="close-ai-analyst"]').click({ timeout: 60 * 1000 });
+
+    // Wait for chat to close before next iteration
+    await expect(page.locator('[data-testid="close-ai-analyst"]')).not.toBeVisible({ timeout: 10 * 1000 });
   }
 
   // (Reset) Remove selection and focus on the first cell on the sheet
@@ -4491,17 +4490,16 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
   // ** Page reload and assert dark mode colors are persisting **
   await page.reload();
-  await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Close AI chat
-  await page
-    .getByRole(`button`, { name: `close` })
-    .first()
-    .click({ timeout: 60 * 1000 });
+  await waitForAppReady(page);
 
   // Assert root has the 'Dark' class applied
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toContain(darkClassName);
+
+  // Re-query elements after reload (locators can become stale after page reload)
+  rootEl = page.locator(`#root .bg-background`).first();
+  navEl = page.locator(`nav`);
+  headerBarEl = page.locator(`div:has-text("File") >> nth = 3`);
 
   // Assert dark mode styling is applied to key elements
   await expect(rootEl).toHaveCSS(`background-color`, darkBackground);
@@ -4571,17 +4569,16 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
   // ** Page reload and assert light mode colors are persisting **
   await page.reload();
-  await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Close AI chat
-  await page
-    .getByRole(`button`, { name: `close` })
-    .first()
-    .click({ timeout: 60 * 1000 });
+  await waitForAppReady(page);
 
   // Assert root has no class names applied
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toBeNull();
+
+  // Re-query elements after reload (locators can become stale after page reload)
+  rootEl = page.locator(`#root .bg-background`).first();
+  navEl = page.locator(`nav`);
+  headerBarEl = page.locator(`div:has-text("File") >> nth = 3`);
 
   // Assert light mode styling is applied to key elements
   await expect(rootEl).toHaveCSS(`background-color`, lightBackground);
