@@ -17,7 +17,8 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
   /* Use 1 worker on CI since we parallelize via shards (164 shards), not workers */
-  workers: 1,
+  /* Locally, use 50% of CPUs for parallel test execution */
+  workers: process.env.CI ? 1 : '50%',
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI ? [['blob']] : [['list'], ['html']],
   /* Configure custom snapshot path template */
