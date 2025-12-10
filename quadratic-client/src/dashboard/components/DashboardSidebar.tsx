@@ -122,7 +122,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
+            <SidebarNavLink
+              to={ROUTES.TEAM_FILES(activeTeamUuid)}
+              dropTarget={canEditTeam ? null : undefined}
+              data-testid="dashboard-sidebar-team-files-link"
+            >
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
@@ -158,7 +162,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Personal
         </Type>
         <div className="relative">
-          <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
+          <SidebarNavLink
+            to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)}
+            dropTarget={ownerUserId}
+            data-testid="dashboard-sidebar-personal-files-link"
+          >
             <FilePrivateIcon className={classNameIcons} />
             My files
           </SidebarNavLink>
@@ -166,7 +174,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             New personal file
           </SidebarNavLinkCreateButton>
         </div>
-        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME} data-testid="dashboard-sidebar-shared-with-me-link">
           <FileSharedWithMeIcon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>
@@ -334,6 +342,7 @@ function SidebarNavLink({
   isLogo,
   onClick,
   target,
+  'data-testid': dataTestId,
 }: {
   to: string;
   children: ReactNode;
@@ -343,6 +352,7 @@ function SidebarNavLink({
   isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
+  'data-testid'?: string;
 }) {
   const location = useLocation();
   const navigation = useNavigation();
@@ -400,6 +410,7 @@ function SidebarNavLink({
       className={classes}
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
+      {...(dataTestId ? { 'data-testid': dataTestId } : {})}
       {...dropProps}
     >
       {children}

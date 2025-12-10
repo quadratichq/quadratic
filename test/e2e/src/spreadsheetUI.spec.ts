@@ -813,13 +813,13 @@ test('Open Formula Editor', async ({ page }) => {
   await page.keyboard.type(formulaCode);
 
   // Check autocorrect by asserting if SUMIF option becomes visible in popup menu
-  await expect(page.getByLabel('SUMIF', { exact: true }).locator('a')).toBeVisible();
+  // Note: Monaco autocomplete uses .monaco-list-row elements, not standard role="option"
+  // We use getByText to find SUMIF regardless of how it's structured in spans
+  const sumifOption = page.getByText(/SUMIF/i).first();
+  await expect(sumifOption).toBeVisible();
 
   // Click SUMIF option from popup menu
-  await page
-    .getByLabel('SUMIF', { exact: true })
-    .locator('a')
-    .click({ timeout: 60 * 1000 });
+  await sumifOption.click({ timeout: 60 * 1000 });
 
   // Check autocorrect by asserting if the code autocompletes
   await expect(
