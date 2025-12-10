@@ -259,11 +259,7 @@ export class PixiAppSettings {
 
   // Check if the grid canvas has focus (or user is editing a cell, or context menu is open)
   isGridFocused(): boolean {
-    return (
-      document.activeElement === pixiApp.canvas ||
-      this.input.show ||
-      this.contextMenu.type !== undefined
-    );
+    return document.activeElement === pixiApp.canvas || this.input.show || this.contextMenu.type !== undefined;
   }
 
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'], closeGlobalSnackbar: () => void) {
