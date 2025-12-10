@@ -166,6 +166,78 @@ mod tests {
     }
 
     #[test]
+    fn test_expand_formula_with_display_values() {
+        // Test case: data in A2:A5 of 1,2,3,4. Formula in C2 of SUM(A2:A3).
+        // Expand it to C2:D5. Check code values and cell values in new cells.
+        let mut grid = GridController::test();
+        let sheet_id = grid.sheet_ids()[0];
+
+        // Set up source data: A2=1, A3=2, A4=3, A5=4
+        for row in 2..=5 {
+            grid.set_cell_value(
+                SheetPos {
+                    x: 1,
+                    y: row,
+                    sheet_id,
+                },
+                (row - 1).to_string(),
+                None,
+                false,
+            );
+        }
+
+        // Create a formula in C2: SUM(A2:A3)
+        grid.set_code_cell(
+            SheetPos {
+                x: 3,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "SUM(A2:A3)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Check the initial formula works: SUM(1, 2) = 3
+        assert_code_cell_value(&grid, sheet_id, 3, 2, "SUM(A2:A3)");
+        assert_display_cell_value(&grid, sheet_id, 3, 2, "3");
+
+        // Autocomplete the formula from C2 to C2:D5
+        let selected = Rect::test_a1("C2");
+        let range = Rect::test_a1("C2:D5");
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
+
+        // Check that formulas are correct
+        // Column C (x=3): formulas should adjust row references
+        assert_code_cell_value(&grid, sheet_id, 3, 2, "SUM(A2:A3)");
+        assert_code_cell_value(&grid, sheet_id, 3, 3, "SUM(A3:A4)");
+        assert_code_cell_value(&grid, sheet_id, 3, 4, "SUM(A4:A5)");
+        assert_code_cell_value(&grid, sheet_id, 3, 5, "SUM(A5:A6)");
+
+        // Column D (x=4): formulas should adjust both row and column references
+        assert_code_cell_value(&grid, sheet_id, 4, 2, "SUM(B2:B3)");
+        assert_code_cell_value(&grid, sheet_id, 4, 3, "SUM(B3:B4)");
+        assert_code_cell_value(&grid, sheet_id, 4, 4, "SUM(B4:B5)");
+        assert_code_cell_value(&grid, sheet_id, 4, 5, "SUM(B5:B6)");
+
+        // Check that display values are correct (the computed results)
+        // Column C: SUM(A2:A3)=3, SUM(A3:A4)=5, SUM(A4:A5)=7, SUM(A5:A6)=4 (A6 is empty=0)
+        assert_display_cell_value(&grid, sheet_id, 3, 2, "3"); // SUM(1,2) = 3
+        assert_display_cell_value(&grid, sheet_id, 3, 3, "5"); // SUM(2,3) = 5
+        assert_display_cell_value(&grid, sheet_id, 3, 4, "7"); // SUM(3,4) = 7
+        assert_display_cell_value(&grid, sheet_id, 3, 5, "4"); // SUM(4,0) = 4
+
+        // Column D: B column is empty, so all sums should be 0
+        assert_display_cell_value(&grid, sheet_id, 4, 2, "0");
+        assert_display_cell_value(&grid, sheet_id, 4, 3, "0");
+        assert_display_cell_value(&grid, sheet_id, 4, 4, "0");
+        assert_display_cell_value(&grid, sheet_id, 4, 5, "0");
+    }
+
+    #[test]
     fn test_expand_left_only() {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
         let range: Rect = Rect::new_span(Pos { x: 7, y: 11 }, Pos { x: 15, y: 12 });

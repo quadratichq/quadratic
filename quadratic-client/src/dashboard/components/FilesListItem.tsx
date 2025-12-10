@@ -236,17 +236,26 @@ export function FilesListItemUserFile({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   {permissions.includes('FILE_VIEW') && (
-                    <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShare} data-testid="dashboard-file-actions-share">
+                      Share
+                    </DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate} data-testid="dashboard-file-actions-duplicate">
+                      Duplicate
+                    </DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setOpen(true)} data-testid="dashboard-file-actions-rename">
+                      Rename
+                    </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownload} data-testid="dashboard-file-actions-download">
+                    Download
+                  </DropdownMenuItem>
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem
+                      data-testid="dashboard-file-actions-open-history"
                       onClick={() => {
                         window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
                       }}
@@ -259,6 +268,7 @@ export function FilesListItemUserFile({
                       <DropdownMenuSeparator />
                       {!isFilePrivate && (
                         <DropdownMenuItem
+                          data-testid="dashboard-file-actions-move-to-personal"
                           onClick={() => {
                             const data = getActionFileMove(userId);
                             submit(data, {
@@ -275,6 +285,7 @@ export function FilesListItemUserFile({
                       )}
                       {isFilePrivate && (
                         <DropdownMenuItem
+                          data-testid="dashboard-file-actions-move-to-team"
                           onClick={() => {
                             const data = getActionFileMove(null);
                             submit(data, {
@@ -294,7 +305,9 @@ export function FilesListItemUserFile({
                   {permissions.includes('FILE_DELETE') && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleDelete}>Delete</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDelete} data-testid="dashboard-file-actions-delete">
+                        Delete
+                      </DropdownMenuItem>
                     </>
                   )}
                 </DropdownMenuContent>

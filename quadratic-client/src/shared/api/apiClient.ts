@@ -14,12 +14,14 @@ export const apiClient = {
     list() {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
-    async get(uuid: string) {
-      const response = await fetchFromApi(
-        `/v0/teams/${uuid}`,
-        { method: 'GET' },
-        ApiSchemas['/v0/teams/:uuid.GET.response']
-      );
+    async get(uuid: string, options?: { updateBilling?: boolean }) {
+      const queryParams = new URLSearchParams();
+      if (options?.updateBilling) {
+        queryParams.set('updateBilling', 'true');
+      }
+      const queryString = queryParams.toString();
+      const url = `/v0/teams/${uuid}${queryString ? `?${queryString}` : ''}`;
+      const response = await fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
 
       if (response.license.status === 'revoked') {
         throw new ApiError('License Revoked', 402, undefined);
@@ -144,12 +146,14 @@ export const apiClient = {
       const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
-    async get(uuid: string) {
-      let response = await fetchFromApi(
-        `/v0/files/${uuid}`,
-        { method: 'GET' },
-        ApiSchemas['/v0/files/:uuid.GET.response']
-      );
+    async get(uuid: string, options?: { updateBilling?: boolean }) {
+      const queryParams = new URLSearchParams();
+      if (options?.updateBilling) {
+        queryParams.set('updateBilling', 'true');
+      }
+      const queryString = queryParams.toString();
+      const url = `/v0/files/${uuid}${queryString ? `?${queryString}` : ''}`;
+      let response = await fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
 
       if (response.license.status === 'revoked') {
         throw new ApiError('License Revoked', 402, undefined);

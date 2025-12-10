@@ -6,6 +6,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::currency;
 use super::number::decimal_from_str;
 use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
@@ -15,12 +16,6 @@ use crate::{
     grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
 };
 
-// Currency symbols ordered by length (longest first) to avoid partial matches
-// e.g., "R$" must be checked before "R" to correctly parse "R$123"
-const CURRENCY_SYMBOLS: &[&str] = &[
-    "CHF", "R$", "kr", "zł", // Multi-character symbols first
-    "$", "€", "£", "¥", "₹", "₩", "₺", "₽", "R", // Single-character symbols
-];
 const PERCENTAGE_SYMBOL: char = '%';
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -268,17 +263,17 @@ impl CellValue {
                 };
                 match numeric_format.kind {
                     NumericFormatKind::Currency => {
-                        let mut currency = if n.is_sign_negative() {
-                            number = number.trim_start_matches('-').to_string();
-                            String::from("-")
-                        } else {
-                            String::new()
-                        };
                         if let Some(symbol) = numeric_format.symbol.as_ref() {
-                            currency.push_str(&symbol.clone());
+                            let is_negative = n.is_sign_negative();
+                            let number_str = if is_negative {
+                                number.trim_start_matches('-').to_string()
+                            } else {
+                                number.clone()
+                            };
+                            currency::format_currency(&number_str, symbol, is_negative)
+                        } else {
+                            number
                         }
-                        currency.push_str(&number);
-                        currency
                     }
                     NumericFormatKind::Percentage => {
                         number.push('%');
@@ -395,59 +390,11 @@ impl CellValue {
     }
 
     fn strip_currency(value: &str) -> String {
-        let (is_negative, absolute_value) = (
-            value.starts_with("-"),
-            value.strip_prefix("-").unwrap_or(value),
-        );
-
-        let mut stripped = absolute_value;
-        for symbol in CURRENCY_SYMBOLS {
-            if let Some(remaining) = stripped.strip_prefix(symbol) {
-                stripped = remaining;
-                break; // Only strip the first matching symbol
-            }
-        }
-
-        if is_negative {
-            if let Some(stripped) = stripped.strip_prefix("-") {
-                stripped.trim().to_string()
-            } else {
-                format!("-{}", stripped.trim())
-            }
-        } else {
-            stripped.to_string()
-        }
+        currency::strip_currency(value)
     }
 
     pub fn unpack_currency(s: &str) -> Option<(String, Decimal)> {
-        if s.is_empty() {
-            return None;
-        }
-
-        let without_parentheses = CellValue::strip_parentheses(s);
-        let (is_negative, absolute_value) = (
-            without_parentheses.starts_with("-"),
-            without_parentheses
-                .strip_prefix("-")
-                .map_or(without_parentheses.as_str(), |absolute_value| {
-                    absolute_value.trim()
-                }),
-        );
-
-        for symbol in CURRENCY_SYMBOLS {
-            if let Some(stripped) = absolute_value
-                .strip_prefix(symbol)
-                .map(|stripped| stripped.trim())
-            {
-                let without_commas =
-                    CellValue::strip_commas(&CellValue::strip_parentheses(stripped));
-                if let Ok(bd) = decimal_from_str(&without_commas) {
-                    let bd = if is_negative { -bd } else { bd };
-                    return Some((symbol.to_string(), bd));
-                }
-            }
-        }
-        None
+        currency::unpack_currency(s)
     }
 
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {

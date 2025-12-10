@@ -176,9 +176,18 @@ class InlineEditorMonaco {
     }
 
     // set text wrap and padding for vertical text alignment
+    // For 'clip' mode, use 'auto' scrollbar with zero size to enable scrolling without visible scrollbar
     this.editor.updateOptions({
       wordWrap: textWrap === 'wrap' ? 'on' : 'off',
       padding: { top: paddingTop, bottom: 0 },
+      scrollbar: {
+        horizontal: textWrap === 'clip' ? 'auto' : 'hidden',
+        vertical: 'hidden',
+        alwaysConsumeMouseWheel: false,
+        verticalScrollbarSize: 0,
+        horizontalScrollbarSize: 0,
+      },
+      scrollBeyondLastColumn: textWrap === 'clip' ? 5 : 0,
     });
 
     // Calculate padding that scales with font size
@@ -199,29 +208,42 @@ class InlineEditorMonaco {
       const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
 
-      width = textWrap === 'wrap' ? width : Math.max(width, measuredWidth + scaledPadding);
+      width = textWrap !== 'overflow' ? width : Math.max(width, measuredWidth + scaledPadding);
     } else {
       // Fallback to scrollWidth if canvas is not available
       const scrollWidth = textarea.scrollWidth;
       const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
-      width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + scaledPadding);
+      width = textWrap !== 'overflow' ? width : Math.max(width, scrollWidth + scaledPadding);
     }
     height = Math.max(contentHeight, height);
 
     const viewportRectangle = pixiApp.getViewportRectangle();
     const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
     if (width > maxWidthDueToViewport) {
-      textWrap = 'wrap';
-      width = maxWidthDueToViewport;
-      this.editor.updateOptions({
-        wordWrap: textWrap === 'wrap' ? 'on' : 'off',
-        padding: { top: paddingTop, bottom: 0 },
-      });
+      // For 'clip' mode, keep it clipped; for others, force wrap if needed
+      if (textWrap === 'clip') {
+        width = Math.min(width, maxWidthDueToViewport);
+      } else {
+        textWrap = 'wrap';
+        width = maxWidthDueToViewport;
+        this.editor.updateOptions({
+          wordWrap: 'on',
+          padding: { top: paddingTop, bottom: 0 },
+        });
+      }
     }
 
     // set final width and height
     this.editor.layout({ width, height });
+
+    // For clip mode, ensure the cursor is visible by scrolling to it
+    if (textWrap === 'clip') {
+      const position = this.editor.getPosition();
+      if (position) {
+        this.editor.revealPosition(position, monaco.editor.ScrollType.Immediate);
+      }
+    }
 
     return { width, height };
   };

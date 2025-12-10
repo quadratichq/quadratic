@@ -64,7 +64,8 @@ export const drawDropdown = (options: RenderDropdown) => {
   sprite.height = DROPDOWN_SIZE[1];
   sprite.rectangle = dropdownRectangle(options.x, options.y);
   sprite.alpha = 0.5;
-  sprite.position.set(options.x, options.y + DROPDOWN_PADDING[1]);
+  // Position sprite so its right edge is inset from options.x (which is rectangle.right) by DROPDOWN_PADDING[0]
+  sprite.position.set(options.x - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0], options.y + DROPDOWN_PADDING[1]);
   return sprite;
 };
 

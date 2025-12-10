@@ -20,6 +20,14 @@ export const ROUTES = {
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   FILES_CREATE: '/files/create',
+  FILES_CREATE_AI: '/files/create/ai',
+  // Team-based AI creation routes (these are the actual routes)
+  TEAM_FILES_CREATE_AI: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai`,
+  TEAM_FILES_CREATE_AI_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/file`,
+  TEAM_FILES_CREATE_AI_PROMPT: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/prompt`,
+  TEAM_FILES_CREATE_AI_PDF: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/pdf`,
+  TEAM_FILES_CREATE_AI_CONNECTION: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/connection`,
+  TEAM_FILES_CREATE_AI_WEB: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/web`,
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {

@@ -83,7 +83,8 @@ impl A1Selection {
             // Add the column if it wasn't found and set the cursor position
             self.ranges.push(CellRefRange::new_relative_column(col));
             self.cursor.x = col;
-            self.cursor.y = top;
+            // Ensure cursor.y is at least 1 since column selections start at row 1
+            self.cursor.y = top.max(1);
         }
 
         if !self.contains_pos(self.cursor, a1_context) {
@@ -183,7 +184,8 @@ impl A1Selection {
         } else {
             // Add the row if it wasn't found and set the cursor position
             self.ranges.push(CellRefRange::new_relative_row(row));
-            self.cursor.x = left;
+            // Ensure cursor.x is at least 1 since row selections start at column 1
+            self.cursor.x = left.max(1);
             self.cursor.y = row;
         }
 
@@ -676,6 +678,27 @@ mod tests {
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A2")]);
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 2);
+
+        // Test adding column when top is 0 (viewport scrolled to show row 0)
+        // The cursor should still be at row 1, not row 0
+        let mut selection = A1Selection::test_a1("A");
+        selection.add_or_remove_column(3, 0, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C")]
+        );
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 1); // cursor.y should be 1, not 0
+
+        // Test adding column when top is negative
+        let mut selection = A1Selection::test_a1("A");
+        selection.add_or_remove_column(3, -5, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C")]
+        );
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 1); // cursor.y should be 1, not -5
     }
 
     #[test]
@@ -719,6 +742,27 @@ mod tests {
         let mut selection = A1Selection::test_a1("3");
         selection.add_or_remove_row(3, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A3")]);
+
+        // Test adding row when left is 0 (viewport scrolled to show column 0)
+        // The cursor should still be at column 1, not column 0
+        let mut selection = A1Selection::test_a1("1");
+        selection.add_or_remove_row(3, 0, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3")]
+        );
+        assert_eq!(selection.cursor.x, 1); // cursor.x should be 1, not 0
+        assert_eq!(selection.cursor.y, 3);
+
+        // Test adding row when left is negative
+        let mut selection = A1Selection::test_a1("1");
+        selection.add_or_remove_row(3, -5, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3")]
+        );
+        assert_eq!(selection.cursor.x, 1); // cursor.x should be 1, not -5
+        assert_eq!(selection.cursor.y, 3);
     }
 
     #[test]
