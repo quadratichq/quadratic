@@ -198,10 +198,18 @@ impl FromStr for Duration {
             let count_str = segments[1].trim();
 
             let unit_str = &segments[2].trim();
-            let unit: TimeUnit = unit_str
-                .strip_suffix(',')
-                .unwrap_or(unit_str)
-                .to_ascii_lowercase()
+            let stripped = unit_str.strip_suffix(',').unwrap_or(unit_str);
+
+            // Only apply lowercase for multi-character units. Single-character
+            // units must be lowercase to avoid false positives like "5M" being
+            // parsed as 5 minutes (when it might mean megabytes or just text).
+            let normalized = if stripped.len() > 1 {
+                stripped.to_ascii_lowercase()
+            } else {
+                stripped.to_string()
+            };
+
+            let unit: TimeUnit = normalized
                 .parse()
                 .map_err(|()| ParseDurationError::InvalidUnit)?;
 
@@ -667,6 +675,9 @@ mod tests {
             ("1 year month", Err(())),               // two units in a row
             ("0.5 year", Err(())),                   // fractional year is not allowed
             ("3 mo, 10year", Err(())),               // nondecreasing unit order
+            ("5M", Err(())),                         // uppercase single-letter unit should NOT match
+            ("5S", Err(())),                         // uppercase single-letter unit should NOT match
+            ("5H", Err(())),                         // uppercase single-letter unit should NOT match
         ] {
             println!("Parsing duration {input:?}");
             let result = input.parse::<Duration>();

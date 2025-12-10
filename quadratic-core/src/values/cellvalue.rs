@@ -288,6 +288,12 @@ impl CellValue {
     }
 
     pub fn to_edit(&self) -> String {
+        self.to_edit_with_format(None)
+    }
+
+    /// Returns a string representation of the value for editing, using the
+    /// provided date_time format if available.
+    pub fn to_edit_with_format(&self, date_time_format: Option<String>) -> String {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
@@ -297,10 +303,24 @@ impl CellValue {
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
 
-            // todo: these formats should be a user-definable format (we'll need it for localization)
-            CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
-            CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
-            CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
+            CellValue::Date(d) => {
+                let format = date_time_format
+                    .as_deref()
+                    .unwrap_or(crate::date_time::DEFAULT_DATE_FORMAT);
+                d.format(format).to_string()
+            }
+            CellValue::Time(t) => {
+                let format = date_time_format
+                    .as_deref()
+                    .unwrap_or(crate::date_time::DEFAULT_TIME_FORMAT);
+                t.format(format).to_string()
+            }
+            CellValue::DateTime(t) => {
+                let format = date_time_format
+                    .as_deref()
+                    .unwrap_or(crate::date_time::DEFAULT_DATE_TIME_FORMAT);
+                t.format(format).to_string()
+            }
 
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
@@ -631,9 +651,17 @@ impl CellValue {
                 ..Default::default()
             };
             CellValue::Number(percent)
-        } else if let Some(time) = CellValue::unpack_time(value) {
+        } else if let Some((time, time_format)) = CellValue::unpack_time_with_format(value) {
+            format_update = FormatUpdate {
+                date_time: Some(Some(time_format)),
+                ..Default::default()
+            };
             time
-        } else if let Some(date) = CellValue::unpack_date(value) {
+        } else if let Some((date, date_format)) = CellValue::unpack_date_with_format(value) {
+            format_update = FormatUpdate {
+                date_time: Some(Some(date_format)),
+                ..Default::default()
+            };
             date
         } else if let Some(date_time) = CellValue::unpack_date_time(value) {
             date_time
@@ -1586,5 +1614,61 @@ mod test {
         let value = "980E92207901934";
         let (cell_value, _) = CellValue::string_to_cell_value(value, false);
         assert_eq!(cell_value.to_string(), value.to_string());
+    }
+
+    #[test]
+    fn date_format_preservation() {
+        // Test that date format is preserved in format_update
+        let (value, format_update) = CellValue::string_to_cell_value("12/23/2024", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m/%-d/%Y".to_string())));
+
+        // Test dash separator is preserved
+        let (value, format_update) = CellValue::string_to_cell_value("5-5", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m-%-d".to_string())));
+
+        // Test slash separator is preserved
+        let (value, format_update) = CellValue::string_to_cell_value("5/15", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m/%-d".to_string())));
+
+        // Test named month format is preserved
+        let (value, format_update) = CellValue::string_to_cell_value("Dec 15", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%b %-d".to_string())));
+    }
+
+    #[test]
+    fn time_format_preservation() {
+        // Test AM/PM format is preserved
+        let (value, format_update) = CellValue::string_to_cell_value("4:45 PM", false);
+        assert!(matches!(value, CellValue::Time(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-I:%M:%S %p".to_string())));
+
+        // Test 24-hour format is preserved
+        let (value, format_update) = CellValue::string_to_cell_value("16:45", false);
+        assert!(matches!(value, CellValue::Time(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-H:%M".to_string())));
+    }
+
+    #[test]
+    fn to_edit_with_format_test() {
+        use chrono::NaiveDate;
+
+        // Test that to_edit_with_format uses the provided format
+        let date = CellValue::Date(NaiveDate::from_ymd_opt(2024, 12, 15).unwrap());
+
+        // With dash separator format
+        assert_eq!(date.to_edit_with_format(Some("%-m-%-d-%Y".to_string())), "12-15-2024");
+
+        // With slash separator format
+        assert_eq!(date.to_edit_with_format(Some("%-m/%-d/%Y".to_string())), "12/15/2024");
+
+        // With named month format
+        assert_eq!(date.to_edit_with_format(Some("%b %-d".to_string())), "Dec 15");
+
+        // Without format (default)
+        assert_eq!(date.to_edit_with_format(None), "12/15/2024");
     }
 }
