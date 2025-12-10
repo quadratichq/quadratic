@@ -99,6 +99,8 @@ const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
 });
 const TeamUserMakingRequestSchema = z.object({
   filePermissions: z.array(FilePermissionSchema),
+  // Whether this file has edit restrictions due to soft file limit (free teams only)
+  isFileEditRestricted: z.boolean().optional(),
 });
 
 export const TeamClientDataKvSchema = z.record(z.any());
@@ -191,6 +193,8 @@ export const ApiSchemas = {
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
       restrictedModel: z.boolean(),
+      // Whether this file has edit restrictions due to soft file limit (free teams only)
+      isFileEditRestricted: z.boolean().optional(),
     }),
     license: LicenseSchema,
   }),
@@ -470,7 +474,16 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/retention-discount.POST.response': z.object({
     message: z.string(),
   }),
-  '/v0/teams/:uuid/file-limit.GET.response': z.object({ hasReachedLimit: z.boolean() }),
+  '/v0/teams/:uuid/file-limit.GET.response': z.object({
+    // Backward compatible field - indicates if creating another file would exceed the editable limit
+    hasReachedLimit: z.boolean(),
+    // New fields for soft limit behavior
+    isOverLimit: z.boolean(),
+    totalFiles: z.number(),
+    // Maximum editable files for free teams, undefined for paid teams
+    maxEditableFiles: z.number().optional(),
+    isPaidPlan: z.boolean(),
+  }),
 
   /**
    * Connections (which are all under `/v0/teams/:uuid/connections/*`)

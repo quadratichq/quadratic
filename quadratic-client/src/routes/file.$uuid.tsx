@@ -15,6 +15,7 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/a
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { FileLimitDialog } from '@/shared/components/FileLimitDialog';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -243,6 +244,7 @@ export const Component = memo(() => {
       <QuadraticApp />
       <Outlet />
       <QuadraticAppDebugSettings />
+      <FileLimitDialog />
       <UpgradeDialog teamUuid={teamUuid} />
     </RecoilRoot>
   );

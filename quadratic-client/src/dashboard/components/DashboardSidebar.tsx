@@ -6,7 +6,8 @@ import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -213,7 +214,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <RocketIcon className="h-5 w-5 text-primary" />
               <div className="flex flex-col">
                 <span className="font-semibold">Upgrade to Quadratic Pro</span>
-                <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
+                <span className="text-muted-foreground">Get more AI messages, unlimited files, and more.</span>
               </div>
             </div>
 
@@ -312,12 +313,16 @@ function SidebarNavLinkCreateButton({
           className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
           onClick={async (e) => {
             e.preventDefault();
-            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-            if (hasReachedLimit) {
-              showUpgradeDialog('fileLimitReached');
+            const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+            const createFile = () => {
+              window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+            };
+
+            if (isOverLimit && !isPaidPlan) {
+              showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
               return;
             }
-            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+            createFile();
           }}
         >
           <AddIcon />

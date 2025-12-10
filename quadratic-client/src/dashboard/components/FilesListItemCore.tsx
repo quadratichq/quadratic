@@ -5,7 +5,7 @@ import { TYPE } from '@/shared/constants/appConstants';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { GlobeIcon } from '@radix-ui/react-icons';
+import { GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
@@ -19,6 +19,7 @@ export function FilesListItemCore({
   isShared,
   isPrivate,
   isSharedWithMe,
+  isFileEditRestricted,
   viewPreferences,
   actions,
 }: {
@@ -33,6 +34,7 @@ export function FilesListItemCore({
   isShared?: boolean;
   isPrivate?: boolean;
   isSharedWithMe?: boolean;
+  isFileEditRestricted?: boolean;
   actions?: ReactNode;
 }) {
   const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
@@ -68,6 +70,15 @@ export function FilesListItemCore({
               {isShared && (
                 <TooltipPopover label="Public">
                   <GlobeIcon className="relative inline h-3 w-3" data-testid="dashboard-file-actions-public-icon" />
+                </TooltipPopover>
+              )}
+
+              {isFileEditRestricted && (
+                <TooltipPopover label="View-only due to file limit. Upgrade to edit.">
+                  <Badge variant="secondary" className="gap-1 px-1.5 py-0 text-[10px] font-normal">
+                    <LockClosedIcon className="h-2.5 w-2.5" />
+                    View-only
+                  </Badge>
                 </TooltipPopover>
               )}
             </p>

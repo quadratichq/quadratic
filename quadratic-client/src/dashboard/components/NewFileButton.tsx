@@ -4,7 +4,7 @@ import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
@@ -43,12 +43,14 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
         variant="default"
         className="gap-2"
         onClick={async () => {
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
+          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const navigateToAI = () =>
+            navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+          if (isOverLimit && !isPaidPlan) {
+            showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, navigateToAI);
             return;
           }
-          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+          navigateToAI();
         }}
       >
         Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
@@ -57,12 +59,15 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
+          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const createFile = () => {
+            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          };
+          if (isOverLimit && !isPaidPlan) {
+            showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
             return;
           }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          createFile();
         }}
       >
         New file

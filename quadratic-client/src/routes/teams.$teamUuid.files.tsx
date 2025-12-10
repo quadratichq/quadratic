@@ -1,4 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { FileLimitBanner } from '@/dashboard/components/FileLimitBanner';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
@@ -37,6 +38,7 @@ export const Component = () => {
 
   return (
     <div className="flex flex-grow flex-col">
+      <FileLimitBanner />
       <DashboardHeader
         title="Team files"
         actions={
@@ -75,6 +77,7 @@ export const Component = () => {
             publicLinkAccess: file.publicLinkAccess,
             permissions: userMakingRequest.filePermissions,
             creator,
+            isFileEditRestricted: userMakingRequest.isFileEditRestricted,
           };
         })}
         teamUuid={teamUuid}

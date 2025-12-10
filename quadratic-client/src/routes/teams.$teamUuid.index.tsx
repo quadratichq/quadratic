@@ -1,4 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { FileLimitBanner } from '@/dashboard/components/FileLimitBanner';
 import { FilesList, type FilesListUserFile } from '@/dashboard/components/FilesList';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
@@ -74,6 +75,7 @@ export const Component = () => {
         permissions: userMakingRequest.filePermissions,
         creator,
         isPrivate: false,
+        isFileEditRestricted: userMakingRequest.isFileEditRestricted,
       });
     });
 
@@ -89,6 +91,7 @@ export const Component = () => {
         permissions: userMakingRequest.filePermissions,
         creator: currentUser,
         isPrivate: true,
+        isFileEditRestricted: userMakingRequest.isFileEditRestricted,
       });
     });
 
@@ -107,6 +110,7 @@ export const Component = () => {
   return (
     <div className="flex flex-grow flex-col">
       <OnboardingBanner />
+      <FileLimitBanner />
 
       <DashboardHeader
         title="Suggested files"

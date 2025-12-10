@@ -4,6 +4,7 @@ import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { FileLimitDialog } from '@/shared/components/FileLimitDialog';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MenuIcon } from '@/shared/components/Icons';
 import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
@@ -244,6 +245,7 @@ export const Component = () => {
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
         <ImportProgressList />
+        <FileLimitDialog />
         <UpgradeDialogWithPeriodicReminder
           teamUuid={activeTeamUuid}
           userMakingRequestTeamRole={userMakingRequestTeamRole}
