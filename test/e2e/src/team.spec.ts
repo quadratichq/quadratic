@@ -216,7 +216,11 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the editUser has been invited with "Can edit" permissions
-  await expect(editUserPage.getByText(new RegExp(`\\(You\\)${editUserEmail}${editPermission}$`))).toBeVisible({
+  await expect(
+    editUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${editUserEmail}"):has-text("${editPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -253,7 +257,11 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the viewUser has been invited with "Can view" permissions
-  await expect(viewUserPage.getByText(new RegExp(`\\(You\\)${viewUserEmail}${viewPermission}$`))).toBeVisible({
+  await expect(
+    viewUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${viewUserEmail}"):has-text("${viewPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 });
@@ -302,7 +310,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
 
   // Assert that the testUser has been invited with Owner permissions
-  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${ownerPermission}$`))).toBeVisible({
+  await expect(
+    manageUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${manageUserEmail}"):has-text("${ownerPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -343,7 +355,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
   // Assert that the testUser's permission is now "Can edit"
-  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${editPermission}$`))).toBeVisible({
+  await expect(
+    manageUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${manageUserEmail}"):has-text("${editPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -382,7 +398,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
   // Assert that the testUser's permission is now "Can view"
-  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${viewPermission}$`))).toBeVisible({
+  await expect(
+    manageUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${manageUserEmail}"):has-text("${viewPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
