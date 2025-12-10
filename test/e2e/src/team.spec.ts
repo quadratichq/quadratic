@@ -176,8 +176,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the ownerUser has been invited with Owner permissions
-  // Use a regex with endsWith assertion so it matches any string that ends with (You){ownerEmail}{ownerPermission}
-  await expect(ownerPage.getByText(new RegExp(`\\(You\\)${ownerEmail}${ownerPermission}$`))).toBeVisible({
+  await expect(
+    ownerPage.locator(`[data-testid="share-dialog-list-item"]:has-text("${ownerEmail}"):has-text("${ownerPermission}")`)
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
