@@ -34,7 +34,7 @@ const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum([
   'claude-sonnet-4-5-20250929',
   'claude-haiku-4-5-20251001',
-  'claude-opus-4-5-20251124',
+  'claude-opus-4-5-20251101',
 ]);
 const OpenAIModelSchema = z.enum([
   'gpt-5-codex',
