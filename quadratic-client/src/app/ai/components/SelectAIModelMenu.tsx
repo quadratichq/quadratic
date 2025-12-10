@@ -152,7 +152,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                 setIsPopoverOpen(false);
               }}
             >
-              <div className="flex flex-col rounded text-sm pt-2">
+              <div className="flex flex-col rounded pt-2 text-sm">
                 <RadioGroupLineItem
                   value="max"
                   label={MODEL_MODES_LABELS_DESCRIPTIONS.max.label}
