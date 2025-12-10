@@ -1,7 +1,7 @@
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { CheckIcon, UndoIcon } from '@/shared/components/Icons';
+import { UndoIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -144,7 +144,6 @@ export const AIPendingChanges = memo(() => {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
 
   // Get the pending changes from the latest AI response chain
@@ -195,10 +194,9 @@ export const AIPendingChanges = memo(() => {
     return Array.from(changesMap.values());
   }, [messages, loading]);
 
-  // Reset confirmed state when new changes come in
+  // Update undo count when changes come in
   useEffect(() => {
     if (pendingChanges.length > 0 && !loading) {
-      setIsConfirmed(false);
       setUndoCount(pendingChanges.length);
     }
   }, [pendingChanges.length, loading]);
@@ -206,13 +204,8 @@ export const AIPendingChanges = memo(() => {
   const handleUndo = useCallback(async () => {
     if (undoCount > 0) {
       await quadraticCore.undo(undoCount, false);
-      setIsConfirmed(true);
     }
   }, [undoCount]);
-
-  const handleConfirm = useCallback(() => {
-    setIsConfirmed(true);
-  }, []);
 
   const handleNavigateToChange = useCallback((change: PendingChange) => {
     if (!change.position) return;
@@ -227,8 +220,8 @@ export const AIPendingChanges = memo(() => {
     }
   }, []);
 
-  // Don't show if loading, no changes, or already confirmed
-  if (loading || pendingChanges.length === 0 || isConfirmed) {
+  // Don't show if loading or no changes
+  if (loading || pendingChanges.length === 0) {
     return null;
   }
 
@@ -246,37 +239,23 @@ export const AIPendingChanges = memo(() => {
             <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
           )}
           <span className="text-sm font-medium">
-            Pending changes
+            Latest changes
             <span className="ml-1.5 text-muted-foreground">({pendingChanges.length})</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1.5 px-2 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleUndo();
-            }}
-          >
-            <UndoIcon className="h-3.5 w-3.5" />
-            Undo
-          </Button>
-          <Button
-            size="sm"
-            variant="default"
-            className="h-7 gap-1.5 px-2 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleConfirm();
-            }}
-          >
-            <CheckIcon className="h-3.5 w-3.5" />
-            Confirm
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5 px-2 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleUndo();
+          }}
+        >
+          <UndoIcon className="h-3.5 w-3.5" />
+          Undo
+        </Button>
       </div>
 
       {/* Expandable content */}
