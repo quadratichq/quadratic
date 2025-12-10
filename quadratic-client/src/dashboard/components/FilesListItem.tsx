@@ -11,7 +11,7 @@ import {
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -149,18 +149,25 @@ export function FilesListItemUserFile({
   };
 
   const handleDuplicate = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isFilePrivate);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(
+      activeTeamUuid,
+      isFilePrivate
+    );
+    const doDuplicate = () => {
+      trackEvent('[Files].duplicateFile', { id: uuid });
+      const data = getActionFileDuplicate({
+        redirect: false,
+        isPrivate: isFilePrivate,
+        teamUuid: activeTeamUuid,
+      });
+      fetcherDuplicate.submit(data, fetcherSubmitOpts);
+    };
+
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, activeTeamUuid, doDuplicate);
       return;
     }
-    trackEvent('[Files].duplicateFile', { id: uuid });
-    const data = getActionFileDuplicate({
-      redirect: false,
-      isPrivate: isFilePrivate,
-      teamUuid: activeTeamUuid,
-    });
-    fetcherDuplicate.submit(data, fetcherSubmitOpts);
+    doDuplicate();
   };
 
   const handleShare = () => {
@@ -222,6 +229,7 @@ export function FilesListItemUserFile({
             isShared={publicLinkAccess !== 'NOT_SHARED'}
             isPrivate={file.isPrivate}
             isSharedWithMe={file.isSharedWithMe}
+            isFileEditRestricted={file.isFileEditRestricted}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>

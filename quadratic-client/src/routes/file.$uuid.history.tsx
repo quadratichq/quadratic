@@ -1,8 +1,9 @@
 import { requireAuth } from '@/auth/auth';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { FileLimitDialog } from '@/shared/components/FileLimitDialog';
 import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
@@ -82,26 +83,34 @@ export const Component = () => {
   const handleDuplicateVersion = useCallback(async () => {
     if (!activeCheckpoint || !teamUuid) return;
 
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, true);
+    const doDuplicate = () => {
+      trackEvent('[FileVersionHistory].duplicateVersion', {
+        uuid,
+        checkpointId: activeCheckpoint.id,
+      });
+
+      const duplicateAction = getActionFileDuplicate({
+        teamUuid,
+        isPrivate: true,
+        redirect: true,
+        checkpointVersion: activeCheckpoint.version,
+        checkpointDataUrl: activeCheckpoint.dataUrl,
+      });
+
+      fetcher.submit(duplicateAction, {
+        method: 'POST',
+        action: ROUTES.API.FILE(uuid),
+        encType: 'application/json',
+      });
+    };
+
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, doDuplicate);
       return;
     }
 
-    trackEvent('[FileVersionHistory].duplicateVersion', {
-      uuid,
-      checkpointId: activeCheckpoint.id,
-    });
-
-    const duplicateAction = getActionFileDuplicate({
-      teamUuid,
-      isPrivate: true,
-      redirect: true,
-      checkpointVersion: activeCheckpoint.version,
-      checkpointDataUrl: activeCheckpoint.dataUrl,
-    });
-
-    fetcher.submit(duplicateAction, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+    doDuplicate();
   }, [activeCheckpoint, fetcher, teamUuid, uuid]);
 
   const handleDownload = useCallback(() => {
@@ -121,6 +130,7 @@ export const Component = () => {
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
+      <FileLimitDialog />
       <UpgradeDialog teamUuid={teamUuid} />
       <div className="grid grid-rows-[auto_1fr] overflow-hidden border-r border-border">
         <div className="overflow-hidden border-b border-border p-3">

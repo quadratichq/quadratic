@@ -6,13 +6,13 @@ import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAt
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
@@ -39,16 +39,11 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleImport = useCallback(
+  // Store pending import props for when user clicks "Create anyway"
+  const pendingImportRef = useRef<FileImportProps | null>(null);
+
+  const doImport = useCallback(
     async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
-      // Only check file limit when creating new files (teamUuid must be defined)
-      if (teamUuid !== undefined) {
-        const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-        if (hasReachedLimit) {
-          showUpgradeDialog('fileLimitReached');
-          return;
-        }
-      }
       quadraticCore.initWorker();
 
       if (!files) files = await uploadFile(supportedFileTypes);
@@ -263,6 +258,31 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
       setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
     },
     [addGlobalSnackbar, location.pathname, navigate, setFilesImportProgressListState, setFilesImportProgressState]
+  );
+
+  const handleImport = useCallback(
+    async (props: FileImportProps) => {
+      const { isPrivate = true, teamUuid } = props;
+
+      // Only check file limit when creating new files (teamUuid must be defined)
+      if (teamUuid !== undefined) {
+        const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+        if (isOverLimit && !isPaidPlan) {
+          // Store the import props and show dialog
+          pendingImportRef.current = props;
+          showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, () => {
+            if (pendingImportRef.current) {
+              doImport(pendingImportRef.current);
+              pendingImportRef.current = null;
+            }
+          });
+          return;
+        }
+      }
+
+      doImport(props);
+    },
+    [doImport]
   );
 
   return handleImport;

@@ -1,5 +1,6 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { FileLimitBanner } from '@/dashboard/components/FileLimitBanner';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
@@ -19,7 +20,7 @@ export const Component = () => {
   const files = filesPrivate.map(
     ({
       file: { name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail },
-      userMakingRequest: { filePermissions },
+      userMakingRequest: { filePermissions, isFileEditRestricted },
     }) => ({
       name,
       thumbnail,
@@ -28,11 +29,13 @@ export const Component = () => {
       uuid,
       publicLinkAccess,
       permissions: filePermissions,
+      isFileEditRestricted,
     })
   );
 
   return (
     <>
+      <FileLimitBanner />
       <DashboardHeader title="My personal files" actions={<NewFileButton isPrivate={true} />} />
       <FilesList
         files={files}

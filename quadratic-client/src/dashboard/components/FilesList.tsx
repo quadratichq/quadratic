@@ -34,6 +34,8 @@ export type FilesListUserFile = {
   isPrivate?: boolean;
   /** Whether this file was shared with the current user. */
   isSharedWithMe?: boolean;
+  /** Whether this file has edit restrictions due to soft file limit (free teams only). */
+  isFileEditRestricted?: boolean;
 };
 
 export function FilesList({
