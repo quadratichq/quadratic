@@ -345,13 +345,13 @@ npx playwright install
 
 ### Linux Instructions on a Mac
 
-Install Operating System: Playwright supports Ubuntu LTS releases 22.04 and 24.04.
-Install and setup SSH: Ensure SSH is installed and add you public SSH key to the linux server.
-Setup the host in VS Code/Cursor: `Cmd + Shift + P` and select `Remote-SSH: Add a New Host.
-Connect to the host in VS Code/Cursor: `Cmd + Shift + P` and select `Remote-SSH: Connect to Host.
-Forward port `9323` in VS Code/Cursor:: In the bottom view, select the `Ports` tab and click on the `Add Port` button.
-Start the Playwright Server (adjust `E2E_URL` as needed): `DISPLAY=:99 E2E_URL=https://qa.quadratic-preview.com/ npx playwright test --ui --ui-host=0.0.0.0 --ui-port=9323`
-Open Browser: Point to http://localhost:9323/ and start testing.
+1. Install Operating System: Playwright supports Ubuntu LTS releases 22.04 and 24.04.
+1. Install and setup SSH: Ensure SSH is installed and add you public SSH key to the linux server.
+1. Setup the host in VS Code/Cursor: `Cmd + Shift + P` and select `Remote-SSH: Add a New Host.
+1. Connect to the host in VS Code/Cursor: `Cmd + Shift + P` and select `Remote-SSH: Connect to Host.
+1. Forward port `9323` in VS Code/Cursor:: In the bottom view, select the `Ports` tab and click on the `Add Port` button.
+1. Start the Playwright Server (adjust `E2E_URL` as needed): `DISPLAY=:99 E2E_URL=https://qa.quadratic-preview.com/ npx playwright test --ui --ui-host=0.0.0.0 --ui-port=9323`
+1. Open Browser: Point to http://localhost:9323/ and start testing.
 
 ### Taking a single snapshot
 
