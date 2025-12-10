@@ -28,7 +28,7 @@ import { useRecoilValue } from 'recoil';
 
 type UIModels = 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
-  max: { label: 'Recommended', description: 'Claude Opus 4.5' },
+  max: { label: 'Auto', description: 'Claude Opus 4.5' },
   others: { label: 'Others', description: 'Experimental models' },
 };
 
@@ -119,7 +119,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       open={false}
       setOpen={() => setKnowsAboutModelPicker(true)}
       title="AI model choices"
-      description="Recommended uses Claude Opus 4.5, or choose from other available models."
+      description="Auto uses Claude Opus 4.5, or choose from other available models."
     >
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         {/* Needs a min-width or it shifts as the popover closes */}
@@ -130,7 +130,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
             e.stopPropagation();
           }}
         >
-          {isOthers ? selectedModelConfig.displayName : 'Recommended'}
+          {isOthers ? selectedModelConfig.displayName : 'Auto'}
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>
 
