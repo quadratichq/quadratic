@@ -6,8 +6,8 @@ import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { isAIPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { isAIPromptMessage, isUserPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -26,7 +26,7 @@ const MODIFYING_TOOLS = new Set([
   AITool.DeleteColumns,
   AITool.ResizeRows,
   AITool.ResizeColumns,
-  AITool.CreateNewSheet,
+  AITool.AddSheet,
   AITool.DeleteSheet,
   AITool.DuplicateSheet,
   AITool.RenameSheet,
@@ -40,7 +40,7 @@ const MODIFYING_TOOLS = new Set([
   AITool.TableColumnSettings,
   AITool.AddDateTimeValidation,
   AITool.AddListValidation,
-  AITool.AddLogicalValidations,
+  AITool.AddLogicalValidation,
   AITool.AddNumberValidation,
   AITool.AddTextValidation,
   AITool.RemoveValidations,
@@ -104,7 +104,7 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
       case AITool.DeleteColumns:
         label = 'Deleted columns';
         break;
-      case AITool.CreateNewSheet:
+      case AITool.AddSheet:
         label = `Created sheet "${args.sheet_name || 'New Sheet'}"`;
         break;
       case AITool.DeleteSheet:
@@ -147,26 +147,52 @@ export const AIPendingChanges = memo(() => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
 
-  // Get the pending changes from the last AI response
+  // Get the pending changes from the latest AI response chain
+  // (all AI messages after the last user message)
+  // Deduplicate by position - if the same cell is changed multiple times, only show the latest
   const pendingChanges = useMemo(() => {
     if (loading) return [];
 
-    const changes: PendingChange[] = [];
-
-    // Look through messages from newest to oldest to find the latest AI response
+    // Find the last user prompt message index
+    let lastUserPromptIndex = -1;
     for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (isUserPromptMessage(message)) {
+        lastUserPromptIndex = i;
+        break;
+      }
+    }
+
+    // Use a Map to deduplicate by position - later changes overwrite earlier ones
+    // Key format: "toolName:position" for position-based changes, or unique ID for others
+    const changesMap = new Map<string, PendingChange>();
+    let nonPositionCounter = 0;
+
+    // Collect all modifying tool calls from AI messages after the last user prompt
+    for (let i = lastUserPromptIndex + 1; i < messages.length; i++) {
       const message = messages[i];
       if (isAIPromptMessage(message)) {
         for (const toolCall of message.toolCalls) {
           if (MODIFYING_TOOLS.has(toolCall.name as AITool) && !toolCall.loading) {
-            changes.push(getToolCallLabel(toolCall));
+            const change = getToolCallLabel(toolCall);
+
+            // Create a unique key based on position if available
+            let key: string;
+            if (change.position) {
+              // For position-based changes, deduplicate by tool type + position
+              key = `${toolCall.name}:${change.position}`;
+            } else {
+              // For non-position changes, use a unique counter to preserve all
+              key = `${toolCall.name}:${nonPositionCounter++}`;
+            }
+
+            changesMap.set(key, change);
           }
         }
-        break; // Only get changes from the most recent AI response
       }
     }
 
-    return changes;
+    return Array.from(changesMap.values());
   }, [messages, loading]);
 
   // Reset confirmed state when new changes come in
@@ -193,9 +219,7 @@ export const AIPendingChanges = memo(() => {
 
     try {
       const args = change.toolCall.arguments ? JSON.parse(change.toolCall.arguments) : {};
-      const sheetId = args.sheet_name
-        ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
-        : sheets.current;
+      const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(change.position, sheetId);
       sheets.changeSelection(selection);
     } catch (e) {
@@ -282,4 +306,3 @@ export const AIPendingChanges = memo(() => {
     </div>
   );
 });
-
