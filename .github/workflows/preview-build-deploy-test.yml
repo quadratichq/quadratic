@@ -656,35 +656,27 @@ jobs:
         if: ${{ !cancelled() }}
         run: cd test/e2e && npm install
 
-      - name: Download and merge all blobs into HTML report
+      - name: Download blob reports
         if: ${{ !cancelled() }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Create temp directory for download
-          mkdir -p temp-download
-
-          # Download all matching artifacts
-          gh run download ${{ github.run_id }} \
-            --repo ${{ github.repository }} \
-            --pattern "blob-report-${{ github.run_id }}-*" \
-            --dir temp-download
-
-          # Create the target directory
-          mkdir -p all-blob-reports
-
-          # Move all files from subdirectories to the target directory
-          find temp-download -type f -exec mv {} all-blob-reports/ \;
-
-          # Clean up
-          rm -rf temp-download
-
-          # Verify download
-          echo "Downloaded $(find all-blob-reports -type f | wc -l) files"
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: blob-report-${{ github.run_id }}-*
+          path: all-blob-reports
+          merge-multiple: true
 
       - name: Merge into HTML Report
         if: ${{ !cancelled() }}
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        run: |
+          if [ ! -d "all-blob-reports" ] || [ -z "$(ls -A all-blob-reports 2>/dev/null)" ]; then
+            echo "No blob reports found. Creating empty report."
+            mkdir -p playwright-report
+            echo "<html><body><h1>No test reports available</h1><p>Tests may have been cancelled or failed to upload reports.</p></body></html>" > playwright-report/index.html
+            exit 0
+          fi
+          file_count=$(find all-blob-reports -type f 2>/dev/null | wc -l || echo 0)
+          echo "Merging $file_count blob reports into HTML report..."
+          npx playwright merge-reports --reporter html ./all-blob-reports
 
       - name: Configure AWS Credentials
         if: ${{ !cancelled() }}
