@@ -297,7 +297,7 @@ jobs:
         run: rustup toolchain install
 
       - name: Install Protoc
-        uses: arduino/
+        uses: arduino/setup-protoc@v3
         with:
           version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}

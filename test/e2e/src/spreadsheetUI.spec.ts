@@ -612,9 +612,8 @@ test('File Actions', async ({ page }) => {
   await fileMenu.click({ timeout: 60 * 1000 });
 
   // click Duplicate
-  // Clicking something to open a new tab
+  // Clicking something to open a new tab (removed redundant 10s waitForTimeout)
   const [duplicatedPage] = await Promise.all([page.waitForEvent('popup'), duplicateButton.click()]);
-  await page.waitForTimeout(10 * 1000);
   await duplicatedPage.waitForLoadState('domcontentloaded');
   await duplicatedPage.bringToFront();
 
@@ -1209,11 +1208,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
   await expect(recipientFileCard).toBeVisible();
 
-  // Navigate to file
+  // Navigate to file (removed redundant 10s waitForTimeout, fixed to wait on recipientPage)
   await recipientFileCard.click({ timeout: 60 * 1000 });
-
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
+  await recipientPage.waitForLoadState('domcontentloaded');
 
   // Assert "Read-only" message appears
   await expect(
@@ -1451,7 +1448,7 @@ test('Sheet Actions', async ({ page }) => {
 
   // click on change color option
   await page.locator('[role="menuitem"]:has-text("Change color")').click({ timeout: 60 * 1000 });
-  await page.locator('[title="#6F258E"]').click({ timeout: 60 * 1000 });
+  await page.locator('[aria-label="Select color #6F258E"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // assert that the color has changed

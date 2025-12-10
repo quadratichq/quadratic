@@ -1,15 +1,16 @@
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/moveInvalid';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { Container, Graphics, type Point } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
 const MOVING_THICKNESS = 2;
 const COL_ROW_ALPHA = 0.25;
+const INVALID_ALPHA = 0.3; // Opacity for invalid drop zones
 
 export class UICellMoving extends Container {
   private graphics: Graphics;
-  private overlaps?: Point[];
   dirty = false;
 
   constructor() {
@@ -31,17 +32,26 @@ export class UICellMoving extends Container {
     }
   };
 
+  // Check if the destination is over a table header (invalid drop zone)
+  private isDestinationInvalid(): boolean {
+    const moving = pixiApp.pointer.pointerCellMoving.movingCells;
+    if (!moving) return false;
+
+    return checkMoveDestinationInvalid(
+      moving.toColumn ?? 0,
+      moving.toRow ?? 0,
+      moving.width ?? 1,
+      moving.height ?? 1,
+      moving.colRows,
+      moving.original
+    );
+  }
+
   // determines whether the move is legal (not sure we want this feature)
   private borderColor() {
-    // const moving = pixiApp.pointer.pointerCellMoving.movingCells;
-    // if (!moving) {
-    //   throw new Error('Expected moving to be defined in drawMove');
-    // }
-    // const cellsLabels = content.cellsSheet.cellsLabels;
-    // const overlap = new Rectangle(moving.toColumn, moving.toRow, moving.width, moving.height);
-    // if (cellsLabels.hasRectangle(overlap, moving.original ? [moving.original] : undefined)) {
-    //   return getCSSVariableTint('warning');
-    // }
+    if (this.isDestinationInvalid()) {
+      return getCSSVariableTint('destructive');
+    }
     return getCSSVariableTint('primary');
   }
 
@@ -52,6 +62,7 @@ export class UICellMoving extends Container {
     }
     this.visible = true;
     this.graphics.clear();
+    const isInvalid = this.isDestinationInvalid();
     this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     const sheet = sheets.sheet;
     if (moving.colRows) {
@@ -68,7 +79,22 @@ export class UICellMoving extends Container {
     }
     const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
     const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
-    this.graphics.drawRect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
+    const rectX = start.x;
+    const rectY = start.y;
+    const rectWidth = end.x + end.width - start.x;
+    const rectHeight = end.y + end.height - start.y;
+
+    // Draw red fill if invalid
+    if (isInvalid) {
+      this.graphics.lineStyle(); // Clear line style
+      this.graphics.beginFill(getCSSVariableTint('destructive'), INVALID_ALPHA);
+      this.graphics.drawRect(rectX, rectY, rectWidth, rectHeight);
+      this.graphics.endFill();
+    }
+
+    // Draw the border rectangle
+    this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
+    this.graphics.drawRect(rectX, rectY, rectWidth, rectHeight);
   }
 
   // draw moving columns and rows (this is the cut and paste version when dragging from the headers)
@@ -120,6 +146,7 @@ export class UICellMoving extends Container {
     }
     this.visible = true;
     this.graphics.clear();
+    const isInvalid = this.isDestinationInvalid();
     this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     const sheet = sheets.sheet;
     const isColumn = moving.colRows === 'columns';
@@ -128,12 +155,39 @@ export class UICellMoving extends Container {
     const endX = isColumn && moving.toColumn ? sheet.getColumnX(moving.toColumn + (moving.width ?? 1)) : bounds.right;
     const startY = !isColumn && moving.toRow ? sheet.getRowY(moving.toRow) : bounds.top;
     const endY = !isColumn && moving.toRow ? sheet.getRowY(moving.toRow + (moving.height ?? 1)) : bounds.bottom;
+
     if (isColumn) {
+      const rectWidth = endX - startX;
+      const rectHeight = bounds.bottom - bounds.y;
+
+      // Draw red fill if invalid
+      if (isInvalid) {
+        this.graphics.lineStyle(); // Clear line style
+        this.graphics.beginFill(getCSSVariableTint('destructive'), INVALID_ALPHA);
+        this.graphics.drawRect(startX, bounds.y, rectWidth, rectHeight);
+        this.graphics.endFill();
+      }
+
+      // Draw the border lines
+      this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
       this.graphics.moveTo(startX, bounds.y);
       this.graphics.lineTo(startX, bounds.bottom);
       this.graphics.moveTo(endX, bounds.y);
       this.graphics.lineTo(endX, bounds.bottom);
     } else {
+      const rectWidth = bounds.right - bounds.left;
+      const rectHeight = endY - startY;
+
+      // Draw red fill if invalid
+      if (isInvalid) {
+        this.graphics.lineStyle(); // Clear line style
+        this.graphics.beginFill(getCSSVariableTint('destructive'), INVALID_ALPHA);
+        this.graphics.drawRect(bounds.left, startY, rectWidth, rectHeight);
+        this.graphics.endFill();
+      }
+
+      // Draw the border lines
+      this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
       this.graphics.moveTo(bounds.left, startY);
       this.graphics.lineTo(bounds.right, startY);
       this.graphics.moveTo(bounds.left, endY);
