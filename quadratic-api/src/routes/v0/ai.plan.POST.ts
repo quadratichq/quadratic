@@ -6,7 +6,6 @@ import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
-import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -86,22 +85,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
     throw new ApiError(403, 'User does not have permission to create files in this team');
   }
 
-  let exceededBillingLimit = false;
-
-  // Check billing limits for non-paid plans
-  if (!isOnPaidPlan) {
-    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
-
-    if (exceededBillingLimit) {
-      res.status(200).json({
-        plan: '',
-        isOnPaidPlan,
-        exceededBillingLimit,
-      });
-      return;
-    }
-  }
+  // Plan generation is always allowed, even if user has exceeded billing limit
+  // This encourages users to try the "Start with AI" flow without penalty
+  const exceededBillingLimit = false;
 
   // Abort the request if the client disconnects
   const abortController = new AbortController();
