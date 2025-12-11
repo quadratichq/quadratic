@@ -19,7 +19,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     uuid,
     publicLinkAccess,
     permissions: [],
-    isSharedWithMe: true,
+    fileType: 'shared',
   }));
   return { sharedWithMeFiles };
 };
@@ -73,7 +73,7 @@ export const Component = () => {
         publicLinkAccess: file.publicLinkAccess,
         permissions: userMakingRequest.filePermissions,
         creator,
-        isPrivate: false,
+        fileType: 'team',
       });
     });
 
@@ -88,7 +88,7 @@ export const Component = () => {
         publicLinkAccess: file.publicLinkAccess,
         permissions: userMakingRequest.filePermissions,
         creator: currentUser,
-        isPrivate: true,
+        fileType: 'private',
       });
     });
 
@@ -96,7 +96,7 @@ export const Component = () => {
     const existingUuids = new Set(allFiles.map((f) => f.uuid));
     sharedWithMeFiles.forEach((file) => {
       if (!existingUuids.has(file.uuid)) {
-        allFiles.push(file);
+        allFiles.push({ ...file, fileType: 'shared' });
       }
     });
 
@@ -109,7 +109,7 @@ export const Component = () => {
       <OnboardingBanner />
 
       <DashboardHeader
-        title="Suggested sheets"
+        title="Files"
         actions={<div className="flex items-center gap-2">{canEdit && <NewFileButton isPrivate={false} />}</div>}
       />
 

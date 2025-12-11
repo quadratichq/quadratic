@@ -3,8 +3,18 @@ import {
   FileListViewControlsDropdown,
   type ViewPreferences,
 } from '@/dashboard/components/FilesListViewControlsDropdown';
-import { ArrowDropDownIcon, CloseIcon } from '@/shared/components/Icons';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { Avatar } from '@/shared/components/Avatar';
+import {
+  ArrowDropDownIcon,
+  CheckBoxEmptyIcon,
+  CheckBoxIcon,
+  CloseIcon,
+  Icon,
+  SearchIcon,
+} from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { ButtonGroup } from '@/shared/shadcn/ui/button-group';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,7 +25,15 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
-import React from 'react';
+import { cn } from '@/shared/shadcn/utils';
+import React, { useState } from 'react';
+
+const fileTypeOptions = [
+  { label: 'All', value: '' },
+  { label: 'Team', value: 'team' },
+  { label: 'Private', value: 'private' },
+  { label: 'Shared with you', value: 'shared' },
+] as const;
 
 export function FilesListViewControls({
   filterValue,
@@ -32,64 +50,135 @@ export function FilesListViewControls({
   filters: FilesListFilters;
   setFilters: React.Dispatch<React.SetStateAction<FilesListFilters>>;
 }) {
+  const [showExtraFilters, setShowExtraFilters] = useState(false);
+  const {
+    activeTeam: { users },
+  } = useDashboardRouteLoaderData();
   return (
-    <div className={`flex flex-row items-center justify-between gap-2 pb-4`}>
-      <div className="flex flex-row items-center gap-2">
-        <div className={`max-w relative flex-grow md:max-w-sm`}>
-          <Input
-            onChange={(e) => setFilterValue(e.target.value)}
-            value={filterValue}
-            placeholder="File name…"
-            className="w-64"
-          />
-          {filterValue && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`absolute right-0 top-0 text-muted-foreground hover:bg-transparent`}
-              onClick={() => setFilterValue('')}
-              aria-label="Clear filter"
-            >
-              <CloseIcon className={`h-4 w-4`} />
-            </Button>
-          )}
-        </div>
+    <>
+      <div className={`flex flex-row items-center justify-between gap-2 pb-4`}>
+        <div className="flex flex-row items-center gap-2">
+          <ButtonGroup className="rounded">
+            {fileTypeOptions.map(({ label, value }) => (
+              <Button
+                variant={filters.fileType === value ? 'outline' : 'outline'}
+                // disabled={filters.fileType === value}
+                className={cn('', filters.fileType === value && 'bg-accent')}
+                onClick={() => setFilters({ ...filters, fileType: value })}
+              >
+                {label}
+              </Button>
+            ))}
+          </ButtonGroup>
+          <div className={`max-w relative flex-grow md:max-w-sm`}>
+            <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground opacity-30" />
+            <Input
+              onChange={(e) => setFilterValue(e.target.value)}
+              value={filterValue}
+              placeholder="Search…"
+              className="w-64 pl-8"
+            />
+            {filterValue && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`absolute right-0 top-0 text-muted-foreground hover:bg-transparent`}
+                onClick={() => setFilterValue('')}
+                aria-label="Clear filter"
+              >
+                <CloseIcon className={`h-4 w-4`} />
+              </Button>
+            )}
+          </div>
+          <Button
+            variant={'outline'}
+            size="icon"
+            className={cn(showExtraFilters && 'bg-accent')}
+            onClick={() => setShowExtraFilters((prev) => !prev)}
+          >
+            <Icon>filter_list</Icon>
+          </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Type: {filters.fileType === '' ? 'All' : filters.fileType} <ArrowDropDownIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuRadioGroup
-              value={filters.fileType}
-              onValueChange={(value) => setFilters({ ...filters, fileType: value as 'team' | 'private' | 'shared' })}
-            >
-              <DropdownMenuRadioItem value="">All</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="team">Team</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="private">Private</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="shared">Shared with you</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Creator: Any <ArrowDropDownIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuCheckboxItem checked={true}>Any</DropdownMenuCheckboxItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuCheckboxItem checked={false}>Jim Nielsen</DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem checked={false}>Jane Doe</DropdownMenuCheckboxItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="hidden">
+                Type: {filters.fileType === '' ? 'All' : filters.fileType} <ArrowDropDownIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuRadioGroup
+                value={filters.fileType}
+                onValueChange={(value) => setFilters({ ...filters, fileType: value as 'team' | 'private' | 'shared' })}
+              >
+                <DropdownMenuRadioItem value="">All</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="team">Team</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="private">Private</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="shared">Shared with you</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className={`flex flex-row items-center gap-2`}>
+          <FileListViewControlsDropdown viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
+        </div>
       </div>
-      <div className={`flex flex-row items-center gap-2`}>
-        <FileListViewControlsDropdown viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
-      </div>
-    </div>
+      {showExtraFilters && (
+        <div className="-mt-0 mb-4 flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Creator: Any <ArrowDropDownIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuCheckboxItem
+                checked={filters.fileCreators === null}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setFilters({ ...filters, fileCreators: null });
+                  }
+                }}
+              >
+                Any
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator className="!block" />
+
+              {users.map((user) => (
+                <DropdownMenuCheckboxItem
+                  key={user.id}
+                  checked={filters.fileCreators !== null && filters.fileCreators.includes(user.email)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setFilters({ ...filters, fileCreators: [...(filters.fileCreators || []), user.email] });
+                    } else {
+                      setFilters({
+                        ...filters,
+                        fileCreators:
+                          filters.fileCreators !== null
+                            ? filters.fileCreators.filter((email) => email !== user.email)
+                            : null,
+                      });
+                    }
+                  }}
+                >
+                  <Avatar src={user.picture} className="mr-2" /> {user.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" onClick={() => setFilters({ ...filters, sharedPublicly: !filters.sharedPublicly })}>
+            {filters.sharedPublicly ? <CheckBoxIcon className="mr-1" /> : <CheckBoxEmptyIcon className="mr-1" />}
+            Shared publicly
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setFilters({ ...filters, hasScheduledTasks: !filters.hasScheduledTasks })}
+          >
+            {filters.hasScheduledTasks ? <CheckBoxIcon className="mr-1" /> : <CheckBoxEmptyIcon className="mr-1" />}
+            Has scheduled tasks
+          </Button>
+        </div>
+      )}
+    </>
   );
 }

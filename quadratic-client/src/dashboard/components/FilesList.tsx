@@ -30,16 +30,15 @@ export type FilesListUserFile = {
     email?: string;
   };
   filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
-  /** Whether this is a private file (true) or team file (false). Used to show a tag on the file card. */
-  isPrivate?: boolean;
-  /** Whether this file was shared with the current user. */
-  isSharedWithMe?: boolean;
+  fileType?: 'team' | 'private' | 'shared';
 };
 
 export type FilesListFilters = {
   fileName: string;
   fileType: '' | 'team' | 'private' | 'shared';
-  fileCreator: string[];
+  fileCreators: null | string[];
+  sharedPublicly?: boolean;
+  hasScheduledTasks?: boolean;
 };
 
 export function FilesList({
@@ -58,7 +57,7 @@ export function FilesList({
   const [filters, setFilters] = useState<FilesListFilters>({
     fileName: '',
     fileType: '',
-    fileCreator: [],
+    fileCreators: null,
   });
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
@@ -127,11 +126,12 @@ export function FilesList({
   }
 
   if (filters.fileType === 'private') {
-    filesToRender = filesToRender.filter((file) => file.isPrivate);
+    filesToRender = filesToRender.filter((file) => file.fileType === 'private');
   } else if (filters.fileType === 'team') {
-    filesToRender = filesToRender.filter((file) => !file.isPrivate);
+    console.log('filtering by team', filesToRender);
+    filesToRender = filesToRender.filter((file) => file.fileType === 'team');
   } else if (filters.fileType === 'shared') {
-    filesToRender = filesToRender.filter((file) => file.publicLinkAccess !== 'NOT_SHARED');
+    filesToRender = filesToRender.filter((file) => file.fileType === 'shared');
   }
 
   // Sort 'em based on current prefs
@@ -182,6 +182,8 @@ export function FilesList({
             setFilterValue={setFilterValue}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
+            filters={filters}
+            setFilters={setFilters}
           />
         ))}
       </FilesListItems>
@@ -239,7 +241,7 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListTempla
         filters={{
           fileName: filterValue,
           fileType: '',
-          fileCreator: [],
+          fileCreators: null,
         }}
         setFilters={() => {}}
       />

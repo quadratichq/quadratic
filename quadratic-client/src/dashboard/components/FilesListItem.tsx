@@ -1,4 +1,4 @@
-import type { FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import type { FilesListFilters, FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -16,6 +16,7 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -57,6 +58,8 @@ export function FilesListItemUserFile({
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
+  filters,
+  setFilters,
 }: {
   file: FilesListUserFile;
   filterValue: string;
@@ -64,6 +67,8 @@ export function FilesListItemUserFile({
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
+  filters: FilesListFilters;
+  setFilters: React.Dispatch<React.SetStateAction<FilesListFilters>>;
 }) {
   const submit = useSubmit();
   const fetcherDelete = useFetcher();
@@ -93,7 +98,7 @@ export function FilesListItemUserFile({
   const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
 
   // Determine if this is a private/personal file (for duplicate and move logic)
-  const isFilePrivate = file.isPrivate ?? isTeamPrivateFilesRoute;
+  const isFilePrivate = file.fileType === 'private';
 
   const description =
     viewPreferences.sort === Sort.Created
@@ -216,8 +221,23 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
-            isPrivate={file.isPrivate}
-            isSharedWithMe={file.isSharedWithMe}
+            children={
+              filters.fileType === '' ? (
+                file.fileType === 'shared' ? (
+                  <Badge variant="secondary" className="px-1.5 py-0 font-normal">
+                    Shared with you
+                  </Badge>
+                ) : file.fileType === 'private' ? (
+                  <Badge variant="secondary" className="px-1.5 py-0 font-normal">
+                    Private
+                  </Badge>
+                ) : file.fileType === 'team' ? (
+                  <Badge variant="outline" className="px-1.5 py-0 font-normal">
+                    Team
+                  </Badge>
+                ) : null
+              ) : null
+            }
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>

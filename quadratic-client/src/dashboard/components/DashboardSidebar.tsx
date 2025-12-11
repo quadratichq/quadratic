@@ -106,26 +106,33 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       </div>
       <div className={`flex flex-col px-3`}>
         <div className="grid gap-0.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="mb-2">New…</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[240px]">
-              <DropdownMenuItem className="group">
-                Start file with AI
-                <AIIcon className="ml-auto opacity-30 group-hover:opacity-100" />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>File</DropdownMenuItem>
-              <DropdownMenuItem className="group">
-                Private file
-                <Icon className="ml-auto opacity-30 group-hover:opacity-100">lock</Icon>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="grid hidden grid-cols-2 gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="mb-2">
+                  New <ArrowDropDownIcon className="ml-0.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[240px]" align="start">
+                <DropdownMenuItem className="group">
+                  Start file with AI
+                  <AIIcon className="ml-auto opacity-30 group-hover:opacity-100" />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>File</DropdownMenuItem>
+                <DropdownMenuItem className="group">
+                  Private file
+                  <Icon className="ml-auto opacity-30 group-hover:opacity-100">lock</Icon>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" className="bg-background">
+              Import <ArrowDropDownIcon className="ml-0.5" />
+            </Button>
+          </div>
           <div className="relative">
             <SidebarNavLink
-              to={ROUTES.TEAM_FILES(activeTeamUuid)}
+              to={ROUTES.TEAM(activeTeamUuid)}
               dropTarget={canEditTeam ? null : undefined}
               data-testid="dashboard-sidebar-team-files-link"
             >
@@ -278,14 +285,6 @@ function SidebarNavLinkCreateButton({
 }) {
   return (
     <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" className="opacity-30 hover:opacity-100">
-            <AIIcon />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>New file with AI</TooltipContent>
-      </Tooltip>
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -311,14 +310,13 @@ function SidebarNavLinkCreateButton({
           <TooltipContent>{children}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent>
-          <DropdownMenuItem>
-            <Icon className="mr-2 text-muted-foreground">lock_open_right</Icon>
-            New team file
+          <DropdownMenuItem className="group">
+            Start with AI
+            <AIIcon className="ml-6 text-muted-foreground group-hover:text-primary" />
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Icon className="mr-2 text-muted-foreground">lock</Icon>
-            New private file
-          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Team file</DropdownMenuItem>
+          <DropdownMenuItem>Private file</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

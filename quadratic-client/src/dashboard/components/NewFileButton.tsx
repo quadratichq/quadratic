@@ -5,7 +5,16 @@ import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import {
+  AddIcon,
+  AIIcon,
+  ApiIcon,
+  ArrowDropDownIcon,
+  DatabaseIcon,
+  ExamplesIcon,
+  FileIcon,
+  Icon,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -38,7 +47,29 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-row-reverse gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="mb-2 hidden">
+            New file… <ArrowDropDownIcon className="ml-2" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem className="group">
+            <AIIcon className="mr-3" />
+            Start with AI
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>
+            <FileIcon className="mr-3" />
+            Team file
+          </DropdownMenuItem>
+          <DropdownMenuItem className="group">
+            <Icon className="mr-3">lock</Icon>
+            Private file
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button
         variant="default"
         className="gap-2"
@@ -51,7 +82,23 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
         }}
       >
-        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
+        <AIIcon className="mr-0" />
+        Start with AI
+      </Button>
+
+      <Button
+        variant="outline"
+        onClick={async (e) => {
+          e.preventDefault();
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          if (hasReachedLimit) {
+            showUpgradeDialog('fileLimitReached');
+            return;
+          }
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+        }}
+      >
+        <AddIcon className="mr-1" /> Team file
       </Button>
       <Button
         variant="outline"
@@ -65,8 +112,9 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
         }}
       >
-        New {isPrivate ? 'draft' : 'sheet'}
+        <AddIcon className="mr-1" /> Private file
       </Button>
+
       <input
         ref={fileInputRef}
         type="file"
