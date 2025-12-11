@@ -580,8 +580,8 @@ interface GroupedToolCallsProps {
   toolCalls: AIToolCall[];
   messageIndex: number;
   debugAIAnalystChatEditing: boolean | undefined;
-  messages: any;
-  setMessages: (messages: any) => void;
+  messages: ChatMessage[];
+  setMessages: (messages: ChatMessage[]) => void;
 }
 
 const GroupedToolCalls = memo(
@@ -644,6 +644,7 @@ const GroupedToolCalls = memo(
                   debugAIAnalystChatEditing
                     ? (newToolCall) => {
                         const message = messages[messageIndex];
+                        if (!('toolCalls' in message)) return;
                         const newMessage = { ...message, toolCalls: [...message.toolCalls] };
                         newMessage.toolCalls[toolCallIndex] = newToolCall;
                         const newMessages = [...messages];

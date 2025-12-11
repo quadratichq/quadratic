@@ -37,24 +37,29 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_dashboard_my_files' });
 
+  // Navigate to My files page (the new Home page shows all files combined)
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
+
   // // Create new team
   // const teamName = `Dashboard Views - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
-  // Define test file names
+  // Define test file names (reduced from 3 to 2 to stay under free user limit)
   const testFile1 = 'C - Test File 1';
   const testFile2 = 'A - Test file 2';
-  const testFile3 = 'b - Test file 3';
 
   // Clean up default file
   await cleanUpFiles(page, { fileName: testFile1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
-  await cleanUpFiles(page, { fileName: testFile3, skipFilterClear: true });
 
-  // Create test files
+  // Create test files (navigate back to My Files after each to ensure files are private)
   await createFile(page, { fileName: testFile1 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
   await createFile(page, { fileName: testFile2 });
-  await createFile(page, { fileName: testFile3 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
 
   // Locate the grid button
   const gridButton = page.locator('button:has(span:text-is("grid_view"))');
@@ -80,13 +85,13 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
   // Assert that grid elements appear in the DOM
 
-  // Assert presence of all three files
+  // Assert presence of all test files
   const gridFileNames = await page.locator('ul > li h2').allTextContents();
-  expect(gridFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
+  expect(gridFileNames).toEqual(expect.arrayContaining([testFile1, testFile2]));
 
   // Assert the correct number of list items
   const liGridCount = await page.locator('ul > li h2').count();
-  expect(liGridCount).toBe(3);
+  expect(liGridCount).toBe(2);
 
   // Get and check grid view characteristics
   const gridViewCharacteristics = await getViewCharacteristics(page);
@@ -118,13 +123,13 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
   // Assert that list elements appear in the DOM
 
-  // Check for the presence of all three files
+  // Check for the presence of all test files
   const listFileNames = await page.locator('ul > li h2').allTextContents();
-  expect(listFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
+  expect(listFileNames).toEqual(expect.arrayContaining([testFile1, testFile2]));
 
   // Verify the correct number of list items
   const liListCount = await page.locator('ul > li h2').count();
-  expect(liListCount).toBe(3);
+  expect(liListCount).toBe(2);
 
   // Get and check list view characteristics
   const listViewCharacteristics = await getViewCharacteristics(page);
@@ -150,6 +155,10 @@ test('Dashboard Views - My Files', async ({ page }) => {
   await page.waitForTimeout(60 * 1000);
 
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+
+  // Navigate back to My files page (nav click goes to Home page)
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
 
   //--------------------------------
   // Act:
@@ -180,8 +189,8 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Retrieve all file names
   const fileNamesLastUpdatedOldestFirst = await page.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct order (oldest first)
-  expect(fileNamesLastUpdatedOldestFirst).toEqual([testFile2, testFile3, testFile1]);
+  // Assert the files are in the correct order (oldest first - testFile2 was created first, testFile1 was edited last)
+  expect(fileNamesLastUpdatedOldestFirst).toEqual([testFile2, testFile1]);
 
   //--------------------------------
   // Sort by Last updated, Newest first
@@ -216,8 +225,8 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Retrieve all file names
   const fileNamesLastUpdatedNewestFirst = await page.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct order (newest first)
-  expect(fileNamesLastUpdatedNewestFirst).toEqual([testFile1, testFile3, testFile2]);
+  // Assert the files are in the correct order (newest first - testFile1 was edited last)
+  expect(fileNamesLastUpdatedNewestFirst).toEqual([testFile1, testFile2]);
 
   //--------------------------------
   // Sort by Date created, Newest first
@@ -253,7 +262,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   const fileNamesDateCreatedNewestFirst = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (newest created first)
-  expect(fileNamesDateCreatedNewestFirst).toEqual([testFile3, testFile2, testFile1]);
+  expect(fileNamesDateCreatedNewestFirst).toEqual([testFile2, testFile1]);
 
   //--------------------------------
   // Sort by Date created, Oldest first
@@ -289,7 +298,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   const fileNamesDateCreatedOldestFirst = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (oldest created first)
-  expect(fileNamesDateCreatedOldestFirst).toEqual([testFile1, testFile2, testFile3]);
+  expect(fileNamesDateCreatedOldestFirst).toEqual([testFile1, testFile2]);
 
   //--------------------------------
   // Sort by Alphabetical, Z-A
@@ -324,8 +333,8 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Retrieve all file names
   const fileNamesAlphabeticalReverse = await page.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct reverse alphabetical order (Z to A)
-  expect(fileNamesAlphabeticalReverse).toEqual([testFile1, testFile3, testFile2]);
+  // Assert the files are in the correct reverse alphabetical order (Z to A: C before A)
+  expect(fileNamesAlphabeticalReverse).toEqual([testFile1, testFile2]);
 
   //--------------------------------
   // Sort by Alphabetical, A-Z
@@ -360,13 +369,12 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Retrieve all file names
   const fileNamesAlphabetical = await page.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct alphabetical order (A to Z)
-  expect(fileNamesAlphabetical).toEqual([testFile2, testFile3, testFile1]);
+  // Assert the files are in the correct alphabetical order (A to Z: A before C)
+  expect(fileNamesAlphabetical).toEqual([testFile2, testFile1]);
 
-  // Clean up default file
+  // Clean up files
   await cleanUpFiles(page, { fileName: testFile1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
-  await cleanUpFiles(page, { fileName: testFile3, skipFilterClear: true });
 });
 
 test('Dashboard Views - Shared with me', async ({ page }) => {
@@ -385,19 +393,16 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
     logIn(sharedUserPage, { emailPrefix: 'e2e_dashboard_shared_user' }),
   ]);
 
-  // Define test file names
+  // Define test file names (reduced from 3 to 2 to stay under free user limit)
   const testFile1 = 'C - Test File 1';
   const testFile2 = 'A - Test file 2';
-  const testFile3 = 'b - Test file 3';
 
   await cleanUpFiles(page, { fileName: testFile1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
-  await cleanUpFiles(page, { fileName: testFile3, skipFilterClear: true });
 
   // Create test files
   await createSharedFile(page, { fileName: testFile1, email: sharedUserEmail });
   await createSharedFile(page, { fileName: testFile2, email: sharedUserEmail });
-  await createSharedFile(page, { fileName: testFile3, email: sharedUserEmail });
 
   await sharedUserPage.bringToFront();
 
@@ -430,13 +435,13 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
   // Assert that grid elements appear in the DOM
 
-  // Assert presence of all three files
+  // Assert presence of all test files
   const gridFileNames = await sharedUserPage.locator('ul > li h2').allTextContents();
-  expect(gridFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
+  expect(gridFileNames).toEqual(expect.arrayContaining([testFile1, testFile2]));
 
   // Assert the correct number of list items
   const liGridCount = await sharedUserPage.locator('ul > li h2').count();
-  expect(liGridCount).toBe(3);
+  expect(liGridCount).toBe(2);
 
   // Get and check grid view characteristics
   const gridViewCharacteristics = await getViewCharacteristics(sharedUserPage);
@@ -467,13 +472,13 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
   // Assert that list elements appear in the DOM
 
-  // Check for the presence of all three files
+  // Check for the presence of all test files
   const listFileNames = await sharedUserPage.locator('ul > li h2').allTextContents();
-  expect(listFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
+  expect(listFileNames).toEqual(expect.arrayContaining([testFile1, testFile2]));
 
   // Verify the correct number of list items
   const liListCount = await sharedUserPage.locator('ul > li h2').count();
-  expect(liListCount).toBe(3);
+  expect(liListCount).toBe(2);
 
   // Get and check list view characteristics
   const listViewCharacteristics = await getViewCharacteristics(sharedUserPage);
@@ -536,8 +541,8 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   // Retrieve all file names
   const fileNamesLastUpdatedOldestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct order (oldest first)
-  expect(fileNamesLastUpdatedOldestFirst).toEqual([testFile2, testFile3, testFile1]);
+  // Assert the files are in the correct order (oldest first - testFile2 was created first, testFile1 was edited last)
+  expect(fileNamesLastUpdatedOldestFirst).toEqual([testFile2, testFile1]);
 
   //--------------------------------
   // Sort by Last Updated (Newest First)
@@ -575,8 +580,8 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   // Retrieve all file names
   const fileNamesLastUpdatedNewestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct order (newest first)
-  expect(fileNamesLastUpdatedNewestFirst).toEqual([testFile1, testFile3, testFile2]);
+  // Assert the files are in the correct order (newest first - testFile1 was edited last)
+  expect(fileNamesLastUpdatedNewestFirst).toEqual([testFile1, testFile2]);
 
   //--------------------------------
   // Sort by Date Created (Oldest First)
@@ -615,7 +620,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   const fileNamesDateCreatedOldestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (oldest created first)
-  expect(fileNamesDateCreatedOldestFirst).toEqual([testFile1, testFile2, testFile3]);
+  expect(fileNamesDateCreatedOldestFirst).toEqual([testFile1, testFile2]);
 
   //--------------------------------
   // Sort by Date Created (Newest First)
@@ -654,7 +659,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   const fileNamesDateCreatedNewestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (newest created first)
-  expect(fileNamesDateCreatedNewestFirst).toEqual([testFile3, testFile2, testFile1]);
+  expect(fileNamesDateCreatedNewestFirst).toEqual([testFile2, testFile1]);
 
   //--------------------------------
   // Sort by Alphabetical
@@ -692,8 +697,8 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   // Retrieve all file names
   const fileNamesAlphabeticalReverse = await sharedUserPage.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct reverse alphabetical order (Z to A)
-  expect(fileNamesAlphabeticalReverse).toEqual([testFile1, testFile3, testFile2]);
+  // Assert the files are in the correct reverse alphabetical order (Z to A: C before A)
+  expect(fileNamesAlphabeticalReverse).toEqual([testFile1, testFile2]);
 
   //--------------------------------
   // Act:
@@ -728,15 +733,14 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   // Retrieve all file names
   const fileNamesAlphabetical = await sharedUserPage.locator('ul > li h2').allTextContents();
 
-  // Assert the files are in the correct alphabetical order (A to Z)
-  expect(fileNamesAlphabetical).toEqual([testFile2, testFile3, testFile1]);
+  // Assert the files are in the correct alphabetical order (A to Z: A before C)
+  expect(fileNamesAlphabetical).toEqual([testFile2, testFile1]);
 
   // Clean up
   await page.bringToFront();
 
   await cleanUpFiles(page, { fileName: testFile1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
-  await cleanUpFiles(page, { fileName: testFile3, skipFilterClear: true });
 });
 
 test('Filter Files by Name - My Files', async ({ page }) => {
@@ -746,25 +750,31 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   // Login
   await logIn(page, { emailPrefix: 'e2e_dashboard_filter_files_my' });
 
+  // Navigate to My files page (the new Home page shows all files combined)
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
+
   // // Create new team
   // const teamName = `Filter Files - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
+  // Use 2 files instead of 3 to stay under free user limit
   const string1 = 'Test';
   const string2 = 'Random';
   const file1 = `${string1}_file_1`;
-  const file2 = `${string2}_file_2`;
-  const file3 = `${string2}_${string1}_3`;
+  const file2 = `${string2}_${string1}_2`; // Contains both strings for filter testing
 
   // Clean up files
   await cleanUpFiles(page, { fileName: file1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: file2, skipFilterClear: true });
-  await cleanUpFiles(page, { fileName: file3, skipFilterClear: true });
 
-  // Create files
+  // Create files (navigate back to My Files after each to ensure files are private)
   await createFile(page, { fileName: file1 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
   await createFile(page, { fileName: file2 });
-  await createFile(page, { fileName: file3 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
 
   //--------------------------------
   // Act:
@@ -777,32 +787,24 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   //--------------------------------
   // Assert:
   //--------------------------------
-  // Assert file 1 are visible
+  // Assert file 1 is visible
   await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
-  // Filter by file 2 and assert file 2 are visible
+  // Filter by file 2 and assert file 2 is visible
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
-  // Filter by file 3 and assert file 2 are visible
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file3);
-  await page.waitForTimeout(2500);
-  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
-
-  // Filter by string1 and assert files including string1 are visible (file 1 and 3)
-
+  // Filter by string1 and assert files including string1 are visible (both files)
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
-  // Filter by string2 and assert files including string2 are visible (file 2 and 3)
-
+  // Filter by string2 and assert file2 (which contains string2) is visible
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up files
   await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
@@ -810,17 +812,15 @@ test('Filter Files by Name - My Files', async ({ page }) => {
 
   await cleanUpFiles(page, { fileName: file1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: file2, skipFilterClear: true });
-  await cleanUpFiles(page, { fileName: file3, skipFilterClear: true });
 });
 
 test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   //--------------------------------
-  // File variables
+  // File variables (reduced from 3 to 2 to stay under free user limit)
   const string1 = 'Test';
   const string2 = 'Random';
   const file1 = `shared_${string1}_file_1`;
-  const file2 = `shared_${string2}_file_2`;
-  const file3 = `shared_${string2}_${string1}_3`;
+  const file2 = `shared_${string2}_${string1}_2`; // Contains both strings for filter testing
 
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
@@ -846,7 +846,6 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   // Navigate to team URL
   await cleanUpFiles(user2Page, { fileName: file1, skipFilterClear: true });
   await cleanUpFiles(user2Page, { fileName: file2, skipFilterClear: true });
-  await cleanUpFiles(user2Page, { fileName: file3, skipFilterClear: true });
 
   // Create shared files
   await createSharedFile(user2Page, {
@@ -855,10 +854,6 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   });
   await createSharedFile(user2Page, {
     fileName: file2,
-    email: user1Email,
-  });
-  await createSharedFile(user2Page, {
-    fileName: file3,
     email: user1Email,
   });
 
@@ -887,22 +882,16 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
-  // Filter by file 3 and assert file 3 is visible
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file3);
-  await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
-
-  // Filter by string1 and assert files including string1 are visible (file 1 and 3)
+  // Filter by string1 and assert files including string1 are visible (both files)
   await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
-  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
-  // Filter by string2 and assert files including string2 are visible (file 2 and 3)
+  // Filter by string2 and assert file2 (which contains string2) is visible
   await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
-  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -913,7 +902,6 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   await user2Page.waitForTimeout(2000);
   await cleanUpFiles(user2Page, { fileName: file1, skipFilterClear: true });
   await cleanUpFiles(user2Page, { fileName: file2, skipFilterClear: true });
-  await cleanUpFiles(user2Page, { fileName: file3, skipFilterClear: true });
 });
 
 test('Import Files', async ({ page }) => {
@@ -926,6 +914,10 @@ test('Import Files', async ({ page }) => {
 
   // Login with dedicated user
   await logIn(page, { emailPrefix: 'e2e_dashboard_import_files' });
+
+  // Navigate to My files page (the new Home page shows all files combined)
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2000);
 
   // Wait for load
   await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();

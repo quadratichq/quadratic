@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { waitForAppReady } from './wait.helpers';
 
 /**
  * Changes cursor location or selection via a1 notation in the goto box.
@@ -57,11 +58,8 @@ export const assertCellValue = async (page: Page, { a1, value }: AssertCellValue
 export const sheetRefreshPage = async (page: Page) => {
   await page.reload();
 
-  const quadraticLoading = page.locator('html[data-loading-start]');
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for app to load (removed redundant 10s waitForTimeout)
+  await waitForAppReady(page);
 
   // Close AI chat box as needed
   try {
@@ -143,4 +141,12 @@ export const pasteFromClipboard = async (page: Page, a1?: string) => {
   // Paste the text in the cells
   await page.keyboard.press('Control+V', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
+};
+
+/**
+ * Waits for the kernel menu to be idle (no running code and no transactions).
+ * The busy badge is visible when there are running code cells or pending transactions.
+ */
+export const waitForKernelMenuIdle = async (page: Page, timeout = 60 * 1000) => {
+  await expect(page.locator('[data-testid="kernel-menu-busy"]')).toBeHidden({ timeout });
 };

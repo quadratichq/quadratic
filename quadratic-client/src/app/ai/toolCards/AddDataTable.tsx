@@ -40,6 +40,7 @@ export const AddDataTable = memo(
         const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
         const startSelection = sheets.stringToSelection(top_left_position, sheetId);
         const { x, y } = startSelection.getCursor();
+        startSelection.free();
         const endX = x + cols - 1;
         const endY = y + rows - 1;
         const rangeString = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;

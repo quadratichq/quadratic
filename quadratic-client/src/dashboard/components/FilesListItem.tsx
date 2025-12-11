@@ -12,7 +12,6 @@ import {
 } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
@@ -85,14 +84,16 @@ export function FilesListItemUserFile({
 
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
   const actionUrl = ROUTES.API.FILE(uuid);
-  const confirmFn = useConfirmDialog('deleteFile', { name });
 
   // Determine if the user can move files
   // If we're looking at the user's private files, make sure they have edit access to the team
   // If we're looking at a team, make sure they have edit access to the current team
   const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
-  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(activeTeamUuid)));
+  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES(activeTeamUuid)));
   const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
+
+  // Determine if this is a private/personal file (for duplicate and move logic)
+  const isFilePrivate = file.isPrivate ?? isTeamPrivateFilesRoute;
 
   const description =
     viewPreferences.sort === Sort.Created
@@ -133,10 +134,8 @@ export function FilesListItemUserFile({
   };
 
   const handleDelete = async () => {
-    if (await confirmFn()) {
-      const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
-      fetcherDelete.submit(data, fetcherSubmitOpts);
-    }
+    const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
+    fetcherDelete.submit(data, fetcherSubmitOpts);
   };
 
   const handleDownload = () => {
@@ -146,7 +145,7 @@ export function FilesListItemUserFile({
   };
 
   const handleDuplicate = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isTeamPrivateFilesRoute);
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isFilePrivate);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;
@@ -154,7 +153,7 @@ export function FilesListItemUserFile({
     trackEvent('[Files].duplicateFile', { id: uuid });
     const data = getActionFileDuplicate({
       redirect: false,
-      isPrivate: isTeamPrivateFilesRoute ? true : false,
+      isPrivate: isFilePrivate,
       teamUuid: activeTeamUuid,
     });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
@@ -217,6 +216,8 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            isPrivate={file.isPrivate}
+            isSharedWithMe={file.isSharedWithMe}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>
@@ -235,17 +236,26 @@ export function FilesListItemUserFile({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   {permissions.includes('FILE_VIEW') && (
-                    <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShare} data-testid="dashboard-file-actions-share">
+                      Share
+                    </DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate} data-testid="dashboard-file-actions-duplicate">
+                      Duplicate
+                    </DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setOpen(true)} data-testid="dashboard-file-actions-rename">
+                      Rename
+                    </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownload} data-testid="dashboard-file-actions-download">
+                    Download
+                  </DropdownMenuItem>
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem
+                      data-testid="dashboard-file-actions-open-history"
                       onClick={() => {
                         window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
                       }}
@@ -256,8 +266,9 @@ export function FilesListItemUserFile({
                   {canMoveFiles && (
                     <>
                       <DropdownMenuSeparator />
-                      {isTeamPublicFilesRoute && (
+                      {!isFilePrivate && (
                         <DropdownMenuItem
+                          data-testid="dashboard-file-actions-move-to-personal"
                           onClick={() => {
                             const data = getActionFileMove(userId);
                             submit(data, {
@@ -269,11 +280,12 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to my files
+                          Move to Personal
                         </DropdownMenuItem>
                       )}
-                      {isTeamPrivateFilesRoute && (
+                      {isFilePrivate && (
                         <DropdownMenuItem
+                          data-testid="dashboard-file-actions-move-to-team"
                           onClick={() => {
                             const data = getActionFileMove(null);
                             submit(data, {
@@ -285,7 +297,7 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to team files
+                          Move to Team
                         </DropdownMenuItem>
                       )}
                     </>
@@ -293,7 +305,9 @@ export function FilesListItemUserFile({
                   {permissions.includes('FILE_DELETE') && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleDelete}>Delete</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDelete} data-testid="dashboard-file-actions-delete">
+                        Delete
+                      </DropdownMenuItem>
                     </>
                   )}
                 </DropdownMenuContent>

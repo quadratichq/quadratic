@@ -153,6 +153,8 @@ export class CellLabel {
   private columnHeader: boolean;
 
   emojis: RenderEmoji[];
+  specialType?: 'Checkbox' | 'List';
+  checkboxValue?: boolean;
 
   private getText = (cell: JsRenderCell) => {
     let text = '';
@@ -248,6 +250,8 @@ export class CellLabel {
     this.strikeThrough = !!cell.strikeThrough;
     this.tableName = !!cell.tableName;
     this.columnHeader = !!cell.columnHeader;
+    this.specialType = cell.special === 'Checkbox' || cell.special === 'List' ? cell.special : undefined;
+    this.checkboxValue = cell.special === 'Checkbox' ? cell.value === 'true' : undefined;
     this.updateCellLimits();
   }
 
@@ -476,7 +480,6 @@ export class CellLabel {
     let prevCharCode = null;
     let lastLineWidth = 0;
     let maxLineWidth = 0;
-    let textHeight = 0;
     let line = 0;
     let lastBreakPos = -1;
     let lastBreakWidth = 0;
@@ -600,7 +603,6 @@ export class CellLabel {
         spaceCount = 0;
       } else {
         lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.frame.width);
-        textHeight = Math.max(textHeight, charRenderData.position.y + charData.textureHeight);
       }
     }
 
@@ -627,11 +629,10 @@ export class CellLabel {
       horizontalAlignOffsets.push(alignOffset);
     }
 
-    // Calculate text height with proper spacing for descenders
+    // Calculate text height based on font size, not glyph height
     // Use this.lineHeight to match the spacing used when positioning lines
     // The 'line' variable is 0-indexed, so (line + 1) gives us the total number of lines
-    const lineBasedHeight = this.lineHeight * (line + 1);
-    let calculatedTextHeight = Math.max(textHeight * scale, lineBasedHeight);
+    let calculatedTextHeight = this.lineHeight * (line + 1);
 
     // Add space for underlines if present (underlines extend below the text baseline)
     // Note: underlineOffset is in bitmap font coordinates and needs to be scaled

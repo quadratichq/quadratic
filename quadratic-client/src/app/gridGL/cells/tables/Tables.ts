@@ -536,7 +536,7 @@ export class Tables extends Container<Table> {
   };
 
   // Returns true if the cell is a table name cell
-  isInTableHeader = (cell: JsCoordinate): boolean => {
+  isInTableHeader = (cell: JsCoordinate, ignoreColumnHeaders = false): boolean => {
     const table = this.getTableIntersects(cell);
     if (!table) return false;
 
@@ -551,7 +551,11 @@ export class Tables extends Container<Table> {
     }
 
     // in column header row
-    if (table.codeCell.show_columns && cell.y === table.codeCell.y + (table.codeCell.show_name ? 1 : 0)) {
+    if (
+      !ignoreColumnHeaders &&
+      table.codeCell.show_columns &&
+      cell.y === table.codeCell.y + (table.codeCell.show_name ? 1 : 0)
+    ) {
       return true;
     }
 

@@ -16,7 +16,7 @@ test('Tile paste formatting', async ({ page }) => {
   await page.keyboard.press('Shift+ArrowDown', { delay: 250 });
 
   await page.locator(`[data-testid="format_fill_color"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`div[title="#F9D2CE"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[aria-label="Select color #F9D2CE"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   await copyToClipboard(page, 'A1:A6');

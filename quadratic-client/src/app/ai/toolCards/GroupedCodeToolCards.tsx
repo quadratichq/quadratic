@@ -101,7 +101,7 @@ export const GroupedCodeToolCards = memo(({ toolCalls, className, isComplete }: 
     const cellText = total === 1 ? 'cell' : 'cells';
 
     if (newCount > 0 && updateCount > 0) {
-      return `Wrote ${newCount} new, updated ${updateCount} code ${cellText}${sheetText}`;
+      return `Wrote ${total} code ${cellText} (${newCount} new, ${updateCount} updated)${sheetText}`;
     } else if (updateCount > 0) {
       return `Updated ${updateCount} code ${cellText}${sheetText}`;
     } else {

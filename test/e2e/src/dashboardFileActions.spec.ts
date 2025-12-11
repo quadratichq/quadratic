@@ -14,6 +14,9 @@ test('Create New File', async ({ page }) => {
   // Login
   await logIn(page, { emailPrefix: `e2e_create_new_file` });
 
+  // Navigate to team files
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+
   // // Create new team
   // const teamName = `${fileName} - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
@@ -47,13 +50,13 @@ test('Create New File', async ({ page }) => {
   await page.mouse.move(300, 500);
   await page.mouse.up();
   await page.locator(`[data-testid="format_fill_color"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[title="#E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
+  await page.locator(`[aria-label="Select color #E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
 
   // Ensure the cell color is updated (you can add specific assertions if needed)
   await page.waitForTimeout(5 * 1000); // Give some time for the update
 
   // Navigate to files page
-  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="file-location-link-team-files"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -99,6 +102,9 @@ test('Edit Share File Permissions', async ({ page }) => {
   // const teamName = `${fileName} - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
+  // Navigate to team files
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+
   await page.locator('[placeholder*="Filter by file or creator name"]').waitFor();
 
   // Delete Previous Edit_Share_File_Spreadsheet file
@@ -114,8 +120,8 @@ test('Edit Share File Permissions', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(3000);
 
-  // Navigate back to "My files" page
-  await page.locator('nav a svg').click({ timeout: 60 * 1000 });
+  // Navigate back to team files page
+  await page.locator('[data-testid="file-location-link-team-files"]').click({ timeout: 60 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
@@ -124,7 +130,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click "Share" -> Fill in recipient email -> select "Can view"
-  await page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can view');
@@ -169,7 +175,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click "Share" -> "Can edit" on recipient permission
-  await page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page
     .locator(`button:right-of(:text("${recipientEmail}"))`)
@@ -246,8 +252,8 @@ test('Edit Share File Permissions', async ({ page }) => {
   //--------------------------------
   // Arrange:
   //--------------------------------
-  // Navigate back to "My files" page
-  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  // Navigate back to team files page
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -259,7 +265,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   page.once('dialog', (dialog) => {
     dialog.accept().catch((err) => console.error(err));
   });
-  await page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page
     .locator(`button:right-of(:text("${recipientEmail}"))`)
@@ -319,15 +325,19 @@ test('File Actions - Dashboard', async ({ page }) => {
   // const teamName = `Test File Actions - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
-  // Cleanup any duplicate copies
+  // Cleanup any duplicate copies (including "(Copy)" variants from previous failed runs)
   await cleanUpFiles(page, {
     fileName: fileActionsName,
     skipFilterClear: true,
   });
+  await cleanUpFiles(page, { fileName: `${fileActionsName} (Copy)`, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: renamedFile, skipFilterClear: true });
 
   // Create files
   await createFile(page, { fileName: fileActionsName });
+
+  // Navigate to team files
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -338,7 +348,7 @@ test('File Actions - Dashboard', async ({ page }) => {
   // Click on "Download" button
   const [gridFile] = await Promise.all([
     page.waitForEvent('download'),
-    page.locator('[role="menuitem"]:has-text("Download")').click(),
+    page.locator('[data-testid="dashboard-file-actions-download"]').click(),
   ]);
   const gridFileName = gridFile.suggestedFilename();
 
@@ -360,7 +370,7 @@ test('File Actions - Dashboard', async ({ page }) => {
   await page.locator(`a:has-text("${fileActionsName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click on "Duplicate" button
-  await page.locator('[role="menuitem"]:has-text("Duplicate")').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-duplicate"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -381,11 +391,8 @@ test('File Actions - Dashboard', async ({ page }) => {
     .locator(`a:has(:text-is("${fileActionsName}")) button[aria-haspopup="menu"]`)
     .click({ timeout: 60 * 1000 });
 
-  // Click on Move to ... <first team name>
-  await page
-    .locator('[role="menuitem"]:below([role="menuitem"]:text-is("Download"))')
-    .nth(1)
-    .click({ timeout: 60 * 1000 });
+  // Click on "Move to Personal"
+  await page.locator('[data-testid="dashboard-file-actions-move-to-personal"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -395,29 +402,23 @@ test('File Actions - Dashboard', async ({ page }) => {
     timeout: 60 * 1000,
   });
 
-  // Navigate to the team the file was moved to
-  await page
-    .getByRole('link', { name: 'Files' })
-    .nth(1)
-    .click({ timeout: 60 * 1000 });
+  // Navigate to personal files (where the file was moved to)
+  await page.locator('[data-testid="dashboard-sidebar-personal-files-link"]').click({ timeout: 60 * 1000 });
 
   // Assert that the file is visible now
   await expect(page.locator(`a:has(:text-is("${fileActionsName}"))`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
-  // Rename File
+  // Move File Back to Team
   //--------------------------------
   await page
     .locator(`a[href*="/file/"]:has(:text-is("${fileActionsName}")) button[aria-haspopup="menu"]`)
     .first()
     .click({ timeout: 60 * 1000 });
-  await page.locator('[role="menuitem"]:has-text("Move to team files")').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-move-to-team"]').click({ timeout: 60 * 1000 });
 
-  // Navigate to the team the file was moved to
-  await page
-    .getByRole('link', { name: 'Files' })
-    .nth(0)
-    .click({ timeout: 60 * 1000 });
+  // Navigate to team files
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -428,7 +429,7 @@ test('File Actions - Dashboard', async ({ page }) => {
     .click({ timeout: 60 * 1000 });
 
   // Click on Rename
-  await page.locator('[role="menuitem"]:has-text("Rename")').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-rename"]').click({ timeout: 60 * 1000 });
 
   // Rename file to "Renamed Actions"
   await page.locator('#rename-item input').fill(renamedFile);
@@ -452,7 +453,7 @@ test('File Actions - Dashboard', async ({ page }) => {
   await page.locator(`a:has(:text-is("${renamedFile}")) button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click on Delete
-  await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-file-actions-delete"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Confirm "Delete" action
@@ -465,11 +466,12 @@ test('File Actions - Dashboard', async ({ page }) => {
   // Assert that the file is no longer visible
   await expect(page.locator(`a:has(:text-is("${renamedFile}"))`)).not.toBeVisible({ timeout: 60 * 1000 });
 
-  // Clean up newly created files
+  // Clean up newly created files (including any "(Copy)" variants)
   await cleanUpFiles(page, {
     fileName: fileActionsName,
     skipFilterClear: true,
   });
+  await cleanUpFiles(page, { fileName: `${fileActionsName} (Copy)`, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: renamedFile, skipFilterClear: true });
 });
 
@@ -504,6 +506,10 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // await createNewTeamByURL(user1Page, { teamName });
 
   await user1Page.bringToFront();
+
+  // Navigate to team files
+  await user1Page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+
   const date = Date.now();
   // Clean up file
   const fileName = `Share_Files - ${date}`;
@@ -519,7 +525,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ force: true });
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
 
   // Invite user 2 and allow them to edit
   await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
@@ -577,7 +583,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu, change user 2 permissions to Can view
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
   await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page.locator(`div:has-text("${user2Email}") + div:has-text("Can edit")`).click({ timeout: 60 * 1000 });
   await user1Page.locator(`span:text("Can view")`).click({ timeout: 60 * 1000 });
@@ -622,20 +628,24 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu, change "Anyone with the link" to "Can edit"
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
   await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page
     .locator(`div:has-text("Anyone with the link") + div > button > span:text("No access")`)
     .click({ timeout: 60 * 1000 });
   await user1Page.locator(`div[data-state="unchecked"] > span:text("Can edit")`).click({ timeout: 60 * 1000 });
+  // Wait for the permission change API call to complete
+  await user1Page.waitForTimeout(3000);
   await user1Page.keyboard.press('Escape');
   await user1Page.reload();
 
   //--------------------------------
   // Assert:
   //--------------------------------
-  // Assert that file now says "Public"
-  await expect(user1Page.locator(`a:has-text("${fileName}") :text("Public")`)).toBeVisible({ timeout: 60 * 1000 });
+  // Assert that file has a public indicator
+  await expect(user1Page.locator(`[data-testid="dashboard-file-actions-public-icon"]`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Assert that user 2 is able to edit the file (even though they are set to "Can view")
   await user2Page.bringToFront();
@@ -686,12 +696,14 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu, change "Anyone with the link" to "Can view"
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator('[data-testid="dashboard-file-actions-share"]').click({ timeout: 60 * 1000 });
   await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page
     .locator(`div:has-text("Anyone with the link") + div > button > span:text("Can edit")`)
     .click({ timeout: 60 * 1000 });
   await user1Page.locator(`div[data-state="unchecked"] > span:text("Can view")`).click({ timeout: 60 * 1000 });
+  // Wait for the permission change API call to complete
+  await user1Page.waitForTimeout(3000);
   await user1Page.keyboard.press('Escape');
   await user1Page.reload();
 
@@ -748,6 +760,9 @@ test('Upload Large File', async ({ page }) => {
   // Login
   await logIn(page, { emailPrefix: `e2e_upload_large_file` });
 
+  // Navigate to team files
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+
   // Create new team
   // const teamName = `${largeFileName} - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
@@ -784,6 +799,6 @@ test('Upload Large File', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName: largeFileName });
 });
