@@ -798,6 +798,8 @@ test('Upload Large File', async ({ page }) => {
   //--------------------------------
   // Clean up:
   //--------------------------------
+  // Navigate back to dashboard first (we're on the file editor page after upload)
+  await page.getByRole('link', { name: 'E2E Test Team' }).click();
   // Cleanup newly created files
   await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName: largeFileName });
