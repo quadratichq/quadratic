@@ -85,11 +85,6 @@ export class GridHeadings extends Container {
     this.dirty = true;
   };
 
-  // Check if the grid canvas has focus (or user is editing a cell)
-  private isGridFocused(): boolean {
-    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
-  }
-
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.headings) {
       this.dirty = true;
@@ -136,7 +131,9 @@ export class GridHeadings extends Container {
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
     // Use light gray for selected headings when grid doesn't have focus, otherwise use accent color
-    const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    const selectionColor = pixiAppSettings.isGridFocused()
+      ? content.accentColor
+      : getCSSVariableTint('muted-foreground');
     this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
@@ -300,7 +297,9 @@ export class GridHeadings extends Container {
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
     // Use light gray for selected headings when grid doesn't have focus, otherwise use accent color
-    const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    const selectionColor = pixiAppSettings.isGridFocused()
+      ? content.accentColor
+      : getCSSVariableTint('muted-foreground');
     this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
