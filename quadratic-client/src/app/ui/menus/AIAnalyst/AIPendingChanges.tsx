@@ -1,15 +1,18 @@
+import { useGenerateAISummary, type ChangeContext } from '@/app/ai/hooks/useGenerateAISummary';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { UndoIcon } from '@/shared/components/Icons';
+import { FormatPaintIcon, GridActionIcon, TableIcon, TableRowsIcon, UndoIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
-import { cn } from '@/shared/shadcn/utils';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { isAIPromptMessage, isUserPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 // Tool calls that modify the grid and should be shown as pending changes
@@ -49,17 +52,25 @@ const MODIFYING_TOOLS = new Set([
 interface PendingChange {
   toolCall: AIToolCall;
   label: string;
+  name?: string;
   description?: string;
   position?: string;
   icon?: React.ReactNode;
+  codeSnippet?: string;
+  language?: string;
+  dataPreview?: string;
 }
 
 function getToolCallLabel(toolCall: AIToolCall): PendingChange {
   const toolName = toolCall.name as AITool;
   let label = toolName.replace(/([A-Z])/g, ' $1').trim();
+  let name: string | undefined;
   let description: string | undefined;
   let position: string | undefined;
   let icon: React.ReactNode | undefined;
+  let codeSnippet: string | undefined;
+  let language: string | undefined;
+  let dataPreview: string | undefined;
 
   try {
     const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
@@ -67,63 +78,133 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
     switch (toolName) {
       case AITool.SetCodeCellValue:
         label = 'Wrote code';
+        name = args.code_cell_name;
         position = args.code_cell_position;
+        language = args.code_cell_language;
+        codeSnippet = args.code_string;
         icon = <LanguageIcon language={args.code_cell_language || ''} />;
         break;
       case AITool.SetSQLCodeCellValue:
         label = 'Wrote SQL';
+        name = args.code_cell_name;
         position = args.code_cell_position;
+        language = args.connection_kind || 'SQL';
+        codeSnippet = args.sql_code_string;
         icon = <LanguageIcon language={args.connection_kind || 'SQL'} />;
         break;
       case AITool.SetFormulaCellValue:
         label = 'Wrote formula';
         position = args.code_cell_position;
+        language = 'Formula';
+        codeSnippet = args.formula_string;
         icon = <LanguageIcon language="Formula" />;
         break;
       case AITool.SetCellValues:
-        label = 'Set cell values';
-        position = args.selection;
+        label = 'Inserted data';
+        position = args.top_left_position;
+        icon = <TableRowsIcon />;
+        // Extract data preview from cell values
+        if (args.cell_values && Array.isArray(args.cell_values)) {
+          const flatValues = args.cell_values.flat().slice(0, 10);
+          dataPreview = flatValues.join(', ');
+        }
         break;
       case AITool.DeleteCells:
         label = 'Deleted cells';
         position = args.selection;
+        icon = <GridActionIcon />;
         break;
       case AITool.MoveCells:
         label = 'Moved cells';
-        description = `from ${args.source_selection} to ${args.target_top_left_position}`;
+        position = args.target_top_left_position;
+        description = `${args.source_selection_rect} → ${args.target_top_left_position}`;
+        icon = <GridActionIcon />;
         break;
       case AITool.InsertRows:
-        label = `Inserted ${args.row_count || 1} row(s)`;
+        label = 'Inserted rows';
+        description = `${args.count || 1} row${(args.count || 1) > 1 ? 's' : ''} at row ${args.row}`;
+        icon = <GridActionIcon />;
         break;
       case AITool.InsertColumns:
-        label = `Inserted ${args.column_count || 1} column(s)`;
+        label = 'Inserted columns';
+        description = `${args.count || 1} column${(args.count || 1) > 1 ? 's' : ''} at ${args.column}`;
+        icon = <GridActionIcon />;
         break;
       case AITool.DeleteRows:
         label = 'Deleted rows';
+        description = args.rows?.join(', ');
+        icon = <GridActionIcon />;
         break;
       case AITool.DeleteColumns:
         label = 'Deleted columns';
+        description = args.columns?.join(', ');
+        icon = <GridActionIcon />;
+        break;
+      case AITool.ResizeRows:
+        label = 'Resized rows';
+        position = args.selection;
+        description = `${args.selection} to ${args.size}px`;
+        icon = <GridActionIcon />;
+        break;
+      case AITool.ResizeColumns:
+        label = 'Resized columns';
+        position = args.selection;
+        description = `${args.selection} to ${args.size}px`;
+        icon = <GridActionIcon />;
         break;
       case AITool.AddSheet:
-        label = `Created sheet "${args.sheet_name || 'New Sheet'}"`;
+        label = 'Created sheet';
+        name = args.sheet_name;
+        icon = <GridActionIcon />;
         break;
       case AITool.DeleteSheet:
-        label = `Deleted sheet "${args.sheet_name}"`;
+        label = 'Deleted sheet';
+        name = args.sheet_name;
+        icon = <GridActionIcon />;
         break;
       case AITool.RenameSheet:
-        label = `Renamed sheet to "${args.new_sheet_name}"`;
+        label = 'Renamed sheet';
+        name = args.new_sheet_name;
+        icon = <GridActionIcon />;
         break;
       case AITool.SetBorders:
-        label = 'Set borders';
+        label = 'Formatted borders';
         position = args.selection;
+        icon = <FormatPaintIcon />;
         break;
       case AITool.SetTextFormats:
-        label = 'Formatted cells';
+        label = 'Formatted';
         position = args.selection;
+        icon = <FormatPaintIcon />;
         break;
       case AITool.AddDataTable:
-        label = 'Added data table';
+        label = 'Inserted table';
+        name = args.table_name;
         position = args.top_left_position;
+        icon = <TableIcon />;
+        // Include first few values as preview
+        if (args.table_data && Array.isArray(args.table_data)) {
+          const headers = args.table_data[0];
+          if (Array.isArray(headers)) {
+            dataPreview = `Columns: ${headers.slice(0, 5).join(', ')}`;
+          }
+        }
+        break;
+      case AITool.TableMeta:
+        label = 'Table changes';
+        position = args.table_location;
+        icon = <GridActionIcon />;
+        break;
+      case AITool.TableColumnSettings:
+        label = 'Table column settings';
+        position = args.table_location;
+        icon = <GridActionIcon />;
+        break;
+      case AITool.ConvertToTable:
+        label = 'Converted to table';
+        name = args.table_name;
+        position = args.selection;
+        icon = <TableIcon />;
         break;
       default:
         // Convert camelCase to readable text
@@ -137,17 +218,38 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
     // Keep default label if parsing fails
   }
 
-  return { toolCall, label, description, position, icon };
+  return { toolCall, label, name, description, position, icon, codeSnippet, language, dataPreview };
 }
 
 export const AIPendingChanges = memo(() => {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const { generateSummary, cancelSummary } = useGenerateAISummary();
   const [isExpanded, setIsExpanded] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
+  const [userMadeChanges, setUserMadeChanges] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summary, setSummary] = useState('');
+  const lastPendingChangesLengthRef = useRef(0);
 
   // Get the pending changes from the latest AI response chain
   // (all AI messages after the last user message)
+  // Extract the last user prompt text for context
+  const lastUserPrompt = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (isUserPromptMessage(message)) {
+        // Extract text from the message content
+        const textContent = message.content.find((c) => 'text' in c);
+        if (textContent && 'text' in textContent) {
+          return textContent.text;
+        }
+        break;
+      }
+    }
+    return undefined;
+  }, [messages]);
+
   // Deduplicate by position - if the same cell is changed multiple times, only show the latest
   const pendingChanges = useMemo(() => {
     if (loading) return [];
@@ -194,18 +296,65 @@ export const AIPendingChanges = memo(() => {
     return Array.from(changesMap.values());
   }, [messages, loading]);
 
-  // Update undo count when changes come in
+  // Update undo count and generate summary when changes come in
   useEffect(() => {
     if (pendingChanges.length > 0 && !loading) {
       setUndoCount(pendingChanges.length);
+      // Reset user changes flag and show summary loading when new AI changes come in
+      if (pendingChanges.length !== lastPendingChangesLengthRef.current) {
+        setUserMadeChanges(false);
+        setSummaryLoading(true);
+        lastPendingChangesLengthRef.current = pendingChanges.length;
+
+        // Generate AI summary with rich context
+        const changeContexts: ChangeContext[] = pendingChanges.map((change) => ({
+          label: change.label,
+          name: change.name,
+          language: change.language,
+          codeSnippet: change.codeSnippet,
+          dataPreview: change.dataPreview,
+        }));
+        generateSummary(changeContexts, lastUserPrompt)
+          .then((result) => {
+            setSummary(result);
+            setSummaryLoading(false);
+          })
+          .catch(() => {
+            setSummary(`${pendingChanges.length} changes made`);
+            setSummaryLoading(false);
+          });
+      }
     }
+
+    return () => {
+      cancelSummary();
+    };
+  }, [pendingChanges, loading, generateSummary, cancelSummary, lastUserPrompt]);
+
+  // Listen for transaction events to detect when user makes changes
+  // after AI has made changes
+  useEffect(() => {
+    if (pendingChanges.length === 0 || loading) return;
+
+    const handleTransactionEnd = () => {
+      // When any transaction ends while we have pending AI changes,
+      // assume it's a user action and disable undo
+      // (AI transactions are tracked separately in pendingChanges)
+      setUserMadeChanges(true);
+    };
+
+    events.on('transactionEnd', handleTransactionEnd);
+
+    return () => {
+      events.off('transactionEnd', handleTransactionEnd);
+    };
   }, [pendingChanges.length, loading]);
 
   const handleUndo = useCallback(async () => {
-    if (undoCount > 0) {
+    if (undoCount > 0 && !userMadeChanges) {
       await quadraticCore.undo(undoCount, false);
     }
-  }, [undoCount]);
+  }, [undoCount, userMadeChanges]);
 
   const handleNavigateToChange = useCallback((change: PendingChange) => {
     if (!change.position) return;
@@ -213,6 +362,36 @@ export const AIPendingChanges = memo(() => {
     try {
       const args = change.toolCall.arguments ? JSON.parse(change.toolCall.arguments) : {};
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
+      const toolName = change.toolCall.name as AITool;
+
+      // For SetCellValues and AddDataTable, calculate the full range based on data dimensions
+      if (toolName === AITool.SetCellValues && args.cell_values && Array.isArray(args.cell_values)) {
+        const rows = args.cell_values.length;
+        const cols = args.cell_values.reduce((max: number, row: unknown[]) => Math.max(max, row.length), 0);
+        const startSelection = sheets.stringToSelection(change.position, sheetId);
+        const { x, y } = startSelection.getCursor();
+        const endX = x + cols - 1;
+        const endY = y + rows - 1;
+        const rangeString = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+        const selection = sheets.stringToSelection(rangeString, sheetId);
+        sheets.changeSelection(selection);
+        return;
+      }
+
+      if (toolName === AITool.AddDataTable && args.table_data && Array.isArray(args.table_data)) {
+        const rows = args.table_data.length;
+        const cols = args.table_data.reduce((max: number, row: unknown[]) => Math.max(max, row.length), 0);
+        const startSelection = sheets.stringToSelection(change.position, sheetId);
+        const { x, y } = startSelection.getCursor();
+        const endX = x + cols - 1;
+        const endY = y + rows - 1;
+        const rangeString = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+        const selection = sheets.stringToSelection(rangeString, sheetId);
+        sheets.changeSelection(selection);
+        return;
+      }
+
+      // Default: just select the position
       const selection = sheets.stringToSelection(change.position, sheetId);
       sheets.changeSelection(selection);
     } catch (e) {
@@ -226,56 +405,60 @@ export const AIPendingChanges = memo(() => {
   }
 
   return (
-    <div className="mx-2 mb-2 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+    <div className="mx-2 mb-1.5 overflow-hidden rounded-md border border-border bg-accent/30">
       {/* Header */}
       <div
         className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 hover:bg-accent/50"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
           {isExpanded ? (
-            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
-            <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+            <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
-          <span className="text-sm font-medium">
-            Latest changes
-            <span className="ml-1.5 text-muted-foreground">({pendingChanges.length})</span>
-          </span>
+          {summaryLoading ? (
+            <Skeleton className="h-4 w-28" />
+          ) : (
+            <span className="text-sm font-medium">
+              {summary}
+              <span className="ml-1 text-muted-foreground">({pendingChanges.length})</span>
+            </span>
+          )}
         </div>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 gap-1.5 px-2 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleUndo();
-          }}
-        >
-          <UndoIcon className="h-3.5 w-3.5" />
-          Undo
-        </Button>
+        {!userMadeChanges && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 shrink-0 gap-1 border-border bg-background px-2 text-xs hover:bg-accent"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUndo();
+            }}
+            title={`Undo ${undoCount} AI change${undoCount === 1 ? '' : 's'}`}
+          >
+            <UndoIcon className="h-3 w-3" />
+            Undo
+          </Button>
+        )}
       </div>
 
       {/* Expandable content */}
       {isExpanded && (
-        <div className="border-t border-border">
-          <div className="max-h-48 overflow-y-auto">
+        <div className="border-t border-border/50">
+          <div className="max-h-44 overflow-y-auto">
             {pendingChanges.map((change, index) => (
               <div
                 key={`${change.toolCall.id}-${index}`}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 text-sm',
-                  change.position && 'cursor-pointer hover:bg-accent/50'
-                )}
-                onClick={() => handleNavigateToChange(change)}
+                className={`flex items-center gap-2 px-3 py-1.5 text-[13px] ${change.position ? 'cursor-pointer hover:bg-accent/50' : ''}`}
+                onClick={() => change.position && handleNavigateToChange(change)}
               >
                 {change.icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{change.icon}</div>}
                 <span className="truncate text-muted-foreground">
                   {change.label}
-                  {change.position && <span className="ml-1 text-xs opacity-70">at {change.position}</span>}
-                  {change.description && <span className="ml-1 text-xs opacity-70">{change.description}</span>}
+                  {change.name && <span className="ml-1 font-medium text-foreground">{change.name}</span>}
+                  {change.position && <span className="ml-1 opacity-70">at {change.position}</span>}
                 </span>
               </div>
             ))}
