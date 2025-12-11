@@ -296,6 +296,17 @@ export const AIPendingChanges = memo(() => {
     return Array.from(changesMap.values());
   }, [messages, loading]);
 
+  // Reset state when a new AI request starts (loading becomes true)
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    if (loading && !wasLoadingRef.current) {
+      // New AI request starting - reset user changes flag
+      setUserMadeChanges(false);
+      lastPendingChangesLengthRef.current = 0;
+    }
+    wasLoadingRef.current = loading;
+  }, [loading]);
+
   // Update undo count and generate summary when changes come in
   useEffect(() => {
     if (pendingChanges.length > 0 && !loading) {
@@ -333,14 +344,35 @@ export const AIPendingChanges = memo(() => {
 
   // Listen for transaction events to detect when user makes changes
   // after AI has made changes
+  const ignoreTransactionsRef = useRef(true);
+
+  // When pending changes update, ignore transactions briefly to let AI's own transactions complete
+  useEffect(() => {
+    if (pendingChanges.length === 0 || loading) {
+      ignoreTransactionsRef.current = true;
+      return;
+    }
+
+    // Ignore transactions for a short time after AI changes arrive
+    // This prevents AI's own transactions from triggering userMadeChanges
+    ignoreTransactionsRef.current = true;
+    const timeout = setTimeout(() => {
+      ignoreTransactionsRef.current = false;
+    }, 500);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [pendingChanges.length, loading]);
+
   useEffect(() => {
     if (pendingChanges.length === 0 || loading) return;
 
     const handleTransactionEnd = () => {
-      // When any transaction ends while we have pending AI changes,
-      // assume it's a user action and disable undo
-      // (AI transactions are tracked separately in pendingChanges)
-      setUserMadeChanges(true);
+      // Only mark as user changes if we're past the initial ignore window
+      if (!ignoreTransactionsRef.current) {
+        setUserMadeChanges(true);
+      }
     };
 
     events.on('transactionEnd', handleTransactionEnd);
@@ -427,21 +459,19 @@ export const AIPendingChanges = memo(() => {
           )}
         </div>
 
-        {!userMadeChanges && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 shrink-0 gap-1 border-border bg-background px-2 text-xs hover:bg-accent"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleUndo();
-            }}
-            title={`Undo ${undoCount} AI change${undoCount === 1 ? '' : 's'}`}
-          >
-            <UndoIcon className="h-3 w-3" />
-            Undo
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant="outline"
+          className={`h-6 shrink-0 gap-1 border-border bg-background px-2 text-xs hover:bg-accent ${userMadeChanges ? 'invisible' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleUndo();
+          }}
+          title={`Undo ${undoCount} AI change${undoCount === 1 ? '' : 's'}`}
+        >
+          <UndoIcon className="h-3 w-3" />
+          Undo
+        </Button>
       </div>
 
       {/* Expandable content */}
