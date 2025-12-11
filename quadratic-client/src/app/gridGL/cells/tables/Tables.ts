@@ -76,7 +76,6 @@ export class Tables extends Container<Table> {
     events.on('a1ContextUpdated', this.handleA1ContextUpdated);
     events.on('sheetOffsetsUpdated', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.resizeHeadingColumn);
-    events.on('resizeHeadingRow', this.resizeHeadingRow);
 
     events.on('contextMenu', this.contextMenu);
 
@@ -98,7 +97,6 @@ export class Tables extends Container<Table> {
     events.off('a1ContextUpdated', this.handleA1ContextUpdated);
     events.off('sheetOffsetsUpdated', this.sheetOffsets);
     events.off('resizeHeadingColumn', this.resizeHeadingColumn);
-    events.off('resizeHeadingRow', this.resizeHeadingRow);
 
     events.off('contextMenu', this.contextMenu);
 
@@ -377,23 +375,14 @@ export class Tables extends Container<Table> {
   // Update floating headers when a column is resized
   private resizeHeadingColumn = (sheetId: string, column: number) => {
     if (sheetId !== this.sheet.id) return;
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const gridHeading = content.headings.headingSize.unscaledHeight;
     for (const table of this.children) {
-      // Update if the column is within or before the table's range
-      const lastColumn = table.codeCell.x + table.codeCell.w - 1;
-      if (table.inOverHeadings && column <= lastColumn) {
-        table.updateCodeCell();
-      }
-    }
-  };
+      if (!table.inOverHeadings) continue;
 
-  // Update floating headers when a row is resized
-  private resizeHeadingRow = (sheetId: string, row: number) => {
-    if (sheetId !== this.sheet.id) return;
-    for (const table of this.children) {
-      // Update if the row is within or before the table's range
-      const lastRow = table.codeCell.y + table.codeCell.h - 1;
-      if (table.inOverHeadings && row <= lastRow) {
-        table.updateCodeCell();
+      // Update if the column is within or before the table's range
+      if (column < table.codeCell.x) {
+        table.header.toHover(bounds, gridHeading);
       }
     }
   };
