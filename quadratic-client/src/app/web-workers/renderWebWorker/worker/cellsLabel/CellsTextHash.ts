@@ -196,10 +196,6 @@ export class CellsTextHash {
       if (Array.isArray(dirty)) {
         cells = dirty;
       } else if (!this.loaded || dirty === true) {
-        if (isTransactionRunning) {
-          return false;
-        }
-
         try {
           cells = await renderCore.getRenderCells(
             this.cellsLabels.sheetId,
@@ -283,6 +279,7 @@ export class CellsTextHash {
 
     this.links = [];
     this.drawRects = [];
+    this.special.clear();
 
     this.labels.forEach((cellLabel) => this.checkClip(cellLabel));
 
@@ -308,6 +305,26 @@ export class CellsTextHash {
       }
       this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
       this.special.addEmojis(cellLabel.emojis);
+
+      // Re-add checkboxes and dropdowns that were cleared above
+      if (cellLabel.specialType === 'Checkbox' && cellLabel.checkboxValue !== undefined) {
+        const rectangle = this.cellsLabels.getCellOffsets(cellLabel.location.x, cellLabel.location.y);
+        this.special.addCheckbox(
+          cellLabel.location.x,
+          cellLabel.location.y,
+          rectangle.left + rectangle.width / 2,
+          rectangle.top + rectangle.height / 2,
+          cellLabel.checkboxValue
+        );
+      } else if (cellLabel.specialType === 'List') {
+        // Recalculate the full cell rectangle (same as createLabel does)
+        const rectangle = this.cellsLabels.getCellOffsets(cellLabel.location.x, cellLabel.location.y);
+        // Position dropdown so sprite's right edge aligns with cell's right edge
+        // The dropdownRectangle extends left from x, so we pass rectangle.right to maintain
+        // the correct clickable area, but the sprite will be positioned at rectangle.right - DROPDOWN_SIZE[0]
+        // Actually, looking at main, it just uses rectangle.right for both, so match that exactly
+        this.special.addDropdown(cellLabel.location.x, cellLabel.location.y, rectangle.right, rectangle.top);
+      }
     });
     if (minX !== Infinity && minY !== Infinity) {
       this.viewRectangle.x = minX;

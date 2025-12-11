@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/moveInvalid';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -270,6 +271,23 @@ export class PointerCellMoving {
           this.movingCells.width ?? 1,
           this.movingCells.height ?? 1
         );
+
+        // Check if any cell in the destination rectangle is an invalid drop zone
+        const isInvalidDestination = checkMoveDestinationInvalid(
+          this.movingCells.toColumn ?? 0,
+          this.movingCells.toRow ?? 0,
+          this.movingCells.width ?? 1,
+          this.movingCells.height ?? 1,
+          this.movingCells.colRows,
+          this.movingCells.original
+        );
+
+        // Don't allow dropping if destination is invalid
+        if (isInvalidDestination) {
+          this.reset();
+          return true;
+        }
+
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn ?? 0,

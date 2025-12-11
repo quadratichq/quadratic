@@ -28,7 +28,7 @@ export const RemoveValidations = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Remove validation';
+    const label = loading ? 'Removing validation' : 'Removed validation';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

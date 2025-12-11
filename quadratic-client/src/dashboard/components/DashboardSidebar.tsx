@@ -124,7 +124,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)}>
+            <SidebarNavLink
+              to={ROUTES.TEAM_FILES(activeTeamUuid)}
+              dropTarget={canEditTeam ? null : undefined}
+              data-testid="dashboard-sidebar-team-files-link"
+            >
               <FileIcon className={classNameIcons} />
               Files
               {canEditTeam && (
@@ -335,6 +339,7 @@ function SidebarNavLink({
   isLogo,
   onClick,
   target,
+  'data-testid': dataTestId,
 }: {
   to: string;
   children: ReactNode;
@@ -344,6 +349,7 @@ function SidebarNavLink({
   isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
+  'data-testid'?: string;
 }) {
   const location = useLocation();
   const navigation = useNavigation();
@@ -402,6 +408,7 @@ function SidebarNavLink({
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
       {...dropProps}
+      {...(dataTestId ? { 'data-testid': dataTestId } : {})}
     >
       {children}
     </NavLink>

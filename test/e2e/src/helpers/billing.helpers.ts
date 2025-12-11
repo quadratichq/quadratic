@@ -89,7 +89,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
  * 1. Verifying the user's current subscription (Free plan).
  * 2. Navigating to the Stripe checkout page and ensuring the correct product is being purchased.
  * 3. Filling in the credit card details and completing the checkout process.
- * 4. Verifying that the user is redirected to the Team files page post-purchase.
+ * 4. Verifying that the user is redirected to the dashboard page post-purchase.
  * 5. Ensuring that the Pro plan is now marked as the active subscription and that the Free plan no longer shows as active.
  * 6. Validating that the 'Upgrade to Pro' button is no longer visible and that the 'Manage billing' button is available.
  * Note: This function uses pre-defined (valid) credit card credentials (`creditCard` object) for simulating the checkout process.
@@ -183,15 +183,17 @@ export const upgradeToProPlan = async (page: Page) => {
     const navigationPromise = page.waitForNavigation();
     await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
 
-    // Wait for the page to redirect to the Team files page
+    // Wait for the page to redirect to the dashboard page
     await navigationPromise;
 
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('domcontentloaded');
 
-    // Assert that page has redirected to the Team files page
-    await expect(page).toHaveTitle(/Team files/);
-    await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
+    // Assert that page has redirected to the dashboard page
+    await expect(page).toHaveTitle(/Suggested files/);
+    await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible({
+      timeout: 60 * 1000,
+    });
 
     // Navigate to the Settings page by clicking the 'Settings' link
     await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });

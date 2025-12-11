@@ -27,7 +27,7 @@ export const Redo = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Action: redo';
+    const label = loading ? 'Redoing' : 'Redone';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

@@ -27,7 +27,7 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   size?: keyof typeof sizes;
 }
 
-const Icon = (props: BaseIconProps) => {
+export const Icon = (props: BaseIconProps) => {
   const { children, className, size = 'sm', ...rest } = props;
   const _size = size ? sizes[size] : sizes['sm'];
 
@@ -359,6 +359,10 @@ export const FormatClearIcon: IconComponent = (props) => {
   return <Icon {...props}>format_clear</Icon>;
 };
 
+export const FormatPaintIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_paint</Icon>;
+};
+
 export const FormatColorFillIcon: IconComponent = (props) => {
   return <Icon {...props}>format_color_fill</Icon>;
 };
@@ -407,6 +411,18 @@ export const FormatDateTimeIcon: IconComponent = (props) => {
   return <Icon {...props}>calendar_month</Icon>;
 };
 
+export const FormatFontSizeIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_fields</Icon>;
+};
+
+export const FormatFontSizeIncreaseIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_increase</Icon>;
+};
+
+export const FormatFontSizeDecreaseIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_decrease</Icon>;
+};
+
 export const FileCopyIcon: IconComponent = (props) => {
   return <Icon {...props}>file_copy</Icon>;
 };
@@ -437,6 +453,10 @@ export const GroupIcon: IconComponent = (props) => {
 
 export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
+};
+
+export const GroupAddIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_add</Icon>;
 };
 
 export const HistoryIcon: IconComponent = (props) => {
@@ -550,6 +570,10 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const SyncIcon: IconComponent = (props) => {
+  return <Icon {...props}>sync</Icon>;
+};
+
 export const SaveAndRunIcon: IconComponent = (props) => {
   return <Icon {...props}>play_arrow</Icon>;
 };
@@ -571,7 +595,7 @@ export const SettingsIcon: IconComponent = (props) => {
 };
 
 export const SheetIcon: IconComponent = (props) => {
-  return <Icon {...props}>tab</Icon>;
+  return <Icon {...props}>grid_on</Icon>;
 };
 
 export const SnippetsIcon: IconComponent = (props) => {
@@ -781,4 +805,14 @@ export const WarningIcon: IconComponent = (props) => {
 
 export const DesktopIcon: IconComponent = (props) => {
   return <Icon {...props}>computer</Icon>;
+};
+
+export const SyncingDoneIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_done</Icon>;
+};
+export const SyncingInProgressIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_sync</Icon>;
+};
+export const SyncingAlertIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_alert</Icon>;
 };

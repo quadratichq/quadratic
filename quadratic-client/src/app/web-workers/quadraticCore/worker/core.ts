@@ -282,7 +282,7 @@ class Core {
       // sends multiplayer synced to the client, to proceed from file loading screen
       coreClient.sendMultiplayerSynced();
 
-      // update the multiplayer state
+      // update the multiplayer state (checks for unsent transactions)
       await this.updateMultiplayerState();
     } catch (e) {
       this.handleCoreError('receiveTransactionAck', e);
@@ -339,6 +339,15 @@ class Core {
       this.gridController.setItalic(selection, italic, cursor, isAi);
     } catch (e) {
       this.handleCoreError('setItalic', e);
+    }
+  }
+
+  setFontSize(selection: string, fontSize: number, cursor: string, isAi: boolean) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.setFontSize(selection, fontSize, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('setFontSize', e);
     }
   }
 
@@ -1398,14 +1407,26 @@ class Core {
     }
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string, isAi: boolean): JsResponse | undefined {
+  resizeRows(
+    sheetId: string,
+    rows: ColumnRowResize[],
+    cursor: string,
+    isAi: boolean,
+    clientResized: boolean
+  ): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       const sizes: JsRowHeight[] = rows.map((row) => ({
         row: BigInt(row.index),
         height: row.size,
       }));
-      return this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor, isAi);
+      return this.gridController.resizeRows(
+        sheetId,
+        JSON.stringify(sizes, bigIntReplacer),
+        cursor,
+        isAi,
+        clientResized
+      );
     } catch (e) {
       this.handleCoreError('resizeRows', e);
     }

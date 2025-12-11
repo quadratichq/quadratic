@@ -3,8 +3,11 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
+import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MenuIcon } from '@/shared/components/Icons';
+import { SettingsDialog } from '@/shared/components/SettingsDialog';
 import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -14,7 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
-import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { handleSentryReplays } from '@/shared/utils/sentry';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -56,7 +59,9 @@ export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFuncti
  */
 type LoaderData = {
   teams: ApiTypes['/v0/teams.GET.response']['teams'];
-  userMakingRequest: ApiTypes['/v0/teams.GET.response']['userMakingRequest'];
+  userMakingRequest: ApiTypes['/v0/teams.GET.response']['userMakingRequest'] & {
+    clientDataKv?: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'];
+  };
   eduStatus: ApiTypes['/v0/education.GET.response']['eduStatus'];
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
@@ -79,19 +84,23 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
     throw redirect(ROUTES.TEAM(teamUuid) + url.search);
   }
 
+  // Check if we're checking for subscription updates (for verification)
+  const updateBilling = url.searchParams.get('subscription') === 'created';
+
   /**
    * Get the initial data
    */
-  const [{ teams, userMakingRequest }, { eduStatus }] = await Promise.all([
+  const [{ teams, userMakingRequest }, { eduStatus }, { clientDataKv }] = await Promise.all([
     apiClient.teams.list(),
     apiClient.education.get(),
+    apiClient.user.clientDataKv.get(),
   ]);
 
   /**
    * Get data for the active team
    */
   const activeTeam = await apiClient.teams
-    .get(teamUuid)
+    .get(teamUuid, { updateBilling })
     .then((data) => {
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {
@@ -144,7 +153,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
 
   handleSentryReplays(activeTeam.team.settings.analyticsAi);
 
-  return { teams, userMakingRequest, eduStatus, activeTeam };
+  return { teams, userMakingRequest: { ...userMakingRequest, clientDataKv }, eduStatus, activeTeam };
 };
 export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
 
@@ -152,12 +161,13 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const {
     activeTeam: {
       userMakingRequest: { teamRole: userMakingRequestTeamRole },
@@ -167,6 +177,17 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+
+  // Handle subscription success: show toast and clean up URL params
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      trackEvent('[Billing].success', { team_uuid: activeTeamUuid });
+      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('subscription');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, addGlobalSnackbar, activeTeamUuid]);
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
@@ -234,6 +255,8 @@ export const Component = () => {
           lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
           billingStatus={billingStatus}
         />
+        <SettingsDialog />
+        <ChangelogDialog />
       </TooltipProvider>
     </RecoilRoot>
   );

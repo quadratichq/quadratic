@@ -27,7 +27,7 @@ export const DeleteCells = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Action: delete';
+    const label = loading ? 'Deleting cells' : 'Deleted cells';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
