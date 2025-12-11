@@ -128,6 +128,7 @@ impl GridController {
                     );
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
+                Operation::SetComputeCode { .. } => self.execute_set_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
@@ -239,6 +240,13 @@ impl GridController {
             && let Some(code_run) = sheet.code_run_at(&(*sheet_pos).into())
         {
             let language = code_run.language.clone();
+
+            // Skip notification for formulas - they execute synchronously and don't need
+            // progress tracking. This avoids O(n²) iteration through pending operations.
+            if !language.is_code_language() {
+                return;
+            }
+
             let code = code_run.code.clone();
             // Notify about this operation as current, with all remaining operations as pending
             // Call notify_code_running_state which is defined in execute_code module

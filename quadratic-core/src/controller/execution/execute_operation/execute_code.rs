@@ -258,6 +258,63 @@ impl GridController {
         }
     }
 
+    /// Executes SetComputeCode operation - sets code and computes in one step.
+    /// This is used by autocomplete to avoid double finalization (no separate SetDataTable needed).
+    pub(super) fn execute_set_compute_code(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetComputeCode {
+            sheet_pos,
+            language,
+            code,
+        } = op
+        {
+            if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                dbgjs!("Only user / undo / redo / server transaction should have a SetComputeCode");
+                return;
+            }
+
+            // Clone for notification
+            let language_for_notify = language.clone();
+            let code_for_notify = code.clone();
+
+            // Execute based on language
+            match language {
+                CodeCellLanguage::Python => {
+                    self.run_python(transaction, sheet_pos, code);
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
+                }
+                CodeCellLanguage::Formula => {
+                    // Formulas execute synchronously - run_formula handles everything
+                    self.run_formula(transaction, sheet_pos, code);
+                }
+                CodeCellLanguage::Connection { kind, id } => {
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
+                    self.run_connection(transaction, sheet_pos, code, kind, id);
+                }
+                CodeCellLanguage::Javascript => {
+                    self.run_javascript(transaction, sheet_pos, code);
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
+                }
+                CodeCellLanguage::Import => {
+                    dbgjs!(format!("Import code run found at {sheet_pos:?}"));
+                    // no-op
+                }
+            }
+        }
+    }
+
     /// Notifies the client about all code operations (currently executing + pending)
     /// If current is None, all operations are pending. If current is Some, that operation is running.
     pub(crate) fn notify_code_running_state(

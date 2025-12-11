@@ -7,7 +7,7 @@ use crate::{
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
-        DataTable, DataTableKind, Sheet, SheetId,
+        CodeCellLanguage, DataTable, DataTableKind, Sheet, SheetId,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
@@ -197,6 +197,13 @@ pub enum Operation {
     /// Runs the code cell at a specific position.
     ComputeCode {
         sheet_pos: SheetPos,
+    },
+    /// Sets code and computes it in one operation (avoids double finalization).
+    /// Used by autocomplete for code cells.
+    SetComputeCode {
+        sheet_pos: SheetPos,
+        language: CodeCellLanguage,
+        code: String,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.

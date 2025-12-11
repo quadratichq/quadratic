@@ -545,6 +545,10 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// Returns whether any of the non-default values in `self` intersects
     /// `rect`.
     pub fn intersects(&self, rect: Rect) -> bool {
+        // Fast path for single-cell lookups
+        if rect.len() == 1 {
+            return self.get(rect.min) != T::default();
+        }
         self.nondefault_rects_in_rect(rect).next().is_some()
     }
 

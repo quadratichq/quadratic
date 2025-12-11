@@ -153,6 +153,11 @@ name = "import_csv"
 harness = false
 required-features = ["function-timer"]
 
+[[bench]]
+name = "autocomplete_formula"
+harness = false
+required-features = ["function-timer"]
+
 [profile.bench]
 debug = true
 

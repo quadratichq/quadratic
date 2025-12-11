@@ -167,17 +167,45 @@ impl SheetDataTables {
 
             let mut other_data_tables_to_update = Vec::new();
             if let Some(updated_rect) = updated_rect {
-                for (other_index, other_pos, other_data_table) in self
-                    .get_in_rect_sorted(updated_rect, true)
-                    .filter(|(_, other_pos, _)| *other_pos != pos)
-                {
-                    let other_old_output_rect =
-                        Some(other_data_table.output_rect(other_pos, false));
-                    other_data_tables_to_update.push((
-                        other_index,
-                        other_pos,
-                        other_old_output_rect,
-                    ));
+                // Optimization: For new single-cell formulas (old_rect=None, new_rect=1x1),
+                // we only need to check if this cell is inside another table's un-spilled output.
+                // This is faster than the general get_in_rect_sorted query.
+                let is_new_single_cell = old_rect.is_none() && updated_rect.len() == 1;
+
+                if is_new_single_cell {
+                    // Fast path: check only un_spilled_output_rects for overlapping tables
+                    for other_pos in self
+                        .un_spilled_output_rects
+                        .get_positions_associated_with_region(updated_rect)
+                    {
+                        if other_pos != pos {
+                            if let Some((other_index, other_data_table)) =
+                                self.get_full_at(&other_pos)
+                            {
+                                let other_old_output_rect =
+                                    Some(other_data_table.output_rect(other_pos, false));
+                                other_data_tables_to_update.push((
+                                    other_index,
+                                    other_pos,
+                                    other_old_output_rect,
+                                ));
+                            }
+                        }
+                    }
+                } else {
+                    // General path: check all tables in the updated rect
+                    for (other_index, other_pos, other_data_table) in self
+                        .get_in_rect_sorted(updated_rect, true)
+                        .filter(|(_, other_pos, _)| *other_pos != pos)
+                    {
+                        let other_old_output_rect =
+                            Some(other_data_table.output_rect(other_pos, false));
+                        other_data_tables_to_update.push((
+                            other_index,
+                            other_pos,
+                            other_old_output_rect,
+                        ));
+                    }
                 }
 
                 dirty_rects.insert(updated_rect);
@@ -379,6 +407,7 @@ impl SheetDataTables {
     }
 
     /// Inserts a data table before the given index, updating mutual spill and cache.
+    #[function_timer::function_timer]
     pub(crate) fn insert_before(
         &mut self,
         mut index: usize,
