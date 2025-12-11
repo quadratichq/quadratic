@@ -437,7 +437,7 @@ export const AIPendingChanges = memo(() => {
   }
 
   return (
-    <div className="mx-2 mb-1.5 overflow-hidden rounded-md border border-border bg-accent/30">
+    <div className="mx-2 mb-1 overflow-hidden rounded-md border border-border bg-background">
       {/* Header */}
       <div
         className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 hover:bg-accent/50"

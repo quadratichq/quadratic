@@ -101,7 +101,12 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="relative grid grid-rows-[auto_1fr_auto_auto] pt-0.5">
+              <div
+                className={cn(
+                  'relative grid pt-0.5',
+                  messagesCount === 0 ? 'grid-rows-[auto_1fr_auto_auto]' : 'grid-rows-[auto_auto]'
+                )}
+              >
                 <AIPendingChanges />
                 {messagesCount === 0 && <div className="relative flex items-center justify-center" />}
                 <div className="px-2 pb-2">
