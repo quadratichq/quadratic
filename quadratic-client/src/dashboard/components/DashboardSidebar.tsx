@@ -10,6 +10,7 @@ import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgr
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
+  AIIcon,
   ArrowDropDownIcon,
   CheckIcon,
   DatabaseIcon,
@@ -17,10 +18,8 @@ import {
   ExamplesIcon,
   ExternalLinkIcon,
   FileIcon,
-  FilePrivateIcon,
-  FileSharedWithMeIcon,
   GroupIcon,
-  HomeIcon,
+  Icon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
@@ -81,7 +80,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const { loggedInUser } = useRootRouteLoaderData();
   const submit = useSubmit();
   const {
-    userMakingRequest: { id: ownerUserId },
     eduStatus,
     activeTeam: {
       userMakingRequest: { teamPermissions },
@@ -108,30 +106,35 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       </div>
       <div className={`flex flex-col px-3`}>
         <div className="grid gap-0.5">
-          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)}>
-            <HomeIcon className={classNameIcons} />
-            Home
-          </SidebarNavLink>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="mb-2">New…</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[240px]">
+              <DropdownMenuItem className="group">
+                Start file with AI
+                <AIIcon className="ml-auto opacity-30 group-hover:opacity-100" />
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>File</DropdownMenuItem>
+              <DropdownMenuItem className="group">
+                Private file
+                <Icon className="ml-auto opacity-30 group-hover:opacity-100">lock</Icon>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
+            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)}>
               <FileIcon className={classNameIcons} />
-              Sheets
+              Files
+              {canEditTeam && (
+                <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
+                  New
+                </SidebarNavLinkCreateButton>
+              )}
             </SidebarNavLink>
-            {canEditTeam && (
-              <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
-                New
-              </SidebarNavLinkCreateButton>
-            )}
           </div>
-          <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-              <FilePrivateIcon className={classNameIcons} />
-              Drafts
-            </SidebarNavLink>
-            <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
-              New
-            </SidebarNavLinkCreateButton>
-          </div>
+
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
@@ -173,8 +176,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </div>
           )}
         </div>
-      </div>
-      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
+        <hr className="my-2" />
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEMPLATES}>
@@ -195,7 +197,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
-
+      </div>
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -223,11 +226,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Labs
           </SidebarNavLink>
         )}
-        <hr />
-        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-          <FileSharedWithMeIcon className={classNameIcons} />
-          Shared with me
-        </SidebarNavLink>
+
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 pl-2.5 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
@@ -274,27 +273,51 @@ function SidebarNavLinkCreateButton({
   teamUuid: string;
 }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
-          onClick={async (e) => {
-            e.preventDefault();
-            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-            if (hasReachedLimit) {
-              showUpgradeDialog('fileLimitReached');
-              return;
-            }
-            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
-          }}
-        >
-          <AddIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{children}</TooltipContent>
-    </Tooltip>
+    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" className="opacity-30 hover:opacity-100">
+            <AIIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>New file with AI</TooltipContent>
+      </Tooltip>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="!bg-transparent opacity-30 hover:opacity-100"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+                  if (hasReachedLimit) {
+                    showUpgradeDialog('fileLimitReached');
+                    return;
+                  }
+                  window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+                }}
+              >
+                <AddIcon />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{children}</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent>
+          <DropdownMenuItem>
+            <Icon className="mr-2 text-muted-foreground">lock_open_right</Icon>
+            New team file
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Icon className="mr-2 text-muted-foreground">lock</Icon>
+            New private file
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 

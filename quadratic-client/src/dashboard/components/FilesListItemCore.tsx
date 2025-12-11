@@ -58,7 +58,7 @@ export function FilesListItemCore({
               ) : (
                 isPrivate === true && (
                   <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
-                    Draft
+                    Private
                   </Badge>
                 )
               )}

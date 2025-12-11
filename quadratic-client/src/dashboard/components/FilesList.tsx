@@ -36,6 +36,12 @@ export type FilesListUserFile = {
   isSharedWithMe?: boolean;
 };
 
+export type FilesListFilters = {
+  fileName: string;
+  fileType: '' | 'team' | 'private' | 'shared';
+  fileCreator: string[];
+};
+
 export function FilesList({
   files,
   emptyState,
@@ -49,6 +55,11 @@ export function FilesList({
 }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
+  const [filters, setFilters] = useState<FilesListFilters>({
+    fileName: '',
+    fileType: '',
+    fileCreator: [],
+  });
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
@@ -115,6 +126,14 @@ export function FilesList({
       .filter((item) => item.filterMatch);
   }
 
+  if (filters.fileType === 'private') {
+    filesToRender = filesToRender.filter((file) => file.isPrivate);
+  } else if (filters.fileType === 'team') {
+    filesToRender = filesToRender.filter((file) => !file.isPrivate);
+  } else if (filters.fileType === 'shared') {
+    filesToRender = filesToRender.filter((file) => file.publicLinkAccess !== 'NOT_SHARED');
+  }
+
   // Sort 'em based on current prefs
   filesToRender.sort((a, b) => {
     let comparison;
@@ -149,6 +168,8 @@ export function FilesList({
         setFilterValue={setFilterValue}
         viewPreferences={viewPreferences}
         setViewPreferences={setViewPreferences}
+        filters={filters}
+        setFilters={setFilters}
       />
 
       <FilesListItems viewPreferences={viewPreferences}>
@@ -214,6 +235,13 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListTempla
         setFilterValue={setFilterValue}
         viewPreferences={viewPreferences}
         setViewPreferences={setViewPreferences}
+        // TODO: fix this
+        filters={{
+          fileName: filterValue,
+          fileType: '',
+          fileCreator: [],
+        }}
+        setFilters={() => {}}
       />
 
       <FilesListItems viewPreferences={viewPreferences}>
