@@ -110,6 +110,9 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Delete Previous Edit_Share_File_Spreadsheet file
   await cleanUpFiles(page, { fileName });
 
+  // Also clean up renamed files from previous test runs (renamed to "Edit - {timestamp}")
+  await cleanUpFiles(page, { fileName: 'Edit -' });
+
   // Import Edit_Share_File_Permissions File
   await uploadFile(page, { fileName, fileType });
 
