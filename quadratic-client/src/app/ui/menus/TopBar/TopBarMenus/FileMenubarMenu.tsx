@@ -9,7 +9,6 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import {
   DeleteIcon,
   DownloadIcon,
@@ -46,7 +45,6 @@ export const FileMenubarMenu = () => {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const user = useRecoilValue(editorInteractionStateUserAtom);
-  const confirmFn = useConfirmDialog('deleteFile', { name });
   const isAvailableArgs = useIsAvailableArgs();
 
   const [recentFiles, setRecentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
@@ -128,7 +126,6 @@ export const FileMenubarMenu = () => {
                 userEmail: user?.email ?? '',
                 redirect: true,
                 submit,
-                confirmFn,
               })
             }
           >

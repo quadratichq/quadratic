@@ -20,7 +20,6 @@ type ConfirmOptions = {
 
 // 2. Keys and required args for each dialog type
 type ConfirmDialogArgs = {
-  deleteFile: { name: string };
   deleteConnection: undefined;
   deleteUserFromTeam: { name: string; isLoggedInUser: boolean };
   deleteUserFromFile: { name: string; isLoggedInUser: boolean };
@@ -32,11 +31,6 @@ type ConfirmDialogKeys = keyof ConfirmDialogArgs;
 const confirmDialogs: {
   [K in ConfirmDialogKeys]: (args: ConfirmDialogArgs[K]) => ConfirmOptions;
 } = {
-  deleteFile: ({ name }) => ({
-    title: 'Delete file',
-    message: `"${name}" will be deleted if you continue. This cannot be undone.`,
-    confirmText: 'Delete',
-  }),
   deleteConnection: () => ({
     title: 'Delete connection',
     message: `The connection will be deleted if you continue. This cannot be undone.`,
