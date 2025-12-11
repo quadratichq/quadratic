@@ -73,7 +73,6 @@ export class Cursor extends Container {
     }
   };
 
-
   // redraws corners if there is an error
   private drawError(cell: JsCoordinate) {
     const error = content.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
@@ -399,7 +398,9 @@ export class Cursor extends Container {
       this.drawFiniteCursor(finiteRanges);
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
       // Use light gray when grid doesn't have focus, otherwise use accent color
-      const selectionColor = pixiAppSettings.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+      const selectionColor = pixiAppSettings.isGridFocused()
+        ? content.accentColor
+        : getCSSVariableTint('muted-foreground');
       const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
         color: selectionColor,
