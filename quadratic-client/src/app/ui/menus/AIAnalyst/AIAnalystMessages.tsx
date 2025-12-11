@@ -644,6 +644,7 @@ const GroupedToolCalls = memo(
                   debugAIAnalystChatEditing
                     ? (newToolCall) => {
                         const message = messages[messageIndex];
+                        if (!('toolCalls' in message)) return;
                         const newMessage = { ...message, toolCalls: [...message.toolCalls] };
                         newMessage.toolCalls[toolCallIndex] = newToolCall;
                         const newMessages = [...messages];
