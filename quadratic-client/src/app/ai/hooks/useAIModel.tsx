@@ -8,6 +8,8 @@ import { useCallback, useEffect, useMemo } from 'react';
 const AI_MODEL_TYPE_KEY = 'aiModelTypeKey';
 const AI_MODEL_OTHERS_KEY = 'aiModelOthersKey';
 
+// Note: 'default' is kept for backwards compatibility with users who had 'fast' selected.
+// They will be migrated to 'max' in the useEffect below.
 export type MODEL_TYPE = 'default' | 'max' | 'others';
 
 interface UseAIModelReturn {
@@ -41,17 +43,9 @@ export const useAIModel = (): UseAIModelReturn => {
     return othersModelKeys[0];
   }, [othersModelKeys]);
 
-  const defaultModelKey: AIModelKey = useMemo(() => {
-    const key = Object.keys(MODELS_CONFIGURATION).find(
-      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'fast'
-    );
-    if (!key) throw new Error('Default model not found');
-    return key as AIModelKey;
-  }, []);
-
   const maxModelKey: AIModelKey = useMemo(() => {
     const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max');
-    if (!key) throw new Error('Default model not found');
+    if (!key) throw new Error('Max model not found');
     return key as AIModelKey;
   }, []);
 
@@ -60,29 +54,33 @@ export const useAIModel = (): UseAIModelReturn => {
       if (othersModelKey) {
         return othersModelKey;
       }
-      setModelType('default');
+      setModelType('max');
       return defaultOthersModelKey;
     }
-    if (modelType === 'default') {
-      return defaultModelKey;
-    }
-    if (modelType === 'max') {
+    // 'default' users (previously 'fast') are now treated as 'max'
+    if (modelType === 'default' || modelType === 'max') {
       return maxModelKey;
     }
     return modelType;
-  }, [defaultModelKey, defaultOthersModelKey, maxModelKey, modelType, othersModelKey, setModelType]);
+  }, [defaultOthersModelKey, maxModelKey, modelType, othersModelKey, setModelType]);
 
   useEffect(() => {
     if (debug) return;
 
-    // ensure the selected model is still available; otherwise set to default
+    // Migrate users who had 'default' (fast) selected to 'max' (recommended)
+    if (modelType === 'default') {
+      setModelType('max');
+      return;
+    }
+
+    // ensure the selected model is still available; otherwise set to max
     if (modelType === 'others' && othersModelKey) {
       const modelConfig = MODELS_CONFIGURATION[othersModelKey];
       if (!modelConfig || modelConfig.mode === 'disabled') {
-        setModelType('default');
+        setModelType('max');
       }
     } else if (modelType === 'others') {
-      setModelType('default');
+      setModelType('max');
     }
   }, [debug, modelType, setModelType, othersModelKey]);
 
