@@ -12,7 +12,7 @@ test('Log In', async ({ page }) => {
   // Assert:
   //--------------------------------
   // brought to home page
-  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({
+  await expect(page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`)).toBeVisible({
     timeout: 60 * 1000,
   });
   await expect(page).toHaveURL(/teams/);
@@ -72,7 +72,7 @@ test.skip('Sign Up', async ({ page }) => {
   await logIn(page, { emailPrefix });
 
   // Assert we can successfully log in
-  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({
+  await expect(page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`)).toBeVisible({
     timeout: 60 * 1000,
   });
   await expect(page).toHaveURL(/teams/);
