@@ -359,6 +359,10 @@ export const FormatClearIcon: IconComponent = (props) => {
   return <Icon {...props}>format_clear</Icon>;
 };
 
+export const FormatPaintIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_paint</Icon>;
+};
+
 export const FormatColorFillIcon: IconComponent = (props) => {
   return <Icon {...props}>format_color_fill</Icon>;
 };

@@ -27,7 +27,7 @@ export const Undo = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Action: undo';
+    const label = loading ? 'Undoing' : 'Undone';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
