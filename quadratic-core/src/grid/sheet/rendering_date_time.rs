@@ -147,4 +147,29 @@ mod tests {
         let value = CellValue::Time(NaiveTime::from_str("17:12:00").unwrap());
         assert_eq!(Sheet::value_date_time(&value, Some(format)), "05:12:00 PM");
     }
+
+    #[test]
+    fn format_preserves_user_input_style() {
+        use chrono::NaiveDate;
+
+        // Test leading zeros are preserved: 01/02/2020
+        let date = NaiveDate::from_ymd_opt(2020, 1, 2).unwrap();
+        let value = CellValue::Date(date);
+        let format = "%m/%d/%Y".to_string(); // with padding
+        assert_eq!(Sheet::value_date_time(&value, Some(format)), "01/02/2020");
+
+        // Test no leading zeros: 1/2/2020
+        let format = "%-m/%-d/%Y".to_string(); // no padding
+        assert_eq!(Sheet::value_date_time(&value, Some(format)), "1/2/2020");
+
+        // Test different separator: 1-2-2020
+        let format = "%-m-%-d-%Y".to_string();
+        assert_eq!(Sheet::value_date_time(&value, Some(format)), "1-2-2020");
+
+        // Test 01/05/2024 specifically - should NOT become 2024/01/05
+        let date = NaiveDate::from_ymd_opt(2024, 1, 5).unwrap();
+        let value = CellValue::Date(date);
+        let format = "%m/%d/%Y".to_string();
+        assert_eq!(Sheet::value_date_time(&value, Some(format)), "01/05/2024");
+    }
 }

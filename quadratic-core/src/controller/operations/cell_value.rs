@@ -75,14 +75,20 @@ impl GridController {
                         ));
                         continue;
                     }
+                    let existing_format = sheet.cell_format(pos);
                     let user_enter_percent = from_user_input
-                        && sheet
-                            .cell_format(pos)
+                        && existing_format
                             .numeric_format
                             .is_some_and(|format| format.kind == NumericFormatKind::Percentage);
 
-                    let (cell_value, format_update) =
+                    let (cell_value, mut format_update) =
                         CellValue::string_to_cell_value(&value, user_enter_percent);
+
+                    // If the cell already has a custom date_time format, preserve it
+                    // instead of using the format detected from the input
+                    if from_user_input && existing_format.date_time.is_some() {
+                        format_update.date_time = None;
+                    }
 
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 

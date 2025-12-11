@@ -299,16 +299,22 @@ impl ParsedDateComponents {
                         }
                     }
                     'm' | 'M' => {
-                        // Use %b for named months, %-m for numeric (no padding)
+                        // Use %b for named months, %m or %-m for numeric
                         if matches!(component, ParsedDateComponent::Month(_)) {
                             "%b".to_string()
+                        } else if component.has_leading_zero() {
+                            "%m".to_string() // preserve leading zero
                         } else {
-                            "%-m".to_string()
+                            "%-m".to_string() // no padding
                         }
                     }
                     'd' | 'D' => {
-                        // Use %-d for day (no padding)
-                        "%-d".to_string()
+                        // Preserve leading zero if present
+                        if component.has_leading_zero() {
+                            "%d".to_string() // with padding
+                        } else {
+                            "%-d".to_string() // no padding
+                        }
                     }
                     c => panic!("unexpected char {c:?} in date format"),
                 }
@@ -376,6 +382,8 @@ enum ParsedDateComponent {
         year: Option<u32>,
         month: Option<u32>,
         day: Option<u32>,
+        /// Whether the original string had a leading zero (e.g., "01" vs "1")
+        has_leading_zero: bool,
     },
 }
 
@@ -396,14 +404,17 @@ impl FromStr for ParsedDateComponent {
             Ok(Self::Day(ordinal.parse().map_err(|_| ())?))
         } else {
             let n = s.parse().map_err(|_| ())?;
+            // Check if the string has a leading zero (e.g., "01" vs "1")
+            let has_leading_zero = s.len() == 2 && s.starts_with('0');
             match s.len() {
                 // 1-digit number must be day or month. Example: `3`
                 1 => Ok(Self::Ambiguous {
                     year: None,
                     month: Some(n),
                     day: Some(n),
+                    has_leading_zero: false,
                 }),
-                // 2-digit number could be anything. Example: `12`
+                // 2-digit number could be anything. Example: `12` or `01`
                 2 => Ok(Self::Ambiguous {
                     year: match n {
                         ..CENTURY_CUTOFF => n.checked_add(2000),
@@ -411,6 +422,7 @@ impl FromStr for ParsedDateComponent {
                     },
                     month: Some(n),
                     day: Some(n),
+                    has_leading_zero,
                 }),
                 // 4-digit number must be year. Example: `1619`
                 4 => Ok(Self::Year(n)),
@@ -433,6 +445,14 @@ impl ParsedDateComponent {
             ParsedDateComponent::Month(month) => Some(month),
             ParsedDateComponent::Ambiguous { month, .. } => month,
             _ => None,
+        }
+    }
+    fn has_leading_zero(self) -> bool {
+        match self {
+            ParsedDateComponent::Ambiguous {
+                has_leading_zero, ..
+            } => has_leading_zero,
+            _ => false,
         }
     }
     fn day(self) -> Option<u32> {
@@ -465,8 +485,11 @@ pub fn parse_date_with_format(value: &str) -> Option<(NaiveDate, String)> {
         // When using spaces, a month name is always required.
         &[
             "MdY", // Dec 10 2024
+            "Mdy", // Dec 10 24 (2-digit year)
             "dMY", // 10 Dec 2024
+            "dMy", // 10 Dec 24 (2-digit year)
             "YMd", // 2024 Dec 10
+            "yMd", // 24 Dec 10 (2-digit year)
             "dM",  // 10 Dec
             "Md",  // Dec 10
             "MY",  // Dec 2024
@@ -667,6 +690,37 @@ mod tests {
 
         let (_, format) = parse_date_with_format("5-5").unwrap();
         assert_eq!(format, "%-m-%-d");
+
+        // Test named month with 2-digit year (Jan 5 24)
+        let (date, format) = parse_date_with_format("Jan 5 24").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 1, 5).unwrap());
+        assert_eq!(format, "%b %-d %y");
+
+        // Test leading zeros are preserved
+        let (date, format) = parse_date_with_format("01/02/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%m/%d/%Y");
+        // Verify rendering
+        assert_eq!(date.format(&format).to_string(), "01/02/2020");
+
+        // Single digit without leading zero
+        let (date, format) = parse_date_with_format("1/2/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%-m/%-d/%Y");
+        // Verify rendering
+        assert_eq!(date.format(&format).to_string(), "1/2/2020");
+
+        // Test 01/05/2024 specifically - with AMERICAN=true, this is January 5, 2024
+        let (date, format) = parse_date_with_format("01/05/2024").unwrap();
+        // Verify it's parsed as January 5, 2024 (month=1, day=5)
+        assert_eq!(date.month(), 1);
+        assert_eq!(date.day(), 5);
+        assert_eq!(date.year(), 2024);
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 1, 5).unwrap());
+        // Format should preserve leading zeros
+        assert_eq!(format, "%m/%d/%Y");
+        // Verify it renders as "01/05/2024", NOT "2024/01/05"
+        assert_eq!(date.format(&format).to_string(), "01/05/2024");
     }
 
     #[test]

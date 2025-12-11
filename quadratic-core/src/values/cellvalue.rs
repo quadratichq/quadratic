@@ -663,7 +663,12 @@ impl CellValue {
                 ..Default::default()
             };
             date
-        } else if let Some(date_time) = CellValue::unpack_date_time(value) {
+        } else if let Some((date_time, dt_format)) = CellValue::unpack_date_time_with_format(value)
+        {
+            format_update = FormatUpdate {
+                date_time: Some(Some(dt_format)),
+                ..Default::default()
+            };
             date_time
         } else if let Some(duration) = CellValue::unpack_duration(value) {
             duration
@@ -1637,6 +1642,26 @@ mod test {
         let (value, format_update) = CellValue::string_to_cell_value("Dec 15", false);
         assert!(matches!(value, CellValue::Date(_)));
         assert_eq!(format_update.date_time, Some(Some("%b %-d".to_string())));
+
+        // Test leading zeros are preserved: 01/02/2020 should stay as 01/02/2020
+        let (value, format_update) = CellValue::string_to_cell_value("01/02/2020", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%m/%d/%Y".to_string())));
+        // Verify it renders correctly
+        if let CellValue::Date(d) = value {
+            let rendered = d.format("%m/%d/%Y").to_string();
+            assert_eq!(rendered, "01/02/2020");
+        }
+
+        // Test 1/5/2024 stays as 1/5/2024 (no leading zeros)
+        let (value, format_update) = CellValue::string_to_cell_value("1/5/2024", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m/%-d/%Y".to_string())));
+        // Verify it renders correctly
+        if let CellValue::Date(d) = value {
+            let rendered = d.format("%-m/%-d/%Y").to_string();
+            assert_eq!(rendered, "1/5/2024");
+        }
     }
 
     #[test]
