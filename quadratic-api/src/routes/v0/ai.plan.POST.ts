@@ -87,8 +87,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
 
   // Plan generation is always allowed, even if user has exceeded billing limit
   // This encourages users to try the "Start with AI" flow without penalty
-  // Plan generation is always allowed, even if user has exceeded billing limit
-  // This encourages users to try the "Start with AI" flow without penalty
   let exceededBillingLimit = false;
   if (!isOnPaidPlan) {
     const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
