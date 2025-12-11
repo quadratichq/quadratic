@@ -136,6 +136,9 @@ export const FileMenubarMenu = () => {
             Delete
           </MenubarItem>
         )}
+
+        <MenubarSeparator />
+        <MenubarItemAction action={Action.HelpSettings} actionArgs={undefined} shortcutOverride="" />
       </MenubarContent>
     </MenubarMenu>
   );

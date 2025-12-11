@@ -21,6 +21,7 @@ export function isBitmapFontLoaded(): boolean {
 }
 
 export async function loadAssets() {
+  if (assetsLoaded) return;
   if (debugFlag('debugShowFileIO')) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 

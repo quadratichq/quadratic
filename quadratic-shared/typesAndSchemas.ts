@@ -111,12 +111,14 @@ export const TeamClientDataKvSchema = z.record(z.any());
 export const UserClientDataKvSchema = z
   .object({
     knowsAboutModelPicker: z.boolean().optional(),
+    lastSeenChangelogVersion: z.string().optional(),
   })
   .strip();
 export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;
 
 const TeamSettingsSchema = z.object({
   analyticsAi: z.boolean(),
+  aiRules: z.string().nullable().optional(),
 });
 export type TeamSettings = z.infer<typeof TeamSettingsSchema>;
 
@@ -412,6 +414,7 @@ export const ApiSchemas = {
       clientDataKv: TeamClientDataKvSchema.optional(),
       settings: TeamSettingsSchema.extend({
         showConnectionDemo: z.boolean().optional(),
+        aiRules: z.string().nullable().optional(),
       })
         .partial()
         .optional(),
@@ -436,7 +439,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.PATCH.response': z.object({
     name: TeamSchema.shape.name,
     clientDataKv: TeamClientDataKvSchema,
-    settings: TeamSettingsSchema.extend({ showConnectionDemo: z.boolean() }),
+    settings: TeamSettingsSchema.extend({ showConnectionDemo: z.boolean(), aiRules: z.string().nullable().optional() }),
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
@@ -495,6 +498,18 @@ export const ApiSchemas = {
   '/v0/user.POST.response': z.object({ message: z.string() }),
   '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
   '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
+  '/v0/user/client-data-kv.GET.response': z.object({
+    clientDataKv: UserClientDataKvSchema.optional(),
+  }),
+  '/v0/user/ai-rules.PATCH.request': z.object({
+    aiRules: z.string().nullable(),
+  }),
+  '/v0/user/ai-rules.PATCH.response': z.object({
+    aiRules: z.string().nullable(),
+  }),
+  '/v0/user/ai-rules.GET.response': z.object({
+    aiRules: z.string().nullable(),
+  }),
 
   /**
    *

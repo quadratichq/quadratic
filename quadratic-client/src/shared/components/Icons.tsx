@@ -587,7 +587,7 @@ export const SettingsIcon: IconComponent = (props) => {
 };
 
 export const SheetIcon: IconComponent = (props) => {
-  return <Icon {...props}>tab</Icon>;
+  return <Icon {...props}>grid_on</Icon>;
 };
 
 export const SnippetsIcon: IconComponent = (props) => {

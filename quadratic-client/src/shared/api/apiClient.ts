@@ -381,11 +381,30 @@ export const apiClient = {
       );
     },
     clientDataKv: {
+      get() {
+        return fetchFromApi(
+          `/v0/user/client-data-kv`,
+          { method: 'GET' },
+          ApiSchemas['/v0/user/client-data-kv.GET.response']
+        );
+      },
       update(body: ApiTypes['/v0/user/client-data-kv.POST.request']) {
         return fetchFromApi(
           `/v0/user/client-data-kv`,
           { method: 'POST', body: JSON.stringify(body) },
           ApiSchemas['/v0/user/client-data-kv.POST.response']
+        );
+      },
+    },
+    aiRules: {
+      get() {
+        return fetchFromApi(`/v0/user/ai-rules`, { method: 'GET' }, ApiSchemas['/v0/user/ai-rules.GET.response']);
+      },
+      update(body: ApiTypes['/v0/user/ai-rules.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/user/ai-rules`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/ai-rules.PATCH.response']
         );
       },
     },

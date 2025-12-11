@@ -57,6 +57,11 @@ export const Component = () => {
         return;
       }
 
+      trackEvent('[Settings].teamNameSaved', {
+        team_uuid: team.uuid,
+        new_name: value,
+      });
+
       const data = getActionUpdateTeam({ name: value });
       submit(data, {
         method: 'POST',

@@ -88,6 +88,7 @@ export const ROUTES = {
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
     FILE_SHARING: (uuid: string) => `/api/files/${uuid}/sharing`,
+    TEAM: (teamUuid: string) => `/api/teams/${teamUuid}`,
     CONNECTIONS: {
       POST: `/api/connections`,
       LIST: (teamUuid: string) => `/api/connections?team-uuid=${teamUuid}`,
