@@ -11,7 +11,7 @@ import {
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
-import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
+import { KernelMenu } from '@/app/ui/menus/KernelMenu/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SettingsIcon, SpinnerIcon } from '@/shared/components/Icons';

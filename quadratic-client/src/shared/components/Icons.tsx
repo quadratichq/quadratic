@@ -566,6 +566,10 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const SyncIcon: IconComponent = (props) => {
+  return <Icon {...props}>sync</Icon>;
+};
+
 export const SaveAndRunIcon: IconComponent = (props) => {
   return <Icon {...props}>play_arrow</Icon>;
 };
@@ -797,4 +801,14 @@ export const WarningIcon: IconComponent = (props) => {
 
 export const DesktopIcon: IconComponent = (props) => {
   return <Icon {...props}>computer</Icon>;
+};
+
+export const SyncingDoneIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_done</Icon>;
+};
+export const SyncingInProgressIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_sync</Icon>;
+};
+export const SyncingAlertIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_alert</Icon>;
 };
