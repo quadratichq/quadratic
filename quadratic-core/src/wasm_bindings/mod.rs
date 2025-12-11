@@ -25,6 +25,13 @@ pub fn hello() {
     js::log("[WASM/Rust] quadratic-core ready");
 }
 
+/// Returns the current file format version.
+/// This should be used when creating new files to ensure compatibility.
+#[wasm_bindgen]
+pub fn get_current_file_version() -> String {
+    crate::grid::file::CURRENT_VERSION.into()
+}
+
 pub fn capture_core_error(func: impl FnOnce() -> Result<Option<JsValue>, String>) -> JsValue {
     match func() {
         Ok(response) => match response {

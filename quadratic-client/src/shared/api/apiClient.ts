@@ -6,8 +6,43 @@ import { captureEvent } from '@sentry/react';
 import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
-// TODO(ddimaria): make this dynamic
-const CURRENT_FILE_VERSION = '1.6';
+// Fallback version if WASM module isn't loaded yet
+// This should match the current version in quadratic-core/src/grid/file/mod.rs
+const FALLBACK_FILE_VERSION = '1.12';
+
+// Cache for the current file version from WASM
+let cachedFileVersion: string | null = null;
+
+/**
+ * Gets the current file format version dynamically from the Rust core.
+ * Falls back to FALLBACK_FILE_VERSION if WASM module isn't loaded yet.
+ */
+async function getCurrentFileVersion(): Promise<string> {
+  // Return cached version if available
+  if (cachedFileVersion !== null) {
+    return cachedFileVersion;
+  }
+
+  try {
+    // Try to import and call the WASM function
+    // The function should be available once the WASM module is loaded
+    const quadraticCore = await import('@/app/quadratic-core/quadratic_core');
+
+    // WASM bindgen keeps snake_case function names as-is
+    // Check if the function exists (it should after WASM is initialized)
+    if (typeof quadraticCore.get_current_file_version === 'function') {
+      const version = quadraticCore.get_current_file_version();
+      cachedFileVersion = version;
+      return version;
+    }
+  } catch (error) {
+    // WASM module not loaded yet, use fallback
+    console.warn('[apiClient] Could not get file version from WASM, using fallback:', error);
+  }
+
+  // Fallback to hardcoded version
+  return FALLBACK_FILE_VERSION;
+}
 
 export const apiClient = {
   teams: {
@@ -161,7 +196,7 @@ export const apiClient = {
 
       return response;
     },
-    create({
+    async create({
       file,
       teamUuid,
       isPrivate,
@@ -176,9 +211,10 @@ export const apiClient = {
       onUploadProgress?: (uploadProgress: number) => void;
     }) {
       if (file === undefined) {
+        const version = await getCurrentFileVersion();
         file = {
           name: 'Untitled',
-          version: CURRENT_FILE_VERSION,
+          version,
         };
       }
 

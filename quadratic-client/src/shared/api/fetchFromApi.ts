@@ -23,6 +23,14 @@ export async function fetchFromApi<T>(
   init: RequestInit,
   schema: z.Schema<T>
 ): Promise<z.infer<typeof schema>> {
+  // Validate that schema is defined and has safeParse method before proceeding
+  if (!schema || typeof schema.safeParse !== 'function') {
+    const errorMessage = `Schema is undefined or invalid for API call: ${init.method} ${path}. This may indicate a missing schema definition in ApiSchemas. Schema: ${schema}`;
+    console.error(errorMessage, { schema, path, method: init.method });
+    captureException(new Error(errorMessage));
+    throw new ApiError(errorMessage, 500, init.method);
+  }
+
   const debugTime = `API ${init.method} ${path}`;
   if (debugFlag('debugShowAPITimes')) console.time(debugTime);
 
