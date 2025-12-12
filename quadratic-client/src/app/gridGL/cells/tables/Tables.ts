@@ -369,7 +369,9 @@ export class Tables extends Container<Table> {
     if (sheetId === this.sheet.id) {
       this.children.map((table) => table.updateCodeCell());
     }
-    pixiApp.setViewportDirty();
+    if (sheetId === sheets.current) {
+      pixiApp.setViewportDirty();
+    }
   };
 
   // Update floating headers when a column is resized
