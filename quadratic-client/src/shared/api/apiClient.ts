@@ -498,6 +498,28 @@ export const apiClient = {
         ApiSchemas['/v0/ai/codeRunError.PATCH.response']
       );
     },
+    async search(query: string, signal?: AbortSignal) {
+      // Import authClient dynamically to avoid circular dependency
+      const { authClient } = await import('@/auth/auth');
+      const isAuthenticated = await authClient.isAuthenticated();
+      const token = isAuthenticated ? await authClient.getTokenOrRedirect(false) : '';
+
+      const response = await fetch(`${apiClient.getApiUrl()}/v0/ai/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(isAuthenticated && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ query }),
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error('Search request failed');
+      }
+
+      return response.json();
+    },
   },
 
   postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {

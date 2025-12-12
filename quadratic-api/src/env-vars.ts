@@ -71,6 +71,7 @@ export const XAI_API_KEY = process.env.XAI_API_KEY || 'XAI_API_KEY';
 export const BASETEN_API_KEY = process.env.BASETEN_API_KEY || 'BASETEN_API_KEY';
 export const FIREWORKS_API_KEY = process.env.FIREWORKS_API_KEY || 'FIREWORKS_API_KEY';
 export const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY || 'OPEN_ROUTER_API_KEY';
+export const PARALLEL_API_KEY = process.env.PARALLEL_API_KEY || '';
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
