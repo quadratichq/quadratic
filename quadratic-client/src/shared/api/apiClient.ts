@@ -161,7 +161,7 @@ export const apiClient = {
 
       return response;
     },
-    async create({
+    create({
       file,
       teamUuid,
       isPrivate,

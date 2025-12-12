@@ -18,6 +18,14 @@ export const loader = async ({ request }: { request: Request }) => {
     if (!isAuthenticated) {
       await authClient.handleSigninRedirect(request.url);
       isAuthenticated = await authClient.isAuthenticated();
+    } else {
+      // If already authenticated and URL contains auth code, strip it for security
+      const url = new URL(request.url);
+      if (url.searchParams.has('code')) {
+        url.searchParams.delete('code');
+        url.searchParams.delete('state'); // Also remove state parameter
+        return redirect(url.pathname + url.search);
+      }
     }
 
     if (isAuthenticated) {
