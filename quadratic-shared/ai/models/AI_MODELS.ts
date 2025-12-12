@@ -521,10 +521,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:gpt-5-2025-08-07': {
-    model: 'gpt-5-2025-08-07',
+  'openai:gpt-5.2-2025-12-12': {
+    model: 'gpt-5.2-2025-12-12',
     backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
-    displayName: 'GPT-5',
+    displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
@@ -619,10 +619,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
-  'azure-openai:gpt-5': {
-    model: 'gpt-5',
-    backupModelKey: 'openai:gpt-5-2025-08-07',
-    displayName: 'GPT-5',
+  'azure-openai:gpt-5.2': {
+    model: 'gpt-5.2',
+    backupModelKey: 'openai:gpt-5.2-2025-12-12',
+    displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
