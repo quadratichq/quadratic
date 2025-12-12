@@ -154,7 +154,8 @@ impl A1Selection {
         if !found {
             self.ranges.push(CellRefRange::new_relative_column(col));
             self.cursor.x = col;
-            self.cursor.y = top;
+            // Ensure cursor.y is at least 1 since column selections start at row 1
+            self.cursor.y = top.max(1);
         } else {
             // Reposition cursor after removal (unless we already set it when converting single column to cell)
             // We track if cursor was set by checking if it matches the cell we created
@@ -389,7 +390,8 @@ impl A1Selection {
         // If row was not found, add it
         if !found {
             self.ranges.push(CellRefRange::new_relative_row(row));
-            self.cursor.x = left;
+            // Ensure cursor.x is at least 1 since row selections start at column 1
+            self.cursor.x = left.max(1);
             self.cursor.y = row;
         } else {
             self.reposition_cursor_after_removal(row, left, a1_context, false);
@@ -420,17 +422,20 @@ impl A1Selection {
         top: i64,
         a1_context: &A1Context,
     ) {
-        // For right-click, if the column is already selected, keep the selection unchanged
-        if is_right_click && !ctrl_key && !shift_key && self.is_entire_column_selected(col) {
-            return;
-        }
-
+        // Handle ctrl/meta key combinations first (including ctrl+right-click)
         if ctrl_key && !shift_key {
-            self.add_or_remove_column(col, top, a1_context);
+            // Add column to selection (works for both left-click and right-click with ctrl/meta)
+            self.add_or_remove_column(col, top.max(1), a1_context);
         } else if shift_key {
             self.extend_column(col, top);
+        } else if is_right_click {
+            // Right-click without modifiers: only change selection if column not already selected
+            if !self.is_entire_column_selected(col) {
+                self.select_only_column(col, top.max(1));
+            }
         } else {
-            self.select_only_column(col, top);
+            // Regular left-click without modifiers: select only this column
+            self.select_only_column(col, top.max(1));
         }
     }
 
@@ -528,17 +533,20 @@ impl A1Selection {
         left: i64,
         a1_context: &A1Context,
     ) {
-        // For right-click, if the row is already selected, keep the selection unchanged
-        if is_right_click && !ctrl_key && !shift_key && self.is_entire_row_selected(row) {
-            return;
-        }
-
+        // Handle ctrl/meta key combinations first (including ctrl+right-click)
         if ctrl_key && !shift_key {
-            self.add_or_remove_row(row, left, a1_context);
+            // Add row to selection (works for both left-click and right-click with ctrl/meta)
+            self.add_or_remove_row(row, left.max(1), a1_context);
         } else if shift_key {
             self.extend_row(row, left);
+        } else if is_right_click {
+            // Right-click without modifiers: only change selection if row not already selected
+            if !self.is_entire_row_selected(row) {
+                self.select_only_row(row, left.max(1));
+            }
         } else {
-            self.select_only_row(row, left);
+            // Regular left-click without modifiers: select only this row
+            self.select_only_row(row, left.max(1));
         }
     }
 
@@ -711,6 +719,27 @@ mod tests {
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A2")]);
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 2);
+
+        // Test adding column when top is 0 (viewport scrolled to show row 0)
+        // The cursor should still be at row 1, not row 0
+        let mut selection = A1Selection::test_a1("A");
+        selection.add_or_remove_column(3, 0, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C")]
+        );
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 1); // cursor.y should be 1, not 0
+
+        // Test adding column when top is negative
+        let mut selection = A1Selection::test_a1("A");
+        selection.add_or_remove_column(3, -5, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C")]
+        );
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 1); // cursor.y should be 1, not -5
     }
 
     #[test]
@@ -754,6 +783,27 @@ mod tests {
         let mut selection = A1Selection::test_a1("3");
         selection.add_or_remove_row(3, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A3")]);
+
+        // Test adding row when left is 0 (viewport scrolled to show column 0)
+        // The cursor should still be at column 1, not column 0
+        let mut selection = A1Selection::test_a1("1");
+        selection.add_or_remove_row(3, 0, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3")]
+        );
+        assert_eq!(selection.cursor.x, 1); // cursor.x should be 1, not 0
+        assert_eq!(selection.cursor.y, 3);
+
+        // Test adding row when left is negative
+        let mut selection = A1Selection::test_a1("1");
+        selection.add_or_remove_row(3, -5, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3")]
+        );
+        assert_eq!(selection.cursor.x, 1); // cursor.x should be 1, not -5
+        assert_eq!(selection.cursor.y, 3);
     }
 
     #[test]
@@ -924,6 +974,14 @@ mod tests {
 
         selection.select_column(col![F], false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("F")]);
+
+        // Test Cmd+right-click on a new column should ADD to selection, not replace it
+        let mut selection = A1Selection::test_a1("A");
+        selection.select_column(col![C], true, false, true, 1, &context); // ctrl=true, right_click=true
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C")]
+        );
     }
 
     #[test]
@@ -935,6 +993,14 @@ mod tests {
 
         selection.select_row(6, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
+
+        // Test Cmd+right-click on a new row should ADD to selection, not replace it
+        let mut selection = A1Selection::test_a1("1");
+        selection.select_row(3, true, false, true, 1, &context); // ctrl=true, right_click=true
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3")]
+        );
     }
 
     #[test]
