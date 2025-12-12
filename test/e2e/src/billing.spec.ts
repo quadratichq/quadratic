@@ -394,7 +394,7 @@ test('Cancel Subscription', async ({ page }) => {
   await expect(page.locator('[role="dialog"] span').nth(1)).toHaveText('Subscription has been canceled');
 });
 
-test('Manage Billing - Update Billing Information', async ({ page }) => {
+test('Update Billing Information', async ({ page }) => {
   //--------------------------------
   // Manage Billing - Update Billing Information
   //--------------------------------
