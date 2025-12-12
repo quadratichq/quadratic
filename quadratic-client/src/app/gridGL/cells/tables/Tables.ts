@@ -75,6 +75,7 @@ export class Tables extends Container<Table> {
     events.on('cursorPosition', this.cursorPosition);
     events.on('a1ContextUpdated', this.handleA1ContextUpdated);
     events.on('sheetOffsetsUpdated', this.sheetOffsets);
+    events.on('resizeHeadingColumn', this.resizeHeadingColumn);
 
     events.on('contextMenu', this.contextMenu);
 
@@ -95,6 +96,7 @@ export class Tables extends Container<Table> {
     events.off('cursorPosition', this.cursorPosition);
     events.off('a1ContextUpdated', this.handleA1ContextUpdated);
     events.off('sheetOffsetsUpdated', this.sheetOffsets);
+    events.off('resizeHeadingColumn', this.resizeHeadingColumn);
 
     events.off('contextMenu', this.contextMenu);
 
@@ -367,7 +369,24 @@ export class Tables extends Container<Table> {
     if (sheetId === this.sheet.id) {
       this.children.map((table) => table.updateCodeCell());
     }
-    pixiApp.setViewportDirty();
+    if (sheetId === sheets.current) {
+      pixiApp.setViewportDirty();
+    }
+  };
+
+  // Update floating headers when a column is resized
+  private resizeHeadingColumn = (sheetId: string, column: number) => {
+    if (sheetId !== this.sheet.id) return;
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const gridHeading = content.headings.headingSize.unscaledHeight;
+    for (const table of this.children) {
+      if (!table.inOverHeadings) continue;
+
+      // Update if the column is within or before the table's range
+      if (column < table.codeCell.x) {
+        table.header.toHover(bounds, gridHeading);
+      }
+    }
   };
 
   isActive = (table: Table): boolean => {
