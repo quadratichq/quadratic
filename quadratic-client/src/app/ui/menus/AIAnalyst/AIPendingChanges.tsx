@@ -231,6 +231,7 @@ export const AIPendingChanges = memo(() => {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summary, setSummary] = useState('');
   const lastPendingChangesLengthRef = useRef(0);
+  console.log(summary);
 
   // Get the pending changes from the latest AI response chain
   // (all AI messages after the last user message)
@@ -437,62 +438,51 @@ export const AIPendingChanges = memo(() => {
   }
 
   return (
-    <div className="mx-2 mb-1 overflow-hidden rounded-md border border-border bg-background">
+    <div className="rounded-border-tr mx-4 overflow-hidden rounded-tl rounded-tr border border-b-0 border-border bg-background">
       {/* Header */}
       <div
-        className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 hover:bg-accent/50"
+        className="flex cursor-pointer items-center justify-between gap-2 px-1 py-1"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex min-w-0 items-center gap-1.5">
-          {isExpanded ? (
-            <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          {summaryLoading ? (
-            <Skeleton className="h-4 w-28" />
-          ) : (
-            <span className="text-sm font-medium">
-              {summary}
-              <span className="ml-1 text-muted-foreground">({pendingChanges.length})</span>
-            </span>
-          )}
+        <div className="flex min-w-0 items-center gap-1.5 text-sm text-success">
+          {isExpanded ? <ChevronDownIcon className="ml-1 mr-0.5" /> : <ChevronRightIcon className="ml-1 mr-0.5" />}
+          {summaryLoading ? <Skeleton className="h-4 w-28" /> : <>{summary}</>}
         </div>
 
-        <Button
-          size="sm"
-          variant="outline"
-          className={`h-6 shrink-0 gap-1 border-border bg-background px-2 text-xs hover:bg-accent ${userMadeChanges ? 'invisible' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleUndo();
-          }}
-          title={`Undo ${undoCount} AI change${undoCount === 1 ? '' : 's'}`}
-        >
-          <UndoIcon className="h-3 w-3" />
-          Undo
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            className={`h-6 shrink-0 gap-1 border-border bg-background px-2 text-xs text-muted-foreground ${userMadeChanges ? 'invisible' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUndo();
+            }}
+            title={`Undo ${undoCount} AI change${undoCount === 1 ? '' : 's'}`}
+          >
+            <UndoIcon className="inline-block h-3 w-3" />
+            Undo
+          </Button>
+        </div>
       </div>
 
       {/* Expandable content */}
       {isExpanded && (
-        <div className="border-t border-border/50">
-          <div className="max-h-44 overflow-y-auto">
-            {pendingChanges.map((change, index) => (
-              <div
-                key={`${change.toolCall.id}-${index}`}
-                className={`flex items-center gap-2 px-3 py-1.5 text-[13px] ${change.position ? 'cursor-pointer hover:bg-accent/50' : ''}`}
-                onClick={() => change.position && handleNavigateToChange(change)}
-              >
-                {change.icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{change.icon}</div>}
-                <span className="truncate text-muted-foreground">
-                  {change.label}
-                  {change.name && <span className="ml-1 font-medium text-foreground">{change.name}</span>}
-                  {change.position && <span className="ml-1 opacity-70">at {change.position}</span>}
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className="mb-1 max-h-44 overflow-y-auto">
+          {pendingChanges.map((change, index) => (
+            <div
+              key={`${change.toolCall.id}-${index}`}
+              className={`flex items-center gap-2 px-2 py-1.5 text-[13px] ${change.position ? 'cursor-pointer hover:bg-accent/50' : ''}`}
+              onClick={() => change.position && handleNavigateToChange(change)}
+            >
+              {change.icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{change.icon}</div>}
+              <span className="truncate">
+                {change.label}
+                {change.name && <span className="ml-1 text-foreground">· {change.name}</span>}
+                {change.position && <span className="ml-1 opacity-70">· {change.position}</span>}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>
