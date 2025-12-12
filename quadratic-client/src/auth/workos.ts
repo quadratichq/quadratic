@@ -52,7 +52,7 @@ async function getClient() {
 }
 
 // Peek at redirect state without clearing it
-export function peekRedirectState(): { redirectTo?: string; closeOnComplete?: boolean } | null {
+function peekRedirectState(): { redirectTo?: string; closeOnComplete?: boolean } | null {
   return redirectState;
 }
 
