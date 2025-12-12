@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
+import { removeTeamInviteFromMailchimp } from '../../email/mailchimp';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -55,6 +56,9 @@ async function handler(
       id: inviteId,
     },
   });
+
+  // Remove from Mailchimp drip campaign (non-blocking)
+  removeTeamInviteFromMailchimp(invite.email);
 
   return res.status(200).json({ message: 'Invite deleted' });
 }
