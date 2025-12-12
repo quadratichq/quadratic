@@ -51,7 +51,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     fn start_date(&self) -> NaiveDate {
-        NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap()
+        NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap_or_else(|_| today())
     }
 
     fn streams(&self) -> Vec<&'static str> {

@@ -146,7 +146,7 @@ export function resultToSyncedConnectionLogResponse(result: SyncedConnectionLog)
     id: result.id,
     syncedConnectionId: result.syncedConnectionId,
     runId: result.runId,
-    // coombin adjacent dates
+    // combine adjacent dates
     syncedDates: combineAdjacentDateRanges(result.syncedDates.map((date) => date.toISOString().split('T')[0])),
     status: result.status,
     error: result.error || undefined,
@@ -222,7 +222,7 @@ export async function calculatePercentCompleted(
 
   const percentCompleted = (syncedDates / totalDates) * 100;
 
-  return Math.max(percentCompleted, 100);
+  return Math.min(percentCompleted, 100);
 }
 
 // Get a unique array of synced dates
