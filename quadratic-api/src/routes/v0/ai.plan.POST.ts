@@ -86,21 +86,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
     throw new ApiError(403, 'User does not have permission to create files in this team');
   }
 
+  // Plan generation is always allowed, even if user has exceeded billing limit
+  // This encourages users to try the "Start with AI" flow without penalty
   let exceededBillingLimit = false;
-
-  // Check billing limits for non-paid plans
   if (!isOnPaidPlan) {
     const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
     exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
-
-    if (exceededBillingLimit) {
-      res.status(200).json({
-        plan: '',
-        isOnPaidPlan,
-        exceededBillingLimit,
-      });
-      return;
-    }
   }
 
   // Abort the request if the client disconnects

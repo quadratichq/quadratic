@@ -13,7 +13,8 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
-import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon, SettingsIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -98,6 +99,20 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               </Button>
             </TooltipPopover>
           )}
+
+          <TooltipPopover label="AI settings">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                trackEvent('[AIAnalyst].openSettings', { messageCount: currentUserMessagesCount });
+                showSettingsDialog('ai');
+              }}
+            >
+              <SettingsIcon />
+            </Button>
+          </TooltipPopover>
 
           <TooltipPopover label="New chat">
             <Button

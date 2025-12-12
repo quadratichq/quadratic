@@ -40,8 +40,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
+  // Settings (including aiRules) require TEAM_MANAGE permission (only OWNER role)
   if (settings && !permissions.includes('TEAM_MANAGE')) {
-    throw new ApiError(403, 'User does not have permission to edit this team’s settings.');
+    throw new ApiError(403, "User does not have permission to edit this team's settings.");
   }
 
   // You can't change privacy settings without a paid plan
@@ -70,6 +71,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
             ...(settings.showConnectionDemo !== undefined
               ? { settingShowConnectionDemo: settings.showConnectionDemo }
               : {}),
+            ...(settings.aiRules !== undefined ? { aiRules: settings.aiRules } : {}),
           }
         : {}),
     },
@@ -91,6 +93,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     settings: {
       analyticsAi: newTeam.settingAnalyticsAi,
       showConnectionDemo: newTeam.settingShowConnectionDemo,
+      aiRules: newTeam.aiRules ?? null,
     },
   });
 }

@@ -148,6 +148,7 @@
     "pgdg",
     "PGID",
     "pgrep",
+    "pgrp",
     "pgsql",
     "PGUSER",
     "pids",

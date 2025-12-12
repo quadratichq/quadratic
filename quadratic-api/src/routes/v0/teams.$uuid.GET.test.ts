@@ -38,8 +38,8 @@ jest.mock('../../stripe/stripe', () => {
   (global as any).__mockCustomersRetrieve = customersRetrieve;
 
   // Import dbClient for the mock updateBilling implementation
-  const dbClient = require('../../dbClient').default;
-  const logger = require('../../utils/logger').default;
+  const dbClient = jest.requireActual('../../dbClient').default;
+  const logger = jest.requireActual('../../utils/logger').default;
 
   return {
     stripe: {
@@ -240,6 +240,40 @@ describe('GET /v0/teams/:uuid', () => {
 
       // updateBilling should return early if no stripeCustomerId, so Stripe shouldn't be called
       expect(mockCustomersRetrieve).not.toHaveBeenCalled();
+    });
+
+    it('returns team settings including aiRules', async () => {
+      // Set team AI rules
+      await dbClient.team.update({
+        where: {
+          uuid: '00000000-0000-4000-8000-000000000001',
+        },
+        data: {
+          aiRules: 'Team AI rules',
+          settingAnalyticsAi: false,
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.team.settings).toHaveProperty('analyticsAi');
+          expect(res.body.team.settings).toHaveProperty('aiRules');
+          expect(res.body.team.settings.analyticsAi).toBe(false);
+          expect(res.body.team.settings.aiRules).toBe('Team AI rules');
+        });
+    });
+
+    it('returns null for aiRules when not set', async () => {
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.team.settings.aiRules).toBeNull();
+        });
     });
   });
 });

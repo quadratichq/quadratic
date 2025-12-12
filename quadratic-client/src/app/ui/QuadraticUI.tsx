@@ -14,11 +14,13 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { AIGetFileName } from '@/app/ui/components/AIGetFileName';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
+import { FloatingTopLeftPosition } from '@/app/ui/components/FloatingTopLeftPosition';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
-import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
+import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
@@ -31,8 +33,10 @@ import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { SettingsDialog } from '@/shared/components/SettingsDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
@@ -131,12 +135,13 @@ export default function QuadraticUI() {
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
+            <FloatingFPS />
+            <FloatingTopLeftPosition />
+            <Coordinates />
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
         </div>
-
-        {!presentationMode && !isEmbed && <BottomBar />}
       </div>
       {/* Global overlay menus */}
       {canEditFile && isAuthenticated && <AIGetFileName />}
@@ -157,6 +162,8 @@ export default function QuadraticUI() {
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
+      <SettingsDialog />
+      <ChangelogDialog />
     </div>
   );
 }
