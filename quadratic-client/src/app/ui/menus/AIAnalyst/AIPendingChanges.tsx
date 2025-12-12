@@ -7,7 +7,6 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FormatPaintIcon, GridActionIcon, TableIcon, TableRowsIcon, UndoIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { isAIPromptMessage, isUserPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -231,7 +230,9 @@ export const AIPendingChanges = memo(() => {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summary, setSummary] = useState('');
   const lastPendingChangesLengthRef = useRef(0);
-  console.log(summary);
+
+  // TODO: remove before merge if we don't do summary
+  console.log(summary, summaryLoading);
 
   // Get the pending changes from the latest AI response chain
   // (all AI messages after the last user message)
@@ -446,7 +447,7 @@ export const AIPendingChanges = memo(() => {
       >
         <div className="flex min-w-0 items-center gap-1.5 text-sm text-success">
           {isExpanded ? <ChevronDownIcon className="ml-1 mr-0.5" /> : <ChevronRightIcon className="ml-1 mr-0.5" />}
-          {summaryLoading ? <Skeleton className="h-4 w-28" /> : <>{summary}</>}
+          {pendingChanges.length} new change{pendingChanges.length === 1 ? '' : 's'}
         </div>
 
         <div className="flex items-center gap-1">
