@@ -4,6 +4,7 @@ import {
   CopyIcon,
   MoreHorizIcon,
   RefreshIcon,
+  SaveAndRunIcon,
   type IconComponent,
 } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
@@ -40,6 +41,7 @@ type ConnectionSchemaBrowserProps = {
   type: ConnectionType;
   additionalActions?: React.ReactNode;
   hideRefreshButton?: boolean;
+  onInsertQuery?: (tableQuery: string) => void;
   tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
 };
@@ -47,6 +49,7 @@ type ConnectionSchemaBrowserProps = {
 export const ConnectionSchemaBrowser = ({
   additionalActions,
   hideRefreshButton = false,
+  onInsertQuery,
   tableActions,
   eventSource,
   teamUuid,
@@ -142,6 +145,7 @@ export const ConnectionSchemaBrowser = ({
             data={table}
             key={index}
             connectionType={type}
+            onInsertQuery={onInsertQuery}
             tableActions={tableActions}
             eventSource={eventSource}
           />
@@ -195,12 +199,14 @@ function TableListItem({
   index,
   data,
   connectionType,
+  onInsertQuery,
   tableActions,
   eventSource,
 }: {
   index: number;
   data: Table;
   connectionType: ConnectionType;
+  onInsertQuery: ConnectionSchemaBrowserProps['onInsertQuery'];
   tableActions: ConnectionSchemaBrowserProps['tableActions'];
   eventSource: string;
 }) {
@@ -237,12 +243,26 @@ function TableListItem({
     [eventSource, data, connectionType]
   );
 
+  const handleInsertQueryClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (onInsertQuery) {
+        trackEvent('[ConnectionSchemaBrowser].insertQuery', { eventSource });
+        onInsertQuery(getTableQuery({ table: data, connectionType }));
+      }
+    },
+    [onInsertQuery, eventSource, data, connectionType]
+  );
+
+  const hasRightActions = onInsertQuery || tableActions;
+  const hasBothActions = onInsertQuery && tableActions;
+
   return (
     <div className="group relative">
       <button
         className={cn(
           'flex h-7 w-full min-w-0 flex-initial cursor-default select-text items-center pl-2 font-normal hover:bg-accent',
-          tableActions ? 'pr-10' : 'pr-3'
+          hasBothActions ? 'pr-16' : hasRightActions ? 'pr-10' : 'pr-3'
         )}
         onClick={handleTableClick}
       >
@@ -252,22 +272,31 @@ function TableListItem({
         <div className="truncate leading-normal">{name}</div>
         <div className="ml-auto flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
       </button>
-      {tableActions && (
-        <div className="absolute right-2 top-0">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
-                <MoreHorizIcon />
+      {hasRightActions && (
+        <div className="absolute right-2 top-0 flex items-center gap-0.5">
+          {onInsertQuery && (
+            <TooltipPopover label="Insert query">
+              <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleInsertQueryClick}>
+                <SaveAndRunIcon />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {tableActions.map(({ label, onClick, Icon }) => (
-                <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
-                  <Icon className="mr-2" /> {label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </TooltipPopover>
+          )}
+          {tableActions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
+                  <MoreHorizIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {tableActions.map(({ label, onClick, Icon }) => (
+                  <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
+                    <Icon className="mr-2" /> {label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       )}
 

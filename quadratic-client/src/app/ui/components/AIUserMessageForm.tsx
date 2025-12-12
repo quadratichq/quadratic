@@ -353,6 +353,21 @@ export const AIUserMessageForm = memo(
       };
     }, [uiContext]);
 
+    // Listen for when the user wants to insert text into the chat (e.g., from schema browser)
+    // Apply _only_ for new
+    useEffect(() => {
+      const handleInsertText = (text: string) => {
+        setPrompt((prev) => `${prev}${prev.length > 0 && !prev.endsWith(' ') ? ' ' : ''}${text} `);
+        textareaRef.current?.focus();
+      };
+      if (uiContext === 'analyst-new-chat') {
+        events.on('aiAnalystInsertText', handleInsertText);
+      }
+      return () => {
+        events.off('aiAnalystInsertText', handleInsertText);
+      };
+    }, [uiContext]);
+
     const textarea = (
       <Textarea
         ref={textareaRef}
