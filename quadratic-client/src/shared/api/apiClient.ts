@@ -84,7 +84,17 @@ export const apiClient = {
         return data;
       },
     },
-
+    files: {
+      deleted: {
+        list(teamUuid: string) {
+          return fetchFromApi(
+            `/v0/teams/${teamUuid}/files/deleted`,
+            { method: 'GET' },
+            ApiSchemas['/v0/teams/:uuid/files/deleted.GET.response']
+          );
+        },
+      },
+    },
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
@@ -187,6 +197,14 @@ export const apiClient = {
     delete(uuid: string) {
       trackEvent('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
+    },
+
+    restore(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/restore`,
+        { method: 'POST' },
+        ApiSchemas['/v0/files/:uuid/restore.POST.response']
+      );
     },
 
     async download(uuid: string, args: { checkpointDataUrl?: string } = {}) {
@@ -381,11 +399,30 @@ export const apiClient = {
       );
     },
     clientDataKv: {
+      get() {
+        return fetchFromApi(
+          `/v0/user/client-data-kv`,
+          { method: 'GET' },
+          ApiSchemas['/v0/user/client-data-kv.GET.response']
+        );
+      },
       update(body: ApiTypes['/v0/user/client-data-kv.POST.request']) {
         return fetchFromApi(
           `/v0/user/client-data-kv`,
           { method: 'POST', body: JSON.stringify(body) },
           ApiSchemas['/v0/user/client-data-kv.POST.response']
+        );
+      },
+    },
+    aiRules: {
+      get() {
+        return fetchFromApi(`/v0/user/ai-rules`, { method: 'GET' }, ApiSchemas['/v0/user/ai-rules.GET.response']);
+      },
+      update(body: ApiTypes['/v0/user/ai-rules.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/user/ai-rules`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/ai-rules.PATCH.response']
         );
       },
     },

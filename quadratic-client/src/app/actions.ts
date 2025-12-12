@@ -99,22 +99,18 @@ export const deleteFile = {
   isAvailable: ({ filePermissions }: IsAvailableArgs) => filePermissions.includes(FILE_DELETE),
   // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({
-    confirmFn,
     fileUuid,
     redirect,
     submit,
     userEmail,
   }: {
-    confirmFn: () => Promise<boolean>;
     fileUuid: string;
     redirect: boolean;
     submit: SubmitFunction;
     userEmail: string;
   }) {
-    if (await confirmFn()) {
-      const data = getActionFileDelete({ userEmail, redirect });
-      submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
-    }
+    const data = getActionFileDelete({ userEmail, redirect });
+    submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
   },
 };
 

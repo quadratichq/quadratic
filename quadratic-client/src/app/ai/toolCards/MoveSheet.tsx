@@ -27,7 +27,7 @@ export const MoveSheet = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Reorder sheet';
+    const label = loading ? 'Reordering sheet' : 'Reordered sheet';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

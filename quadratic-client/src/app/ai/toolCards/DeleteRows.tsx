@@ -27,7 +27,7 @@ export const DeleteRows = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Delete rows';
+    const label = loading ? 'Deleting rows' : 'Deleted rows';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

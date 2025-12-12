@@ -185,18 +185,29 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   handleSentryReplays(data.team.settings.analyticsAi);
 
+  // Fetch clientDataKv (team data is now loaded via useTeamData hook when needed)
+  let clientDataKv: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'] | undefined = undefined;
+  try {
+    const fetchedClientDataKv = await apiClient.user.clientDataKv.get();
+    clientDataKv = fetchedClientDataKv.clientDataKv;
+  } catch {
+    // If we can't fetch clientDataKv, continue without it
+    clientDataKv = undefined;
+  }
+
   startupTimer.end('file.loader');
-  return data;
+  return { ...data, userMakingRequest: { ...data.userMakingRequest, clientDataKv } };
 };
 
 export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
+  const loaderData = useLoaderData() as FileData;
   const {
     file: { uuid: fileUuid },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions },
-  } = useLoaderData() as FileData;
+  } = loaderData;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({

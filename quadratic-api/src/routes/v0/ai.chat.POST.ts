@@ -12,7 +12,7 @@ import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
-import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { getAIRulesContext, getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
@@ -53,6 +53,18 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
+
+  // Fetch user and team AI rules
+  const [user, team] = await Promise.all([
+    dbClient.user.findUnique({
+      where: { id: userId },
+      select: { aiRules: true },
+    }),
+    dbClient.team.findUnique({
+      where: { id: ownerTeam.id },
+      select: { aiRules: true },
+    }),
+  ]);
 
   // Check if the file's owner team is on a paid plan
   const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
@@ -134,6 +146,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   if (args.useQuadraticContext) {
     const quadraticContext = getQuadraticContext(source, args.language);
     args.messages = [...quadraticContext, ...args.messages];
+  }
+
+  // Add AI rules context (team rules + user rules)
+  const aiRulesContext = getAIRulesContext(user?.aiRules ?? null, team?.aiRules ?? null);
+  if (aiRulesContext.length > 0) {
+    args.messages = [...aiRulesContext, ...args.messages];
   }
 
   const parsedResponse = await handleAIRequest({
