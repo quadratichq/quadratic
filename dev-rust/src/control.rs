@@ -144,8 +144,12 @@ impl Control {
             status_guard.insert(name.to_string(), crate::types::ServiceStatus::Stopped);
         }
 
-        // Small delay to ensure cleanup completes
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        // Wait for port to be free if this service has a port
+        if let Some(service) = crate::services::get_service_by_name(name) {
+            if let Some(port) = service.port() {
+                crate::kill::wait_for_port_free(port, 2000).await;
+            }
+        }
 
         // Start the service with the correct perf mode
         self.service_manager
