@@ -3,7 +3,8 @@ import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
-import { ExternalLinkIcon, FeedbackIcon } from '@/shared/components/Icons';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import { ExternalLinkIcon, FeedbackIcon, SettingsIcon } from '@/shared/components/Icons';
 import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL, YOUTUBE_CHANNEL } from '@/shared/constants/urls';
 
 type HelpActionSpec = Pick<
@@ -14,6 +15,7 @@ type HelpActionSpec = Pick<
   | Action.HelpQuadratic101
   | Action.HelpCommunity
   | Action.HelpChangelog
+  | Action.HelpSettings
   | Action.HelpYouTube
 >;
 
@@ -65,6 +67,14 @@ export const helpActionsSpec: HelpActionSpec = {
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }));
+    },
+  },
+  [Action.HelpSettings]: {
+    label: () => 'Settings',
+    labelVerbose: 'Open settings',
+    Icon: SettingsIcon,
+    run: () => {
+      showSettingsDialog();
     },
   },
   [Action.HelpYouTube]: {

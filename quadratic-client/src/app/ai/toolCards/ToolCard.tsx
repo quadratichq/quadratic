@@ -12,6 +12,9 @@ export const ToolCard = memo(
     actions,
     isLoading,
     compact,
+    outlined,
+    onClick,
+    hideIcon,
   }: {
     icon?: React.ReactNode;
     label?: string | React.ReactNode;
@@ -21,22 +24,34 @@ export const ToolCard = memo(
     actions?: React.ReactNode;
     isLoading?: boolean;
     compact?: boolean;
+    outlined?: boolean;
+    onClick?: () => void;
+    hideIcon?: boolean;
   }) => {
     // Compact mode: render as inline text
     if (compact) {
       return (
-        <div className={cn('flex min-w-0 select-none items-center gap-1.5 text-xs text-muted-foreground', className)}>
-          {icon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</div>}
-          <span className="truncate">
+        <div
+          className={cn(
+            'flex min-w-0 select-none items-center gap-1.5 text-sm text-muted-foreground',
+            outlined && 'rounded border border-border bg-background px-2 py-1 shadow-sm',
+            onClick && 'cursor-pointer hover:text-foreground/80',
+            className
+          )}
+          onClick={onClick}
+        >
+          {icon && !hideIcon && <div className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</div>}
+          <span className="min-w-0 truncate">
             {label}
             {description && (
               <>
                 {' '}
-                <span className="text-muted-foreground/70">• {description}</span>
+                <span className="text-muted-foreground">• {description}</span>
               </>
             )}
           </span>
           {hasError && <span className="text-destructive"> (error)</span>}
+          {actions && <div className="ml-2 flex shrink-0 items-center">{actions}</div>}
         </div>
       );
     }

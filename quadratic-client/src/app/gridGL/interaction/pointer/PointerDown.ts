@@ -33,6 +33,9 @@ export class PointerDown {
   // used to track the unselect rectangle
   unselectDown?: Rectangle;
 
+  // track right-click for drag selection (context menu shown on pointer up if not dragged)
+  private rightClickDown?: { world: Point; column: number; row: number };
+
   // Determines whether the input is valid (ie, whether it is open and has a value that does not fail validation)
   private async isInputValid(): Promise<boolean> {
     const location = inlineEditorHandler.location;
@@ -68,31 +71,22 @@ export class PointerDown {
 
     const isRightClick = event.button === 2 || (isMac && event.button === 0 && event.ctrlKey);
 
-    // If right click and we have a multi cell selection.
-    // If the user has clicked inside the selection.
+    // Right-click: start selection (drag to extend), context menu shown on pointer up
     if (isRightClick) {
-      if (!cursor.contains(column, row)) {
-        cursor.moveTo(column, row);
+      if (event.shiftKey) {
+        // Shift+right-click: extend selection to this cell
+        cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
+      } else if (!cursor.contains(column, row)) {
+        // If Cmd/Ctrl is held, add to selection; otherwise replace selection
+        cursor.moveTo(column, row, { append: event.metaKey || event.ctrlKey });
       }
-      const codeCell = content.cellsSheet.tables.getCodeCellIntersects({ x: column, y: row });
-      if (codeCell && codeCell?.language !== 'Import') {
-        events.emit('contextMenu', {
-          type: ContextMenuType.Grid,
-          world,
-          column: codeCell.x,
-          row: codeCell.y,
-          table: codeCell,
-        });
-      } else {
-        events.emit('contextMenu', {
-          type: ContextMenuType.Grid,
-          world,
-          column,
-          row,
-          // _could_ have an associated table if it's a cell inside a table on the grid
-          table: content.cellsSheet.tables.getCodeCellIntersects(cursor.position),
-        });
-      }
+      // Store right-click info for showing context menu on pointer up
+      this.rightClickDown = { world, column, row };
+      this.previousPosition = new Point(column, row);
+      this.positionRaw = world;
+      this.pointerMoved = false;
+      this.position = new Point(column, row);
+      this.active = true;
       return;
     }
 
@@ -220,6 +214,36 @@ export class PointerDown {
       );
       this.unselectDown = undefined;
       events.emit('setDirty', { cursor: true });
+      return;
+    }
+
+    // Show context menu on right-click release
+    if (this.rightClickDown) {
+      const { world, column, row } = this.rightClickDown;
+      const cursor = sheets.sheet.cursor;
+      const codeCell = content.cellsSheet.tables.getCodeCellIntersects({ x: column, y: row });
+      if (codeCell && codeCell?.language !== 'Import') {
+        events.emit('contextMenu', {
+          type: ContextMenuType.Grid,
+          world,
+          column: codeCell.x,
+          row: codeCell.y,
+          table: codeCell,
+        });
+      } else {
+        events.emit('contextMenu', {
+          type: ContextMenuType.Grid,
+          world,
+          column,
+          row,
+          // _could_ have an associated table if it's a cell inside a table on the grid
+          table: content.cellsSheet.tables.getCodeCellIntersects(cursor.position),
+        });
+      }
+      this.rightClickDown = undefined;
+      this.active = false;
+      this.previousPosition = undefined;
+      pixiApp.viewport.disableMouseEdges();
       return;
     }
 

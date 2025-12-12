@@ -27,7 +27,7 @@ export const ResizeRows = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Resize rows';
+    const label = loading ? 'Resizing rows' : 'Resized rows';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

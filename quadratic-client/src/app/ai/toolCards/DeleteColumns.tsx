@@ -27,7 +27,7 @@ export const DeleteColumns = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Delete columns';
+    const label = loading ? 'Deleting columns' : 'Deleted columns';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

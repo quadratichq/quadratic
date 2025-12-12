@@ -28,7 +28,7 @@ export const AddDateTimeValidation = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Add date time validation';
+    const label = loading ? 'Adding date time validation' : 'Added date time validation';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

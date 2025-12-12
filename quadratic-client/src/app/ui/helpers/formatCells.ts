@@ -103,10 +103,10 @@ export const increaseFontSize = async () => {
   const formatSummary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
   if (formatSummary && 'fontSize' in formatSummary) {
     const currentSize = (formatSummary as CellFormatSummary).fontSize ?? DEFAULT_FONT_SIZE;
-    const newSize = Math.min(currentSize + 2, MAX_FONT_SIZE);
+    const newSize = Math.min(currentSize + 1, MAX_FONT_SIZE);
     setFontSize(newSize);
   } else {
-    setFontSize(DEFAULT_FONT_SIZE + 2);
+    setFontSize(DEFAULT_FONT_SIZE + 1);
   }
 };
 
@@ -114,9 +114,9 @@ export const decreaseFontSize = async () => {
   const formatSummary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
   if (formatSummary && 'fontSize' in formatSummary) {
     const currentSize = (formatSummary as CellFormatSummary).fontSize ?? DEFAULT_FONT_SIZE;
-    const newSize = Math.max(currentSize - 2, MIN_FONT_SIZE);
+    const newSize = Math.max(currentSize - 1, MIN_FONT_SIZE);
     setFontSize(newSize);
   } else {
-    setFontSize(DEFAULT_FONT_SIZE - 2);
+    setFontSize(DEFAULT_FONT_SIZE - 1);
   }
 };

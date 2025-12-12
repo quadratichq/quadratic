@@ -71,11 +71,6 @@ export class Cursor extends Container {
     }
   };
 
-  // Check if the grid canvas has focus (or user is editing a cell)
-  private isGridFocused(): boolean {
-    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
-  }
-
   // redraws corners if there is an error
   private drawError(cell: JsCoordinate) {
     const error = content.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
@@ -137,7 +132,8 @@ export class Cursor extends Container {
       cellBounds = sheet.getCellOffsets(cell.x, cell.y);
     }
     let { x, y, width, height } = cellBounds;
-    const color = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    // Use light gray when grid doesn't have focus, otherwise use accent color
+    const color = pixiAppSettings.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
     const codeCell = codeEditorState.codeCell;
 
     content.hoverTableColumnsSelection.clear();
@@ -244,7 +240,7 @@ export class Cursor extends Container {
 
     if (!sheets.sheet.cursor.isSingleSelection()) {
       // Use light gray when grid doesn't have focus, otherwise use accent color
-      const color = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+      const color = pixiAppSettings.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
       drawFiniteSelection(this.graphics, color, FILL_SELECTION_ALPHA, ranges);
     }
   }
@@ -266,7 +262,7 @@ export class Cursor extends Container {
       this.graphics.lineStyle(0);
 
       // Use light gray when grid doesn't have focus, otherwise use accent color
-      const color = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+      const color = pixiAppSettings.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -327,7 +323,7 @@ export class Cursor extends Container {
 
     const color = formula
       ? getCSSVariableTint('primary')
-      : this.isGridFocused()
+      : pixiAppSettings.isGridFocused()
         ? content.accentColor
         : getCSSVariableTint('muted-foreground');
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
@@ -421,7 +417,9 @@ export class Cursor extends Container {
       this.drawFiniteCursor(finiteRanges);
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
       // Use light gray when grid doesn't have focus, otherwise use accent color
-      const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+      const selectionColor = pixiAppSettings.isGridFocused()
+        ? content.accentColor
+        : getCSSVariableTint('muted-foreground');
       const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
         color: selectionColor,

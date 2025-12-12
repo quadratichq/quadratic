@@ -1,5 +1,6 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -103,29 +104,43 @@ export const UpdateCodeCell = memo(
       }
     }, [toolArgs, args]);
 
+    const language = getLanguage(codeCell.language);
+    const label = loading ? 'Updating code' : `Updated code ${language}`;
+
+    const handleClick = useCallback(() => {
+      try {
+        sheets.sheet.cursor.moveTo(codeCell.pos.x, codeCell.pos.y);
+      } catch (e) {
+        console.warn('Failed to select cell:', e);
+      }
+    }, [codeCell.pos.x, codeCell.pos.y]);
+
     if (loading) {
       return (
         <ToolCard
-          icon={<LanguageIcon language={getLanguage(codeCell.language)} />}
-          label={getLanguage(codeCell.language)}
+          icon={<LanguageIcon language={language} />}
+          label={label}
           description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's')}
           isLoading={true}
           className={className}
+          compact
         />
       );
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError className={className} />;
+      return (
+        <ToolCard icon={<LanguageIcon language="" />} label="Updated code" hasError className={className} compact />
+      );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard isLoading className={className} />;
+      return <ToolCard isLoading className={className} compact />;
     }
 
     return (
       <div>
         <ToolCard
-          icon={<LanguageIcon language={getLanguage(codeCell.language)} />}
-          label={getLanguage(codeCell.language)}
+          icon={<LanguageIcon language={language} />}
+          label={label}
           description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's')}
           actions={
             editorContent !== toolArgs.data.code_string && (
@@ -151,11 +166,13 @@ export const UpdateCodeCell = memo(
             )
           }
           className={className}
+          compact
+          onClick={handleClick}
         />
 
         {showCode && (
           <div
-            className="-mt-0.5 h-max overflow-hidden rounded-b-md rounded-e-md rounded-r-none rounded-s-none border border-t-0 border-border bg-background shadow-sm"
+            className="mt-1 h-max overflow-hidden rounded-md border border-border bg-background shadow-sm"
             style={{ height: `${Math.ceil(toolArgs.data.code_string.split('\n').length) * 19 + 16}px` }}
           >
             <Editor

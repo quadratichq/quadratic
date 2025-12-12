@@ -282,7 +282,7 @@ class Core {
       // sends multiplayer synced to the client, to proceed from file loading screen
       coreClient.sendMultiplayerSynced();
 
-      // update the multiplayer state
+      // update the multiplayer state (checks for unsent transactions)
       await this.updateMultiplayerState();
     } catch (e) {
       this.handleCoreError('receiveTransactionAck', e);

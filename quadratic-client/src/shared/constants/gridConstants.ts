@@ -25,5 +25,5 @@ export const FONT_SIZE_DISPLAY_ADJUSTMENT = -4;
 export const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72, 96] as const;
 
 // Internal min/max values (converted from user-facing values)
-export const MIN_FONT_SIZE = 2 - FONT_SIZE_DISPLAY_ADJUSTMENT;
+export const MIN_FONT_SIZE = 1 - FONT_SIZE_DISPLAY_ADJUSTMENT;
 export const MAX_FONT_SIZE = 96 - FONT_SIZE_DISPLAY_ADJUSTMENT;

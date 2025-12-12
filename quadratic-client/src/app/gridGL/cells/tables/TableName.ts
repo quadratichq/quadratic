@@ -7,7 +7,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { LINE_HEIGHT, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT, DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { timeAgoAndNextTimeout } from '@/shared/utils/timeAgo';
@@ -185,10 +185,18 @@ export class TableName extends Container {
 
   private drawText() {
     this.text.text = this.table.codeCell.name;
-    this.text.anchor.set(0, 0.5);
+    this.text.anchor.set(0, 0);
+
+    // Calculate available space for vertical positioning (use LINE_HEIGHT like CellLabel)
+    const textHeight = LINE_HEIGHT;
+    const availableSpace = this.h - textHeight;
+
+    // Calculate vertical position
+    const yPos = Math.max(0, availableSpace / 2);
+
     this.text.position.set(
       TABLE_NAME_PADDING[0] + (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
-      OPEN_SANS_FIX.y + this.h / 2
+      OPEN_SANS_FIX.y + yPos
     );
 
     // truncate the name if it's too long
@@ -204,14 +212,12 @@ export class TableName extends Container {
   }
 
   private drawDropdown() {
-    this.dropdown.position.set(
-      this.text.width +
-        OPEN_SANS_FIX.x +
-        DROPDOWN_PADDING +
-        TABLE_NAME_PADDING[0] +
-        (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
-      this.text.y - this.dropdown.height / 4 // the 4 is b/c the icon is saved with the top in the middle of the texture
-    );
+    // Position dropdown vertically centered with the table name row (this.h)
+    // Dropdown anchor is (0.5, 0) so y position is the top of the dropdown
+    const rowCenterY = this.h / 2;
+    const dropdownTopY = rowCenterY - this.dropdown.height / 2;
+
+    this.dropdown.position.set(this.text.x + this.text.width + DROPDOWN_PADDING, dropdownTopY);
   }
 
   private drawModified = () => {
@@ -255,7 +261,9 @@ export class TableName extends Container {
     } else {
       this.modified.visible = true;
       this.modified.anchor.set(0, 0.5);
-      this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
+      // Center vertically with the main text (text anchor is at top, modified anchor is at center)
+      const textCenterY = this.text.y + LINE_HEIGHT / 2;
+      this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, textCenterY);
     }
   };
 
