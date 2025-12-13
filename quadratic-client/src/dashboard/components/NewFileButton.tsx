@@ -90,12 +90,12 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, false);
           if (hasReachedLimit) {
             showUpgradeDialog('fileLimitReached');
             return;
           }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: false });
         }}
       >
         <AddIcon className="mr-1" /> Team file
@@ -104,12 +104,12 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
           if (hasReachedLimit) {
             showUpgradeDialog('fileLimitReached');
             return;
           }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
         }}
       >
         <AddIcon className="mr-1" /> Private file
