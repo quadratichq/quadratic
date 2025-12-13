@@ -15,10 +15,10 @@ import { executePython, type InputValues } from '@/aiSpreadsheet/execution/pytho
 import type {
   AddNodeArgs,
   AiNodeType,
-  CodeNodeData,
+  AiSpreadsheetNode,
   BaseInputNodeData,
   CodeExecutionResult,
-  AiSpreadsheetNode,
+  CodeNodeData,
 } from '@/aiSpreadsheet/types';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
@@ -166,20 +166,24 @@ export function useAiSpreadsheetTools() {
           }
           const parsed = parseResult.data;
 
-          // Try to get source and target IDs from mapping, or find by label
+          // Try to get source and target IDs from mapping, or find by label/name
           let sourceId = nodeIdMapRef.current.get(parsed.source_node_id);
           let targetId = nodeIdMapRef.current.get(parsed.target_node_id);
 
-          // Fallback: find by label if not in map
+          // Fallback: find by label or name if not in map
           if (!sourceId) {
             const sourceNode = currentState.nodes.find(
-              (n) => n.data.label?.toLowerCase() === parsed.source_node_id.toLowerCase()
+              (n) =>
+                n.data.label?.toLowerCase() === parsed.source_node_id.toLowerCase() ||
+                (n.data as BaseInputNodeData).name?.toLowerCase() === parsed.source_node_id.toLowerCase()
             );
             if (sourceNode) sourceId = sourceNode.id;
           }
           if (!targetId) {
             const targetNode = currentState.nodes.find(
-              (n) => n.data.label?.toLowerCase() === parsed.target_node_id.toLowerCase()
+              (n) =>
+                n.data.label?.toLowerCase() === parsed.target_node_id.toLowerCase() ||
+                (n.data as BaseInputNodeData).name?.toLowerCase() === parsed.target_node_id.toLowerCase()
             );
             if (targetNode) targetId = targetNode.id;
           }
