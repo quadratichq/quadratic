@@ -557,6 +557,7 @@ const AISourceSchema = z.enum([
   'AIAssistant',
   'AIAnalyst',
   'AIResearcher',
+  'AISpreadsheet',
   'GetChatName',
   'GetFileName',
   'CodeEditorCompletions',

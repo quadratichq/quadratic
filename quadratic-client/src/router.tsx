@@ -120,6 +120,7 @@ export const router = createBrowserRouter(
         <Route path="file/:uuid/history" lazy={() => import('./routes/file.$uuid.history')} />
         <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
         <Route path="teams/:teamUuid/onboarding" lazy={() => import('./routes/teams.$teamUuid.onboarding')} />
+        <Route path="teams/:teamUuid/ai-spreadsheet" lazy={() => import('./routes/teams.$teamUuid.ai-spreadsheet')} />
         <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
           <Route
             path={ROUTES.FILES_SHARED_WITH_ME}

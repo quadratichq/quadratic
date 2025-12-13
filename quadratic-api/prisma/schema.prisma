@@ -294,6 +294,7 @@ enum AIChatSource {
     AIAssistant                   @map("ai_assistant")
     AIAnalyst                     @map("ai_analyst")
     AIResearcher                  @map("ai_researcher")
+    AISpreadsheet                 @map("ai_spreadsheet")
     GetChatName                   @map("get_chat_name")
     GetFileName                   @map("get_file_name")
     CodeEditorCompletions         @map("code_editor_completions")

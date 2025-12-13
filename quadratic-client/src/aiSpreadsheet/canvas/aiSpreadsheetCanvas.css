@@ -1,0 +1,21 @@
+/* Override React Flow default node styling */
+.react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Remove the default selection box styling */
+.react-flow__node.selected {
+  box-shadow: none !important;
+}
+
+/* Make sure custom nodes don't inherit unwanted styles */
+.react-flow__node-input,
+.react-flow__node-transform,
+.react-flow__node-output {
+  background: transparent !important;
+  border: none !important;
+}
+

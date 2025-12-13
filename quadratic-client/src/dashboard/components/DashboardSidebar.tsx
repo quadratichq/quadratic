@@ -10,6 +10,7 @@ import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgr
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
+  AIIcon,
   ArrowDropDownIcon,
   CheckIcon,
   DatabaseIcon,
@@ -150,6 +151,15 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
               <SettingsIcon className={classNameIcons} />
               Settings
+            </SidebarNavLink>
+          )}
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_AI_SPREADSHEET(activeTeamUuid)}>
+              <AIIcon className={classNameIcons} />
+              AI Spreadsheet
+              <Badge variant="secondary" className="ml-auto text-[10px]">
+                New
+              </Badge>
             </SidebarNavLink>
           )}
         </div>

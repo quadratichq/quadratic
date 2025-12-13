@@ -592,6 +592,34 @@ export const ApiSchemas = {
     exceededBillingLimit: z.boolean(),
   }),
 
+  // AI Spreadsheet (prototype) - simple chat with tool calling for canvas manipulation
+  '/v0/ai/spreadsheet.POST.request': z.object({
+    teamUuid: z.string().uuid(),
+    prompt: z.string().min(1),
+    systemPrompt: z.string().optional(),
+    connections: z
+      .array(
+        z.object({
+          uuid: z.string(),
+          name: z.string(),
+          type: z.string(),
+        })
+      )
+      .optional(),
+  }),
+  '/v0/ai/spreadsheet.POST.response': z.object({
+    content: z.string(),
+    toolCalls: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        arguments: z.string(),
+      })
+    ),
+    isOnPaidPlan: z.boolean(),
+    exceededBillingLimit: z.boolean(),
+  }),
+
   '/v0/ai/feedback.PATCH.request': z.object({
     chatId: z.string().uuid(),
     messageIndex: z.number(),
