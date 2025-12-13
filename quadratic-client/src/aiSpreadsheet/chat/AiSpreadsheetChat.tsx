@@ -10,9 +10,9 @@ import { AiSpreadsheetChatForm } from '@/aiSpreadsheet/chat/AiSpreadsheetChatFor
 import { useAiSpreadsheetTools } from '@/aiSpreadsheet/hooks/useAiSpreadsheetTools';
 import type { ChatMessage } from '@/aiSpreadsheet/types';
 import { Markdown } from '@/app/ui/components/Markdown';
-import { AIIcon, DatabaseIcon, CodeIcon, TableIcon, InsertChartIcon, FileIcon } from '@/shared/components/Icons';
-import { ChevronDownIcon, ChevronRightIcon, Link1Icon, PersonIcon, ReloadIcon, TrashIcon } from '@radix-ui/react-icons';
-import { useEffect, useRef, useState } from 'react';
+import { AIIcon } from '@/shared/components/Icons';
+import { PersonIcon, TrashIcon } from '@radix-ui/react-icons';
+import { useEffect, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface Connection {
@@ -122,7 +122,11 @@ function EmptyState() {
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
-  const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
+
+  // Don't render assistant messages that only have tool calls (no text content)
+  if (!isUser && !message.content) {
+    return null;
+  }
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -146,14 +150,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             )}
           </div>
         )}
-        {/* Tool calls */}
-        {hasToolCalls && (
-          <div className="space-y-1">
-            {message.toolCalls!.map((toolCall) => (
-              <ToolCallCard key={toolCall.id} toolCall={toolCall} />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -161,7 +157,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 function StreamingMessage({
   content,
-  toolCalls,
   onAbort,
 }: {
   content: string;
@@ -187,15 +182,7 @@ function StreamingMessage({
             <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
             <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
             <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
-            <span className="ml-2 text-xs text-muted-foreground">Thinking...</span>
-          </div>
-        )}
-        {/* Streaming tool calls */}
-        {toolCalls.length > 0 && (
-          <div className="space-y-1">
-            {toolCalls.map((toolCall) => (
-              <ToolCallCard key={toolCall.id} toolCall={toolCall} isStreaming={!toolCall.processed} />
-            ))}
+            <span className="ml-2 text-xs text-muted-foreground">Building...</span>
           </div>
         )}
         {/* Abort button */}
@@ -207,92 +194,6 @@ function StreamingMessage({
           Stop
         </button>
       </div>
-    </div>
-  );
-}
-
-function ToolCallCard({
-  toolCall,
-  isStreaming = false,
-}: {
-  toolCall: { id: string; name: string; arguments: string };
-  isStreaming?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  const getToolIcon = (name: string) => {
-    if (name.includes('input')) {
-      if (name.includes('connection')) return <DatabaseIcon className="h-3 w-3" />;
-      if (name.includes('file')) return <FileIcon className="h-3 w-3" />;
-      return <DatabaseIcon className="h-3 w-3" />;
-    }
-    if (name.includes('transform') || name.includes('code') || name.includes('formula')) {
-      return <CodeIcon className="h-3 w-3" />;
-    }
-    if (name.includes('output')) {
-      if (name.includes('chart')) return <InsertChartIcon className="h-3 w-3" />;
-      return <TableIcon className="h-3 w-3" />;
-    }
-    if (name.includes('connect')) return <Link1Icon className="h-3 w-3" />;
-    if (name.includes('remove') || name.includes('clear')) return <TrashIcon className="h-3 w-3" />;
-    if (name.includes('update')) return <ReloadIcon className="h-3 w-3" />;
-    return <AIIcon size="sm" />;
-  };
-
-  const getToolColor = (name: string) => {
-    if (name.includes('input')) return 'border-yellow-500/50 bg-yellow-500/10';
-    if (name.includes('transform')) return 'border-blue-500/50 bg-blue-500/10';
-    if (name.includes('output')) return 'border-pink-500/50 bg-pink-500/10';
-    if (name.includes('connect')) return 'border-green-500/50 bg-green-500/10';
-    if (name.includes('remove') || name.includes('clear')) return 'border-red-500/50 bg-red-500/10';
-    return 'border-border bg-muted/50';
-  };
-
-  const formatToolName = (name: string) => {
-    // Replace "node" with "cell" for user-facing text
-    return name
-      .replace(/_/g, ' ')
-      .replace(/node/gi, 'cell')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
-  const parseArgs = () => {
-    try {
-      return JSON.parse(toolCall.arguments);
-    } catch {
-      return null;
-    }
-  };
-
-  const args = parseArgs();
-  const label = args?.label || args?.node_id || '';
-
-  return (
-    <div
-      className={`rounded-md border px-3 py-2 text-xs ${getToolColor(toolCall.name)} ${
-        isStreaming ? 'animate-pulse' : ''
-      }`}
-    >
-      <button onClick={() => setExpanded(!expanded)} className="flex w-full items-center gap-2">
-        {expanded ? (
-          <ChevronDownIcon className="h-3 w-3 text-muted-foreground" />
-        ) : (
-          <ChevronRightIcon className="h-3 w-3 text-muted-foreground" />
-        )}
-        {getToolIcon(toolCall.name)}
-        <span className="font-medium">{formatToolName(toolCall.name)}</span>
-        {label && <span className="text-muted-foreground">— {label}</span>}
-        {isStreaming && (
-          <span className="ml-auto flex items-center gap-1 text-muted-foreground">
-            <ReloadIcon className="h-3 w-3 animate-spin" />
-          </span>
-        )}
-      </button>
-      {expanded && args && (
-        <pre className="mt-2 max-h-32 overflow-auto rounded bg-background/50 p-2 text-[10px] text-muted-foreground">
-          {JSON.stringify(args, null, 2)}
-        </pre>
-      )}
     </div>
   );
 }

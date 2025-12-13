@@ -9,7 +9,7 @@ export type InputNodeType = 'connection' | 'file' | 'cell' | 'dataTable' | 'webS
 // Transform node types
 export type TransformNodeType = 'formula' | 'code';
 
-// Output node types
+// Output node types (kept for backwards compatibility, but code nodes now show results inline)
 export type OutputNodeType = 'table' | 'chart' | 'htmlOutput';
 
 // Combined node type
@@ -23,9 +23,30 @@ export interface BaseNodeData {
   createdBy: string; // 'ai' or 'user'
 }
 
-// Input node data types
-export interface ConnectionNodeData extends BaseNodeData {
+// Base for input nodes - includes name for q.get() reference
+export interface BaseInputNodeData extends BaseNodeData {
   category: 'input';
+  name: string; // Unique name for q.get("name") reference in code
+}
+
+// Execution result types for code nodes
+export type CodeResultType = 'value' | 'table' | 'chart' | 'html' | 'error';
+
+export interface CodeExecutionResult {
+  type: CodeResultType;
+  value?: string | number | boolean | null; // Single value result
+  columns?: string[]; // Table columns
+  rows?: (string | number | boolean | null)[][]; // Table rows
+  htmlContent?: string; // Chart HTML or custom HTML output
+  error?: string; // Error message
+  stdout?: string; // Console output
+  executedAt: number; // Timestamp
+}
+
+export type CodeExecutionState = 'idle' | 'running' | 'success' | 'error';
+
+// Input node data types - all include 'name' for q.get() reference
+export interface ConnectionNodeData extends BaseInputNodeData {
   nodeType: 'connection';
   connectionUuid: string;
   connectionName: string;
@@ -33,36 +54,31 @@ export interface ConnectionNodeData extends BaseNodeData {
   query?: string;
 }
 
-export interface FileNodeData extends BaseNodeData {
-  category: 'input';
+export interface FileNodeData extends BaseInputNodeData {
   nodeType: 'file';
   fileName: string;
   fileType: string;
   fileSize?: number;
 }
 
-export interface CellNodeData extends BaseNodeData {
-  category: 'input';
+export interface CellNodeData extends BaseInputNodeData {
   nodeType: 'cell';
   value: string;
 }
 
-export interface DataTableNodeData extends BaseNodeData {
-  category: 'input';
+export interface DataTableNodeData extends BaseInputNodeData {
   nodeType: 'dataTable';
   columns: string[];
   rows: string[][];
 }
 
-export interface WebSearchNodeData extends BaseNodeData {
-  category: 'input';
+export interface WebSearchNodeData extends BaseInputNodeData {
   nodeType: 'webSearch';
   query: string;
   results?: string[];
 }
 
-export interface HtmlInputNodeData extends BaseNodeData {
-  category: 'input';
+export interface HtmlInputNodeData extends BaseInputNodeData {
   nodeType: 'html';
   htmlContent: string;
 }
@@ -79,6 +95,10 @@ export interface CodeNodeData extends BaseNodeData {
   nodeType: 'code';
   language: 'python' | 'javascript';
   code: string;
+  description?: string; // Human-readable description of what the code does
+  // Execution state - code nodes display their own results
+  executionState?: CodeExecutionState;
+  result?: CodeExecutionResult;
 }
 
 // Output node data types

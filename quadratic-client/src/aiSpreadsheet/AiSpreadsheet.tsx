@@ -2,6 +2,8 @@ import { aiSpreadsheetTeamUuidAtom } from '@/aiSpreadsheet/atoms/aiSpreadsheetAt
 import { AiSpreadsheetCanvas } from '@/aiSpreadsheet/canvas/AiSpreadsheetCanvas';
 import { AiSpreadsheetChat } from '@/aiSpreadsheet/chat/AiSpreadsheetChat';
 import { NodeInspector } from '@/aiSpreadsheet/canvas/NodeInspector';
+import { ExecutionProvider } from '@/aiSpreadsheet/execution/ExecutionContext';
+import { useExecutionEngine } from '@/aiSpreadsheet/hooks/useExecutionEngine';
 import type { AiSpreadsheetLoaderData } from '@/routes/teams.$teamUuid.ai-spreadsheet';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ROUTES } from '@/shared/constants/routes';
@@ -54,11 +56,26 @@ export function AiSpreadsheet({ loaderData }: AiSpreadsheetProps) {
         {/* Canvas Panel - 2/3 width */}
         <div className="relative flex-1">
           <ReactFlowProvider>
-            <AiSpreadsheetCanvas />
-            <NodeInspector />
+            <CanvasWithExecution />
           </ReactFlowProvider>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Canvas wrapper that includes the execution engine.
+ * Must be inside ReactFlowProvider and have access to Recoil state.
+ */
+function CanvasWithExecution() {
+  // Initialize the execution engine - this sets up reactive execution
+  const { executeCodeNode } = useExecutionEngine();
+
+  return (
+    <ExecutionProvider executeCodeNode={executeCodeNode}>
+      <AiSpreadsheetCanvas />
+      <NodeInspector />
+    </ExecutionProvider>
   );
 }

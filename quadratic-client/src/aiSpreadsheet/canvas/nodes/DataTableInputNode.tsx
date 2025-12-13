@@ -1,16 +1,23 @@
-import type { AiSpreadsheetNodeData } from '@/aiSpreadsheet/types';
+import type { DataTableNodeData } from '@/aiSpreadsheet/types';
+import { aiSpreadsheetAtom } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
 import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import { TableIcon } from '@/shared/components/Icons';
 import { useCallback, useMemo, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export function DataTableInputNode({ id, data, selected }: NodeProps) {
-  const nodeData = data as unknown as AiSpreadsheetNodeData & {
-    columns: string[];
-    rows: string[][];
-  };
+  const nodeData = data as unknown as DataTableNodeData;
   const { setNodes } = useReactFlow();
+  const setRecoilState = useSetRecoilState(aiSpreadsheetAtom);
   const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  // Check if value is numeric for right-alignment
+  const isNumeric = (val: string) => {
+    if (!val) return false;
+    const num = parseFloat(val);
+    return !isNaN(num) && isFinite(num);
+  };
 
   const columns = nodeData.columns || [];
   const rows = useMemo(() => nodeData.rows || [], [nodeData.rows]);
@@ -28,20 +35,41 @@ export function DataTableInputNode({ id, data, selected }: NodeProps) {
   const handleSave = useCallback(() => {
     if (!editingCell) return;
     const { row, col } = editingCell;
+
+    const updateRows = (existingRows: string[][] | undefined) => {
+      const newRows = [...(existingRows || [])];
+      if (!newRows[row]) newRows[row] = [];
+      newRows[row] = [...newRows[row]];
+      newRows[row][col] = editValue;
+      return newRows;
+    };
+
+    // Update React Flow local state
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id === id) {
-          const newRows = [...((node.data.rows as string[][]) || [])];
-          if (!newRows[row]) newRows[row] = [];
-          newRows[row] = [...newRows[row]];
-          newRows[row][col] = editValue;
+          const newRows = updateRows(node.data.rows as string[][] | undefined);
           return { ...node, data: { ...node.data, rows: newRows } };
         }
         return node;
       })
     );
+
+    // Also update Recoil state to trigger execution engine
+    setRecoilState((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((node) => {
+        if (node.id === id) {
+          const tableData = node.data as DataTableNodeData;
+          const newRows = updateRows(tableData.rows);
+          return { ...node, data: { ...node.data, rows: newRows } };
+        }
+        return node;
+      }),
+    }));
+
     setEditingCell(null);
-  }, [id, editingCell, editValue, setNodes]);
+  }, [id, editingCell, editValue, setNodes, setRecoilState]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -62,15 +90,15 @@ export function DataTableInputNode({ id, data, selected }: NodeProps) {
   const handleClasses = selected ? '!border-amber-500 !bg-amber-400' : '!border-slate-400 !bg-slate-300';
 
   return (
-    <div className={`group min-w-[200px] transition-all ${selected ? 'scale-[1.02]' : ''}`}>
-      {/* Header */}
+    <div className={`group relative min-w-[200px] transition-all ${selected ? 'scale-[1.02]' : ''}`}>
+      {/* Header - shows label and dimensions */}
       <div
-        className={`flex items-center gap-1.5 border-b px-2 py-1 text-[10px] font-medium uppercase tracking-wide ${headerClasses}`}
+        className={`flex items-center gap-1.5 border-b px-2 py-1 ${headerClasses}`}
         style={{ borderTopLeftRadius: '4px', borderTopRightRadius: '4px' }}
       >
         <TableIcon className="h-3 w-3" />
-        <span className="truncate">{nodeData.label}</span>
-        <span className="ml-auto text-[9px] opacity-60">
+        <span className="truncate text-[10px] font-medium uppercase tracking-wide">{nodeData.label}</span>
+        <span className="text-[9px] opacity-60">
           {rows.length} × {columns.length}
         </span>
       </div>
@@ -115,10 +143,12 @@ export function DataTableInputNode({ id, data, selected }: NodeProps) {
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
-                        className="nodrag nowheel nopan w-full bg-amber-50 px-1 outline-none ring-1 ring-amber-400"
+                        className={`nodrag nowheel nopan w-full bg-amber-50 px-1 outline-none ring-1 ring-amber-400 ${isNumeric(editValue) ? 'text-right' : ''}`}
                       />
                     ) : (
-                      <span className="cursor-text">{row[colIndex] || ''}</span>
+                      <span className={`cursor-text ${isNumeric(row[colIndex] || '') ? 'block text-right' : ''}`}>
+                        {row[colIndex] || ''}
+                      </span>
                     )}
                   </td>
                 ))}

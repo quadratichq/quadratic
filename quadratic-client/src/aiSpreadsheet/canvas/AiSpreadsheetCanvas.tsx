@@ -41,18 +41,28 @@ export function AiSpreadsheetCanvas() {
   }, [recoilNodes, setNodes, fitView]);
 
   useEffect(() => {
-    // Add marker end to all edges
-    const edgesWithMarkers = recoilEdges.map((edge) => ({
-      ...edge,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20,
-        color: '#94a3b8',
-      },
-    }));
+    // Add marker end to all edges and set animation based on target node execution state
+    const edgesWithMarkers = recoilEdges.map((edge) => {
+      // Find the target node to check if it's running
+      const targetNode = recoilNodes.find((n) => n.id === edge.target);
+      // Only code nodes have executionState
+      const isTargetRunning =
+        targetNode?.data?.nodeType === 'code' &&
+        (targetNode.data as { executionState?: string }).executionState === 'running';
+
+      return {
+        ...edge,
+        animated: isTargetRunning, // Only animate when target is running
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#94a3b8',
+        },
+      };
+    });
     setEdges(edgesWithMarkers);
-  }, [recoilEdges, setEdges]);
+  }, [recoilEdges, recoilNodes, setEdges]);
 
   const onSelectionChange: OnSelectionChangeFunc = useCallback(
     ({ nodes: selectedNodes }) => {
@@ -84,7 +94,7 @@ export function AiSpreadsheetCanvas() {
         maxZoom={2}
         defaultEdgeOptions={{
           type: 'dependency',
-          animated: true,
+          animated: false, // Animation is controlled per-edge based on execution state
         }}
         // Disable editing - this is view-only
         nodesDraggable={false}

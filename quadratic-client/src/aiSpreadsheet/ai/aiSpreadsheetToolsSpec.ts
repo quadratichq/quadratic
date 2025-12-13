@@ -19,7 +19,8 @@ export enum AiSpreadsheetTool {
 // Schema definitions for tool arguments
 export const AiSpreadsheetToolsArgsSchema = {
   [AiSpreadsheetTool.AddInputNode]: z.object({
-    node_id: z.string().describe('Unique identifier for this node (use snake_case, e.g., "sales_data_input")'),
+    node_id: z.string().describe('Unique identifier for this node (use snake_case, e.g., "sales_data")'),
+    name: z.string().optional().describe('Reference name for q.get("name") in code. If not provided, uses node_id.'),
     label: z.string().describe('Human-readable name displayed on the node'),
     input_type: z
       .enum(['connection', 'file', 'cell', 'data_table', 'web_search', 'html'])
@@ -53,6 +54,10 @@ export const AiSpreadsheetToolsArgsSchema = {
     // Code-specific fields
     language: z.enum(['python', 'javascript']).optional().describe('Programming language (for code type)'),
     code: z.string().optional().describe('The code to execute'),
+    description: z
+      .string()
+      .optional()
+      .describe('Brief human-readable description of what the code does (shown by default instead of code)'),
     // Formula-specific fields
     formula: z.string().optional().describe('Spreadsheet formula (for formula type)'),
   }),
@@ -78,13 +83,16 @@ export const AiSpreadsheetToolsArgsSchema = {
   }),
 
   [AiSpreadsheetTool.UpdateNode]: z.object({
-    node_id: z.string().describe('ID of the node to update'),
+    node_id: z.string().describe('ID of the existing node to update'),
     label: z.string().optional().describe('New label for the node'),
-    // Any other fields that can be updated based on node type
-    code: z.string().optional(),
+    // For code cells
+    code: z.string().optional().describe('New Python code for code cell'),
+    description: z.string().optional().describe('New description for code cell'),
+    // For input cells
+    value: z.string().optional().describe('New value for input cell'),
+    // Other types
     formula: z.string().optional(),
     query: z.string().optional(),
-    value: z.string().optional(),
   }),
 
   [AiSpreadsheetTool.ClearCanvas]: z.object({
@@ -97,15 +105,16 @@ export const aiSpreadsheetToolDefinitions = [
   {
     name: AiSpreadsheetTool.AddInputNode,
     description:
-      'Add an input node to the canvas. Input nodes are data sources like database connections, files, manual values, web searches, or HTML content.',
+      'Add an input node to the canvas. Input nodes are data sources that code cells can reference via q.get("name").',
     parameters: {
       type: 'object',
       properties: {
         node_id: { type: 'string', description: 'Unique identifier (snake_case)' },
+        name: { type: 'string', description: 'Reference name for q.get("name") in code' },
         label: { type: 'string', description: 'Display name for the node' },
         input_type: {
           type: 'string',
-          enum: ['connection', 'file', 'cell', 'web_search', 'html'],
+          enum: ['connection', 'file', 'cell', 'data_table', 'web_search', 'html'],
           description: 'Type of input source',
         },
         connection_uuid: { type: 'string', description: 'Database connection UUID' },
@@ -115,10 +124,16 @@ export const aiSpreadsheetToolDefinitions = [
         file_name: { type: 'string', description: 'Name of the file' },
         file_type: { type: 'string', description: 'MIME type' },
         value: { type: 'string', description: 'Manual input value' },
+        columns: { type: 'array', items: { type: 'string' }, description: 'Column names for data_table' },
+        rows: {
+          type: 'array',
+          items: { type: 'array', items: { type: 'string' } },
+          description: 'Row data for data_table',
+        },
         search_query: { type: 'string', description: 'Web search query' },
         html_content: { type: 'string', description: 'HTML content' },
       },
-      required: ['node_id', 'label', 'input_type'],
+      required: ['node_id', 'name', 'label', 'input_type'],
     },
   },
   {
@@ -211,58 +226,96 @@ export const aiSpreadsheetToolDefinitions = [
 ];
 
 // System prompt for the AI
-export const AI_SPREADSHEET_SYSTEM_PROMPT = `You are an AI assistant that builds spreadsheet models visually on a canvas.
+export const AI_SPREADSHEET_SYSTEM_PROMPT = `You are an AI assistant that builds reactive spreadsheet models visually on a canvas.
 
-## CRITICAL: You must create ALL THREE parts of every model:
-1. **INPUT CELLS** - The data/values the user provides
-2. **FORMULA/CALCULATION CELLS** - The logic that processes the inputs  
-3. **OUTPUT/RESULT CELLS** - Where the final answer is displayed
+## How It Works
 
-NEVER stop after creating just inputs. ALWAYS complete the full model with calculations AND results.
+1. **Input Cells** - Values the user can edit. Each has a unique \`name\` for reference.
+2. **Code Cells** - Python code that reads inputs via \`q.get("name")\` and computes results.
+
+Code cells automatically display their output (value, table, or chart). When inputs change, code re-runs automatically.
 
 ## Cell Types
 
 **Input Cells** (add_input_node):
-- \`cell\`: A value the user can edit (number, text, etc.)
+- \`cell\`: A single editable value (number, text, etc.)
+- \`data_table\`: Multiple rows/columns of data
 
-**Calculation Cells** (add_transform_node):
-- \`code\`: Python code for calculations
-- \`formula\`: Simple formulas
+**Code Cells** (add_transform_node):
+- \`code\`: Python code that uses \`q.get("name")\` to read inputs
 
-**Result Cells** (add_output_node):
-- \`table\`: Display the result
+## How to Reference Inputs in Code
+
+Use \`q.get("input_name")\` to get values from input cells:
+
+\`\`\`python
+# Get single values
+price = q.get("home_price")     # Returns: 500000
+rate = q.get("interest_rate")   # Returns: 6.5
+
+# Get data tables (returns pandas DataFrame)
+sales_df = q.get("sales_data")
+\`\`\`
 
 ## Required Workflow
 
-For EVERY request, you MUST:
-1. Create input cells for each variable
-2. Create a calculation cell with the formula/code
-3. Create a result cell to display the answer
-4. Connect: inputs → calculation → result
+For EVERY request:
+1. Create input cells with \`name\` fields (used for q.get reference)
+2. Create a code cell that uses \`q.get()\` to read inputs
+3. Connect: inputs → code cell
+
+The code cell's return value (last expression) becomes the displayed result.
 
 ## Example: "Add 5 + 7"
 
-You must create ALL of these:
-- add_input_node: cell "a" with value "5"
-- add_input_node: cell "b" with value "7"  
-- add_transform_node: code that adds the inputs
-- add_output_node: table to show the sum
-- connect_nodes: a → calculation
-- connect_nodes: b → calculation
-- connect_nodes: calculation → result
+- add_input_node: { node_id: "a", name: "a", label: "A", input_type: "cell", value: "5" }
+- add_input_node: { node_id: "b", name: "b", label: "B", input_type: "cell", value: "7" }
+- add_transform_node: { node_id: "sum", label: "Sum", transform_type: "code", language: "python", code: "a = q.get('a')\\nb = q.get('b')\\na + b" }
+- connect_nodes: a → sum
+- connect_nodes: b → sum
+
+Result: The code cell displays "12"
 
 ## Example: "Mortgage calculator"
 
-You must create ALL of these:
-- add_input_node: cell "home_price" = "500000"
-- add_input_node: cell "down_payment_pct" = "20"
-- add_input_node: cell "interest_rate" = "6.5"  
-- add_input_node: cell "loan_term" = "30"
-- add_transform_node: code with PMT calculation
-- add_output_node: table for monthly payment
-- connect_nodes: (all inputs → calculation → result)
+- add_input_node: { node_id: "home_price", name: "home_price", label: "Home Price", input_type: "cell", value: "500000" }
+- add_input_node: { node_id: "down_pct", name: "down_payment_pct", label: "Down Payment %", input_type: "cell", value: "20" }
+- add_input_node: { node_id: "rate", name: "interest_rate", label: "Interest Rate %", input_type: "cell", value: "6.5" }
+- add_input_node: { node_id: "term", name: "loan_term", label: "Loan Term (years)", input_type: "cell", value: "30" }
+- add_transform_node with Python code that:
+  - Gets each input with q.get()
+  - Calculates monthly payment using PMT formula
+  - Returns formatted result string
+- connect_nodes: (all inputs → payment)
 
-REMEMBER: A model is NOT complete without a calculation cell AND a result cell. Always create the full workflow.`;
+## Output Types
+
+The code cell result type is determined automatically:
+- **Single value**: Just return a number, string, etc.
+- **Table**: Return a pandas DataFrame
+- **Chart**: Return a plotly figure (it renders as HTML)
+
+IMPORTANT: Do NOT create add_output_node calls. Code cells display their own results.
+
+## Editing Existing Nodes (update_node)
+
+When you need to fix errors or modify existing cells, use \`update_node\` instead of creating new ones:
+
+\`\`\`
+update_node: {
+  node_id: "existing_node_id",
+  code: "# fixed code here",
+  description: "Updated description"
+}
+\`\`\`
+
+**When to use update_node:**
+- Fixing Python errors in code cells
+- Changing input values
+- Updating labels or descriptions
+- Modifying code logic
+
+**Important:** Always prefer \`update_node\` over deleting and recreating nodes when making changes.`;
 
 // Helper to build context message with available connections
 export function buildConnectionsContext(connections: { uuid: string; name: string; type: string }[]): string {

@@ -1,14 +1,31 @@
-import type { AiSpreadsheetNodeData } from '@/aiSpreadsheet/types';
+import type { BaseInputNodeData } from '@/aiSpreadsheet/types';
+import { aiSpreadsheetAtom } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
 import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import { DatabaseIcon, FileIcon, SearchIcon, CodeIcon } from '@/shared/components/Icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
+
+// Type guard for input nodes with name field
+type InputNodeData = BaseInputNodeData & {
+  value?: string;
+  query?: string;
+  fileName?: string;
+};
 
 export function InputNode({ id, data, selected }: NodeProps) {
-  const nodeData = data as unknown as AiSpreadsheetNodeData;
+  const nodeData = data as unknown as InputNodeData;
   const { setNodes } = useReactFlow();
+  const setRecoilState = useSetRecoilState(aiSpreadsheetAtom);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Check if value is numeric for right-alignment
+  const isNumeric = (val: string) => {
+    if (!val) return false;
+    const num = parseFloat(val);
+    return !isNaN(num) && isFinite(num);
+  };
 
   const getIcon = () => {
     switch (nodeData.nodeType) {
@@ -65,17 +82,18 @@ export function InputNode({ id, data, selected }: NodeProps) {
 
   const handleSave = useCallback(() => {
     setIsEditing(false);
-    // Update the node data based on node type
+    // Determine which property to update based on node type
+    let updateKey = 'value';
+    if (nodeData.nodeType === 'connection' || nodeData.nodeType === 'webSearch') {
+      updateKey = 'query';
+    } else if (nodeData.nodeType === 'file') {
+      updateKey = 'fileName';
+    }
+
+    // Update React Flow local state
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id === id) {
-          // Determine which property to update based on node type
-          let updateKey = 'value';
-          if (nodeData.nodeType === 'connection' || nodeData.nodeType === 'webSearch') {
-            updateKey = 'query';
-          } else if (nodeData.nodeType === 'file') {
-            updateKey = 'fileName';
-          }
           return {
             ...node,
             data: { ...node.data, [updateKey]: editValue },
@@ -84,7 +102,21 @@ export function InputNode({ id, data, selected }: NodeProps) {
         return node;
       })
     );
-  }, [id, nodeData.nodeType, editValue, setNodes]);
+
+    // Also update Recoil state to trigger execution engine
+    setRecoilState((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: { ...node.data, [updateKey]: editValue },
+          };
+        }
+        return node;
+      }),
+    }));
+  }, [id, nodeData.nodeType, editValue, setNodes, setRecoilState]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -106,14 +138,14 @@ export function InputNode({ id, data, selected }: NodeProps) {
   const displayValue = value.length > 20 ? value.substring(0, 20) + '...' : value;
 
   return (
-    <div className={`group min-w-[140px] transition-all ${selected ? 'scale-105' : ''}`}>
-      {/* Cell name header - looks like spreadsheet column/row header */}
+    <div className={`group relative min-w-[160px] transition-all ${selected ? 'scale-105' : ''}`}>
+      {/* Cell name header */}
       <div
-        className={`flex items-center gap-1.5 border-b px-2 py-1 text-[10px] font-medium uppercase tracking-wide ${headerClasses}`}
+        className={`flex items-center gap-1.5 border-b px-2 py-1 ${headerClasses}`}
         style={{ borderTopLeftRadius: '4px', borderTopRightRadius: '4px' }}
       >
         {icon}
-        <span className="truncate">{nodeData.label}</span>
+        <span className="truncate text-[10px] font-medium uppercase tracking-wide">{nodeData.label}</span>
       </div>
 
       {/* Cell value area - looks like a spreadsheet cell */}
@@ -136,11 +168,11 @@ export function InputNode({ id, data, selected }: NodeProps) {
             onKeyDown={handleKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="nodrag nowheel nopan w-full bg-transparent font-mono text-sm text-slate-800 outline-none"
+            className={`nodrag nowheel nopan w-full bg-transparent font-mono text-sm text-slate-800 outline-none ${isNumeric(editValue) ? 'text-right' : ''}`}
             style={{ minWidth: '100px' }}
           />
         ) : (
-          <span className="text-slate-800">{displayValue}</span>
+          <span className={`block text-slate-800 ${isNumeric(value) ? 'text-right' : ''}`}>{displayValue}</span>
         )}
       </div>
 

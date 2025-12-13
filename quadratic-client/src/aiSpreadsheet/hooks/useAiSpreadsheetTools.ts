@@ -11,11 +11,74 @@ import {
   removeNode,
   type AiSpreadsheetState,
 } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
-import type { AddNodeArgs, AiNodeType } from '@/aiSpreadsheet/types';
+import { executePython, type InputValues } from '@/aiSpreadsheet/execution/pythonRunner';
+import type {
+  AddNodeArgs,
+  AiNodeType,
+  CodeNodeData,
+  BaseInputNodeData,
+  CodeExecutionResult,
+  AiSpreadsheetNode,
+} from '@/aiSpreadsheet/types';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { useCallback, useRef } from 'react';
 import { useRecoilState } from 'recoil';
+
+/**
+ * Execute a code node and return the result
+ */
+async function executeCodeNodeAndGetResult(
+  nodeId: string,
+  nodes: AiSpreadsheetNode[],
+  edges: { source: string; target: string }[]
+): Promise<{ nodeId: string; result: CodeExecutionResult; codeData: CodeNodeData } | null> {
+  const node = nodes.find((n) => n.id === nodeId);
+  if (!node || node.data.nodeType !== 'code') return null;
+
+  const codeData = node.data as CodeNodeData;
+  if (codeData.language !== 'python') return null;
+
+  // Get input dependencies
+  const incomingEdges = edges.filter((e) => e.target === nodeId);
+  const sourceNodeIds = incomingEdges.map((e) => e.source);
+  const inputNodes = nodes.filter((n) => sourceNodeIds.includes(n.id) && n.data.category === 'input');
+
+  // Build input values
+  const inputValues: InputValues = new Map();
+  for (const inputNode of inputNodes) {
+    const data = inputNode.data as BaseInputNodeData;
+    const name = data.name;
+    if (!name) continue;
+
+    switch (data.nodeType) {
+      case 'cell':
+        inputValues.set(name, (data as BaseInputNodeData & { value: string }).value || '');
+        break;
+      case 'dataTable': {
+        const tableData = data as BaseInputNodeData & { columns: string[]; rows: string[][] };
+        const tableArray = [tableData.columns, ...tableData.rows];
+        inputValues.set(name, tableArray);
+        break;
+      }
+    }
+  }
+
+  try {
+    const result = await executePython(codeData.code, inputValues);
+    return { nodeId, result, codeData };
+  } catch (error) {
+    return {
+      nodeId,
+      result: {
+        type: 'error',
+        error: error instanceof Error ? error.message : String(error),
+        executedAt: Date.now(),
+      },
+      codeData,
+    };
+  }
+}
 
 interface Connection {
   uuid: string;
@@ -71,7 +134,7 @@ export function useAiSpreadsheetTools() {
             label: parsed.label,
             data:
               nodeType === 'code'
-                ? { language: parsed.language || 'python', code: parsed.code || '' }
+                ? { language: parsed.language || 'python', code: parsed.code || '', description: parsed.description }
                 : { formula: parsed.formula || '' },
           });
           nodeIdMapRef.current.set(parsed.node_id, result.newNodeId);
@@ -169,6 +232,62 @@ export function useAiSpreadsheetTools() {
           return currentState;
         }
 
+        case AiSpreadsheetTool.UpdateNode: {
+          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.UpdateNode].safeParse(args);
+          if (!parseResult.success) {
+            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            return currentState;
+          }
+          const parsed = parseResult.data;
+
+          // Find the node by ID or label
+          let nodeId = nodeIdMapRef.current.get(parsed.node_id);
+          if (!nodeId) {
+            const nodeByLabel = currentState.nodes.find(
+              (n) => n.data.label?.toLowerCase() === parsed.node_id.toLowerCase()
+            );
+            if (nodeByLabel) nodeId = nodeByLabel.id;
+          }
+
+          if (!nodeId) {
+            console.warn('[AI Spreadsheet] Could not find node to update:', parsed.node_id);
+            return currentState;
+          }
+
+          console.log('[AI Spreadsheet] Updating node:', nodeId, parsed);
+
+          // Update the node with the provided fields
+          return {
+            ...currentState,
+            nodes: currentState.nodes.map((n) => {
+              if (n.id !== nodeId) return n;
+
+              const updatedData = { ...n.data };
+
+              // Update common fields
+              if (parsed.label) updatedData.label = parsed.label;
+
+              // Update code-specific fields
+              if (n.data.nodeType === 'code') {
+                if (parsed.code !== undefined) (updatedData as CodeNodeData).code = parsed.code;
+                if (parsed.description !== undefined) (updatedData as CodeNodeData).description = parsed.description;
+                // Reset execution state when code changes
+                if (parsed.code !== undefined) {
+                  (updatedData as CodeNodeData).executionState = undefined;
+                  (updatedData as CodeNodeData).result = undefined;
+                }
+              }
+
+              // Update input cell value
+              if (n.data.nodeType === 'cell' && parsed.value !== undefined) {
+                (updatedData as BaseInputNodeData & { value: string }).value = parsed.value;
+              }
+
+              return { ...n, data: updatedData };
+            }),
+          };
+        }
+
         case AiSpreadsheetTool.ClearCanvas: {
           const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.ClearCanvas].safeParse(args);
           if (!parseResult.success) {
@@ -193,19 +312,28 @@ export function useAiSpreadsheetTools() {
     }
   }, []);
 
-  // Main function to process AI response
-  const processAiResponse = useCallback(
-    async (userMessage: string, connections: Connection[]) => {
-      // Cancel any previous request
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
+  // Internal function to process AI response with recursion support
+  const processAiResponseInternal = useCallback(
+    async (userMessage: string, connections: Connection[], recursionDepth: number = 0) => {
+      // Limit recursion to prevent infinite loops (max 3 attempts to fix errors)
+      if (recursionDepth > 2) {
+        console.warn('[AI Spreadsheet] Max recursion depth reached, stopping error correction');
+        setState((prev) => ({ ...prev, loading: false }));
+        return;
+      }
 
-      // Reset streaming state
-      setState((prev) => ({
-        ...prev,
-        streamingContent: '',
-        streamingToolCalls: [],
-      }));
+      // Only cancel and reset on first call (not recursive error fixes)
+      if (recursionDepth === 0) {
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = new AbortController();
+
+        // Reset streaming state
+        setState((prev) => ({
+          ...prev,
+          streamingContent: '',
+          streamingToolCalls: [],
+        }));
+      }
 
       try {
         const token = await authClient.getTokenOrRedirect();
@@ -220,7 +348,7 @@ export function useAiSpreadsheetTools() {
 
         const response = await fetch(endpoint, {
           method: 'POST',
-          signal: abortControllerRef.current.signal,
+          signal: abortControllerRef.current?.signal,
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -365,6 +493,86 @@ export function useAiSpreadsheetTools() {
 
         console.log('[AI Spreadsheet] About to update final state with responseText:', responseText.substring(0, 100));
 
+        // Find any code nodes that were created by tool calls and execute them
+        const codeNodeToolCalls = toolCalls.filter((tc) => tc.name === AiSpreadsheetTool.AddTransformNode);
+
+        // Execute code nodes and collect errors
+        const executionErrors: string[] = [];
+
+        if (codeNodeToolCalls.length > 0) {
+          console.log('[AI Spreadsheet] Executing code nodes created by tool calls:', codeNodeToolCalls.length);
+
+          // Get current state to access nodes and edges
+          // We need to do this in a way that ensures we have the latest state
+          let currentNodes: AiSpreadsheetNode[] = [];
+          let currentEdges: { source: string; target: string }[] = [];
+
+          setState((prev) => {
+            currentNodes = prev.nodes;
+            currentEdges = prev.edges;
+            return prev; // Don't change state, just read it
+          });
+
+          // Wait for state to settle
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // Re-read the state to get latest
+          setState((prev) => {
+            currentNodes = prev.nodes;
+            currentEdges = prev.edges;
+            return prev;
+          });
+
+          for (const tc of codeNodeToolCalls) {
+            try {
+              const args = JSON.parse(tc.arguments);
+              if (args.transform_type !== 'code') continue;
+
+              // Get the actual node ID from the map
+              const actualNodeId = nodeIdMapRef.current.get(args.node_id);
+              if (!actualNodeId) {
+                console.warn('[AI Spreadsheet] Could not find node ID for:', args.node_id);
+                continue;
+              }
+
+              console.log('[AI Spreadsheet] Executing code node:', actualNodeId);
+
+              const execResult = await executeCodeNodeAndGetResult(actualNodeId, currentNodes, currentEdges);
+
+              if (execResult) {
+                // Update node with result
+                setState((prev) => ({
+                  ...prev,
+                  nodes: prev.nodes.map((n) =>
+                    n.id === actualNodeId
+                      ? {
+                          ...n,
+                          data: {
+                            ...n.data,
+                            executionState: execResult.result.type === 'error' ? 'error' : 'success',
+                            result: execResult.result,
+                          } as CodeNodeData,
+                        }
+                      : n
+                  ),
+                }));
+
+                // Collect errors
+                if (execResult.result.type === 'error') {
+                  const errorMsg =
+                    `Code cell "${execResult.codeData.label}" execution error:\n` +
+                    `Error: ${execResult.result.error}\n` +
+                    (execResult.result.stdout ? `Console: ${execResult.result.stdout}\n` : '') +
+                    `Code:\n\`\`\`python\n${execResult.codeData.code}\n\`\`\``;
+                  executionErrors.push(errorMsg);
+                }
+              }
+            } catch (e) {
+              console.error('[AI Spreadsheet] Error executing code node:', e);
+            }
+          }
+        }
+
         // Update final state - tool calls are already processed during streaming
         setState((prev) => {
           console.log('[AI Spreadsheet] Inside setState. prev.chatMessages.length:', prev.chatMessages.length);
@@ -385,13 +593,26 @@ export function useAiSpreadsheetTools() {
           return {
             ...prev,
             chatMessages: [...prev.chatMessages, newMessage],
-            loading: false,
+            loading: executionErrors.length > 0, // Keep loading if we need to fix errors
             streamingContent: '',
             streamingToolCalls: [],
           };
         });
 
         console.log('[AI Spreadsheet] setState called, function complete');
+
+        // If there were execution errors, automatically call the AI to fix them
+        if (executionErrors.length > 0) {
+          console.log('[AI Spreadsheet] Execution errors found, calling AI to fix:', executionErrors.length);
+          const errorContext =
+            `The following Python execution errors occurred:\n\n` +
+            executionErrors.join('\n\n---\n\n') +
+            `\n\nPlease fix these errors by updating the code cells.`;
+
+          // Call AI again with the error context (recursive call)
+          await processAiResponseInternal(errorContext, connections, recursionDepth + 1);
+          return;
+        }
       } catch (error: any) {
         if (error.name === 'AbortError') {
           setState((prev) => ({
@@ -424,6 +645,14 @@ export function useAiSpreadsheetTools() {
       }
     },
     [state, setState, processToolCall]
+  );
+
+  // Wrapper function to start processing (recursionDepth = 0)
+  const processAiResponse = useCallback(
+    (userMessage: string, connections: Connection[]) => {
+      return processAiResponseInternal(userMessage, connections, 0);
+    },
+    [processAiResponseInternal]
   );
 
   return {
@@ -466,9 +695,13 @@ function mapOutputType(type: string): AiNodeType {
 }
 
 function buildInputNodeData(parsed: any): Partial<AddNodeArgs['data']> {
+  // All input nodes get the name field for q.get() reference
+  const baseName = parsed.name || parsed.node_id || parsed.label.toLowerCase().replace(/\s+/g, '_');
+
   switch (parsed.input_type) {
     case 'connection':
       return {
+        name: baseName,
         connectionUuid: parsed.connection_uuid || '',
         connectionName: parsed.connection_name || 'Database',
         connectionType: parsed.connection_type || 'POSTGRES',
@@ -476,28 +709,33 @@ function buildInputNodeData(parsed: any): Partial<AddNodeArgs['data']> {
       };
     case 'file':
       return {
+        name: baseName,
         fileName: parsed.file_name || 'data.csv',
         fileType: parsed.file_type || 'text/csv',
       };
     case 'cell':
       return {
+        name: baseName,
         value: parsed.value || '',
       };
     case 'data_table':
       return {
+        name: baseName,
         columns: parsed.columns || ['Column 1'],
         rows: parsed.rows || [],
       };
     case 'web_search':
       return {
+        name: baseName,
         query: parsed.search_query || '',
       };
     case 'html':
       return {
+        name: baseName,
         htmlContent: parsed.html_content || '',
       };
     default:
-      return {};
+      return { name: baseName };
   }
 }
 

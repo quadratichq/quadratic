@@ -5,7 +5,12 @@ import logger from '../../utils/logger';
 
 // Tool schemas using Zod (these are lightweight, no langchain dependency)
 const AddInputNodeSchema = z.object({
-  node_id: z.string().describe('Unique identifier for this node (use snake_case, e.g., "sales_data_input")'),
+  node_id: z.string().describe('Unique identifier for this node (use snake_case, e.g., "sales_data")'),
+  name: z
+    .string()
+    .describe(
+      'The reference name used in code to get this value via q.get("name"). Use snake_case (e.g., "home_price", "interest_rate")'
+    ),
   label: z.string().describe('Human-readable name displayed on the node'),
   input_type: z
     .enum(['connection', 'file', 'cell', 'data_table', 'web_search', 'html'])
@@ -32,6 +37,10 @@ const AddTransformNodeSchema = z.object({
   transform_type: z.enum(['code', 'formula']).describe('Type of transformation'),
   language: z.enum(['python', 'javascript']).optional().describe('Programming language (for code type)'),
   code: z.string().optional().describe('The code to execute'),
+  description: z
+    .string()
+    .optional()
+    .describe('Brief human-readable description of what the code does (e.g. "Calculates monthly mortgage payment")'),
   formula: z.string().optional().describe('Spreadsheet formula (for formula type)'),
 });
 
@@ -53,62 +62,136 @@ const RemoveNodeSchema = z.object({
   node_id: z.string().describe('ID of the node to remove'),
 });
 
+const UpdateNodeSchema = z.object({
+  node_id: z.string().describe('ID of the existing node to update'),
+  // For input cells
+  value: z.string().optional().describe('New value for input cell'),
+  // For code cells
+  code: z.string().optional().describe('New Python code for code cell'),
+  description: z.string().optional().describe('New description for code cell'),
+  // For any node
+  label: z.string().optional().describe('New label/title for the node'),
+});
+
 const ClearCanvasSchema = z.object({
   confirm: z.boolean().describe('Must be true to confirm clearing all nodes'),
 });
 
-const SYSTEM_PROMPT = `You are an AI assistant that builds spreadsheet models visually on a canvas.
+const SYSTEM_PROMPT = `You are an AI assistant that builds reactive spreadsheet models visually on a canvas.
 
-## CRITICAL: You must create ALL THREE parts of every model:
-1. **INPUT CELLS** - The data/values the user provides
-2. **FORMULA/CALCULATION CELLS** - The logic that processes the inputs  
-3. **OUTPUT/RESULT CELLS** - Where the final answer is displayed
+## How It Works
 
-NEVER stop after creating just inputs. ALWAYS complete the full model with calculations AND results.
+1. **Input Cells** - Values the user can edit. Each has a unique \`name\` for reference.
+2. **Code Cells** - Python code that reads inputs via \`q.get("name")\` and computes results.
+
+Code cells automatically display their output (value, table, or chart). When inputs change, code re-runs automatically.
 
 ## Cell Types
 
 **Input Cells** (add_input_node):
-- \`cell\`: A value the user can edit (number, text, etc.)
+- \`cell\`: A single editable value (number, text, etc.)
+- \`data_table\`: Multiple rows/columns of data
 
-**Calculation Cells** (add_transform_node):
-- \`code\`: Python code for calculations
-- \`formula\`: Simple formulas
+**Code Cells** (add_transform_node):
+- \`code\`: Python code that uses \`q.get("name")\` to read inputs
 
-**Result Cells** (add_output_node):
-- \`table\`: Display the result
+## How to Reference Inputs in Code
+
+Use \`q.get("input_name")\` to get values from input cells:
+
+\`\`\`python
+# Get single values
+price = q.get("home_price")     # Returns: 500000
+rate = q.get("interest_rate")   # Returns: 6.5
+
+# Get data tables (returns pandas DataFrame)
+sales_df = q.get("sales_data")
+\`\`\`
 
 ## Required Workflow
 
-For EVERY request, you MUST:
-1. Create input cells for each variable
-2. Create a calculation cell with the formula/code
-3. Create a result cell to display the answer
-4. Connect: inputs → calculation → result
+For EVERY request:
+1. Create input cells with unique \`name\` fields
+2. Create a code cell that uses \`q.get()\` to read inputs
+3. Connect: inputs → code cell
+
+The code cell's return value (last expression) becomes the displayed result.
 
 ## Example: "Add 5 + 7"
 
-You must create ALL of these:
-- add_input_node: cell "a" with value "5"
-- add_input_node: cell "b" with value "7"  
-- add_transform_node: code that adds the inputs
-- add_output_node: table to show the sum
-- connect_nodes: a → calculation
-- connect_nodes: b → calculation
-- connect_nodes: calculation → result
+\`\`\`
+add_input_node: { name: "a", label: "A", input_type: "cell", value: "5" }
+add_input_node: { name: "b", label: "B", input_type: "cell", value: "7" }
+add_transform_node: { 
+  label: "Sum", 
+  transform_type: "code", 
+  language: "python",
+  code: "a = q.get('a')\\nb = q.get('b')\\na + b",
+  description: "Adds two numbers together"
+}
+connect_nodes: a → sum
+connect_nodes: b → sum
+\`\`\`
+
+Result: The code cell displays "12"
 
 ## Example: "Mortgage calculator"
 
-You must create ALL of these:
-- add_input_node: cell "home_price" = "500000"
-- add_input_node: cell "down_payment_pct" = "20"
-- add_input_node: cell "interest_rate" = "6.5"  
-- add_input_node: cell "loan_term" = "30"
-- add_transform_node: code with PMT calculation
-- add_output_node: table for monthly payment
-- connect_nodes: (all inputs → calculation → result)
+\`\`\`
+add_input_node: { name: "home_price", label: "Home Price", input_type: "cell", value: "500000" }
+add_input_node: { name: "down_payment_pct", label: "Down Payment %", input_type: "cell", value: "20" }
+add_input_node: { name: "interest_rate", label: "Interest Rate %", input_type: "cell", value: "6.5" }
+add_input_node: { name: "loan_term", label: "Loan Term (years)", input_type: "cell", value: "30" }
+add_transform_node: {
+  label: "Monthly Payment",
+  transform_type: "code",
+  language: "python",
+  description: "Calculates monthly mortgage payment using PMT formula",
+  code: """
+home_price = q.get('home_price')
+down_pct = q.get('down_payment_pct')
+rate = q.get('interest_rate')
+years = q.get('loan_term')
 
-REMEMBER: A model is NOT complete without a calculation cell AND a result cell. Always create the full workflow.`;
+principal = home_price * (1 - down_pct / 100)
+monthly_rate = (rate / 100) / 12
+n_payments = years * 12
+
+payment = principal * (monthly_rate * (1 + monthly_rate)**n_payments) / ((1 + monthly_rate)**n_payments - 1)
+f"Monthly Payment: \${payment:,.2f}"
+"""
+}
+connect_nodes: (all inputs → payment)
+\`\`\`
+
+## Output Types
+
+The code cell result type is determined automatically:
+- **Single value**: Just return a number, string, etc.
+- **Table**: Return a pandas DataFrame
+- **Chart**: Return a plotly figure (it renders as HTML)
+
+IMPORTANT: Do NOT create add_output_node calls. Code cells display their own results.
+
+## Editing Existing Nodes (update_node)
+
+When you need to fix errors or modify existing cells, use \`update_node\` instead of creating new ones:
+
+\`\`\`
+update_node: {
+  node_id: "existing_node_id",
+  code: "# fixed code here",
+  description: "Updated description"
+}
+\`\`\`
+
+**When to use update_node:**
+- Fixing Python errors in code cells
+- Changing input values
+- Updating labels or descriptions
+- Modifying code logic
+
+**Important:** Always prefer \`update_node\` over deleting and recreating nodes when making changes.`;
 
 interface LangChainAISpreadsheetRequest {
   prompt: string;
@@ -225,6 +308,18 @@ async function getTools() {
     }
   );
 
+  const updateNode = tool(
+    async (input: z.infer<typeof UpdateNodeSchema>) => {
+      return JSON.stringify({ success: true, action: 'update_node', ...input });
+    },
+    {
+      name: 'update_node',
+      description:
+        'Update an existing node on the canvas. Use this to fix code errors, change input values, or update labels. Preferred over creating new nodes when fixing issues.',
+      schema: UpdateNodeSchema,
+    }
+  );
+
   const clearCanvas = tool(
     async (input: z.infer<typeof ClearCanvasSchema>) => {
       return JSON.stringify({ success: true, action: 'clear_canvas', ...input });
@@ -236,7 +331,7 @@ async function getTools() {
     }
   );
 
-  cachedTools = [addInputNode, addTransformNode, addOutputNode, connectNodes, removeNode, clearCanvas];
+  cachedTools = [addInputNode, addTransformNode, addOutputNode, connectNodes, removeNode, updateNode, clearCanvas];
   return cachedTools;
 }
 
