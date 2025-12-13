@@ -145,7 +145,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               )}
             </SidebarNavLink>
           </div>
-
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
@@ -163,7 +162,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
           )}
           {!isOnPaidPlan && !isSettingsPage && (
-            <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
+            <div className="mb-2 mt-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
               <div className="flex gap-2">
                 <RocketIcon className="h-5 w-5 text-primary" />
                 <div className="flex flex-col">
@@ -187,7 +186,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </div>
           )}
         </div>
-        <hr className="my-2" />
+      </div>
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEMPLATES}>
@@ -208,8 +208,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
-      </div>
-      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -283,26 +281,22 @@ function SidebarNavLinkCreateButton({
   isPrivate: boolean;
   teamUuid: string;
 }) {
+  const handleClick = async ({ isPrivate }: { isPrivate: boolean }) => {
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
+    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+  };
+
   return (
     <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="!bg-transparent opacity-30 hover:opacity-100"
-                onClick={async (e) => {
-                  e.preventDefault();
-                  const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-                  if (hasReachedLimit) {
-                    showUpgradeDialog('fileLimitReached');
-                    return;
-                  }
-                  window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
-                }}
-              >
+              <Button variant="ghost" size="icon-sm" className="!bg-transparent opacity-30 hover:opacity-100">
                 <AddIcon />
               </Button>
             </DropdownMenuTrigger>
@@ -310,13 +304,33 @@ function SidebarNavLinkCreateButton({
           <TooltipContent>{children}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent>
-          <DropdownMenuItem className="group">
+          <DropdownMenuItem
+            className="group"
+            onClick={() => {
+              // TODO: using navigate() doesn't work here?
+              window.location.href = ROUTES.TEAM_FILES_CREATE_AI(teamUuid);
+            }}
+          >
             Start with AI
             <AIIcon className="ml-6 text-muted-foreground group-hover:text-primary" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Team file</DropdownMenuItem>
-          <DropdownMenuItem>Private file</DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async (e) => {
+              e.preventDefault();
+              handleClick({ isPrivate: false });
+            }}
+          >
+            Team file
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async (e) => {
+              e.preventDefault();
+              handleClick({ isPrivate: true });
+            }}
+          >
+            Private file
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
