@@ -5,7 +5,7 @@ services:
     restart: always
     container_name: postgres_for_api
     ports:
-      - '5433:5432'
+      - '5434:5432'
     environment:
       POSTGRES_USER: prisma
       POSTGRES_PASSWORD: prisma

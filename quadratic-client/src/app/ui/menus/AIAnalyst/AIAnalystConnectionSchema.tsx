@@ -40,10 +40,12 @@ export const AIAnalystConnectionSchema = memo(() => {
     return null;
   }
 
-  const connectionType =
+  const connection =
     connections && aiAnalystActiveSchemaConnectionUuid
-      ? connections.find((connection) => connection.uuid === aiAnalystActiveSchemaConnectionUuid)?.type
+      ? connections.find((connection) => connection.uuid === aiAnalystActiveSchemaConnectionUuid)
       : undefined;
+  const connectionType = connection?.type;
+
   // This should never happen, but just in case
   if (!connectionType) {
     throw new Error('A connection with a known UUID could not find its corresponding type');
@@ -73,6 +75,7 @@ export const AIAnalystConnectionSchema = memo(() => {
           teamUuid={teamUuid}
           type={connectionType}
           uuid={aiAnalystActiveSchemaConnectionUuid}
+          showSyncedConnection={true}
           eventSource="app-left-side"
         />
       </div>
