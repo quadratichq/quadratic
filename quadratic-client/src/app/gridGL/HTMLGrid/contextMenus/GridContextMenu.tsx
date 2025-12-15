@@ -2,6 +2,7 @@ import { getTable } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { GridContextMenuCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCell';
+import { GridContextMenuCodeCellOutput } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeCellOutput';
 import { GridContextMenuCodeTable } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
 import { GridContextMenuCodeTableCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableCell';
 import { GridContextMenuCodeTableChart } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableChart';
@@ -47,6 +48,11 @@ export const GridContextMenu = () => {
   // This isn't a context menu, but more of a menu that pops up when you click 'sort' on a table
   if (contextMenu.type === ContextMenuType.TableSort) {
     return null;
+  }
+
+  // Context menu for double-clicking on code cell output data area
+  if (contextMenu.type === ContextMenuType.CodeCellOutput) {
+    return <GridContextMenuCodeCellOutput />;
   }
 
   // It's a table column selection

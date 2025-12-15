@@ -9,6 +9,7 @@ export enum ContextMenuType {
   Table = 'table',
   TableSort = 'table-sort',
   TableColumn = 'table-column',
+  CodeCellOutput = 'code-cell-output',
 }
 
 export interface ContextMenuState {
