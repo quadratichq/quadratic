@@ -108,7 +108,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="grid gap-0.5">
           <div className="relative">
             <SidebarNavLink
-              to={ROUTES.TEAM(activeTeamUuid)}
+              to={ROUTES.TEAM_FILES(activeTeamUuid)}
               dropTarget={canEditTeam ? null : undefined}
               data-testid="dashboard-sidebar-team-files-link"
             >

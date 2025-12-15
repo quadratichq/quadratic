@@ -1,6 +1,6 @@
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
-import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
+import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirect } from 'react-router';
 
 /**
  * When adding a new first level route, make sure to add it to the cloudflare as well for both QA and Prod
@@ -133,7 +133,7 @@ export const router = createBrowserRouter(
           <Route path="teams">
             <Route index element={<Navigate to="/" replace />} />
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
-              <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+              <Route index loader={() => redirect('./files')} />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
               <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />

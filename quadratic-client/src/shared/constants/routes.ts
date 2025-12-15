@@ -74,7 +74,7 @@ export const ROUTES = {
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
   TEAM_CONNECTION: (teamUuid: string, connectionUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
-  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
+  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}/files`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}?type=private`,
   TEAM_FILES_SHARED_WITH_ME: (teamUuid: string) => `/teams/${teamUuid}?type=shared-with-me`,
   TEAM_FILES_DELETED: (teamUuid: string) => `/teams/${teamUuid}/files/deleted`,

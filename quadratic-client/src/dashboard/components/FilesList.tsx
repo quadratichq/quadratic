@@ -181,7 +181,7 @@ export function FilesList({
       </FilesListItems>
 
       {(filterValue && filesToRender.length === 0) ||
-        (filters.fileType !== '' && filesToRender.length === 0 && <EmptyFilterState />)}
+        (filters.fileType && filesToRender.length === 0 && <EmptyFilterState />)}
 
       {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
 

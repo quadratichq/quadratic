@@ -1,4 +1,8 @@
-import { defaultFilesListFilters, filesListFiltersAtom } from '@/dashboard/atoms/filesListFiltersAtom';
+import {
+  defaultFilesListFilters,
+  filesListFiltersAtom,
+  type FilesListType,
+} from '@/dashboard/atoms/filesListFiltersAtom';
 import {
   FileListViewControlsDropdown,
   type ViewPreferences,
@@ -14,6 +18,7 @@ import {
   GroupIcon,
   SearchIcon,
 } from '@/shared/components/Icons';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ButtonGroup } from '@/shared/shadcn/ui/button-group';
 import {
@@ -28,14 +33,14 @@ import {
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { useAtom } from 'jotai';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
-const fileTypeOptions = [
-  { label: 'All', value: '', Icon: FileIcon },
+const fileTypeOptions: { label: string; value: FilesListType; Icon: React.ElementType }[] = [
+  { label: 'All', value: null, Icon: FileIcon },
   { label: 'Team', value: 'team', Icon: GroupIcon },
   { label: 'Private', value: 'private', Icon: FilePrivateIcon },
   { label: 'Shared with you', value: 'shared', Icon: FileSharedWithMeIcon },
-] as const;
+];
 
 export function FilesListViewControls({
   viewPreferences,
@@ -48,12 +53,13 @@ export function FilesListViewControls({
     activeTeam: { users },
   } = useDashboardRouteLoaderData();
   const [showDropdown, setShowDropdown] = useState(false);
-
   const [filters, setFilters] = useAtom(filesListFiltersAtom);
 
-  const activeFiltersCount = useMemo(() => {
-    return filters.fileCreator ? 1 : 0 + (filters.sharedPublicly ? 1 : 0);
-  }, [filters]);
+  const hasOtherFilters = filters.fileCreator && filters.sharedPublicly;
+
+  // We handle the file type in the URL without using the router
+  useUpdateQueryStringValueWithoutNavigation('type', filters.fileType);
+
   return (
     <div className={`mb-4 flex flex-row items-center justify-between gap-2`}>
       <div className="flex flex-row items-center gap-2">
@@ -63,19 +69,13 @@ export function FilesListViewControls({
               variant="outline"
               className={cn('group hover:text-primary', filters.fileType === value && 'bg-accent text-primary')}
               onClick={() =>
-                setFilters((prev) => ({
+                setFilters({
                   ...defaultFilesListFilters,
                   fileType: value,
-                }))
+                })
               }
             >
-              <Icon
-                size="xs"
-                className={cn(
-                  'mr-1',
-                  filters.fileType === value ? '' : 'ztext-muted-foreground zgroup-hover:text-foreground'
-                )}
-              />
+              <Icon size="xs" className={cn('mr-1')} />
               {label}
             </Button>
           ))}
@@ -96,7 +96,7 @@ export function FilesListViewControls({
               onClick={() => setFilters((prev) => ({ ...prev, fileName: '' }))}
               aria-label="Clear filter"
             >
-              <CloseIcon className={`h-4 w-4`} />
+              <CloseIcon />
             </Button>
           )}
         </div>
@@ -106,7 +106,7 @@ export function FilesListViewControls({
             <Button
               variant="outline"
               size="icon"
-              className={cn('relative', activeFiltersCount > 0 && 'bg-accent text-primary hover:text-primary')}
+              className={cn('relative', hasOtherFilters && 'bg-accent text-primary hover:text-primary')}
               aria-label="Other filters"
               onClick={() => setShowDropdown(true)}
             >
@@ -120,7 +120,7 @@ export function FilesListViewControls({
                 size="sm"
                 variant="ghost"
                 className={'h-6 px-2 py-0 font-normal'}
-                disabled={activeFiltersCount === 0}
+                disabled={!hasOtherFilters}
                 onClick={(e) => {
                   e.preventDefault();
                   setFilters({ ...filters, fileCreator: null, sharedPublicly: false });
