@@ -1,7 +1,9 @@
 import {
+  aiSpreadsheetAtom,
   aiSpreadsheetEdgesAtom,
   aiSpreadsheetNodesAtom,
   aiSpreadsheetSelectedNodeIdAtom,
+  updateNodePositions,
 } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
 import { edgeTypes } from '@/aiSpreadsheet/canvas/edges/edgeTypes';
 import { nodeTypes } from '@/aiSpreadsheet/canvas/nodes/nodeTypes';
@@ -15,30 +17,42 @@ import {
   useEdgesState,
   useReactFlow,
   type OnSelectionChangeFunc,
+  type Node,
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './aiSpreadsheetCanvas.css';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export function AiSpreadsheetCanvas() {
   const [recoilNodes] = useRecoilState(aiSpreadsheetNodesAtom);
   const [recoilEdges] = useRecoilState(aiSpreadsheetEdgesAtom);
   const setSelectedNodeId = useSetRecoilState(aiSpreadsheetSelectedNodeIdAtom);
+  const setRecoilState = useSetRecoilState(aiSpreadsheetAtom);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(recoilNodes as any);
   const [edges, setEdges, onEdgesChange] = useEdgesState(recoilEdges as any);
   const { fitView } = useReactFlow();
 
-  // Sync recoil state with local state
+  // Track if we're currently dragging to avoid unnecessary state updates
+  const isDraggingRef = useRef(false);
+
+  // Sync recoil state with local state (skip during drag to avoid conflicts)
   useEffect(() => {
+    if (isDraggingRef.current) return;
     setNodes(recoilNodes as any);
-    // Auto-fit view when nodes change
-    if (recoilNodes.length > 0) {
+    // Auto-fit view when nodes change (only on actual node count changes, not position changes)
+  }, [recoilNodes, setNodes]);
+
+  // Auto-fit view when node count changes
+  const prevNodeCountRef = useRef(0);
+  useEffect(() => {
+    if (recoilNodes.length !== prevNodeCountRef.current && recoilNodes.length > 0) {
       setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100);
     }
-  }, [recoilNodes, setNodes, fitView]);
+    prevNodeCountRef.current = recoilNodes.length;
+  }, [recoilNodes.length, fitView]);
 
   useEffect(() => {
     // Add marker end to all edges and set animation based on target node execution state
@@ -75,6 +89,31 @@ export function AiSpreadsheetCanvas() {
     [setSelectedNodeId]
   );
 
+  // Handle node drag start
+  const onNodeDragStart = useCallback(() => {
+    isDraggingRef.current = true;
+  }, []);
+
+  // Handle node drag stop - sync positions back to recoil state
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, _node: Node, draggedNodes: Node[]) => {
+      isDraggingRef.current = false;
+
+      // Collect position updates for all dragged nodes
+      const positionUpdates = draggedNodes.map((n) => ({
+        id: n.id,
+        position: n.position,
+      }));
+
+      // Update recoil state with new positions
+      setRecoilState((prev) => ({
+        ...prev,
+        nodes: updateNodePositions(prev, positionUpdates),
+      }));
+    },
+    [setRecoilState]
+  );
+
   const proOptions = { hideAttribution: true };
 
   return (
@@ -85,6 +124,8 @@ export function AiSpreadsheetCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onSelectionChange={onSelectionChange}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         proOptions={proOptions}
@@ -96,8 +137,8 @@ export function AiSpreadsheetCanvas() {
           type: 'dependency',
           animated: false, // Animation is controlled per-edge based on execution state
         }}
-        // Disable editing - this is view-only
-        nodesDraggable={false}
+        // Enable node dragging for manual rearrangement
+        nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={true}
         selectNodesOnDrag={false}

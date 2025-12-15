@@ -13,10 +13,28 @@ import { atom, selector, DefaultValue } from 'recoil';
 import { v4 as uuidv4 } from 'uuid';
 
 // Default positions for auto-layout
-const COLUMN_SPACING = 350;
-const ROW_SPACING = 80;
+const COLUMN_SPACING = 400;
 const INITIAL_X = 50;
 const INITIAL_Y = 50;
+const NODE_PADDING = 20; // Vertical padding between nodes
+
+// Estimated heights for different node types (used for auto-layout)
+const NODE_HEIGHT_ESTIMATES: Record<string, number> = {
+  // Input nodes
+  cell: 80,
+  connection: 100,
+  file: 80,
+  webSearch: 80,
+  html: 100,
+  dataTable: 220, // Has table with max-height 200px + header
+  // Transform nodes
+  code: 280, // Header + description/code preview + result area
+  formula: 120,
+  // Output nodes
+  table: 200,
+  chart: 250,
+  htmlOutput: 200,
+};
 
 export interface AiSpreadsheetState {
   nodes: AiSpreadsheetNode[];
@@ -132,21 +150,47 @@ export const aiSpreadsheetStreamingToolCallsAtom = selector<{ id: string; name: 
   get: ({ get }) => get(aiSpreadsheetAtom).streamingToolCalls,
 });
 
-// Helper to calculate position based on category
-function getPositionForCategory(category: NodeCategory, existingNodes: AiSpreadsheetNode[]): { x: number; y: number } {
+// Get estimated height for a node based on its type
+function getNodeHeight(node: AiSpreadsheetNode): number {
+  const nodeType = node.data.nodeType;
+  return NODE_HEIGHT_ESTIMATES[nodeType] || 120;
+}
+
+// Helper to calculate position based on category, avoiding overlaps
+function getPositionForCategory(
+  category: NodeCategory,
+  existingNodes: AiSpreadsheetNode[],
+  nodeType?: string
+): { x: number; y: number } {
   const categoryColumn: Record<NodeCategory, number> = {
     input: 0,
     transform: 1,
     output: 2,
   };
 
-  const nodesInColumn = existingNodes.filter((n) => n.data.category === category);
   const column = categoryColumn[category];
+  const columnX = INITIAL_X + column * COLUMN_SPACING;
 
-  return {
-    x: INITIAL_X + column * COLUMN_SPACING,
-    y: INITIAL_Y + nodesInColumn.length * ROW_SPACING,
-  };
+  // Get all nodes in this column
+  const nodesInColumn = existingNodes.filter((n) => n.data.category === category);
+
+  if (nodesInColumn.length === 0) {
+    return { x: columnX, y: INITIAL_Y };
+  }
+
+  // Sort nodes by y position to find the bottom-most position
+  const sortedNodes = [...nodesInColumn].sort((a, b) => a.position.y - b.position.y);
+
+  // Find the next y position after the last node (accounting for its height)
+  let nextY = INITIAL_Y;
+  for (const node of sortedNodes) {
+    const nodeBottom = node.position.y + getNodeHeight(node) + NODE_PADDING;
+    if (nodeBottom > nextY) {
+      nextY = nodeBottom;
+    }
+  }
+
+  return { x: columnX, y: nextY };
 }
 
 // Action to add a node
@@ -167,7 +211,7 @@ export function addNode(
   }
 
   const nodeId = uuidv4();
-  const nodePosition = position ?? getPositionForCategory(category, currentState.nodes);
+  const nodePosition = position ?? getPositionForCategory(category, currentState.nodes, nodeType);
 
   // Use special type for dataTable inputs (different component)
   const reactFlowType = nodeType === 'dataTable' ? 'dataTableInput' : category;
@@ -243,6 +287,21 @@ export function updateNode(currentState: AiSpreadsheetState, args: UpdateNodeArg
           ...updates,
         } as AiSpreadsheetNodeData,
       };
+    }
+    return node;
+  });
+}
+
+// Action to update node positions (for drag and drop)
+export function updateNodePositions(
+  currentState: AiSpreadsheetState,
+  positionUpdates: { id: string; position: { x: number; y: number } }[]
+): AiSpreadsheetNode[] {
+  const positionMap = new Map(positionUpdates.map((p) => [p.id, p.position]));
+  return currentState.nodes.map((node) => {
+    const newPosition = positionMap.get(node.id);
+    if (newPosition) {
+      return { ...node, position: newPosition };
     }
     return node;
   });
