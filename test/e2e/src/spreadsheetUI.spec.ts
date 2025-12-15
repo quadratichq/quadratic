@@ -1210,11 +1210,11 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Navigate to file (removed redundant 10s waitForTimeout, fixed to wait on recipientPage)
   await recipientFileCard.click({ timeout: 60 * 1000 });
-  await recipientPage.waitForLoadState('domcontentloaded');
+  await recipientPage.waitForLoadState('networkidle');
 
   // Assert "Read-only" message appears
   await expect(
-    recipientPage.locator(`:text("Read-only. Duplicate or ask the owner for permission to edit.")`).first()
+    recipientPage.locator('text=Read-only. Duplicate or ask the owner for permission to edit.').first()
   ).toBeVisible();
 
   //--------------------------------

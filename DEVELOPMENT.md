@@ -355,6 +355,8 @@ npx playwright install
 
 ### Taking a single snapshot
 
+Adjust `E2E_URL` as needed.
+
 ```shell
-npx playwright test -g "Connection goes down in Multiplayer Session" --update-snapshots --workers=1
+E2E_URL=https://qa.quadratic-preview.com/ npx playwright test -g "Connection goes down in Multiplayer Session" --update-snapshots --workers=1
 ```

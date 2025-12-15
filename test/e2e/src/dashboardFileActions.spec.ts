@@ -110,6 +110,9 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Delete Previous Edit_Share_File_Spreadsheet file
   await cleanUpFiles(page, { fileName });
 
+  // Also clean up renamed files from previous test runs (renamed to "Edit - {timestamp}")
+  await cleanUpFiles(page, { fileName: 'Edit -' });
+
   // Import Edit_Share_File_Permissions File
   await uploadFile(page, { fileName, fileType });
 
@@ -520,6 +523,9 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Create a file and navigate to file
   await createFile(user1Page, { fileName });
 
+  // Navigate back to team files (createFile navigates to Home, not Team Files)
+  await user1Page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
+
   //--------------------------------
   // Act:
   //--------------------------------
@@ -798,6 +804,8 @@ test('Upload Large File', async ({ page }) => {
   //--------------------------------
   // Clean up:
   //--------------------------------
+  // Navigate back to dashboard first (we're on the file editor page after upload)
+  await page.getByRole('link', { name: 'E2E Test Team' }).click();
   // Cleanup newly created files
   await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName: largeFileName });
