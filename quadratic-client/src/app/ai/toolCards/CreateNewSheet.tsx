@@ -30,15 +30,26 @@ export const NewSheet = memo(
     const label = 'Create sheet';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError description={toolArgs.error.message} className={className} />;
+      return (
+        <ToolCard
+          icon={icon}
+          label={label}
+          hasError
+          description={toolArgs.error.message}
+          className={className}
+          compact
+        />
+      );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}"`} className={className} />;
+    return (
+      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}"`} className={className} compact />
+    );
   }
 );

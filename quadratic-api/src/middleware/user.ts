@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { trackEvent } from '../analytics/mixpanel';
 import dbClient from '../dbClient';
 import { triggerJourney } from '../email/mailchimp';
+import { VERSION } from '../env-vars';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { Auth, RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
@@ -92,6 +93,9 @@ const getOrCreateUser = async (auth: Auth) => {
     data: {
       auth0Id: auth.sub,
       email: auth.email,
+      clientDataKv: {
+        lastSeenChangelogVersion: VERSION || undefined,
+      },
     },
   });
 

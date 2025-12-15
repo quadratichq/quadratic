@@ -3,9 +3,11 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
+import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MenuIcon } from '@/shared/components/Icons';
+import { SettingsDialog } from '@/shared/components/SettingsDialog';
 import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -57,7 +59,9 @@ export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFuncti
  */
 type LoaderData = {
   teams: ApiTypes['/v0/teams.GET.response']['teams'];
-  userMakingRequest: ApiTypes['/v0/teams.GET.response']['userMakingRequest'];
+  userMakingRequest: ApiTypes['/v0/teams.GET.response']['userMakingRequest'] & {
+    clientDataKv?: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'];
+  };
   eduStatus: ApiTypes['/v0/education.GET.response']['eduStatus'];
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
@@ -86,9 +90,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   /**
    * Get the initial data
    */
-  const [{ teams, userMakingRequest }, { eduStatus }] = await Promise.all([
+  const [{ teams, userMakingRequest }, { eduStatus }, { clientDataKv }] = await Promise.all([
     apiClient.teams.list(),
     apiClient.education.get(),
+    apiClient.user.clientDataKv.get(),
   ]);
 
   /**
@@ -148,7 +153,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
 
   handleSentryReplays(activeTeam.team.settings.analyticsAi);
 
-  return { teams, userMakingRequest, eduStatus, activeTeam };
+  return { teams, userMakingRequest: { ...userMakingRequest, clientDataKv }, eduStatus, activeTeam };
 };
 export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
 
@@ -250,6 +255,8 @@ export const Component = () => {
           lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
           billingStatus={billingStatus}
         />
+        <SettingsDialog />
+        <ChangelogDialog />
       </TooltipProvider>
     </RecoilRoot>
   );

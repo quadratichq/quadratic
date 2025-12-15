@@ -12,7 +12,7 @@ export const ImportFilesToGrid = memo(({ content }: ImportFilesToGridProps) => {
         <ToolCardQuery
           key={`${index}-${file.fileName}-${file.loading}`}
           className="px-2"
-          label={`Importing ${file.fileName}...`}
+          label={file.loading ? `Importing ${file.fileName}...` : `Imported ${file.fileName}`}
           isLoading={file.loading}
         />
       ))}

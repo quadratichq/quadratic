@@ -27,7 +27,7 @@ export const MoveCells = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Action: move';
+    const label = loading ? 'Moving cells' : 'Moved cells';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

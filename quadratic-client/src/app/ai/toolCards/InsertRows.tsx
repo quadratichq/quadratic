@@ -27,7 +27,7 @@ export const InsertRows = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Insert rows';
+    const label = loading ? 'Inserting rows' : 'Inserted rows';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
