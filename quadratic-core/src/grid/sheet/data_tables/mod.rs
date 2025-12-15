@@ -181,18 +181,17 @@ impl SheetDataTables {
                         .un_spilled_output_rects
                         .get_positions_associated_with_region(updated_rect)
                     {
-                        if other_pos != pos {
-                            if let Some((other_index, other_data_table)) =
+                        if other_pos != pos
+                            && let Some((other_index, other_data_table)) =
                                 self.get_full_at(&other_pos)
-                            {
-                                let other_old_output_rect =
-                                    Some(other_data_table.output_rect(other_pos, false));
-                                other_data_tables_to_update.push((
-                                    other_index,
-                                    other_pos,
-                                    other_old_output_rect,
-                                ));
-                            }
+                        {
+                            let other_old_output_rect =
+                                Some(other_data_table.output_rect(other_pos, false));
+                            other_data_tables_to_update.push((
+                                other_index,
+                                other_pos,
+                                other_old_output_rect,
+                            ));
                         }
                     }
                 } else {

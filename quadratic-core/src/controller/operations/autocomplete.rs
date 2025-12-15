@@ -4,7 +4,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{
-        CodeCellLanguage, SheetId,
+        SheetId,
         formats::SheetFormatUpdates,
         series::{SeriesOptions, find_auto_complete},
         sheet::borders::BordersUpdates,
@@ -646,26 +646,12 @@ impl GridController {
                                 y_start: 0,
                             },
                         );
-                        // For formulas, use SetComputeCode (avoids double finalization)
-                        // For async languages (Python, JS, Connection), use SetDataTable + ComputeCode
-                        if code_run.language == CodeCellLanguage::Formula {
-                            compute_code_ops.push(Operation::SetComputeCode {
-                                sheet_pos: final_pos.to_sheet_pos(sheet_id),
-                                language: code_run.language.clone(),
-                                code: code_run.code.clone(),
-                            });
-                        } else {
-                            // Async languages need SetDataTable first, then ComputeCode
-                            data_table_ops.push(Operation::SetDataTable {
-                                sheet_pos: final_pos.to_sheet_pos(sheet_id),
-                                data_table: Some(data_table.clone()),
-                                index: usize::MAX,
-                                ignore_old_data_table: true,
-                            });
-                            compute_code_ops.push(Operation::ComputeCode {
-                                sheet_pos: final_pos.to_sheet_pos(sheet_id),
-                            });
-                        }
+                        // Use SetComputeCode for all languages (handles both sync and async)
+                        compute_code_ops.push(Operation::SetComputeCode {
+                            sheet_pos: final_pos.to_sheet_pos(sheet_id),
+                            language: code_run.language.clone(),
+                            code: code_run.code.clone(),
+                        });
                     } else {
                         // Non-code data tables still use SetDataTable
                         data_table_ops.push(Operation::SetDataTable {

@@ -52,7 +52,6 @@ fn setup_grid(size: i64) -> (GridController, quadratic_core::grid::SheetId) {
         A1Selection::from_rect(SheetRect::new(2, 1, 2, size, sheet_id)),
         "A1+1".to_string(),
         None,
-        None,
     );
 
     (gc, sheet_id)
@@ -90,7 +89,7 @@ fn execute_paste(
 
 /// Criterion benchmark
 fn criterion_benchmark(c: &mut Criterion) {
-    let size = 10000;
+    let size = 70000;
     let bench_name = format!("clipboard_{}_formulas", size);
 
     #[cfg(feature = "function-timer")]

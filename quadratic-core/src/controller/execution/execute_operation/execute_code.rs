@@ -1,11 +1,12 @@
 use crate::{
-    SheetPos, SheetRect,
+    CellValue, SheetPos, SheetRect, Value,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+    util::now,
     wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
 use anyhow::Result;
@@ -32,7 +33,8 @@ impl GridController {
                     {
                         // only add if there isn't already one pending
                         if !transaction.operations.iter().any(|op| match op {
-                            Operation::ComputeCode { sheet_pos } => {
+                            Operation::ComputeCode { sheet_pos }
+                            | Operation::SetComputeCode { sheet_pos, .. } => {
                                 code_cell_sheet_pos == sheet_pos
                             }
                             _ => false,
@@ -258,8 +260,7 @@ impl GridController {
         }
     }
 
-    /// Executes SetComputeCode operation - sets code and computes in one step.
-    /// This is used by autocomplete to avoid double finalization (no separate SetDataTable needed).
+    /// Executes SetComputeCode operation
     pub(super) fn execute_set_compute_code(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -283,6 +284,10 @@ impl GridController {
             // Execute based on language
             match language {
                 CodeCellLanguage::Python => {
+                    // Set up empty data table first, then trigger async execution
+                    let data_table =
+                        Self::create_empty_code_data_table(language.clone(), code.clone());
+                    self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
                     self.run_python(transaction, sheet_pos, code);
                     self.notify_code_running_state(
                         transaction,
@@ -293,14 +298,22 @@ impl GridController {
                     // Formulas execute synchronously - run_formula handles everything
                     self.run_formula(transaction, sheet_pos, code);
                 }
-                CodeCellLanguage::Connection { kind, id } => {
+                CodeCellLanguage::Connection { ref kind, ref id } => {
+                    // Set up empty data table first, then trigger async execution
+                    let data_table =
+                        Self::create_empty_code_data_table(language.clone(), code.clone());
+                    self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
                     self.notify_code_running_state(
                         transaction,
                         Some((sheet_pos, language_for_notify, code_for_notify)),
                     );
-                    self.run_connection(transaction, sheet_pos, code, kind, id);
+                    self.run_connection(transaction, sheet_pos, code, *kind, id.clone());
                 }
                 CodeCellLanguage::Javascript => {
+                    // Set up empty data table first, then trigger async execution
+                    let data_table =
+                        Self::create_empty_code_data_table(language.clone(), code.clone());
+                    self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
                     self.run_javascript(transaction, sheet_pos, code);
                     self.notify_code_running_state(
                         transaction,
@@ -312,6 +325,36 @@ impl GridController {
                     // no-op
                 }
             }
+        }
+    }
+
+    /// Creates an empty data table for a code cell (used by SetComputeCode for async languages)
+    fn create_empty_code_data_table(language: CodeCellLanguage, code: String) -> DataTable {
+        // Use the same naming convention as set_code_cell_operations
+        let name = format!("{}1", language.as_string());
+        DataTable {
+            kind: DataTableKind::CodeRun(CodeRun {
+                language,
+                code,
+                ..Default::default()
+            }),
+            name: CellValue::Text(name),
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            column_headers: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            value: Value::Single(CellValue::Blank),
+            spill_value: false,
+            spill_data_table: false,
+            last_modified: now(),
+            alternating_colors: true,
+            formats: None,
+            borders: None,
+            chart_pixel_output: None,
+            chart_output: None,
         }
     }
 
