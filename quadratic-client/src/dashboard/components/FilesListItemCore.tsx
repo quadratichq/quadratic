@@ -5,7 +5,7 @@ import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { useAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
@@ -29,7 +29,7 @@ export function FilesListItemCore({
   actions?: ReactNode;
   children?: ReactNode;
 }) {
-  const [filters, setFilters] = useAtom(filesListFiltersAtom);
+  const filters = useAtomValue(filesListFiltersAtom);
   const filterValue = filters.fileName;
   const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
   const isGrid = viewPreferences.layout === Layout.Grid;
@@ -53,27 +53,9 @@ export function FilesListItemCore({
 
           {creator?.name && creator?.email && (
             <TooltipPopover label={`Created by ${creator.name}`}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  const email = creator.email;
-                  // Toggle filtering by the creator's email
-                  setFilters({
-                    ...filters,
-                    fileCreator: filters.fileCreator === email ? null : (email ?? null),
-                  });
-                }}
-                className={cn(
-                  'relative',
-                  filters.fileCreator === creator.email &&
-                    "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full after:outline after:outline-4 after:outline-yellow-200 after:content-[''] dark:after:outline-yellow-700"
-                )}
-              >
-                <Avatar alt={creator.name} src={creator.picture}>
-                  {creator.name?.[0] ? creator.name?.[0] : creator.email?.[0]}
-                </Avatar>
-              </button>
+              <Avatar alt={creator.name} src={creator.picture}>
+                {creator.name?.[0] ? creator.name?.[0] : creator.email?.[0]}
+              </Avatar>
             </TooltipPopover>
           )}
         </div>
