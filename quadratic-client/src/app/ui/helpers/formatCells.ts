@@ -23,10 +23,10 @@ export const canApplyNumericFormatting = async (): Promise<boolean> => {
   let cellsChecked = 0;
 
   for (const range of ranges) {
-    const startX = Number(range.min.col);
-    const startY = Number(range.min.row);
-    const endX = Number(range.max.col);
-    const endY = Number(range.max.row);
+    const startX = Number(range.start.col.coord);
+    const startY = Number(range.start.row.coord);
+    const endX = Number(range.end.col.coord);
+    const endY = Number(range.end.row.coord);
 
     // Check each cell in the range
     for (let x = startX; x <= endX; x++) {

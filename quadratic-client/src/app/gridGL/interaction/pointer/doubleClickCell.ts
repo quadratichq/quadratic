@@ -7,6 +7,7 @@ import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditor
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { Point } from 'pixi.js';
 
 export async function doubleClickCell(options: {
   column: number;
@@ -72,10 +73,10 @@ export async function doubleClickCell(options: {
         });
       } else {
         // Double-click on data area shows context menu with options
-        const world = sheets.sheet.getCellOffsets(column, row);
+        const cellRect = sheets.sheet.getCellOffsets(column, row);
         events.emit('contextMenu', {
           type: ContextMenuType.CodeCellOutput,
-          world: { x: world.x + world.w / 2, y: world.y + world.h / 2 },
+          world: new Point(cellRect.x + cellRect.width / 2, cellRect.y + cellRect.height / 2),
           column: codeCell.x,
           row: codeCell.y,
           table: codeCell,
@@ -163,10 +164,10 @@ export async function doubleClickCell(options: {
           });
         } else {
           // Double-click on data area shows context menu with options
-          const world = sheets.sheet.getCellOffsets(column, row);
+          const cellRect = sheets.sheet.getCellOffsets(column, row);
           events.emit('contextMenu', {
             type: ContextMenuType.CodeCellOutput,
-            world: { x: world.x + world.w / 2, y: world.y + world.h / 2 },
+            world: new Point(cellRect.x + cellRect.width / 2, cellRect.y + cellRect.height / 2),
             column: codeCell.x,
             row: codeCell.y,
             table: codeCell,
