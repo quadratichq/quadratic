@@ -6,6 +6,7 @@ import type { CellAlign, CellFormatSummary, CellVerticalAlign, CellWrap } from '
 import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DEFAULT_FONT_SIZE, MAX_FONT_SIZE, MIN_FONT_SIZE } from '@/shared/constants/gridConstants';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 
 // Maximum number of cells to check for numeric formatting validation
 // to avoid performance issues with large selections
@@ -46,10 +47,27 @@ export const canApplyNumericFormatting = async (): Promise<boolean> => {
 
         // If there's a value and it's not a number, show toast and return false
         if (cellValue && cellValue.kind !== 'Number' && cellValue.kind !== 'Blank') {
-          pixiAppSettings.snackbar(
-            'Number formatting can only be applied to numeric values. Code outputs with text or other types cannot be formatted as numbers.',
-            { severity: 'warning' }
-          );
+          // Get table name and column name for the AI prompt
+          const tableName = codeCell.name;
+          const columnIndex = x - codeCell.x;
+          const columnName = codeCell.columns[columnIndex]?.name ?? `column ${columnIndex}`;
+
+          pixiAppSettings.snackbar("Data you're trying to format numerically is a string.", {
+            severity: 'warning',
+            button: {
+              title: 'Ask AI',
+              callback: () => {
+                const prompt = `Make sure the data in ${tableName}[${columnName}] is numeric. If it can't be returned as a numerical type, explain why.`;
+                pixiAppSettings.submitAIAnalystPrompt?.({
+                  content: [createTextContent(prompt)],
+                  messageSource: 'NumericFormatting',
+                  context: { codeCell: undefined, connection: undefined },
+                  messageIndex: 0,
+                  importFiles: [],
+                });
+              },
+            },
+          });
           return false;
         }
       }

@@ -1,23 +1,24 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
-import { DropdownMenuLabel, DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 
 /**
  * Context menu shown when double-clicking on the data area of a code cell output.
- * Provides options to open the code editor, convert to editable table, or flatten.
+ * Provides options to open the code editor or convert to editable data table.
  */
 export function GridContextMenuCodeCellOutput() {
   return (
     <ContextMenuBase>
-      <DropdownMenuLabel className="px-2 py-1.5 text-xs font-normal text-muted-foreground">
-        Can't edit code outputs
-      </DropdownMenuLabel>
-
-      <DropdownMenuSeparator />
-
-      <ContextMenuItemAction action={Action.EditTableCode} actionArgs={undefined} />
-      <ContextMenuItemAction action={Action.CodeToDataTable} actionArgs={undefined} />
-      <ContextMenuItemAction action={Action.FlattenTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.EditTableCode} actionArgs={undefined} overrideDefaultOption={false} />
+      <ContextMenuItemAction
+        action={Action.CodeToDataTable}
+        actionArgs={undefined}
+        labelOverride={
+          <span className="flex flex-col">
+            <span>Convert code table to data table</span>
+            <span className="text-xs text-muted-foreground">(becomes editable but loses code)</span>
+          </span>
+        }
+      />
     </ContextMenuBase>
   );
 }

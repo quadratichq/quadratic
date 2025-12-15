@@ -109,7 +109,7 @@ export const ContextMenuItemAction = <T extends Action>(props: {
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
   // allows overriding of the default option (which sets the menu item to bold)
   overrideDefaultOption?: boolean;
-  labelOverride?: string;
+  labelOverride?: React.ReactNode;
 }): JSX.Element | null => {
   const { overrideDefaultOption, labelOverride } = props;
   const { label, Icon, run, isAvailable, checkbox, defaultOption } = defaultActionSpec[props.action];
