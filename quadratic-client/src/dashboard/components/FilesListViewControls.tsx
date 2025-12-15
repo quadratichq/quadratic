@@ -55,7 +55,7 @@ export function FilesListViewControls({
   const [showDropdown, setShowDropdown] = useState(false);
   const [filters, setFilters] = useAtom(filesListFiltersAtom);
 
-  const hasOtherFilters = filters.fileCreator && filters.sharedPublicly;
+  const hasOtherFilters = filters.fileCreator || filters.sharedPublicly;
 
   // We handle the file type in the URL without using the router
   useUpdateQueryStringValueWithoutNavigation('type', filters.fileType);
