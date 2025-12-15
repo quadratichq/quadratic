@@ -66,7 +66,7 @@ export function FilesListViewControls({
             <Button
               variant="outline"
               className={cn('group hover:text-primary', filters.fileType === value && 'bg-accent text-primary')}
-              onClick={() => setFilters({ ...filters, fileType: value })}
+              onClick={() => setFilters({ ...filters, fileType: value, fileCreator: null, sharedPublicly: false })}
             >
               <Icon
                 size="xs"

@@ -1,4 +1,4 @@
-import type { FilesListUserFile } from '@/dashboard/components/FilesList';
+import type { FilesListFilters, FilesListUserFile } from '@/dashboard/components/FilesList';
 import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
@@ -11,7 +11,8 @@ export function FilesListItemCore({
   description,
   filterMatch,
   filterValue,
-  setFilterValue,
+  filters,
+  setFilters,
   creator,
   hasNetworkError,
   isShared,
@@ -23,7 +24,8 @@ export function FilesListItemCore({
   description: string;
   filterMatch?: FilesListUserFile['filterMatch'];
   filterValue: string;
-  setFilterValue?: Function;
+  filters?: FilesListFilters;
+  setFilters?: React.Dispatch<React.SetStateAction<FilesListFilters>>;
   viewPreferences: ViewPreferences;
   creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
@@ -51,18 +53,22 @@ export function FilesListItemCore({
             )}
           </div>
 
-          {creator && creator.name && setFilterValue && (
+          {creator?.name && creator?.email && filters && setFilters && (
             <TooltipPopover label={`Created by ${creator.name}`}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  // Toggle filtering by the creator's email based on the current filter match
-                  setFilterValue(filterMatch && filterValue === creator.email ? '' : creator.email);
+                  const email = creator.email;
+                  // Toggle filtering by the creator's email
+                  setFilters({
+                    ...filters,
+                    fileCreator: filters.fileCreator === email ? null : (email ?? null),
+                  });
                 }}
                 className={cn(
                   'relative',
-                  (filterMatch === 'creator-email' || filterMatch === 'creator-name') &&
+                  filters.fileCreator === creator.email &&
                     "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full after:outline after:outline-4 after:outline-yellow-200 after:content-[''] dark:after:outline-yellow-700"
                 )}
               >

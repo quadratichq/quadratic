@@ -54,7 +54,6 @@ export function FilesListItems({
 export function FilesListItemUserFile({
   file,
   filterValue,
-  setFilterValue,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
@@ -63,7 +62,6 @@ export function FilesListItemUserFile({
 }: {
   file: FilesListUserFile;
   filterValue: string;
-  setFilterValue: Function;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
@@ -215,7 +213,8 @@ export function FilesListItemUserFile({
             key={uuid}
             creator={file.creator}
             filterValue={filterValue}
-            setFilterValue={setFilterValue}
+            filters={filters}
+            setFilters={setFilters}
             filterMatch={file.filterMatch}
             name={displayName}
             description={description}
