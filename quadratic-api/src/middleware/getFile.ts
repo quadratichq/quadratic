@@ -7,7 +7,15 @@ import { getFilePermissions, getTeamPermissions } from '../utils/permissions';
  * However, in the case of a publicly-shared file, anonymous users can request
  * a file and we don't know who they are.
  */
-export async function getFile<T extends number | undefined>({ uuid, userId }: { uuid: string; userId: T }) {
+export async function getFile<T extends number | undefined>({
+  uuid,
+  userId,
+  allowDeleted,
+}: {
+  uuid: string;
+  userId: T;
+  allowDeleted?: boolean;
+}) {
   const file = await dbClient.file.findUnique({
     where: {
       uuid,
@@ -34,7 +42,7 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(404, 'File not found');
   }
 
-  if (file.deleted) {
+  if (file.deleted && !allowDeleted) {
     throw new ApiError(410, 'File has been deleted');
   }
 

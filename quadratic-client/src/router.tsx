@@ -72,6 +72,7 @@ export const router = createBrowserRouter(
           <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
           <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
           <Route path="connections" lazy={() => import('./routes/api.connections')} />
+          <Route path="teams/:teamUuid" lazy={() => import('./routes/api.teams.$teamUuid')} />
           <Route
             path="teams/:teamUuid/connections/:uuid/schema/:type"
             lazy={() => import('./routes/api.teams.$teamUuid.connections.$uuid.schema.$type')}
@@ -140,6 +141,7 @@ export const router = createBrowserRouter(
               <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
               <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
+              <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />

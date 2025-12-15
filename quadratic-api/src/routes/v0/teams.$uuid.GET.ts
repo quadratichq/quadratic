@@ -149,6 +149,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       onboardingComplete: dbTeam.onboardingComplete !== false,
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
+        aiRules: dbTeam.aiRules ?? null,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
     },

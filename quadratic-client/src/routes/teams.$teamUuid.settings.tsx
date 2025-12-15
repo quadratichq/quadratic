@@ -57,6 +57,11 @@ export const Component = () => {
         return;
       }
 
+      trackEvent('[Settings].teamNameSaved', {
+        team_uuid: team.uuid,
+        new_name: value,
+      });
+
       const data = getActionUpdateTeam({ name: value });
       submit(data, {
         method: 'POST',
@@ -270,6 +275,24 @@ export const Component = () => {
                   ))}
                 </ul>
               </div>
+            </div>
+          </SettingsRow>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              File recovery
+            </Type>
+            <div>
+              <Button variant="outline" asChild>
+                <Link
+                  to={ROUTES.TEAM_FILES_DELETED(team.uuid)}
+                  onClick={() => trackEvent('[TeamSettings].viewDeletedFiles')}
+                >
+                  Recover deleted files
+                </Link>
+              </Button>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Files deleted in the 30 days remain available for recovery.
+              </p>
             </div>
           </SettingsRow>
         </>

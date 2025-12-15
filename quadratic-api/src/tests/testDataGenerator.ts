@@ -23,6 +23,9 @@ export async function createUser({ auth0Id }: Partial<UserData>) {
     data: {
       auth0Id: id,
       email,
+      clientDataKv: {
+        lastSeenChangelogVersion: process.env.VERSION || undefined,
+      },
     },
   });
 

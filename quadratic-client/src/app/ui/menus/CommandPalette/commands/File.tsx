@@ -9,7 +9,6 @@ import {
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DeleteIcon, DownloadIcon, FileCopyIcon, FileIcon } from '@/shared/components/Icons';
 import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
@@ -123,13 +122,10 @@ const commands: CommandGroup = {
       label: deleteFile.label,
       isAvailable: deleteFile.isAvailable,
       Component: (props: any) => {
-        const { name } = useFileContext();
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const user = useRecoilValue(editorInteractionStateUserAtom);
         const submit = useSubmit();
-        const confirmFn = useConfirmDialog('deleteFile', { name });
-        const action = () =>
-          deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit, confirmFn });
+        const action = () => deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit });
         return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },

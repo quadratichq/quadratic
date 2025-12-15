@@ -1,6 +1,7 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { AtomEffect } from 'recoil';
 import { DefaultValue, atom, selector } from 'recoil';
 import { showAIAnalystAtom } from './aiAnalystAtom';
@@ -64,14 +65,30 @@ export const gridSettingsAtom = atom({
   effects: [localStorageEffect, emitGridSettingsChange],
 });
 
+// Map setting keys to their tracking event names
+const settingEventMap: Partial<Record<keyof GridSettings, string>> = {
+  showHeadings: '[Settings].toggleShowHeadings',
+  showGridLines: '[Settings].toggleShowGridLines',
+  showScrollbars: '[Settings].toggleShowScrollbars',
+  showCellTypeOutlines: '[Settings].toggleShowCellTypeOutlines',
+  showCodePeek: '[Settings].toggleShowCodePeek',
+};
+
 const createSelector = <T extends keyof GridSettings>(key: T) =>
   selector<GridSettings[T]>({
     key: `codeEditor${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
     get: ({ get }) => get(gridSettingsAtom)[key],
     set: ({ set }, newValue) => {
+      const actualValue = newValue instanceof DefaultValue ? undefined : newValue;
+
+      // Track the change if this setting has an event mapped
+      if (actualValue !== undefined && settingEventMap[key]) {
+        trackEvent(settingEventMap[key]!, { enabled: actualValue });
+      }
+
       set(gridSettingsAtom, (prev) => ({
         ...prev,
-        [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
+        [key]: actualValue === undefined ? prev[key] : actualValue,
       }));
       focusGrid();
     },
@@ -90,15 +107,22 @@ export const showAIAnalystOnStartupAtom = selector<boolean>({
   key: 'codeEditorShowAIAnalystOnStartupAtom',
   get: ({ get }) => get(gridSettingsAtom).showAIAnalystOnStartup,
   set: ({ set }, newValue) => {
+    const actualValue = newValue instanceof DefaultValue ? undefined : newValue;
+
+    // Track the change
+    if (actualValue !== undefined) {
+      trackEvent('[Settings].toggleShowAIAnalystOnStartup', { enabled: actualValue });
+    }
+
     // Update the grid settings
     set(gridSettingsAtom, (prev) => ({
       ...prev,
-      showAIAnalystOnStartup: newValue instanceof DefaultValue ? prev.showAIAnalystOnStartup : newValue,
+      showAIAnalystOnStartup: actualValue === undefined ? prev.showAIAnalystOnStartup : actualValue,
     }));
 
     // Also update the AI panel visibility to match the setting when user toggles it
-    if (!(newValue instanceof DefaultValue)) {
-      set(showAIAnalystAtom, newValue);
+    if (actualValue !== undefined) {
+      set(showAIAnalystAtom, actualValue);
     }
 
     focusGrid();

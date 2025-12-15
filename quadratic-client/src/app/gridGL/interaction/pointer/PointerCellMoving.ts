@@ -181,6 +181,13 @@ export class PointerCellMoving {
   };
 
   private pointerMoveHover = (world: Point): boolean => {
+    // Ignore cursor interactions when the mouse is over the grid headings
+    // to allow column/row resizing to work properly
+    if (content.headings.intersectsHeadings(world)) {
+      this.reset();
+      return false;
+    }
+
     // we move if a single rectangle
     let rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
 

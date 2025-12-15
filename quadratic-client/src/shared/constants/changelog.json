@@ -1,0 +1,85 @@
+[
+  {
+    "version": "0.21.10",
+    "date": "2024-12-20",
+    "changes": ["Added in-app changelog viewer", "Improved settings menu navigation"],
+    "details": null
+  },
+  {
+    "version": "0.21.3",
+    "date": "2025-11-21",
+    "changes": ["@ mentions in AI chat", "AI chat schema viewer", "AI generated Formula ranges", "Bug fixes"],
+    "details": "<h2>@ mentions in AI chat</h2>\n<p>Type @ to mention specific items in the sheet. This helps the AI understand your intent and references.</p>\n\n<h2>Schema viewer</h2>\n<p>We've improved the schema viewing experience, adding it additionally to the AI chat any time a connection is opened. Browse your database schema while you seamlessly chat with your data.</p>\n\n<h2>Formula ranges</h2>\n<p>Instead of writing Formulas one cell at a time, AI can now insert ranges of Formulas to the sheet, enabling a much more efficient formula writing experience.</p>\n\n<h2>Bug fixes</h2>\n<p>We shipped numerous bug fixes and stability improvements in October.</p>\n<ul>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3553\" target=\"_blank\" rel=\"noopener noreferrer\">Column grid lines missing</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3550\" target=\"_blank\" rel=\"noopener noreferrer\">Disable negative grid headings</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3520\" target=\"_blank\" rel=\"noopener noreferrer\">Limit sheet name length</a></li>\n</ul>\n<p>View the complete list of features and bug fixes from October on GitHub <a href=\"https://github.com/quadratichq/quadratic/pulls?q=is%3Apr%20state%3Aclosed%20closed%3A2025-10-01..2025-10-31\" target=\"_blank\" rel=\"noopener noreferrer\">here</a>.</p>"
+  },
+  {
+    "version": "0.21.0",
+    "date": "2025-10-29",
+    "changes": ["AI Chat", "AI code editor improvements", "AI model support", "Numerous minor improvements and fixes"],
+    "details": "<h2>AI Chat</h2>\n<p>AI Chat lets you chat directly with your data and code in Quadratic spreadsheets. Creating business analytics just got super easy. With Quadratic AI, you can build charts and find insights from your data faster than ever.</p>\n\n<h2>AI code editor improvements</h2>\n<p>With the AI Assistant in the code editor, you can chat directly with your code. Write and edit Python, SQL, JavaScript, or formulas.</p>\n\n<h2>AI supports various models and scenarios</h2>\n<p>Quadratic AI supports a variety of models, including OpenAI and Anthropic models. You can use Anthropic models either directly from their cloud or via the models hosted on a Quadratic instance on AWS Bedrock.</p>\n<p>You can also <a href=\"https://quadratichq.com/contact\" target=\"_blank\" rel=\"noopener noreferrer\">contact us</a> for help with custom models in self-hosted Quadratic instances.</p>\n\n<h2>Numerous minor improvements and fixes</h2>\n<ul>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2000\" target=\"_blank\" rel=\"noopener noreferrer\">Dashboard design tweaks for readability</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2004\" target=\"_blank\" rel=\"noopener noreferrer\">Improved new file dialogue</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2034\" target=\"_blank\" rel=\"noopener noreferrer\">Design tweak for AI fix button</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2037\" target=\"_blank\" rel=\"noopener noreferrer\">Hyperlink fix with colons</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2036\" target=\"_blank\" rel=\"noopener noreferrer\">Error triangle disappearing immediately when fixed</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2041\" target=\"_blank\" rel=\"noopener noreferrer\">Data validation centering fix</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2046\" target=\"_blank\" rel=\"noopener noreferrer\">Dark mode fixes</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2049\" target=\"_blank\" rel=\"noopener noreferrer\">Drag and move code cells duplication fix</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2053\" target=\"_blank\" rel=\"noopener noreferrer\">Memory leak fix for better performance</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2055\" target=\"_blank\" rel=\"noopener noreferrer\">Unfollowing from grid fix</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2057\" target=\"_blank\" rel=\"noopener noreferrer\">Custom dates bug fix</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2058\" target=\"_blank\" rel=\"noopener noreferrer\">Plotly chart speed up via CDN</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2083\" target=\"_blank\" rel=\"noopener noreferrer\">Request proxy fix</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2081\" target=\"_blank\" rel=\"noopener noreferrer\">Code cell artifact bug fix</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/2101\" target=\"_blank\" rel=\"noopener noreferrer\">Send new users straight to a file</a></li>\n</ul>"
+  },
+  {
+    "version": "0.20.8",
+    "date": "2025-11-07",
+    "changes": ["New AI Models", "Semantic layer", "SQL in left chat", "Bug fixes"],
+    "details": "<h2>New AI Models</h2>\n<p><strong>Default:</strong> On Default, you'll notice a faster, more powerful experience. We are continually shipping improvements to our Default model to ensure a healthy balance of cost and performance for new users.</p>\n<p><strong>Max:</strong> On Max, we continuously upgrade to the model that performs best on our evaluations. The latest release from Anthropic, Claude Sonnet 4.5, delivers performance comparable to GPT-5 but with significantly faster speed. As a result, we've switched the model on Max from GPT-5 to Claude Sonnet 4.5 for our power users to get the best possible experience.</p>\n\n<h2>Semantic layer</h2>\n<p>Have specific quirks about your database you want AI to know about? Anything you enter in the semantic layer field of your connection details will be included in the AI's context.</p>\n\n<h2>SQL in left chat</h2>\n<p>You can now query your connections directly from the left-side AI chat. Previously, this could only be done from the code editor chat, with limited scope. Now, you can run fully agentic SQL queries from the left chat to query your database and immediately start analysis.</p>\n<p>We will also be following up soon with lots of improvements to this experience, including better ways to view schema, narrow chat context, and more.</p>\n\n<h2>Bug fixes</h2>\n<p>We shipped numerous bug fixes and stability improvements in September. Some of these fixes include:</p>\n<ul>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3480\" target=\"_blank\" rel=\"noopener noreferrer\">Remove letters from autocomplete</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3479\" target=\"_blank\" rel=\"noopener noreferrer\">Copy as PNG closes context menu</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3477\" target=\"_blank\" rel=\"noopener noreferrer\">Calendar properly showing for datetimes</a></li>\n</ul>\n<p>View the complete list of features and bug fixes shipped from September on GitHub <a href=\"https://github.com/quadratichq/quadratic/pulls?q=is%3Apr+is%3Aclosed\" target=\"_blank\" rel=\"noopener noreferrer\">here</a>.</p>"
+  },
+  {
+    "version": "0.20.0",
+    "date": "2025-09-25",
+    "changes": [
+      "Theming",
+      "Clickable links",
+      "Insert/delete columns and rows",
+      "Smart autocomplete",
+      "Date & time formulas",
+      "Numerous minor improvements and fixes"
+    ],
+    "details": "<h2>Theming</h2>\n<p>Theming in Quadratic allows you to utilize the world's first dark mode spreadsheet and pick from a palette of pre-set accent colors.</p>\n\n<h2>Clickable links</h2>\n<p>You can now create clickable URLs in your spreadsheets that, when clicked, will open in a new browser tab.</p>\n\n<h2>Insert/delete columns and rows</h2>\n<p>You can now insert and delete single or multiple columns and rows.</p>\n\n<h2>Smart autocomplete</h2>\n<p>Smart autocomplete automatically suggests autocomplete options, using the content from adjacent cells to make recommendations. To fill in the recommended text, press the tab button.</p>\n\n<h2>Date & time formulas</h2>\n<p>We've added support for date and time formulas, allowing you to easily create and manipulate dates and times.</p>\n\n<h2>Numerous minor improvements and fixes</h2>\n<ul>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1883\" target=\"_blank\" rel=\"noopener noreferrer\">Reduce percentage decimal precision</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1885\" target=\"_blank\" rel=\"noopener noreferrer\">Changing sheet saves input</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1942\" target=\"_blank\" rel=\"noopener noreferrer\">Ctrl + ; inserts current time</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1940\" target=\"_blank\" rel=\"noopener noreferrer\">Focus returns to grid when pressing esc on menus</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1939\" target=\"_blank\" rel=\"noopener noreferrer\">Fix MATCH formula</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1931\" target=\"_blank\" rel=\"noopener noreferrer\">Fix sheet drag locations in bottom bar</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1928\" target=\"_blank\" rel=\"noopener noreferrer\">Fix auto-resize row bug and offsets</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1925\" target=\"_blank\" rel=\"noopener noreferrer\">Change default AI model and tune temperature</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1919\" target=\"_blank\" rel=\"noopener noreferrer\">Chart resizing fixes</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1911\" target=\"_blank\" rel=\"noopener noreferrer\">Border menu improvements</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1904\" target=\"_blank\" rel=\"noopener noreferrer\">Update code cells on undo/redo</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1948\" target=\"_blank\" rel=\"noopener noreferrer\">Fix border clearing</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1952\" target=\"_blank\" rel=\"noopener noreferrer\">New design for multiplayer avatars</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1953\" target=\"_blank\" rel=\"noopener noreferrer\">Fix sheets stuck in pan mode</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1958\" target=\"_blank\" rel=\"noopener noreferrer\">Keep go-to menu open when pressing Shift</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1966\" target=\"_blank\" rel=\"noopener noreferrer\">Fix border formatting</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1969\" target=\"_blank\" rel=\"noopener noreferrer\">Prevent paste on middle click on Linux</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1977\" target=\"_blank\" rel=\"noopener noreferrer\">CSV delimiter improvements</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/1980\" target=\"_blank\" rel=\"noopener noreferrer\">Show logged-in user context when you don't have permissions on a file</a></li>\n</ul>"
+  },
+  {
+    "version": "0.17.0",
+    "date": "2025-09-02",
+    "changes": [
+      "New tools and context for AI",
+      "Broader Excel import formatting support",
+      "SQL schema filtering",
+      "Bug fixes"
+    ],
+    "details": "<h2>New tools and context for AI</h2>\n<p>We added many new tools for AI to access, including:</p>\n<ul>\n<li>Insert/delete rows/columns</li>\n<li>Table manipulation</li>\n<li>Validations</li>\n<li>Many more</li>\n</ul>\n<p>AI should now have nearly complete access to common spreadsheet features. We also significantly improved AI context, with simpler and more comprehensive instructions.</p>\n<p>Read about the full scope of our recent AI changes <a href=\"https://www.quadratichq.com/blog/ai-agents-for-spreadsheets\" target=\"_blank\" rel=\"noopener noreferrer\">here in our Blog</a>.</p>\n\n<h2>Broader Excel import formatting support</h2>\n<p>Until now, Excel imports only added data and formula to the sheet. Now we also support formatting on imports, including:</p>\n<ul>\n<li>Font: bold, italic, underline, strikethrough, color</li>\n<li>Background/fill color</li>\n<li>Alignment: horizontal, vertical, wrap text, shrink to fit</li>\n<li>Date, time, datetime</li>\n<li>Number: commas, decimals, scientific, percentage, currency, exponent</li>\n<li>Border: border style, border color</li>\n<li>Layout: column width, row height</li>\n</ul>\n\n<h2>SQL schema filtering</h2>\n<p>One of our most active business users requested SQL schema filtering. We built and shipped the feature same-day. Have a feature you want built? Please <a href=\"https://quadratichq.com/contact\" target=\"_blank\" rel=\"noopener noreferrer\">let us know</a>.</p>\n\n<h2>Bug fixes</h2>\n<p>We shipped a few minor bug fixes and stability improvements in August.</p>\n<p>View the complete list of features and bug fixes from August on GitHub <a href=\"https://github.com/quadratichq/quadratic/issues?q=is%3Apr%20state%3Aclosed%20closed%3A2025-08-01..2025-08-31\" target=\"_blank\" rel=\"noopener noreferrer\">here</a>.</p>"
+  },
+  {
+    "version": "0.16.0",
+    "date": "2025-08-07",
+    "changes": [
+      "JavaScript language support",
+      "Cell ranges to Python",
+      "Major selection improvements",
+      "Lots of fixed papercuts"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.15.0",
+    "date": "2025-07-22",
+    "changes": ["Inline formulas", "Drag to move cells", "Auto-resize columns", "Education program"],
+    "details": null
+  },
+  {
+    "version": "0.14.0",
+    "date": "2025-07-17",
+    "changes": ["Relative references", "Web workers", "Editor improvements"],
+    "details": null
+  },
+  {
+    "version": "0.13.0",
+    "date": "2025-07-03",
+    "changes": ["Multiplayer", "Python improvements", "Various features and bug fixes"],
+    "details": null
+  },
+  {
+    "version": "0.12.0",
+    "date": "2025-06-28",
+    "changes": ["Charts", "Gallery", "Numerous optimizations"],
+    "details": null
+  }
+]
