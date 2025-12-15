@@ -6,6 +6,7 @@ import {
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { fullScreenChatIsOpenAtom } from '@/app/atoms/fullScreenChatAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -20,6 +21,7 @@ import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
+import { AIFullScreenChat } from '@/app/ui/menus/AIAnalyst/AIFullScreenChat';
 import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
@@ -39,12 +41,13 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { SettingsDialog } from '@/shared/components/SettingsDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigation, useParams } from 'react-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigation, useParams, useSearchParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
@@ -59,6 +62,8 @@ export default function QuadraticUI() {
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [fullScreenChatIsOpen, setFullScreenChatIsOpen] = useRecoilState(fullScreenChatIsOpenAtom);
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
@@ -68,6 +73,34 @@ export default function QuadraticUI() {
       events.off('coreError', handleError);
     };
   }, []);
+
+  // Handle ?chat search param to open full-screen chat overlay
+  useEffect(() => {
+    if (searchParams.has(SEARCH_PARAMS.CHAT.KEY) && canEditFile && isAuthenticated) {
+      setFullScreenChatIsOpen(true);
+      // Clean up the URL param
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete(SEARCH_PARAMS.CHAT.KEY);
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, setFullScreenChatIsOpen, canEditFile, isAuthenticated]);
+
+  // Handle keyboard escape to close full-screen chat
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && fullScreenChatIsOpen) {
+        setFullScreenChatIsOpen(false);
+      }
+    },
+    [fullScreenChatIsOpen, setFullScreenChatIsOpen]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
@@ -164,6 +197,8 @@ export default function QuadraticUI() {
       <UserMessage />
       <SettingsDialog />
       <ChangelogDialog />
+      {/* Full-screen AI chat overlay */}
+      {canEditFile && isAuthenticated && <AIFullScreenChat />}
     </div>
   );
 }

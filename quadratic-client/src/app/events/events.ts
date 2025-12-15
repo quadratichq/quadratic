@@ -173,6 +173,12 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystSetPrompt: (prompt: string) => void;
+  aiAnalystFormStateChanged: (state: {
+    files: import('quadratic-shared/typesAndSchemasAI').FileContent[];
+    importFiles: { name: string; size: number }[];
+    context: import('quadratic-shared/typesAndSchemasAI').Context;
+  }) => void;
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;
