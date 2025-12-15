@@ -8,6 +8,7 @@ use crate::{
 };
 
 impl GridController {
+    #[function_timer::function_timer]
     pub(crate) fn run_formula(
         &mut self,
         transaction: &mut PendingTransaction,

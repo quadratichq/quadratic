@@ -11,6 +11,7 @@ impl Sheet {
     /// Recalculates all bounds of the sheet.
     ///
     /// Returns whether any of the sheet's bounds has changed
+    #[function_timer::function_timer]
     pub fn recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
         let old_data_bounds = self.data_bounds.to_bounds_rect();
         let old_format_bounds = self.format_bounds.to_bounds_rect();

@@ -32,6 +32,7 @@ impl GridController {
     /// final_range: the range of cells to expand to
     ///
     /// cursor: the cursor position for the undo/redo stack
+    #[function_timer::function_timer]
     pub fn autocomplete_operations(
         &mut self,
         sheet_id: SheetId,
@@ -645,17 +646,21 @@ impl GridController {
                                 y_start: 0,
                             },
                         );
-                        compute_code_ops.push(Operation::ComputeCode {
+                        // Use SetComputeCode for all languages (handles both sync and async)
+                        compute_code_ops.push(Operation::SetComputeCode {
                             sheet_pos: final_pos.to_sheet_pos(sheet_id),
+                            language: code_run.language.clone(),
+                            code: code_run.code.clone(),
+                        });
+                    } else {
+                        // Non-code data tables still use SetDataTable
+                        data_table_ops.push(Operation::SetDataTable {
+                            sheet_pos: final_pos.to_sheet_pos(sheet_id),
+                            data_table: Some(data_table),
+                            index: usize::MAX,
+                            ignore_old_data_table: true,
                         });
                     }
-
-                    data_table_ops.push(Operation::SetDataTable {
-                        sheet_pos: final_pos.to_sheet_pos(sheet_id),
-                        data_table: Some(data_table),
-                        index: usize::MAX,
-                        ignore_old_data_table: true,
-                    });
                 }
             }
         }

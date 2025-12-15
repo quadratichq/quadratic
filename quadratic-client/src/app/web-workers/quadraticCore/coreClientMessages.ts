@@ -1504,7 +1504,6 @@ export interface ClientCoreSetFormula {
   sheetId: string;
   selection: string;
   codeString: string;
-  codeCellName?: string;
   cursor: string;
 }
 

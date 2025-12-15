@@ -1482,7 +1482,6 @@ class Core {
     sheetId: string,
     selection: string,
     codeString: string,
-    codeCellName: string | undefined,
     cursor: string
   ): string | { error: string } | undefined {
     try {
@@ -1490,7 +1489,7 @@ class Core {
       if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
         return { error: 'Error in set formula: Cannot add formula to a data table' };
       }
-      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
+      return this.gridController.setFormula(sheetId, selection, codeString, cursor);
     } catch (e) {
       this.handleCoreError('setFormula', e);
     }

@@ -27,6 +27,7 @@ impl GridController {
     }
 
     /// using a selection, paste the contents from the clipboard on the grid
+    #[function_timer::function_timer]
     pub fn paste_from_clipboard(
         &mut self,
         selection: &A1Selection,
@@ -59,12 +60,7 @@ impl GridController {
                     is_ai,
                 );
             }
-
-            return;
-        }
-
-        // if not quadratic html, then use the plain text
-        if let Ok(ops) = self.paste_plain_text_operations(
+        } else if let Ok(ops) = self.paste_plain_text_operations(
             insert_at.to_sheet_pos(selection.sheet_id),
             end_pos,
             selection,
