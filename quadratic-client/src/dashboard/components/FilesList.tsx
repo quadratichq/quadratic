@@ -125,12 +125,18 @@ export function FilesList({
       .filter((item) => item.filterMatch);
   }
 
+  // Filter by file type
   if (filters.fileType === 'private') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'private');
   } else if (filters.fileType === 'team') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'team');
   } else if (filters.fileType === 'shared') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'shared');
+  }
+
+  // Filter by publicly shared
+  if (filters.sharedPublicly) {
+    filesToRender = filesToRender.filter((file) => file.publicLinkAccess !== 'NOT_SHARED');
   }
 
   // Filter by file creator

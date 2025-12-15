@@ -135,13 +135,6 @@ export function FilesListViewControls({
             {filters.sharedPublicly ? <CheckBoxIcon className="mr-1" /> : <CheckBoxEmptyIcon className="mr-1" />}
             Shared publicly
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => setFilters({ ...filters, hasScheduledTasks: !filters.hasScheduledTasks })}
-          >
-            {filters.hasScheduledTasks ? <CheckBoxIcon className="mr-1" /> : <CheckBoxEmptyIcon className="mr-1" />}
-            Has scheduled tasks
-          </Button>
         </div>
       )}
     </>

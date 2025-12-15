@@ -52,7 +52,7 @@ export function FilesListItemCore({
                 {description}
 
                 {isShared && (
-                  <TooltipPopover label="Public">
+                  <TooltipPopover label="Shared publicly">
                     <GlobeIcon className="relative inline h-3 w-3" data-testid="dashboard-file-actions-public-icon" />
                   </TooltipPopover>
                 )}
