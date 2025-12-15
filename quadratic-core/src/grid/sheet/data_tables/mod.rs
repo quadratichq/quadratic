@@ -13,6 +13,8 @@ use crate::{
 use anyhow::{Result, anyhow};
 
 pub mod cache;
+mod single_cell_tables_cache;
+
 use cache::SheetDataTablesCache;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -82,6 +84,7 @@ impl SheetDataTables {
     /// This function only updates spill due to another data table, not due to cell values in columns.
     ///
     /// Returns set of dirty rectangle
+    #[function_timer::function_timer]
     fn update_spill_and_cache(
         &mut self,
         index: usize,

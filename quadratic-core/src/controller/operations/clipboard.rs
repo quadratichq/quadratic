@@ -920,6 +920,7 @@ impl GridController {
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
+    #[function_timer::function_timer]
     pub fn paste_html_operations(
         &mut self,
         insert_at: Pos,

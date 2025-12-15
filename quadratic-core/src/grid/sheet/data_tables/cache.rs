@@ -13,13 +13,14 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+pub use super::single_cell_tables_cache::SingleCellTablesCache;
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct SheetDataTablesCache {
     // boolean map indicating presence of single cell data table at a position
     // this takes spills and errors into account, which are also single cell tables
-    // NOTE: the bool cannot be false
-    pub(crate) single_cell_tables: Contiguous2D<Option<bool>>,
+    pub(crate) single_cell_tables: SingleCellTablesCache,
 
     // cache of output rect and empty values for multi-cell data tables
     pub(crate) multi_cell_tables: MultiCellTablesCache,
