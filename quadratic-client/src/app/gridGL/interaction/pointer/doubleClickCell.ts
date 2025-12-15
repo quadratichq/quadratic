@@ -7,15 +7,16 @@ import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditor
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Point } from 'pixi.js';
+import type { Point } from 'pixi.js';
 
 export async function doubleClickCell(options: {
   column: number;
   row: number;
   cell?: string;
   cursorMode?: CursorMode;
+  world?: Point;
 }) {
-  let { column, row, cell, cursorMode } = options;
+  let { column, row, cell, cursorMode, world } = options;
 
   if (inlineEditorHandler.isEditingFormula()) {
     return;
@@ -73,10 +74,9 @@ export async function doubleClickCell(options: {
         });
       } else {
         // Double-click on data area shows context menu with options
-        const cellRect = sheets.sheet.getCellOffsets(column, row);
         events.emit('contextMenu', {
           type: ContextMenuType.CodeCellOutput,
-          world: new Point(cellRect.x + cellRect.width / 2, cellRect.y + cellRect.height / 2),
+          world,
           column: codeCell.x,
           row: codeCell.y,
           table: codeCell,
@@ -164,10 +164,9 @@ export async function doubleClickCell(options: {
           });
         } else {
           // Double-click on data area shows context menu with options
-          const cellRect = sheets.sheet.getCellOffsets(column, row);
           events.emit('contextMenu', {
             type: ContextMenuType.CodeCellOutput,
-            world: new Point(cellRect.x + cellRect.width / 2, cellRect.y + cellRect.height / 2),
+            world,
             column: codeCell.x,
             row: codeCell.y,
             table: codeCell,

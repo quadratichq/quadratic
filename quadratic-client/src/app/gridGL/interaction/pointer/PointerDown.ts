@@ -106,7 +106,7 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        doubleClickCell({ column, row });
+        doubleClickCell({ column, row, world });
         this.active = false;
         return;
       }
