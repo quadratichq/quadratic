@@ -10,6 +10,10 @@ import {
   CheckBoxEmptyIcon,
   CheckBoxIcon,
   CloseIcon,
+  FileIcon,
+  FilePrivateIcon,
+  FileSharedWithMeIcon,
+  GroupIcon,
   Icon,
   SearchIcon,
 } from '@/shared/components/Icons';
@@ -28,10 +32,10 @@ import { cn } from '@/shared/shadcn/utils';
 import React, { useState } from 'react';
 
 const fileTypeOptions = [
-  { label: 'All', value: '' },
-  { label: 'Team', value: 'team' },
-  { label: 'Private', value: 'private' },
-  { label: 'Shared with you', value: 'shared' },
+  { label: 'All', value: '', Icon: FileIcon },
+  { label: 'Team', value: 'team', Icon: GroupIcon },
+  { label: 'Private', value: 'private', Icon: FilePrivateIcon },
+  { label: 'Shared with you', value: 'shared', Icon: FileSharedWithMeIcon },
 ] as const;
 
 export function FilesListViewControls({
@@ -54,17 +58,23 @@ export function FilesListViewControls({
     activeTeam: { users },
   } = useDashboardRouteLoaderData();
   return (
-    <>
-      <div className={`flex flex-row items-center justify-between gap-2 pb-4`}>
+    <div className="mb-4 flex flex-col gap-2">
+      <div className={`flex flex-row items-center justify-between gap-2`}>
         <div className="flex flex-row items-center gap-2">
           <ButtonGroup className="rounded">
-            {fileTypeOptions.map(({ label, value }) => (
+            {fileTypeOptions.map(({ label, value, Icon }) => (
               <Button
-                variant={filters.fileType === value ? 'outline' : 'outline'}
-                // disabled={filters.fileType === value}
-                className={cn('', filters.fileType === value && 'bg-accent')}
+                variant="outline"
+                className={cn('group', filters.fileType === value && 'bg-accent')}
                 onClick={() => setFilters({ ...filters, fileType: value })}
               >
+                <Icon
+                  size="xs"
+                  className={cn(
+                    'mr-1 text-muted-foreground group-hover:text-foreground',
+                    filters.fileType === value && 'text-foreground'
+                  )}
+                />
                 {label}
               </Button>
             ))}
@@ -94,6 +104,7 @@ export function FilesListViewControls({
             size="icon"
             className={cn(showExtraFilters && 'bg-accent')}
             onClick={() => setShowExtraFilters((prev) => !prev)}
+            aria-label="Toggle extra filters"
           >
             <Icon>filter_list</Icon>
           </Button>
@@ -103,7 +114,7 @@ export function FilesListViewControls({
         </div>
       </div>
       {showExtraFilters && (
-        <div className="-mt-0 mb-4 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -137,6 +148,6 @@ export function FilesListViewControls({
           </Button>
         </div>
       )}
-    </>
+    </div>
   );
 }

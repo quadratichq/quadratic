@@ -8,6 +8,8 @@ import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
 const sizes = {
+  xxs: '12',
+  xs: '16',
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
@@ -763,16 +765,16 @@ export const LightedBulbIcon: IconComponent = (props) => {
   );
 };
 
+export const PublicIcon: IconComponent = (props) => {
+  return <Icon {...props}>public</Icon>;
+};
+
 export const SheetComeFromIcon: IconComponent = (props) => {
   return <Icon {...props}>step_out</Icon>;
 };
 
 export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
-};
-
-export const TeamIcon: IconComponent = (props) => {
-  return <Icon {...props}>groups</Icon>;
 };
 
 export const GenericLanguageIcon: IconComponent = (props) => {

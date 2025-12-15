@@ -19,12 +19,10 @@ import {
   ExternalLinkIcon,
   FileIcon,
   GroupIcon,
-  Icon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
   SettingsIcon,
-  TeamIcon,
 } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
@@ -51,7 +49,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -106,30 +104,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       </div>
       <div className={`flex flex-col px-3`}>
         <div className="grid gap-0.5">
-          <div className="grid hidden grid-cols-2 gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="mb-2">
-                  New <ArrowDropDownIcon className="ml-0.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[240px]" align="start">
-                <DropdownMenuItem className="group">
-                  Start file with AI
-                  <AIIcon className="ml-auto opacity-30 group-hover:opacity-100" />
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>File</DropdownMenuItem>
-                <DropdownMenuItem className="group">
-                  Private file
-                  <Icon className="ml-auto opacity-30 group-hover:opacity-100">lock</Icon>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" className="bg-background">
-              Import <ArrowDropDownIcon className="ml-0.5" />
-            </Button>
-          </div>
           <div className="relative">
             <SidebarNavLink
               to={ROUTES.TEAM(activeTeamUuid)}
@@ -301,7 +275,9 @@ function SidebarNavLinkCreateButton({
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{children}</TooltipContent>
+          <TooltipPortal>
+            <TooltipContent>{children}</TooltipContent>
+          </TooltipPortal>
         </Tooltip>
         <DropdownMenuContent>
           <DropdownMenuItem
@@ -556,7 +532,7 @@ function CreateTeamAlert({ children }: { children: ReactNode }) {
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent className="max-w-sm">
         <AlertDialogHeader>
-          <TeamIcon size="lg" />
+          <GroupIcon size="lg" />
           <AlertDialogTitle>Teams in Quadratic</AlertDialogTitle>
           <AlertDialogDescription>
             Teams are a collaborative space for working with other people. Create a new team and answer a few onboarding

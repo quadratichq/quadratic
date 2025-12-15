@@ -14,7 +14,14 @@ import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
+import {
+  FileIcon,
+  FilePrivateIcon,
+  FileSharedWithMeIcon,
+  GroupIcon,
+  MoreVertIcon,
+  PublicIcon,
+} from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -26,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shared/shadcn/ui/separator';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
@@ -222,21 +230,37 @@ export function FilesListItemUserFile({
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
             children={
-              filters.fileType === '' ? (
-                file.fileType === 'shared' ? (
-                  <Badge variant="secondary" className="px-1.5 py-0 font-normal">
-                    Shared with you
+              <div className="mt-0.5 flex items-center gap-1">
+                {file.fileType === 'shared' ? (
+                  <Badge variant="secondary" className="px-1 py-0 font-normal">
+                    <FileSharedWithMeIcon size="xxs" className="mr-1" /> Shared with you
                   </Badge>
                 ) : file.fileType === 'private' ? (
-                  <Badge variant="secondary" className="px-1.5 py-0 font-normal">
-                    Private
+                  <Badge variant="secondary" className="px-1 py-0 font-normal">
+                    <FilePrivateIcon size="xxs" className="mr-1" /> Private
                   </Badge>
                 ) : file.fileType === 'team' ? (
-                  <Badge variant="outline" className="px-1.5 py-0 font-normal">
+                  <Badge variant="outline" className="px-1 py-0 font-normal">
+                    <GroupIcon size="xxs" className="mr-1" />
                     Team
                   </Badge>
-                ) : null
-              ) : null
+                ) : null}
+                {publicLinkAccess !== 'NOT_SHARED' && (
+                  <Badge variant="outline" className="border-none px-1 py-0 font-normal text-muted-foreground">
+                    <PublicIcon size="xxs" className="mr-1" data-testid="dashboard-file-actions-public-icon" />
+                    Shared publicly
+                  </Badge>
+                )}
+                {publicLinkAccess !== 'NOT_SHARED' && false && (
+                  <TooltipPopover label="Shared publicly">
+                    <PublicIcon
+                      size="xs"
+                      className="text-foreground"
+                      data-testid="dashboard-file-actions-public-icon"
+                    />
+                  </TooltipPopover>
+                )}
+              </div>
             }
             viewPreferences={viewPreferences}
             actions={
@@ -300,7 +324,7 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to Personal
+                          Move to Private
                         </DropdownMenuItem>
                       )}
                       {isFilePrivate && (

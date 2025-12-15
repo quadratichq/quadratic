@@ -80,7 +80,7 @@ function FileLocation() {
     // My private file
     dashboardLink = (
       <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} data-testid="file-location-link-my-files">
-        My files
+        Private
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {

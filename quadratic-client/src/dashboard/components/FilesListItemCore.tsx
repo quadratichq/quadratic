@@ -4,7 +4,6 @@ import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { GlobeIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
@@ -48,15 +47,7 @@ export function FilesListItemCore({
             {hasNetworkError ? (
               <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
             ) : (
-              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
-                {description}
-
-                {isShared && (
-                  <TooltipPopover label="Shared publicly">
-                    <GlobeIcon className="relative inline h-3 w-3" data-testid="dashboard-file-actions-public-icon" />
-                  </TooltipPopover>
-                )}
-              </p>
+              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
             )}
           </div>
 
