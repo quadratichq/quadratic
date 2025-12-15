@@ -97,25 +97,6 @@ export function FilesListViewControls({
           >
             <Icon>filter_list</Icon>
           </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="hidden">
-                Type: {filters.fileType === '' ? 'All' : filters.fileType} <ArrowDropDownIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuRadioGroup
-                value={filters.fileType}
-                onValueChange={(value) => setFilters({ ...filters, fileType: value as 'team' | 'private' | 'shared' })}
-              >
-                <DropdownMenuRadioItem value="">All</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="team">Team</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="private">Private</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="shared">Shared with you</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
         <div className={`flex flex-row items-center gap-2`}>
           <FileListViewControlsDropdown viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
