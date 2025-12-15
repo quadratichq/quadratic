@@ -1,4 +1,5 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
+import { filesListFiltersAtom } from '@/dashboard/atoms/filesListFiltersAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { FilesListItemExampleFile, FilesListItems, FilesListItemUserFile } from '@/dashboard/components/FilesListItem';
 import { FilesListViewControls } from '@/dashboard/components/FilesListViewControls';
@@ -9,6 +10,7 @@ import { EmptyState } from '@/shared/components/EmptyState';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { useAtomValue } from 'jotai';
 import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
@@ -33,13 +35,7 @@ export type FilesListUserFile = {
   fileType?: 'team' | 'private' | 'shared';
 };
 
-export type FilesListFilters = {
-  fileName: string;
-  fileType: '' | 'team' | 'private' | 'shared';
-  fileCreator: null | string;
-  sharedPublicly?: boolean;
-  hasScheduledTasks?: boolean;
-};
+export type { FilesListFilters } from '@/dashboard/atoms/filesListFiltersAtom';
 
 export function FilesList({
   files,
@@ -53,12 +49,8 @@ export function FilesList({
   isPrivate?: boolean;
 }) {
   const { pathname } = useLocation();
-  const [filterValue, setFilterValue] = useState<string>('');
-  const [filters, setFilters] = useState<FilesListFilters>({
-    fileName: '',
-    fileType: '',
-    fileCreator: null,
-  });
+  const filters = useAtomValue(filesListFiltersAtom);
+  const filterValue = filters.fileName;
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
@@ -174,14 +166,7 @@ export function FilesList({
 
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
-      <FilesListViewControls
-        filterValue={filterValue}
-        setFilterValue={setFilterValue}
-        viewPreferences={viewPreferences}
-        setViewPreferences={setViewPreferences}
-        filters={filters}
-        setFilters={setFilters}
-      />
+      <FilesListViewControls viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (
@@ -189,11 +174,8 @@ export function FilesList({
             key={file.uuid}
             file={file}
             lazyLoad={i > 12}
-            filterValue={filterValue}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
-            filters={filters}
-            setFilters={setFilters}
           />
         ))}
       </FilesListItems>
@@ -227,7 +209,8 @@ export type FilesListTemplateFile = {
 
 export function ExampleFilesList({ files, emptyState }: { files: FilesListTemplateFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
-  const [filterValue, setFilterValue] = useState<string>('');
+  const filters = useAtomValue(filesListFiltersAtom);
+  const filterValue = filters.fileName;
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
     // Persist the layout preference across views (by URL)
     `FilesList-${pathname}`,
@@ -243,19 +226,7 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListTempla
 
   return (
     <>
-      <FilesListViewControls
-        filterValue={filterValue}
-        setFilterValue={setFilterValue}
-        viewPreferences={viewPreferences}
-        setViewPreferences={setViewPreferences}
-        // TODO: fix this
-        filters={{
-          fileName: filterValue,
-          fileType: '',
-          fileCreator: null,
-        }}
-        setFilters={() => {}}
-      />
+      <FilesListViewControls viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => {
@@ -271,7 +242,6 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListTempla
                 thumbnail,
                 description,
               }}
-              filterValue={filterValue}
               lazyLoad={lazyLoad}
               viewPreferences={viewPreferences}
             />

@@ -1,4 +1,4 @@
-import type { FilesListFilters, FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import type { FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -53,20 +53,14 @@ export function FilesListItems({
 
 export function FilesListItemUserFile({
   file,
-  filterValue,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
-  filters,
-  setFilters,
 }: {
   file: FilesListUserFile;
-  filterValue: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
-  filters: FilesListFilters;
-  setFilters: React.Dispatch<React.SetStateAction<FilesListFilters>>;
 }) {
   const submit = useSubmit();
   const fetcherDelete = useFetcher();
@@ -212,9 +206,6 @@ export function FilesListItemUserFile({
           <FilesListItemCore
             key={uuid}
             creator={file.creator}
-            filterValue={filterValue}
-            filters={filters}
-            setFilters={setFilters}
             filterMatch={file.filterMatch}
             name={displayName}
             description={description}
@@ -357,12 +348,10 @@ export function FilesListItemUserFile({
 
 export function FilesListItemExampleFile({
   file,
-  filterValue,
   lazyLoad,
   viewPreferences,
 }: {
   file: FilesListTemplateFile;
-  filterValue: string;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
@@ -371,12 +360,7 @@ export function FilesListItemExampleFile({
     <ListItem>
       <Link to={href} className="flex w-full" reloadDocument>
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
-          <FilesListItemCore
-            name={name}
-            description={description}
-            filterValue={filterValue}
-            viewPreferences={viewPreferences}
-          />
+          <FilesListItemCore name={name} description={description} viewPreferences={viewPreferences} />
         </ListItemView>
       </Link>
     </ListItem>

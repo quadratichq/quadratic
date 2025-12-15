@@ -1,18 +1,17 @@
-import type { FilesListFilters, FilesListUserFile } from '@/dashboard/components/FilesList';
+import { filesListFiltersAtom } from '@/dashboard/atoms/filesListFiltersAtom';
+import type { FilesListUserFile } from '@/dashboard/components/FilesList';
 import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtom } from 'jotai';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
   name,
   description,
   filterMatch,
-  filterValue,
-  filters,
-  setFilters,
   creator,
   hasNetworkError,
   isShared,
@@ -23,9 +22,6 @@ export function FilesListItemCore({
   name: string;
   description: string;
   filterMatch?: FilesListUserFile['filterMatch'];
-  filterValue: string;
-  filters?: FilesListFilters;
-  setFilters?: React.Dispatch<React.SetStateAction<FilesListFilters>>;
   viewPreferences: ViewPreferences;
   creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
@@ -33,6 +29,8 @@ export function FilesListItemCore({
   actions?: ReactNode;
   children?: ReactNode;
 }) {
+  const [filters, setFilters] = useAtom(filesListFiltersAtom);
+  const filterValue = filters.fileName;
   const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
   const isGrid = viewPreferences.layout === Layout.Grid;
 
@@ -53,7 +51,7 @@ export function FilesListItemCore({
             )}
           </div>
 
-          {creator?.name && creator?.email && filters && setFilters && (
+          {creator?.name && creator?.email && (
             <TooltipPopover label={`Created by ${creator.name}`}>
               <button
                 onClick={(e) => {

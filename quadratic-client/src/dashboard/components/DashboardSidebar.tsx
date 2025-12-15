@@ -18,7 +18,9 @@ import {
   ExamplesIcon,
   ExternalLinkIcon,
   FileIcon,
+  FilePrivateIcon,
   GroupIcon,
+  GroupSearchIcon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
@@ -126,7 +128,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
           )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
-            <GroupIcon className={classNameIcons} />
+            <GroupSearchIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
           {canEditTeam && (
@@ -287,8 +289,8 @@ function SidebarNavLinkCreateButton({
               window.location.href = ROUTES.TEAM_FILES_CREATE_AI(teamUuid);
             }}
           >
+            <AIIcon className="mr-2 text-muted-foreground" />
             Start with AI
-            <AIIcon className="ml-6 text-muted-foreground group-hover:text-primary" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -297,6 +299,7 @@ function SidebarNavLinkCreateButton({
               handleClick({ isPrivate: false });
             }}
           >
+            <GroupIcon className="mr-2 text-muted-foreground" />
             Team file
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -305,6 +308,7 @@ function SidebarNavLinkCreateButton({
               handleClick({ isPrivate: true });
             }}
           >
+            <FilePrivateIcon className="mr-2 text-muted-foreground" />
             Private file
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -532,7 +536,7 @@ function CreateTeamAlert({ children }: { children: ReactNode }) {
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent className="max-w-sm">
         <AlertDialogHeader>
-          <GroupIcon size="lg" />
+          <GroupSearchIcon size="lg" />
           <AlertDialogTitle>Teams in Quadratic</AlertDialogTitle>
           <AlertDialogDescription>
             Teams are a collaborative space for working with other people. Create a new team and answer a few onboarding

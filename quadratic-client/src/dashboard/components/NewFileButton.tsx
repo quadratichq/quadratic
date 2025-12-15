@@ -13,7 +13,6 @@ import {
   DatabaseIcon,
   ExamplesIcon,
   FileIcon,
-  Icon,
 } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
@@ -48,28 +47,6 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
 
   return (
     <div className="flex flex-row-reverse gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="mb-2 hidden">
-            New file… <ArrowDropDownIcon className="ml-2" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem className="group">
-            <AIIcon className="mr-3" />
-            Start with AI
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <FileIcon className="mr-3" />
-            Team file
-          </DropdownMenuItem>
-          <DropdownMenuItem className="group">
-            <Icon className="mr-3">lock</Icon>
-            Private file
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
       <Button
         variant="default"
         className="gap-2"

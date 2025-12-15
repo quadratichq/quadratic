@@ -461,6 +461,10 @@ export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
 };
 
+export const GroupSearchIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_search</Icon>;
+};
+
 export const GroupAddIcon: IconComponent = (props) => {
   return <Icon {...props}>group_add</Icon>;
 };
