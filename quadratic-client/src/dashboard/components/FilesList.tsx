@@ -36,7 +36,7 @@ export type FilesListUserFile = {
 export type FilesListFilters = {
   fileName: string;
   fileType: '' | 'team' | 'private' | 'shared';
-  fileCreators: null | string[];
+  fileCreator: null | string;
   sharedPublicly?: boolean;
   hasScheduledTasks?: boolean;
 };
@@ -57,7 +57,7 @@ export function FilesList({
   const [filters, setFilters] = useState<FilesListFilters>({
     fileName: '',
     fileType: '',
-    fileCreators: null,
+    fileCreator: null,
   });
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
@@ -128,10 +128,16 @@ export function FilesList({
   if (filters.fileType === 'private') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'private');
   } else if (filters.fileType === 'team') {
-    console.log('filtering by team', filesToRender);
     filesToRender = filesToRender.filter((file) => file.fileType === 'team');
   } else if (filters.fileType === 'shared') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'shared');
+  }
+
+  // Filter by file creator
+  if (filters.fileCreator !== null) {
+    filesToRender = filesToRender.filter((file) => {
+      return file.creator?.email === filters.fileCreator;
+    });
   }
 
   // Sort 'em based on current prefs
@@ -241,7 +247,7 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListTempla
         filters={{
           fileName: filterValue,
           fileType: '',
-          fileCreators: null,
+          fileCreator: null,
         }}
         setFilters={() => {}}
       />

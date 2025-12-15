@@ -17,7 +17,6 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { ButtonGroup } from '@/shared/shadcn/ui/button-group';
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -127,43 +126,28 @@ export function FilesListViewControls({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
-                Creator: Any <ArrowDropDownIcon />
+                Creator:{' '}
+                {filters.fileCreator === null
+                  ? 'Any'
+                  : users.find((u) => u.email === filters.fileCreator)?.name || filters.fileCreator}{' '}
+                <ArrowDropDownIcon />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuCheckboxItem
-                checked={filters.fileCreators === null}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setFilters({ ...filters, fileCreators: null });
-                  }
+              <DropdownMenuRadioGroup
+                value={filters.fileCreator ?? ''}
+                onValueChange={(value) => {
+                  setFilters({ ...filters, fileCreator: value === '' ? null : value });
                 }}
               >
-                Any
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator className="!block" />
-
-              {users.map((user) => (
-                <DropdownMenuCheckboxItem
-                  key={user.id}
-                  checked={filters.fileCreators !== null && filters.fileCreators.includes(user.email)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setFilters({ ...filters, fileCreators: [...(filters.fileCreators || []), user.email] });
-                    } else {
-                      setFilters({
-                        ...filters,
-                        fileCreators:
-                          filters.fileCreators !== null
-                            ? filters.fileCreators.filter((email) => email !== user.email)
-                            : null,
-                      });
-                    }
-                  }}
-                >
-                  <Avatar src={user.picture} className="mr-2" /> {user.name}
-                </DropdownMenuCheckboxItem>
-              ))}
+                <DropdownMenuRadioItem value="">Any</DropdownMenuRadioItem>
+                <DropdownMenuSeparator className="!block" />
+                {users.map((user) => (
+                  <DropdownMenuRadioItem key={user.id} value={user.email}>
+                    <Avatar src={user.picture} className="mr-2" /> {user.name}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" onClick={() => setFilters({ ...filters, sharedPublicly: !filters.sharedPublicly })}>
