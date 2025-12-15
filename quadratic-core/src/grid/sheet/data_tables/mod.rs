@@ -460,7 +460,7 @@ impl SheetDataTables {
     }
 
     /// Returns the finite bounds of the sheet data tables.
-    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&mut self) -> Option<Rect> {
         self.cache.finite_bounds()
     }
 

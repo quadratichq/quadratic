@@ -287,6 +287,7 @@ impl PendingTransaction {
         self.add_content_cache(sheet_id);
     }
 
+    #[function_timer::function_timer]
     pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
@@ -299,6 +300,7 @@ impl PendingTransaction {
         self.add_content_cache(sheet_rect.sheet_id);
     }
 
+    #[function_timer::function_timer]
     pub fn add_dirty_hashes_from_dirty_code_rects(
         &mut self,
         sheet: &Sheet,

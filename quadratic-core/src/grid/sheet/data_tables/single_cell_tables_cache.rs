@@ -92,21 +92,19 @@ impl SingleCellTablesCache {
     }
 
     /// Returns the bounding rectangle of all single-cell tables, or None if empty.
+    /// Uses the R-tree's cached envelope for O(1) performance.
     pub fn finite_bounds(&self) -> Option<Rect> {
         if self.tables.is_empty() {
             return None;
         }
-        let mut min_x = i64::MAX;
-        let mut max_x = i64::MIN;
-        let mut min_y = i64::MAX;
-        let mut max_y = i64::MIN;
-        for pos in self.tables.iter() {
-            min_x = min_x.min(pos.x);
-            max_x = max_x.max(pos.x);
-            min_y = min_y.min(pos.y);
-            max_y = max_y.max(pos.y);
-        }
-        Some(Rect::new(min_x, min_y, max_x, max_y))
+        // The R-tree root envelope contains the bounding box of all elements - O(1)
+        let envelope = self.spatial_index.root().envelope();
+        Some(Rect::new(
+            envelope.lower().x,
+            envelope.lower().y,
+            envelope.upper().x,
+            envelope.upper().y,
+        ))
     }
 
     /// Returns true if there are no single-cell tables in the given rectangle.
