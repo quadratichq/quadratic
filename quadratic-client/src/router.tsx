@@ -121,11 +121,6 @@ export const router = createBrowserRouter(
         <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
         <Route path="teams/:teamUuid/onboarding" lazy={() => import('./routes/teams.$teamUuid.onboarding')} />
         <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
-          <Route
-            path={ROUTES.FILES_SHARED_WITH_ME}
-            lazy={() => import('./routes/files.shared-with-me')}
-            shouldRevalidate={dontRevalidateDialogs}
-          />
           {/* Redirect /examples to /templates - we add this because examples is linked in lots of places we're not aware about */}
           <Route path="/examples" element={<Navigate to={ROUTES.TEMPLATES} replace />} />
           <Route
@@ -140,7 +135,6 @@ export const router = createBrowserRouter(
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
               <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
-              <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
               <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />

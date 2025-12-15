@@ -345,6 +345,10 @@ export const FileIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };
 
+export const FiltersIcon: IconComponent = (props) => {
+  return <Icon {...props}>filter_list</Icon>;
+};
+
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };

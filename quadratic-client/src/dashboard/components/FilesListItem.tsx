@@ -14,14 +14,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import {
-  FileIcon,
-  FilePrivateIcon,
-  FileSharedWithMeIcon,
-  GroupIcon,
-  MoreVertIcon,
-  PublicIcon,
-} from '@/shared/components/Icons';
+import { FileIcon, FilePrivateIcon, FileSharedWithMeIcon, GroupIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -33,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shared/shadcn/ui/separator';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
@@ -247,18 +239,8 @@ export function FilesListItemUserFile({
                 ) : null}
                 {publicLinkAccess !== 'NOT_SHARED' && (
                   <Badge variant="outline" className="border-none px-1 py-0 font-normal text-muted-foreground">
-                    <PublicIcon size="xxs" className="mr-1" data-testid="dashboard-file-actions-public-icon" />
                     Shared publicly
                   </Badge>
-                )}
-                {publicLinkAccess !== 'NOT_SHARED' && false && (
-                  <TooltipPopover label="Shared publicly">
-                    <PublicIcon
-                      size="xs"
-                      className="text-foreground"
-                      data-testid="dashboard-file-actions-public-icon"
-                    />
-                  </TooltipPopover>
                 )}
               </div>
             }

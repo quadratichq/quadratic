@@ -14,7 +14,6 @@ export const ROUTES = {
   VERIFY_EMAIL: '/verify-email',
   SEND_RESET_PASSWORD: '/send-reset-password',
   RESET_PASSWORD: '/reset-password',
-  FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
@@ -77,6 +76,7 @@ export const ROUTES = {
     `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
   TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}?type=private`,
+  TEAM_FILES_SHARED_WITH_ME: (teamUuid: string) => `/teams/${teamUuid}?type=shared-with-me`,
   TEAM_FILES_DELETED: (teamUuid: string) => `/teams/${teamUuid}/files/deleted`,
   TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
