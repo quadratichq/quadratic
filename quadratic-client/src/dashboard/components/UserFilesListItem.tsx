@@ -101,6 +101,10 @@ export function UserFilesListItem({
     }
   }, [addGlobalSnackbar, fetcherMove.data]);
 
+  // TODO:(jimniels) enhancement
+  // optimistic updates should probably be moved up to UserFilesList
+  // so all updates flow down from there.
+
   // Optimistically hide this file if it's being deleted
   if (fetcherDelete.state !== 'idle') {
     return null;
