@@ -59,7 +59,12 @@ export function UserFilesListOtherFilters() {
         <DropdownMenuRadioGroup
           value={filters.sharedPublicly ? 'sharedPublicly' : (filters.fileCreator ?? '')}
           onValueChange={(value) => {
-            if (value === '') {
+            const currentValue = filters.sharedPublicly ? 'sharedPublicly' : (filters.fileCreator ?? '');
+
+            // If clicking the already-selected filter, reset all filters
+            if (value === currentValue && value !== '') {
+              setFilters({ ...filters, fileCreator: null, sharedPublicly: false });
+            } else if (value === '') {
               setFilters({ ...filters, fileCreator: null, sharedPublicly: false });
             } else if (value === 'sharedPublicly') {
               setFilters({ ...filters, fileCreator: null, sharedPublicly: true });
