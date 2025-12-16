@@ -16,7 +16,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { FileIcon, FilePrivateIcon, FileSharedWithMeIcon, GroupIcon, MoreVertIcon } from '@/shared/components/Icons';
+import { FilePrivateIcon, FileSharedWithMeIcon, GroupIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -31,7 +31,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SubmitOptions } from 'react-router';
 import { Link, useFetcher, useMatch, useSubmit } from 'react-router';
 
@@ -55,7 +55,6 @@ export function UserFilesListItem({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
-  const fileDragRef = useRef<HTMLDivElement>(null);
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     activeTeam: {
@@ -157,43 +156,13 @@ export function UserFilesListItem({
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
   const isDisabled = uuid.includes('duplicate');
 
-  const dragProps = canMoveFiles
-    ? {
-        draggable: true,
-        onDragStart: (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (fileDragRef.current) {
-            fileDragRef.current.style.opacity = '1';
-            event.dataTransfer.setDragImage(fileDragRef.current, 16, 16);
-          }
-          event.dataTransfer.dropEffect = 'move';
-          event.dataTransfer.setData('application/quadratic-file-uuid', uuid);
-        },
-        onDragEnd: (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (fileDragRef.current) {
-            fileDragRef.current.style.opacity = '0';
-          }
-        },
-      }
-    : {};
-
   return (
     <ListItem>
-      <div
-        ref={fileDragRef}
-        // FYI: There's some trickery to get this displaying right across all browser
-        // Basically this is hidden behind the file itself and when it's dragged
-        // it becomes visible.
-        className="absolute -top-[1px] left-0 z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-0.5 text-sm text-primary-foreground opacity-0"
-      >
-        <FileIcon />
-        {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
-      </div>
       <Link
         key={uuid}
         to={ROUTES.FILE({ uuid, searchParams: '' })}
         reloadDocument
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
-        {...dragProps}
       >
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
           <FilesListItemCore

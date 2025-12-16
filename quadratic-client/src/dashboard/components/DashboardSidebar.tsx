@@ -2,7 +2,6 @@ import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
@@ -107,11 +106,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       <div className={`flex flex-col px-3`}>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink
-              to={ROUTES.TEAM_FILES(activeTeamUuid)}
-              dropTarget={canEditTeam ? null : undefined}
-              data-testid="dashboard-sidebar-team-files-link"
-            >
+            <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} data-testid="dashboard-sidebar-team-files-link">
               <FileIcon className={classNameIcons} />
               Files
               {canEditTeam && (
@@ -320,14 +315,13 @@ function SidebarNavLinkCreateButton({
 const sidebarItemClasses = {
   base: `dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
   active: `bg-accent dark:brightness-125 brightness-95 saturate-150 dark:saturate-100`,
-  dragging: `bg-primary text-primary-foreground`,
 };
 
 function SidebarNavLink({
   to,
   children,
   className,
-  dropTarget,
+
   isLogo,
   onClick,
   target,
@@ -336,8 +330,7 @@ function SidebarNavLink({
   to: string;
   children: ReactNode;
   className?: string;
-  // number = assigning to a user, null = assigning to a team
-  dropTarget?: number | null;
+
   isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
@@ -345,8 +338,6 @@ function SidebarNavLink({
 }) {
   const location = useLocation();
   const navigation = useNavigation();
-  const submit = useSubmit();
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
@@ -354,44 +345,7 @@ function SidebarNavLink({
     // We're navigating to this page
     to === navigation.location?.pathname;
 
-  const isDroppable = dropTarget !== undefined && to !== location.pathname;
-  const dropProps = isDroppable
-    ? {
-        onDragLeave: (event: React.DragEvent<HTMLAnchorElement>) => {
-          setIsDraggingOver(false);
-        },
-        onDragOver: (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (!event.dataTransfer.types.includes('application/quadratic-file-uuid')) return;
-
-          event.preventDefault();
-          event.dataTransfer.dropEffect = 'move';
-          setIsDraggingOver(true);
-        },
-        onDrop: async (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (!event.dataTransfer.types.includes('application/quadratic-file-uuid')) return;
-
-          event.preventDefault();
-          const uuid = event.dataTransfer.getData('application/quadratic-file-uuid');
-          setIsDraggingOver(false);
-          const data = getActionFileMove(dropTarget);
-          submit(data, {
-            method: 'POST',
-            action: ROUTES.API.FILE(uuid),
-            encType: 'application/json',
-            navigate: false,
-            fetcherKey: `move-file:${uuid}`,
-          });
-        },
-      }
-    : {};
-
-  const classes = cn(
-    sidebarItemClasses.base,
-    isActive && sidebarItemClasses.active,
-    isDraggingOver && sidebarItemClasses.dragging,
-    TYPE.body2,
-    className
-  );
+  const classes = cn(sidebarItemClasses.base, isActive && sidebarItemClasses.active, TYPE.body2, className);
 
   return (
     <NavLink
@@ -399,7 +353,6 @@ function SidebarNavLink({
       className={classes}
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
-      {...dropProps}
       {...(dataTestId ? { 'data-testid': dataTestId } : {})}
     >
       {children}
