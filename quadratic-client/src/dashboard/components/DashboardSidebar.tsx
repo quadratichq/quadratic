@@ -206,37 +206,36 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Labs
           </SidebarNavLink>
         )}
-
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 pl-2.5 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
-              <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
-                {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
-              </Avatar>
-              <p className={`truncate text-xs`}>{loggedInUser?.email}</p>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-60" side="top" align="start">
-              <DropdownMenuItem disabled className="flex-col items-start">
-                {loggedInUser?.name || 'You'}
-                <span className="text-xs">{loggedInUser?.email}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  submit(null, {
-                    method: 'post',
-                    action: ROUTES.LOGOUT,
-                  });
-                }}
-              >
-                <LogoutIcon className="mr-2 text-muted-foreground" /> Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <div className="flex flex-shrink-0 items-center">
-            <ThemePickerMenu />
-          </div>
+      </div>
+      <div className="sticky bottom-3 flex items-center gap-2 px-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 pl-2.5 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
+            <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
+              {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
+            </Avatar>
+            <p className={`truncate text-xs`}>{loggedInUser?.email}</p>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-60" side="top" align="start">
+            <DropdownMenuItem disabled className="flex-col items-start">
+              {loggedInUser?.name || 'You'}
+              <span className="text-xs">{loggedInUser?.email}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                submit(null, {
+                  method: 'post',
+                  action: ROUTES.LOGOUT,
+                });
+              }}
+            >
+              <LogoutIcon className="mr-2 text-muted-foreground" /> Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="flex flex-shrink-0 items-center">
+          <ThemePickerMenu />
         </div>
       </div>
     </nav>
