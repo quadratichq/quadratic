@@ -56,7 +56,20 @@ export class CellsTextHashValidations extends Container {
         const { x, y } = pos;
         if (!validation) return;
 
-        const offset = sheet.getCellOffsets(x, y);
+        // Check if the cell is part of a merged cell and use the full merged cell rect
+        const mergeRect = sheet.getMergeCellRect(Number(x), Number(y));
+        let offset: Rectangle;
+        if (mergeRect) {
+          offset = sheet.getScreenRectangle(
+            Number(mergeRect.min.x),
+            Number(mergeRect.min.y),
+            Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+            Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+          );
+        } else {
+          offset = sheet.getCellOffsets(x, y);
+        }
+
         let color = 0;
         switch (style) {
           case 'Stop':
@@ -120,12 +133,26 @@ export class CellsTextHashValidations extends Container {
   }
 
   reposition() {
+    const sheet = sheets.sheet;
     this.warnings.forEach((warning) => {
       const { pos } = warning;
-      const offset = sheets.sheet.getCellOffsets(pos.x, pos.y);
+      // Check if the cell is part of a merged cell and use the full merged cell rect
+      const mergeRect = sheet.getMergeCellRect(Number(pos.x), Number(pos.y));
+      let offset: Rectangle;
+      if (mergeRect) {
+        offset = sheet.getScreenRectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      } else {
+        offset = sheet.getCellOffsets(pos.x, pos.y);
+      }
       const sprite = this.warningSprites.get(`${pos.x},${pos.y}`);
       if (sprite) {
         sprite[0].position.set(offset.x + offset.width, offset.y);
+        sprite[1] = offset;
       }
     });
   }

@@ -141,6 +141,14 @@ impl Sheet {
         self.columns.has_content_in_rect(output_rect)
     }
 
+    /// Checks spill due to merged cells on sheet
+    ///
+    /// Returns true if the data table's output would overlap any merged cells
+    fn check_spills_due_to_merged_cells(&self, pos: Pos, data_table: &DataTable) -> bool {
+        let output_rect = data_table.output_rect(pos, true);
+        !self.merge_cells.get_merge_cells(output_rect).is_empty()
+    }
+
     /// Returns a mutable DataTable at a Pos
     pub fn modify_data_table_at(
         &mut self,
@@ -160,6 +168,7 @@ impl Sheet {
             false => None,
         };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
+        data_table.spill_merged_cell = self.check_spills_due_to_merged_cells(pos, &data_table);
         let (index, old_data_table, dirty_rects) = self.data_tables.insert_full(pos, data_table);
         (old_cell_value, index, old_data_table, dirty_rects)
     }
@@ -175,6 +184,7 @@ impl Sheet {
             false => None,
         };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
+        data_table.spill_merged_cell = self.check_spills_due_to_merged_cells(pos, &data_table);
         let (index, old_data_table, dirty_rects) =
             self.data_tables.insert_before(index, pos, data_table);
         (old_cell_value, index, old_data_table, dirty_rects)
@@ -203,17 +213,21 @@ impl Sheet {
         let mut data_tables_to_modify = Vec::new();
 
         for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
-            let new_spill = self.check_spills_due_to_column_values(pos, data_table);
-            if new_spill != data_table.spill_value {
-                data_tables_to_modify.push((pos, new_spill));
+            let new_spill_value = self.check_spills_due_to_column_values(pos, data_table);
+            let new_spill_merged_cell = self.check_spills_due_to_merged_cells(pos, data_table);
+            if new_spill_value != data_table.spill_value
+                || new_spill_merged_cell != data_table.spill_merged_cell
+            {
+                data_tables_to_modify.push((pos, new_spill_value, new_spill_merged_cell));
             }
         }
 
         let mut dirty_rects = HashSet::new();
 
-        for (pos, new_spill) in data_tables_to_modify {
+        for (pos, new_spill_value, new_spill_merged_cell) in data_tables_to_modify {
             if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
-                dt.spill_value = new_spill;
+                dt.spill_value = new_spill_value;
+                dt.spill_merged_cell = new_spill_merged_cell;
                 Ok(())
             }) {
                 dirty_rects.extend(dirty_rect);

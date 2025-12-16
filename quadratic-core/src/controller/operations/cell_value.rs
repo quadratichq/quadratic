@@ -184,6 +184,48 @@ impl GridController {
                 &self.a1_context,
             );
 
+            // Expand each rect to include full merged cells
+            let expanded_rects: Vec<Rect> = rects
+                .into_iter()
+                .map(|rect| {
+                    let mut expanded = rect;
+
+                    // Check all corner positions to find merged cells that might partially overlap
+                    for pos in [
+                        Pos {
+                            x: rect.min.x,
+                            y: rect.min.y,
+                        },
+                        Pos {
+                            x: rect.max.x,
+                            y: rect.min.y,
+                        },
+                        Pos {
+                            x: rect.min.x,
+                            y: rect.max.y,
+                        },
+                        Pos {
+                            x: rect.max.x,
+                            y: rect.max.y,
+                        },
+                    ] {
+                        if let Some(merge_rect) = sheet.merge_cells.get_merge_cell_rect(pos) {
+                            expanded = expanded.union(&merge_rect);
+                        }
+                    }
+
+                    // Also get all merged cells fully contained in the rect
+                    let merged_cells = sheet.merge_cells.get_merge_cells(expanded);
+                    for merge_rect in merged_cells {
+                        expanded = expanded.union(&merge_rect);
+                    }
+
+                    expanded
+                })
+                .collect();
+
+            let rects = expanded_rects;
+
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
                 let mut can_delete_column = false;
@@ -524,12 +566,13 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use crate::a1::A1Selection;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::{CellValue, SheetPos, a1::A1Selection};
-    use crate::{SheetRect, test_util::*};
+    use crate::test_util::*;
+    use crate::{CellValue, Pos, SheetPos, SheetRect};
 
     #[test]
     fn test() {
@@ -710,5 +753,48 @@ mod test {
 
         gc.redo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
+    }
+
+    #[test]
+    fn test_delete_merged_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set a value at B1
+        gc.set_cell_value(
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+            false,
+        );
+
+        // Merge cells B1:C2
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C2", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Verify the value exists at the anchor
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+
+        // Delete with cursor on C2 (not the anchor B1)
+        let delete_selection = crate::a1::A1Selection::test_a1_sheet_id("C2", sheet_id);
+        gc.delete_cells(&delete_selection, None, false);
+
+        // Value should be deleted from the entire merged cell
+        assert_eq!(gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }), None);
+        assert_eq!(gc.sheet(sheet_id).display_value(Pos { x: 3, y: 2 }), None);
+
+        // Undo should restore the value
+        gc.undo(1, None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
     }
 }

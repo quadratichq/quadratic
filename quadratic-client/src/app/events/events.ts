@@ -17,7 +17,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import type { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -173,6 +173,8 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+
+  mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;

@@ -112,6 +112,7 @@ export class CellsFills extends Container {
 
   private drawCells = () => {
     this.cellsContainer.removeChildren();
+
     this.cells.forEach((fill) => {
       const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = this.getColor(fill.color);

@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import type { ColorResult } from '@/app/ui/components/ColorPicker';
@@ -7,6 +8,7 @@ import {
   clearFormattingAndBorders,
   decreaseFontSize,
   increaseFontSize,
+  mergeCells,
   removeNumericFormat,
   setAlign,
   setBold,
@@ -24,6 +26,7 @@ import {
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
+  unmergeCells,
 } from '@/app/ui/helpers/formatCells';
 import type { UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
@@ -60,8 +63,10 @@ import {
   FormatTextWrapIcon,
   FormatToggleCommasIcon,
   FormatUnderlinedIcon,
+  MergeCellsIcon,
   PercentIcon,
   ScientificIcon,
+  UnmergeCellsIcon,
   VerticalAlignBottomIcon,
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
@@ -113,6 +118,8 @@ type FormatActionSpec = Pick<
   | Action.FormatBorderDotted
   | Action.FormatBorderDouble
   | Action.FormatBorderColor
+  | Action.MergeCells
+  | Action.UnmergeCells
 >;
 
 export type FormatActionArgs = {
@@ -450,6 +457,26 @@ export const formatActionsSpec: FormatActionSpec = {
     Icon: BorderColorIcon,
     run: ({ borders, color }: FormatActionArgs[Action.FormatBorderColor]) => {
       borders.changeBorders({ color: convertReactColorToString(color) });
+    },
+  },
+  [Action.MergeCells]: {
+    label: () => 'Merge cells',
+    Icon: MergeCellsIcon,
+    isDisabled: () => {
+      return sheets.sheet.cursor.isSingleSelection();
+    },
+    run: () => {
+      mergeCells();
+    },
+  },
+  [Action.UnmergeCells]: {
+    label: () => 'Unmerge cells',
+    Icon: UnmergeCellsIcon,
+    isDisabled: () => {
+      return !sheets.sheet.cursor.containsMergedCells();
+    },
+    run: () => {
+      unmergeCells();
     },
   },
 };

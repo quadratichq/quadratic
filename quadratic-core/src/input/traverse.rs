@@ -1,10 +1,13 @@
 use crate::{
     Pos, SheetPos,
     a1::A1Context,
-    grid::{SheetId, sheet::data_tables::cache::SheetDataTablesCache},
+    grid::{
+        SheetId,
+        sheet::{data_tables::cache::SheetDataTablesCache, merge_cells::MergeCells},
+    },
     input::has_content::{
-        column_bounds, has_content_ignore_blank_table, is_at_table_edge_col, is_at_table_edge_row,
-        row_bounds,
+        column_bounds, has_content_ignore_blank_table_with_merge, is_at_table_edge_col,
+        is_at_table_edge_row, row_bounds,
     },
     wasm_bindings::sheet_content_cache::SheetContentCache,
 };
@@ -26,8 +29,9 @@ pub(crate) fn find_next_column(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Option<i64> {
-    let Some(bounds) = row_bounds(row, content_cache, table_cache) else {
+    let Some(bounds) = row_bounds(row, content_cache, table_cache, merge_cells) else {
         return if with_content {
             None
         } else {
@@ -37,8 +41,12 @@ pub(crate) fn find_next_column(
     let mut x = column_start;
     let mut at_table_edge = false;
     while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
-        let has_content =
-            has_content_ignore_blank_table(Pos { x, y: row }, content_cache, table_cache);
+        let has_content = has_content_ignore_blank_table_with_merge(
+            Pos { x, y: row },
+            content_cache,
+            table_cache,
+            merge_cells,
+        );
 
         // add edges of data tables to the search
         at_table_edge = is_at_table_edge_col(
@@ -74,8 +82,12 @@ pub(crate) fn find_next_column(
     }
 
     // final check when we've exited the loop
-    let has_content = has_content_ignore_blank_table(Pos { x, y: row }, content_cache, table_cache)
-        || at_table_edge;
+    let has_content = has_content_ignore_blank_table_with_merge(
+        Pos { x, y: row },
+        content_cache,
+        table_cache,
+        merge_cells,
+    ) || at_table_edge;
     if with_content == has_content {
         Some(x)
     } else {
@@ -99,15 +111,20 @@ pub(crate) fn find_next_row(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Option<i64> {
-    let Some(bounds) = column_bounds(column, content_cache, table_cache) else {
+    let Some(bounds) = column_bounds(column, content_cache, table_cache, merge_cells) else {
         return if with_content { None } else { Some(row_start) };
     };
     let mut y = row_start;
     let mut at_table_edge = false;
     while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
-        let has_content =
-            has_content_ignore_blank_table(Pos { x: column, y }, content_cache, table_cache);
+        let has_content = has_content_ignore_blank_table_with_merge(
+            Pos { x: column, y },
+            content_cache,
+            table_cache,
+            merge_cells,
+        );
 
         // add edges of data tables to the search
         at_table_edge = is_at_table_edge_row(
@@ -140,9 +157,12 @@ pub(crate) fn find_next_row(
     }
 
     // final check when we've exited the loop
-    let has_content =
-        has_content_ignore_blank_table(Pos { x: column, y }, content_cache, table_cache)
-            || at_table_edge;
+    let has_content = has_content_ignore_blank_table_with_merge(
+        Pos { x: column, y },
+        content_cache,
+        table_cache,
+        merge_cells,
+    ) || at_table_edge;
     if with_content == has_content {
         Some(y)
     } else {

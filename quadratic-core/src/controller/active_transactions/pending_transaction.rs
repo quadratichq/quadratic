@@ -117,6 +117,9 @@ pub struct PendingTransaction {
 
     /// sheets that need updated SheetDataTablesCache
     pub(crate) sheet_data_tables_cache: HashSet<SheetId>,
+
+    /// sheets that need updated MergeCells
+    pub(crate) merge_cells_updates: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -152,6 +155,7 @@ impl Default for PendingTransaction {
             update_selection: None,
             sheet_content_cache: HashSet::new(),
             sheet_data_tables_cache: HashSet::new(),
+            merge_cells_updates: HashSet::new(),
         }
     }
 }

@@ -15,7 +15,17 @@ const CURSOR_WIDTH = 2;
 export const MultiplayerCellEdit = (props: Props) => {
   const input = props.multiplayerCellInput;
   const sheet = sheets.sheet;
-  const cellOffsets = sheet.getCellOffsets(input.location.x, input.location.y);
+
+  // Check if the cell is part of a merged cell and get the full merged cell rect
+  const mergeRect = sheet.getMergeCellRect(input.location.x, input.location.y);
+  const cellOffsets = mergeRect
+    ? sheet.getScreenRectangle(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+        Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+      )
+    : sheet.getCellOffsets(input.location.x, input.location.y);
 
   const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
   useEffect(() => {

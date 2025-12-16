@@ -153,9 +153,6 @@ name = "import_csv"
 harness = false
 required-features = ["function-timer"]
 
-[profile.bench]
-debug = true
-
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
 
