@@ -1,13 +1,13 @@
 /**
- * Hook for managing reactive code execution in the AI Spreadsheet.
+ * Hook for managing reactive code execution in the Canvas.
  * When inputs change, dependent code nodes are re-executed automatically.
  */
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
-import { aiSpreadsheetAtom } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
-import type { AiSpreadsheetNode, CodeNodeData, BaseInputNodeData, CodeExecutionResult } from '@/aiSpreadsheet/types';
-import { executePython, preloadPyodide, type InputValues } from '@/aiSpreadsheet/execution/pythonRunner';
+import { canvasAtom } from '@/canvas/atoms/canvasAtom';
+import type { CanvasNode, CodeNodeData, BaseInputNodeData, CodeExecutionResult } from '@/canvas/types';
+import { executePython, preloadPyodide, type InputValues } from '@/canvas/execution/pythonRunner';
 
 // Debounce delay for re-execution (ms)
 const EXECUTION_DEBOUNCE_MS = 300;
@@ -17,9 +17,9 @@ const EXECUTION_DEBOUNCE_MS = 300;
  */
 function getInputDependencies(
   codeNodeId: string,
-  nodes: AiSpreadsheetNode[],
+  nodes: CanvasNode[],
   edges: { source: string; target: string }[]
-): AiSpreadsheetNode[] {
+): CanvasNode[] {
   // Find all edges that point TO this code node
   const incomingEdges = edges.filter((e) => e.target === codeNodeId);
   const sourceNodeIds = incomingEdges.map((e) => e.source);
@@ -31,7 +31,7 @@ function getInputDependencies(
 /**
  * Build input values map from input nodes
  */
-function buildInputValues(inputNodes: AiSpreadsheetNode[]): InputValues {
+function buildInputValues(inputNodes: CanvasNode[]): InputValues {
   const values: InputValues = new Map();
 
   for (const node of inputNodes) {
@@ -64,7 +64,7 @@ function buildInputValues(inputNodes: AiSpreadsheetNode[]): InputValues {
  * Hook to manage reactive code execution
  */
 export function useExecutionEngine() {
-  const [state, setState] = useRecoilState(aiSpreadsheetAtom);
+  const [state, setState] = useRecoilState(canvasAtom);
   const executionQueueRef = useRef<Set<string>>(new Set());
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const previousInputValuesRef = useRef<Map<string, string>>(new Map());

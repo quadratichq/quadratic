@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 /**
- * AI Spreadsheet Tool Definitions
+ * Canvas Tool Definitions
  * These tools allow the AI to create and manage nodes on the visual canvas.
  */
 
 // Tool names enum
-export enum AiSpreadsheetTool {
+export enum CanvasTool {
   AddInputNode = 'add_input_node',
   AddTransformNode = 'add_transform_node',
   AddOutputNode = 'add_output_node',
@@ -17,8 +17,8 @@ export enum AiSpreadsheetTool {
 }
 
 // Schema definitions for tool arguments
-export const AiSpreadsheetToolsArgsSchema = {
-  [AiSpreadsheetTool.AddInputNode]: z.object({
+export const CanvasToolsArgsSchema = {
+  [CanvasTool.AddInputNode]: z.object({
     node_id: z.string().describe('Unique identifier for this node (use snake_case, e.g., "sales_data")'),
     name: z.string().optional().describe('Reference name for q.get("name") in code. If not provided, uses node_id.'),
     label: z.string().describe('Human-readable name displayed on the node'),
@@ -47,7 +47,7 @@ export const AiSpreadsheetToolsArgsSchema = {
     html_content: z.string().optional().describe('HTML content for HTML input'),
   }),
 
-  [AiSpreadsheetTool.AddTransformNode]: z.object({
+  [CanvasTool.AddTransformNode]: z.object({
     node_id: z.string().describe('Unique identifier for this node'),
     label: z.string().describe('Human-readable name displayed on the node'),
     transform_type: z.enum(['code', 'formula']).describe('Type of transformation'),
@@ -62,7 +62,7 @@ export const AiSpreadsheetToolsArgsSchema = {
     formula: z.string().optional().describe('Spreadsheet formula (for formula type)'),
   }),
 
-  [AiSpreadsheetTool.AddOutputNode]: z.object({
+  [CanvasTool.AddOutputNode]: z.object({
     node_id: z.string().describe('Unique identifier for this node'),
     label: z.string().describe('Human-readable name displayed on the node'),
     output_type: z.enum(['table', 'chart', 'html']).describe('Type of output'),
@@ -72,17 +72,17 @@ export const AiSpreadsheetToolsArgsSchema = {
     columns: z.array(z.string()).optional().describe('Expected column names'),
   }),
 
-  [AiSpreadsheetTool.ConnectNodes]: z.object({
+  [CanvasTool.ConnectNodes]: z.object({
     source_node_id: z.string().describe('ID of the source node (data flows FROM this node)'),
     target_node_id: z.string().describe('ID of the target node (data flows TO this node)'),
     label: z.string().optional().describe('Optional label for the connection arrow'),
   }),
 
-  [AiSpreadsheetTool.RemoveNode]: z.object({
+  [CanvasTool.RemoveNode]: z.object({
     node_id: z.string().describe('ID of the node to remove'),
   }),
 
-  [AiSpreadsheetTool.UpdateNode]: z.object({
+  [CanvasTool.UpdateNode]: z.object({
     node_id: z.string().describe('ID of the existing node to update'),
     label: z.string().optional().describe('New label for the node'),
     // For code cells
@@ -95,15 +95,15 @@ export const AiSpreadsheetToolsArgsSchema = {
     query: z.string().optional(),
   }),
 
-  [AiSpreadsheetTool.ClearCanvas]: z.object({
+  [CanvasTool.ClearCanvas]: z.object({
     confirm: z.boolean().describe('Must be true to confirm clearing all nodes'),
   }),
 } as const;
 
 // Tool definitions for the AI API (matches OpenAI/Anthropic function calling format)
-export const aiSpreadsheetToolDefinitions = [
+export const canvasToolDefinitions = [
   {
-    name: AiSpreadsheetTool.AddInputNode,
+    name: CanvasTool.AddInputNode,
     description:
       'Add an input node to the canvas. Input nodes are data sources that code cells can reference via q.get("name").',
     parameters: {
@@ -137,7 +137,7 @@ export const aiSpreadsheetToolDefinitions = [
     },
   },
   {
-    name: AiSpreadsheetTool.AddTransformNode,
+    name: CanvasTool.AddTransformNode,
     description:
       'Add a transform node that processes data. Use code (Python/JavaScript) for complex transformations or formulas for simple calculations.',
     parameters: {
@@ -162,7 +162,7 @@ export const aiSpreadsheetToolDefinitions = [
     },
   },
   {
-    name: AiSpreadsheetTool.AddOutputNode,
+    name: CanvasTool.AddOutputNode,
     description: 'Add an output node to display results. Can be a data table, chart visualization, or custom HTML.',
     parameters: {
       type: 'object',
@@ -189,7 +189,7 @@ export const aiSpreadsheetToolDefinitions = [
     },
   },
   {
-    name: AiSpreadsheetTool.ConnectNodes,
+    name: CanvasTool.ConnectNodes,
     description: 'Connect two nodes with an arrow showing data flow. Data flows from source to target.',
     parameters: {
       type: 'object',
@@ -202,7 +202,7 @@ export const aiSpreadsheetToolDefinitions = [
     },
   },
   {
-    name: AiSpreadsheetTool.RemoveNode,
+    name: CanvasTool.RemoveNode,
     description: 'Remove a node from the canvas. Also removes any connections to/from this node.',
     parameters: {
       type: 'object',
@@ -213,7 +213,7 @@ export const aiSpreadsheetToolDefinitions = [
     },
   },
   {
-    name: AiSpreadsheetTool.ClearCanvas,
+    name: CanvasTool.ClearCanvas,
     description: 'Clear all nodes and connections from the canvas. Use when the user wants to start over.',
     parameters: {
       type: 'object',
@@ -226,7 +226,7 @@ export const aiSpreadsheetToolDefinitions = [
 ];
 
 // System prompt for the AI
-export const AI_SPREADSHEET_SYSTEM_PROMPT = `You are an AI assistant that builds reactive spreadsheet models visually on a canvas.
+export const CANVAS_SYSTEM_PROMPT = `You are an AI assistant that builds reactive spreadsheet models visually on a canvas.
 
 ## How It Works
 

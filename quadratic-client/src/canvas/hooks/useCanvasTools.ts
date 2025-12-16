@@ -1,25 +1,21 @@
-import {
-  AI_SPREADSHEET_SYSTEM_PROMPT,
-  AiSpreadsheetTool,
-  AiSpreadsheetToolsArgsSchema,
-} from '@/aiSpreadsheet/ai/aiSpreadsheetToolsSpec';
+import { CANVAS_SYSTEM_PROMPT, CanvasTool, CanvasToolsArgsSchema } from '@/canvas/ai/canvasToolsSpec';
 import {
   addNode,
-  aiSpreadsheetAtom,
+  canvasAtom,
   clearCanvas,
   connectNodes,
   removeNode,
-  type AiSpreadsheetState,
-} from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
-import { executePython, type InputValues } from '@/aiSpreadsheet/execution/pythonRunner';
+  type CanvasState,
+} from '@/canvas/atoms/canvasAtom';
+import { executePython, type InputValues } from '@/canvas/execution/pythonRunner';
 import type {
   AddNodeArgs,
   AiNodeType,
-  AiSpreadsheetNode,
+  CanvasNode,
   BaseInputNodeData,
   CodeExecutionResult,
   CodeNodeData,
-} from '@/aiSpreadsheet/types';
+} from '@/canvas/types';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { useCallback, useRef } from 'react';
@@ -30,7 +26,7 @@ import { useRecoilState } from 'recoil';
  */
 async function executeCodeNodeAndGetResult(
   nodeId: string,
-  nodes: AiSpreadsheetNode[],
+  nodes: CanvasNode[],
   edges: { source: string; target: string }[]
 ): Promise<{ nodeId: string; result: CodeExecutionResult; codeData: CodeNodeData } | null> {
   const node = nodes.find((n) => n.id === nodeId);
@@ -92,21 +88,21 @@ interface ToolCall {
   arguments: string;
 }
 
-export function useAiSpreadsheetTools() {
-  const [state, setState] = useRecoilState(aiSpreadsheetAtom);
+export function useCanvasTools() {
+  const [state, setState] = useRecoilState(canvasAtom);
   const abortControllerRef = useRef<AbortController | null>(null);
   const nodeIdMapRef = useRef<Map<string, string>>(new Map());
 
   // Process a single tool call and update state
-  const processToolCall = useCallback((toolCall: ToolCall, currentState: AiSpreadsheetState): AiSpreadsheetState => {
+  const processToolCall = useCallback((toolCall: ToolCall, currentState: CanvasState): CanvasState => {
     try {
       const args = JSON.parse(toolCall.arguments);
 
       switch (toolCall.name) {
-        case AiSpreadsheetTool.AddInputNode: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.AddInputNode].safeParse(args);
+        case CanvasTool.AddInputNode: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.AddInputNode].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
@@ -121,10 +117,10 @@ export function useAiSpreadsheetTools() {
           return { ...currentState, nodes: result.nodes };
         }
 
-        case AiSpreadsheetTool.AddTransformNode: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.AddTransformNode].safeParse(args);
+        case CanvasTool.AddTransformNode: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.AddTransformNode].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
@@ -141,10 +137,10 @@ export function useAiSpreadsheetTools() {
           return { ...currentState, nodes: result.nodes };
         }
 
-        case AiSpreadsheetTool.AddOutputNode: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.AddOutputNode].safeParse(args);
+        case CanvasTool.AddOutputNode: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.AddOutputNode].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
@@ -158,10 +154,10 @@ export function useAiSpreadsheetTools() {
           return { ...currentState, nodes: result.nodes };
         }
 
-        case AiSpreadsheetTool.ConnectNodes: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.ConnectNodes].safeParse(args);
+        case CanvasTool.ConnectNodes: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.ConnectNodes].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
@@ -196,7 +192,7 @@ export function useAiSpreadsheetTools() {
             });
             return { ...currentState, edges: result.edges };
           } else {
-            console.warn('[AI Spreadsheet] Could not find nodes to connect:', {
+            console.warn('[Canvas] Could not find nodes to connect:', {
               source: parsed.source_node_id,
               target: parsed.target_node_id,
               foundSource: sourceId,
@@ -206,15 +202,15 @@ export function useAiSpreadsheetTools() {
           return currentState;
         }
 
-        case AiSpreadsheetTool.RemoveNode: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.RemoveNode].safeParse(args);
+        case CanvasTool.RemoveNode: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.RemoveNode].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
           const nodeId = nodeIdMapRef.current.get(parsed.node_id);
-          console.log('[AI Spreadsheet] RemoveNode:', {
+          console.log('[Canvas] RemoveNode:', {
             requestedNodeId: parsed.node_id,
             mappedNodeId: nodeId,
             availableMappings: Array.from(nodeIdMapRef.current.entries()),
@@ -228,18 +224,18 @@ export function useAiSpreadsheetTools() {
               (n) => n.data.label?.toLowerCase() === parsed.node_id.toLowerCase()
             );
             if (nodeByLabel) {
-              console.log('[AI Spreadsheet] Found node by label:', nodeByLabel.id);
+              console.log('[Canvas] Found node by label:', nodeByLabel.id);
               return removeNode(currentState, { nodeId: nodeByLabel.id });
             }
-            console.warn('[AI Spreadsheet] Could not find node to remove:', parsed.node_id);
+            console.warn('[Canvas] Could not find node to remove:', parsed.node_id);
           }
           return currentState;
         }
 
-        case AiSpreadsheetTool.UpdateNode: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.UpdateNode].safeParse(args);
+        case CanvasTool.UpdateNode: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.UpdateNode].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
@@ -254,11 +250,11 @@ export function useAiSpreadsheetTools() {
           }
 
           if (!nodeId) {
-            console.warn('[AI Spreadsheet] Could not find node to update:', parsed.node_id);
+            console.warn('[Canvas] Could not find node to update:', parsed.node_id);
             return currentState;
           }
 
-          console.log('[AI Spreadsheet] Updating node:', nodeId, parsed);
+          console.log('[Canvas] Updating node:', nodeId, parsed);
 
           // Update the node with the provided fields
           return {
@@ -292,10 +288,10 @@ export function useAiSpreadsheetTools() {
           };
         }
 
-        case AiSpreadsheetTool.ClearCanvas: {
-          const parseResult = AiSpreadsheetToolsArgsSchema[AiSpreadsheetTool.ClearCanvas].safeParse(args);
+        case CanvasTool.ClearCanvas: {
+          const parseResult = CanvasToolsArgsSchema[CanvasTool.ClearCanvas].safeParse(args);
           if (!parseResult.success) {
-            console.warn('[AI Spreadsheet] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
+            console.warn('[Canvas] Skipping incomplete tool call:', toolCall.name, parseResult.error.issues);
             return currentState;
           }
           const parsed = parseResult.data;
@@ -321,7 +317,7 @@ export function useAiSpreadsheetTools() {
     async (userMessage: string, connections: Connection[], recursionDepth: number = 0) => {
       // Limit recursion to prevent infinite loops (max 3 attempts to fix errors)
       if (recursionDepth > 2) {
-        console.warn('[AI Spreadsheet] Max recursion depth reached, stopping error correction');
+        console.warn('[Canvas] Max recursion depth reached, stopping error correction');
         setState((prev) => ({ ...prev, loading: false }));
         return;
       }
@@ -341,7 +337,7 @@ export function useAiSpreadsheetTools() {
 
       try {
         const token = await authClient.getTokenOrRedirect();
-        const endpoint = `${apiClient.getApiUrl()}/v0/ai/spreadsheet`;
+        const endpoint = `${apiClient.getApiUrl()}/v0/ai/canvas`;
 
         // Build the full prompt with chat history context
         const chatHistory = state.chatMessages
@@ -360,7 +356,7 @@ export function useAiSpreadsheetTools() {
           body: JSON.stringify({
             teamUuid: state.teamUuid,
             prompt: fullPrompt,
-            systemPrompt: AI_SPREADSHEET_SYSTEM_PROMPT,
+            systemPrompt: CANVAS_SYSTEM_PROMPT,
             connections: connections.map((c) => ({
               uuid: c.uuid,
               name: c.name,
@@ -377,7 +373,7 @@ export function useAiSpreadsheetTools() {
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No response body');
 
-        console.log('[AI Spreadsheet] Starting to read stream...');
+        console.log('[Canvas] Starting to read stream...');
 
         const decoder = new TextDecoder();
         let assistantMessage = '';
@@ -403,7 +399,7 @@ export function useAiSpreadsheetTools() {
             // Process any NEW tool calls immediately (render cells as they come in)
             for (const toolCall of tools) {
               if (!processedToolCallIds.has(toolCall.id)) {
-                console.log('[AI Spreadsheet] Processing tool call immediately:', toolCall.name);
+                console.log('[Canvas] Processing tool call immediately:', toolCall.name);
                 processedToolCallIds.add(toolCall.id);
                 currentState = processToolCall(toolCall, currentState);
                 // Mark this tool call as processed
@@ -420,14 +416,14 @@ export function useAiSpreadsheetTools() {
         while (true) {
           const { value, done } = await reader.read();
           if (done) {
-            console.log('[AI Spreadsheet] Stream ended. Total chunks:', chunkCount);
+            console.log('[Canvas] Stream ended. Total chunks:', chunkCount);
             break;
           }
 
           chunkCount++;
           const chunkText = decoder.decode(value, { stream: true });
           buffer += chunkText;
-          console.log(`[AI Spreadsheet] Chunk ${chunkCount}:`, chunkText.substring(0, 200));
+          console.log(`[Canvas] Chunk ${chunkCount}:`, chunkText.substring(0, 200));
 
           const lines = buffer.split('\n');
           // Keep the last incomplete line in the buffer
@@ -437,7 +433,7 @@ export function useAiSpreadsheetTools() {
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.slice(6));
-                console.log('[AI Spreadsheet] Parsed SSE data:', {
+                console.log('[Canvas] Parsed SSE data:', {
                   hasContent: !!data.content,
                   contentType: typeof data.content,
                   isArray: Array.isArray(data.content),
@@ -463,7 +459,7 @@ export function useAiSpreadsheetTools() {
                 // Extract tool calls - accumulate by ID to handle streaming updates
                 // SSE events are cumulative, so each event contains the full current state of tool calls
                 if (data.toolCalls && data.toolCalls.length > 0) {
-                  console.log('[AI Spreadsheet] Found tool calls in SSE event:', data.toolCalls.length, data.toolCalls);
+                  console.log('[Canvas] Found tool calls in SSE event:', data.toolCalls.length, data.toolCalls);
                   // Replace with the latest tool calls from the server (they're cumulative)
                   // This ensures we get the complete set including multiple calls of the same tool type
                   toolCalls = data.toolCalls.map((tc: { id?: string; name: string; arguments: unknown }) => ({
@@ -471,19 +467,19 @@ export function useAiSpreadsheetTools() {
                     name: tc.name,
                     arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments),
                   }));
-                  console.log('[AI Spreadsheet] Updated tool calls. Total:', toolCalls.length);
+                  console.log('[Canvas] Updated tool calls. Total:', toolCalls.length);
                 }
 
                 // Update streaming state for live updates (this also processes new tool calls)
                 updateStreamingState(assistantMessage, toolCalls);
               } catch (parseError) {
-                console.log('[AI Spreadsheet] Parse error on line:', line.substring(0, 100), parseError);
+                console.log('[Canvas] Parse error on line:', line.substring(0, 100), parseError);
               }
             }
           }
         }
 
-        console.log('[AI Spreadsheet] Stream complete. Final state:', {
+        console.log('[Canvas] Stream complete. Final state:', {
           assistantMessage: assistantMessage.substring(0, 100),
           toolCallCount: toolCalls.length,
           toolCalls: toolCalls.map((tc) => tc.name),
@@ -495,20 +491,20 @@ export function useAiSpreadsheetTools() {
           responseText = `I've added ${toolCalls.length} cell${toolCalls.length > 1 ? 's' : ''} to the canvas.`;
         }
 
-        console.log('[AI Spreadsheet] About to update final state with responseText:', responseText.substring(0, 100));
+        console.log('[Canvas] About to update final state with responseText:', responseText.substring(0, 100));
 
         // Find any code nodes that were created by tool calls and execute them
-        const codeNodeToolCalls = toolCalls.filter((tc) => tc.name === AiSpreadsheetTool.AddTransformNode);
+        const codeNodeToolCalls = toolCalls.filter((tc) => tc.name === CanvasTool.AddTransformNode);
 
         // Execute code nodes and collect errors
         const executionErrors: string[] = [];
 
         if (codeNodeToolCalls.length > 0) {
-          console.log('[AI Spreadsheet] Executing code nodes created by tool calls:', codeNodeToolCalls.length);
+          console.log('[Canvas] Executing code nodes created by tool calls:', codeNodeToolCalls.length);
 
           // Get current state to access nodes and edges
           // We need to do this in a way that ensures we have the latest state
-          let currentNodes: AiSpreadsheetNode[] = [];
+          let currentNodes: CanvasNode[] = [];
           let currentEdges: { source: string; target: string }[] = [];
 
           setState((prev) => {
@@ -535,11 +531,11 @@ export function useAiSpreadsheetTools() {
               // Get the actual node ID from the map
               const actualNodeId = nodeIdMapRef.current.get(args.node_id);
               if (!actualNodeId) {
-                console.warn('[AI Spreadsheet] Could not find node ID for:', args.node_id);
+                console.warn('[Canvas] Could not find node ID for:', args.node_id);
                 continue;
               }
 
-              console.log('[AI Spreadsheet] Executing code node:', actualNodeId);
+              console.log('[Canvas] Executing code node:', actualNodeId);
 
               const execResult = await executeCodeNodeAndGetResult(actualNodeId, currentNodes, currentEdges);
 
@@ -572,14 +568,14 @@ export function useAiSpreadsheetTools() {
                 }
               }
             } catch (e) {
-              console.error('[AI Spreadsheet] Error executing code node:', e);
+              console.error('[Canvas] Error executing code node:', e);
             }
           }
         }
 
         // Update final state - tool calls are already processed during streaming
         setState((prev) => {
-          console.log('[AI Spreadsheet] Inside setState. prev.chatMessages.length:', prev.chatMessages.length);
+          console.log('[Canvas] Inside setState. prev.chatMessages.length:', prev.chatMessages.length);
 
           // Add AI response message to the latest chat messages
           const newMessage = {
@@ -603,11 +599,11 @@ export function useAiSpreadsheetTools() {
           };
         });
 
-        console.log('[AI Spreadsheet] setState called, function complete');
+        console.log('[Canvas] setState called, function complete');
 
         // If there were execution errors, automatically call the AI to fix them
         if (executionErrors.length > 0) {
-          console.log('[AI Spreadsheet] Execution errors found, calling AI to fix:', executionErrors.length);
+          console.log('[Canvas] Execution errors found, calling AI to fix:', executionErrors.length);
           const errorContext =
             `The following Python execution errors occurred:\n\n` +
             executionErrors.join('\n\n---\n\n') +

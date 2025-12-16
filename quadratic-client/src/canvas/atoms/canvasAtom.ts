@@ -1,14 +1,14 @@
 import type {
   AddNodeArgs,
-  AiSpreadsheetEdge,
-  AiSpreadsheetNode,
-  AiSpreadsheetNodeData,
+  CanvasEdge,
+  CanvasNode,
+  CanvasNodeData,
   ChatMessage,
   ConnectNodesArgs,
   NodeCategory,
   RemoveNodeArgs,
   UpdateNodeArgs,
-} from '@/aiSpreadsheet/types';
+} from '@/canvas/types';
 import { atom, selector, DefaultValue } from 'recoil';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -36,9 +36,9 @@ const NODE_HEIGHT_ESTIMATES: Record<string, number> = {
   htmlOutput: 200,
 };
 
-export interface AiSpreadsheetState {
-  nodes: AiSpreadsheetNode[];
-  edges: AiSpreadsheetEdge[];
+export interface CanvasState {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
   selectedNodeId: string | null;
   chatMessages: ChatMessage[];
   loading: boolean;
@@ -48,7 +48,7 @@ export interface AiSpreadsheetState {
   streamingToolCalls: { id: string; name: string; arguments: string; processed?: boolean }[];
 }
 
-export const defaultAiSpreadsheetState: AiSpreadsheetState = {
+export const defaultCanvasState: CanvasState = {
   nodes: [],
   edges: [],
   selectedNodeId: null,
@@ -59,99 +59,99 @@ export const defaultAiSpreadsheetState: AiSpreadsheetState = {
   streamingToolCalls: [],
 };
 
-export const aiSpreadsheetAtom = atom<AiSpreadsheetState>({
-  key: 'aiSpreadsheetAtom',
-  default: defaultAiSpreadsheetState,
+export const canvasAtom = atom<CanvasState>({
+  key: 'canvasAtom',
+  default: defaultCanvasState,
 });
 
 // Selectors for individual state pieces
-export const aiSpreadsheetNodesAtom = selector<AiSpreadsheetNode[]>({
-  key: 'aiSpreadsheetNodesAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).nodes,
+export const canvasNodesAtom = selector<CanvasNode[]>({
+  key: 'canvasNodesAtom',
+  get: ({ get }) => get(canvasAtom).nodes,
   set: ({ set }, newValue) => {
-    set(aiSpreadsheetAtom, (prev) => ({
+    set(canvasAtom, (prev) => ({
       ...prev,
       nodes: newValue instanceof DefaultValue ? prev.nodes : newValue,
     }));
   },
 });
 
-export const aiSpreadsheetEdgesAtom = selector<AiSpreadsheetEdge[]>({
-  key: 'aiSpreadsheetEdgesAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).edges,
+export const canvasEdgesAtom = selector<CanvasEdge[]>({
+  key: 'canvasEdgesAtom',
+  get: ({ get }) => get(canvasAtom).edges,
   set: ({ set }, newValue) => {
-    set(aiSpreadsheetAtom, (prev) => ({
+    set(canvasAtom, (prev) => ({
       ...prev,
       edges: newValue instanceof DefaultValue ? prev.edges : newValue,
     }));
   },
 });
 
-export const aiSpreadsheetSelectedNodeIdAtom = selector<string | null>({
-  key: 'aiSpreadsheetSelectedNodeIdAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).selectedNodeId,
+export const canvasSelectedNodeIdAtom = selector<string | null>({
+  key: 'canvasSelectedNodeIdAtom',
+  get: ({ get }) => get(canvasAtom).selectedNodeId,
   set: ({ set }, newValue) => {
-    set(aiSpreadsheetAtom, (prev) => ({
+    set(canvasAtom, (prev) => ({
       ...prev,
       selectedNodeId: newValue instanceof DefaultValue ? null : newValue,
     }));
   },
 });
 
-export const aiSpreadsheetSelectedNodeAtom = selector<AiSpreadsheetNode | null>({
-  key: 'aiSpreadsheetSelectedNodeAtom',
+export const canvasSelectedNodeAtom = selector<CanvasNode | null>({
+  key: 'canvasSelectedNodeAtom',
   get: ({ get }) => {
-    const state = get(aiSpreadsheetAtom);
+    const state = get(canvasAtom);
     if (!state.selectedNodeId) return null;
     return state.nodes.find((n) => n.id === state.selectedNodeId) ?? null;
   },
 });
 
-export const aiSpreadsheetChatMessagesAtom = selector<ChatMessage[]>({
-  key: 'aiSpreadsheetChatMessagesAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).chatMessages,
+export const canvasChatMessagesAtom = selector<ChatMessage[]>({
+  key: 'canvasChatMessagesAtom',
+  get: ({ get }) => get(canvasAtom).chatMessages,
   set: ({ set }, newValue) => {
-    set(aiSpreadsheetAtom, (prev) => ({
+    set(canvasAtom, (prev) => ({
       ...prev,
       chatMessages: newValue instanceof DefaultValue ? prev.chatMessages : newValue,
     }));
   },
 });
 
-export const aiSpreadsheetLoadingAtom = selector<boolean>({
-  key: 'aiSpreadsheetLoadingAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).loading,
+export const canvasLoadingAtom = selector<boolean>({
+  key: 'canvasLoadingAtom',
+  get: ({ get }) => get(canvasAtom).loading,
   set: ({ set }, newValue) => {
-    set(aiSpreadsheetAtom, (prev) => ({
+    set(canvasAtom, (prev) => ({
       ...prev,
       loading: newValue instanceof DefaultValue ? prev.loading : newValue,
     }));
   },
 });
 
-export const aiSpreadsheetTeamUuidAtom = selector<string>({
-  key: 'aiSpreadsheetTeamUuidAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).teamUuid,
+export const canvasTeamUuidAtom = selector<string>({
+  key: 'canvasTeamUuidAtom',
+  get: ({ get }) => get(canvasAtom).teamUuid,
   set: ({ set }, newValue) => {
-    set(aiSpreadsheetAtom, (prev) => ({
+    set(canvasAtom, (prev) => ({
       ...prev,
       teamUuid: newValue instanceof DefaultValue ? prev.teamUuid : newValue,
     }));
   },
 });
 
-export const aiSpreadsheetStreamingContentAtom = selector<string>({
-  key: 'aiSpreadsheetStreamingContentAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).streamingContent,
+export const canvasStreamingContentAtom = selector<string>({
+  key: 'canvasStreamingContentAtom',
+  get: ({ get }) => get(canvasAtom).streamingContent,
 });
 
-export const aiSpreadsheetStreamingToolCallsAtom = selector<{ id: string; name: string; arguments: string }[]>({
-  key: 'aiSpreadsheetStreamingToolCallsAtom',
-  get: ({ get }) => get(aiSpreadsheetAtom).streamingToolCalls,
+export const canvasStreamingToolCallsAtom = selector<{ id: string; name: string; arguments: string }[]>({
+  key: 'canvasStreamingToolCallsAtom',
+  get: ({ get }) => get(canvasAtom).streamingToolCalls,
 });
 
 // Get estimated height for a node based on its type
-function getNodeHeight(node: AiSpreadsheetNode): number {
+function getNodeHeight(node: CanvasNode): number {
   const nodeType = node.data.nodeType;
   return NODE_HEIGHT_ESTIMATES[nodeType] || 120;
 }
@@ -159,7 +159,7 @@ function getNodeHeight(node: AiSpreadsheetNode): number {
 // Helper to calculate position based on category, avoiding overlaps
 function getPositionForCategory(
   category: NodeCategory,
-  existingNodes: AiSpreadsheetNode[],
+  existingNodes: CanvasNode[],
   nodeType?: string
 ): { x: number; y: number } {
   const categoryColumn: Record<NodeCategory, number> = {
@@ -194,10 +194,7 @@ function getPositionForCategory(
 }
 
 // Action to add a node
-export function addNode(
-  currentState: AiSpreadsheetState,
-  args: AddNodeArgs
-): { nodes: AiSpreadsheetNode[]; newNodeId: string } {
+export function addNode(currentState: CanvasState, args: AddNodeArgs): { nodes: CanvasNode[]; newNodeId: string } {
   const { nodeType, label, data, position } = args;
 
   // Determine category from node type
@@ -216,7 +213,7 @@ export function addNode(
   // Use special type for dataTable inputs (different component)
   const reactFlowType = nodeType === 'dataTable' ? 'dataTableInput' : category;
 
-  const newNode: AiSpreadsheetNode = {
+  const newNode: CanvasNode = {
     id: nodeId,
     type: reactFlowType, // This maps to our custom node components
     position: nodePosition,
@@ -226,7 +223,7 @@ export function addNode(
       nodeType,
       createdBy: 'ai',
       ...data,
-    } as AiSpreadsheetNodeData,
+    } as CanvasNodeData,
   };
 
   return {
@@ -236,7 +233,7 @@ export function addNode(
 }
 
 // Action to remove a node
-export function removeNode(currentState: AiSpreadsheetState, args: RemoveNodeArgs): AiSpreadsheetState {
+export function removeNode(currentState: CanvasState, args: RemoveNodeArgs): CanvasState {
   const { nodeId } = args;
   return {
     ...currentState,
@@ -248,9 +245,9 @@ export function removeNode(currentState: AiSpreadsheetState, args: RemoveNodeArg
 
 // Action to connect nodes
 export function connectNodes(
-  currentState: AiSpreadsheetState,
+  currentState: CanvasState,
   args: ConnectNodesArgs
-): { edges: AiSpreadsheetEdge[]; newEdgeId: string } {
+): { edges: CanvasEdge[]; newEdgeId: string } {
   const { sourceNodeId, targetNodeId, label } = args;
 
   // Check if edge already exists
@@ -260,7 +257,7 @@ export function connectNodes(
   }
 
   const edgeId = uuidv4();
-  const newEdge: AiSpreadsheetEdge = {
+  const newEdge: CanvasEdge = {
     id: edgeId,
     source: sourceNodeId,
     target: targetNodeId,
@@ -276,7 +273,7 @@ export function connectNodes(
 }
 
 // Action to update a node
-export function updateNode(currentState: AiSpreadsheetState, args: UpdateNodeArgs): AiSpreadsheetNode[] {
+export function updateNode(currentState: CanvasState, args: UpdateNodeArgs): CanvasNode[] {
   const { nodeId, updates } = args;
   return currentState.nodes.map((node) => {
     if (node.id === nodeId) {
@@ -285,7 +282,7 @@ export function updateNode(currentState: AiSpreadsheetState, args: UpdateNodeArg
         data: {
           ...node.data,
           ...updates,
-        } as AiSpreadsheetNodeData,
+        } as CanvasNodeData,
       };
     }
     return node;
@@ -294,9 +291,9 @@ export function updateNode(currentState: AiSpreadsheetState, args: UpdateNodeArg
 
 // Action to update node positions (for drag and drop)
 export function updateNodePositions(
-  currentState: AiSpreadsheetState,
+  currentState: CanvasState,
   positionUpdates: { id: string; position: { x: number; y: number } }[]
-): AiSpreadsheetNode[] {
+): CanvasNode[] {
   const positionMap = new Map(positionUpdates.map((p) => [p.id, p.position]));
   return currentState.nodes.map((node) => {
     const newPosition = positionMap.get(node.id);
@@ -309,7 +306,7 @@ export function updateNodePositions(
 
 // Action to add a chat message
 export function addChatMessage(
-  currentState: AiSpreadsheetState,
+  currentState: CanvasState,
   message: Omit<ChatMessage, 'id' | 'timestamp'>
 ): ChatMessage[] {
   const newMessage: ChatMessage = {
@@ -321,7 +318,7 @@ export function addChatMessage(
 }
 
 // Action to clear the canvas
-export function clearCanvas(): Partial<AiSpreadsheetState> {
+export function clearCanvas(): Partial<CanvasState> {
   return {
     nodes: [],
     edges: [],

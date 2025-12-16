@@ -154,9 +154,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
           )}
           {canEditTeam && (
-            <SidebarNavLink to={ROUTES.TEAM_AI_SPREADSHEET(activeTeamUuid)}>
+            <SidebarNavLink to={ROUTES.TEAM_CANVAS(activeTeamUuid)}>
               <AIIcon className={classNameIcons} />
-              AI Spreadsheet
+              Canvas
               <Badge variant="secondary" className="ml-auto text-[10px]">
                 New
               </Badge>

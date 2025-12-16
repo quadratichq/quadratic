@@ -1,18 +1,15 @@
-import {
-  aiSpreadsheetSelectedNodeAtom,
-  aiSpreadsheetSelectedNodeIdAtom,
-} from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
-import type { AiSpreadsheetNodeData } from '@/aiSpreadsheet/types';
+import { canvasSelectedNodeAtom, canvasSelectedNodeIdAtom } from '@/canvas/atoms/canvasAtom';
+import type { CanvasNodeData } from '@/canvas/types';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export function NodeInspector() {
-  const selectedNode = useRecoilValue(aiSpreadsheetSelectedNodeAtom);
-  const [, setSelectedNodeId] = useRecoilState(aiSpreadsheetSelectedNodeIdAtom);
+  const selectedNode = useRecoilValue(canvasSelectedNodeAtom);
+  const [, setSelectedNodeId] = useRecoilState(canvasSelectedNodeIdAtom);
 
   if (!selectedNode) return null;
 
-  const data = selectedNode.data as AiSpreadsheetNodeData;
+  const data = selectedNode.data as CanvasNodeData;
 
   return (
     <div className="absolute bottom-4 right-4 z-10 w-80 rounded-lg border border-border bg-background shadow-lg">
@@ -56,7 +53,7 @@ export function NodeInspector() {
   );
 }
 
-function renderNodeDetails(data: AiSpreadsheetNodeData) {
+function renderNodeDetails(data: CanvasNodeData) {
   switch (data.nodeType) {
     case 'connection':
       return (

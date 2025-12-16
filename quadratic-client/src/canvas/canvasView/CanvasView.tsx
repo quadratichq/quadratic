@@ -1,12 +1,12 @@
 import {
-  aiSpreadsheetAtom,
-  aiSpreadsheetEdgesAtom,
-  aiSpreadsheetNodesAtom,
-  aiSpreadsheetSelectedNodeIdAtom,
+  canvasAtom,
+  canvasEdgesAtom,
+  canvasNodesAtom,
+  canvasSelectedNodeIdAtom,
   updateNodePositions,
-} from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
-import { edgeTypes } from '@/aiSpreadsheet/canvas/edges/edgeTypes';
-import { nodeTypes } from '@/aiSpreadsheet/canvas/nodes/nodeTypes';
+} from '@/canvas/atoms/canvasAtom';
+import { edgeTypes } from '@/canvas/canvasView/edges/edgeTypes';
+import { nodeTypes } from '@/canvas/canvasView/nodes/nodeTypes';
 import { TableIcon } from '@/shared/components/Icons';
 import {
   Background,
@@ -21,15 +21,15 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import './aiSpreadsheetCanvas.css';
+import './canvasView.css';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
-export function AiSpreadsheetCanvas() {
-  const [recoilNodes] = useRecoilState(aiSpreadsheetNodesAtom);
-  const [recoilEdges] = useRecoilState(aiSpreadsheetEdgesAtom);
-  const setSelectedNodeId = useSetRecoilState(aiSpreadsheetSelectedNodeIdAtom);
-  const setRecoilState = useSetRecoilState(aiSpreadsheetAtom);
+export function CanvasView() {
+  const [recoilNodes] = useRecoilState(canvasNodesAtom);
+  const [recoilEdges] = useRecoilState(canvasEdgesAtom);
+  const setSelectedNodeId = useSetRecoilState(canvasSelectedNodeIdAtom);
+  const setRecoilState = useSetRecoilState(canvasAtom);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(recoilNodes as any);
   const [edges, setEdges, onEdgesChange] = useEdgesState(recoilEdges as any);
@@ -160,7 +160,7 @@ function EmptyCanvasState() {
         <div className="mb-3 flex justify-center">
           <TableIcon className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h3 className="mb-1 font-semibold text-foreground">Your spreadsheet is empty</h3>
+        <h3 className="mb-1 font-semibold text-foreground">Your canvas is empty</h3>
         <p className="text-sm text-muted-foreground">Use the chat to describe what you want to build.</p>
       </div>
     </div>

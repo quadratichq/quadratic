@@ -1,14 +1,14 @@
 import {
   addChatMessage,
-  aiSpreadsheetAtom,
-  aiSpreadsheetChatMessagesAtom,
-  aiSpreadsheetLoadingAtom,
-  aiSpreadsheetStreamingContentAtom,
-  aiSpreadsheetStreamingToolCallsAtom,
-} from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
-import { AiSpreadsheetChatForm } from '@/aiSpreadsheet/chat/AiSpreadsheetChatForm';
-import { useAiSpreadsheetTools } from '@/aiSpreadsheet/hooks/useAiSpreadsheetTools';
-import type { ChatMessage } from '@/aiSpreadsheet/types';
+  canvasAtom,
+  canvasChatMessagesAtom,
+  canvasLoadingAtom,
+  canvasStreamingContentAtom,
+  canvasStreamingToolCallsAtom,
+} from '@/canvas/atoms/canvasAtom';
+import { CanvasChatForm } from '@/canvas/chat/CanvasChatForm';
+import { useCanvasTools } from '@/canvas/hooks/useCanvasTools';
+import type { ChatMessage } from '@/canvas/types';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIIcon } from '@/shared/components/Icons';
 import { PersonIcon, TrashIcon } from '@radix-ui/react-icons';
@@ -21,23 +21,23 @@ interface Connection {
   type: string;
 }
 
-interface AiSpreadsheetChatProps {
+interface CanvasChatProps {
   teamUuid: string;
   connections: Connection[];
 }
 
-export function AiSpreadsheetChat({ teamUuid, connections }: AiSpreadsheetChatProps) {
-  const messages = useRecoilValue(aiSpreadsheetChatMessagesAtom);
-  const loading = useRecoilValue(aiSpreadsheetLoadingAtom);
-  const streamingContent = useRecoilValue(aiSpreadsheetStreamingContentAtom);
-  const streamingToolCalls = useRecoilValue(aiSpreadsheetStreamingToolCallsAtom);
-  const [state, setState] = useRecoilState(aiSpreadsheetAtom);
-  const { processAiResponse, abortRequest } = useAiSpreadsheetTools();
+export function CanvasChat({ teamUuid, connections }: CanvasChatProps) {
+  const messages = useRecoilValue(canvasChatMessagesAtom);
+  const loading = useRecoilValue(canvasLoadingAtom);
+  const streamingContent = useRecoilValue(canvasStreamingContentAtom);
+  const streamingToolCalls = useRecoilValue(canvasStreamingToolCallsAtom);
+  const [state, setState] = useRecoilState(canvasAtom);
+  const { processAiResponse, abortRequest } = useCanvasTools();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Debug: log state changes
   useEffect(() => {
-    console.log('[AI Chat] State changed - messages:', messages.length, 'loading:', loading);
+    console.log('[Canvas Chat] State changed - messages:', messages.length, 'loading:', loading);
   }, [messages, loading]);
 
   // Auto-scroll to bottom when new messages arrive or streaming updates
@@ -46,18 +46,18 @@ export function AiSpreadsheetChat({ teamUuid, connections }: AiSpreadsheetChatPr
   }, [messages, streamingContent, streamingToolCalls]);
 
   const handleSendMessage = async (content: string) => {
-    console.log('[AI Chat] handleSendMessage called with:', content);
+    console.log('[Canvas Chat] handleSendMessage called with:', content);
     // Add user message
     const newMessages = addChatMessage(state, { role: 'user', content });
-    console.log('[AI Chat] Created newMessages, length:', newMessages.length);
+    console.log('[Canvas Chat] Created newMessages, length:', newMessages.length);
     setState((prev) => ({ ...prev, chatMessages: newMessages, loading: true }));
 
     try {
-      console.log('[AI Chat] Calling processAiResponse...');
+      console.log('[Canvas Chat] Calling processAiResponse...');
       await processAiResponse(content, connections);
-      console.log('[AI Chat] processAiResponse completed');
+      console.log('[Canvas Chat] processAiResponse completed');
     } catch (error) {
-      console.error('[AI Chat] Error processing AI response:', error);
+      console.error('[Canvas Chat] Error processing AI response:', error);
       const errorMessages = addChatMessage(
         { ...state, chatMessages: newMessages },
         { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }
@@ -92,7 +92,7 @@ export function AiSpreadsheetChat({ teamUuid, connections }: AiSpreadsheetChatPr
 
       {/* Input form */}
       <div className="border-t border-border p-4">
-        <AiSpreadsheetChatForm onSend={handleSendMessage} disabled={loading} connections={connections} />
+        <CanvasChatForm onSend={handleSendMessage} disabled={loading} connections={connections} />
       </div>
     </div>
   );
@@ -104,7 +104,7 @@ function EmptyState() {
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
         <AIIcon size="lg" className="text-primary" />
       </div>
-      <h3 className="mb-2 text-lg font-semibold">AI Spreadsheet</h3>
+      <h3 className="mb-2 text-lg font-semibold">Canvas</h3>
       <p className="mb-4 max-w-sm text-sm text-muted-foreground">
         Describe the model you want to build. I'll create input cells, formula cells, and output cells on your canvas.
       </p>

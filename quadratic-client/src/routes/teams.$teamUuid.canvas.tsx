@@ -1,5 +1,5 @@
 import { requireAuth } from '@/auth/auth';
-import { AiSpreadsheet } from '@/aiSpreadsheet/AiSpreadsheet';
+import { Canvas } from '@/canvas/Canvas';
 import { apiClient } from '@/shared/api/apiClient';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
@@ -7,7 +7,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { redirect, useLoaderData } from 'react-router';
 import { RecoilRoot } from 'recoil';
 
-export interface AiSpreadsheetLoaderData {
+export interface CanvasLoaderData {
   connections: {
     uuid: string;
     name: string;
@@ -17,7 +17,7 @@ export interface AiSpreadsheetLoaderData {
   teamName: string;
 }
 
-export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<AiSpreadsheetLoaderData> => {
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<CanvasLoaderData> => {
   await requireAuth(loaderArgs.request);
   const teamUuid = loaderArgs.params.teamUuid;
   if (!teamUuid) throw new Error('Team UUID is required');
@@ -26,7 +26,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<AiSpreadsh
 
   // Ensure the user has editor permissions
   if (!teamData.userMakingRequest.teamPermissions.includes('TEAM_EDIT')) {
-    const message = encodeURIComponent('You need editor permissions to use AI Spreadsheet.');
+    const message = encodeURIComponent('You need editor permissions to use Canvas.');
     throw redirect(`/?${SEARCH_PARAMS.SNACKBAR_MSG.KEY}=${message}`);
   }
 
@@ -43,11 +43,11 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<AiSpreadsh
 
 export const Component = () => {
   useRemoveInitialLoadingUI();
-  const loaderData = useLoaderData() as AiSpreadsheetLoaderData;
+  const loaderData = useLoaderData() as CanvasLoaderData;
 
   return (
     <RecoilRoot>
-      <AiSpreadsheet loaderData={loaderData} />
+      <Canvas loaderData={loaderData} />
     </RecoilRoot>
   );
 };

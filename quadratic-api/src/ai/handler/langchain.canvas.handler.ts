@@ -193,14 +193,14 @@ update_node: {
 
 **Important:** Always prefer \`update_node\` over deleting and recreating nodes when making changes.`;
 
-interface LangChainAISpreadsheetRequest {
+interface LangChainCanvasRequest {
   prompt: string;
   systemPrompt?: string;
   connections?: { uuid: string; name: string; type: string }[];
   signal?: AbortSignal;
 }
 
-interface LangChainAISpreadsheetResponse {
+interface LangChainCanvasResponse {
   content: string;
   toolCalls: {
     id: string;
@@ -351,8 +351,8 @@ async function getModel() {
   return cachedModel;
 }
 
-export async function handleLangChainAISpreadsheetRequest(
-  request: LangChainAISpreadsheetRequest,
+export async function handleLangChainCanvasRequest(
+  request: LangChainCanvasRequest,
   response: Response
 ): Promise<void> {
   const { prompt, systemPrompt, connections, signal } = request;
@@ -365,7 +365,7 @@ export async function handleLangChainAISpreadsheetRequest(
   }
 
   // Log what we're sending to the model
-  logger.info('[LangChain AI Spreadsheet] Request details:', {
+  logger.info('[LangChain Canvas] Request details:', {
     promptLength: prompt.length,
     promptPreview: prompt.substring(0, 500),
     systemPromptLength: fullSystemPrompt.length,
@@ -392,7 +392,7 @@ export async function handleLangChainAISpreadsheetRequest(
   const { ToolMessage, AIMessage } = await loadLangchain();
 
   try {
-    let allToolCalls: LangChainAISpreadsheetResponse['toolCalls'] = [];
+    let allToolCalls: LangChainCanvasResponse['toolCalls'] = [];
     let allContent = '';
     let loopCount = 0;
     const MAX_LOOPS = 5; // Prevent infinite loops
@@ -400,10 +400,10 @@ export async function handleLangChainAISpreadsheetRequest(
     // Agentic loop - continue until model stops making tool calls
     while (loopCount < MAX_LOOPS) {
       loopCount++;
-      logger.info('[LangChain AI Spreadsheet] Starting loop iteration', { loopCount });
+      logger.info('[LangChain Canvas] Starting loop iteration', { loopCount });
 
       let accumulatedContent = '';
-      let toolCalls: LangChainAISpreadsheetResponse['toolCalls'] = [];
+      let toolCalls: LangChainCanvasResponse['toolCalls'] = [];
       let toolCallIndex = 0;
       // Track streaming tool call chunks by index (for accumulating partial JSON args)
       const streamingToolCalls: Map<number, { id?: string; name?: string; argsStr: string }> = new Map();
@@ -419,13 +419,13 @@ export async function handleLangChainAISpreadsheetRequest(
         chunkNumber++;
         lastChunk = chunk;
         if (signal?.aborted) {
-          logger.info('[LangChain AI Spreadsheet] Stream aborted by signal at chunk:', { chunkNumber });
+          logger.info('[LangChain Canvas] Stream aborted by signal at chunk:', { chunkNumber });
           break;
         }
 
         // Debug: log the raw chunk structure for tool calls
         if (chunk.tool_calls && chunk.tool_calls.length > 0) {
-          logger.info('[LangChain AI Spreadsheet] Raw tool_calls from chunk:', {
+          logger.info('[LangChain Canvas] Raw tool_calls from chunk:', {
             toolCalls: chunk.tool_calls.map(
               (tc: { id?: string; name?: string; args?: unknown; arguments?: unknown }) => ({
                 id: tc.id,
@@ -443,7 +443,7 @@ export async function handleLangChainAISpreadsheetRequest(
         }
         // Also check for tool_call_chunks (used in streaming mode)
         if (chunk.tool_call_chunks && chunk.tool_call_chunks.length > 0) {
-          logger.info('[LangChain AI Spreadsheet] Raw tool_call_chunks from chunk:', {
+          logger.info('[LangChain Canvas] Raw tool_call_chunks from chunk:', {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             toolCallChunks: chunk.tool_call_chunks.map((tc: any) => ({
               id: tc.id,
@@ -576,7 +576,7 @@ export async function handleLangChainAISpreadsheetRequest(
       const stopReason = lastChunk?.response_metadata?.stop_reason || lastChunk?.usage_metadata?.stop_reason;
       const usageMetadata = lastChunk?.usage_metadata;
 
-      logger.info('[LangChain AI Spreadsheet] Stream iteration ended', {
+      logger.info('[LangChain Canvas] Stream iteration ended', {
         loopCount,
         chunkNumber,
         signalAborted: signal?.aborted,
@@ -617,7 +617,7 @@ export async function handleLangChainAISpreadsheetRequest(
 
       // If there are tool calls, we need to continue the loop by sending tool results
       if (validToolCalls.length > 0) {
-        logger.info('[LangChain AI Spreadsheet] Tool calls found, adding to messages for continuation', {
+        logger.info('[LangChain Canvas] Tool calls found, adding to messages for continuation', {
           toolCallCount: validToolCalls.length,
         });
 
@@ -650,13 +650,13 @@ export async function handleLangChainAISpreadsheetRequest(
       }
 
       // No tool calls, we're done - break out of the loop
-      logger.info('[LangChain AI Spreadsheet] No more tool calls, finishing');
+      logger.info('[LangChain Canvas] No more tool calls, finishing');
       break;
     } // End of while loop
 
     // Send final message (only if response is still writable)
     if (!response.writableEnded) {
-      logger.info('[LangChain AI Spreadsheet] Final tool calls:', {
+      logger.info('[LangChain Canvas] Final tool calls:', {
         total: allToolCalls.length,
         toolCalls: allToolCalls.map((tc) => ({
           id: tc.id,
@@ -682,21 +682,21 @@ export async function handleLangChainAISpreadsheetRequest(
       response.end();
     }
 
-    logger.info('[LangChain AI Spreadsheet] Request completed', {
+    logger.info('[LangChain Canvas] Request completed', {
       totalLoops: loopCount,
       toolCallCount: allToolCalls.length,
       contentLength: allContent.length,
     });
   } catch (error) {
     if (signal?.aborted) {
-      logger.info('[LangChain AI Spreadsheet] Request aborted by client');
+      logger.info('[LangChain Canvas] Request aborted by client');
       if (!response.writableEnded) {
         response.end();
       }
       return;
     }
 
-    logger.error('[LangChain AI Spreadsheet] Error processing request', error);
+    logger.error('[LangChain Canvas] Error processing request', error);
 
     // Send error response
     if (!response.writableEnded) {
@@ -717,3 +717,4 @@ export async function handleLangChainAISpreadsheetRequest(
     }
   }
 }
+

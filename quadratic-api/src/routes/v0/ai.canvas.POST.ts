@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { handleLangChainAISpreadsheetRequest } from '../../ai/handler/langchain.aiSpreadsheet.handler';
+import { handleLangChainCanvasRequest } from '../../ai/handler/langchain.canvas.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
@@ -18,10 +18,10 @@ import { getTeamPermissions } from '../../utils/permissions';
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/ai/spreadsheet.POST.request'],
+  body: ApiSchemas['/v0/ai/canvas.POST.request'],
 });
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/spreadsheet.POST.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/canvas.POST.response']>) {
   const {
     user: { id: userId },
   } = req;
@@ -58,7 +58,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/spre
   // Ensure the user has at least editor permissions
   const teamPermissions = getTeamPermissions(userTeamRole.role);
   if (!teamPermissions.includes('TEAM_EDIT')) {
-    throw new ApiError(403, 'User does not have permission to use AI Spreadsheet');
+    throw new ApiError(403, 'User does not have permission to use Canvas');
   }
 
   let exceededBillingLimit = false;
@@ -84,8 +84,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/spre
   });
 
   try {
-    // Use LangChain handler for AI Spreadsheet
-    await handleLangChainAISpreadsheetRequest(
+    // Use LangChain handler for Canvas
+    await handleLangChainCanvasRequest(
       {
         prompt,
         systemPrompt,
@@ -98,7 +98,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/spre
     if (abortController.signal.aborted) {
       return;
     }
-    logger.error('Error in ai.spreadsheet.POST handler', error);
+    logger.error('Error in ai.canvas.POST handler', error);
     throw new ApiError(500, 'Failed to process AI request');
   }
 }
+

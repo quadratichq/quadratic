@@ -124,7 +124,7 @@ export interface HtmlOutputNodeData extends BaseNodeData {
 }
 
 // Union of all node data types
-export type AiSpreadsheetNodeData =
+export type CanvasNodeData =
   | ConnectionNodeData
   | FileNodeData
   | CellNodeData
@@ -138,16 +138,16 @@ export type AiSpreadsheetNodeData =
   | HtmlOutputNodeData;
 
 // React Flow node type (using a looser type to work with React Flow)
-export interface AiSpreadsheetNode {
+export interface CanvasNode {
   id: string;
   type: string;
   position: { x: number; y: number };
-  data: AiSpreadsheetNodeData;
+  data: CanvasNodeData;
   selected?: boolean;
 }
 
 // Edge with optional label
-export interface AiSpreadsheetEdge extends Edge {
+export interface CanvasEdge extends Edge {
   label?: string;
 }
 
@@ -173,7 +173,7 @@ export type AiToolName = 'add_node' | 'remove_node' | 'connect_nodes' | 'update_
 export interface AddNodeArgs {
   nodeType: AiNodeType;
   label: string;
-  data: Partial<AiSpreadsheetNodeData>;
+  data: Partial<CanvasNodeData>;
   position?: { x: number; y: number };
 }
 
@@ -189,5 +189,5 @@ export interface ConnectNodesArgs {
 
 export interface UpdateNodeArgs {
   nodeId: string;
-  updates: Partial<AiSpreadsheetNodeData>;
+  updates: Partial<CanvasNodeData>;
 }

@@ -1,9 +1,9 @@
-import type { AiSpreadsheetNodeData } from '@/aiSpreadsheet/types';
+import type { CanvasNodeData } from '@/canvas/types';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { TableIcon, DataObjectIcon, CodeIcon } from '@/shared/components/Icons';
 
 export function OutputNode({ data, selected }: NodeProps) {
-  const nodeData = data as unknown as AiSpreadsheetNodeData;
+  const nodeData = data as unknown as CanvasNodeData;
 
   const getIcon = () => {
     switch (nodeData.nodeType) {

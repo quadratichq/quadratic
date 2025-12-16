@@ -1,5 +1,5 @@
-import type { DataTableNodeData } from '@/aiSpreadsheet/types';
-import { aiSpreadsheetAtom } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
+import type { DataTableNodeData } from '@/canvas/types';
+import { canvasAtom } from '@/canvas/atoms/canvasAtom';
 import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import { TableIcon } from '@/shared/components/Icons';
 import { useCallback, useMemo, useState } from 'react';
@@ -8,7 +8,7 @@ import { useSetRecoilState } from 'recoil';
 export function DataTableInputNode({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as DataTableNodeData;
   const { setNodes } = useReactFlow();
-  const setRecoilState = useSetRecoilState(aiSpreadsheetAtom);
+  const setRecoilState = useSetRecoilState(canvasAtom);
   const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
   const [editValue, setEditValue] = useState('');
 

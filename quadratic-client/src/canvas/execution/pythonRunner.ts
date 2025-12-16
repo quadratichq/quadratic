@@ -1,9 +1,9 @@
 /**
- * Lightweight Pyodide runner for AI Spreadsheet code cells.
+ * Lightweight Pyodide runner for Canvas code cells.
  * This is a simplified version that runs Python code with access to inputs via q.get().
  */
 
-import type { CodeExecutionResult } from '@/aiSpreadsheet/types';
+import type { CodeExecutionResult } from '@/canvas/types';
 import { loadPyodide as loadPyodideLib, type PyodideInterface } from 'pyodide';
 
 // Input values map: name -> value
@@ -26,7 +26,7 @@ async function loadPyodide(): Promise<PyodideInterface> {
   }
 
   pyodideLoading = (async () => {
-    console.log('[AI Spreadsheet Python] Loading Pyodide...');
+    console.log('[Canvas Python] Loading Pyodide...');
 
     // Load Pyodide - uses the same local pyodide as the main app
     const pyodide = await loadPyodideLib({
@@ -36,7 +36,7 @@ async function loadPyodide(): Promise<PyodideInterface> {
     // Pre-load commonly used packages
     await pyodide.loadPackage(['pandas', 'numpy']);
 
-    console.log('[AI Spreadsheet Python] Pyodide loaded successfully');
+    console.log('[Canvas Python] Pyodide loaded successfully');
     pyodideInstance = pyodide;
     return pyodideInstance;
   })();
@@ -76,10 +76,10 @@ sys.stdout = _stdout_capture
     try {
       await pyodide.loadPackagesFromImports(code, {
         messageCallback: () => 0,
-        errorCallback: (e) => console.warn('[AI Spreadsheet Python] Package load warning:', e),
+        errorCallback: (e) => console.warn('[Canvas Python] Package load warning:', e),
       });
     } catch (e) {
-      console.warn('[AI Spreadsheet Python] Package load error (continuing):', e);
+      console.warn('[Canvas Python] Package load error (continuing):', e);
     }
 
     // Execute the user code and get the result
@@ -162,7 +162,7 @@ __result
     const errorStack = error instanceof Error ? error.stack : undefined;
 
     // Enhanced console logging
-    console.error('[AI Spreadsheet Python] Execution error:', {
+    console.error('[Canvas Python] Execution error:', {
       error: errorMessage,
       stack: errorStack,
       code: code.substring(0, 200), // First 200 chars of code
@@ -274,7 +274,7 @@ function processResult(result: unknown, stdout: string, executedAt: number): Cod
         executedAt,
       };
     } catch (e) {
-      console.warn('[AI Spreadsheet Python] DataFrame conversion error:', e);
+      console.warn('[Canvas Python] DataFrame conversion error:', e);
     }
   }
 
@@ -299,7 +299,7 @@ function processResult(result: unknown, stdout: string, executedAt: number): Cod
         executedAt,
       };
     } catch (e) {
-      console.warn('[AI Spreadsheet Python] HTML repr error:', e);
+      console.warn('[Canvas Python] HTML repr error:', e);
     }
   }
 
@@ -314,7 +314,7 @@ function processResult(result: unknown, stdout: string, executedAt: number): Cod
         executedAt,
       };
     } catch (e) {
-      console.warn('[AI Spreadsheet Python] to_html error:', e);
+      console.warn('[Canvas Python] to_html error:', e);
     }
   }
 
@@ -361,5 +361,5 @@ export function isPyodideLoaded(): boolean {
  * Preload Pyodide (call early to reduce first execution delay)
  */
 export function preloadPyodide(): void {
-  loadPyodide().catch((e) => console.warn('[AI Spreadsheet Python] Preload error:', e));
+  loadPyodide().catch((e) => console.warn('[Canvas Python] Preload error:', e));
 }

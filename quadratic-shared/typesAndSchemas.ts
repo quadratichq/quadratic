@@ -592,8 +592,8 @@ export const ApiSchemas = {
     exceededBillingLimit: z.boolean(),
   }),
 
-  // AI Spreadsheet (prototype) - simple chat with tool calling for canvas manipulation
-  '/v0/ai/spreadsheet.POST.request': z.object({
+  // Canvas (prototype) - simple chat with tool calling for canvas manipulation
+  '/v0/ai/canvas.POST.request': z.object({
     teamUuid: z.string().uuid(),
     prompt: z.string().min(1),
     systemPrompt: z.string().optional(),
@@ -607,7 +607,7 @@ export const ApiSchemas = {
       )
       .optional(),
   }),
-  '/v0/ai/spreadsheet.POST.response': z.object({
+  '/v0/ai/canvas.POST.response': z.object({
     content: z.string(),
     toolCalls: z.array(
       z.object({

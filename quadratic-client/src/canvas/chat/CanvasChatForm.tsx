@@ -9,13 +9,13 @@ interface Connection {
   type: string;
 }
 
-interface AiSpreadsheetChatFormProps {
+interface CanvasChatFormProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   connections: Connection[];
 }
 
-export function AiSpreadsheetChatForm({ onSend, disabled, connections }: AiSpreadsheetChatFormProps) {
+export function CanvasChatForm({ onSend, disabled, connections }: CanvasChatFormProps) {
   const [message, setMessage] = useState('');
 
   const handleSubmit = useCallback(() => {

@@ -1,5 +1,5 @@
-import { useExecution } from '@/aiSpreadsheet/execution/ExecutionContext';
-import type { CodeExecutionResult, CodeNodeData } from '@/aiSpreadsheet/types';
+import { useExecution } from '@/canvas/execution/ExecutionContext';
+import type { CodeExecutionResult, CodeNodeData } from '@/canvas/types';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { CodeIcon, FunctionIcon, RefreshIcon } from '@/shared/components/Icons';

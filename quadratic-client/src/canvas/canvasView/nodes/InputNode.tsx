@@ -1,5 +1,5 @@
-import type { BaseInputNodeData } from '@/aiSpreadsheet/types';
-import { aiSpreadsheetAtom } from '@/aiSpreadsheet/atoms/aiSpreadsheetAtom';
+import type { BaseInputNodeData } from '@/canvas/types';
+import { canvasAtom } from '@/canvas/atoms/canvasAtom';
 import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import { DatabaseIcon, FileIcon, SearchIcon, CodeIcon } from '@/shared/components/Icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,7 +15,7 @@ type InputNodeData = BaseInputNodeData & {
 export function InputNode({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as InputNodeData;
   const { setNodes } = useReactFlow();
-  const setRecoilState = useSetRecoilState(aiSpreadsheetAtom);
+  const setRecoilState = useSetRecoilState(canvasAtom);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
