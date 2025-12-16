@@ -1,4 +1,4 @@
-import { ArrowDropDownIcon, ViewGridIcon, ViewListIcon } from '@/shared/components/Icons';
+import { ArrowDropDownIcon, MoreHorizIcon, ViewGridIcon, ViewListIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -111,7 +111,7 @@ export function FilesListViewToggle({
 
   return (
     <>
-      <div className={cn(`hidden sm:flex sm:flex-row sm:items-center sm:gap-1`, className)}>
+      <div className={cn(`hidden xl:flex xl:flex-shrink-0 xl:flex-row xl:items-center xl:gap-1`, className)}>
         {(viewPreferences.sort || viewPreferences.order) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -137,7 +137,7 @@ export function FilesListViewToggle({
           </DropdownMenu>
         )}
 
-        <div className="text-muted-foreground">
+        <div className="flex flex-shrink-0 items-center text-muted-foreground">
           <Button
             className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `!opacity-100`)}
             variant="ghost"
@@ -159,11 +159,11 @@ export function FilesListViewToggle({
         </div>
       </div>
 
-      <div className={cn(`sm:hidden`, className)}>
+      <div className={cn(`xl:hidden`, className)}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon">
-              <ArrowDropDownIcon />
+              <MoreHorizIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">

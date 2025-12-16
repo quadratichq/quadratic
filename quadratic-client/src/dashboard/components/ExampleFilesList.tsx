@@ -1,4 +1,3 @@
-import { FilesListControlsRow } from '@/dashboard/components/FilesListControlsRow';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { FilesListItems, ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { FilesListSearchInput } from '@/dashboard/components/FilesListSearchInput';
@@ -40,14 +39,14 @@ export function ExampleFilesList({ files, emptyState }: { files: ExampleFilesLis
 
   return (
     <>
-      <FilesListControlsRow>
+      <div className="mb-4 flex flex-row items-center gap-2">
         <FilesListSearchInput value={searchValue} onChange={setSearchValue} />
         <FilesListViewToggle
           viewPreferences={viewPreferences}
           setViewPreferences={setViewPreferences}
           className="ml-auto"
         />
-      </FilesListControlsRow>
+      </div>
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => {

@@ -31,7 +31,7 @@ export function UserFilesListOtherFilters() {
         <Button
           variant="outline"
           size="icon"
-          className={cn('relative', hasOtherFilters && 'bg-accent text-primary hover:text-primary')}
+          className={cn('relative flex-shrink-0', hasOtherFilters && 'bg-accent text-primary hover:text-primary')}
           aria-label="Other filters"
           onClick={() => setShowDropdown(true)}
         >

@@ -1,7 +1,6 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
-import { FilesListControlsRow } from '@/dashboard/components/FilesListControlsRow';
 import { FilesListItems } from '@/dashboard/components/FilesListItems';
 import { FilesListSearchInput } from '@/dashboard/components/FilesListSearchInput';
 import {
@@ -158,20 +157,22 @@ export function UserFilesList({
 
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
-      <FilesListControlsRow>
+      <div className="mb-4 flex flex-row flex-wrap items-center gap-2">
         <UserFilesListFileTypeFilter />
+
         <FilesListSearchInput
           value={filterValue}
           onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
           disabled={filterValue === '' && filesToRender.length === 0}
         />
         <UserFilesListOtherFilters />
+
         <FilesListViewToggle
           viewPreferences={viewPreferences}
           setViewPreferences={setViewPreferences}
-          className="ml-auto"
+          className="xl:ml-auto"
         />
-      </FilesListControlsRow>
+      </div>
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (

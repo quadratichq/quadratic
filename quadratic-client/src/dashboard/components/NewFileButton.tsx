@@ -30,6 +30,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useAtomValue } from 'jotai';
 import { useRef } from 'react';
+import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
@@ -51,8 +52,12 @@ export function NewFileButton() {
   // If we're looking at the private tab, make implicit new files private. Otherwise, team files.
   const isPrivate = filters.fileType === 'private';
 
+  if (isMobile) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-row-reverse gap-2">
+    <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
         variant="default"
         className="gap-2"
