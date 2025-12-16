@@ -5,7 +5,7 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // used when `restrictedCountry` is true, in model router
-export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-3-pro-preview:thinking-toggle-off';
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-3-pro-preview:thinking-toggle-on';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
@@ -321,6 +321,7 @@ export const MODELS_CONFIGURATION: {
   'vertexai:gemini-3-pro-preview:thinking-toggle-on': {
     ...AI_RATES.gemini_3_pro_rate,
     model: 'gemini-3-pro-preview',
+    backupModelKey: 'azure-openai:gpt-4.1-mini',
     displayName: '3 Pro',
     displayProvider: 'Gemini',
     temperature: 0.1,
