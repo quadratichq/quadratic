@@ -41,16 +41,12 @@ venv/*
 
 # Generated Rust files
 **/target
+poc/**/target/
 quadratic-core/tmp.txt
 quadratic-files/storage
-<<<<<<< HEAD
 quadratic-multiplayer/target/
 quadratic-rust-shared/target/
-poc/**/target/
 quadratic-cloud-controller/target/
-=======
->>>>>>> origin/qa
-
 quadratic-rust-shared/src/auto_gen_path.rs
 
 # Generated JS files
