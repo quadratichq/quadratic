@@ -55,8 +55,7 @@ extern "C" {
     pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */);
     pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */);
 
-    // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
-    pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */);
+    pub fn jsHashRenderFills(render_fills: Vec<u8> /* Vec<JsHashRenderFills> */);
     pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */);
 
     pub fn jsRequestTransactions(sequence_num: u64);
@@ -331,8 +330,8 @@ pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */) {
-    js_call("jsSheetFills", format!("{sheet_id},{fills:?}"));
+pub fn jsHashRenderFills(render_fills: Vec<u8> /* Vec<JsHashRenderFills> */) {
+    js_call("jsHashRenderFills", format!("{render_fills:?}"));
 }
 
 #[cfg(test)]

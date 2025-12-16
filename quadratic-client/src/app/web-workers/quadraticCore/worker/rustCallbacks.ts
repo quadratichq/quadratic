@@ -15,7 +15,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
     sendSheetInfoUpdateRender: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
-    sendSheetFills: (sheetId: string, fill: Uint8Array) => void;
+    sendHashRenderFills: (hashRenderFills: Uint8Array) => void;
     sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
     sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
@@ -98,8 +98,8 @@ export const jsSheetInfoUpdate = (sheetInfo: Uint8Array) => {
   self.sendSheetInfoUpdateRender(sheetInfo);
 };
 
-export const jsSheetFills = (sheetId: string, sheetFills: Uint8Array) => {
-  self.sendSheetFills(sheetId, sheetFills);
+export const jsHashRenderFills = (hashRenderFills: Uint8Array) => {
+  self.sendHashRenderFills(hashRenderFills);
 };
 
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFills: Uint8Array) => {

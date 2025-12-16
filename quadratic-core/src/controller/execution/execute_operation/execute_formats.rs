@@ -14,7 +14,8 @@ impl GridController {
             return; // sheet may have been deleted
         };
 
-        let (reverse_operations, hashes, rows, fills_changed) = sheet.set_formats_a1(&formats);
+        let (reverse_operations, hashes, rows, fill_bounds, has_meta_fills) =
+            sheet.set_formats_a1(&formats);
 
         if reverse_operations.is_empty() {
             return;
@@ -36,8 +37,12 @@ impl GridController {
                     .extend(rows);
             }
 
-            if fills_changed {
-                transaction.add_fill_cells(sheet_id);
+            if let Some(fill_bounds) = fill_bounds {
+                transaction.add_fill_cells(sheet_id, fill_bounds);
+            }
+
+            if has_meta_fills {
+                transaction.add_sheet_meta_fills(sheet_id);
             }
         }
 

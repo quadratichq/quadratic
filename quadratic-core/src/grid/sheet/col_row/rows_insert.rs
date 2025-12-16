@@ -29,7 +29,7 @@ impl Sheet {
 
         // update formatting
         self.formats.insert_row(row, copy_formats);
-        transaction.add_fill_cells(self.id);
+        transaction.add_fill_cells_from_rows(self, row);
 
         // signal client to update the borders for changed columns
         self.borders.insert_row(row, copy_formats);

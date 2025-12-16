@@ -5,7 +5,8 @@ import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
-import type { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import type { JsHashRenderFills, JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 
@@ -22,7 +23,8 @@ const ALTERNATING_BG_COLOR = getCSSVariableTint('text');
 
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
-  private cells: JsRenderFill[] = [];
+  // Map of hash key (e.g., "0,0") to fills in that hash
+  private fillsByHash: Map<string, JsRenderFill[]> = new Map();
   private sheetFills?: JsSheetFill[];
   private alternatingColorsGraphics: Graphics;
 
@@ -42,7 +44,7 @@ export class CellsFills extends Container {
     );
     this.alternatingColorsGraphics = this.addChild(new Graphics());
 
-    events.on('sheetFills', this.handleSheetFills);
+    events.on('hashRenderFills', this.handleHashRenderFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
     events.on('sheetOffsetsUpdated', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
@@ -54,7 +56,7 @@ export class CellsFills extends Container {
   }
 
   destroy() {
-    events.off('sheetFills', this.handleSheetFills);
+    events.off('hashRenderFills', this.handleHashRenderFills);
     events.off('sheetMetaFills', this.handleSheetMetaFills);
     events.off('sheetOffsetsUpdated', this.drawSheetCells);
     events.off('cursorPosition', this.setDirty);
@@ -66,9 +68,23 @@ export class CellsFills extends Container {
     super.destroy();
   }
 
-  private handleSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
-    if (sheetId === this.cellsSheet.sheetId) {
-      this.cells = fills;
+  private handleHashRenderFills = (hashRenderFillsData: Uint8Array) => {
+    const hashRenderFillsArray = fromUint8Array<JsHashRenderFills[]>(hashRenderFillsData);
+    let needsRedraw = false;
+
+    for (const { sheet_id, hash, fills } of hashRenderFillsArray) {
+      if (sheet_id.id === this.cellsSheet.sheetId) {
+        const key = `${hash.x},${hash.y}`;
+        if (fills.length === 0) {
+          this.fillsByHash.delete(key);
+        } else {
+          this.fillsByHash.set(key, fills);
+        }
+        needsRedraw = true;
+      }
+    }
+
+    if (needsRedraw) {
       this.drawCells();
     }
   };
@@ -112,14 +128,16 @@ export class CellsFills extends Container {
 
   private drawCells = () => {
     this.cellsContainer.removeChildren();
-    this.cells.forEach((fill) => {
-      const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
-      sprite.tint = this.getColor(fill.color);
-      const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
-      sprite.position.set(screen.x, screen.y);
-      sprite.width = screen.width;
-      sprite.height = screen.height;
-      sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+    this.fillsByHash.forEach((fills) => {
+      fills.forEach((fill) => {
+        const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
+        sprite.tint = this.getColor(fill.color);
+        const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
+        sprite.position.set(screen.x, screen.y);
+        sprite.width = screen.width;
+        sprite.height = screen.height;
+        sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+      });
     });
     pixiApp.setViewportDirty();
   };

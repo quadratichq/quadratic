@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 
 use crate::{
@@ -6,8 +8,8 @@ use crate::{
     grid::{
         SheetId,
         js_types::{
-            JsHashRenderCells, JsHashValidationWarnings, JsHashesDirty, JsHtmlOutput, JsOffset,
-            JsUpdateCodeCell,
+            JsHashRenderCells, JsHashRenderFills, JsHashValidationWarnings, JsHashesDirty,
+            JsHtmlOutput, JsOffset, JsUpdateCodeCell,
         },
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -530,12 +532,71 @@ impl GridController {
     fn send_fills(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             transaction.fill_cells.clear();
+            transaction.sheet_meta_fills.clear();
             return;
         }
 
         let fill_cells = std::mem::take(&mut transaction.fill_cells);
-        for sheet_id in fill_cells.into_iter() {
-            self.send_all_fills(sheet_id);
+        let sheet_meta_fills = std::mem::take(&mut transaction.sheet_meta_fills);
+        let mut render_fills_in_hashes = Vec::new();
+
+        // Track which sheets we've already sent meta fills for
+        let mut meta_fills_sent: HashSet<SheetId> = HashSet::new();
+
+        for (sheet_id, hashes) in fill_cells.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            for hash in hashes.into_iter() {
+                let rect = Rect::from_numbers(
+                    hash.x * CELL_SHEET_WIDTH as i64,
+                    hash.y * CELL_SHEET_HEIGHT as i64,
+                    CELL_SHEET_WIDTH as i64,
+                    CELL_SHEET_HEIGHT as i64,
+                );
+
+                render_fills_in_hashes.push(JsHashRenderFills {
+                    sheet_id,
+                    hash,
+                    fills: sheet.get_render_fills_in_rect(rect),
+                });
+            }
+
+            // Send sheet meta fills (infinite fills) for the sheet
+            let sheet_fills = sheet.get_all_sheet_fills();
+            if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
+                crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+            }
+            meta_fills_sent.insert(sheet_id);
+        }
+
+        // Send meta fills for sheets that only have meta fill changes (no finite fill changes)
+        for sheet_id in sheet_meta_fills.into_iter() {
+            if !meta_fills_sent.contains(&sheet_id) {
+                let Some(sheet) = self.try_sheet(sheet_id) else {
+                    continue;
+                };
+
+                let sheet_fills = sheet.get_all_sheet_fills();
+                if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
+                    crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+                }
+            }
+        }
+
+        if !render_fills_in_hashes.is_empty() {
+            match serde_json::to_vec(&render_fills_in_hashes) {
+                Ok(render_fills) => {
+                    crate::wasm_bindings::js::jsHashRenderFills(render_fills);
+                }
+                Err(e) => {
+                    dbgjs!(format!(
+                        "[send_fills] Error serializing render fills {:?}",
+                        e
+                    ));
+                }
+            }
         }
     }
 
@@ -548,9 +609,57 @@ impl GridController {
             return;
         };
 
-        let fills = sheet.get_all_render_fills();
-        if let Ok(fills) = serde_json::to_vec(&fills) {
-            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+        // Send fills for all hashes that have formatting (fills are part of formatting)
+        let bounds = sheet.bounds(false);
+        if !bounds.is_empty() {
+            let mut render_fills_in_hashes = Vec::new();
+
+            // Iterate over all hashes that could have content
+            let min_hash_x = bounds
+                .first_column()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let max_hash_x = bounds
+                .last_column()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let min_hash_y = bounds
+                .first_row()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+            let max_hash_y = bounds
+                .last_row()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+
+            for hash_x in min_hash_x..=max_hash_x {
+                for hash_y in min_hash_y..=max_hash_y {
+                    let rect = Rect::from_numbers(
+                        hash_x * CELL_SHEET_WIDTH as i64,
+                        hash_y * CELL_SHEET_HEIGHT as i64,
+                        CELL_SHEET_WIDTH as i64,
+                        CELL_SHEET_HEIGHT as i64,
+                    );
+
+                    let fills = sheet.get_render_fills_in_rect(rect);
+                    if !fills.is_empty() {
+                        render_fills_in_hashes.push(JsHashRenderFills {
+                            sheet_id,
+                            hash: Pos {
+                                x: hash_x,
+                                y: hash_y,
+                            },
+                            fills,
+                        });
+                    }
+                }
+            }
+
+            if !render_fills_in_hashes.is_empty() {
+                if let Ok(render_fills) = serde_json::to_vec(&render_fills_in_hashes) {
+                    crate::wasm_bindings::js::jsHashRenderFills(render_fills);
+                }
+            }
         }
 
         let sheet_fills = sheet.get_all_sheet_fills();

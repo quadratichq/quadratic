@@ -485,10 +485,9 @@ export interface CoreClientSetCodeCellValue {
   error?: string;
 }
 
-export interface CoreClientSheetFills {
-  type: 'coreClientSheetFills';
-  sheetId: string;
-  fills: Uint8Array;
+export interface CoreClientHashRenderFills {
+  type: 'coreClientHashRenderFills';
+  hashRenderFills: Uint8Array;
 }
 
 export interface CoreClientSheetMetaFills {
@@ -1629,7 +1628,7 @@ export type CoreClientMessage =
   | CoreClientImportFile
   | CoreClientAddSheet
   | CoreClientSheetsInfo
-  | CoreClientSheetFills
+  | CoreClientHashRenderFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor

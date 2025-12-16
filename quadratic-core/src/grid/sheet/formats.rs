@@ -78,15 +78,14 @@ impl Sheet {
         }
     }
 
-    /// Returns the dirty hashes and rows changed for the formats
+    /// Returns the dirty hashes, rows changed, fill bounds, and whether meta fills changed
     fn formats_transaction_changes(
         &self,
         formats: &SheetFormatUpdates,
         reverse_formats: &SheetFormatUpdates,
-    ) -> (HashSet<Pos>, HashSet<i64>, bool) {
+    ) -> (HashSet<Pos>, HashSet<i64>, Option<Rect>, bool) {
         let mut dirty_hashes = HashSet::new();
         let mut rows_to_resize = HashSet::new();
-        let mut fills_changed = false;
 
         self.format_transaction_changes(
             formats.align.to_owned(),
@@ -174,23 +173,40 @@ impl Sheet {
             &mut rows_to_resize,
         );
 
-        if formats.fill_color.is_some() {
-            fills_changed = true;
-        }
+        let fill_bounds = formats
+            .fill_color
+            .as_ref()
+            .and_then(|fc| fc.finite_bounds());
 
-        (dirty_hashes, rows_to_resize, fills_changed)
+        // Check if any fill has infinite bounds (meta fills: row/column/sheet fills)
+        let has_meta_fills = formats
+            .fill_color
+            .as_ref()
+            .map(|fc| {
+                fc.to_rects()
+                    .any(|(_, _, x2, y2, _)| x2.is_none() || y2.is_none())
+            })
+            .unwrap_or(false);
+
+        (dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills)
     }
 
     /// Sets formats using SheetFormatUpdates.
     ///
-    /// Returns (reverse_operations, dirty_hashes, rows_to_resize)
+    /// Returns (reverse_operations, dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills)
     pub fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
-    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>, bool) {
+    ) -> (
+        Vec<Operation>,
+        HashSet<Pos>,
+        HashSet<i64>,
+        Option<Rect>,
+        bool,
+    ) {
         let reverse_formats = self.formats.apply_updates(formats);
 
-        let (dirty_hashes, rows_to_resize, fills_changed) =
+        let (dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills) =
             self.formats_transaction_changes(formats, &reverse_formats);
 
         let reverse_op = Operation::SetCellFormatsA1 {
@@ -202,7 +218,8 @@ impl Sheet {
             vec![reverse_op],
             dirty_hashes,
             rows_to_resize,
-            fills_changed,
+            fill_bounds,
+            has_meta_fills,
         )
     }
 }
@@ -281,7 +298,7 @@ mod tests {
         reverse_formats.fill_color = Some(reverse_fill_color);
 
         // Get the changes
-        let (dirty_hashes, rows_changed, fills_changed) =
+        let (dirty_hashes, rows_changed, fills_changed, has_meta_fills) =
             sheet.formats_transaction_changes(&formats, &reverse_formats);
 
         // Expected quadrants (converted to quadrant coordinates)
@@ -296,6 +313,7 @@ mod tests {
 
         assert_eq!(dirty_hashes, expected_quadrants);
         assert_eq!(rows_changed, expected_rows);
-        assert!(fills_changed);
+        assert!(fills_changed.is_some());
+        assert!(!has_meta_fills); // finite fill, not a meta fill
     }
 }

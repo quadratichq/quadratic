@@ -4,7 +4,7 @@
 //! (even if defined as infinite).
 
 use crate::{
-    Pos,
+    Pos, Rect,
     grid::{
         Sheet,
         js_types::{JsRenderFill, JsSheetFill},
@@ -96,6 +96,106 @@ impl Sheet {
                                                 h: (y1 - y + 1) as u32,
                                                 color,
                                             });
+                                        };
+                                    }
+                                    fills
+                                },
+                            )
+                        })
+                    })
+                    .flatten(),
+            )
+            .collect()
+    }
+
+    /// Returns finite fills that intersect with the given rect.
+    pub fn get_render_fills_in_rect(&self, rect: Rect) -> Vec<JsRenderFill> {
+        self.formats
+            .fill_color
+            .to_rects()
+            .filter_map(|(x0, y0, x1, y1, color)| {
+                if let (Some(x1), Some(y1)) = (x1, y1) {
+                    let fill_rect = Rect::new_span(Pos { x: x0, y: y0 }, Pos { x: x1, y: y1 });
+                    if fill_rect.intersects(rect) {
+                        Some(JsRenderFill {
+                            x: x0,
+                            y: y0,
+                            w: (x1 - x0 + 1) as u32,
+                            h: (y1 - y0 + 1) as u32,
+                            color,
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .chain(
+                self.data_tables
+                    .expensive_iter()
+                    .filter_map(|(pos, dt)| {
+                        let reverse_display_buffer = dt.get_reverse_display_buffer();
+                        dt.formats.as_ref().map(|formats| {
+                            formats.fill_color.to_rects().flat_map(
+                                move |(mut x0, mut y0, x1, y1, color)| {
+                                    let mut fills = vec![];
+                                    if dt.has_spill() || dt.has_error() {
+                                        return fills;
+                                    }
+                                    let mut output_rect = dt.output_rect(*pos, false);
+                                    output_rect.min.y += dt.y_adjustment(true);
+                                    let mut x1 = x1.unwrap_or(output_rect.width() as i64);
+                                    let mut y1 = y1.unwrap_or(output_rect.height() as i64);
+                                    x0 = dt
+                                        .get_display_index_from_column_index(x0 as u32 - 1, false);
+                                    x1 =
+                                        dt.get_display_index_from_column_index(x1 as u32 - 1, true);
+                                    y0 -= 1;
+                                    y1 -= 1;
+                                    let fills_min_y = (pos.y + dt.y_adjustment(false)).max(pos.y);
+                                    if dt.display_buffer.is_some() {
+                                        for y in y0..=y1 {
+                                            let x = output_rect.min.x + x0;
+                                            let x1 = output_rect.min.x + x1;
+                                            let mut y = dt
+                                                .get_display_index_from_reverse_display_buffer(
+                                                    y as u64,
+                                                    reverse_display_buffer.as_ref(),
+                                                )
+                                                as i64;
+                                            y += output_rect.min.y;
+                                            if x1 >= x && y >= fills_min_y {
+                                                let fill_rect =
+                                                    Rect::new_span(Pos { x, y }, Pos { x: x1, y });
+                                                if fill_rect.intersects(rect) {
+                                                    fills.push(JsRenderFill {
+                                                        x,
+                                                        y,
+                                                        w: (x1 - x + 1) as u32,
+                                                        h: 1,
+                                                        color: color.clone(),
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        let x = output_rect.min.x + x0;
+                                        let y = (output_rect.min.y + y0).max(fills_min_y);
+                                        let x1 = output_rect.min.x + x1;
+                                        let y1 = output_rect.min.y + y1;
+                                        if x1 >= x && y1 >= y {
+                                            let fill_rect =
+                                                Rect::new_span(Pos { x, y }, Pos { x: x1, y: y1 });
+                                            if fill_rect.intersects(rect) {
+                                                fills.push(JsRenderFill {
+                                                    x,
+                                                    y,
+                                                    w: (x1 - x + 1) as u32,
+                                                    h: (y1 - y + 1) as u32,
+                                                    color,
+                                                });
+                                            }
                                         };
                                     }
                                     fills
