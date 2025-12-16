@@ -106,6 +106,11 @@ export function UserFilesListItem({
     return null;
   }
 
+  // Optimistically hide the file if it's being moved _and_ you're on private or team listings
+  if (fetcherMove.state !== 'idle' && (filters.fileType === 'private' || filters.fileType === 'team')) {
+    return null;
+  }
+
   // Optimistically update file type if it's being moved
   if (fetcherMove.state !== 'idle') {
     const ownerUserId = (fetcherMove.json as FileAction['request.move']).ownerUserId;
