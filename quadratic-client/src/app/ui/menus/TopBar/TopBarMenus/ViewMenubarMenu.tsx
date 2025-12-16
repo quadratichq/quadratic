@@ -10,7 +10,8 @@ import {
 } from '@/app/atoms/gridSettingsAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
-import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
+import { CheckSmallIcon, CropFreeIcon, ThemeIcon, ZoomInIcon } from '@/shared/components/Icons';
+import { ThemeCustomization } from '@/shared/components/ThemeCustomization';
 import {
   MenubarContent,
   MenubarItem,
@@ -22,6 +23,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
+import { useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 const MenubarItemCheckbox = ({ checked }: { checked: boolean }) => {
@@ -38,6 +40,7 @@ export const ViewMenubarMenu = () => {
   const [showScrollbars, setShowScrollbars] = useRecoilState(showScrollbarsAtom);
   const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
+  const [isThemeSubmenuOpen, setIsThemeSubmenuOpen] = useState(false);
 
   return (
     <MenubarMenu>
@@ -89,6 +92,18 @@ export const ViewMenubarMenu = () => {
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>
         </MenubarItem>
         <MenubarSeparator />
+        <MenubarSub open={isThemeSubmenuOpen} onOpenChange={setIsThemeSubmenuOpen}>
+          <MenubarSubTrigger>
+            <ThemeIcon /> Theme
+          </MenubarSubTrigger>
+          <MenubarSubContent className="w-80">
+            <div className="p-4">
+              <h2 className="text-md font-semibold">Theme customization</h2>
+              <p className="mb-4 text-xs text-muted-foreground">Pick a style that fits you</p>
+              {isThemeSubmenuOpen && <ThemeCustomization />}
+            </div>
+          </MenubarSubContent>
+        </MenubarSub>
       </MenubarContent>
     </MenubarMenu>
   );

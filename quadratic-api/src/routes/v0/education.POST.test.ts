@@ -37,18 +37,27 @@ beforeAll(async () => {
     data: {
       auth0Id: 'userHarvard',
       email: 'user@harvard.edu',
+      clientDataKv: {
+        lastSeenChangelogVersion: process.env.VERSION || undefined,
+      },
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userEligible',
       email: 'user@eligible-domain.com',
+      clientDataKv: {
+        lastSeenChangelogVersion: process.env.VERSION || undefined,
+      },
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userIneligible',
       email: 'user@ineligible-domain.com',
+      clientDataKv: {
+        lastSeenChangelogVersion: process.env.VERSION || undefined,
+      },
     },
   });
 });

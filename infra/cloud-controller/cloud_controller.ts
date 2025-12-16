@@ -30,9 +30,11 @@ const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const vpcId = config.require("vpc-id");
 // Default to m5.2xlarge (8 vCPU, 32 GB RAM) - sized for controller + up to 20 cloud workers
-const instanceSize = config.get("cloud-controller-instance-size") ?? "m5.2xlarge";
+const instanceSize =
+  config.get("cloud-controller-instance-size") ?? "m5.2xlarge";
 // Root volume size in GB - needs space for Docker images and container storage
-const rootVolumeSize = config.getNumber("cloud-controller-root-volume-size") ?? 100;
+const rootVolumeSize =
+  config.getNumber("cloud-controller-root-volume-size") ?? 100;
 
 // Create a single EC2 instance
 // Note: Instance runs BOTH the controller AND multiple cloud workers (up to 20 concurrent)
@@ -66,8 +68,9 @@ const instance = new aws.ec2.Instance("cloud-controller-instance", {
     volumeType: "gp3",
     deleteOnTermination: true,
   },
-  // Enable detailed monitoring for better visibility
-  monitoring: true,
+  // Disable detailed monitoring (requires ec2:MonitorInstances permission that CI doesn't have).
+  // Basic monitoring is still available (5-minute intervals instead of 1-minute)
+  monitoring: false,
 });
 
 // Create a new Target Group
@@ -207,4 +210,3 @@ const dnsRecord = new aws.route53.Record("cloud-controller-r53-record", {
 });
 
 export const cloudControllerPublicDns = dnsRecord.name;
-

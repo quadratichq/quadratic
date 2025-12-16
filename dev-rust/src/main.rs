@@ -1,5 +1,6 @@
 mod checks;
 mod control;
+mod kill;
 mod server;
 mod service_manager;
 mod services;
@@ -24,14 +25,49 @@ struct Args {
     /// Base directory for state and other files
     #[arg(long, default_value = ".")]
     dir: PathBuf,
+
+    // === Kill subprocess mode flags ===
+    // When these are set, the binary runs as a short-lived killer process
+    /// Kill all services (reads JSON from stdin) and exit (subprocess mode)
+    #[arg(long, hide = true)]
+    kill_all: bool,
+
+    /// Kill all processes on this port and exit (subprocess mode)
+    #[arg(long, hide = true)]
+    kill_port: Option<u16>,
+
+    /// Kill this process group and exit (subprocess mode)
+    #[arg(long, hide = true)]
+    kill_pgrp: Option<i32>,
+
+    /// Kill cargo/rustc processes for this crate directory and exit (subprocess mode)
+    #[arg(long, hide = true)]
+    kill_cargo: Option<String>,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
+    // === Kill subprocess mode ===
+    // If any kill flag is set, run the kill operation and exit immediately.
+    // These run synchronously without tokio runtime overhead.
+    if args.kill_all {
+        std::process::exit(kill::run_kill_all());
+    }
+    if let Some(port) = args.kill_port {
+        std::process::exit(kill::run_kill_port(port));
+    }
+    if let Some(pgid) = args.kill_pgrp {
+        std::process::exit(kill::run_kill_pgrp(pgid));
+    }
+    if let Some(ref cwd) = args.kill_cargo {
+        std::process::exit(kill::run_kill_cargo(cwd));
+    }
+
+    // === Normal server mode ===
     tracing_subscriber::fmt::init();
     eprintln!("Starting Quadratic Dev Server...");
-
-    let args = Args::parse();
 
     // Do blocking file I/O operations in parallel, but start server immediately
     // Quick initial base_dir - try to find workspace root quickly, fallback to current dir
@@ -195,6 +231,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // If we exited due to a signal, ensure the server future is dropped so it stops serving.
         drop(server_future);
     }
+
+    // Kill our own port to ensure it's freed (in case of unclean shutdown)
+    eprintln!("Killing port {}...", args.port);
+    kill::run_kill_port(args.port);
 
     Ok(())
 }

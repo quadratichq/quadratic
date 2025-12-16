@@ -4,7 +4,7 @@ import { Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureException, flush } from '@sentry/react';
 import { useEffect } from 'react';
 import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
@@ -208,8 +208,17 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  // When done, we'll send people to a new _team_ file
-  const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
+  // A/B test: 10% of users go to the AI create flow, 90% go directly to a new file
+  const useAiCreateFlow = Math.random() < 0.1;
+  trackEvent('[Onboarding].postOnboardingFlow', { flow: useAiCreateFlow ? 'startWithAi' : 'newFile' });
+
+  // Register as super property so we can filter/analyze sessions for users in the "Start with AI" cohort.
+  // Naming convention: ab_<test-name>_<month><year> with values for each variant.
+  // When running a new A/B test, create a new property with updated date (e.g., ab_onboarding_mar2025).
+  registerEventAnalyticsData({ ab_onboarding_dec2024: useAiCreateFlow ? 'startWithAi' : 'newFile' });
+  const newFilePath = useAiCreateFlow
+    ? ROUTES.TEAM_FILES_CREATE_AI(teamUuid)
+    : ROUTES.CREATE_FILE(teamUuid, { private: false });
 
   // If the user wants to upgrade to Pro, we'll send them to Stripe first
   if (result.data && result.data['team-plan'] === 'pro') {

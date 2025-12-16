@@ -29,6 +29,9 @@ model User {
     clientDataKv  Json            @default("{}") @map("client_data_kv")
     ScheduledTask ScheduledTask[]
 
+    // AI Settings
+    aiRules String? @map("ai_rules") // User-specific AI rules/instructions
+
     @@index([auth0Id])
     @@index([email])
 }
@@ -148,6 +151,7 @@ model Team {
     // Settings
     settingAnalyticsAi        Boolean @default(true) @map("setting_analytics_ai")
     settingShowConnectionDemo Boolean @default(true) @map("setting_show_connection_demo")
+    aiRules                   String? @map("ai_rules") // Team-specific AI rules/instructions
 
     // SSH Keys
     sshPrivateKey Bytes?

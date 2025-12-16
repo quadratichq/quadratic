@@ -27,7 +27,7 @@ export const ResizeColumns = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Resize columns';
+    const label = loading ? 'Resizing columns' : 'Resized columns';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
