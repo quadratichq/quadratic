@@ -165,7 +165,7 @@ export function UserFilesList({
           onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
           disabled={filterValue === '' && filesToRender.length === 0}
         />
-        <UserFilesListOtherFilters disabled={filesToRender.length === 0} />
+        <UserFilesListOtherFilters />
         <FilesListViewToggle
           viewPreferences={viewPreferences}
           setViewPreferences={setViewPreferences}
