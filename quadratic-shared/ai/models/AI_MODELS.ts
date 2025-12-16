@@ -5,7 +5,7 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // used when `restrictedCountry` is true, in model router
-export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-3-pro-preview:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
@@ -298,6 +298,41 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
+    imageSupport: true,
+  },
+  'vertexai:gemini-3-pro-preview:thinking-toggle-off': {
+    ...AI_RATES.gemini_3_pro_rate,
+    model: 'gemini-3-pro-preview',
+    backupModelKey: 'azure-openai:gpt-4.1-mini',
+    displayName: '3 Pro',
+    displayProvider: 'Gemini',
+    temperature: 0.1,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: false,
+    thinkingToggle: false,
+    thinkingBudget: 0,
+    imageSupport: true,
+  },
+  'vertexai:gemini-3-pro-preview:thinking-toggle-on': {
+    ...AI_RATES.gemini_3_pro_rate,
+    model: 'gemini-3-pro-preview',
+    displayName: '3 Pro',
+    displayProvider: 'Gemini',
+    temperature: 0.1,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'others',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
+    thinkingToggle: true,
+    thinkingBudget: 24576,
     imageSupport: true,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {

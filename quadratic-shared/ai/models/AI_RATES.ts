@@ -12,6 +12,12 @@ export const gemini_2_5_pro_rate: AIRates = {
   rate_per_million_cache_read_tokens: 0.31,
   rate_per_million_cache_write_tokens: 4.5,
 };
+export const gemini_3_pro_rate: AIRates = {
+  rate_per_million_input_tokens: 1.25,
+  rate_per_million_output_tokens: 10,
+  rate_per_million_cache_read_tokens: 0.31,
+  rate_per_million_cache_write_tokens: 4.5,
+};
 export const gemini_2_5_flash_rate: AIRates = {
   rate_per_million_input_tokens: 0.3,
   rate_per_million_output_tokens: 2.5,

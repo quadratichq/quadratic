@@ -24,7 +24,12 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-haiku-4-5@20251001',
   'claude-opus-4-5@20251101',
 ]);
-const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']);
+const VertexAIModelSchema = z.enum([
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-pro',
+  'gemini-3-pro-preview',
+]);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
@@ -97,6 +102,8 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-off',
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-on',
   'vertexai:gemini-2.5-pro',
+  'vertexai:gemini-3-pro-preview:thinking-toggle-off',
+  'vertexai:gemini-3-pro-preview:thinking-toggle-on',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
