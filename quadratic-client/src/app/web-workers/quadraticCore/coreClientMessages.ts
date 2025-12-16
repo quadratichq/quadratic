@@ -312,6 +312,17 @@ export interface ClientCoreSetCellFillColor {
   isAi: boolean;
 }
 
+export interface ClientCoreGetRenderFillsForHashes {
+  type: 'clientCoreGetRenderFillsForHashes';
+  sheetId: string;
+  hashes: JsCoordinate[];
+}
+
+export interface ClientCoreGetSheetMetaFills {
+  type: 'clientCoreGetSheetMetaFills';
+  sheetId: string;
+}
+
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
@@ -488,6 +499,11 @@ export interface CoreClientSetCodeCellValue {
 export interface CoreClientHashRenderFills {
   type: 'coreClientHashRenderFills';
   hashRenderFills: Uint8Array;
+}
+
+export interface CoreClientHashesDirtyFills {
+  type: 'coreClientHashesDirtyFills';
+  dirtyHashes: Uint8Array;
 }
 
 export interface CoreClientSheetMetaFills {
@@ -1527,6 +1543,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellItalic
   | ClientCoreSetCellFontSize
   | ClientCoreSetCellFillColor
+  | ClientCoreGetRenderFillsForHashes
+  | ClientCoreGetSheetMetaFills
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
   | ClientCoreSetCellStrikeThrough
@@ -1629,6 +1647,7 @@ export type CoreClientMessage =
   | CoreClientAddSheet
   | CoreClientSheetsInfo
   | CoreClientHashRenderFills
+  | CoreClientHashesDirtyFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor

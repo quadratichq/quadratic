@@ -73,6 +73,7 @@ interface EventTypes {
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetOffsetsUpdated: (sheetId: string) => void;
   hashRenderFills: (hashRenderFills: Uint8Array) => void;
+  hashesDirtyFills: (dirtyHashes: Uint8Array) => void;
   sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;

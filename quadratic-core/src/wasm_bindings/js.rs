@@ -56,6 +56,7 @@ extern "C" {
     pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */);
 
     pub fn jsHashRenderFills(render_fills: Vec<u8> /* Vec<JsHashRenderFills> */);
+    pub fn jsHashesDirtyFills(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */);
     pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */);
 
     pub fn jsRequestTransactions(sequence_num: u64);
@@ -332,6 +333,12 @@ pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
 #[allow(non_snake_case)]
 pub fn jsHashRenderFills(render_fills: Vec<u8> /* Vec<JsHashRenderFills> */) {
     js_call("jsHashRenderFills", format!("{render_fills:?}"));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsHashesDirtyFills(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */) {
+    js_call("jsHashesDirtyFills", format!("{dirty_hashes:?}"));
 }
 
 #[cfg(test)]

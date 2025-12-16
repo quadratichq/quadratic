@@ -16,6 +16,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoUpdateRender: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
     sendHashRenderFills: (hashRenderFills: Uint8Array) => void;
+    sendHashesDirtyFills: (dirtyHashes: Uint8Array) => void;
     sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
     sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
@@ -100,6 +101,10 @@ export const jsSheetInfoUpdate = (sheetInfo: Uint8Array) => {
 
 export const jsHashRenderFills = (hashRenderFills: Uint8Array) => {
   self.sendHashRenderFills(hashRenderFills);
+};
+
+export const jsHashesDirtyFills = (dirtyHashes: Uint8Array) => {
+  self.sendHashesDirtyFills(dirtyHashes);
 };
 
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFills: Uint8Array) => {

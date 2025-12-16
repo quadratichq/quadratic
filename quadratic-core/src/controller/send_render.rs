@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 
@@ -538,7 +538,15 @@ impl GridController {
 
         let fill_cells = std::mem::take(&mut transaction.fill_cells);
         let sheet_meta_fills = std::mem::take(&mut transaction.sheet_meta_fills);
+
+        // Get viewport info to determine which fills are visible
+        let viewport_info = self
+            .viewport_buffer
+            .as_ref()
+            .and_then(|vb| vb.get_viewport());
+
         let mut render_fills_in_hashes = Vec::new();
+        let mut dirty_fills_outside_viewport: HashMap<SheetId, Vec<Pos>> = HashMap::new();
 
         // Track which sheets we've already sent meta fills for
         let mut meta_fills_sent: HashSet<SheetId> = HashSet::new();
@@ -549,18 +557,34 @@ impl GridController {
             };
 
             for hash in hashes.into_iter() {
-                let rect = Rect::from_numbers(
-                    hash.x * CELL_SHEET_WIDTH as i64,
-                    hash.y * CELL_SHEET_HEIGHT as i64,
-                    CELL_SHEET_WIDTH as i64,
-                    CELL_SHEET_HEIGHT as i64,
-                );
+                // Check if this hash is in the viewport
+                let in_viewport = viewport_info
+                    .as_ref()
+                    .map(|(top_left, bottom_right, viewport_sheet_id)| {
+                        *viewport_sheet_id == sheet_id
+                            && Rect::new_span(*top_left, *bottom_right).contains(hash)
+                    })
+                    .unwrap_or(true); // If no viewport info, send all fills
 
-                render_fills_in_hashes.push(JsHashRenderFills {
-                    sheet_id,
-                    hash,
-                    fills: sheet.get_render_fills_in_rect(rect),
-                });
+                if in_viewport {
+                    let rect = Rect::from_numbers(
+                        hash.x * CELL_SHEET_WIDTH as i64,
+                        hash.y * CELL_SHEET_HEIGHT as i64,
+                        CELL_SHEET_WIDTH as i64,
+                        CELL_SHEET_HEIGHT as i64,
+                    );
+
+                    render_fills_in_hashes.push(JsHashRenderFills {
+                        sheet_id,
+                        hash,
+                        fills: sheet.get_render_fills_in_rect(rect),
+                    });
+                } else {
+                    dirty_fills_outside_viewport
+                        .entry(sheet_id)
+                        .or_default()
+                        .push(hash);
+                }
             }
 
             // Send sheet meta fills (infinite fills) for the sheet
@@ -585,6 +609,7 @@ impl GridController {
             }
         }
 
+        // Send visible fills
         if !render_fills_in_hashes.is_empty() {
             match serde_json::to_vec(&render_fills_in_hashes) {
                 Ok(render_fills) => {
@@ -598,73 +623,17 @@ impl GridController {
                 }
             }
         }
-    }
 
-    pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
+        // Send dirty fills outside viewport so client can request them later
+        if !dirty_fills_outside_viewport.is_empty() {
+            let dirty_hashes: Vec<JsHashesDirty> = dirty_fills_outside_viewport
+                .into_iter()
+                .map(|(sheet_id, hashes)| JsHashesDirty { sheet_id, hashes })
+                .collect();
 
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return;
-        };
-
-        // Send fills for all hashes that have formatting (fills are part of formatting)
-        let bounds = sheet.bounds(false);
-        if !bounds.is_empty() {
-            let mut render_fills_in_hashes = Vec::new();
-
-            // Iterate over all hashes that could have content
-            let min_hash_x = bounds
-                .first_column()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let max_hash_x = bounds
-                .last_column()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let min_hash_y = bounds
-                .first_row()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-            let max_hash_y = bounds
-                .last_row()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-
-            for hash_x in min_hash_x..=max_hash_x {
-                for hash_y in min_hash_y..=max_hash_y {
-                    let rect = Rect::from_numbers(
-                        hash_x * CELL_SHEET_WIDTH as i64,
-                        hash_y * CELL_SHEET_HEIGHT as i64,
-                        CELL_SHEET_WIDTH as i64,
-                        CELL_SHEET_HEIGHT as i64,
-                    );
-
-                    let fills = sheet.get_render_fills_in_rect(rect);
-                    if !fills.is_empty() {
-                        render_fills_in_hashes.push(JsHashRenderFills {
-                            sheet_id,
-                            hash: Pos {
-                                x: hash_x,
-                                y: hash_y,
-                            },
-                            fills,
-                        });
-                    }
-                }
+            if let Ok(dirty_hashes) = serde_json::to_vec(&dirty_hashes) {
+                crate::wasm_bindings::js::jsHashesDirtyFills(dirty_hashes);
             }
-
-            if !render_fills_in_hashes.is_empty() {
-                if let Ok(render_fills) = serde_json::to_vec(&render_fills_in_hashes) {
-                    crate::wasm_bindings::js::jsHashRenderFills(render_fills);
-                }
-            }
-        }
-
-        let sheet_fills = sheet.get_all_sheet_fills();
-        if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
-            crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
         }
     }
 
@@ -727,7 +696,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        ClearOption, Pos, SheetPos,
+        Pos, SheetPos,
         a1::A1Selection,
         controller::{
             GridController,
@@ -736,8 +705,7 @@ mod test {
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{
-            Contiguous2D, SheetId,
-            formats::SheetFormatUpdates,
+            SheetId,
             js_types::{JsHashRenderCells, JsHashesDirty, JsHtmlOutput, JsRenderCell},
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
@@ -925,28 +893,122 @@ mod test {
     }
 
     #[test]
-    fn send_all_fills() {
-        let mut gc = GridController::test();
+    fn test_send_fills_in_viewport() {
+        clear_js_calls();
+        let mut gc = GridController::test_with_viewport_buffer();
+
+        // Set a fill color on a cell inside the viewport (0,0 is inside the test viewport)
+        gc.set_fill_color(
+            &A1Selection::test_a1("A1"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify jsHashRenderFills was called (fill is in viewport)
+        expect_js_call_count("jsHashRenderFills", 1, false);
+        // Verify jsHashesDirtyFills was NOT called (no fills outside viewport)
+        expect_js_call_count("jsHashesDirtyFills", 0, true);
+    }
+
+    #[test]
+    fn test_send_fills_outside_viewport() {
+        clear_js_calls();
+        let mut gc = GridController::test_with_viewport_buffer();
+
+        // Set a fill color on a cell far outside the viewport
+        // The test viewport is approximately -10 to 10 in hash coordinates
+        gc.set_fill_color(
+            &A1Selection::test_a1("ZZ1000"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify jsHashRenderFills was NOT called (fill is outside viewport)
+        expect_js_call_count("jsHashRenderFills", 0, false);
+        // Verify jsHashesDirtyFills was called (fill outside viewport marked dirty)
+        expect_js_call_count("jsHashesDirtyFills", 1, true);
+    }
+
+    #[test]
+    fn test_send_fills_mixed_viewport() {
+        clear_js_calls();
+        let mut gc = GridController::test_with_viewport_buffer();
+
+        // Set fills both inside and outside the viewport
+        gc.set_fill_color(
+            &A1Selection::test_a1("A1,ZZ1000"),
+            Some("green".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Both should be called - one for visible fills, one for dirty fills
+        expect_js_call_count("jsHashRenderFills", 1, false);
+        expect_js_call_count("jsHashesDirtyFills", 1, true);
+    }
+
+    #[test]
+    fn test_send_fills_server_transaction() {
+        clear_js_calls();
+        let gc = GridController::test_with_viewport_buffer();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.try_sheet_mut(sheet_id)
-            .unwrap()
-            .set_formats_a1(&SheetFormatUpdates {
-                bold: Contiguous2D::new_from_opt_selection(
-                    &A1Selection::test_a1("A1"),
-                    Some(ClearOption::Some(true)),
-                ),
-                ..Default::default()
-            });
+        // Create a server transaction with fill cells
+        let mut transaction = PendingTransaction {
+            source: TransactionSource::Server,
+            ..Default::default()
+        };
+        transaction
+            .fill_cells
+            .insert(sheet_id, HashSet::from([Pos { x: 0, y: 0 }]));
 
-        gc.send_all_fills(sheet_id);
+        gc.send_fills(&mut transaction);
 
-        let sheet = gc.try_sheet(sheet_id).unwrap();
-        let fills = sheet.get_all_sheet_fills();
-        expect_js_call(
-            "jsSheetMetaFills",
-            format!("{},{:?}", sheet.id, serde_json::to_vec(&fills).unwrap()),
-            true,
-        );
+        // Server transactions should not send fills
+        expect_js_call_count("jsHashRenderFills", 0, false);
+        expect_js_call_count("jsHashesDirtyFills", 0, false);
+        expect_js_call_count("jsSheetMetaFills", 0, true);
+    }
+
+    #[test]
+    fn test_send_meta_fills() {
+        clear_js_calls();
+        let mut gc = GridController::test_with_viewport_buffer();
+
+        // Set an infinite column fill (meta fill)
+        gc.set_fill_color(
+            &A1Selection::test_a1("A:A"),
+            Some("yellow".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Meta fills should be sent
+        expect_js_call_count("jsSheetMetaFills", 1, true);
+    }
+
+    #[test]
+    fn test_send_fills_without_viewport_buffer() {
+        clear_js_calls();
+        let mut gc = GridController::test(); // No viewport buffer
+
+        // Set a fill color - without viewport buffer, all fills should be sent
+        gc.set_fill_color(
+            &A1Selection::test_a1("ZZ1000"),
+            Some("purple".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Without viewport buffer, fills should be sent immediately (not marked dirty)
+        expect_js_call_count("jsHashRenderFills", 1, false);
+        expect_js_call_count("jsHashesDirtyFills", 0, true);
     }
 }

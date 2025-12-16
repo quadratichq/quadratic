@@ -24,6 +24,7 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeErrorContext,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsHashValidationWarnings,
@@ -153,6 +154,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientHashRenderFills') {
       events.emit('hashRenderFills', e.data.hashRenderFills);
+      return;
+    } else if (e.data.type === 'coreClientHashesDirtyFills') {
+      events.emit('hashesDirtyFills', e.data.dirtyHashes);
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
@@ -672,6 +676,21 @@ class QuadraticCore {
       fillColor,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    this.send({
+      type: 'clientCoreGetRenderFillsForHashes',
+      sheetId,
+      hashes,
+    });
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    this.send({
+      type: 'clientCoreGetSheetMetaFills',
+      sheetId,
     });
   }
 
