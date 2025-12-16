@@ -71,7 +71,7 @@ export function UserFilesListOtherFilters() {
         >
           <DropdownMenuSeparator className="!block" />
           <DropdownMenuRadioItem value="sharedPublicly">Shared publicly</DropdownMenuRadioItem>
-          {users.length > 0 && filters.fileType !== 'shared' && filters.fileType !== 'private' && (
+          {users.length > 1 && filters.fileType !== 'shared' && filters.fileType !== 'private' && (
             <>
               <DropdownMenuSeparator className="!block" />
               {users.map((user) => (
