@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use smallvec::SmallVec;
 
 use super::*;
-use crate::CellValueHash;
+use crate::{ArraySize, CellValueHash};
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
@@ -15,6 +15,54 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
+        formula_fn!(
+            /// Transposes an array (swaps rows and columns).
+            ///
+            /// The first row becomes the first column, the second row becomes the
+            /// second column, and so on.
+            #[examples("TRANSPOSE(A1:C2)", "TRANSPOSE({1, 2, 3; 4, 5, 6})")]
+            fn TRANSPOSE(array: Array) {
+                array.transpose()
+            }
+        ),
+        formula_fn!(
+            /// Generates a sequence of numbers.
+            ///
+            /// - `rows`: The number of rows to return.
+            /// - `columns`: The number of columns to return (default 1).
+            /// - `start`: The starting number (default 1).
+            /// - `step`: The increment between numbers (default 1).
+            #[examples(
+                "SEQUENCE(5) = {1; 2; 3; 4; 5}",
+                "SEQUENCE(3, 3) = {1, 2, 3; 4, 5, 6; 7, 8, 9}",
+                "SEQUENCE(3, 1, 0, 2) = {0; 2; 4}"
+            )]
+            fn SEQUENCE(
+                span: Span,
+                rows: (Spanned<i64>),
+                columns: (Option<Spanned<i64>>),
+                start: (Option<i64>),
+                step: (Option<i64>),
+            ) {
+                let r = rows.inner;
+                let c = columns.map(|c| c.inner).unwrap_or(1);
+                let start_val = start.unwrap_or(1);
+                let step_val = step.unwrap_or(1);
+
+                if r <= 0 || c <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let size = ArraySize::new(c as u32, r as u32)
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                let values: SmallVec<[CellValue; 1]> = (0..(r * c))
+                    .map(|i| CellValue::Number((start_val + step_val * i).into()))
+                    .collect();
+
+                Array::new_row_major(size, values)?
+            }
+        ),
         formula_fn!(
             /// Filters an array of values by a list of booleans.
             ///

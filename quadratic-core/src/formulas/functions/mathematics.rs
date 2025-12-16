@@ -78,7 +78,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Multiplies all values.  
+            /// Multiplies all values.
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
             fn PRODUCT(numbers: (Iter<f64>)) {
@@ -401,6 +401,227 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("TAU()")]
             fn TAU() {
                 std::f64::consts::TAU
+            }
+        ),
+        // Additional math functions
+        formula_fn!(
+            /// Returns the sign of a number: 1 if positive, -1 if negative, 0 if zero.
+            #[examples("SIGN(-5) = -1", "SIGN(5) = 1", "SIGN(0) = 0")]
+            #[zip_map]
+            fn SIGN([number]: f64) {
+                if number > 0.0 {
+                    1
+                } else if number < 0.0 {
+                    -1
+                } else {
+                    0
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the greatest common divisor of two or more integers.
+            #[examples("GCD(12, 18) = 6", "GCD(24, 36, 48) = 12")]
+            fn GCD(numbers: (Iter<i64>)) {
+                fn gcd_two(mut a: i64, mut b: i64) -> i64 {
+                    a = a.abs();
+                    b = b.abs();
+                    while b != 0 {
+                        let t = b;
+                        b = a % b;
+                        a = t;
+                    }
+                    a
+                }
+                let values: Vec<i64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Ok(0.into());
+                }
+                let result = values.into_iter().fold(0, gcd_two);
+                Ok(CellValue::from(result))
+            }
+        ),
+        formula_fn!(
+            /// Returns the least common multiple of two or more integers.
+            #[examples("LCM(4, 6) = 12", "LCM(3, 5, 7) = 105")]
+            fn LCM(span: Span, numbers: (Iter<i64>)) {
+                fn gcd_two(mut a: i64, mut b: i64) -> i64 {
+                    a = a.abs();
+                    b = b.abs();
+                    while b != 0 {
+                        let t = b;
+                        b = a % b;
+                        a = t;
+                    }
+                    a
+                }
+                fn lcm_two(a: i64, b: i64) -> Option<i64> {
+                    if a == 0 || b == 0 {
+                        return Some(0);
+                    }
+                    let g = gcd_two(a, b);
+                    (a / g).checked_mul(b.abs())
+                }
+                let values: Vec<i64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Ok(0.into());
+                }
+                let result = values
+                    .into_iter()
+                    .try_fold(1_i64, |acc, x| lcm_two(acc, x))
+                    .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?;
+                Ok(CellValue::from(result))
+            }
+        ),
+        formula_fn!(
+            /// Returns the integer portion of a division.
+            /// Truncates the result to an integer.
+            #[examples("QUOTIENT(10, 3) = 3", "QUOTIENT(-10, 3) = -3")]
+            #[zip_map]
+            fn QUOTIENT(span: Span, [numerator]: f64, [denominator]: f64) {
+                if denominator == 0.0 {
+                    return Err(RunErrorMsg::DivideByZero.with_span(span));
+                }
+                (numerator / denominator).trunc() as i64
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number up to the nearest odd integer.
+            /// If the number is already odd, it is unchanged (unless negative).
+            #[examples("ODD(1.5) = 3", "ODD(2) = 3", "ODD(-1.5) = -3")]
+            #[zip_map]
+            fn ODD([number]: f64) {
+                if number == 0.0 {
+                    1_i64
+                } else {
+                    let sign = if number > 0.0 { 1.0 } else { -1.0 };
+                    let abs_num = number.abs();
+                    let ceil = abs_num.ceil() as i64;
+                    let result = if ceil % 2 == 0 { ceil + 1 } else { ceil };
+                    (sign * result as f64) as i64
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number up to the nearest even integer.
+            /// Rounds away from zero.
+            #[examples("EVEN(1.5) = 2", "EVEN(3) = 4", "EVEN(-1.5) = -2")]
+            #[zip_map]
+            fn EVEN([number]: f64) {
+                if number == 0.0 {
+                    0_i64
+                } else {
+                    let sign = if number > 0.0 { 1.0 } else { -1.0 };
+                    let abs_num = number.abs();
+                    let ceil = abs_num.ceil() as i64;
+                    let result = if ceil % 2 == 0 { ceil } else { ceil + 1 };
+                    (sign * result as f64) as i64
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the factorial of a number.
+            /// The number must be non-negative.
+            #[examples("FACT(5) = 120", "FACT(0) = 1")]
+            #[zip_map]
+            fn FACT(span: Span, [number]: (Spanned<i64>)) {
+                if number.inner < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
+                }
+                let n = number.inner as u64;
+                if n > 170 {
+                    return Err(RunErrorMsg::Overflow.with_span(span));
+                }
+                let result: f64 = (1..=n).map(|i| i as f64).product();
+                result
+            }
+        ),
+        formula_fn!(
+            /// Returns the double factorial of a number.
+            /// For even n: n!! = n * (n-2) * (n-4) * ... * 4 * 2
+            /// For odd n: n!! = n * (n-2) * (n-4) * ... * 3 * 1
+            #[examples("FACTDOUBLE(6) = 48", "FACTDOUBLE(7) = 105")]
+            #[zip_map]
+            fn FACTDOUBLE(span: Span, [number]: (Spanned<i64>)) {
+                if number.inner < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
+                }
+                let n = number.inner as u64;
+                if n > 300 {
+                    return Err(RunErrorMsg::Overflow.with_span(span));
+                }
+                let mut result = 1.0_f64;
+                let mut i = n;
+                while i > 1 {
+                    result *= i as f64;
+                    i -= 2;
+                }
+                result
+            }
+        ),
+        formula_fn!(
+            /// Returns the number of combinations of n items taken k at a time.
+            /// Also known as "n choose k" or the binomial coefficient.
+            #[examples("COMBIN(5, 2) = 10", "COMBIN(10, 3) = 120")]
+            #[zip_map]
+            fn COMBIN(span: Span, [n]: (Spanned<i64>), [k]: (Spanned<i64>)) {
+                if n.inner < 0 || k.inner < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if k.inner > n.inner {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                }
+                let n = n.inner as u64;
+                let k = k.inner as u64;
+                // Use the smaller k to minimize calculations
+                let k = k.min(n - k);
+                // Calculate n! / (k! * (n-k)!) iteratively to avoid overflow
+                let mut result = 1.0_f64;
+                for i in 0..k {
+                    result = result * (n - i) as f64 / (i + 1) as f64;
+                }
+                result.round()
+            }
+        ),
+        formula_fn!(
+            /// Returns the number of permutations of n items taken k at a time.
+            #[examples("PERMUT(5, 2) = 20", "PERMUT(10, 3) = 720")]
+            #[zip_map]
+            fn PERMUT(span: Span, [n]: (Spanned<i64>), [k]: (Spanned<i64>)) {
+                if n.inner < 0 || k.inner < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if k.inner > n.inner {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                }
+                let n = n.inner as u64;
+                let k = k.inner as u64;
+                // Calculate n! / (n-k)! = n * (n-1) * ... * (n-k+1)
+                let mut result = 1.0_f64;
+                for i in 0..k {
+                    result *= (n - i) as f64;
+                }
+                result.round()
+            }
+        ),
+        formula_fn!(
+            /// Returns the sum of squares of the arguments.
+            #[examples("SUMSQ(3, 4) = 25", "SUMSQ(1, 2, 3) = 14")]
+            fn SUMSQ(numbers: (Iter<f64>)) {
+                numbers.try_fold(0.0, |acc, x| {
+                    let val = x?;
+                    Ok(acc + val * val)
+                })
+            }
+        ),
+        formula_fn!(
+            /// Returns the square root of a number multiplied by π.
+            #[examples("SQRTPI(1) = 1.7724538509...", "SQRTPI(2)")]
+            #[zip_map]
+            fn SQRTPI(span: Span, [number]: f64) {
+                if number < 0.0 {
+                    return Err(RunErrorMsg::NaN.with_span(span));
+                }
+                (number * std::f64::consts::PI).sqrt()
             }
         ),
     ]

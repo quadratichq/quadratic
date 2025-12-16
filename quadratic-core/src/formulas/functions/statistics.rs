@@ -191,6 +191,127 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Ok(CellValue::from(stdev))
             }
         ),
+        formula_fn!(
+            /// Returns the median of the given numbers.
+            /// The median is the middle value when the numbers are sorted.
+            /// If there is an even number of values, returns the average of the two middle values.
+            #[examples("MEDIAN(1, 2, 3, 4, 5) = 3", "MEDIAN(1, 2, 3, 4) = 2.5")]
+            fn MEDIAN(span: Span, numbers: (Iter<f64>)) {
+                let mut values: Vec<f64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+                values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let len = values.len();
+                if len % 2 == 0 {
+                    (values[len / 2 - 1] + values[len / 2]) / 2.0
+                } else {
+                    values[len / 2]
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the k-th largest value in a data set.
+            /// `k` is 1-indexed, so LARGE(data, 1) returns the largest value.
+            #[examples("LARGE(A1:A10, 1)", "LARGE({5, 2, 8, 1, 9}, 2) = 8")]
+            fn LARGE(span: Span, numbers: (Iter<f64>), k: (Spanned<i64>)) {
+                let mut values: Vec<f64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+                let k_usize = k
+                    .inner
+                    .checked_sub(1)
+                    .and_then(|n| usize::try_from(n).ok())
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(k.span))?;
+                if k_usize >= values.len() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                }
+                // Sort descending
+                values.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+                values[k_usize]
+            }
+        ),
+        formula_fn!(
+            /// Returns the k-th smallest value in a data set.
+            /// `k` is 1-indexed, so SMALL(data, 1) returns the smallest value.
+            #[examples("SMALL(A1:A10, 1)", "SMALL({5, 2, 8, 1, 9}, 2) = 2")]
+            fn SMALL(span: Span, numbers: (Iter<f64>), k: (Spanned<i64>)) {
+                let mut values: Vec<f64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+                let k_usize = k
+                    .inner
+                    .checked_sub(1)
+                    .and_then(|n| usize::try_from(n).ok())
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(k.span))?;
+                if k_usize >= values.len() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                }
+                // Sort ascending
+                values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                values[k_usize]
+            }
+        ),
+        formula_fn!(
+            /// Returns the minimum value from cells that match the specified criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples("MINIFS(A1:A10, B1:B10, \">0\")")]
+            fn MINIFS(
+                ctx: Ctx,
+                min_range: (Spanned<Array>),
+                eval_range1: (Spanned<Array>),
+                criteria1: (Spanned<Value>),
+                more_eval_ranges_and_criteria: FormulaFnArgs,
+            ) {
+                ctx.zip_map_eval_ranges_and_criteria_from_args(
+                    eval_range1,
+                    criteria1,
+                    more_eval_ranges_and_criteria,
+                    |_ctx, eval_ranges_and_criteria| {
+                        let mut numbers = Criterion::iter_matching_multi_coerced::<f64>(
+                            &eval_ranges_and_criteria,
+                            &min_range,
+                        )?;
+                        let result: f64 = numbers.try_fold(
+                            f64::INFINITY,
+                            |a, b: CodeResult<f64>| -> CodeResult<f64> { Ok(f64::min(a, b?)) },
+                        )?;
+                        Ok(result.into())
+                    },
+                )?
+            }
+        ),
+        formula_fn!(
+            /// Returns the maximum value from cells that match the specified criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples("MAXIFS(A1:A10, B1:B10, \">0\")")]
+            fn MAXIFS(
+                ctx: Ctx,
+                max_range: (Spanned<Array>),
+                eval_range1: (Spanned<Array>),
+                criteria1: (Spanned<Value>),
+                more_eval_ranges_and_criteria: FormulaFnArgs,
+            ) {
+                ctx.zip_map_eval_ranges_and_criteria_from_args(
+                    eval_range1,
+                    criteria1,
+                    more_eval_ranges_and_criteria,
+                    |_ctx, eval_ranges_and_criteria| {
+                        let mut numbers = Criterion::iter_matching_multi_coerced::<f64>(
+                            &eval_ranges_and_criteria,
+                            &max_range,
+                        )?;
+                        let result: f64 = numbers.try_fold(
+                            f64::NEG_INFINITY,
+                            |a, b: CodeResult<f64>| -> CodeResult<f64> { Ok(f64::max(a, b?)) },
+                        )?;
+                        Ok(result.into())
+                    },
+                )?
+            }
+        ),
     ]
 }
 

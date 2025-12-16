@@ -470,6 +470,216 @@ fn get_functions() -> Vec<FormulaFunction> {
                 s1 == s2
             }
         ),
+        // Search and replace
+        formula_fn!(
+            /// Returns the position of a substring within a string (case-sensitive).
+            /// Returns an error if the substring is not found.
+            ///
+            /// `start_pos` is the position to start searching from (1-indexed, default 1).
+            #[examples("FIND(\"lo\", \"Hello\") = 4", "FIND(\"l\", \"Hello\", 4) = 4")]
+            #[zip_map]
+            fn FIND(
+                [find_text]: String,
+                [within_text]: String,
+                [start_pos]: (Option<Spanned<i64>>),
+            ) {
+                let start = start_pos.map_or(Ok(0), |s| try_i64_minus_1_to_usize(s))?;
+                if start > within_text.len() {
+                    return Err(RunErrorMsg::InvalidArgument.without_span());
+                }
+                // Get byte index from character index
+                let byte_start = within_text
+                    .char_indices()
+                    .nth(start)
+                    .map(|(i, _)| i)
+                    .unwrap_or(within_text.len());
+                match within_text[byte_start..].find(&find_text) {
+                    Some(byte_pos) => {
+                        // Convert byte position back to character position
+                        let char_pos = within_text[..byte_start + byte_pos].chars().count();
+                        (char_pos + 1) as i64 // 1-indexed
+                    }
+                    None => return Err(RunErrorMsg::NoMatch.without_span()),
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the position of a substring within a string (case-insensitive).
+            /// Supports wildcards: `?` matches any single character, `*` matches any sequence.
+            /// Returns an error if the substring is not found.
+            ///
+            /// `start_pos` is the position to start searching from (1-indexed, default 1).
+            #[examples(
+                "SEARCH(\"LO\", \"Hello\") = 4",
+                "SEARCH(\"l\", \"Hello\", 4) = 4",
+                "SEARCH(\"l*o\", \"Hello\") = 3"
+            )]
+            #[zip_map]
+            fn SEARCH(
+                span: Span,
+                [find_text]: String,
+                [within_text]: String,
+                [start_pos]: (Option<Spanned<i64>>),
+            ) {
+                let start = start_pos.map_or(Ok(0), |s| try_i64_minus_1_to_usize(s))?;
+                if start > within_text.chars().count() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Get the substring starting from start position
+                let search_text: String = within_text.chars().skip(start).collect();
+                let search_text_lower = search_text.to_lowercase();
+                let find_text_lower = find_text.to_lowercase();
+
+                // Check if it's a simple search or wildcard search
+                if find_text_lower.contains('*') || find_text_lower.contains('?') {
+                    // Use wildcard matching
+                    let regex = crate::formulas::wildcard_pattern_to_regex(&find_text_lower)?;
+                    match regex.find(&search_text_lower) {
+                        Some(m) => {
+                            let char_pos = search_text_lower[..m.start()].chars().count();
+                            (start + char_pos + 1) as i64 // 1-indexed
+                        }
+                        None => return Err(RunErrorMsg::NoMatch.with_span(span)),
+                    }
+                } else {
+                    // Simple case-insensitive search
+                    match search_text_lower.find(&find_text_lower) {
+                        Some(byte_pos) => {
+                            let char_pos = search_text_lower[..byte_pos].chars().count();
+                            (start + char_pos + 1) as i64 // 1-indexed
+                        }
+                        None => return Err(RunErrorMsg::NoMatch.with_span(span)),
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Replaces part of a text string with a different text string.
+            ///
+            /// - `old_text`: The original text.
+            /// - `start_pos`: The position to start replacing (1-indexed).
+            /// - `num_chars`: The number of characters to replace.
+            /// - `new_text`: The text to insert.
+            #[examples(
+                "REPLACE(\"Hello\", 2, 3, \"i\") = \"Hio\"",
+                "REPLACE(\"abcdef\", 3, 2, \"XYZ\") = \"abXYZef\""
+            )]
+            #[zip_map]
+            fn REPLACE(
+                [old_text]: String,
+                [start_pos]: (Spanned<i64>),
+                [num_chars]: (Spanned<i64>),
+                [new_text]: String,
+            ) {
+                let start = try_i64_minus_1_to_usize(start_pos)?;
+                let num = try_i64_to_usize(num_chars)?;
+
+                let chars: Vec<char> = old_text.chars().collect();
+                let before: String = chars.iter().take(start).collect();
+                let after: String = chars.iter().skip(start + num).collect();
+
+                format!("{}{}{}", before, new_text, after)
+            }
+        ),
+        formula_fn!(
+            /// Substitutes new text for old text in a string.
+            ///
+            /// - `text`: The text containing the text to replace.
+            /// - `old_text`: The text to replace.
+            /// - `new_text`: The replacement text.
+            /// - `instance_num`: Optional. Which occurrence to replace (1-indexed). If omitted, all occurrences are replaced.
+            #[examples(
+                "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\") = \"Hi Hi\"",
+                "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\", 2) = \"Hello Hi\""
+            )]
+            #[zip_map]
+            fn SUBSTITUTE(
+                [text]: String,
+                [old_text]: String,
+                [new_text]: String,
+                [instance_num]: (Option<Spanned<i64>>),
+            ) {
+                if old_text.is_empty() {
+                    text
+                } else {
+                    match instance_num {
+                        None => {
+                            // Replace all occurrences
+                            text.replace(&old_text, &new_text)
+                        }
+                        Some(n) => {
+                            let instance = try_i64_to_usize(n)?;
+                            if instance == 0 {
+                                return Err(RunErrorMsg::InvalidArgument.with_span(n.span));
+                            }
+                            // Replace only the nth occurrence
+                            let mut count = 0;
+                            let mut result = String::new();
+                            let mut remaining = text.as_str();
+
+                            while let Some(pos) = remaining.find(&old_text) {
+                                count += 1;
+                                if count == instance {
+                                    result.push_str(&remaining[..pos]);
+                                    result.push_str(&new_text);
+                                    result.push_str(&remaining[pos + old_text.len()..]);
+                                    return Ok(CellValue::Text(result.into()));
+                                } else {
+                                    result.push_str(&remaining[..pos + old_text.len()]);
+                                    remaining = &remaining[pos + old_text.len()..];
+                                }
+                            }
+                            // If we didn't find the nth occurrence, return original text
+                            result.push_str(remaining);
+                            result
+                        }
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Repeats a text string a specified number of times.
+            #[examples("REPT(\"*\", 5) = \"*****\"", "REPT(\"ab\", 3) = \"ababab\"")]
+            #[zip_map]
+            fn REPT([text]: String, [number_times]: (Spanned<i64>)) {
+                let times = try_i64_to_usize(number_times)?;
+                text.repeat(times)
+            }
+        ),
+        formula_fn!(
+            /// Concatenates text strings with a delimiter between them.
+            ///
+            /// - `delimiter`: The text to insert between each value.
+            /// - `ignore_empty`: If TRUE, ignores empty cells.
+            /// - `text1, text2, ...`: The text values to join.
+            #[examples(
+                "TEXTJOIN(\", \", TRUE, \"a\", \"b\", \"c\") = \"a, b, c\"",
+                "TEXTJOIN(\"-\", FALSE, \"a\", \"\", \"c\") = \"a--c\""
+            )]
+            fn TEXTJOIN(delimiter: String, ignore_empty: bool, texts: (Iter<CellValue>)) {
+                let strings: Vec<String> = texts
+                    .filter_map(|v| match v {
+                        Ok(CellValue::Blank) => {
+                            if ignore_empty {
+                                None
+                            } else {
+                                Some(Ok(String::new()))
+                            }
+                        }
+                        Ok(CellValue::Text(s)) if s.is_empty() => {
+                            if ignore_empty {
+                                None
+                            } else {
+                                Some(Ok(String::new()))
+                            }
+                        }
+                        Ok(v) => Some(Ok(v.to_display())),
+                        Err(e) => Some(Err(e)),
+                    })
+                    .collect::<CodeResult<Vec<_>>>()?;
+                strings.join(&delimiter)
+            }
+        ),
     ]
 }
 

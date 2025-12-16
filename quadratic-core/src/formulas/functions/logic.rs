@@ -117,6 +117,71 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        // Information functions
+        formula_fn!(
+            /// Returns TRUE if value is blank.
+            #[examples("ISBLANK(A1)", "ISBLANK(\"\") = FALSE")]
+            #[zip_map]
+            fn ISBLANK([value]: CellValue) {
+                value.is_blank()
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is a number.
+            #[examples("ISNUMBER(123) = TRUE", "ISNUMBER(\"abc\") = FALSE")]
+            #[zip_map]
+            fn ISNUMBER([value]: CellValue) {
+                matches!(value, CellValue::Number(_))
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is text.
+            #[examples("ISTEXT(\"abc\") = TRUE", "ISTEXT(123) = FALSE")]
+            #[zip_map]
+            fn ISTEXT([value]: CellValue) {
+                matches!(value, CellValue::Text(_))
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is an error.
+            #[examples("ISERROR(1/0) = TRUE", "ISERROR(123) = FALSE")]
+            #[zip_map]
+            fn ISERROR([value]: CellValue) {
+                matches!(value, CellValue::Error(_))
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is a logical value (TRUE or FALSE).
+            #[examples("ISLOGICAL(TRUE) = TRUE", "ISLOGICAL(1) = FALSE")]
+            #[zip_map]
+            fn ISLOGICAL([value]: CellValue) {
+                matches!(value, CellValue::Logical(_))
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is an even number.
+            #[examples("ISEVEN(4) = TRUE", "ISEVEN(3) = FALSE")]
+            #[zip_map]
+            fn ISEVEN([value]: f64) {
+                (value.round() as i64) % 2 == 0
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is an odd number.
+            #[examples("ISODD(3) = TRUE", "ISODD(4) = FALSE")]
+            #[zip_map]
+            fn ISODD([value]: f64) {
+                (value.round() as i64) % 2 != 0
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is a #N/A error.
+            #[examples("ISNA(VLOOKUP(\"x\", A1:B10, 2)) = TRUE")]
+            #[zip_map]
+            fn ISNA([value]: CellValue) {
+                matches!(&value, CellValue::Error(e) if matches!(e.msg, RunErrorMsg::NoMatch))
+            }
+        ),
     ]
 }
 
