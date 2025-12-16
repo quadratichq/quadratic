@@ -1,3 +1,4 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
@@ -50,6 +51,7 @@ export class CellsFills extends Container {
   private cellsContainer: ParticleContainer;
   private meta: Graphics;
   private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
+  private debugGraphics: Graphics;
 
   private dirty = false;
   private dirtyTables = false;
@@ -63,6 +65,7 @@ export class CellsFills extends Container {
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
     this.alternatingColorsGraphics = this.addChild(new Graphics());
+    this.debugGraphics = this.addChild(new Graphics());
 
     events.on('hashRenderFills', this.handleHashRenderFills);
     events.on('hashesDirtyFills', this.handleHashesDirtyFills);
@@ -102,10 +105,21 @@ export class CellsFills extends Container {
     for (const { sheet_id, hash, fills } of hashRenderFillsArray) {
       if (sheet_id.id === this.cellsSheet.sheetId) {
         const key = `${hash.x},${hash.y}`;
+        const alreadyHad = this.fillsByHash.has(key);
         if (fills.length === 0) {
           this.fillsByHash.delete(key);
+          if (debugFlag('debugShowCellHashesInfo')) {
+            console.log(
+              `[CellsFills] received empty fills for hash (${hash.x},${hash.y})${alreadyHad ? ' (DUPLICATE)' : ''}`
+            );
+          }
         } else {
           this.fillsByHash.set(key, fills);
+          if (debugFlag('debugShowCellHashesInfo')) {
+            console.log(
+              `[CellsFills] received ${fills.length} fills for hash (${hash.x},${hash.y})${alreadyHad ? ' (DUPLICATE)' : ''}`
+            );
+          }
         }
         // Clear from dirty set since we now have the data
         this.dirtyFillHashes.delete(key);
@@ -153,9 +167,16 @@ export class CellsFills extends Container {
   };
 
   cheapCull = (viewBounds: Rectangle) => {
-    this.cellsContainer.children.forEach(
-      (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
-    );
+    let visibleCount = 0;
+    this.cellsContainer.children.forEach((sprite) => {
+      sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds);
+      if (sprite.visible) visibleCount++;
+    });
+    if (debugFlag('debugShowCellHashesInfo')) {
+      console.log(
+        `[CellsFills] visible: ${visibleCount}/${this.cellsContainer.children.length} fills (${this.fillsByHash.size} hashes in memory)`
+      );
+    }
   };
 
   private getColor(color: string): number {
@@ -174,7 +195,11 @@ export class CellsFills extends Container {
 
   private drawCells = () => {
     this.cellsContainer.removeChildren();
+    this.debugGraphics.clear();
+    const showDebug = debugFlag('debugShowCellHashesInfo');
+    let totalFills = 0;
     this.fillsByHash.forEach((fills) => {
+      totalFills += fills.length;
       fills.forEach((fill) => {
         const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
         sprite.tint = this.getColor(fill.color);
@@ -183,8 +208,17 @@ export class CellsFills extends Container {
         sprite.width = screen.width;
         sprite.height = screen.height;
         sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+
+        // Draw debug outline around each fill
+        if (showDebug) {
+          this.debugGraphics.lineStyle(2, 0xff0000, 1);
+          this.debugGraphics.drawRect(screen.x, screen.y, screen.width, screen.height);
+        }
       });
     });
+    if (showDebug) {
+      console.log(`[CellsFills] rendering ${totalFills} fills from ${this.fillsByHash.size} hashes`);
+    }
     pixiApp.setViewportDirty();
   };
 
@@ -262,6 +296,11 @@ export class CellsFills extends Container {
 
     // Request fills for new hashes
     if (hashesToLoad.length > 0) {
+      if (debugFlag('debugShowCellHashesInfo')) {
+        console.log(
+          `[CellsFills] loading ${hashesToLoad.length} fill hashes: ${hashesToLoad.map((h) => `(${h.x},${h.y})`).join(', ')}`
+        );
+      }
       quadraticCore.getRenderFillsForHashes(this.cellsSheet.sheetId, hashesToLoad);
     }
 
@@ -280,6 +319,9 @@ export class CellsFills extends Container {
 
     // Redraw if we unloaded any hashes
     if (hashesToUnload.length > 0) {
+      if (debugFlag('debugShowCellHashesInfo')) {
+        console.log(`[CellsFills] unloading ${hashesToUnload.length} fill hashes: ${hashesToUnload.join(', ')}`);
+      }
       this.drawCells();
     }
   };
