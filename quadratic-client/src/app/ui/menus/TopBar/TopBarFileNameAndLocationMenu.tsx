@@ -80,7 +80,7 @@ function FileLocation() {
     // My private file
     dashboardLink = (
       <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} data-testid="file-location-link-my-files">
-        My files
+        Private
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {
@@ -93,7 +93,11 @@ function FileLocation() {
   } else if (fileRole) {
     // File i was invited to
     dashboardLink = (
-      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} data-testid="file-location-link-shared-with-me">
+      <Link
+        to={ROUTES.TEAM_FILES_SHARED_WITH_ME(team.uuid)}
+        {...linkProps}
+        data-testid="file-location-link-shared-with-me"
+      >
         Shared with me
       </Link>
     );

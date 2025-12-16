@@ -1,4 +1,4 @@
-import { ArrowDropDownIcon, ViewGridIcon, ViewListIcon } from '@/shared/components/Icons';
+import { ArrowDropDownIcon, MoreHorizIcon, ViewGridIcon, ViewListIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -41,12 +41,14 @@ const layoutOptionsByValue = {
   [Layout.Grid]: 'Grid',
 };
 
-export function FileListViewControlsDropdown({
+export function FilesListViewToggle({
   viewPreferences,
   setViewPreferences,
+  className,
 }: {
   viewPreferences: ViewPreferences;
   setViewPreferences: Dispatch<SetStateAction<ViewPreferences>>;
+  className?: string;
 }) {
   const orderOptionsByValue = {
     [Order.Ascending]: viewPreferences.sort === Sort.Alphabetical ? 'A-Z' : 'Oldest first',
@@ -109,7 +111,7 @@ export function FileListViewControlsDropdown({
 
   return (
     <>
-      <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-1">
+      <div className={cn(`hidden xl:flex xl:flex-shrink-0 xl:flex-row xl:items-center xl:gap-1`, className)}>
         {(viewPreferences.sort || viewPreferences.order) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -135,7 +137,7 @@ export function FileListViewControlsDropdown({
           </DropdownMenu>
         )}
 
-        <div className="text-muted-foreground">
+        <div className="flex flex-shrink-0 items-center text-muted-foreground">
           <Button
             className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `!opacity-100`)}
             variant="ghost"
@@ -157,11 +159,11 @@ export function FileListViewControlsDropdown({
         </div>
       </div>
 
-      <div className="sm:hidden">
+      <div className={cn(`xl:hidden`, className)}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon">
-              <ArrowDropDownIcon />
+              <MoreHorizIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">

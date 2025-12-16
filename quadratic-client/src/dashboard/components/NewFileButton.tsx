@@ -2,10 +2,19 @@ import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import {
+  AddIcon,
+  AIIcon,
+  ApiIcon,
+  ArrowDropDownIcon,
+  DatabaseIcon,
+  ExamplesIcon,
+  FileIcon,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -19,13 +28,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { useAtomValue } from 'jotai';
 import { useRef } from 'react';
+import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
 
-export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
+export function NewFileButton() {
   const {
     activeTeam: {
       connections,
@@ -36,9 +47,17 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
+  const filters = useAtomValue(userFilesListFiltersAtom);
+
+  // If we're looking at the private tab, make implicit new files private. Otherwise, team files.
+  const isPrivate = filters.fileType === 'private';
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
-    <div className="flex gap-2">
+    <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
         variant="default"
         className="gap-2"
@@ -51,22 +70,39 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
         }}
       >
-        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
+        <AIIcon className="mr-0" />
+        Start with AI
+      </Button>
+
+      <Button
+        variant="outline"
+        onClick={async (e) => {
+          e.preventDefault();
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, false);
+          if (hasReachedLimit) {
+            showUpgradeDialog('fileLimitReached');
+            return;
+          }
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: false });
+        }}
+      >
+        <AddIcon className="mr-1" /> Team file
       </Button>
       <Button
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
           if (hasReachedLimit) {
             showUpgradeDialog('fileLimitReached');
             return;
           }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
         }}
       >
-        New file
+        <AddIcon className="mr-1" /> Private file
       </Button>
+
       <input
         ref={fileInputRef}
         type="file"
