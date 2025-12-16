@@ -7,15 +7,23 @@ export function FilesListSearchInput({
   value,
   onChange,
   className,
+  disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className={cn(`relative w-64`, className)}>
       <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground opacity-30" />
-      <Input onChange={(e) => onChange(e.target.value)} value={value} placeholder="Search…" className="w-full pl-8" />
+      <Input
+        onChange={(e) => onChange(e.target.value)}
+        value={value}
+        placeholder="Search…"
+        className="w-full pl-8"
+        disabled={disabled}
+      />
       {value && (
         <Button
           variant="ghost"

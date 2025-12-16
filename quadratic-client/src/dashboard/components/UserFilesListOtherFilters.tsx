@@ -16,7 +16,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { useAtom } from 'jotai';
 import { useState } from 'react';
 
-export function UserFilesListOtherFilters() {
+export function UserFilesListOtherFilters({ disabled }: { disabled?: boolean }) {
   const {
     activeTeam: { users },
   } = useDashboardRouteLoaderData();
@@ -33,6 +33,7 @@ export function UserFilesListOtherFilters() {
           size="icon"
           className={cn('relative', hasOtherFilters && 'bg-accent text-primary hover:text-primary')}
           aria-label="Other filters"
+          disabled={disabled}
           onClick={() => setShowDropdown(true)}
         >
           <FiltersIcon />

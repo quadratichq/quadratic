@@ -2,7 +2,6 @@ import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { FilesListControlsRow } from '@/dashboard/components/FilesListControlsRow';
-import { FilesListEmptyFilterState } from '@/dashboard/components/FilesListEmptyFilterState';
 import { FilesListItems } from '@/dashboard/components/FilesListItems';
 import { FilesListSearchInput } from '@/dashboard/components/FilesListSearchInput';
 import {
@@ -12,6 +11,7 @@ import {
   Sort,
   type ViewPreferences,
 } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { UserFilesListEmptyState } from '@/dashboard/components/UserFilesListEmptyState';
 import { UserFilesListFileTypeFilter } from '@/dashboard/components/UserFilesListFileTypeFilter';
 import { UserFilesListItem } from '@/dashboard/components/UserFilesListItem';
 import { UserFilesListOtherFilters } from '@/dashboard/components/UserFilesListOtherFilters';
@@ -22,7 +22,6 @@ import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { useAtom } from 'jotai';
 import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router';
@@ -48,18 +47,17 @@ export type UserFilesListFile = {
 
 export function UserFilesList({
   files,
-  emptyState,
+
   teamUuid,
-  isPrivate,
 }: {
   files: UserFilesListFile[];
-  emptyState?: ReactNode;
+
   teamUuid?: string;
-  isPrivate?: boolean;
 }) {
   const { pathname } = useLocation();
   const [filters, setFilters] = useAtom(userFilesListFiltersAtom);
   const filterValue = filters.fileName;
+  const fileType = filters.fileType;
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
@@ -147,16 +145,15 @@ export function UserFilesList({
     return viewPreferences.order === Order.Ascending ? comparison : -comparison;
   });
 
-  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
-      if (teamUuid === undefined || isPrivate === undefined || !e.dataTransfer.types.includes('Files')) return;
-      setFileDragDropState({ show: true, teamUuid, isPrivate });
+      if (teamUuid === undefined || !e.dataTransfer.types.includes('Files')) return;
+      setFileDragDropState({ show: true, teamUuid, isPrivate: fileType === 'private' });
     },
-    [isPrivate, setFileDragDropState, teamUuid]
+    [setFileDragDropState, fileType, teamUuid]
   );
 
   return (
@@ -166,8 +163,9 @@ export function UserFilesList({
         <FilesListSearchInput
           value={filterValue}
           onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
+          disabled={filterValue === '' && filesToRender.length === 0}
         />
-        <UserFilesListOtherFilters />
+        <UserFilesListOtherFilters disabled={filesToRender.length === 0} />
         <FilesListViewToggle
           viewPreferences={viewPreferences}
           setViewPreferences={setViewPreferences}
@@ -187,10 +185,7 @@ export function UserFilesList({
         ))}
       </FilesListItems>
 
-      {(filterValue && filesToRender.length === 0) ||
-        (filters.fileType && filesToRender.length === 0 && <FilesListEmptyFilterState />)}
-
-      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
+      <UserFilesListEmptyState filesToRenderCount={filesToRender.length} />
 
       {activeShareMenuFileId && (
         <ShareFileDialog

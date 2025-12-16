@@ -2,6 +2,7 @@ import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
@@ -27,13 +28,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { useAtomValue } from 'jotai';
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
 
-export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
+export function NewFileButton() {
   const {
     activeTeam: {
       connections,
@@ -44,6 +46,10 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
+  const filters = useAtomValue(userFilesListFiltersAtom);
+
+  // If we're looking at the private tab, make implicit new files private. Otherwise, team files.
+  const isPrivate = filters.fileType === 'private';
 
   return (
     <div className="flex flex-row-reverse gap-2">

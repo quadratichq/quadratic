@@ -1,5 +1,4 @@
 import { FilesListControlsRow } from '@/dashboard/components/FilesListControlsRow';
-import { FilesListEmptyFilterState } from '@/dashboard/components/FilesListEmptyFilterState';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { FilesListItems, ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { FilesListSearchInput } from '@/dashboard/components/FilesListSearchInput';
@@ -8,7 +7,9 @@ import {
   Layout,
   type ViewPreferences,
 } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { EmptyState } from '@/shared/components/EmptyState';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -70,7 +71,14 @@ export function ExampleFilesList({ files, emptyState }: { files: ExampleFilesLis
         })}
       </FilesListItems>
 
-      {searchValue && filesToRender.length === 0 && <FilesListEmptyFilterState />}
+      {searchValue && filesToRender.length === 0 && (
+        <EmptyState
+          title="No matches"
+          description={'No files found matching your filters.'}
+          Icon={MagnifyingGlassIcon}
+          className="mt-10"
+        />
+      )}
     </>
   );
 }

@@ -33,7 +33,7 @@ import { timeAgo } from '@/shared/utils/timeAgo';
 import { useAtomValue } from 'jotai';
 import { useEffect, useState } from 'react';
 import type { SubmitOptions } from 'react-router';
-import { Link, useFetcher, useMatch, useSubmit } from 'react-router';
+import { Link, useFetcher, useSubmit } from 'react-router';
 
 export function UserFilesListItem({
   file,
@@ -69,11 +69,7 @@ export function UserFilesListItem({
   const actionUrl = ROUTES.API.FILE(uuid);
 
   // Determine if the user can move files
-  // If we're looking at the user's private files, make sure they have edit access to the team
-  // If we're looking at a team, make sure they have edit access to the current team
-  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
-  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES(activeTeamUuid)));
-  const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
+  const canMoveFiles = permissions.includes('FILE_MOVE');
 
   // Determine if this is a private/personal file (for duplicate and move logic)
   const isFilePrivate = fileType === 'private';

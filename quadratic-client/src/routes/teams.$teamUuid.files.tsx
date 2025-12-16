@@ -1,16 +1,13 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { UserFilesList, type UserFilesListFile } from '@/dashboard/components/UserFilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { Avatar } from '@/shared/components/Avatar';
-import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
-import { FileIcon } from '@radix-ui/react-icons';
 import { useMemo } from 'react';
 import { Link, useLoaderData, type LoaderFunctionArgs } from 'react-router';
 
@@ -136,32 +133,12 @@ export const Component = () => {
                 </div>
               </Link>
             </div>
-            {canEdit && <NewFileButton isPrivate={false} />}
+            {canEdit && <NewFileButton />}
           </div>
         }
       />
 
-      <UserFilesList
-        files={suggestedFiles}
-        teamUuid={teamUuid}
-        isPrivate={false}
-        emptyState={
-          canEdit ? (
-            <FilesListEmptyState />
-          ) : (
-            <EmptyState
-              title="No team files yet"
-              description={`Files created by your team members will show up here.`}
-              Icon={FileIcon}
-            />
-          )
-          // <EmptyState
-          //   title="No suggested files"
-          //   description="Files will appear here for quick access."
-          //   Icon={FileIcon}
-          // />
-        }
-      />
+      <UserFilesList files={suggestedFiles} teamUuid={teamUuid} />
     </div>
   );
 };
