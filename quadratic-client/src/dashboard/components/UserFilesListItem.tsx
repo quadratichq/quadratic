@@ -1,6 +1,8 @@
-import type { FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
+import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import type { UserFilesListFile } from '@/dashboard/components/UserFilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
@@ -25,43 +27,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
+import { useAtomValue } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import type { SubmitOptions } from 'react-router';
 import { Link, useFetcher, useMatch, useSubmit } from 'react-router';
 
-export function FilesListItems({
-  children,
-  viewPreferences,
-}: {
-  children: React.ReactNode;
-  viewPreferences: ViewPreferences;
-}) {
-  return (
-    <ul
-      className={cn(
-        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4'
-      )}
-    >
-      {children}
-    </ul>
-  );
-}
-
-export function FilesListItemUserFile({
+export function UserFilesListItem({
   file,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
 }: {
-  file: FilesListUserFile;
+  file: UserFilesListFile;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
+  const filters = useAtomValue(userFilesListFiltersAtom);
   const submit = useSubmit();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -80,6 +65,8 @@ export function FilesListItemUserFile({
   } = useDashboardRouteLoaderData();
 
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  let { fileType } = file;
+
   const actionUrl = ROUTES.API.FILE(uuid);
 
   // Determine if the user can move files
@@ -90,7 +77,7 @@ export function FilesListItemUserFile({
   const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
 
   // Determine if this is a private/personal file (for duplicate and move logic)
-  const isFilePrivate = file.fileType === 'private';
+  const isFilePrivate = fileType === 'private';
 
   const description =
     viewPreferences.sort === Sort.Created
@@ -119,9 +106,15 @@ export function FilesListItemUserFile({
     }
   }, [addGlobalSnackbar, fetcherMove.data]);
 
-  // Optimistically hide this file if it's being deleted or moved
-  if (fetcherDelete.state !== 'idle' || fetcherMove.state !== 'idle') {
+  // Optimistically hide this file if it's being deleted
+  if (fetcherDelete.state !== 'idle') {
     return null;
+  }
+
+  // Optimistically update file type if it's being moved
+  if (fetcherMove.state !== 'idle') {
+    const ownerUserId = (fetcherMove.json as FileAction['request.move']).ownerUserId;
+    fileType = ownerUserId ? 'private' : 'team';
   }
 
   const renameFile = (value: string) => {
@@ -206,22 +199,22 @@ export function FilesListItemUserFile({
           <FilesListItemCore
             key={uuid}
             creator={file.creator}
-            filterMatch={file.filterMatch}
             name={displayName}
+            nameFilter={filters.fileName}
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
             children={
               <div className="mt-0.5 flex items-center gap-1">
-                {file.fileType === 'shared' ? (
+                {fileType === 'shared' ? (
                   <Badge variant="secondary" className="px-1 py-0 font-normal">
                     <FileSharedWithMeIcon size="xxs" className="mr-1" /> Shared with you
                   </Badge>
-                ) : file.fileType === 'private' ? (
+                ) : fileType === 'private' ? (
                   <Badge variant="secondary" className="px-1 py-0 font-normal">
                     <FilePrivateIcon size="xxs" className="mr-1" /> Private
                   </Badge>
-                ) : file.fileType === 'team' ? (
+                ) : fileType === 'team' ? (
                   <Badge variant="outline" className="px-1 py-0 font-normal">
                     <GroupIcon size="xxs" className="mr-1" />
                     Team
@@ -343,102 +336,5 @@ export function FilesListItemUserFile({
         />
       )}
     </ListItem>
-  );
-}
-
-export function FilesListItemExampleFile({
-  file,
-  lazyLoad,
-  viewPreferences,
-}: {
-  file: FilesListTemplateFile;
-  lazyLoad: boolean;
-  viewPreferences: ViewPreferences;
-}) {
-  const { href, thumbnail, name, description } = file;
-  return (
-    <ListItem>
-      <Link to={href} className="flex w-full" reloadDocument>
-        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
-          <FilesListItemCore name={name} description={description} viewPreferences={viewPreferences} />
-        </ListItemView>
-      </Link>
-    </ListItem>
-  );
-}
-
-function ListItem({ children }: { children: React.ReactNode }) {
-  return <li className="relative flex">{children}</li>;
-}
-
-function ListItemView({
-  viewPreferences,
-  thumbnail,
-  lazyLoad,
-  children,
-}: {
-  viewPreferences: ViewPreferences;
-  thumbnail: FilesListUserFile['thumbnail'];
-  lazyLoad: boolean;
-  children: React.ReactNode;
-}) {
-  const { layout } = viewPreferences;
-
-  return layout === Layout.Grid ? (
-    <div className="border border-border p-2 hover:bg-accent">
-      <div className="flex aspect-video items-center justify-center bg-background">
-        {thumbnail ? (
-          <img
-            loading={lazyLoad ? 'lazy' : 'eager'}
-            src={thumbnail}
-            crossOrigin="anonymous"
-            alt="File thumbnail screenshot"
-            className="dark-mode-hack object-cover"
-            draggable="false"
-          />
-        ) : (
-          <div className="flex items-center justify-center">
-            <img
-              src={'/favicon.ico'}
-              alt="File thumbnail placeholder"
-              className={`opacity-10 brightness-0 grayscale`}
-              width="24"
-              height="24"
-              draggable="false"
-            />
-          </div>
-        )}
-      </div>
-      <Separator className="border-accent" />
-      <div className="pt-2">{children}</div>
-    </div>
-  ) : (
-    <div className={`flex w-full flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
-      <div className={`hidden border border-border shadow-sm md:block`}>
-        {thumbnail ? (
-          <img
-            loading={lazyLoad ? 'lazy' : 'eager'}
-            src={thumbnail}
-            crossOrigin="anonymous"
-            alt="File thumbnail screenshot"
-            className={`aspect-video object-fill`}
-            width="80"
-            draggable="false"
-          />
-        ) : (
-          <div className="flex aspect-video w-20 items-center justify-center bg-background">
-            <img
-              src={'/favicon.ico'}
-              alt="File thumbnail placeholder"
-              className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
-              width="16"
-              height="16"
-              draggable="false"
-            />
-          </div>
-        )}
-      </div>
-      <div className="flex-grow">{children}</div>
-    </div>
   );
 }

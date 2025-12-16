@@ -1,17 +1,15 @@
-import { filesListFiltersAtom } from '@/dashboard/atoms/filesListFiltersAtom';
-import type { FilesListUserFile } from '@/dashboard/components/FilesList';
 import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import type { FileCreator } from '@/dashboard/components/UserFilesList';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
   name,
+  nameFilter,
   description,
-  filterMatch,
   creator,
   hasNetworkError,
   isShared,
@@ -20,18 +18,16 @@ export function FilesListItemCore({
   children,
 }: {
   name: string;
+  nameFilter: string;
   description: string;
-  filterMatch?: FilesListUserFile['filterMatch'];
   viewPreferences: ViewPreferences;
-  creator?: FilesListUserFile['creator'];
+  creator?: FileCreator;
   hasNetworkError?: boolean;
   isShared?: boolean;
   actions?: ReactNode;
   children?: ReactNode;
 }) {
-  const filters = useAtomValue(filesListFiltersAtom);
-  const filterValue = filters.fileName;
-  const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
+  const __html = nameFilter ? highlightMatchingString(name, nameFilter) : name;
   const isGrid = viewPreferences.layout === Layout.Grid;
 
   return (

@@ -1,16 +1,26 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
-import { filesListFiltersAtom } from '@/dashboard/atoms/filesListFiltersAtom';
+import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
-import { FilesListItemExampleFile, FilesListItems, FilesListItemUserFile } from '@/dashboard/components/FilesListItem';
-import { FilesListViewControls } from '@/dashboard/components/FilesListViewControls';
-import { Layout, Order, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { FilesListControlsRow } from '@/dashboard/components/FilesListControlsRow';
+import { FilesListEmptyFilterState } from '@/dashboard/components/FilesListEmptyFilterState';
+import { FilesListItems } from '@/dashboard/components/FilesListItems';
+import { FilesListSearchInput } from '@/dashboard/components/FilesListSearchInput';
+import {
+  FilesListViewToggle,
+  Layout,
+  Order,
+  Sort,
+  type ViewPreferences,
+} from '@/dashboard/components/FilesListViewControlsDropdown';
+import { UserFilesListFileTypeFilter } from '@/dashboard/components/UserFilesListFileTypeFilter';
+import { UserFilesListItem } from '@/dashboard/components/UserFilesListItem';
+import { UserFilesListOtherFilters } from '@/dashboard/components/UserFilesListOtherFilters';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
-import { EmptyState } from '@/shared/components/EmptyState';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { useAtomValue } from 'jotai';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
+import { useAtom } from 'jotai';
 import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
@@ -18,7 +28,13 @@ import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
-export type FilesListUserFile = {
+export type FileCreator = {
+  name?: string;
+  picture?: string;
+  email?: string;
+};
+
+export type UserFilesListFile = {
   createdDate: string;
   name: string;
   publicLinkAccess: PublicLinkAccess;
@@ -26,30 +42,23 @@ export type FilesListUserFile = {
   thumbnail: string | null;
   updatedDate: string;
   uuid: string;
-  creator?: {
-    name?: string;
-    picture?: string;
-    email?: string;
-  };
-  filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
-  fileType?: 'team' | 'private' | 'shared';
+  creator?: FileCreator;
+  fileType: 'team' | 'private' | 'shared';
 };
 
-export type { FilesListFilters } from '@/dashboard/atoms/filesListFiltersAtom';
-
-export function FilesList({
+export function UserFilesList({
   files,
   emptyState,
   teamUuid,
   isPrivate,
 }: {
-  files: FilesListUserFile[];
+  files: UserFilesListFile[];
   emptyState?: ReactNode;
   teamUuid?: string;
   isPrivate?: boolean;
 }) {
   const { pathname } = useLocation();
-  const filters = useAtomValue(filesListFiltersAtom);
+  const [filters, setFilters] = useAtom(userFilesListFiltersAtom);
   const filterValue = filters.fileName;
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
@@ -64,6 +73,9 @@ export function FilesList({
     }
   );
 
+  // We handle the file type in the URL without using the router
+  useUpdateQueryStringValueWithoutNavigation('type', filters.fileType);
+
   // We will optimistcally render the list of files
   let filesToRender = files;
 
@@ -75,7 +87,7 @@ export function FilesList({
       // (filter makes sure there's no trailing slash to deal with)
       const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
       // We should never have a file that's duplicating that's not in the list
-      const file = files.find((file) => file.uuid === fileUuid) as FilesListUserFile;
+      const file = files.find((file) => file.uuid === fileUuid) as UserFilesListFile;
       return {
         ...file,
         uuid: `${fileUuid}--duplicate-${i}`,
@@ -89,31 +101,14 @@ export function FilesList({
 
   // If the user has an active filter query, remove those
   if (filterValue) {
-    filesToRender = filesToRender
-      .map((file) => {
-        const { name, creator } = file;
-        const fileNameNormalized = name.toLowerCase();
-        const creatorNameNormalized = creator?.name?.toLowerCase() || '';
-        const creatorEmailNormalized = creator?.email?.toLowerCase() || '';
-        const filterValueNormalized = filterValue.toLowerCase();
+    filesToRender = filesToRender.filter((file) => {
+      const { name } = file;
+      const fileNameNormalized = name.toLowerCase();
 
-        let filterMatch: FilesListUserFile['filterMatch'] = undefined;
-        if (fileNameNormalized.includes(filterValueNormalized)) {
-          filterMatch = 'file-name';
-        } else if (creatorNameNormalized.includes(filterValueNormalized)) {
-          filterMatch = 'creator-name';
-        } else if (creatorEmailNormalized.includes(filterValueNormalized)) {
-          filterMatch = 'creator-email';
-        }
+      const filterValueNormalized = filterValue.toLowerCase();
 
-        return filterMatch
-          ? {
-              ...file,
-              filterMatch,
-            }
-          : file;
-      })
-      .filter((item) => item.filterMatch);
+      return fileNameNormalized.includes(filterValueNormalized);
+    });
   }
 
   // Filter by file type
@@ -166,11 +161,23 @@ export function FilesList({
 
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
-      <FilesListViewControls viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
+      <FilesListControlsRow>
+        <UserFilesListFileTypeFilter />
+        <FilesListSearchInput
+          value={filterValue}
+          onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
+        />
+        <UserFilesListOtherFilters />
+        <FilesListViewToggle
+          viewPreferences={viewPreferences}
+          setViewPreferences={setViewPreferences}
+          className="ml-auto"
+        />
+      </FilesListControlsRow>
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (
-          <FilesListItemUserFile
+          <UserFilesListItem
             key={file.uuid}
             file={file}
             lazyLoad={i > 12}
@@ -181,7 +188,7 @@ export function FilesList({
       </FilesListItems>
 
       {(filterValue && filesToRender.length === 0) ||
-        (filters.fileType && filesToRender.length === 0 && <EmptyFilterState />)}
+        (filters.fileType && filesToRender.length === 0 && <FilesListEmptyFilterState />)}
 
       {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
 
@@ -196,68 +203,6 @@ export function FilesList({
       )}
 
       <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
-    </div>
-  );
-}
-
-export type FilesListTemplateFile = {
-  description: string;
-  href: string;
-  name: string;
-  thumbnail: string;
-};
-
-export function ExampleFilesList({ files, emptyState }: { files: FilesListTemplateFile[]; emptyState?: ReactNode }) {
-  const { pathname } = useLocation();
-  const filters = useAtomValue(filesListFiltersAtom);
-  const filterValue = filters.fileName;
-  const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
-    // Persist the layout preference across views (by URL)
-    `FilesList-${pathname}`,
-    // Initial state
-    {
-      layout: isMobile ? Layout.List : Layout.Grid,
-    }
-  );
-
-  const filesToRender = filterValue
-    ? files.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()))
-    : files;
-
-  return (
-    <>
-      <FilesListViewControls viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
-
-      <FilesListItems viewPreferences={viewPreferences}>
-        {filesToRender.map((file, i) => {
-          const { href, name, thumbnail, description } = file;
-          const lazyLoad = i > 12;
-
-          return (
-            <FilesListItemExampleFile
-              key={href}
-              file={{
-                name,
-                href,
-                thumbnail,
-                description,
-              }}
-              lazyLoad={lazyLoad}
-              viewPreferences={viewPreferences}
-            />
-          );
-        })}
-      </FilesListItems>
-
-      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
-    </>
-  );
-}
-
-function EmptyFilterState() {
-  return (
-    <div className="flex min-h-80 items-center justify-center">
-      <EmptyState title="No matches" description={'No files found matching your filters.'} Icon={MagnifyingGlassIcon} />
     </div>
   );
 }

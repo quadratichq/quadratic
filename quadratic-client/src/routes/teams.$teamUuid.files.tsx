@@ -1,8 +1,8 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { FilesList, type FilesListUserFile } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
+import { UserFilesList, type UserFilesListFile } from '@/dashboard/components/UserFilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { Avatar } from '@/shared/components/Avatar';
@@ -64,7 +64,7 @@ export const Component = () => {
 
   // Combine team files + personal files + shared with me files, sorted by last modified date
   const suggestedFiles = useMemo(() => {
-    const allFiles: FilesListUserFile[] = [];
+    const allFiles: UserFilesListFile[] = [];
 
     // Add team files
     teamFiles.forEach(({ file, userMakingRequest }) => {
@@ -141,7 +141,7 @@ export const Component = () => {
         }
       />
 
-      <FilesList
+      <UserFilesList
         files={suggestedFiles}
         teamUuid={teamUuid}
         isPrivate={false}

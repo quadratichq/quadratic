@@ -1,17 +1,17 @@
 import { atom } from 'jotai';
 
-export type FilesListType = null | 'team' | 'private' | 'shared';
+export type UserFilesListType = null | 'team' | 'private' | 'shared';
 
-export type FilesListFilters = {
+export type UserFilesListFilters = {
   fileName: string;
-  fileType: FilesListType;
+  fileType: UserFilesListType;
   fileCreator: null | string;
   sharedPublicly?: boolean;
   hasScheduledTasks?: boolean;
 };
 
 // Helper to get initial fileType from URL search params
-function getInitialFileType(): FilesListType {
+function getInitialFileType(): UserFilesListType {
   try {
     const params = new URLSearchParams(window.location.search);
     const type = params.get('type');
@@ -22,11 +22,11 @@ function getInitialFileType(): FilesListType {
   }
 }
 
-export const defaultFilesListFilters: FilesListFilters = {
+export const defaultUserFilesListFilters: UserFilesListFilters = {
   fileName: '',
   fileType: getInitialFileType(),
   fileCreator: null,
   sharedPublicly: false,
 };
 
-export const filesListFiltersAtom = atom<FilesListFilters>(defaultFilesListFilters);
+export const userFilesListFiltersAtom = atom<UserFilesListFilters>(defaultUserFilesListFilters);
