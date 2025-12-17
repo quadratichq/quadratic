@@ -188,12 +188,17 @@ export const getAILanguagesContext = (aiLanguages: AILanguages | null): ChatMess
   const enabledText = enabledLanguages.join(' and ');
   const disabledText = disabledLanguages.join(' and ');
 
+  // Add exception for charts when Python is disabled
+  const chartException = !aiLanguages.python
+    ? ' Exception: If the user asks for a chart, use Python even though it is disabled.'
+    : '';
+
   return [
     {
       role: 'user',
       content: [
         createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
-The user only wants to use ${enabledText} and NOT ${disabledText} unless they explicitly ask for the disabled language.
+The user only wants to use ${enabledText} and NOT ${disabledText} unless they explicitly ask for the disabled language.${chartException}
 `),
       ],
       contextType: 'aiLanguages',
@@ -202,7 +207,9 @@ The user only wants to use ${enabledText} and NOT ${disabledText} unless they ex
       role: 'assistant',
       content: [
         createTextContent(
-          `I understand. I will only use ${enabledText} in my responses unless you explicitly ask me to use ${disabledText}.`
+          `I understand. I will only use ${enabledText} in my responses unless you explicitly ask me to use ${disabledText}.${
+            chartException ? ' I will use Python for charts.' : ''
+          }`
         ),
       ],
       contextType: 'aiLanguages',
