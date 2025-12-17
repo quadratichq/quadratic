@@ -18,16 +18,13 @@ const schema = z.object({
 
 /**
  * Create a Plaid Link token
- * 
+ *
  * This endpoint creates a link token that the frontend uses to initialize
  * Plaid Link, allowing users to search for and connect their bank accounts.
- * 
+ *
  * POST /v0/teams/:uuid/plaid/link-token
  */
-async function handler(
-  req: RequestWithUser,
-  res: Response<{ linkToken: string }>
-) {
+async function handler(req: RequestWithUser, res: Response<{ linkToken: string }>) {
   const {
     user: { id: userId },
   } = req;
@@ -59,19 +56,27 @@ async function handler(
 
     const plaidClient = new PlaidApi(configuration);
 
-    // Create link token with all products we want to support
-    const request = {
+    // Create user in Plaid if it doesn't exist.
+    // This is needed to only get billed once per user.
+    const userCreateRequest = { client_user_id: userId.toString() };
+    const userCreateResponse = await plaidClient.userCreate(userCreateRequest, true);
+    const plaidUserId = userCreateResponse.data.user_id;
+
+    // Create link token with all products we want to support, and require if supported products
+    const createLinkTokenRequest = {
       user: {
         client_user_id: userId.toString(),
       },
+      user_id: plaidUserId,
       client_name: 'Quadratic',
-      products: [Products.Transactions, Products.Investments, Products.Liabilities],
+      products: [Products.Transactions],
+      required_if_supported_products: [Products.Investments, Products.Liabilities],
       country_codes: [CountryCode.Us],
       language: 'en',
     };
 
-    const response = await plaidClient.linkTokenCreate(request);
-    const linkToken = response.data.link_token;
+    const createLinkTokenResponse = await plaidClient.linkTokenCreate(createLinkTokenRequest);
+    const linkToken = createLinkTokenResponse.data.link_token;
 
     return res.status(200).json({ linkToken });
   } catch (error) {
@@ -79,4 +84,3 @@ async function handler(
     throw new ApiError(500, 'Failed to create Plaid link token');
   }
 }
-
