@@ -8,7 +8,11 @@ use super::*;
 use crate::{
     Array, ArraySize, CellValue, CodeResult, CoerceInto, Pos, RunErrorMsg, SheetRect, Spanned,
     Value,
-    a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
+    a1::{
+        CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange, UNBOUNDED,
+        column_name,
+    },
+    formulas::LambdaValue,
     grid::SheetId,
 };
 
@@ -59,6 +63,36 @@ impl AstNodeContents {
             AstNodeContents::Error(_) => "error literal",
         }
     }
+
+    /// Tries to extract an identifier name from this AST node.
+    ///
+    /// This is used for LAMBDA parameter names. A valid identifier is:
+    /// - A CellRef that represents a column-only reference (e.g., "X" becomes column 24)
+    /// - A String literal
+    ///
+    /// Returns `None` if the node cannot be interpreted as an identifier.
+    fn try_as_identifier(&self) -> Option<String> {
+        match self {
+            AstNodeContents::CellRef(None, bounds) => {
+                // Check if this is a column-only reference (no row number)
+                // A column reference has:
+                // - start.col and end.col are the same (single column)
+                // - start.row = 1, end.row = UNBOUNDED (full column range)
+                // - col is not UNBOUNDED
+                if bounds.start.col == bounds.end.col
+                    && bounds.start.col.coord != UNBOUNDED
+                    && bounds.start.row.coord == 1
+                    && bounds.end.row.coord == UNBOUNDED
+                {
+                    Some(column_name(bounds.start.col.coord))
+                } else {
+                    None
+                }
+            }
+            AstNodeContents::String(s) => Some(s.clone()),
+            _ => None,
+        }
+    }
 }
 
 impl Formula {
@@ -70,7 +104,10 @@ impl Formula {
 
 impl AstNode {
     /// Evaluates an AST node. Errors are converted to [`CellValue::Error`].
-    fn eval<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> Spanned<Value> {
+    pub(crate) fn eval<'expr, 'ctx: 'expr>(
+        &'expr self,
+        ctx: &'expr mut Ctx<'ctx>,
+    ) -> Spanned<Value> {
         self.eval_to_result(ctx).unwrap_or_else(|e| Spanned {
             span: self.span,
             inner: e.into(),
@@ -89,6 +126,161 @@ impl AstNode {
                 let array = ctx.get_cell_array(rect.inner, self.span)?;
 
                 Value::Array(array.inner)
+            }
+
+            // Special handling for LAMBDA
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("LAMBDA") =>
+            {
+                // LAMBDA(param1, param2, ..., body)
+                // All arguments except the last are parameter names
+                // The last argument is the body expression (kept unevaluated)
+                if args.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "LAMBDA".into(),
+                        arg_name: "body".into(),
+                    }
+                    .with_span(self.span));
+                }
+
+                let (param_nodes, body_node) = args.split_at(args.len() - 1);
+
+                // Extract parameter names from the first N-1 arguments
+                let mut params = Vec::with_capacity(param_nodes.len());
+                for param_node in param_nodes {
+                    let param_name = param_node.inner.try_as_identifier().ok_or_else(|| {
+                        RunErrorMsg::Expected {
+                            expected: "parameter name".into(),
+                            got: Some(param_node.inner.type_string().into()),
+                        }
+                        .with_span(param_node.span)
+                    })?;
+                    params.push(param_name);
+                }
+
+                // The body is the last argument (kept as unevaluated AST)
+                let body = body_node[0].clone();
+
+                Value::Lambda(LambdaValue::new(params, body))
+            }
+
+            // Special handling for LET
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("LET") =>
+            {
+                // LET(name1, value1, name2, value2, ..., calculation)
+                // Arguments come in pairs (name, value) followed by final calculation
+                // Minimum: LET(name, value, calculation) = 3 arguments
+                if args.len() < 3 {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "LET".into(),
+                        arg_name: if args.is_empty() {
+                            "name1".into()
+                        } else if args.len() == 1 {
+                            "value1".into()
+                        } else {
+                            "calculation".into()
+                        },
+                    }
+                    .with_span(self.span));
+                }
+
+                // Must have odd number of arguments: pairs + calculation
+                if args.len() % 2 == 0 {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "LET".into(),
+                        arg_name: "calculation".into(),
+                    }
+                    .with_span(self.span));
+                }
+
+                // Build bindings from name-value pairs
+                let mut bindings: Vec<(String, Value)> = Vec::new();
+                let num_pairs = (args.len() - 1) / 2;
+
+                for i in 0..num_pairs {
+                    let name_node = &args[i * 2];
+                    let value_node = &args[i * 2 + 1];
+
+                    // Extract variable name
+                    let var_name = name_node.inner.try_as_identifier().ok_or_else(|| {
+                        RunErrorMsg::Expected {
+                            expected: "variable name".into(),
+                            got: Some(name_node.inner.type_string().into()),
+                        }
+                        .with_span(name_node.span)
+                    })?;
+
+                    // Evaluate value with current bindings (allows referencing earlier variables)
+                    let mut child_ctx = ctx.with_bindings(&bindings);
+                    let value = value_node.eval(&mut child_ctx).inner;
+
+                    bindings.push((var_name, value));
+                }
+
+                // Evaluate calculation with all bindings
+                let calculation_node = &args[args.len() - 1];
+                let mut child_ctx = ctx.with_bindings(&bindings);
+                calculation_node.eval(&mut child_ctx).inner
+            }
+
+            // Special handling for CALL (lambda invocation)
+            // CALL(callee, arg1, arg2, ...) - generated by parser for expr(args) syntax
+            AstNodeContents::FunctionCall { func, args } if func.inner == "CALL" => {
+                if args.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "CALL".into(),
+                        arg_name: "callee".into(),
+                    }
+                    .with_span(self.span));
+                }
+
+                // Evaluate the callee (first argument)
+                let callee_value = args[0].eval(&mut *ctx).inner;
+
+                match callee_value {
+                    Value::Lambda(lambda) => {
+                        // Check argument count
+                        let call_args = &args[1..];
+                        if call_args.len() != lambda.param_count() {
+                            return Err(RunErrorMsg::TooManyArguments {
+                                func_name: "LAMBDA".into(),
+                                max_arg_count: lambda.param_count(),
+                            }
+                            .with_span(self.span));
+                        }
+
+                        // Evaluate the call arguments
+                        let arg_values: Vec<Value> = call_args
+                            .iter()
+                            .map(|arg| arg.eval(&mut *ctx).inner)
+                            .collect();
+
+                        // Create bindings from parameters to argument values
+                        let bindings: Vec<(String, Value)> = lambda
+                            .params
+                            .iter()
+                            .zip(arg_values)
+                            .map(|(name, val)| (name.clone(), val))
+                            .collect();
+
+                        // Create child context with bindings and evaluate body
+                        let mut child_ctx = ctx.with_bindings(&bindings);
+                        lambda.body.eval(&mut child_ctx).inner
+                    }
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "lambda".into(),
+                            got: Some(match callee_value {
+                                Value::Single(cv) => cv.type_name().into(),
+                                Value::Array(_) => "array".into(),
+                                Value::Tuple(_) => "tuple".into(),
+                                Value::Lambda(_) => unreachable!(),
+                            }),
+                        }
+                        .with_span(args[0].span));
+                    }
+                }
             }
 
             // Other operator/function
@@ -148,8 +340,26 @@ impl AstNode {
                 Array::new_row_major(size, flat_array)?.into()
             }
 
-            // Single cell references return 1x1 arrays for Excel compatibility.
-            AstNodeContents::CellRef(_, _) | AstNodeContents::RangeRef(_) => {
+            // Single cell references: first check if it's a variable, then treat as cell reference
+            AstNodeContents::CellRef(sheet_id, _) => {
+                // Check if this CellRef could be a variable reference
+                if sheet_id.is_none() {
+                    if let Some(identifier) = self.inner.try_as_identifier() {
+                        if let Some(value) = ctx.lookup_variable(&identifier) {
+                            return Ok(Spanned {
+                                span: self.span,
+                                inner: value.clone(),
+                            });
+                        }
+                    }
+                }
+                // Not a variable, treat as cell reference
+                let ref_range = self.to_ref_range(ctx)?;
+                let sheet_rect = ctx.resolve_range_ref(&ref_range, self.span, true)?.inner;
+                ctx.get_cell_array(sheet_rect, self.span)?.inner.into()
+            }
+
+            AstNodeContents::RangeRef(_) => {
                 let ref_range = self.to_ref_range(ctx)?;
                 let sheet_rect = ctx.resolve_range_ref(&ref_range, self.span, true)?.inner;
                 ctx.get_cell_array(sheet_rect, self.span)?.inner.into()

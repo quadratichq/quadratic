@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use smallvec::SmallVec;
 
 use super::*;
+use crate::formulas::LambdaValue;
 use crate::{ArraySize, CellValueHash};
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -511,7 +512,667 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Array::new_row_major(size, values)?
             }
         ),
+        formula_fn!(
+            /// Applies a lambda function to each row of an array and returns the
+            /// results as a column.
+            ///
+            /// - `array`: The array to process, where each row is passed to the lambda.
+            /// - `lambda`: A LAMBDA function that takes a single row (as a 1D array)
+            ///   and returns a single value.
+            ///
+            /// The lambda function is called once for each row in the array.
+            /// The results are combined into a single column.
+            #[examples(
+                "BYROW({1, 2; 3, 4}, LAMBDA(row, SUM(row)))",
+                "BYROW(A1:C5, LAMBDA(r, MAX(r)))"
+            )]
+            fn BYROW(ctx: Ctx, span: Span, args: FormulaFnArgs) {
+                eval_by_slice(ctx, span, args, Axis::Y, "BYROW")?
+            }
+        ),
+        formula_fn!(
+            /// Applies a lambda function to each column of an array and returns the
+            /// results as a row.
+            ///
+            /// - `array`: The array to process, where each column is passed to the lambda.
+            /// - `lambda`: A LAMBDA function that takes a single column (as a 1D array)
+            ///   and returns a single value.
+            ///
+            /// The lambda function is called once for each column in the array.
+            /// The results are combined into a single row.
+            #[examples(
+                "BYCOL({1, 2; 3, 4}, LAMBDA(col, SUM(col)))",
+                "BYCOL(A1:C5, LAMBDA(c, MAX(c)))"
+            )]
+            fn BYCOL(ctx: Ctx, span: Span, args: FormulaFnArgs) {
+                eval_by_slice(ctx, span, args, Axis::X, "BYCOL")?
+            }
+        ),
+        formula_fn!(
+            /// Creates an array by applying a lambda function to each row and column index.
+            ///
+            /// - `rows`: The number of rows in the resulting array.
+            /// - `columns`: The number of columns in the resulting array.
+            /// - `lambda`: A LAMBDA function that takes row index and column index
+            ///   (both 1-based) and returns a value for that cell.
+            ///
+            /// The lambda is called once for each cell in the resulting array.
+            #[examples(
+                "MAKEARRAY(3, 3, LAMBDA(r, c, r * c))",
+                "MAKEARRAY(2, 4, LAMBDA(row, col, row + col))"
+            )]
+            fn MAKEARRAY(ctx: Ctx, span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get rows
+                let rows_value = args.take_next_required("rows")?;
+                let rows: i64 = rows_value.try_coerce()?.inner;
+
+                // Get columns
+                let columns_value = args.take_next_required("columns")?;
+                let columns: i64 = columns_value.try_coerce()?.inner;
+
+                // Get lambda
+                let lambda_value = args.take_next_required("lambda")?;
+                let lambda = extract_lambda(&lambda_value, "MAKEARRAY")?;
+
+                args.error_if_more_args()?;
+
+                if ctx.skip_computation {
+                    return Ok(Value::Single(CellValue::Blank));
+                }
+
+                // Validate dimensions
+                if rows <= 0 || columns <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Validate lambda has exactly 2 parameters
+                if lambda.param_count() != 2 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let size = ArraySize::new(columns as u32, rows as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity((rows * columns) as usize);
+
+                for r in 1..=rows {
+                    for c in 1..=columns {
+                        // Create bindings for row and column indices (1-based)
+                        let bindings = vec![
+                            (lambda.params[0].clone(), Value::from(r as f64)),
+                            (lambda.params[1].clone(), Value::from(c as f64)),
+                        ];
+
+                        // Evaluate the lambda body with the bindings
+                        let mut child_ctx = ctx.with_bindings(&bindings);
+                        let result = lambda.body.eval(&mut child_ctx);
+
+                        // Extract a single value from the result
+                        let cell_value = match result.inner {
+                            Value::Single(cv) => cv,
+                            Value::Array(a) => a
+                                .cell_values_slice()
+                                .first()
+                                .cloned()
+                                .unwrap_or(CellValue::Blank),
+                            Value::Tuple(t) => t
+                                .first()
+                                .and_then(|a| a.cell_values_slice().first().cloned())
+                                .unwrap_or(CellValue::Blank),
+                            Value::Lambda(_) => {
+                                return Err(RunErrorMsg::Expected {
+                                    expected: "value".into(),
+                                    got: Some("lambda".into()),
+                                }
+                                .with_span(span));
+                            }
+                        };
+
+                        values.push(cell_value);
+                    }
+                }
+
+                Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Applies a lambda function to each element in an array or arrays,
+            /// returning a new array of the same size.
+            ///
+            /// - `array1`: The first array to map over.
+            /// - `lambda`: A LAMBDA function that takes one argument per input array
+            ///   and returns a value.
+            ///
+            /// If multiple arrays are provided (via additional arguments before lambda),
+            /// they must all have the same dimensions, and the lambda receives one
+            /// element from each array at corresponding positions.
+            #[examples(
+                "MAP({1, 2, 3}, LAMBDA(x, x * 2))",
+                "MAP({1, 2; 3, 4}, {10, 20; 30, 40}, LAMBDA(a, b, a + b))"
+            )]
+            fn MAP(ctx: Ctx, span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Collect all arguments
+                let all_args: Vec<Spanned<Value>> = args.take_rest().collect();
+
+                if all_args.len() < 2 {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "MAP".into(),
+                        arg_name: if all_args.is_empty() {
+                            "array"
+                        } else {
+                            "lambda"
+                        }
+                        .into(),
+                    }
+                    .with_span(span));
+                }
+
+                // The last argument should be the lambda
+                let lambda_value = &all_args[all_args.len() - 1];
+                let lambda = extract_lambda(lambda_value, "MAP")?;
+
+                // All other arguments are arrays
+                let array_values = &all_args[..all_args.len() - 1];
+
+                // Check that lambda has correct number of parameters
+                if lambda.param_count() != array_values.len() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                if ctx.skip_computation {
+                    return Ok(Value::Single(CellValue::Blank));
+                }
+
+                // Convert all arguments to arrays
+                let arrays: Vec<Array> = array_values
+                    .iter()
+                    .map(|v| Array::try_from(v.inner.clone()))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|e| e.with_span(span))?;
+
+                // All arrays must have the same size
+                let first_size = arrays[0].size();
+                for (i, arr) in arrays.iter().enumerate().skip(1) {
+                    if arr.size() != first_size {
+                        return Err(RunErrorMsg::ExactArraySizeMismatch {
+                            expected: first_size,
+                            got: arr.size(),
+                        }
+                        .with_span(array_values[i].span));
+                    }
+                }
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(first_size.len());
+
+                // Iterate over all positions
+                for idx in 0..first_size.len() {
+                    // Get the element from each array at this position
+                    let mut bindings: Vec<(String, Value)> = Vec::with_capacity(arrays.len());
+                    for (i, arr) in arrays.iter().enumerate() {
+                        let cell_value = arr.cell_values_slice()[idx].clone();
+                        bindings.push((lambda.params[i].clone(), Value::Single(cell_value)));
+                    }
+
+                    // Evaluate the lambda body with the bindings
+                    let mut child_ctx = ctx.with_bindings(&bindings);
+                    let result = lambda.body.eval(&mut child_ctx);
+
+                    // Extract a single value from the result
+                    let cell_value = match result.inner {
+                        Value::Single(cv) => cv,
+                        Value::Array(a) => a
+                            .cell_values_slice()
+                            .first()
+                            .cloned()
+                            .unwrap_or(CellValue::Blank),
+                        Value::Tuple(t) => t
+                            .first()
+                            .and_then(|a| a.cell_values_slice().first().cloned())
+                            .unwrap_or(CellValue::Blank),
+                        Value::Lambda(_) => {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "value".into(),
+                                got: Some("lambda".into()),
+                            }
+                            .with_span(span));
+                        }
+                    };
+
+                    values.push(cell_value);
+                }
+
+                Array::new_row_major(first_size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Reduces an array to a single value by applying a lambda function
+            /// to an accumulator and each element in sequence.
+            ///
+            /// - `initial_value`: The starting value for the accumulator.
+            /// - `array`: The array to reduce.
+            /// - `lambda`: A LAMBDA function that takes two arguments:
+            ///   the accumulator and the current element, and returns the new
+            ///   accumulator value.
+            ///
+            /// The lambda is called once for each element in the array,
+            /// with the result becoming the new accumulator for the next iteration.
+            #[examples(
+                "REDUCE(0, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc + val))",
+                "REDUCE(1, A1:A5, LAMBDA(a, b, a * b))"
+            )]
+            fn REDUCE(ctx: Ctx, span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get initial value
+                let initial_value = args.take_next_required("initial_value")?;
+
+                // Get array
+                let array_value = args.take_next_required("array")?;
+                let array: Array = array_value.try_coerce()?.inner;
+
+                // Get lambda
+                let lambda_value = args.take_next_required("lambda")?;
+                let lambda = extract_lambda(&lambda_value, "REDUCE")?;
+
+                args.error_if_more_args()?;
+
+                if ctx.skip_computation {
+                    return Ok(Value::Single(CellValue::Blank));
+                }
+
+                // Validate lambda has exactly 2 parameters
+                if lambda.param_count() != 2 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Start with initial value
+                let mut accumulator = initial_value.inner;
+
+                // Iterate over array elements
+                for cell_value in array.cell_values_slice().iter() {
+                    // Create bindings for accumulator and current element
+                    let bindings = vec![
+                        (lambda.params[0].clone(), accumulator),
+                        (lambda.params[1].clone(), Value::Single(cell_value.clone())),
+                    ];
+
+                    // Evaluate the lambda body with the bindings
+                    let mut child_ctx = ctx.with_bindings(&bindings);
+                    let result = lambda.body.eval(&mut child_ctx);
+
+                    // The result becomes the new accumulator
+                    accumulator = result.inner;
+                }
+
+                accumulator
+            }
+        ),
+        formula_fn!(
+            /// Returns the specified columns from an array.
+            ///
+            /// Column indices are 1-based. Negative indices count from the end
+            /// of the array (e.g., -1 is the last column).
+            ///
+            /// Multiple column indices can be specified to return multiple columns.
+            #[examples(
+                "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 1) = {1; 4}",
+                "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 1, 3) = {1, 3; 4, 6}",
+                "CHOOSECOLS({1, 2, 3; 4, 5, 6}, -1) = {3; 6}"
+            )]
+            fn CHOOSECOLS(span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get the array
+                let array_value = args.take_next_required("array")?;
+                let array: Array = array_value.try_coerce()?.inner;
+
+                // Collect column indices
+                let indices: Vec<Spanned<i64>> = args
+                    .take_rest()
+                    .map(|v| v.try_coerce::<i64>())
+                    .collect::<CodeResult<Vec<_>>>()?;
+
+                if indices.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "CHOOSECOLS".into(),
+                        arg_name: "col_num1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                let width = array.width() as i64;
+                let height = array.height();
+
+                // Convert indices to 0-based, handling negative indices
+                let col_indices: Vec<u32> = indices
+                    .iter()
+                    .map(|idx| {
+                        let i = idx.inner;
+                        if i == 0 {
+                            return Err(RunErrorMsg::IndexOutOfBounds.with_span(idx.span));
+                        }
+                        let col = if i > 0 { i - 1 } else { width + i };
+                        if col < 0 || col >= width {
+                            return Err(RunErrorMsg::IndexOutOfBounds.with_span(idx.span));
+                        }
+                        Ok(col as u32)
+                    })
+                    .collect::<CodeResult<Vec<_>>>()?;
+
+                // Build the result array
+                let result_size = ArraySize::new(col_indices.len() as u32, height)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(result_size.len());
+                for y in 0..height {
+                    for &col in &col_indices {
+                        values.push(array.get(col, y)?.clone());
+                    }
+                }
+
+                Array::new_row_major(result_size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Returns the specified rows from an array.
+            ///
+            /// Row indices are 1-based. Negative indices count from the end
+            /// of the array (e.g., -1 is the last row).
+            ///
+            /// Multiple row indices can be specified to return multiple rows.
+            #[examples(
+                "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 1) = {1, 2, 3}",
+                "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 1, 2) = {1, 2, 3; 4, 5, 6}",
+                "CHOOSEROWS({1, 2, 3; 4, 5, 6}, -1) = {4, 5, 6}"
+            )]
+            fn CHOOSEROWS(span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get the array
+                let array_value = args.take_next_required("array")?;
+                let array: Array = array_value.try_coerce()?.inner;
+
+                // Collect row indices
+                let indices: Vec<Spanned<i64>> = args
+                    .take_rest()
+                    .map(|v| v.try_coerce::<i64>())
+                    .collect::<CodeResult<Vec<_>>>()?;
+
+                if indices.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "CHOOSEROWS".into(),
+                        arg_name: "row_num1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                let width = array.width();
+                let height = array.height() as i64;
+
+                // Convert indices to 0-based, handling negative indices
+                let row_indices: Vec<u32> = indices
+                    .iter()
+                    .map(|idx| {
+                        let i = idx.inner;
+                        if i == 0 {
+                            return Err(RunErrorMsg::IndexOutOfBounds.with_span(idx.span));
+                        }
+                        let row = if i > 0 { i - 1 } else { height + i };
+                        if row < 0 || row >= height {
+                            return Err(RunErrorMsg::IndexOutOfBounds.with_span(idx.span));
+                        }
+                        Ok(row as u32)
+                    })
+                    .collect::<CodeResult<Vec<_>>>()?;
+
+                // Build the result array
+                let result_size = ArraySize::new(width, row_indices.len() as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(result_size.len());
+                for &row in &row_indices {
+                    for x in 0..width {
+                        values.push(array.get(x, row)?.clone());
+                    }
+                }
+
+                Array::new_row_major(result_size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Scans an array by applying a lambda function to an accumulator
+            /// and each element, returning an array of all intermediate values.
+            ///
+            /// - `initial_value`: The starting value for the accumulator.
+            /// - `array`: The array to scan.
+            /// - `lambda`: A LAMBDA function that takes two arguments:
+            ///   the accumulator and the current element, and returns the new
+            ///   accumulator value.
+            ///
+            /// Similar to REDUCE, but returns all intermediate accumulator values
+            /// as an array of the same shape as the input array.
+            #[examples(
+                "SCAN(0, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc + val))",
+                "SCAN(1, A1:A5, LAMBDA(a, b, a * b))"
+            )]
+            fn SCAN(ctx: Ctx, span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get initial value
+                let initial_value = args.take_next_required("initial_value")?;
+
+                // Get array
+                let array_value = args.take_next_required("array")?;
+                let array: Array = array_value.try_coerce()?.inner;
+
+                // Get lambda
+                let lambda_value = args.take_next_required("lambda")?;
+                let lambda = extract_lambda(&lambda_value, "SCAN")?;
+
+                args.error_if_more_args()?;
+
+                if ctx.skip_computation {
+                    return Ok(Value::Single(CellValue::Blank));
+                }
+
+                // Validate lambda has exactly 2 parameters
+                if lambda.param_count() != 2 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let size = array.size();
+                let mut values: SmallVec<[CellValue; 1]> = SmallVec::with_capacity(size.len());
+
+                // Start with initial value
+                let mut accumulator = initial_value.inner;
+
+                // Iterate over array elements
+                for cell_value in array.cell_values_slice().iter() {
+                    // Create bindings for accumulator and current element
+                    let bindings = vec![
+                        (lambda.params[0].clone(), accumulator),
+                        (lambda.params[1].clone(), Value::Single(cell_value.clone())),
+                    ];
+
+                    // Evaluate the lambda body with the bindings
+                    let mut child_ctx = ctx.with_bindings(&bindings);
+                    let result = lambda.body.eval(&mut child_ctx);
+
+                    // Extract a single value from the result for the output
+                    let result_value = match &result.inner {
+                        Value::Single(cv) => cv.clone(),
+                        Value::Array(a) => a
+                            .cell_values_slice()
+                            .first()
+                            .cloned()
+                            .unwrap_or(CellValue::Blank),
+                        Value::Tuple(t) => t
+                            .first()
+                            .and_then(|a| a.cell_values_slice().first().cloned())
+                            .unwrap_or(CellValue::Blank),
+                        Value::Lambda(_) => {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "value".into(),
+                                got: Some("lambda".into()),
+                            }
+                            .with_span(span));
+                        }
+                    };
+
+                    values.push(result_value);
+
+                    // The result becomes the new accumulator
+                    accumulator = result.inner;
+                }
+
+                Array::new_row_major(size, values)?
+            }
+        ),
     ]
+}
+
+/// Evaluates BYROW or BYCOL by applying a lambda function to each slice (row or column)
+/// of an array and returning the results.
+fn eval_by_slice(
+    ctx: &mut Ctx<'_>,
+    span: Span,
+    mut args: FormulaFnArgs,
+    axis: Axis,
+    func_name: &'static str,
+) -> CodeResult<Value> {
+    // Get the array argument
+    let array_value = args.take_next_required("array")?;
+    let array: Array = array_value.try_coerce()?.inner;
+
+    // Get the lambda argument
+    let lambda_value = args.take_next_required("lambda")?;
+    let lambda = extract_lambda(&lambda_value, func_name)?;
+
+    // Check that there are no extra arguments
+    args.error_if_more_args()?;
+
+    if ctx.skip_computation {
+        return Ok(Value::Single(CellValue::Blank));
+    }
+
+    // Validate lambda has exactly 1 parameter
+    if lambda.param_count() != 1 {
+        return Err(RunErrorMsg::InvalidArgument.with_span(span));
+    }
+
+    // Apply the lambda to each slice
+    let results = apply_lambda_to_slices(ctx, &array, &lambda, axis, span)?;
+
+    // Build result array based on axis
+    let result_array = match axis {
+        // BYROW: results form a column (Nx1 array)
+        Axis::Y => {
+            let size = ArraySize::new(1, results.len() as u32)
+                .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+            Array::new_row_major(size, results.into())?
+        }
+        // BYCOL: results form a row (1xN array)
+        Axis::X => {
+            let size = ArraySize::new(results.len() as u32, 1)
+                .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+            Array::new_row_major(size, results.into())?
+        }
+    };
+
+    Ok(Value::from(result_array))
+}
+
+/// Extracts a LambdaValue from a Spanned<Value>, returning an error if it's not a lambda.
+fn extract_lambda(value: &Spanned<Value>, _func_name: &str) -> CodeResult<LambdaValue> {
+    match &value.inner {
+        Value::Lambda(lambda) => Ok(lambda.clone()),
+        Value::Single(cv) => Err(RunErrorMsg::Expected {
+            expected: "lambda".into(),
+            got: Some(cv.type_name().into()),
+        }
+        .with_span(value.span)),
+        Value::Array(_) => Err(RunErrorMsg::Expected {
+            expected: "lambda".into(),
+            got: Some("array".into()),
+        }
+        .with_span(value.span)),
+        Value::Tuple(_) => Err(RunErrorMsg::Expected {
+            expected: "lambda".into(),
+            got: Some("tuple".into()),
+        }
+        .with_span(value.span)),
+    }
+}
+
+/// Applies a lambda function to each slice (row or column) of an array.
+fn apply_lambda_to_slices(
+    ctx: &mut Ctx<'_>,
+    array: &Array,
+    lambda: &LambdaValue,
+    axis: Axis,
+    span: Span,
+) -> CodeResult<SmallVec<[CellValue; 1]>> {
+    let mut results = SmallVec::new();
+
+    for slice in array.slices(axis) {
+        // Create a 1D array from the slice
+        let slice_values: SmallVec<[CellValue; 1]> =
+            slice.into_iter().map(|cv| cv.clone()).collect();
+        let slice_array = match axis {
+            // Row: create a 1xN array (row vector)
+            Axis::Y => {
+                let size = ArraySize::new(slice_values.len() as u32, 1)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, slice_values)?
+            }
+            // Column: create an Nx1 array (column vector)
+            Axis::X => {
+                let size = ArraySize::new(1, slice_values.len() as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, slice_values)?
+            }
+        };
+
+        // Create bindings for the lambda parameter
+        let bindings = vec![(lambda.params[0].clone(), Value::from(slice_array))];
+
+        // Evaluate the lambda body with the bindings
+        let mut child_ctx = ctx.with_bindings(&bindings);
+        let result = lambda.body.eval(&mut child_ctx);
+
+        // Extract a single value from the result
+        let cell_value = match result.inner {
+            Value::Single(cv) => cv,
+            Value::Array(a) => a
+                .cell_values_slice()
+                .first()
+                .cloned()
+                .unwrap_or(CellValue::Blank),
+            Value::Tuple(t) => t
+                .first()
+                .and_then(|a| a.cell_values_slice().first().cloned())
+                .unwrap_or(CellValue::Blank),
+            Value::Lambda(_) => {
+                return Err(RunErrorMsg::Expected {
+                    expected: "value".into(),
+                    got: Some("lambda".into()),
+                }
+                .with_span(span));
+            }
+        };
+
+        results.push(cell_value);
+    }
+
+    Ok(results)
 }
 
 /// Calculate matrix determinant using LU decomposition with partial pivoting
@@ -1272,6 +1933,550 @@ mod tests {
         assert_eq!(
             RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "RANDARRAY(1, 1, 100, 10)").msg,
+        );
+    }
+
+    #[test]
+    fn test_byrow() {
+        let g = GridController::new();
+
+        // Basic BYROW with SUM
+        assert_eq!(
+            "{3; 7}",
+            eval_to_string(&g, "BYROW({1, 2; 3, 4}, LAMBDA(row, SUM(row)))")
+        );
+
+        // BYROW with MAX
+        assert_eq!(
+            "{3; 6; 9}",
+            eval_to_string(&g, "BYROW({1, 2, 3; 4, 5, 6; 7, 8, 9}, LAMBDA(r, MAX(r)))")
+        );
+
+        // BYROW with MIN
+        assert_eq!(
+            "{1; 4; 7}",
+            eval_to_string(&g, "BYROW({1, 2, 3; 4, 5, 6; 7, 8, 9}, LAMBDA(r, MIN(r)))")
+        );
+
+        // BYROW with AVERAGE
+        assert_eq!(
+            "{2; 5; 8}",
+            eval_to_string(
+                &g,
+                "BYROW({1, 2, 3; 4, 5, 6; 7, 8, 9}, LAMBDA(r, AVERAGE(r)))"
+            )
+        );
+
+        // BYROW with single row
+        assert_eq!(
+            "{6}",
+            eval_to_string(&g, "BYROW({1, 2, 3}, LAMBDA(r, SUM(r)))")
+        );
+
+        // BYROW with single column (each "row" is a single element)
+        assert_eq!(
+            "{1; 2; 3}",
+            eval_to_string(&g, "BYROW({1; 2; 3}, LAMBDA(r, SUM(r)))")
+        );
+
+        // BYROW with COUNT
+        assert_eq!(
+            "{3; 3}",
+            eval_to_string(&g, "BYROW({1, 2, 3; 4, 5, 6}, LAMBDA(r, COUNT(r)))")
+        );
+
+        // Error: lambda must have exactly 1 parameter
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "BYROW({1, 2; 3, 4}, LAMBDA(a, b, a+b))").msg,
+        );
+
+        // Error: missing lambda argument
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "BYROW".into(),
+                arg_name: "lambda".into(),
+            },
+            eval_to_err(&g, "BYROW({1, 2; 3, 4})").msg,
+        );
+
+        // Error: non-lambda as second argument
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "lambda".into(),
+                got: Some("number".into()),
+            },
+            eval_to_err(&g, "BYROW({1, 2; 3, 4}, 5)").msg,
+        );
+    }
+
+    #[test]
+    fn test_bycol() {
+        let g = GridController::new();
+
+        // Basic BYCOL with SUM
+        assert_eq!(
+            "{4, 6}",
+            eval_to_string(&g, "BYCOL({1, 2; 3, 4}, LAMBDA(col, SUM(col)))")
+        );
+
+        // BYCOL with MAX
+        assert_eq!(
+            "{7, 8, 9}",
+            eval_to_string(&g, "BYCOL({1, 2, 3; 4, 5, 6; 7, 8, 9}, LAMBDA(c, MAX(c)))")
+        );
+
+        // BYCOL with MIN
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "BYCOL({1, 2, 3; 4, 5, 6; 7, 8, 9}, LAMBDA(c, MIN(c)))")
+        );
+
+        // BYCOL with AVERAGE
+        assert_eq!(
+            "{4, 5, 6}",
+            eval_to_string(
+                &g,
+                "BYCOL({1, 2, 3; 4, 5, 6; 7, 8, 9}, LAMBDA(c, AVERAGE(c)))"
+            )
+        );
+
+        // BYCOL with single column
+        assert_eq!(
+            "{6}",
+            eval_to_string(&g, "BYCOL({1; 2; 3}, LAMBDA(c, SUM(c)))")
+        );
+
+        // BYCOL with single row (each "column" is a single element)
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "BYCOL({1, 2, 3}, LAMBDA(c, SUM(c)))")
+        );
+
+        // BYCOL with COUNT
+        assert_eq!(
+            "{2, 2, 2}",
+            eval_to_string(&g, "BYCOL({1, 2, 3; 4, 5, 6}, LAMBDA(c, COUNT(c)))")
+        );
+
+        // Error: lambda must have exactly 1 parameter
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "BYCOL({1, 2; 3, 4}, LAMBDA(a, b, a+b))").msg,
+        );
+
+        // Error: missing lambda argument
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "BYCOL".into(),
+                arg_name: "lambda".into(),
+            },
+            eval_to_err(&g, "BYCOL({1, 2; 3, 4})").msg,
+        );
+
+        // Error: non-lambda as second argument
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "lambda".into(),
+                got: Some("text".into()),
+            },
+            eval_to_err(&g, "BYCOL({1, 2; 3, 4}, \"not a lambda\")").msg,
+        );
+    }
+
+    #[test]
+    fn test_makearray() {
+        let g = GridController::new();
+
+        // Basic MAKEARRAY - multiplication table
+        assert_eq!(
+            "{1, 2, 3; 2, 4, 6; 3, 6, 9}",
+            eval_to_string(&g, "MAKEARRAY(3, 3, LAMBDA(r, c, r * c))")
+        );
+
+        // MAKEARRAY - row + column indices
+        assert_eq!(
+            "{2, 3, 4; 3, 4, 5}",
+            eval_to_string(&g, "MAKEARRAY(2, 3, LAMBDA(row, col, row + col))")
+        );
+
+        // MAKEARRAY - single row
+        assert_eq!(
+            "{1, 2, 3, 4}",
+            eval_to_string(&g, "MAKEARRAY(1, 4, LAMBDA(r, c, c))")
+        );
+
+        // MAKEARRAY - single column
+        assert_eq!(
+            "{1; 2; 3; 4}",
+            eval_to_string(&g, "MAKEARRAY(4, 1, LAMBDA(r, c, r))")
+        );
+
+        // MAKEARRAY - constant value
+        assert_eq!(
+            "{5, 5; 5, 5}",
+            eval_to_string(&g, "MAKEARRAY(2, 2, LAMBDA(r, c, 5))")
+        );
+
+        // MAKEARRAY - with calculation
+        assert_eq!(
+            "{2, 5, 10; 5, 8, 13; 10, 13, 18}",
+            eval_to_string(&g, "MAKEARRAY(3, 3, LAMBDA(r, c, r*r + c*c))")
+        );
+
+        // Error: invalid dimensions
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MAKEARRAY(0, 3, LAMBDA(r, c, r))").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MAKEARRAY(3, -1, LAMBDA(r, c, r))").msg,
+        );
+
+        // Error: lambda must have exactly 2 parameters
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MAKEARRAY(2, 2, LAMBDA(x, x))").msg,
+        );
+    }
+
+    #[test]
+    fn test_map() {
+        let g = GridController::new();
+
+        // Basic MAP - double values
+        assert_eq!(
+            "{2, 4, 6}",
+            eval_to_string(&g, "MAP({1, 2, 3}, LAMBDA(x, x * 2))")
+        );
+
+        // MAP - 2D array
+        assert_eq!(
+            "{2, 4; 6, 8}",
+            eval_to_string(&g, "MAP({1, 2; 3, 4}, LAMBDA(x, x * 2))")
+        );
+
+        // MAP - with string transformation
+        assert_eq!(
+            "{HELLO, WORLD}",
+            eval_to_string(&g, "MAP({\"hello\", \"world\"}, LAMBDA(s, UPPER(s)))")
+        );
+
+        // MAP - square values
+        assert_eq!(
+            "{1, 4, 9, 16}",
+            eval_to_string(&g, "MAP({1, 2, 3, 4}, LAMBDA(n, n * n))")
+        );
+
+        // MAP with two arrays
+        assert_eq!(
+            "{11, 22; 33, 44}",
+            eval_to_string(
+                &g,
+                "MAP({1, 2; 3, 4}, {10, 20; 30, 40}, LAMBDA(a, b, a + b))"
+            )
+        );
+
+        // MAP with three arrays
+        assert_eq!(
+            "{111, 222}",
+            eval_to_string(
+                &g,
+                "MAP({1, 2}, {10, 20}, {100, 200}, LAMBDA(a, b, c, a + b + c))"
+            )
+        );
+
+        // Error: missing arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "MAP".into(),
+                arg_name: "array".into(),
+            },
+            eval_to_err(&g, "MAP()").msg,
+        );
+
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "MAP".into(),
+                arg_name: "lambda".into(),
+            },
+            eval_to_err(&g, "MAP({1, 2, 3})").msg,
+        );
+
+        // Error: wrong number of lambda parameters
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MAP({1, 2, 3}, LAMBDA(a, b, a + b))").msg,
+        );
+    }
+
+    #[test]
+    fn test_reduce() {
+        let g = GridController::new();
+
+        // Basic REDUCE - sum
+        assert_eq!(
+            "15",
+            eval_to_string(
+                &g,
+                "REDUCE(0, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc + val))"
+            )
+        );
+
+        // REDUCE - product
+        assert_eq!(
+            "120",
+            eval_to_string(
+                &g,
+                "REDUCE(1, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc * val))"
+            )
+        );
+
+        // REDUCE - with initial value
+        assert_eq!(
+            "25",
+            eval_to_string(
+                &g,
+                "REDUCE(10, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc + val))"
+            )
+        );
+
+        // REDUCE - find max
+        assert_eq!(
+            "9",
+            eval_to_string(
+                &g,
+                "REDUCE(0, {3, 7, 2, 9, 1}, LAMBDA(acc, val, IF(val > acc, val, acc)))"
+            )
+        );
+
+        // REDUCE - 2D array (processes in row-major order)
+        assert_eq!(
+            "10",
+            eval_to_string(&g, "REDUCE(0, {1, 2; 3, 4}, LAMBDA(acc, val, acc + val))")
+        );
+
+        // REDUCE - string concatenation
+        assert_eq!(
+            "abc",
+            eval_to_string(
+                &g,
+                "REDUCE(\"\", {\"a\", \"b\", \"c\"}, LAMBDA(acc, val, CONCAT(acc, val)))"
+            )
+        );
+
+        // Error: lambda must have exactly 2 parameters
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "REDUCE(0, {1, 2, 3}, LAMBDA(x, x))").msg,
+        );
+    }
+
+    #[test]
+    fn test_choosecols() {
+        let g = GridController::new();
+
+        // Basic CHOOSECOLS - single column
+        assert_eq!(
+            "{1; 4}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 1)")
+        );
+        assert_eq!(
+            "{2; 5}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 2)")
+        );
+        assert_eq!(
+            "{3; 6}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 3)")
+        );
+
+        // CHOOSECOLS - multiple columns
+        assert_eq!(
+            "{1, 3; 4, 6}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 1, 3)")
+        );
+        assert_eq!(
+            "{3, 1; 6, 4}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 3, 1)")
+        );
+
+        // CHOOSECOLS - negative indices
+        assert_eq!(
+            "{3; 6}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, -1)")
+        );
+        assert_eq!(
+            "{2; 5}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, -2)")
+        );
+        assert_eq!(
+            "{1; 4}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, -3)")
+        );
+
+        // CHOOSECOLS - mixed positive and negative
+        assert_eq!(
+            "{1, 3; 4, 6}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 1, -1)")
+        );
+
+        // CHOOSECOLS - duplicate columns
+        assert_eq!(
+            "{1, 1; 4, 4}",
+            eval_to_string(&g, "CHOOSECOLS({1, 2, 3; 4, 5, 6}, 1, 1)")
+        );
+
+        // Error: index 0 is invalid
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSECOLS({1, 2, 3}, 0)").msg,
+        );
+
+        // Error: index out of bounds
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSECOLS({1, 2, 3}, 4)").msg,
+        );
+
+        // Error: negative index out of bounds
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSECOLS({1, 2, 3}, -4)").msg,
+        );
+
+        // Error: missing column indices
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "CHOOSECOLS".into(),
+                arg_name: "col_num1".into(),
+            },
+            eval_to_err(&g, "CHOOSECOLS({1, 2, 3})").msg,
+        );
+    }
+
+    #[test]
+    fn test_chooserows() {
+        let g = GridController::new();
+
+        // Basic CHOOSEROWS - single row
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 1)")
+        );
+        assert_eq!(
+            "{4, 5, 6}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 2)")
+        );
+
+        // CHOOSEROWS - multiple rows
+        assert_eq!(
+            "{1, 2, 3; 4, 5, 6}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 1, 2)")
+        );
+        assert_eq!(
+            "{4, 5, 6; 1, 2, 3}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 2, 1)")
+        );
+
+        // CHOOSEROWS - negative indices
+        assert_eq!(
+            "{4, 5, 6}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, -1)")
+        );
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, -2)")
+        );
+
+        // CHOOSEROWS - mixed positive and negative
+        assert_eq!(
+            "{1, 2, 3; 4, 5, 6}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 1, -1)")
+        );
+
+        // CHOOSEROWS - duplicate rows
+        assert_eq!(
+            "{1, 2, 3; 1, 2, 3}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6}, 1, 1)")
+        );
+
+        // CHOOSEROWS with 3 rows
+        assert_eq!(
+            "{4, 5, 6}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6; 7, 8, 9}, 2)")
+        );
+        assert_eq!(
+            "{7, 8, 9}",
+            eval_to_string(&g, "CHOOSEROWS({1, 2, 3; 4, 5, 6; 7, 8, 9}, -1)")
+        );
+
+        // Error: index 0 is invalid
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSEROWS({1; 2; 3}, 0)").msg,
+        );
+
+        // Error: index out of bounds
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSEROWS({1; 2; 3}, 4)").msg,
+        );
+
+        // Error: negative index out of bounds
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSEROWS({1; 2; 3}, -4)").msg,
+        );
+
+        // Error: missing row indices
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "CHOOSEROWS".into(),
+                arg_name: "row_num1".into(),
+            },
+            eval_to_err(&g, "CHOOSEROWS({1; 2; 3})").msg,
+        );
+    }
+
+    #[test]
+    fn test_scan() {
+        let g = GridController::new();
+
+        // Basic SCAN - running sum
+        assert_eq!(
+            "{1, 3, 6, 10, 15}",
+            eval_to_string(&g, "SCAN(0, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc + val))")
+        );
+
+        // SCAN - running product
+        assert_eq!(
+            "{1, 2, 6, 24, 120}",
+            eval_to_string(&g, "SCAN(1, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc * val))")
+        );
+
+        // SCAN - with initial value
+        assert_eq!(
+            "{11, 13, 16, 20, 25}",
+            eval_to_string(&g, "SCAN(10, {1, 2, 3, 4, 5}, LAMBDA(acc, val, acc + val))")
+        );
+
+        // SCAN - 2D array preserves shape
+        assert_eq!(
+            "{1, 3; 6, 10}",
+            eval_to_string(&g, "SCAN(0, {1, 2; 3, 4}, LAMBDA(acc, val, acc + val))")
+        );
+
+        // SCAN - column array
+        assert_eq!(
+            "{1; 3; 6}",
+            eval_to_string(&g, "SCAN(0, {1; 2; 3}, LAMBDA(acc, val, acc + val))")
+        );
+
+        // Error: lambda must have exactly 2 parameters
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "SCAN(0, {1, 2, 3}, LAMBDA(x, x))").msg,
         );
     }
 }

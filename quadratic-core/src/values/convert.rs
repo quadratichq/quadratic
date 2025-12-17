@@ -401,6 +401,7 @@ impl<'a> CoerceInto for Spanned<&'a Value> {
             Value::Single(v) => v.error(),
             Value::Array(a) => a.first_error(),
             Value::Tuple(t) => t.iter().find_map(|a| a.first_error()),
+            Value::Lambda(_) => None,
         };
         match error {
             Some(e) => Err(e.clone()),
@@ -418,6 +419,7 @@ impl CoerceInto for Spanned<Value> {
                 .map(|a| a.into_non_error_array())
                 .try_collect()
                 .map(Value::Tuple),
+            Value::Lambda(l) => Ok(Value::Lambda(l)),
         }
     }
 }

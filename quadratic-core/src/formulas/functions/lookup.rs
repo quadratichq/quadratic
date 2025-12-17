@@ -458,6 +458,21 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns the number of areas in a reference.
+            ///
+            /// An area is a range of contiguous cells or a single cell. When
+            /// multiple ranges are passed as a tuple, this function returns
+            /// the count of those ranges.
+            #[examples(
+                "AREAS(A1:C3) = 1",
+                "AREAS((A1:C3, D1:E5)) = 2",
+                "AREAS((A1, B2, C3:D4)) = 3"
+            )]
+            fn AREAS(range: (Spanned<Vec<Array>>)) {
+                range.inner.len() as i64
+            }
+        ),
+        formula_fn!(
             /// Returns the element in `range` at a given `row` and `column`. If
             /// the array is a single row, then `row` may be omitted; otherwise
             /// it is required. If the array is a single column, then `column`
@@ -1563,6 +1578,23 @@ mod tests {
         // With arrays
         assert_eq!("2", eval_to_string(&g, "ROWS({1,2;3,4})"));
         assert_eq!("2", eval_to_string(&g, "COLUMNS({1,2;3,4})"));
+    }
+
+    #[test]
+    fn test_areas() {
+        let g = GridController::new();
+
+        // Single range = 1 area
+        assert_eq!("1", eval_to_string(&g, "AREAS(A1:C3)"));
+        assert_eq!("1", eval_to_string(&g, "AREAS(A1)"));
+
+        // Multiple ranges = multiple areas
+        assert_eq!("2", eval_to_string(&g, "AREAS((A1:C3, D1:E5))"));
+        assert_eq!("3", eval_to_string(&g, "AREAS((A1, B2, C3:D4))"));
+        assert_eq!("4", eval_to_string(&g, "AREAS((A1, B1, C1, D1))"));
+
+        // Single array literal = 1 area
+        assert_eq!("1", eval_to_string(&g, "AREAS({1,2,3;4,5,6})"));
     }
 
     #[test]

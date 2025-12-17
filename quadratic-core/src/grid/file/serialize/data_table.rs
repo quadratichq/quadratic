@@ -493,7 +493,7 @@ pub(crate) fn export_data_tables(
                             .collect(),
                     })
                 }
-                Value::Tuple(_) => {
+                Value::Tuple(_) | Value::Lambda(_) => {
                     current::OutputValueSchema::Single(current::CellValueSchema::Blank)
                 }
             };

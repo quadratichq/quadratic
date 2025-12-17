@@ -346,23 +346,56 @@ fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<
     let mut ret = p.parse(ExpressionWithPrecedence(precedence.next()))?;
 
     // Repeatedly try to consume a suffix.
-    while let Some(tok) = p.peek_next() {
-        if allowed_ops.contains(&tok) {
-            p.next();
-            let op = Spanned {
-                span: p.span(),
-                inner: p.token_str().to_string(),
-            };
-            ret = AstNode {
-                span: Span::merge(ret.span, op.span),
-                inner: ast::AstNodeContents::FunctionCall {
-                    func: op,
-                    args: vec![ret],
-                },
+    loop {
+        if let Some(tok) = p.peek_next() {
+            if allowed_ops.contains(&tok) {
+                p.next();
+                let op = Spanned {
+                    span: p.span(),
+                    inner: p.token_str().to_string(),
+                };
+                ret = AstNode {
+                    span: Span::merge(ret.span, op.span),
+                    inner: ast::AstNodeContents::FunctionCall {
+                        func: op,
+                        args: vec![ret],
+                    },
+                };
+                continue;
             }
-        } else {
-            break;
+
+            // Check for function call suffix: expression followed by (args)
+            // This handles LAMBDA(...)(...) syntax
+            if tok == Token::LParen {
+                let call_args = p.parse(List {
+                    inner: TupleExpression,
+                    sep: Token::ArgSep,
+                    start: Token::LParen,
+                    end: Token::RParen,
+                    sep_name: "comma",
+                    allow_trailing_sep: false,
+                    allow_empty: true,
+                })?;
+
+                // Create a CALL function with the callee as the first argument
+                // and the call arguments as remaining arguments
+                let mut args = vec![ret];
+                args.extend(call_args.inner);
+
+                ret = AstNode {
+                    span: Span::merge(args[0].span, call_args.span),
+                    inner: ast::AstNodeContents::FunctionCall {
+                        func: Spanned {
+                            span: call_args.span,
+                            inner: "CALL".to_string(),
+                        },
+                        args,
+                    },
+                };
+                continue;
+            }
         }
+        break;
     }
     Ok(ret)
 }

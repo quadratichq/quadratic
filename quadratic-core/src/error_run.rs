@@ -129,8 +129,8 @@ impl fmt::Display for RunErrorMsg {
             Self::Spill => {
                 write!(f, "Spill error")
             }
-            Self::Unimplemented(s) => {
-                write!(f, "This feature is unimplemented: {s}")
+            Self::Unimplemented(_) => {
+                write!(f, "#UNIMPLEMENTED")
             }
             Self::UnknownError => {
                 write!(f, "(unknown error)")
@@ -260,7 +260,7 @@ impl fmt::Display for RunErrorMsg {
             Self::DivideByZero => write!(f, "Divide by zero"),
             Self::NegativeExponent => write!(f, "Negative exponent"),
             Self::IndexOutOfBounds => write!(f, "Index out of bounds"),
-            Self::NoMatch => write!(f, "No match found"),
+            Self::NoMatch => write!(f, "#N/A"),
             Self::InvalidArgument => write!(f, "Invalid argument"),
             Self::NotANumber => write!(f, "Not a number"),
             Self::Infinity => write!(f, "Unexpected Infinity"),

@@ -1,5 +1,3 @@
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use ts_rs::TS;
@@ -168,28 +166,49 @@ impl CellRefRangeEnd {
     }
 
     fn parse_a1_components(s: &str) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
-        lazy_static! {
-            /// ^(\$?)([A-Za-z]*)(\$?)(\d*)$
-            /// ^                          $    match whole string
-            ///  (\$?)                          group 1: optional `$`
-            ///       ([A-Za-z]*)               group 2: optional column name
-            ///                  (\$?)          group 3: optional `$`
-            ///                       (\d*)     group 4: optional row name
-            ///
-            /// All groups will be present, but some may be empty.
-            static ref A1_REGEX: Regex =
-                Regex::new(r#"^(\$?)([A-Za-z]*)(\$?)(\d*)$"#).expect("bad regex");
+        // Manual parsing to avoid regex, which can cause WASM stack overflow.
+        // Pattern: ^(\$?)([A-Za-z]*)(\$?)(\d*)$
+        //
+        // This parses A1-style cell references like:
+        //   "A1", "$A$1", "A", "$A", "1", "$1", "AB123", etc.
+
+        let mut chars = s.chars().peekable();
+
+        // Parse optional first '$' (column absolute marker)
+        let first_dollar = chars.next_if(|&c| c == '$').is_some();
+
+        // Parse optional column letters
+        let mut col_str = String::new();
+        while let Some(&c) = chars.peek() {
+            if c.is_ascii_alphabetic() {
+                col_str.push(chars.next().unwrap());
+            } else {
+                break;
+            }
         }
 
-        let captures = A1_REGEX
-            .captures(s)
-            .ok_or_else(|| A1Error::InvalidCellReference(s.to_string()))?;
+        // Parse optional second '$' (row absolute marker)
+        let second_dollar = chars.next_if(|&c| c == '$').is_some();
 
-        let mut col_is_absolute = !captures[1].is_empty();
-        let col_str = &captures[2];
+        // Parse optional row digits
+        let mut row_str = String::new();
+        while let Some(&c) = chars.peek() {
+            if c.is_ascii_digit() {
+                row_str.push(chars.next().unwrap());
+            } else {
+                break;
+            }
+        }
 
-        let mut row_is_absolute = !captures[3].is_empty();
-        let row_str = &captures[4];
+        // Ensure we've consumed the entire string (no trailing characters)
+        if chars.next().is_some() {
+            return Err(A1Error::InvalidCellReference(s.to_string()));
+        }
+
+        // Determine absolute markers
+        // If there's no column, then the first $ applies to the row, not column
+        let mut col_is_absolute = first_dollar;
+        let mut row_is_absolute = second_dollar;
 
         // If there is no column, then an absolute row will be parsed as
         // `($)()()(row)` instead of `()()($)(row)`. Let's fix that.
@@ -197,21 +216,23 @@ impl CellRefRangeEnd {
             std::mem::swap(&mut row_is_absolute, &mut col_is_absolute);
         }
 
-        let col = match col_str {
-            "" => None,
-            _ => Some(
-                super::column_from_name(col_str)
-                    .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?,
-            ),
+        let col = if col_str.is_empty() {
+            None
+        } else {
+            Some(
+                super::column_from_name(&col_str)
+                    .ok_or_else(|| A1Error::InvalidColumn(col_str.clone()))?,
+            )
         };
-        let row: Option<i64> = match row_str {
-            "" => None,
-            _ => Some(
+        let row: Option<i64> = if row_str.is_empty() {
+            None
+        } else {
+            Some(
                 row_str
                     .parse()
                     .ok()
-                    .ok_or_else(|| A1Error::InvalidRow(row_str.to_owned()))?,
-            ),
+                    .ok_or_else(|| A1Error::InvalidRow(row_str.clone()))?,
+            )
         };
 
         if col_is_absolute && col.is_none() || row_is_absolute && row.is_none() {
@@ -244,61 +265,115 @@ impl CellRefRangeEnd {
         s: &str,
         base_pos: Pos,
     ) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
-        lazy_static! {
-            /// ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$
-            /// ^                                                      $    match whole string
-            ///  (                        )?                                group 1: optional row
-            ///   R                                                           literal R
-            ///    (           |         )                                    group 2: either of ...
-            ///     \[       \]                                                 square brackets containing ...
-            ///       (-?\d+)                                                     group 3: positive or negative integer
-            ///                 \{     \}                                       curly braces containing ...
-            ///                   (\d+)                                           group 4: positive integer
-            ///                             (                        )?     group 5: optional column (same as row)
-            ///                              C                                literal C
-            ///                               (           |         )         group 6: either of ...
-            ///                                \[(-?\d+)\]                      group 7: `[]` with positive or negative integer
-            ///                                            \{(\d+)\}            group 8: `{}` with positive integer
-            static ref RC_REGEX: Regex =
-                Regex::new(r#"^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$"#)
-                    .expect("bad regex");
+        // Manual parsing to avoid regex, which can cause WASM stack overflow.
+        // Pattern: ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$
+        //
+        // This parses RC-style cell references like:
+        //   "R[1]C[2]", "R{5}C{3}", "R[-3]", "C[2]", etc.
+
+        /// Parses a bracketed value like "[123]" or "[-45]" (relative) or "{123}" (absolute)
+        /// Returns (value, is_absolute) or None if not a valid bracketed value
+        fn parse_bracketed(
+            chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
+        ) -> Option<(i64, bool)> {
+            let bracket = *chars.peek()?;
+            let (_, close, is_absolute) = match bracket {
+                '[' => ('[', ']', false),
+                '{' => ('{', '}', true),
+                _ => return None,
+            };
+
+            chars.next(); // consume opening bracket
+
+            // Parse the number (may have leading minus for relative refs)
+            let mut num_str = String::new();
+            if !is_absolute && chars.peek() == Some(&'-') {
+                num_str.push(chars.next().unwrap());
+            }
+            while let Some(&c) = chars.peek() {
+                if c.is_ascii_digit() {
+                    num_str.push(chars.next().unwrap());
+                } else {
+                    break;
+                }
+            }
+
+            // Expect closing bracket
+            if chars.next() != Some(close) {
+                return None;
+            }
+
+            let value: i64 = num_str.parse().ok()?;
+            Some((value, is_absolute))
         }
 
-        let captures = RC_REGEX
-            .captures(s)
-            .ok_or_else(|| A1Error::InvalidCellReference(s.to_string()))?;
+        let mut chars = s.chars().peekable();
 
-        // These MUST be i64
-        let relative_row: Option<Result<i64, _>> = captures.get(3).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
-        let absolute_row: Option<Result<i64, _>> = captures.get(4).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
+        // Parse optional R component
+        let mut relative_row: Option<i64> = None;
+        let mut absolute_row: Option<i64> = None;
+        if chars.peek() == Some(&'R') {
+            chars.next(); // consume 'R'
+            if let Some((value, is_abs)) = parse_bracketed(&mut chars) {
+                if is_abs {
+                    absolute_row = Some(value);
+                } else {
+                    relative_row = Some(value);
+                }
+            } else {
+                return Err(A1Error::InvalidCellReference(s.to_string()));
+            }
+        }
 
-        // These MAY be u64
-        let relative_col: Option<Result<i64, _>> = captures.get(7).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
-        let absolute_col: Option<Result<i64, _>> = captures.get(8).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
+        // Parse optional C component
+        let mut relative_col: Option<i64> = None;
+        let mut absolute_col: Option<i64> = None;
+        if chars.peek() == Some(&'C') {
+            chars.next(); // consume 'C'
+            if let Some((value, is_abs)) = parse_bracketed(&mut chars) {
+                if is_abs {
+                    absolute_col = Some(value);
+                } else {
+                    relative_col = Some(value);
+                }
+            } else {
+                return Err(A1Error::InvalidCellReference(s.to_string()));
+            }
+        }
+
+        // Ensure we've consumed the entire string
+        if chars.next().is_some() {
+            return Err(A1Error::InvalidCellReference(s.to_string()));
+        }
+
+        // Must have at least one component
+        if relative_row.is_none()
+            && absolute_row.is_none()
+            && relative_col.is_none()
+            && absolute_col.is_none()
+        {
+            return Err(A1Error::InvalidCellReference(s.to_string()));
+        }
 
         let row_is_absolute = absolute_row.is_some();
         let col_is_absolute = absolute_col.is_some();
 
         let row = match relative_row {
-            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.y, delta?)?),
-            None => absolute_row.transpose()?,
+            Some(delta) => {
+                let coord = crate::util::offset_cell_coord(base_pos.y, delta)
+                    .map_err(|_| A1Error::OutOfBounds(crate::RefError))?;
+                Some(coord)
+            }
+            None => absolute_row,
         };
 
         let col = match relative_col {
-            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.x, delta?)?),
-            None => absolute_col.transpose()?,
+            Some(delta) => {
+                let coord = crate::util::offset_cell_coord(base_pos.x, delta)
+                    .map_err(|_| A1Error::OutOfBounds(crate::RefError))?;
+                Some(coord)
+            }
+            None => absolute_col,
         };
 
         Ok((col, col_is_absolute, row, row_is_absolute))

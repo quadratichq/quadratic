@@ -24,7 +24,7 @@ lazy_static! {
   static ref PREFIX_RE: regex::Regex = regex::Regex::new(r"^_xl(?:fn|udf)\.").unwrap();
 }
 
-const EXCEL_FUNCTIONS_LIST: [&str; 512] = [
+const EXCEL_FUNCTIONS_LIST: [&str; 510] = [
     "ABS",
     "ACCRINT",
     "ACCRINTM",
@@ -73,8 +73,6 @@ const EXCEL_FUNCTIONS_LIST: [&str; 512] = [
     "BITOR",
     "BITRSHIFT",
     "BITXOR",
-    "BYCOL",
-    "BYROW",
     "CALL",
     "CEILING",
     "CEILING.MATH",
@@ -296,7 +294,7 @@ const EXCEL_FUNCTIONS_LIST: [&str; 512] = [
     "ISPMT",
     "JIS",
     "KURT",
-    "LAMBDA",
+    "LAMBDA", // Implemented natively in ast.rs
     "LARGE",
     "LCM",
     "LEFT",

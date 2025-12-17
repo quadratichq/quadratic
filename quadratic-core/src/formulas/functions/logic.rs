@@ -27,6 +27,18 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns the #N/A error value.
+            ///
+            /// This function takes no arguments and is used to explicitly return
+            /// the "not available" error. This is useful when you want to mark a
+            /// cell as intentionally containing no data.
+            #[include_args_in_completion(false)]
+            #[examples("NA()", "IF(A1=\"\", NA(), A1)")]
+            fn NA() {
+                CellValue::Error(Box::new(RunErrorMsg::NoMatch.without_span()))
+            }
+        ),
+        formula_fn!(
             /// Returns `TRUE` if `a` is falsey and `FALSE` if `a` is truthy.
             #[examples("NOT(A113)")]
             #[zip_map]
@@ -227,6 +239,122 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[zip_map]
             fn ISNA([value]: CellValue) {
                 matches!(&value, CellValue::Error(e) if matches!(e.msg, RunErrorMsg::NoMatch))
+            }
+        ),
+        formula_fn!(
+            /// Returns a value from a list of values based on an index number.
+            ///
+            /// The index is 1-based, so `CHOOSE(1, a, b, c)` returns `a`,
+            /// `CHOOSE(2, a, b, c)` returns `b`, and so on.
+            ///
+            /// If the index is out of range, an error is returned.
+            #[examples(
+                "CHOOSE(2, \"a\", \"b\", \"c\") = \"b\"",
+                "CHOOSE(1, 10, 20, 30) = 10",
+                "CHOOSE(3, A1, B1, C1)"
+            )]
+            fn CHOOSE(span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get index
+                let index_value = args.take_next_required("index")?;
+                let index: i64 = index_value.try_coerce()?.inner;
+
+                // Collect all choice values
+                let choices: Vec<Spanned<Value>> = args.take_rest().collect();
+
+                if choices.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "CHOOSE".into(),
+                        arg_name: "value1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                // Validate index (1-based)
+                if index < 1 || index as usize > choices.len() {
+                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(span));
+                }
+
+                // Return the chosen value (convert to 0-based index)
+                choices.into_iter().nth(index as usize - 1).unwrap().inner
+            }
+        ),
+        formula_fn!(
+            /// Evaluates an expression against a list of values and returns the
+            /// result corresponding to the first matching value.
+            ///
+            /// Takes an expression followed by pairs of values and results. The
+            /// function compares the expression to each value in order, and
+            /// returns the result corresponding to the first match.
+            /// An optional default value can be provided as the last argument
+            /// if no matches are found.
+            ///
+            /// Unlike nested IF statements, SWITCH only evaluates the expression
+            /// once, making it more efficient and easier to read.
+            #[examples(
+                "SWITCH(A1, 1, \"One\", 2, \"Two\", 3, \"Three\", \"Other\")",
+                "SWITCH(WEEKDAY(TODAY()), 1, \"Sunday\", 7, \"Saturday\", \"Weekday\")"
+            )]
+            fn SWITCH(span: Span, args: FormulaFnArgs) {
+                // SWITCH(expression, value1, result1, [value2, result2], ..., [default])
+                // Minimum: SWITCH(expression, value1, result1) = 3 arguments
+                if !args.has_next() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "SWITCH".into(),
+                        arg_name: "expression".into(),
+                    }
+                    .with_span(span));
+                }
+
+                let mut args = args;
+
+                // Get the expression to match against
+                let expression_value = args.take_next_required("expression")?;
+                let expression: CellValue = expression_value.try_coerce()?.inner;
+
+                if !args.has_next() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "SWITCH".into(),
+                        arg_name: "value1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                let mut pair_index = 1;
+                let mut result: Option<Value> = None;
+                let mut default_value: Option<Spanned<Value>> = None;
+
+                while args.has_next() && result.is_none() {
+                    // Get the value to compare against
+                    let match_value = args.take_next_required(format!("value{pair_index}"))?;
+
+                    // Check if there's a result for this value
+                    if args.has_next() {
+                        let result_value =
+                            args.take_next_required(format!("result{pair_index}"))?;
+
+                        // Compare expression to match_value
+                        let match_cv: CellValue = match_value.try_coerce()?.inner;
+                        if expression == match_cv {
+                            result = Some(result_value.inner);
+                        }
+
+                        pair_index += 1;
+                    } else {
+                        // This is the default value (odd number of remaining args after expression)
+                        default_value = Some(match_value);
+                    }
+                }
+
+                // Return the result, default, or error
+                if let Some(r) = result {
+                    r
+                } else if let Some(d) = default_value {
+                    d.inner
+                } else {
+                    return Err(RunErrorMsg::NoMatch.with_span(span));
+                }
             }
         ),
     ]
@@ -533,5 +661,239 @@ mod tests {
         // Non-errors should return false
         assert_eq!("FALSE", eval_to_string(&g, "ISNA(123)"));
         assert_eq!("FALSE", eval_to_string(&g, "ISNA(\"hello\")"));
+    }
+
+    #[test]
+    fn test_formula_na() {
+        let g = GridController::new();
+
+        // NA() returns the #N/A error
+        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "NA()").msg);
+
+        // ISNA should detect the NA() error
+        assert_eq!("TRUE", eval_to_string(&g, "ISNA(NA())"));
+
+        // IFNA should catch the NA() error
+        assert_eq!("fallback", eval_to_string(&g, "IFNA(NA(), \"fallback\")"));
+
+        // IFERROR should also catch the NA() error
+        assert_eq!("caught", eval_to_string(&g, "IFERROR(NA(), \"caught\")"));
+    }
+
+    #[test]
+    fn test_formula_let() {
+        let g = GridController::new();
+
+        // Basic LET with single variable
+        assert_eq!("10", eval_to_string(&g, "LET(x, 5, x * 2)"));
+
+        // LET with multiple variables
+        assert_eq!("15", eval_to_string(&g, "LET(a, 5, b, 10, a + b)"));
+
+        // LET with variables referencing earlier variables
+        assert_eq!(
+            "30",
+            eval_to_string(&g, "LET(x, 10, y, x * 2, z, y + x, z)")
+        );
+
+        // LET with strings (using short variable names that are valid column refs)
+        assert_eq!(
+            "Hello, World!",
+            eval_to_string(
+                &g,
+                "LET(g, \"Hello\", n, \"World\", CONCAT(g, \", \", n, \"!\"))"
+            )
+        );
+
+        // LET with array
+        assert_eq!("6", eval_to_string(&g, "LET(arr, {1, 2, 3}, SUM(arr))"));
+
+        // Nested LET
+        assert_eq!(
+            "25",
+            eval_to_string(&g, "LET(x, 5, LET(y, x * 2, y + x + y))")
+        );
+
+        // LET used in calculation (using short variable names)
+        assert_eq!("12", eval_to_string(&g, "LET(b, 4, h, 6, b * h / 2)"));
+
+        // LET with longer multi-letter variable names (valid column refs)
+        assert_eq!(
+            "30",
+            eval_to_string(&g, "LET(val, 10, mult, 3, val * mult)")
+        );
+
+        // Error: missing arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "LET".into(),
+                arg_name: "name1".into(),
+            },
+            eval_to_err(&g, "LET()").msg,
+        );
+
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "LET".into(),
+                arg_name: "value1".into(),
+            },
+            eval_to_err(&g, "LET(x)").msg,
+        );
+
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "LET".into(),
+                arg_name: "calculation".into(),
+            },
+            eval_to_err(&g, "LET(x, 5)").msg,
+        );
+
+        // Error: even number of arguments (missing calculation)
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "LET".into(),
+                arg_name: "calculation".into(),
+            },
+            eval_to_err(&g, "LET(x, 5, y, 10)").msg,
+        );
+    }
+
+    #[test]
+    fn test_formula_choose() {
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Basic CHOOSE with strings
+        assert_eq!("a", eval_to_string(&g, "CHOOSE(1, \"a\", \"b\", \"c\")"));
+        assert_eq!("b", eval_to_string(&g, "CHOOSE(2, \"a\", \"b\", \"c\")"));
+        assert_eq!("c", eval_to_string(&g, "CHOOSE(3, \"a\", \"b\", \"c\")"));
+
+        // CHOOSE with numbers
+        assert_eq!("10", eval_to_string(&g, "CHOOSE(1, 10, 20, 30)"));
+        assert_eq!("20", eval_to_string(&g, "CHOOSE(2, 10, 20, 30)"));
+        assert_eq!("30", eval_to_string(&g, "CHOOSE(3, 10, 20, 30)"));
+
+        // CHOOSE with cell references (cell refs return arrays)
+        g.set_cell_value(pos![sheet_id!A1], "first".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B1], "second".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!C1], "third".to_string(), None, false);
+        assert_eq!("{first}", eval_to_string(&g, "CHOOSE(1, A1, B1, C1)"));
+        assert_eq!("{second}", eval_to_string(&g, "CHOOSE(2, A1, B1, C1)"));
+        assert_eq!("{third}", eval_to_string(&g, "CHOOSE(3, A1, B1, C1)"));
+
+        // CHOOSE with expressions
+        assert_eq!("50", eval_to_string(&g, "CHOOSE(2, 10+20, 40+10, 60+30)"));
+
+        // CHOOSE with calculated index
+        assert_eq!("b", eval_to_string(&g, "CHOOSE(1+1, \"a\", \"b\", \"c\")"));
+
+        // Error: index out of bounds (too small)
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSE(0, \"a\", \"b\", \"c\")").msg,
+        );
+
+        // Error: index out of bounds (too large)
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSE(4, \"a\", \"b\", \"c\")").msg,
+        );
+
+        // Error: negative index
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHOOSE(-1, \"a\", \"b\", \"c\")").msg,
+        );
+
+        // Error: missing values
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "CHOOSE".into(),
+                arg_name: "value1".into(),
+            },
+            eval_to_err(&g, "CHOOSE(1)").msg,
+        );
+
+        // Error: missing index
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "CHOOSE".into(),
+                arg_name: "index".into(),
+            },
+            eval_to_err(&g, "CHOOSE()").msg,
+        );
+    }
+
+    #[test]
+    fn test_formula_switch() {
+        let g = GridController::new();
+
+        // Basic SWITCH - first match
+        assert_eq!(
+            "One",
+            eval_to_string(&g, "SWITCH(1, 1, \"One\", 2, \"Two\", 3, \"Three\")")
+        );
+
+        // SWITCH - second match
+        assert_eq!(
+            "Two",
+            eval_to_string(&g, "SWITCH(2, 1, \"One\", 2, \"Two\", 3, \"Three\")")
+        );
+
+        // SWITCH - third match
+        assert_eq!(
+            "Three",
+            eval_to_string(&g, "SWITCH(3, 1, \"One\", 2, \"Two\", 3, \"Three\")")
+        );
+
+        // SWITCH - no match, with default
+        assert_eq!(
+            "Other",
+            eval_to_string(
+                &g,
+                "SWITCH(4, 1, \"One\", 2, \"Two\", 3, \"Three\", \"Other\")"
+            )
+        );
+
+        // SWITCH - no match, no default (error)
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "SWITCH(4, 1, \"One\", 2, \"Two\", 3, \"Three\")").msg,
+        );
+
+        // SWITCH with strings
+        assert_eq!(
+            "Apple",
+            eval_to_string(
+                &g,
+                "SWITCH(\"a\", \"a\", \"Apple\", \"b\", \"Banana\", \"Unknown\")"
+            )
+        );
+
+        // SWITCH with numbers
+        assert_eq!(
+            "100",
+            eval_to_string(&g, "SWITCH(10, 1, 10, 10, 100, 100, 1000)")
+        );
+
+        // SWITCH with expressions
+        assert_eq!("6", eval_to_string(&g, "SWITCH(2+1, 1, 2, 2, 4, 3, 6, 0)"));
+
+        // Error: missing arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SWITCH".into(),
+                arg_name: "expression".into(),
+            },
+            eval_to_err(&g, "SWITCH()").msg,
+        );
+
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SWITCH".into(),
+                arg_name: "value1".into(),
+            },
+            eval_to_err(&g, "SWITCH(1)").msg,
+        );
     }
 }
