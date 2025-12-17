@@ -68,8 +68,9 @@ const instance = new aws.ec2.Instance("cloud-controller-instance", {
     volumeType: "gp3",
     deleteOnTermination: true,
   },
-  // Enable detailed monitoring for better visibility
-  monitoring: true,
+  // Disable detailed monitoring (requires ec2:MonitorInstances permission that CI doesn't have).
+  // Basic monitoring is still available (5-minute intervals instead of 1-minute)
+  monitoring: false,
 });
 
 // Create a new Target Group

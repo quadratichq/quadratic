@@ -124,6 +124,55 @@ describe('PATCH /v0/files/:uuid', () => {
     });
   });
 
+  describe('update timezone', () => {
+    it('accepts setting timezone with valid IANA identifier', async () => {
+      await request(app)
+        .patch('/v0/files/00000000-0000-4000-8000-000000000001')
+        .send({ timezone: 'America/New_York' })
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.timezone).toBe('America/New_York');
+        });
+    });
+    it('accepts updating timezone to different IANA identifier', async () => {
+      await request(app)
+        .patch('/v0/files/00000000-0000-4000-8000-000000000001')
+        .send({ timezone: 'Europe/London' })
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.timezone).toBe('Europe/London');
+        });
+    });
+    it('accepts setting timezone to null', async () => {
+      await request(app)
+        .patch('/v0/files/00000000-0000-4000-8000-000000000001')
+        .send({ timezone: null })
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.timezone).toBe(null);
+        });
+    });
+    it('rejects someone without permission updating timezone', async () => {
+      await request(app)
+        .patch('/v0/files/00000000-0000-4000-8000-000000000001')
+        .send({ timezone: 'Asia/Tokyo' })
+        .set('Authorization', `Bearer ValidToken userViewer`)
+        .expect(403)
+        .expect(expectError);
+    });
+    it('rejects updating timezone and name at the same time', async () => {
+      await request(app)
+        .patch('/v0/files/00000000-0000-4000-8000-000000000001')
+        .send({ timezone: 'Asia/Tokyo', name: 'new_name' })
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(400)
+        .expect(expectError);
+    });
+  });
+
   describe('move file inside team', () => {
     it('accepts public -> private', async () => {
       const ownerAuth0Id = 'userOwner';
@@ -136,7 +185,7 @@ describe('PATCH /v0/files/:uuid', () => {
           expect(res.body.ownerUserId).toBe(undefined);
         });
     });
-    it('accepts private -> public if it’s your private file', async () => {
+    it("accepts private -> public if it's your private file", async () => {
       const ownerAuth0Id = 'userOwner';
       await request(app)
         .patch('/v0/files/00000000-0000-4000-8000-000000000001')
@@ -147,7 +196,7 @@ describe('PATCH /v0/files/:uuid', () => {
           expect(res.body.ownerUserId).toBe(undefined);
         });
     });
-    it('rejects private -> public if it’s not your private file', async () => {
+    it("rejects private -> public if it's not your private file", async () => {
       const ownerAuth0Id = 'userViewer';
       await request(app)
         .patch('/v0/files/00000000-0000-4000-8000-000000000001')
