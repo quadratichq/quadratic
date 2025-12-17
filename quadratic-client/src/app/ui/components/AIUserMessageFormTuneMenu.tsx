@@ -3,9 +3,9 @@ import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { CodeIcon, EditIcon, EnhancePromptIcon, SpinnerIcon, TuneIcon } from '@/shared/components/Icons';
 import { useUserAILanguages, type AILanguages } from '@/shared/hooks/useUserAILanguages';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -113,25 +113,28 @@ export const AIUserMessageFormTuneMenu = memo(
               <span>Languages</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuCheckboxItem
-                  checked={aiLanguages.formulas}
-                  onCheckedChange={() => handleToggleLanguage('formulas')}
-                >
-                  Formulas
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={aiLanguages.python}
-                  onCheckedChange={() => handleToggleLanguage('python')}
-                >
-                  Python
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={aiLanguages.javascript}
-                  onCheckedChange={() => handleToggleLanguage('javascript')}
-                >
-                  JavaScript
-                </DropdownMenuCheckboxItem>
+              <DropdownMenuSubContent
+                className="p-2"
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onInteractOutside={(e) => e.preventDefault()}
+              >
+                <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <Checkbox checked={aiLanguages.formulas} onCheckedChange={() => handleToggleLanguage('formulas')} />
+                    <span className="text-sm">Formulas</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <Checkbox checked={aiLanguages.python} onCheckedChange={() => handleToggleLanguage('python')} />
+                    <span className="text-sm">Python</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <Checkbox
+                      checked={aiLanguages.javascript}
+                      onCheckedChange={() => handleToggleLanguage('javascript')}
+                    />
+                    <span className="text-sm">JavaScript</span>
+                  </label>
+                </div>
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
