@@ -1511,7 +1511,215 @@ fn get_functions() -> Vec<FormulaFunction> {
                 friendly_name.unwrap_or(link_location)
             }
         ),
+        formula_fn!(
+            /// Converts an array or range to a single column.
+            ///
+            /// - `array`: The array or range to convert to a column.
+            /// - `ignore`: Optional. Specifies how to handle blanks and errors:
+            ///   - `0` (default): Keep all values
+            ///   - `1`: Ignore blanks
+            ///   - `2`: Ignore errors
+            ///   - `3`: Ignore blanks and errors
+            /// - `scan_by_column`: Optional. If `TRUE`, scans the array by column
+            ///   (top to bottom, then left to right). If `FALSE` or omitted, scans
+            ///   by row (left to right, then top to bottom).
+            #[examples(
+                "TOCOL({1, 2; 3, 4}) = {1; 2; 3; 4}",
+                "TOCOL({1, 2; 3, 4}, , TRUE) = {1; 3; 2; 4}",
+                "TOCOL({1, , 3; , 5, 6}, 1) = {1; 3; 5; 6}"
+            )]
+            fn TOCOL(
+                span: Span,
+                array: Array,
+                ignore: (Option<Spanned<i64>>),
+                scan_by_column: (Option<bool>),
+            ) {
+                let ignore_mode = ignore.map(|i| i.inner).unwrap_or(0);
+                if !(0..=3).contains(&ignore_mode) {
+                    return Err(RunErrorMsg::InvalidArgument
+                        .with_span(ignore.map(|i| i.span).unwrap_or(span)));
+                }
+                let by_column = scan_by_column.unwrap_or(false);
+
+                let ignore_blanks = ignore_mode == 1 || ignore_mode == 3;
+                let ignore_errors = ignore_mode == 2 || ignore_mode == 3;
+
+                let mut values: SmallVec<[CellValue; 1]> = SmallVec::new();
+
+                if by_column {
+                    // Scan by column (top to bottom, then left to right)
+                    for col in 0..array.width() {
+                        for row in 0..array.height() {
+                            let value = array.get(col, row)?;
+                            if should_include_value(value, ignore_blanks, ignore_errors) {
+                                values.push(value.clone());
+                            }
+                        }
+                    }
+                } else {
+                    // Scan by row (left to right, then top to bottom) - default
+                    for row in 0..array.height() {
+                        for col in 0..array.width() {
+                            let value = array.get(col, row)?;
+                            if should_include_value(value, ignore_blanks, ignore_errors) {
+                                values.push(value.clone());
+                            }
+                        }
+                    }
+                }
+
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                let size = ArraySize::new(1, values.len() as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Converts an array or range to a single row.
+            ///
+            /// - `array`: The array or range to convert to a row.
+            /// - `ignore`: Optional. Specifies how to handle blanks and errors:
+            ///   - `0` (default): Keep all values
+            ///   - `1`: Ignore blanks
+            ///   - `2`: Ignore errors
+            ///   - `3`: Ignore blanks and errors
+            /// - `scan_by_column`: Optional. If `TRUE`, scans the array by column
+            ///   (top to bottom, then left to right). If `FALSE` or omitted, scans
+            ///   by row (left to right, then top to bottom).
+            #[examples(
+                "TOROW({1; 2; 3; 4}) = {1, 2, 3, 4}",
+                "TOROW({1, 2; 3, 4}) = {1, 2, 3, 4}",
+                "TOROW({1, 2; 3, 4}, , TRUE) = {1, 3, 2, 4}",
+                "TOROW({1, , 3; , 5, 6}, 1) = {1, 3, 5, 6}"
+            )]
+            fn TOROW(
+                span: Span,
+                array: Array,
+                ignore: (Option<Spanned<i64>>),
+                scan_by_column: (Option<bool>),
+            ) {
+                let ignore_mode = ignore.map(|i| i.inner).unwrap_or(0);
+                if !(0..=3).contains(&ignore_mode) {
+                    return Err(RunErrorMsg::InvalidArgument
+                        .with_span(ignore.map(|i| i.span).unwrap_or(span)));
+                }
+                let by_column = scan_by_column.unwrap_or(false);
+
+                let ignore_blanks = ignore_mode == 1 || ignore_mode == 3;
+                let ignore_errors = ignore_mode == 2 || ignore_mode == 3;
+
+                let mut values: SmallVec<[CellValue; 1]> = SmallVec::new();
+
+                if by_column {
+                    // Scan by column (top to bottom, then left to right)
+                    for col in 0..array.width() {
+                        for row in 0..array.height() {
+                            let value = array.get(col, row)?;
+                            if should_include_value(value, ignore_blanks, ignore_errors) {
+                                values.push(value.clone());
+                            }
+                        }
+                    }
+                } else {
+                    // Scan by row (left to right, then top to bottom) - default
+                    for row in 0..array.height() {
+                        for col in 0..array.width() {
+                            let value = array.get(col, row)?;
+                            if should_include_value(value, ignore_blanks, ignore_errors) {
+                                values.push(value.clone());
+                            }
+                        }
+                    }
+                }
+
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                let size = ArraySize::new(values.len() as u32, 1)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Stacks arrays vertically into a single array.
+            ///
+            /// Appends arrays on top of each other, resulting in an array with the
+            /// combined height of all input arrays.
+            ///
+            /// If arrays have different widths, arrays with fewer columns are
+            /// padded with #N/A errors to match the widest array. Single values
+            /// or single-row arrays are expanded to match the width of the widest
+            /// array.
+            #[examples(
+                "VSTACK({1, 2}, {3, 4}) = {1, 2; 3, 4}",
+                "VSTACK({1; 2; 3}, {4; 5; 6}) = {1; 2; 3; 4; 5; 6}",
+                "VSTACK({1, 2, 3}, {4, 5, 6}) = {1, 2, 3; 4, 5, 6}"
+            )]
+            fn VSTACK(span: Span, arrays: (Iter<Spanned<Array>>)) {
+                let arrays: Vec<Spanned<Array>> = arrays.collect::<CodeResult<Vec<_>>>()?;
+
+                if arrays.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "VSTACK".into(),
+                        arg_name: "array1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                // Find the maximum width, treating single values as width 1
+                let max_width = arrays.iter().map(|a| a.inner.width()).max().unwrap_or(1);
+
+                // Validate that all arrays have either width 1 (single column/value) or max_width
+                for arr in &arrays {
+                    let w = arr.inner.width();
+                    if w != 1 && w != max_width {
+                        return Err(RunErrorMsg::ArrayAxisMismatch {
+                            axis: Axis::X,
+                            expected: max_width,
+                            got: w,
+                        }
+                        .with_span(arr.span));
+                    }
+                }
+
+                // Calculate total height
+                let total_height: u32 = arrays.iter().map(|a| a.inner.height()).sum();
+
+                let size = ArraySize::new(max_width, total_height)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> = SmallVec::with_capacity(size.len());
+
+                for arr in &arrays {
+                    let arr_width = arr.inner.width();
+                    for row in 0..arr.inner.height() {
+                        for col in 0..max_width {
+                            // If array has width 1, always use col 0; otherwise use current col
+                            let source_col = if arr_width == 1 { 0 } else { col };
+                            values.push(arr.inner.get(source_col, row)?.clone());
+                        }
+                    }
+                }
+
+                Array::new_row_major(size, values)?
+            }
+        ),
     ]
+}
+
+/// Helper function to determine if a value should be included based on ignore settings
+fn should_include_value(value: &CellValue, ignore_blanks: bool, ignore_errors: bool) -> bool {
+    if ignore_blanks && value.is_blank() {
+        return false;
+    }
+    if ignore_errors && matches!(value, CellValue::Error(_)) {
+        return false;
+    }
+    true
 }
 
 /// Evaluates BYROW or BYCOL by applying a lambda function to each slice (row or column)
@@ -3368,6 +3576,148 @@ mod tests {
         assert_eq!(
             RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "TAKE({1, 2, 3}, 1, 0)").msg,
+        );
+    }
+
+    #[test]
+    fn test_tocol() {
+        let g = GridController::new();
+
+        // Basic TOCOL - 2D array to column (row-major scan, default)
+        assert_eq!("{1; 2; 3; 4}", eval_to_string(&g, "TOCOL({1, 2; 3, 4})"));
+
+        // TOCOL - single row to column
+        assert_eq!("{1; 2; 3}", eval_to_string(&g, "TOCOL({1, 2, 3})"));
+
+        // TOCOL - column stays as column
+        assert_eq!("{1; 2; 3}", eval_to_string(&g, "TOCOL({1; 2; 3})"));
+
+        // TOCOL - scan by column
+        assert_eq!(
+            "{1; 3; 2; 4}",
+            eval_to_string(&g, "TOCOL({1, 2; 3, 4}, , TRUE)")
+        );
+
+        // TOCOL - 3x3 array, row-major
+        assert_eq!(
+            "{1; 2; 3; 4; 5; 6; 7; 8; 9}",
+            eval_to_string(&g, "TOCOL({1, 2, 3; 4, 5, 6; 7, 8, 9})")
+        );
+
+        // TOCOL - 3x3 array, column-major
+        assert_eq!(
+            "{1; 4; 7; 2; 5; 8; 3; 6; 9}",
+            eval_to_string(&g, "TOCOL({1, 2, 3; 4, 5, 6; 7, 8, 9}, , TRUE)")
+        );
+
+        // TOCOL - single value
+        assert_eq!("{1}", eval_to_string(&g, "TOCOL({1})"));
+
+        // Error: invalid ignore value
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "TOCOL({1, 2, 3}, 4)").msg,
+        );
+    }
+
+    #[test]
+    fn test_torow() {
+        let g = GridController::new();
+
+        // Basic TOROW - column to row
+        assert_eq!("{1, 2, 3, 4}", eval_to_string(&g, "TOROW({1; 2; 3; 4})"));
+
+        // TOROW - 2D array to row (row-major scan, default)
+        assert_eq!("{1, 2, 3, 4}", eval_to_string(&g, "TOROW({1, 2; 3, 4})"));
+
+        // TOROW - row stays as row
+        assert_eq!("{1, 2, 3}", eval_to_string(&g, "TOROW({1, 2, 3})"));
+
+        // TOROW - scan by column
+        assert_eq!(
+            "{1, 3, 2, 4}",
+            eval_to_string(&g, "TOROW({1, 2; 3, 4}, , TRUE)")
+        );
+
+        // TOROW - 3x3 array, row-major
+        assert_eq!(
+            "{1, 2, 3, 4, 5, 6, 7, 8, 9}",
+            eval_to_string(&g, "TOROW({1, 2, 3; 4, 5, 6; 7, 8, 9})")
+        );
+
+        // TOROW - 3x3 array, column-major
+        assert_eq!(
+            "{1, 4, 7, 2, 5, 8, 3, 6, 9}",
+            eval_to_string(&g, "TOROW({1, 2, 3; 4, 5, 6; 7, 8, 9}, , TRUE)")
+        );
+
+        // TOROW - single value
+        assert_eq!("{1}", eval_to_string(&g, "TOROW({1})"));
+
+        // Error: invalid ignore value
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "TOROW({1, 2, 3}, 4)").msg,
+        );
+    }
+
+    #[test]
+    fn test_vstack() {
+        let g = GridController::new();
+
+        // Basic VSTACK - two rows
+        assert_eq!("{1, 2; 3, 4}", eval_to_string(&g, "VSTACK({1, 2}, {3, 4})"));
+
+        // VSTACK - two columns
+        assert_eq!(
+            "{1; 2; 3; 4; 5; 6}",
+            eval_to_string(&g, "VSTACK({1; 2; 3}, {4; 5; 6})")
+        );
+
+        // VSTACK - with single value
+        assert_eq!(
+            "{1, 2, 3; 0, 0, 0}",
+            eval_to_string(&g, "VSTACK({1, 2, 3}, 0)")
+        );
+
+        // VSTACK - single value expanded to match width
+        assert_eq!(
+            "{0, 0, 0; 1, 2, 3}",
+            eval_to_string(&g, "VSTACK(0, {1, 2, 3})")
+        );
+
+        // VSTACK - single column expanded to match width
+        assert_eq!(
+            "{1, 1, 1; 4, 5, 6}",
+            eval_to_string(&g, "VSTACK({1}, {4, 5, 6})")
+        );
+
+        // VSTACK - multiple arrays
+        assert_eq!("{1; 2; 3}", eval_to_string(&g, "VSTACK({1}, {2}, {3})"));
+
+        // VSTACK - 2D arrays stacked
+        assert_eq!(
+            "{1, 2; 3, 4; 5, 6; 7, 8}",
+            eval_to_string(&g, "VSTACK({1, 2; 3, 4}, {5, 6; 7, 8})")
+        );
+
+        // Error: width mismatch
+        assert_eq!(
+            RunErrorMsg::ArrayAxisMismatch {
+                axis: Axis::X,
+                expected: 3,
+                got: 2,
+            },
+            eval_to_err(&g, "VSTACK({1, 2, 3}, {4, 5})").msg,
+        );
+
+        // Error: no arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "VSTACK".into(),
+                arg_name: "array1".into(),
+            },
+            eval_to_err(&g, "VSTACK()").msg,
         );
     }
 }
