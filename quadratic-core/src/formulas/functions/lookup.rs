@@ -714,6 +714,74 @@ fn get_functions() -> Vec<FormulaFunction> {
                 ))
             }
         ),
+        formula_fn!(
+            /// Searches for a value in a range and returns the index of the
+            /// first match, starting from 1.
+            ///
+            /// This is an enhanced version of MATCH with more flexible matching
+            /// and search options.
+            ///
+            /// - `search_key`: The value to search for.
+            /// - `search_range`: A one-row or one-column range to search.
+            /// - `match_mode`: Optional. How to match:
+            ///   - `0` (default): Exact match
+            ///   - `-1`: Exact match or next smaller
+            ///   - `1`: Exact match or next larger
+            ///   - `2`: Wildcard match (*, ?, ~)
+            /// - `search_mode`: Optional. How to search:
+            ///   - `1` (default): Search first to last
+            ///   - `-1`: Search last to first
+            ///   - `2`: Binary search ascending (range must be sorted ascending)
+            ///   - `-2`: Binary search descending (range must be sorted descending)
+            ///
+            #[doc = see_docs_for_more_about_wildcards!()]
+            #[examples(
+                "XMATCH(\"b\", {\"a\", \"b\", \"c\"}) = 2",
+                "XMATCH(5, {1, 3, 5, 7, 9}, 0) = 3",
+                "XMATCH(4, {1, 3, 5, 7, 9}, 1) = 3",
+                "XMATCH(4, {1, 3, 5, 7, 9}, -1) = 2"
+            )]
+            #[zip_map]
+            fn XMATCH(
+                span: Span,
+                [search_key]: CellValue,
+                search_range: (Spanned<Array>),
+                match_mode: (Option<i64>),
+                search_mode: (Option<i64>),
+            ) {
+                let match_mode = match match_mode.unwrap_or(0) {
+                    0 => LookupMatchMode::Exact,
+                    -1 => LookupMatchMode::NextSmaller,
+                    1 => LookupMatchMode::NextLarger,
+                    2 => LookupMatchMode::Wildcard,
+                    _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                };
+                let search_mode = match search_mode.unwrap_or(1) {
+                    1 => LookupSearchMode::LinearForward,
+                    -1 => LookupSearchMode::LinearReverse,
+                    2 => LookupSearchMode::BinaryAscending,
+                    -2 => LookupSearchMode::BinaryDescending,
+                    _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                };
+
+                // Check for invalid combination
+                if match_mode == LookupMatchMode::Wildcard {
+                    match search_mode {
+                        LookupSearchMode::LinearForward | LookupSearchMode::LinearReverse => (), //ok
+                        LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
+                            // not ok -- can't do binary search with wildcard
+                            return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                        }
+                    }
+                }
+
+                let needle = search_key;
+                let haystack = search_range.try_as_linear_array()?;
+                let index = lookup(&needle, haystack, match_mode, search_mode)?
+                    .ok_or(RunErrorMsg::NoMatch)?;
+                index as i64 + 1 // 1-indexed
+            }
+        ),
     ]
 }
 
@@ -1961,6 +2029,93 @@ mod tests {
             result.contains("UNIMPLEMENTED"),
             "Expected UNIMPLEMENTED error, got: {}",
             result
+        );
+    }
+
+    #[test]
+    fn test_xmatch() {
+        let g = GridController::new();
+
+        // Basic exact match (default match_mode = 0)
+        assert_eq!(
+            "2",
+            eval_to_string(&g, "XMATCH(\"b\", {\"a\", \"b\", \"c\"})")
+        );
+        assert_eq!(
+            "1",
+            eval_to_string(&g, "XMATCH(\"a\", {\"a\", \"b\", \"c\"})")
+        );
+        assert_eq!(
+            "3",
+            eval_to_string(&g, "XMATCH(\"c\", {\"a\", \"b\", \"c\"})")
+        );
+
+        // Exact match with numbers
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, 0)"));
+        assert_eq!("1", eval_to_string(&g, "XMATCH(1, {1, 3, 5, 7, 9}, 0)"));
+        assert_eq!("5", eval_to_string(&g, "XMATCH(9, {1, 3, 5, 7, 9}, 0)"));
+
+        // No match returns error
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "XMATCH(4, {1, 3, 5, 7, 9}, 0)").msg,
+        );
+
+        // match_mode = 1 (exact or next larger)
+        assert_eq!("3", eval_to_string(&g, "XMATCH(4, {1, 3, 5, 7, 9}, 1)"));
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, 1)"));
+        assert_eq!("1", eval_to_string(&g, "XMATCH(0, {1, 3, 5, 7, 9}, 1)"));
+
+        // match_mode = -1 (exact or next smaller)
+        assert_eq!("2", eval_to_string(&g, "XMATCH(4, {1, 3, 5, 7, 9}, -1)"));
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, -1)"));
+        assert_eq!("5", eval_to_string(&g, "XMATCH(100, {1, 3, 5, 7, 9}, -1)"));
+
+        // match_mode = 2 (wildcard)
+        assert_eq!(
+            "2",
+            eval_to_string(&g, "XMATCH(\"b*\", {\"apple\", \"banana\", \"cherry\"}, 2)")
+        );
+        assert_eq!(
+            "1",
+            eval_to_string(&g, "XMATCH(\"a*\", {\"apple\", \"banana\", \"cherry\"}, 2)")
+        );
+        assert_eq!(
+            "3",
+            eval_to_string(&g, "XMATCH(\"c*\", {\"apple\", \"banana\", \"cherry\"}, 2)")
+        );
+
+        // search_mode = -1 (reverse search)
+        assert_eq!(
+            "5",
+            eval_to_string(
+                &g,
+                "XMATCH(\"a\", {\"a\", \"b\", \"c\", \"d\", \"a\"}, 0, -1)"
+            )
+        );
+
+        // search_mode = 2 (binary search ascending)
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, 0, 2)"));
+
+        // search_mode = -2 (binary search descending)
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {9, 7, 5, 3, 1}, 0, -2)"));
+
+        // Column vector
+        assert_eq!(
+            "2",
+            eval_to_string(&g, "XMATCH(\"b\", {\"a\"; \"b\"; \"c\"})")
+        );
+
+        // Error: wildcard with binary search not allowed
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "XMATCH(\"a*\", {\"a\", \"b\", \"c\"}, 2, 2)").msg,
+        );
+
+        // Error: non-linear array
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "XMATCH(1, {1, 2; 3, 4})").msg,
         );
     }
 }

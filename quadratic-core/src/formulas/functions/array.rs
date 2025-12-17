@@ -1708,6 +1708,138 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Array::new_row_major(size, values)?
             }
         ),
+        formula_fn!(
+            /// Wraps a row or column of values into columns after a specified
+            /// number of elements.
+            ///
+            /// - `vector`: A one-dimensional array (row or column) to wrap.
+            /// - `wrap_count`: The number of values per column (i.e., the number
+            ///   of rows in the result).
+            /// - `pad_with`: Optional. The value to use for padding if the vector
+            ///   doesn't fill the last column completely. Defaults to #N/A.
+            ///
+            /// The result is a 2D array where values from the vector fill each
+            /// column top-to-bottom before moving to the next column.
+            #[examples(
+                "WRAPCOLS({1, 2, 3, 4, 5, 6}, 3) = {1, 4; 2, 5; 3, 6}",
+                "WRAPCOLS({1, 2, 3, 4, 5}, 2, 0) = {1, 3, 5; 2, 4, 0}",
+                "WRAPCOLS({1; 2; 3; 4}, 2) = {1, 3; 2, 4}"
+            )]
+            fn WRAPCOLS(
+                span: Span,
+                vector: (Spanned<Array>),
+                wrap_count: (Spanned<i64>),
+                pad_with: (Option<CellValue>),
+            ) {
+                // Validate wrap_count
+                if wrap_count.inner <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(wrap_count.span));
+                }
+                let wrap_count = wrap_count.inner as usize;
+
+                // Ensure vector is a linear array (single row or single column)
+                let values: Vec<CellValue> =
+                    vector.try_as_linear_array()?.iter().cloned().collect();
+
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                // Calculate dimensions
+                let num_cols = (values.len() + wrap_count - 1) / wrap_count; // ceiling division
+                let num_rows = wrap_count;
+
+                // Determine pad value (default to #N/A)
+                let pad_value = pad_with.unwrap_or_else(|| {
+                    CellValue::Error(Box::new(RunErrorMsg::NotAvailable.with_span(span)))
+                });
+
+                let size = ArraySize::new(num_cols as u32, num_rows as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut result: SmallVec<[CellValue; 1]> = SmallVec::with_capacity(size.len());
+
+                // Fill by row (output is row-major), but values fill columns
+                for row in 0..num_rows {
+                    for col in 0..num_cols {
+                        let idx = col * wrap_count + row;
+                        if idx < values.len() {
+                            result.push(values[idx].clone());
+                        } else {
+                            result.push(pad_value.clone());
+                        }
+                    }
+                }
+
+                Array::new_row_major(size, result)?
+            }
+        ),
+        formula_fn!(
+            /// Wraps a row or column of values into rows after a specified
+            /// number of elements.
+            ///
+            /// - `vector`: A one-dimensional array (row or column) to wrap.
+            /// - `wrap_count`: The number of values per row (i.e., the number
+            ///   of columns in the result).
+            /// - `pad_with`: Optional. The value to use for padding if the vector
+            ///   doesn't fill the last row completely. Defaults to #N/A.
+            ///
+            /// The result is a 2D array where values from the vector fill each
+            /// row left-to-right before moving to the next row.
+            #[examples(
+                "WRAPROWS({1, 2, 3, 4, 5, 6}, 3) = {1, 2, 3; 4, 5, 6}",
+                "WRAPROWS({1, 2, 3, 4, 5}, 2, 0) = {1, 2; 3, 4; 5, 0}",
+                "WRAPROWS({1; 2; 3; 4}, 2) = {1, 2; 3, 4}"
+            )]
+            fn WRAPROWS(
+                span: Span,
+                vector: (Spanned<Array>),
+                wrap_count: (Spanned<i64>),
+                pad_with: (Option<CellValue>),
+            ) {
+                // Validate wrap_count
+                if wrap_count.inner <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(wrap_count.span));
+                }
+                let wrap_count = wrap_count.inner as usize;
+
+                // Ensure vector is a linear array (single row or single column)
+                let values: Vec<CellValue> =
+                    vector.try_as_linear_array()?.iter().cloned().collect();
+
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                // Calculate dimensions
+                let num_rows = (values.len() + wrap_count - 1) / wrap_count; // ceiling division
+                let num_cols = wrap_count;
+
+                // Determine pad value (default to #N/A)
+                let pad_value = pad_with.unwrap_or_else(|| {
+                    CellValue::Error(Box::new(RunErrorMsg::NotAvailable.with_span(span)))
+                });
+
+                let size = ArraySize::new(num_cols as u32, num_rows as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut result: SmallVec<[CellValue; 1]> = SmallVec::with_capacity(size.len());
+
+                // Fill by row (output is row-major), values also fill by row
+                for row in 0..num_rows {
+                    for col in 0..num_cols {
+                        let idx = row * wrap_count + col;
+                        if idx < values.len() {
+                            result.push(values[idx].clone());
+                        } else {
+                            result.push(pad_value.clone());
+                        }
+                    }
+                }
+
+                Array::new_row_major(size, result)?
+            }
+        ),
     ]
 }
 
@@ -3718,6 +3850,131 @@ mod tests {
                 arg_name: "array1".into(),
             },
             eval_to_err(&g, "VSTACK()").msg,
+        );
+    }
+
+    #[test]
+    fn test_wrapcols() {
+        let g = GridController::new();
+
+        // Basic WRAPCOLS - wrap 6 elements into columns of 3
+        assert_eq!(
+            "{1, 4; 2, 5; 3, 6}",
+            eval_to_string(&g, "WRAPCOLS({1, 2, 3, 4, 5, 6}, 3)")
+        );
+
+        // WRAPCOLS - wrap 4 elements into columns of 2
+        assert_eq!(
+            "{1, 3; 2, 4}",
+            eval_to_string(&g, "WRAPCOLS({1, 2, 3, 4}, 2)")
+        );
+
+        // WRAPCOLS - from column vector
+        assert_eq!(
+            "{1, 3; 2, 4}",
+            eval_to_string(&g, "WRAPCOLS({1; 2; 3; 4}, 2)")
+        );
+
+        // WRAPCOLS - with padding (default #N/A)
+        let result = eval_to_string(&g, "WRAPCOLS({1, 2, 3, 4, 5}, 2)");
+        assert!(result.contains("1, 3, 5"));
+        assert!(result.contains("2, 4"));
+
+        // WRAPCOLS - with custom pad value
+        assert_eq!(
+            "{1, 3, 5; 2, 4, 0}",
+            eval_to_string(&g, "WRAPCOLS({1, 2, 3, 4, 5}, 2, 0)")
+        );
+
+        // WRAPCOLS - single element
+        assert_eq!("{1}", eval_to_string(&g, "WRAPCOLS({1}, 1)"));
+
+        // WRAPCOLS - wrap_count equals length
+        assert_eq!("{1; 2; 3}", eval_to_string(&g, "WRAPCOLS({1, 2, 3}, 3)"));
+
+        // WRAPCOLS - wrap_count of 1 (each element is a column)
+        assert_eq!(
+            "{1, 2, 3, 4}",
+            eval_to_string(&g, "WRAPCOLS({1, 2, 3, 4}, 1)")
+        );
+
+        // Error: wrap_count <= 0
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "WRAPCOLS({1, 2, 3}, 0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "WRAPCOLS({1, 2, 3}, -1)").msg,
+        );
+
+        // Error: not a linear array
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "WRAPCOLS({1, 2; 3, 4}, 2)").msg,
+        );
+    }
+
+    #[test]
+    fn test_wraprows() {
+        let g = GridController::new();
+
+        // Basic WRAPROWS - wrap 6 elements into rows of 3
+        assert_eq!(
+            "{1, 2, 3; 4, 5, 6}",
+            eval_to_string(&g, "WRAPROWS({1, 2, 3, 4, 5, 6}, 3)")
+        );
+
+        // WRAPROWS - wrap 4 elements into rows of 2
+        assert_eq!(
+            "{1, 2; 3, 4}",
+            eval_to_string(&g, "WRAPROWS({1, 2, 3, 4}, 2)")
+        );
+
+        // WRAPROWS - from column vector
+        assert_eq!(
+            "{1, 2; 3, 4}",
+            eval_to_string(&g, "WRAPROWS({1; 2; 3; 4}, 2)")
+        );
+
+        // WRAPROWS - with padding (default #N/A)
+        let result = eval_to_string(&g, "WRAPROWS({1, 2, 3, 4, 5}, 2)");
+        assert!(result.contains("1, 2"));
+        assert!(result.contains("3, 4"));
+        assert!(result.contains("5"));
+
+        // WRAPROWS - with custom pad value
+        assert_eq!(
+            "{1, 2; 3, 4; 5, 0}",
+            eval_to_string(&g, "WRAPROWS({1, 2, 3, 4, 5}, 2, 0)")
+        );
+
+        // WRAPROWS - single element
+        assert_eq!("{1}", eval_to_string(&g, "WRAPROWS({1}, 1)"));
+
+        // WRAPROWS - wrap_count equals length
+        assert_eq!("{1, 2, 3}", eval_to_string(&g, "WRAPROWS({1, 2, 3}, 3)"));
+
+        // WRAPROWS - wrap_count of 1 (each element is a row)
+        assert_eq!(
+            "{1; 2; 3; 4}",
+            eval_to_string(&g, "WRAPROWS({1, 2, 3, 4}, 1)")
+        );
+
+        // Error: wrap_count <= 0
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "WRAPROWS({1, 2, 3}, 0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "WRAPROWS({1, 2, 3}, -1)").msg,
+        );
+
+        // Error: not a linear array
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "WRAPROWS({1, 2; 3, 4}, 2)").msg,
         );
     }
 }
