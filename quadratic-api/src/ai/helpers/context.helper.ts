@@ -146,3 +146,66 @@ ${rules.join('\n\n')}
     },
   ];
 };
+
+export interface AILanguages {
+  formulas: boolean;
+  python: boolean;
+  javascript: boolean;
+}
+
+export const getAILanguagesContext = (aiLanguages: AILanguages | null): ChatMessage[] => {
+  // If no preferences set, or all languages are enabled, no context needed
+  if (!aiLanguages || (aiLanguages.formulas && aiLanguages.python && aiLanguages.javascript)) {
+    return [];
+  }
+
+  const enabledLanguages: string[] = [];
+  const disabledLanguages: string[] = [];
+
+  if (aiLanguages.formulas) {
+    enabledLanguages.push('Formulas');
+  } else {
+    disabledLanguages.push('Formulas');
+  }
+
+  if (aiLanguages.python) {
+    enabledLanguages.push('Python');
+  } else {
+    disabledLanguages.push('Python');
+  }
+
+  if (aiLanguages.javascript) {
+    enabledLanguages.push('JavaScript');
+  } else {
+    disabledLanguages.push('JavaScript');
+  }
+
+  // If no languages are enabled, don't add any context (fallback to default behavior)
+  if (enabledLanguages.length === 0) {
+    return [];
+  }
+
+  const enabledText = enabledLanguages.join(' and ');
+  const disabledText = disabledLanguages.join(' and ');
+
+  return [
+    {
+      role: 'user',
+      content: [
+        createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
+The user only wants to use ${enabledText} and NOT ${disabledText} unless they explicitly ask for the disabled language.
+`),
+      ],
+      contextType: 'aiLanguages',
+    },
+    {
+      role: 'assistant',
+      content: [
+        createTextContent(
+          `I understand. I will only use ${enabledText} in my responses unless you explicitly ask me to use ${disabledText}.`
+        ),
+      ],
+      contextType: 'aiLanguages',
+    },
+  ];
+};

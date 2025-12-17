@@ -426,6 +426,22 @@ export const apiClient = {
         );
       },
     },
+    aiLanguages: {
+      get() {
+        return fetchFromApi(
+          `/v0/user/ai-languages`,
+          { method: 'GET' },
+          ApiSchemas['/v0/user/ai-languages.GET.response']
+        );
+      },
+      update(body: ApiTypes['/v0/user/ai-languages.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/user/ai-languages`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/ai-languages.PATCH.response']
+        );
+      },
+    },
   },
 
   education: {

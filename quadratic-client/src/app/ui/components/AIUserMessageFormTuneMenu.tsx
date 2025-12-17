@@ -1,7 +1,7 @@
 import { useOptimizePrompt } from '@/app/ai/hooks/useOptimizePrompt';
-import { aiAnalystLanguagesAtom, type AIAnalystLanguages } from '@/app/atoms/aiAnalystAtom';
 import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { CodeIcon, EditIcon, EnhancePromptIcon, SpinnerIcon, TuneIcon } from '@/shared/components/Icons';
+import { useUserAILanguages, type AILanguages } from '@/shared/hooks/useUserAILanguages';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -17,7 +17,6 @@ import {
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo, useCallback, useState } from 'react';
-import { useRecoilState } from 'recoil';
 
 interface AIUserMessageFormTuneMenuProps {
   disabled: boolean;
@@ -30,7 +29,7 @@ export const AIUserMessageFormTuneMenu = memo(
   ({ disabled, prompt, setPrompt, textareaRef }: AIUserMessageFormTuneMenuProps) => {
     const { optimizePrompt } = useOptimizePrompt();
     const [isOptimizing, setIsOptimizing] = useState(false);
-    const [languages, setLanguages] = useRecoilState(aiAnalystLanguagesAtom);
+    const { aiLanguages, saveAILanguages } = useUserAILanguages();
 
     const handleOptimize = useCallback(async () => {
       if (isOptimizing) return;
@@ -67,14 +66,15 @@ export const AIUserMessageFormTuneMenu = memo(
     );
 
     const handleToggleLanguage = useCallback(
-      (language: keyof AIAnalystLanguages) => {
-        setLanguages((prev) => ({
-          ...prev,
-          [language]: !prev[language],
-        }));
-        trackEvent('[AIAnalyst].toggleLanguage', { language, enabled: !languages[language] });
+      (language: keyof AILanguages) => {
+        const newValue = !aiLanguages[language];
+        saveAILanguages({
+          ...aiLanguages,
+          [language]: newValue,
+        });
+        trackEvent('[AIAnalyst].toggleLanguage', { language, enabled: newValue });
       },
-      [setLanguages, languages]
+      [saveAILanguages, aiLanguages]
     );
 
     return (
@@ -115,19 +115,19 @@ export const AIUserMessageFormTuneMenu = memo(
             <DropdownMenuPortal>
               <DropdownMenuSubContent>
                 <DropdownMenuCheckboxItem
-                  checked={languages.formulas}
+                  checked={aiLanguages.formulas}
                   onCheckedChange={() => handleToggleLanguage('formulas')}
                 >
                   Formulas
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  checked={languages.python}
+                  checked={aiLanguages.python}
                   onCheckedChange={() => handleToggleLanguage('python')}
                 >
                   Python
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  checked={languages.javascript}
+                  checked={aiLanguages.javascript}
                   onCheckedChange={() => handleToggleLanguage('javascript')}
                 >
                   JavaScript
