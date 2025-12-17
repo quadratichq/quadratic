@@ -4,6 +4,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { redisHost, redisPort } from "../shared/redis";
+
 import {
   cloudControllerEc2SecurityGroup,
   cloudControllerNlbSecurityGroup,
@@ -18,6 +19,12 @@ const config = new pulumi.Config();
 const cloudControllerSubdomain = config.require("cloud-controller-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
+const multiplayerHost = config.require("multiplayer-host");
+const multiplayerPort = config.require("multiplayer-port");
+const filesHost = config.require("files-host");
+const filesPort = config.require("files-port");
+const connectionHost = config.require("connection-host");
+const connectionPort = config.require("connection-port");
 const cloudControllerECRName = config.require("cloud-controller-ecr-repo-name");
 const cloudControllerPulumiEscEnvironmentName = config.require(
   "cloud-controller-pulumi-esc-environment-name",
@@ -57,6 +64,12 @@ const instance = new aws.ec2.Instance("cloud-controller-instance", {
       cloudControllerPulumiEscEnvironmentName,
       {
         QUADRATIC_API_URI: quadraticApiUri,
+        MULTIPLAYER_HOST: multiplayerHost,
+        MULTIPLAYER_PORT: multiplayerPort,
+        FILES_HOST: filesHost,
+        FILES_PORT: filesPort,
+        CONNECTION_HOST: connectionHost,
+        CONNECTION_PORT: connectionPort,
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
       },
