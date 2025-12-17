@@ -8,7 +8,7 @@ import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
-import { AIUserMessageFormOptimizeButton } from '@/app/ui/components/AIUserMessageFormOptimizeButton';
+import { AIUserMessageFormTuneMenu } from '@/app/ui/components/AIUserMessageFormTuneMenu';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import {
   detectMentionInText,
@@ -611,7 +611,7 @@ const AIUserMessageFormFooter = memo(
                 textareaRef={textareaRef}
               />
             )}
-            <AIUserMessageFormOptimizeButton
+            <AIUserMessageFormTuneMenu
               disabled={disabled}
               prompt={prompt}
               setPrompt={setPrompt}
