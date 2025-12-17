@@ -25,20 +25,29 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the row number of a reference.
             /// If no reference is provided, returns the row of the current cell.
             #[examples("ROW(A5) = 5", "ROW()")]
-            fn ROW(ctx: Ctx, reference: (Option<Spanned<Array>>)) {
+            fn ROW(ctx: Ctx, span: Span, reference: (Option<Spanned<Array>>)) {
                 match reference {
-                    Some(arr) => {
-                        // For an array, return the row number of the first cell
-                        if arr.inner.height() == 1 && arr.inner.width() == 1 {
-                            // y is 0-indexed internally, so add 1 for Excel-style 1-indexed
-                            ctx.sheet_pos.y + 1
-                        } else {
-                            // For ranges, return the first row (simplified implementation)
-                            ctx.sheet_pos.y + 1
+                    Some(_arr) => {
+                        // Get the row of the referenced cell from cells_accessed
+                        // to_rect returns 1-indexed coordinates
+                        let a1_context = ctx.grid_controller.a1_context();
+                        let ref_pos =
+                            ctx.cells_accessed
+                                .cells
+                                .iter()
+                                .find_map(|(_sheet_id, ranges)| {
+                                    ranges.iter().find_map(|range| range.to_rect(a1_context))
+                                });
+                        match ref_pos {
+                            Some(rect) => rect.min.y,
+                            None => {
+                                return Err(RunErrorMsg::BadCellReference.with_span(span));
+                            }
                         }
                     }
                     None => {
-                        // Return the row of the current cell (y is 0-indexed, add 1)
+                        // Return the row of the current cell
+                        // sheet_pos.y is 0-indexed, so add 1 for Excel-style 1-indexed
                         ctx.sheet_pos.y + 1
                     }
                 }
@@ -48,14 +57,29 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the column number of a reference.
             /// If no reference is provided, returns the column of the current cell.
             #[examples("COLUMN(C5) = 3", "COLUMN()")]
-            fn COLUMN(ctx: Ctx, reference: (Option<Spanned<Array>>)) {
+            fn COLUMN(ctx: Ctx, span: Span, reference: (Option<Spanned<Array>>)) {
                 match reference {
                     Some(_arr) => {
-                        // x is already 1-indexed internally
-                        ctx.sheet_pos.x
+                        // Get the column of the referenced cell from cells_accessed
+                        // to_rect returns 1-indexed coordinates
+                        let a1_context = ctx.grid_controller.a1_context();
+                        let ref_pos =
+                            ctx.cells_accessed
+                                .cells
+                                .iter()
+                                .find_map(|(_sheet_id, ranges)| {
+                                    ranges.iter().find_map(|range| range.to_rect(a1_context))
+                                });
+                        match ref_pos {
+                            Some(rect) => rect.min.x,
+                            None => {
+                                return Err(RunErrorMsg::BadCellReference.with_span(span));
+                            }
+                        }
                     }
                     None => {
-                        // Return the column of the current cell (x is already 1-indexed)
+                        // Return the column of the current cell
+                        // sheet_pos.x is already 1-indexed
                         ctx.sheet_pos.x
                     }
                 }
@@ -516,6 +540,180 @@ fn get_functions() -> Vec<FormulaFunction> {
                     .inner
             }
         ),
+        formula_fn!(
+            /// Searches for a value in a one-row or one-column range and returns
+            /// a corresponding value from another one-row or one-column range.
+            ///
+            /// This is the vector form of LOOKUP. If `result_range` is omitted,
+            /// `lookup_range` is used for both searching and returning values.
+            ///
+            /// The values in `lookup_range` must be sorted in ascending order;
+            /// otherwise the result may be incorrect. LOOKUP finds the largest
+            /// value less than or equal to `lookup_value`.
+            ///
+            /// If no value is found (all values are greater than `lookup_value`),
+            /// returns an error.
+            #[examples(
+                "LOOKUP(5, {1, 2, 3, 4, 5})",
+                "LOOKUP(\"c\", {\"a\", \"b\", \"c\"}, {1, 2, 3})",
+                "LOOKUP(50, A1:A10, B1:B10)"
+            )]
+            fn LOOKUP(
+                span: Span,
+                lookup_value: CellValue,
+                lookup_range: (Spanned<Array>),
+                result_range: (Option<Spanned<Array>>),
+            ) {
+                // Determine if lookup_range is a row or column vector
+                let lookup_axis = lookup_range.array_linear_axis()?;
+                let lookup_vec = lookup_range.try_as_linear_array()?;
+
+                // Use lookup_range as result_range if not provided
+                let result_range = result_range.unwrap_or_else(|| lookup_range.clone());
+                let _result_axis = result_range.array_linear_axis()?;
+                let result_vec = result_range.try_as_linear_array()?;
+
+                // For vector form, both must be linear and same length
+                if lookup_vec.len() != result_vec.len() {
+                    return Err(RunErrorMsg::ArrayAxisMismatch {
+                        axis: lookup_axis.unwrap_or(Axis::Y),
+                        expected: lookup_vec.len() as u32,
+                        got: result_vec.len() as u32,
+                    }
+                    .with_span(span));
+                }
+
+                // Use binary search with "next smaller" mode since LOOKUP expects sorted data
+                let match_mode = LookupMatchMode::NextSmaller;
+                let search_mode = LookupSearchMode::BinaryAscending;
+
+                let index = lookup(&lookup_value, lookup_vec, match_mode, search_mode)?
+                    .ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?;
+
+                // Both are linear - just get the element at the found index
+                result_vec
+                    .get(index)
+                    .cloned()
+                    .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(span))?
+            }
+        ),
+        formula_fn!(
+            /// Returns a reference offset from a given starting reference by a
+            /// specified number of rows and columns.
+            ///
+            /// - `reference`: The starting reference.
+            /// - `rows`: The number of rows to offset (can be negative).
+            /// - `cols`: The number of columns to offset (can be negative).
+            /// - `height`: Optional. The height (number of rows) of the returned reference.
+            ///   Defaults to the height of the reference.
+            /// - `width`: Optional. The width (number of columns) of the returned reference.
+            ///   Defaults to the width of the reference.
+            ///
+            /// OFFSET returns a reference that can be used in other formulas.
+            #[examples(
+                "OFFSET(A1, 2, 3)",
+                "OFFSET(A1:B2, 1, 1)",
+                "OFFSET(A1, 0, 0, 5, 5)",
+                "SUM(OFFSET(A1, 0, 0, 10, 1))"
+            )]
+            fn OFFSET(
+                ctx: Ctx,
+                span: Span,
+                reference: (Spanned<Array>),
+                rows: i64,
+                cols: i64,
+                height: (Option<Spanned<i64>>),
+                width: (Option<Spanned<i64>>),
+            ) {
+                // Get the dimensions of the original reference
+                let orig_height = reference.inner.height() as i64;
+                let orig_width = reference.inner.width() as i64;
+
+                // Use provided height/width or default to original dimensions
+                let new_height = height.map(|h| h.inner).unwrap_or(orig_height);
+                let new_width = width.map(|w| w.inner).unwrap_or(orig_width);
+
+                // Validate dimensions
+                if new_height <= 0 || new_width <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Get the position of the referenced cell from cells_accessed
+                // The reference was just evaluated, so the accessed cells should contain it
+                let a1_context = ctx.grid_controller.a1_context();
+                let mut ref_pos: Option<(i64, i64)> = None;
+
+                for (_sheet_id, ranges) in ctx.cells_accessed.cells.iter() {
+                    for range in ranges.iter() {
+                        if let Some(rect) = range.to_rect(a1_context) {
+                            // Use the top-left corner of the range as the base position
+                            ref_pos = Some((rect.min.x, rect.min.y));
+                            break;
+                        }
+                    }
+                    if ref_pos.is_some() {
+                        break;
+                    }
+                }
+
+                let (base_x, base_y) =
+                    ref_pos.ok_or_else(|| RunErrorMsg::BadCellReference.with_span(span))?;
+
+                // Calculate new position by offsetting from the reference position
+                let new_x = base_x + cols;
+                let new_y = base_y + rows;
+
+                // Validate the new position is within bounds
+                if new_x < 1 || new_y < 1 {
+                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(span));
+                }
+
+                // Build the new reference string and use INDIRECT-like evaluation
+                let end_x = new_x + new_width - 1;
+                let end_y = new_y + new_height - 1;
+
+                let start_col = column_number_to_letter(new_x as u32);
+                let end_col = column_number_to_letter(end_x as u32);
+
+                let cell_ref_str = if new_height == 1 && new_width == 1 {
+                    format!("{}{}", start_col, new_y)
+                } else {
+                    format!("{}{}:{}{}", start_col, new_y, end_col, end_y)
+                };
+
+                let cell_ref = SheetCellRefRange::parse_at(
+                    &cell_ref_str,
+                    ctx.sheet_pos,
+                    ctx.grid_controller.a1_context(),
+                )
+                .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
+
+                let sheet_rect = ctx.resolve_range_ref(&cell_ref, span, true)?.inner;
+                ctx.get_cell_array(sheet_rect, span)?.inner
+            }
+        ),
+        formula_fn!(
+            /// Retrieves real-time data from a COM server.
+            ///
+            /// In traditional Excel, RTD connects to a COM automation server to
+            /// receive real-time data updates (e.g., stock prices, financial data).
+            ///
+            /// - `prog_id`: The program ID of the RTD server.
+            /// - `server`: The server name (empty string for local).
+            /// - `topics`: One or more topic strings that identify the data to retrieve.
+            ///
+            /// **Note**: RTD is not implemented in Quadratic as it requires
+            /// Windows COM servers which are not supported in a browser environment.
+            #[examples("RTD(\"MyServer.RTD\", \"\", \"Topic1\")")]
+            fn RTD(span: Span, _prog_id: String, _server: String, _topics: (Iter<String>)) {
+                CellValue::Error(Box::new(
+                    RunErrorMsg::Unimplemented(
+                        "RTD requires COM servers which are not supported".into(),
+                    )
+                    .with_span(span),
+                ))
+            }
+        ),
     ]
 }
 
@@ -778,7 +976,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::{Pos, controller::GridController, formulas::tests::*};
+    use crate::{Axis, Pos, controller::GridController, formulas::tests::*};
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -1559,6 +1757,22 @@ mod tests {
         // The test evaluation context starts at origin (1, 1) which is A1
         assert_eq!("1", eval_to_string(&g, "ROW()"));
         assert_eq!("1", eval_to_string(&g, "COLUMN()"));
+
+        // ROW with a reference returns the row of that reference
+        assert_eq!("5", eval_to_string(&g, "ROW(A5)"));
+        assert_eq!("10", eval_to_string(&g, "ROW(B10)"));
+        assert_eq!("1", eval_to_string(&g, "ROW(Z1)"));
+
+        // COLUMN with a reference returns the column of that reference
+        assert_eq!("3", eval_to_string(&g, "COLUMN(C5)"));
+        assert_eq!("1", eval_to_string(&g, "COLUMN(A10)"));
+        assert_eq!("26", eval_to_string(&g, "COLUMN(Z1)"));
+
+        // ROW and COLUMN with ranges return the first row/column
+        assert_eq!("1", eval_to_string(&g, "ROW(A1:C5)"));
+        assert_eq!("3", eval_to_string(&g, "ROW(B3:D10)"));
+        assert_eq!("1", eval_to_string(&g, "COLUMN(A1:C5)"));
+        assert_eq!("2", eval_to_string(&g, "COLUMN(B3:D10)"));
     }
 
     #[test]
@@ -1619,6 +1833,134 @@ mod tests {
         assert_eq!(
             "Sheet1!$A$1",
             eval_to_string(&g, "ADDRESS(1, 1, 1, TRUE, \"Sheet1\")")
+        );
+    }
+
+    #[test]
+    fn test_lookup() {
+        let g = GridController::new();
+
+        // Basic LOOKUP with array - finds exact match
+        assert_eq!("3", eval_to_string(&g, "LOOKUP(3, {1, 2, 3, 4, 5})"));
+
+        // LOOKUP finds largest value less than or equal to lookup_value
+        assert_eq!("2", eval_to_string(&g, "LOOKUP(2.5, {1, 2, 3, 4, 5})"));
+        assert_eq!("5", eval_to_string(&g, "LOOKUP(10, {1, 2, 3, 4, 5})"));
+
+        // LOOKUP with separate result array
+        assert_eq!(
+            "c",
+            eval_to_string(
+                &g,
+                "LOOKUP(3, {1, 2, 3, 4, 5}, {\"a\", \"b\", \"c\", \"d\", \"e\"})"
+            )
+        );
+        assert_eq!(
+            "b",
+            eval_to_string(
+                &g,
+                "LOOKUP(2.5, {1, 2, 3, 4, 5}, {\"a\", \"b\", \"c\", \"d\", \"e\"})"
+            )
+        );
+
+        // LOOKUP with column vectors
+        assert_eq!("3", eval_to_string(&g, "LOOKUP(3, {1; 2; 3; 4; 5})"));
+        assert_eq!(
+            "c",
+            eval_to_string(
+                &g,
+                "LOOKUP(3, {1; 2; 3; 4; 5}, {\"a\"; \"b\"; \"c\"; \"d\"; \"e\"})"
+            )
+        );
+
+        // LOOKUP with strings (sorted alphabetically)
+        assert_eq!(
+            "2",
+            eval_to_string(
+                &g,
+                "LOOKUP(\"banana\", {\"apple\", \"banana\", \"cherry\"}, {1, 2, 3})"
+            )
+        );
+
+        // Error: no match (all values greater than lookup_value)
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "LOOKUP(0, {1, 2, 3, 4, 5})").msg,
+        );
+
+        // Error: array size mismatch
+        assert_eq!(
+            RunErrorMsg::ArrayAxisMismatch {
+                axis: Axis::X,
+                expected: 3,
+                got: 2,
+            },
+            eval_to_err(&g, "LOOKUP(3, {1, 2, 3}, {\"a\", \"b\"})").msg,
+        );
+    }
+
+    #[test]
+    fn test_offset() {
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Set up test data
+        for y in 1..=5 {
+            for x in 1..=5 {
+                g.set_cell_value(
+                    crate::SheetPos { x, y, sheet_id },
+                    (x * 10 + y).to_string(),
+                    None,
+                    false,
+                );
+            }
+        }
+
+        // Basic OFFSET - returns cell at offset (result is an array)
+        assert_eq!("{31}", eval_to_string(&g, "OFFSET(A1, 0, 2)"));
+        assert_eq!("{12}", eval_to_string(&g, "OFFSET(A1, 1, 0)"));
+
+        // OFFSET with height and width
+        assert_eq!(
+            "{11, 21; 12, 22}",
+            eval_to_string(&g, "OFFSET(A1, 0, 0, 2, 2)")
+        );
+
+        // OFFSET used with SUM
+        assert_eq!("66", eval_to_string(&g, "SUM(OFFSET(A1, 0, 0, 2, 2))"));
+
+        // Error: invalid dimensions
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "OFFSET(A1, 0, 0, 0, 1)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "OFFSET(A1, 0, 0, 1, -1)").msg,
+        );
+    }
+
+    #[test]
+    fn test_rtd() {
+        let g = GridController::new();
+
+        // RTD returns Unimplemented error since COM servers are not supported
+        let result = eval_to_string(&g, "RTD(\"Server\", \"\", \"Topic1\")");
+        assert!(
+            result.contains("UNIMPLEMENTED"),
+            "Expected UNIMPLEMENTED error, got: {}",
+            result
+        );
+
+        // RTD with multiple topics
+        let result = eval_to_string(
+            &g,
+            "RTD(\"Server\", \"RemoteServer\", \"Topic1\", \"Topic2\")",
+        );
+        assert!(
+            result.contains("UNIMPLEMENTED"),
+            "Expected UNIMPLEMENTED error, got: {}",
+            result
         );
     }
 }

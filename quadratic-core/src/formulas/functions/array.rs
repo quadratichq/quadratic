@@ -4,7 +4,7 @@ use smallvec::SmallVec;
 
 use super::*;
 use crate::formulas::LambdaValue;
-use crate::{ArraySize, CellValueHash};
+use crate::{ArraySize, CellValueHash, Pos};
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
@@ -196,6 +196,197 @@ fn get_functions() -> Vec<FormulaFunction> {
                         )
                     }),
                 )?
+            }
+        ),
+        formula_fn!(
+            /// Sorts an array based on the values in a corresponding array or
+            /// range.
+            ///
+            /// - `array`: The array to sort.
+            /// - `by_array1`: The array or range to sort by.
+            /// - `sort_order1`: Optional. 1 for ascending (default), -1 for descending.
+            /// - Additional `by_array`, `sort_order` pairs can be provided for
+            ///   secondary sorting.
+            ///
+            /// Unlike SORT, which sorts by a column within the array itself,
+            /// SORTBY sorts using a separate array of the same height. This
+            /// allows sorting by calculated values or values from a different
+            /// range.
+            ///
+            /// The sort is [stable].
+            ///
+            /// [stable]:
+            ///     https://en.wikipedia.org/wiki/Sorting_algorithm#Stability
+            #[examples(
+                "SORTBY(A1:B5, C1:C5)",
+                "SORTBY(A1:B5, C1:C5, -1)",
+                "SORTBY(A1:C10, D1:D10, 1, E1:E10, -1)"
+            )]
+            fn SORTBY(span: Span, args: FormulaFnArgs) {
+                let mut args = args;
+
+                // Get the array to sort
+                let array_value = args.take_next_required("array")?;
+                let array: Array = array_value.try_coerce()?.inner;
+
+                // Collect by_array/sort_order pairs
+                let mut sort_keys: Vec<(Array, i64)> = vec![];
+
+                while args.has_next() {
+                    // Get by_array
+                    let by_array_value = args.take_next_required("by_array")?;
+                    let by_array_span = by_array_value.span;
+                    let by_array: Array = by_array_value.try_coerce()?.inner;
+
+                    // Validate by_array has same number of rows as array
+                    if by_array.height() != array.height() {
+                        return Err(RunErrorMsg::ArrayAxisMismatch {
+                            axis: Axis::Y,
+                            expected: array.height(),
+                            got: by_array.height(),
+                        }
+                        .with_span(by_array_span));
+                    }
+
+                    // Get optional sort_order
+                    let sort_order = match args.take_next_optional() {
+                        Some(order_value) => {
+                            let order: Spanned<i64> = order_value.try_coerce()?;
+                            if order.inner != 1 && order.inner != -1 {
+                                return Err(RunErrorMsg::InvalidArgument.with_span(order.span));
+                            }
+                            order.inner
+                        }
+                        None => 1, // Default ascending
+                    };
+
+                    sort_keys.push((by_array, sort_order));
+                }
+
+                if sort_keys.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "SORTBY".into(),
+                        arg_name: "by_array1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                // Create indices and sort them
+                let mut indices: Vec<usize> = (0..array.height() as usize).collect();
+
+                indices.sort_by(|&a, &b| {
+                    for (by_array, sort_order) in &sort_keys {
+                        let val_a = by_array.get(0, a as u32).ok();
+                        let val_b = by_array.get(0, b as u32).ok();
+
+                        let cmp = match (val_a, val_b) {
+                            (Some(va), Some(vb)) => CellValue::total_cmp(va, vb),
+                            (Some(_), None) => std::cmp::Ordering::Less,
+                            (None, Some(_)) => std::cmp::Ordering::Greater,
+                            (None, None) => std::cmp::Ordering::Equal,
+                        };
+
+                        let cmp = if *sort_order == -1 {
+                            cmp.reverse()
+                        } else {
+                            cmp
+                        };
+                        if cmp != std::cmp::Ordering::Equal {
+                            return cmp;
+                        }
+                    }
+                    std::cmp::Ordering::Equal
+                });
+
+                // Build sorted array
+                let size = array.size();
+                let mut values: SmallVec<[CellValue; 1]> = SmallVec::with_capacity(size.len());
+
+                for &row_idx in &indices {
+                    for col in 0..array.width() {
+                        values.push(array.get(col, row_idx as u32)?.clone());
+                    }
+                }
+
+                Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Returns a specified number of rows or columns from the start or
+            /// end of an array.
+            ///
+            /// - `array`: The array from which to take rows or columns.
+            /// - `rows`: The number of rows to take. Positive values take from
+            ///   the start, negative values take from the end.
+            /// - `columns`: Optional. The number of columns to take. Positive
+            ///   values take from the start, negative values take from the end.
+            ///
+            /// If either `rows` or `columns` is 0, returns an error.
+            #[examples(
+                "TAKE({1, 2, 3; 4, 5, 6; 7, 8, 9}, 2) = {1, 2, 3; 4, 5, 6}",
+                "TAKE({1, 2, 3; 4, 5, 6}, 1, 2) = {1, 2}",
+                "TAKE({1, 2, 3; 4, 5, 6}, -1) = {4, 5, 6}",
+                "TAKE({1, 2, 3}, 1, -2) = {2, 3}"
+            )]
+            fn TAKE(
+                span: Span,
+                array: (Spanned<Array>),
+                rows: (Spanned<i64>),
+                columns: (Option<Spanned<i64>>),
+            ) {
+                let arr = array.inner;
+                let width = arr.width() as i64;
+                let height = arr.height() as i64;
+
+                let rows_to_take = rows.inner;
+                let cols_to_take = columns.map(|c| c.inner);
+
+                // 0 is not allowed
+                if rows_to_take == 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(rows.span));
+                }
+                if cols_to_take == Some(0) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(columns.unwrap().span));
+                }
+
+                // Calculate row range
+                let (row_start, row_count) = if rows_to_take > 0 {
+                    // Take from start
+                    (0, rows_to_take.min(height))
+                } else {
+                    // Take from end
+                    let count = (-rows_to_take).min(height);
+                    (height - count, count)
+                };
+
+                // Calculate column range
+                let (col_start, col_count) = match cols_to_take {
+                    None => (0, width), // Take all columns
+                    Some(cols) => {
+                        if cols > 0 {
+                            // Take from start
+                            (0, cols.min(width))
+                        } else {
+                            // Take from end
+                            let count = (-cols).min(width);
+                            (width - count, count)
+                        }
+                    }
+                };
+
+                let result_size = ArraySize::new(col_count as u32, row_count as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(result_size.len());
+
+                for y in row_start..(row_start + row_count) {
+                    for x in col_start..(col_start + col_count) {
+                        values.push(arr.get(x as u32, y as u32)?.clone());
+                    }
+                }
+
+                Array::new_row_major(result_size, values)?
             }
         ),
         formula_fn!(
@@ -1034,6 +1225,290 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
 
                 Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Excludes a specified number of rows or columns from the start or
+            /// end of an array.
+            ///
+            /// - `array`: The array from which to drop rows or columns.
+            /// - `rows`: The number of rows to drop. Positive values drop from
+            ///   the start, negative values drop from the end.
+            /// - `columns`: Optional. The number of columns to drop. Positive
+            ///   values drop from the start, negative values drop from the end.
+            #[examples(
+                "DROP({1, 2, 3; 4, 5, 6; 7, 8, 9}, 1) = {4, 5, 6; 7, 8, 9}",
+                "DROP({1, 2, 3; 4, 5, 6}, 1, 1) = {5, 6}",
+                "DROP({1, 2, 3; 4, 5, 6}, -1) = {1, 2, 3}",
+                "DROP({1, 2, 3}, 0, -1) = {1, 2}"
+            )]
+            fn DROP(
+                span: Span,
+                array: (Spanned<Array>),
+                rows: (Spanned<i64>),
+                columns: (Option<Spanned<i64>>),
+            ) {
+                let arr = array.inner;
+                let width = arr.width() as i64;
+                let height = arr.height() as i64;
+
+                let rows_to_drop = rows.inner;
+                let cols_to_drop = columns.map(|c| c.inner).unwrap_or(0);
+
+                // Calculate the new start and size for rows
+                let (row_start, new_height) = if rows_to_drop >= 0 {
+                    // Drop from start
+                    let start = rows_to_drop.min(height);
+                    (start, height - start)
+                } else {
+                    // Drop from end
+                    let to_drop = (-rows_to_drop).min(height);
+                    (0, height - to_drop)
+                };
+
+                // Calculate the new start and size for columns
+                let (col_start, new_width) = if cols_to_drop >= 0 {
+                    // Drop from start
+                    let start = cols_to_drop.min(width);
+                    (start, width - start)
+                } else {
+                    // Drop from end
+                    let to_drop = (-cols_to_drop).min(width);
+                    (0, width - to_drop)
+                };
+
+                // Check if result would be empty
+                if new_width <= 0 || new_height <= 0 {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                let result_size = ArraySize::new(new_width as u32, new_height as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(result_size.len());
+
+                for y in row_start..(row_start + new_height) {
+                    for x in col_start..(col_start + new_width) {
+                        values.push(arr.get(x as u32, y as u32)?.clone());
+                    }
+                }
+
+                Array::new_row_major(result_size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Expands or pads an array to the specified number of rows and
+            /// columns.
+            ///
+            /// - `array`: The array to expand.
+            /// - `rows`: The number of rows in the expanded array. If omitted or
+            ///   blank, the array's current row count is used.
+            /// - `columns`: Optional. The number of columns in the expanded array.
+            ///   If omitted, the array's current column count is used.
+            /// - `pad_with`: Optional. The value to pad with. Defaults to #N/A.
+            ///
+            /// The original array's dimensions cannot be reduced.
+            #[examples(
+                "EXPAND({1, 2; 3, 4}, 3, 3) = {1, 2, #N/A; 3, 4, #N/A; #N/A, #N/A, #N/A}",
+                "EXPAND({1, 2}, 2, 3, 0) = {1, 2, 0; 0, 0, 0}",
+                "EXPAND({1}, 2, 2, \"-\") = {1, \"-\"; \"-\", \"-\"}"
+            )]
+            fn EXPAND(
+                span: Span,
+                array: (Spanned<Array>),
+                rows: (Option<Spanned<i64>>),
+                columns: (Option<Spanned<i64>>),
+                pad_with: (Option<CellValue>),
+            ) {
+                let arr = array.inner;
+                let orig_width = arr.width() as i64;
+                let orig_height = arr.height() as i64;
+
+                // Use original dimensions if not specified or blank
+                let target_rows = rows.map(|r| r.inner).unwrap_or(orig_height);
+                let target_cols = columns.map(|c| c.inner).unwrap_or(orig_width);
+
+                // Validate: cannot reduce dimensions
+                if target_rows < orig_height || target_cols < orig_width {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Validate: dimensions must be positive
+                if target_rows <= 0 || target_cols <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let result_size = ArraySize::new(target_cols as u32, target_rows as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                // Default pad value is #N/A error
+                let pad_value = pad_with.unwrap_or_else(|| {
+                    CellValue::Error(Box::new(RunErrorMsg::NotAvailable.with_span(span)))
+                });
+
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(result_size.len());
+
+                for y in 0..target_rows {
+                    for x in 0..target_cols {
+                        if x < orig_width && y < orig_height {
+                            values.push(arr.get(x as u32, y as u32)?.clone());
+                        } else {
+                            values.push(pad_value.clone());
+                        }
+                    }
+                }
+
+                Array::new_row_major(result_size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Returns the formula at the given reference as a text string.
+            ///
+            /// - `reference`: A reference to a cell containing a formula.
+            ///
+            /// Returns #N/A if the referenced cell does not contain a formula.
+            #[examples("FORMULATEXT(A1)", "FORMULATEXT(Sheet2!B5)")]
+            fn FORMULATEXT(ctx: Ctx, span: Span, reference: (Spanned<Array>)) {
+                // Get the position of the referenced cell
+                // The reference should point to a single cell
+                if reference.inner.size().len() != 1 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(reference.span));
+                }
+
+                if ctx.skip_computation {
+                    return Ok(CellValue::Blank.into());
+                }
+
+                // The cells_accessed in ctx contains all the cells that were referenced.
+                // We need to find the position of the cell that was passed as an argument.
+                // Since the argument was just evaluated, the most recently accessed cell
+                // should be the one we're looking for.
+
+                // Get the last accessed cell position from cells_accessed
+                // We iterate through all sheets and their ranges to find the cell position
+                let a1_context = ctx.grid_controller.a1_context();
+
+                for (sheet_id, ranges) in ctx.cells_accessed.cells.iter() {
+                    for range in ranges.iter() {
+                        // Get the bounds of this range
+                        if let Some(rect) = range.to_rect(a1_context) {
+                            // We only want single-cell references for FORMULATEXT
+                            if rect.width() == 1 && rect.height() == 1 {
+                                let pos = Pos {
+                                    x: rect.min.x,
+                                    y: rect.min.y,
+                                };
+
+                                // Look up if there's a formula at this position
+                                if let Some(sheet) = ctx.grid_controller.try_sheet(*sheet_id) {
+                                    if let Some(code_run) = sheet.code_run_at(&pos) {
+                                        if code_run.language
+                                            == crate::grid::CodeCellLanguage::Formula
+                                        {
+                                            // Return the formula code with = prefix
+                                            let formula_code = if code_run.code.starts_with('=') {
+                                                code_run.code.clone()
+                                            } else {
+                                                format!("={}", code_run.code)
+                                            };
+                                            return Ok(CellValue::Text(formula_code).into());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // No formula found at the referenced cell
+                CellValue::Error(Box::new(RunErrorMsg::NotAvailable.with_span(span)))
+            }
+        ),
+        formula_fn!(
+            /// Appends arrays horizontally (column-wise).
+            ///
+            /// Stacks multiple arrays or values side by side. All arrays must have
+            /// the same number of rows, or be a single value (which will be expanded
+            /// to match the height of the other arrays).
+            ///
+            /// - `array1, array2, ...`: The arrays or values to stack horizontally.
+            #[examples(
+                "HSTACK({1; 2; 3}, {4; 5; 6}) = {1, 4; 2, 5; 3, 6}",
+                "HSTACK({1, 2}, {3, 4}) = {1, 2, 3, 4}",
+                "HSTACK(A1:A3, B1:B3, C1:C3)"
+            )]
+            fn HSTACK(span: Span, arrays: (Iter<Spanned<Array>>)) {
+                let arrays: Vec<Spanned<Array>> = arrays.collect::<CodeResult<Vec<_>>>()?;
+
+                if arrays.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "HSTACK".into(),
+                        arg_name: "array1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                // Find the maximum height, treating single values as height 1
+                let max_height = arrays.iter().map(|a| a.inner.height()).max().unwrap_or(1);
+
+                // Validate that all arrays have either height 1 (single row/value) or max_height
+                for arr in &arrays {
+                    let h = arr.inner.height();
+                    if h != 1 && h != max_height {
+                        return Err(RunErrorMsg::ArrayAxisMismatch {
+                            axis: Axis::Y,
+                            expected: max_height,
+                            got: h,
+                        }
+                        .with_span(arr.span));
+                    }
+                }
+
+                // Calculate total width
+                let total_width: u32 = arrays.iter().map(|a| a.inner.width()).sum();
+
+                let size = ArraySize::new(total_width, max_height)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+
+                let mut values: SmallVec<[CellValue; 1]> = SmallVec::with_capacity(size.len());
+
+                for row in 0..max_height {
+                    for arr in &arrays {
+                        let arr_height = arr.inner.height();
+                        // If array has height 1, always use row 0; otherwise use current row
+                        let source_row = if arr_height == 1 { 0 } else { row };
+                        for col in 0..arr.inner.width() {
+                            values.push(arr.inner.get(col, source_row)?.clone());
+                        }
+                    }
+                }
+
+                Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Creates a clickable hyperlink.
+            ///
+            /// Returns a text value that, if it looks like a URL, will be
+            /// rendered as a clickable link.
+            ///
+            /// - `link_location`: The URL or reference to navigate to.
+            /// - `friendly_name`: Optional text to display. If omitted, displays
+            ///   the link_location.
+            ///
+            /// Note: For the link to be clickable, the displayed text must be a
+            /// valid URL (starting with http://, https://, or www.).
+            #[examples(
+                "HYPERLINK(\"https://example.com\")",
+                "HYPERLINK(\"https://example.com\", \"Click here\")"
+            )]
+            #[zip_map]
+            fn HYPERLINK([link_location]: String, [friendly_name]: (Option<String>)) {
+                // Return the friendly_name if provided, otherwise the link_location
+                // The client will auto-detect URLs and make them clickable
+                friendly_name.unwrap_or(link_location)
             }
         ),
     ]
@@ -2477,6 +2952,422 @@ mod tests {
         assert_eq!(
             RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "SCAN(0, {1, 2, 3}, LAMBDA(x, x))").msg,
+        );
+    }
+
+    #[test]
+    fn test_drop() {
+        let g = GridController::new();
+
+        // Basic DROP - drop rows from start
+        assert_eq!(
+            "{4, 5, 6; 7, 8, 9}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6; 7, 8, 9}, 1)")
+        );
+        assert_eq!(
+            "{7, 8, 9}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6; 7, 8, 9}, 2)")
+        );
+
+        // DROP - drop rows from end (negative)
+        assert_eq!(
+            "{1, 2, 3; 4, 5, 6}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6; 7, 8, 9}, -1)")
+        );
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6; 7, 8, 9}, -2)")
+        );
+
+        // DROP - drop columns from start
+        assert_eq!(
+            "{2, 3; 5, 6}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6}, 0, 1)")
+        );
+        assert_eq!(
+            "{3; 6}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6}, 0, 2)")
+        );
+
+        // DROP - drop columns from end (negative)
+        assert_eq!(
+            "{1, 2; 4, 5}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6}, 0, -1)")
+        );
+        assert_eq!(
+            "{1; 4}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6}, 0, -2)")
+        );
+
+        // DROP - drop both rows and columns
+        assert_eq!(
+            "{5, 6}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6}, 1, 1)")
+        );
+        assert_eq!(
+            "{1, 2}",
+            eval_to_string(&g, "DROP({1, 2, 3; 4, 5, 6}, -1, -1)")
+        );
+
+        // DROP - single row array
+        assert_eq!("{2, 3}", eval_to_string(&g, "DROP({1, 2, 3}, 0, 1)"));
+        assert_eq!("{1, 2}", eval_to_string(&g, "DROP({1, 2, 3}, 0, -1)"));
+
+        // DROP - single column array
+        assert_eq!("{2; 3}", eval_to_string(&g, "DROP({1; 2; 3}, 1)"));
+        assert_eq!("{1; 2}", eval_to_string(&g, "DROP({1; 2; 3}, -1)"));
+
+        // Error: dropping all rows/columns results in empty array
+        assert_eq!(
+            RunErrorMsg::EmptyArray,
+            eval_to_err(&g, "DROP({1, 2, 3}, 1)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::EmptyArray,
+            eval_to_err(&g, "DROP({1, 2, 3}, 0, 3)").msg,
+        );
+    }
+
+    #[test]
+    fn test_expand() {
+        let g = GridController::new();
+
+        // Basic EXPAND - expand rows
+        let result = eval_to_string(&g, "EXPAND({1, 2; 3, 4}, 3)");
+        // The third row should contain #N/A errors
+        assert!(result.contains("1, 2"));
+        assert!(result.contains("3, 4"));
+
+        // EXPAND - expand columns
+        let result = eval_to_string(&g, "EXPAND({1, 2; 3, 4}, 2, 3)");
+        assert!(result.contains("1, 2"));
+        assert!(result.contains("3, 4"));
+
+        // EXPAND - with custom pad value
+        assert_eq!(
+            "{1, 2, 0; 0, 0, 0}",
+            eval_to_string(&g, "EXPAND({1, 2}, 2, 3, 0)")
+        );
+
+        // EXPAND - with text pad value
+        assert_eq!(
+            "{1, -, -; -, -, -}",
+            eval_to_string(&g, "EXPAND({1}, 2, 3, \"-\")")
+        );
+
+        // EXPAND - same size (no change)
+        assert_eq!(
+            "{1, 2; 3, 4}",
+            eval_to_string(&g, "EXPAND({1, 2; 3, 4}, 2, 2)")
+        );
+
+        // EXPAND - single cell
+        assert_eq!(
+            "{1, 0, 0; 0, 0, 0; 0, 0, 0}",
+            eval_to_string(&g, "EXPAND({1}, 3, 3, 0)")
+        );
+
+        // Error: cannot reduce dimensions
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "EXPAND({1, 2, 3}, 1, 2)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "EXPAND({1; 2; 3}, 2)").msg,
+        );
+
+        // Error: invalid dimensions
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "EXPAND({1, 2}, 0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "EXPAND({1, 2}, 1, -1)").msg,
+        );
+    }
+
+    #[test]
+    fn test_formulatext() {
+        use crate::SheetPos;
+        use crate::grid::CodeCellLanguage;
+
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Set a formula at A1
+        g.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "SUM(B1:B5)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // FORMULATEXT should return the formula text
+        let result = eval_to_string(&g, "FORMULATEXT(A1)");
+        // The result should contain the formula or N/A if the formula hasn't run yet
+        assert!(
+            result.contains("SUM") || result.contains("N/A"),
+            "Expected formula text or N/A, got: {}",
+            result
+        );
+
+        // FORMULATEXT on a cell without formula should return N/A
+        let result = eval_to_string(&g, "FORMULATEXT(Z99)");
+        assert!(
+            result.contains("N/A"),
+            "Expected N/A error for non-formula cell, got: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_hstack() {
+        let g = GridController::new();
+
+        // Basic HSTACK - two column vectors
+        assert_eq!(
+            "{1, 4; 2, 5; 3, 6}",
+            eval_to_string(&g, "HSTACK({1; 2; 3}, {4; 5; 6})")
+        );
+
+        // HSTACK - two row vectors (single row each)
+        assert_eq!("{1, 2, 3, 4}", eval_to_string(&g, "HSTACK({1, 2}, {3, 4})"));
+
+        // HSTACK - single values
+        assert_eq!("{1, 2, 3}", eval_to_string(&g, "HSTACK(1, 2, 3)"));
+
+        // HSTACK - mixed arrays and single values
+        assert_eq!(
+            "{1, 2, 0; 3, 4, 0}",
+            eval_to_string(&g, "HSTACK({1, 2; 3, 4}, 0)")
+        );
+
+        // HSTACK - single value expanded to match height
+        assert_eq!(
+            "{1, 0; 2, 0; 3, 0}",
+            eval_to_string(&g, "HSTACK({1; 2; 3}, 0)")
+        );
+
+        // HSTACK - single row expanded to match height
+        assert_eq!(
+            "{1, 4, 5; 2, 4, 5; 3, 4, 5}",
+            eval_to_string(&g, "HSTACK({1; 2; 3}, {4, 5})")
+        );
+
+        // HSTACK - multiple arrays
+        assert_eq!("{1, 2, 3}", eval_to_string(&g, "HSTACK({1}, {2}, {3})"));
+
+        // HSTACK - 2D arrays side by side
+        assert_eq!(
+            "{1, 2, 5, 6; 3, 4, 7, 8}",
+            eval_to_string(&g, "HSTACK({1, 2; 3, 4}, {5, 6; 7, 8})")
+        );
+
+        // Error: height mismatch
+        assert_eq!(
+            RunErrorMsg::ArrayAxisMismatch {
+                axis: Axis::Y,
+                expected: 3,
+                got: 2,
+            },
+            eval_to_err(&g, "HSTACK({1; 2; 3}, {4; 5})").msg,
+        );
+
+        // Error: no arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "HSTACK".into(),
+                arg_name: "array1".into(),
+            },
+            eval_to_err(&g, "HSTACK()").msg,
+        );
+    }
+
+    #[test]
+    fn test_hyperlink() {
+        let g = GridController::new();
+
+        // HYPERLINK with just URL
+        assert_eq!(
+            "https://example.com",
+            eval_to_string(&g, "HYPERLINK(\"https://example.com\")")
+        );
+
+        // HYPERLINK with friendly name
+        assert_eq!(
+            "Click here",
+            eval_to_string(&g, "HYPERLINK(\"https://example.com\", \"Click here\")")
+        );
+
+        // HYPERLINK with URL as friendly name (will be auto-detected as link by client)
+        assert_eq!(
+            "https://google.com",
+            eval_to_string(
+                &g,
+                "HYPERLINK(\"https://example.com\", \"https://google.com\")"
+            )
+        );
+
+        // HYPERLINK with empty friendly name returns empty string
+        assert_eq!(
+            "",
+            eval_to_string(&g, "HYPERLINK(\"https://example.com\", \"\")")
+        );
+
+        // HYPERLINK with cell reference as URL
+        let arr = array!["https://test.com"];
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &arr), 0);
+        assert_eq!("https://test.com", eval_to_string(&g, "HYPERLINK(A1)"));
+    }
+
+    #[test]
+    fn test_sortby() {
+        let g = GridController::new();
+
+        // Basic SORTBY - sort by separate array (ascending by default)
+        assert_eq!(
+            "{a, 1; b, 2; c, 3}",
+            eval_to_string(&g, "SORTBY({\"c\", 3; \"a\", 1; \"b\", 2}, {3; 1; 2})")
+        );
+
+        // SORTBY - descending order
+        assert_eq!(
+            "{c, 3; b, 2; a, 1}",
+            eval_to_string(&g, "SORTBY({\"c\", 3; \"a\", 1; \"b\", 2}, {3; 1; 2}, -1)")
+        );
+
+        // SORTBY - sort by text
+        assert_eq!(
+            "{apple, 1; banana, 2; cherry, 3}",
+            eval_to_string(
+                &g,
+                "SORTBY({\"banana\", 2; \"cherry\", 3; \"apple\", 1}, {\"banana\"; \"cherry\"; \"apple\"})"
+            )
+        );
+
+        // SORTBY - sort numbers
+        assert_eq!(
+            "{1, 100; 2, 200; 3, 300}",
+            eval_to_string(&g, "SORTBY({3, 300; 1, 100; 2, 200}, {3; 1; 2})")
+        );
+
+        // SORTBY - multiple sort keys
+        assert_eq!(
+            "{a, 1; a, 2; b, 1; b, 2}",
+            eval_to_string(
+                &g,
+                "SORTBY({\"b\", 2; \"a\", 1; \"b\", 1; \"a\", 2}, {\"b\"; \"a\"; \"b\"; \"a\"}, 1, {2; 1; 1; 2}, 1)"
+            )
+        );
+
+        // SORTBY - secondary key with descending
+        assert_eq!(
+            "{a, 2; a, 1; b, 2; b, 1}",
+            eval_to_string(
+                &g,
+                "SORTBY({\"b\", 2; \"a\", 1; \"b\", 1; \"a\", 2}, {\"b\"; \"a\"; \"b\"; \"a\"}, 1, {2; 1; 1; 2}, -1)"
+            )
+        );
+
+        // Error: by_array has different height
+        assert_eq!(
+            RunErrorMsg::ArrayAxisMismatch {
+                axis: Axis::Y,
+                expected: 3,
+                got: 2,
+            },
+            eval_to_err(&g, "SORTBY({1; 2; 3}, {1; 2})").msg,
+        );
+
+        // Error: invalid sort order
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "SORTBY({1; 2; 3}, {1; 2; 3}, 0)").msg,
+        );
+
+        // Error: missing by_array
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SORTBY".into(),
+                arg_name: "by_array1".into(),
+            },
+            eval_to_err(&g, "SORTBY({1; 2; 3})").msg,
+        );
+    }
+
+    #[test]
+    fn test_take() {
+        let g = GridController::new();
+
+        // Basic TAKE - take rows from start
+        assert_eq!(
+            "{1, 2, 3; 4, 5, 6}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6; 7, 8, 9}, 2)")
+        );
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6; 7, 8, 9}, 1)")
+        );
+
+        // TAKE - take rows from end (negative)
+        assert_eq!(
+            "{4, 5, 6; 7, 8, 9}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6; 7, 8, 9}, -2)")
+        );
+        assert_eq!(
+            "{7, 8, 9}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6; 7, 8, 9}, -1)")
+        );
+
+        // TAKE - take columns from start
+        assert_eq!(
+            "{1, 2; 4, 5}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6}, 2, 2)")
+        );
+        assert_eq!(
+            "{1; 4}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6}, 2, 1)")
+        );
+
+        // TAKE - take columns from end (negative)
+        assert_eq!(
+            "{2, 3; 5, 6}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6}, 2, -2)")
+        );
+        assert_eq!(
+            "{3; 6}",
+            eval_to_string(&g, "TAKE({1, 2, 3; 4, 5, 6}, 2, -1)")
+        );
+
+        // TAKE - take more than available (returns all)
+        assert_eq!("{1, 2, 3}", eval_to_string(&g, "TAKE({1, 2, 3}, 5)"));
+
+        // TAKE - single row array
+        assert_eq!("{1, 2}", eval_to_string(&g, "TAKE({1, 2, 3}, 1, 2)"));
+        assert_eq!("{2, 3}", eval_to_string(&g, "TAKE({1, 2, 3}, 1, -2)"));
+
+        // TAKE - single column array
+        assert_eq!("{1; 2}", eval_to_string(&g, "TAKE({1; 2; 3}, 2)"));
+        assert_eq!("{2; 3}", eval_to_string(&g, "TAKE({1; 2; 3}, -2)"));
+
+        // Error: 0 rows not allowed
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "TAKE({1, 2, 3}, 0)").msg,
+        );
+
+        // Error: 0 columns not allowed
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "TAKE({1, 2, 3}, 1, 0)").msg,
         );
     }
 }
