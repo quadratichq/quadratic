@@ -18,6 +18,12 @@ import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
 
+export interface AIAnalystLanguages {
+  formulas: boolean;
+  python: boolean;
+  javascript: boolean;
+}
+
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   activeSchemaConnectionUuid: string | undefined;
@@ -43,7 +49,14 @@ export interface AIAnalystState {
   };
   waitingOnMessageIndex?: number;
   failingSqlConnections: { uuids: string[]; lastResetTimestamp: number };
+  languages: AIAnalystLanguages;
 }
+
+export const defaultAIAnalystLanguages: AIAnalystLanguages = {
+  formulas: true,
+  python: true,
+  javascript: false,
+};
 
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: false,
@@ -75,6 +88,7 @@ export const defaultAIAnalystState: AIAnalystState = {
   },
   waitingOnMessageIndex: undefined,
   failingSqlConnections: { uuids: [], lastResetTimestamp: 0 },
+  languages: defaultAIAnalystLanguages,
 };
 
 export let aiAnalystInitialized = false;
@@ -445,6 +459,20 @@ export const aiAnalystFailingSqlConnectionsAtom = selector<{ uuids: string[]; la
       }
 
       return { ...prev, failingSqlConnections: newValue };
+    });
+  },
+});
+
+export const aiAnalystLanguagesAtom = selector<AIAnalystLanguages>({
+  key: 'aiAnalystLanguagesAtom',
+  get: ({ get }) => get(aiAnalystAtom).languages,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return { ...prev, languages: newValue };
     });
   },
 });
