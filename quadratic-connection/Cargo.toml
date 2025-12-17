@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-connection"
-version = "0.22.0"
+version = "0.22.1"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -37,6 +37,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "auth",
   "cache",
   "environment",
+  "multiplayer",
   "net",
   "object_store",
   "parquet",

@@ -34,7 +34,6 @@ impl State {
             host: config.pubsub_host.to_owned(),
             port: config.pubsub_port.to_owned(),
             password: config.pubsub_password.to_owned(),
-            active_channels: config.pubsub_active_channels.to_owned(),
         });
 
         Ok(State {

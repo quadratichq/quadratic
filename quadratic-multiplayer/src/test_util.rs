@@ -12,6 +12,10 @@ use quadratic_core::cell_values::CellValues;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::{CellValue, SheetPos};
+use quadratic_rust_shared::multiplayer::message::{
+    CellEdit, UserState, request::MessageRequest, response::MessageResponse,
+};
+use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::FilePermRole;
 use std::sync::Arc;
 use std::{
@@ -25,14 +29,10 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 use crate::config::config;
-use crate::message::request::MessageRequest;
-use crate::message::response::MessageResponse;
 use crate::server::app;
 use crate::state::State;
-use crate::state::connection::PreConnection;
-use crate::state::user::{CellEdit, User, UserState};
+use crate::state::user::User;
 
-pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSlhXUjc4NlBGVjJUNkZBQU5NQ0tGOFRUIn0.eyJlbWFpbCI6ImF5dXNoQGdtYWlsLmNvbSIsImlzcyI6Imh0dHBzOi8vYXBpLndvcmtvcy5jb20vdXNlcl9tYW5hZ2VtZW50L2NsaWVudF8wMUpYV1I3OEcxUlM5NDNTSlpHOUc5S0ZEVyIsInN1YiI6InVzZXJfMDFLNEVaQzYzMUdHSEZLQjVWWEVBUlBCMEciLCJzaWQiOiJzZXNzaW9uXzAxSzRFWkM2UFlTRUI1SldTS0ZEWkZHV0RCIiwianRpIjoiMDFLNEVaQ0pZRjkxNzk3Rk1HMTUyRFc0OEgiLCJleHAiOjE3NTcxNDQ2MDQsImlhdCI6MTc1NzE0NDMwNH0.g22z76GKyuKctRZ4FPzWvEbNAOC1yEvnHCzSVRp7x58vfAo1X8qjXfI7sNNHHK6HsDMKjX6OOl74g1rjGTlSPc5kJYeoU6BLpB3Y_WamAe3YranIE5oxbhU37MJiOYoyHF9gZA08sJVH0T20rTDigPitlX3H1FpLMX_iQRAblLJalgrtgQgYpyKLc354n2k_YXcJD_6j8wVFn93DSJYeyQONSwl5BTftYDO-vvz0k3nIpQpPsgjzDy-SsNDkJFNHpcEFdIh2FQkQT2JDUjmIfhijYeMCy9VoSxCP17La6ErTvZh8gCeyEw2XRIktK3xt58BOxQvsVrtXXuoW0y9Kag";
 pub static GROUP_NAME_TEST: &str = "quadratic-multiplayer-test-1";
 
 /// General setup to be used for tests.  It creates:
@@ -51,8 +51,8 @@ pub(crate) async fn setup() -> (
     User,
 ) {
     let file_id = Uuid::new_v4();
-    let user_1 = new_user();
-    let user_2 = new_user();
+    let user_1 = new_user(0);
+    let user_2 = new_user(1);
 
     setup_existing_room(file_id, user_1, user_2).await
 }
@@ -67,7 +67,7 @@ pub(crate) async fn setup() -> (
 pub(crate) async fn setup_existing_room(
     file_id: Uuid,
     user_1: User,
-    user_2: User,
+    mut user_2: User,
 ) -> (
     Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     Arc<State>,
@@ -93,7 +93,9 @@ pub(crate) async fn setup_existing_room(
         new_connection(socket.clone(), state.clone(), file_id, user_1.clone()).await;
 
     // add another user so that we can test broadcasting
-    new_connection(socket.clone(), state.clone(), file_id, user_2.clone()).await;
+    let user_2_connection_id =
+        new_connection(socket.clone(), state.clone(), file_id, user_2.clone()).await;
+    user_2.connection_id = user_2_connection_id;
 
     (socket, state, connection_id, file_id, user_1, user_2)
 }
@@ -110,7 +112,7 @@ pub(crate) async fn new_arc_state() -> Arc<State> {
 }
 
 /// Create a new user with fake values
-pub(crate) fn new_user() -> User {
+pub(crate) fn new_user(index: usize) -> User {
     User {
         session_id: Uuid::new_v4(),
         user_id: Uuid::new_v4().to_string(),
@@ -133,7 +135,7 @@ pub(crate) fn new_user() -> User {
         permissions: vec![FilePermRole::FileView, FilePermRole::FileEdit],
         socket: None,
         last_heartbeat: chrono::Utc::now(),
-        index: 0,
+        index,
     }
 }
 
@@ -172,8 +174,8 @@ pub(crate) async fn add_user_via_ws(
 
 /// Add a new user to a room via global state directly.
 /// Returns the user.
-pub(crate) async fn add_new_user_to_room(file_id: Uuid, state: Arc<State>) -> User {
-    add_user_to_room(file_id, new_user(), state).await
+pub(crate) async fn add_new_user_to_room(file_id: Uuid, state: Arc<State>, index: usize) -> User {
+    add_user_to_room(file_id, new_user(index), state).await
 }
 
 /// Add an existing user to a room via global state directly.

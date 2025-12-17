@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.22.0"
+version = "0.22.1"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -17,6 +17,7 @@ futures-util = { version = "0.3.29", default-features = false, features = [
     "std",
 ] }
 headers = "0.4.0"
+http = "1.1.0"
 jsonwebtoken = "9.2.0"
 openssl = { version = "0.10.72", features = ["vendored"] }
 quadratic-core = { path = "../quadratic-core", default-features = false, features = [
