@@ -60,7 +60,7 @@ export const AIUserMessageFormTuneMenu = memo(
 
     return (
       <DropdownMenu>
-        <TooltipPopover label="AI options" fastMode={true}>
+        <TooltipPopover label="More options" fastMode={true}>
           <DropdownMenuTrigger asChild>
             <Button
               size="icon-sm"
@@ -94,4 +94,3 @@ export const AIUserMessageFormTuneMenu = memo(
 );
 
 AIUserMessageFormTuneMenu.displayName = 'AIUserMessageFormTuneMenu';
-
