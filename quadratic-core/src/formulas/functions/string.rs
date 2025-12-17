@@ -483,7 +483,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 [within_text]: String,
                 [start_pos]: (Option<Spanned<i64>>),
             ) {
-                let start = start_pos.map_or(Ok(0), |s| try_i64_minus_1_to_usize(s))?;
+                let start = start_pos.map_or(Ok(0), try_i64_minus_1_to_usize)?;
                 if start > within_text.len() {
                     return Err(RunErrorMsg::InvalidArgument.without_span());
                 }
@@ -521,7 +521,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 [within_text]: String,
                 [start_pos]: (Option<Spanned<i64>>),
             ) {
-                let start = start_pos.map_or(Ok(0), |s| try_i64_minus_1_to_usize(s))?;
+                let start = start_pos.map_or(Ok(0), try_i64_minus_1_to_usize)?;
                 if start > within_text.chars().count() {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
@@ -623,7 +623,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                                     result.push_str(&remaining[..pos]);
                                     result.push_str(&new_text);
                                     result.push_str(&remaining[pos + old_text.len()..]);
-                                    return Ok(CellValue::Text(result.into()));
+                                    return Ok(CellValue::Text(result));
                                 } else {
                                     result.push_str(&remaining[..pos + old_text.len()]);
                                     remaining = &remaining[pos + old_text.len()..];

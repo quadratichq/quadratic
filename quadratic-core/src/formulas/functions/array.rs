@@ -338,8 +338,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
 
                 // Calculate determinant using LU decomposition
-                let det = matrix_determinant(&matrix, n);
-                det
+                matrix_determinant(&matrix, n)
             }
         ),
         formula_fn!(
@@ -451,6 +450,65 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let result_size = ArraySize::new(cols as u32, rows as u32)
                     .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
                 Array::new_row_major(result_size, result.into())?
+            }
+        ),
+        formula_fn!(
+            /// Returns an array of random numbers.
+            ///
+            /// - `rows`: The number of rows to return (default 1).
+            /// - `columns`: The number of columns to return (default 1).
+            /// - `min`: The minimum value (default 0).
+            /// - `max`: The maximum value (default 1).
+            /// - `whole_number`: If TRUE, returns whole numbers; if FALSE,
+            ///   returns decimal numbers (default FALSE).
+            #[examples("RANDARRAY(3, 2)", "RANDARRAY(2, 2, 1, 100, TRUE)")]
+            fn RANDARRAY(
+                span: Span,
+                rows: (Option<Spanned<i64>>),
+                columns: (Option<Spanned<i64>>),
+                min: (Option<f64>),
+                max: (Option<f64>),
+                whole_number: (Option<bool>),
+            ) {
+                use rand::Rng;
+
+                let r = rows.map(|r| r.inner).unwrap_or(1);
+                let c = columns.map(|c| c.inner).unwrap_or(1);
+                let min_val = min.unwrap_or(0.0);
+                let max_val = max.unwrap_or(1.0);
+                let whole = whole_number.unwrap_or(false);
+
+                if r <= 0 || c <= 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if min_val > max_val {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let size = ArraySize::new(c as u32, r as u32)
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                let mut rng = rand::rng();
+                let values: SmallVec<[CellValue; 1]> = (0..(r * c))
+                    .map(|_| {
+                        let val = if whole {
+                            let min_i = min_val.ceil() as i64;
+                            let max_i = max_val.floor() as i64;
+                            if min_i > max_i {
+                                min_val // If no integers in range, return min
+                            } else {
+                                rng.random_range(min_i..=max_i) as f64
+                            }
+                        } else {
+                            rng.random_range(min_val..=max_val)
+                        };
+                        CellValue::Number(
+                            rust_decimal::Decimal::from_f64_retain(val).unwrap_or_default(),
+                        )
+                    })
+                    .collect();
+
+                Array::new_row_major(size, values)?
             }
         ),
     ]
@@ -1146,6 +1204,74 @@ mod tests {
                 got: 3,
             },
             eval_to_err(&g, "MMULT({1, 2; 3, 4}, {1, 2, 3; 4, 5, 6; 7, 8, 9})").msg,
+        );
+    }
+
+    #[test]
+    fn test_randarray() {
+        let g = GridController::new();
+
+        // Default: 1x1 array with value between 0 and 1
+        let result = eval_to_string(&g, "RANDARRAY()");
+        let val: f64 = result
+            .trim_matches(|c| c == '{' || c == '}')
+            .parse()
+            .unwrap();
+        assert!(val >= 0.0 && val <= 1.0);
+
+        // Custom dimensions
+        let result = eval_to_string(&g, "RANDARRAY(2, 3)");
+        // Should have format like "{a, b, c; d, e, f}"
+        assert!(result.starts_with('{') && result.ends_with('}'));
+        let rows: Vec<&str> = result
+            .trim_matches(|c| c == '{' || c == '}')
+            .split("; ")
+            .collect();
+        assert_eq!(2, rows.len());
+        for row in rows {
+            let cols: Vec<&str> = row.split(", ").collect();
+            assert_eq!(3, cols.len());
+            for col in cols {
+                let val: f64 = col.parse().unwrap();
+                assert!(val >= 0.0 && val <= 1.0);
+            }
+        }
+
+        // Custom min/max range
+        for _ in 0..10 {
+            let result = eval_to_string(&g, "RANDARRAY(1, 1, 10, 20)");
+            let val: f64 = result
+                .trim_matches(|c| c == '{' || c == '}')
+                .parse()
+                .unwrap();
+            assert!(val >= 10.0 && val <= 20.0);
+        }
+
+        // Whole numbers
+        for _ in 0..10 {
+            let result = eval_to_string(&g, "RANDARRAY(1, 1, 1, 100, TRUE)");
+            let val: f64 = result
+                .trim_matches(|c| c == '{' || c == '}')
+                .parse()
+                .unwrap();
+            assert!(val >= 1.0 && val <= 100.0);
+            assert_eq!(val, val.floor()); // Should be a whole number
+        }
+
+        // Error for invalid dimensions
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "RANDARRAY(0, 1)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "RANDARRAY(1, -1)").msg,
+        );
+
+        // Error for min > max
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "RANDARRAY(1, 1, 100, 10)").msg,
         );
     }
 }

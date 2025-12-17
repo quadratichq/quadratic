@@ -219,9 +219,10 @@ impl CellRefRangeEnd {
         }
 
         if col.is_some_and(|c| c != UNBOUNDED && c > OUT_OF_BOUNDS)
-            && let Some(c) = col {
-                return Err(A1Error::InvalidColumn(column_name(c)));
-            }
+            && let Some(c) = col
+        {
+            return Err(A1Error::InvalidColumn(column_name(c)));
+        }
         if row.is_some_and(|r| r != UNBOUNDED && r > OUT_OF_BOUNDS) {
             return Err(A1Error::InvalidRow(row.unwrap_or(1).to_string()));
         }
@@ -542,6 +543,22 @@ mod tests {
         assert!(CellRefRangeEnd::parse_end("$", None).is_err());
         assert!(CellRefRangeEnd::parse_end("$A$", None).is_err());
         assert!(CellRefRangeEnd::parse_end("", None).is_ok());
+    }
+
+    #[test]
+    fn test_parse_formula_string_as_cell_ref() {
+        // This test ensures that formula strings are rejected early without
+        // causing regex stack overflow in WASM. The formula contains characters
+        // like '=', '(', ')', ',', '{', '}', ';' that are not valid in A1 notation.
+        let formula = "=BYCOL({1,2;3,4}, LAMBDA(c, SUM(c)))";
+        assert!(CellRefRangeEnd::parse_start(formula, None).is_err());
+        assert!(CellRefRangeEnd::parse_end(formula, None).is_err());
+
+        // Also test other invalid characters
+        assert!(CellRefRangeEnd::parse_start("A1+B2", None).is_err());
+        assert!(CellRefRangeEnd::parse_start("SUM(A1)", None).is_err());
+        assert!(CellRefRangeEnd::parse_start("A1:B2", None).is_err()); // colon is handled at higher level
+        assert!(CellRefRangeEnd::parse_start("Sheet1!A1", None).is_err()); // sheet ref handled at higher level
     }
 
     #[test]

@@ -284,4 +284,40 @@ mod tests {
         // C1 should have the sum
         assert_display_cell_value(&gc, sheet_id, 3, 1, "10"); // C1 = SUM(A1:A5) = 0+1+2+3+4 = 10
     }
+
+    #[test]
+    fn test_set_formula_with_special_chars() {
+        // This test ensures that formulas with array literals and special characters
+        // do not cause regex stack overflow. The formula contains special characters
+        // like '{', '}', ';', ',' that could previously cause issues if passed to
+        // the A1 parser incorrectly.
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Test array literal formula - this should parse without crashing
+        gc.set_code_cell(
+            pos![A1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "=SUM({1,2;3,4})".to_owned(),
+            None,
+            None,
+            false,
+        );
+
+        // The formula should produce the sum of all elements: 1+2+3+4=10
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "10");
+
+        // Test more complex formulas with special characters
+        gc.set_code_cell(
+            pos![B1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "=IF(TRUE, {1,2,3}, {4,5,6})".to_owned(),
+            None,
+            None,
+            false,
+        );
+
+        // Should return the first array element
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "1");
+    }
 }

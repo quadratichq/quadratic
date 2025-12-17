@@ -117,6 +117,53 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        formula_fn!(
+            /// Checks multiple conditions and returns the value corresponding
+            /// to the first TRUE condition.
+            ///
+            /// Takes pairs of arguments where each pair consists of a condition
+            /// and a value. The function evaluates each condition in order and
+            /// returns the value of the first condition that evaluates to TRUE.
+            /// Returns an error if no condition is TRUE.
+            #[examples(
+                "IFS(A1>90, \"A\", A1>80, \"B\", A1>70, \"C\", TRUE, \"F\")",
+                "IFS(score>=90, \"Excellent\", score>=70, \"Good\", TRUE, \"Needs Improvement\")"
+            )]
+            fn IFS(span: Span, args: FormulaFnArgs) {
+                // IFS requires at least 2 arguments (one condition-value pair)
+                if !args.has_next() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "IFS".into(),
+                        arg_name: "condition1".into(),
+                    }
+                    .with_span(span));
+                }
+
+                let mut args = args;
+                let mut pair_index = 1;
+                let mut result: Option<Value> = None;
+
+                while args.has_next() && result.is_none() {
+                    // Get condition
+                    let condition_value =
+                        args.take_next_required(format!("condition{pair_index}"))?;
+                    let condition: bool = condition_value.try_coerce()?.inner;
+
+                    // Get value for this condition
+                    let value = args.take_next_required(format!("value{pair_index}"))?;
+
+                    if condition {
+                        // Return the value corresponding to the first TRUE condition
+                        result = Some(value.inner);
+                    }
+
+                    pair_index += 1;
+                }
+
+                // Return the result or error if no condition was TRUE
+                result.ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?
+            }
+        ),
         // Information functions
         formula_fn!(
             /// Returns TRUE if value is blank.
@@ -299,6 +346,104 @@ mod tests {
             RunErrorMsg::DivideByZero,
             eval_to_err(&g, "IFNA(XLOOKUP(30, A1:A3, B1:B3), \"no match\")",).msg,
         );
+    }
+
+    #[test]
+    fn test_formula_ifs() {
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Basic IFS test - first condition true
+        assert_eq!("A", eval_to_string(&g, "IFS(TRUE, \"A\", TRUE, \"B\")"));
+
+        // Basic IFS test - first condition false, second true
+        assert_eq!("B", eval_to_string(&g, "IFS(FALSE, \"A\", TRUE, \"B\")"));
+
+        // Basic IFS test - first condition false, second false, third true
+        assert_eq!(
+            "C",
+            eval_to_string(&g, "IFS(FALSE, \"A\", FALSE, \"B\", TRUE, \"C\")")
+        );
+
+        // Test with numeric values
+        assert_eq!("100", eval_to_string(&g, "IFS(TRUE, 100, TRUE, 200)"));
+
+        // Test with cell references
+        g.set_cell_value(pos![sheet_id!A1], "95".to_string(), None, false);
+        assert_eq!(
+            "A",
+            eval_to_string(
+                &g,
+                "IFS(A1>=90, \"A\", A1>=80, \"B\", A1>=70, \"C\", TRUE, \"F\")"
+            )
+        );
+
+        g.set_cell_value(pos![sheet_id!A1], "85".to_string(), None, false);
+        assert_eq!(
+            "B",
+            eval_to_string(
+                &g,
+                "IFS(A1>=90, \"A\", A1>=80, \"B\", A1>=70, \"C\", TRUE, \"F\")"
+            )
+        );
+
+        g.set_cell_value(pos![sheet_id!A1], "75".to_string(), None, false);
+        assert_eq!(
+            "C",
+            eval_to_string(
+                &g,
+                "IFS(A1>=90, \"A\", A1>=80, \"B\", A1>=70, \"C\", TRUE, \"F\")"
+            )
+        );
+
+        g.set_cell_value(pos![sheet_id!A1], "50".to_string(), None, false);
+        assert_eq!(
+            "F",
+            eval_to_string(
+                &g,
+                "IFS(A1>=90, \"A\", A1>=80, \"B\", A1>=70, \"C\", TRUE, \"F\")"
+            )
+        );
+
+        // Test error when no condition is TRUE
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "IFS(FALSE, \"A\", FALSE, \"B\")").msg,
+        );
+
+        // Test error when no arguments are provided
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "IFS".into(),
+                arg_name: "condition1".into(),
+            },
+            eval_to_err(&g, "IFS()").msg,
+        );
+
+        // Test error when odd number of arguments (missing value)
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "IFS".into(),
+                arg_name: "value1".into(),
+            },
+            eval_to_err(&g, "IFS(TRUE)").msg,
+        );
+
+        // Test with expressions as values
+        assert_eq!("15", eval_to_string(&g, "IFS(TRUE, 10+5, TRUE, 20)"));
+
+        // Test short-circuiting - only first true condition's value is returned
+        assert_eq!(
+            "first",
+            eval_to_string(
+                &g,
+                "IFS(TRUE, \"first\", TRUE, \"second\", TRUE, \"third\")"
+            )
+        );
+
+        // Test with 0/1 as boolean
+        assert_eq!("yes", eval_to_string(&g, "IFS(1, \"yes\", TRUE, \"no\")"));
+        assert_eq!("no", eval_to_string(&g, "IFS(0, \"yes\", TRUE, \"no\")"));
     }
 
     #[test]

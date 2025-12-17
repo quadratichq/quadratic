@@ -53,6 +53,7 @@ async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.14.0"
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
+rand = "0.9"
 regex = "1.7"
 rstar = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
