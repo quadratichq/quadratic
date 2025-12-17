@@ -214,8 +214,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the k-th largest value in a data set.
             /// `k` is 1-indexed, so LARGE(data, 1) returns the largest value.
             #[examples("LARGE(A1:A10, 1)", "LARGE({5, 2, 8, 1, 9}, 2) = 8")]
-            fn LARGE(span: Span, numbers: (Iter<f64>), k: (Spanned<i64>)) {
-                let mut values: Vec<f64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+            fn LARGE(span: Span, array: (Spanned<Array>), k: (Spanned<i64>)) {
+                let mut values: Vec<f64> = array
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
                 if values.is_empty() {
                     return Err(RunErrorMsg::EmptyArray.with_span(span));
                 }
@@ -236,8 +241,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the k-th smallest value in a data set.
             /// `k` is 1-indexed, so SMALL(data, 1) returns the smallest value.
             #[examples("SMALL(A1:A10, 1)", "SMALL({5, 2, 8, 1, 9}, 2) = 2")]
-            fn SMALL(span: Span, numbers: (Iter<f64>), k: (Spanned<i64>)) {
-                let mut values: Vec<f64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+            fn SMALL(span: Span, array: (Spanned<Array>), k: (Spanned<i64>)) {
+                let mut values: Vec<f64> = array
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
                 if values.is_empty() {
                     return Err(RunErrorMsg::EmptyArray.with_span(span));
                 }
@@ -590,5 +600,65 @@ mod tests {
 
         // Test basic standard deviation calculation
         assert_eq!("2", eval_to_string(&g, "STDEV(1, 3, 5)"));
+    }
+
+    #[test]
+    fn test_median() {
+        let g = GridController::new();
+
+        // Odd number of values
+        assert_eq!("3", eval_to_string(&g, "MEDIAN(1, 2, 3, 4, 5)"));
+        assert_eq!("3", eval_to_string(&g, "MEDIAN(5, 1, 3, 2, 4)"));
+
+        // Even number of values
+        assert_eq!("2.5", eval_to_string(&g, "MEDIAN(1, 2, 3, 4)"));
+
+        // Single value
+        assert_eq!("42", eval_to_string(&g, "MEDIAN(42)"));
+
+        // With decimals
+        assert_eq!("2.5", eval_to_string(&g, "MEDIAN(1.5, 2.5, 3.5)"));
+    }
+
+    #[test]
+    fn test_large() {
+        let g = GridController::new();
+
+        // Basic tests
+        assert_eq!("9", eval_to_string(&g, "LARGE({5, 2, 8, 1, 9}, 1)"));
+        assert_eq!("8", eval_to_string(&g, "LARGE({5, 2, 8, 1, 9}, 2)"));
+        assert_eq!("5", eval_to_string(&g, "LARGE({5, 2, 8, 1, 9}, 3)"));
+        assert_eq!("1", eval_to_string(&g, "LARGE({5, 2, 8, 1, 9}, 5)"));
+
+        // Error cases
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "LARGE({5, 2, 8}, 0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "LARGE({5, 2, 8}, 4)").msg,
+        );
+    }
+
+    #[test]
+    fn test_small() {
+        let g = GridController::new();
+
+        // Basic tests
+        assert_eq!("1", eval_to_string(&g, "SMALL({5, 2, 8, 1, 9}, 1)"));
+        assert_eq!("2", eval_to_string(&g, "SMALL({5, 2, 8, 1, 9}, 2)"));
+        assert_eq!("5", eval_to_string(&g, "SMALL({5, 2, 8, 1, 9}, 3)"));
+        assert_eq!("9", eval_to_string(&g, "SMALL({5, 2, 8, 1, 9}, 5)"));
+
+        // Error cases
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "SMALL({5, 2, 8}, 0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "SMALL({5, 2, 8}, 4)").msg,
+        );
     }
 }

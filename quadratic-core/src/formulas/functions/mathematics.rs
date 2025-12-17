@@ -1140,4 +1140,122 @@ mod tests {
                 .msg,
         );
     }
+
+    #[test]
+    fn test_sign() {
+        let g = GridController::new();
+        assert_eq!("1", eval_to_string(&g, "SIGN(42)"));
+        assert_eq!("-1", eval_to_string(&g, "SIGN(-42)"));
+        assert_eq!("0", eval_to_string(&g, "SIGN(0)"));
+        assert_eq!("1", eval_to_string(&g, "SIGN(0.001)"));
+        assert_eq!("-1", eval_to_string(&g, "SIGN(-0.001)"));
+    }
+
+    #[test]
+    fn test_gcd_lcm() {
+        let g = GridController::new();
+
+        // GCD tests
+        assert_eq!("6", eval_to_string(&g, "GCD(12, 18)"));
+        assert_eq!("1", eval_to_string(&g, "GCD(7, 13)"));
+        assert_eq!("4", eval_to_string(&g, "GCD(12, 8, 4)"));
+        assert_eq!("5", eval_to_string(&g, "GCD(5)"));
+
+        // LCM tests
+        assert_eq!("12", eval_to_string(&g, "LCM(4, 6)"));
+        assert_eq!("60", eval_to_string(&g, "LCM(4, 5, 6)"));
+        assert_eq!("7", eval_to_string(&g, "LCM(7)"));
+    }
+
+    #[test]
+    fn test_quotient() {
+        let g = GridController::new();
+        assert_eq!("2", eval_to_string(&g, "QUOTIENT(7, 3)"));
+        assert_eq!("-2", eval_to_string(&g, "QUOTIENT(-7, 3)"));
+        assert_eq!("-2", eval_to_string(&g, "QUOTIENT(7, -3)"));
+        assert_eq!("2", eval_to_string(&g, "QUOTIENT(-7, -3)"));
+    }
+
+    #[test]
+    fn test_odd_even() {
+        let g = GridController::new();
+
+        // ODD tests
+        assert_eq!("3", eval_to_string(&g, "ODD(1.5)"));
+        assert_eq!("3", eval_to_string(&g, "ODD(2)"));
+        assert_eq!("-3", eval_to_string(&g, "ODD(-1.5)"));
+        assert_eq!("1", eval_to_string(&g, "ODD(0)"));
+        assert_eq!("1", eval_to_string(&g, "ODD(1)"));
+        assert_eq!("5", eval_to_string(&g, "ODD(4)"));
+
+        // EVEN tests
+        assert_eq!("2", eval_to_string(&g, "EVEN(1.5)"));
+        assert_eq!("4", eval_to_string(&g, "EVEN(3)"));
+        assert_eq!("-2", eval_to_string(&g, "EVEN(-1.5)"));
+        assert_eq!("0", eval_to_string(&g, "EVEN(0)"));
+        assert_eq!("2", eval_to_string(&g, "EVEN(1)"));
+        assert_eq!("4", eval_to_string(&g, "EVEN(4)"));
+    }
+
+    #[test]
+    fn test_fact() {
+        let g = GridController::new();
+        assert_eq!("1", eval_to_string(&g, "FACT(0)"));
+        assert_eq!("1", eval_to_string(&g, "FACT(1)"));
+        assert_eq!("120", eval_to_string(&g, "FACT(5)"));
+        assert_eq!("3628800", eval_to_string(&g, "FACT(10)"));
+
+        // Error for negative
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "FACT(-1)").msg,
+        );
+    }
+
+    #[test]
+    fn test_factdouble() {
+        let g = GridController::new();
+        assert_eq!("1", eval_to_string(&g, "FACTDOUBLE(0)"));
+        assert_eq!("1", eval_to_string(&g, "FACTDOUBLE(1)"));
+        assert_eq!("2", eval_to_string(&g, "FACTDOUBLE(2)"));
+        assert_eq!("15", eval_to_string(&g, "FACTDOUBLE(5)")); // 5 * 3 * 1
+        assert_eq!("48", eval_to_string(&g, "FACTDOUBLE(6)")); // 6 * 4 * 2
+        assert_eq!("105", eval_to_string(&g, "FACTDOUBLE(7)")); // 7 * 5 * 3 * 1
+    }
+
+    #[test]
+    fn test_combin_permut() {
+        let g = GridController::new();
+
+        // COMBIN tests (n choose k)
+        assert_eq!("10", eval_to_string(&g, "COMBIN(5, 2)")); // 5!/(2!*3!) = 10
+        assert_eq!("1", eval_to_string(&g, "COMBIN(5, 0)"));
+        assert_eq!("1", eval_to_string(&g, "COMBIN(5, 5)"));
+        assert_eq!("252", eval_to_string(&g, "COMBIN(10, 5)"));
+
+        // PERMUT tests
+        assert_eq!("20", eval_to_string(&g, "PERMUT(5, 2)")); // 5!/3! = 20
+        assert_eq!("1", eval_to_string(&g, "PERMUT(5, 0)"));
+        assert_eq!("120", eval_to_string(&g, "PERMUT(5, 5)"));
+    }
+
+    #[test]
+    fn test_sumsq() {
+        let g = GridController::new();
+        assert_eq!("25", eval_to_string(&g, "SUMSQ(3, 4)")); // 9 + 16
+        assert_eq!("14", eval_to_string(&g, "SUMSQ(1, 2, 3)")); // 1 + 4 + 9
+        assert_eq!("100", eval_to_string(&g, "SUMSQ(10)"));
+    }
+
+    #[test]
+    fn test_sqrtpi() {
+        let g = GridController::new();
+        // SQRTPI(1) = sqrt(π) ≈ 1.7724538509
+        let result = eval_to_string(&g, "SQRTPI(1)");
+        assert!(result.starts_with("1.77"));
+
+        // SQRTPI(2) = sqrt(2π) ≈ 2.5066282746
+        let result = eval_to_string(&g, "SQRTPI(2)");
+        assert!(result.starts_with("2.50"));
+    }
 }

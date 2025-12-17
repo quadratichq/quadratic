@@ -1112,4 +1112,134 @@ mod tests {
         assert_eq!("TRUE", eval_to_string(&g, "EXACT(\"abc\", \"abc\")"));
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"abc\", \"def\")"));
     }
+
+    #[test]
+    fn test_formula_find() {
+        let g = GridController::new();
+
+        // Basic find
+        assert_eq!("4", eval_to_string(&g, "FIND(\"lo\", \"Hello\")"));
+        assert_eq!("1", eval_to_string(&g, "FIND(\"H\", \"Hello\")"));
+        assert_eq!("5", eval_to_string(&g, "FIND(\"o\", \"Hello\")"));
+
+        // Case sensitive
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "FIND(\"h\", \"Hello\")").msg,
+        );
+
+        // With start position
+        assert_eq!("4", eval_to_string(&g, "FIND(\"l\", \"Hello\", 4)"));
+
+        // Not found
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "FIND(\"z\", \"Hello\")").msg,
+        );
+    }
+
+    #[test]
+    fn test_formula_search() {
+        let g = GridController::new();
+
+        // Basic search (case insensitive)
+        assert_eq!("1", eval_to_string(&g, "SEARCH(\"h\", \"Hello\")"));
+        assert_eq!("1", eval_to_string(&g, "SEARCH(\"H\", \"Hello\")"));
+        assert_eq!("4", eval_to_string(&g, "SEARCH(\"lo\", \"Hello\")"));
+
+        // Wildcards
+        assert_eq!("1", eval_to_string(&g, "SEARCH(\"H*o\", \"Hello\")"));
+        assert_eq!("1", eval_to_string(&g, "SEARCH(\"H?llo\", \"Hello\")"));
+    }
+
+    #[test]
+    fn test_formula_replace() {
+        let g = GridController::new();
+
+        // Basic replace - start at position 4, replace 6 chars
+        // "abcdefghijk" -> "abc" + "XYZ" + "jk" = "abcXYZjk"
+        assert_eq!(
+            "abcXYZjk",
+            eval_to_string(&g, "REPLACE(\"abcdefghijk\", 4, 6, \"XYZ\")")
+        );
+
+        // Replace at beginning
+        assert_eq!(
+            "XYZdef",
+            eval_to_string(&g, "REPLACE(\"abcdef\", 1, 3, \"XYZ\")")
+        );
+
+        // Replace at end
+        assert_eq!(
+            "abcXYZ",
+            eval_to_string(&g, "REPLACE(\"abcdef\", 4, 3, \"XYZ\")")
+        );
+
+        // Insert (0 chars to replace)
+        assert_eq!(
+            "abcXYZdef",
+            eval_to_string(&g, "REPLACE(\"abcdef\", 4, 0, \"XYZ\")")
+        );
+    }
+
+    #[test]
+    fn test_formula_substitute() {
+        let g = GridController::new();
+
+        // Replace all occurrences
+        assert_eq!(
+            "Hi Hi",
+            eval_to_string(&g, "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\")")
+        );
+
+        // Replace specific occurrence
+        assert_eq!(
+            "Hello Hi",
+            eval_to_string(&g, "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\", 2)")
+        );
+
+        // No match
+        assert_eq!(
+            "Hello",
+            eval_to_string(&g, "SUBSTITUTE(\"Hello\", \"xyz\", \"abc\")")
+        );
+
+        // Empty old_text returns original
+        assert_eq!(
+            "Hello",
+            eval_to_string(&g, "SUBSTITUTE(\"Hello\", \"\", \"abc\")")
+        );
+    }
+
+    #[test]
+    fn test_formula_rept() {
+        let g = GridController::new();
+
+        assert_eq!("*****", eval_to_string(&g, "REPT(\"*\", 5)"));
+        assert_eq!("ababab", eval_to_string(&g, "REPT(\"ab\", 3)"));
+        assert_eq!("", eval_to_string(&g, "REPT(\"abc\", 0)"));
+    }
+
+    #[test]
+    fn test_formula_textjoin() {
+        let g = GridController::new();
+
+        // Basic join
+        assert_eq!(
+            "a, b, c",
+            eval_to_string(&g, "TEXTJOIN(\", \", TRUE, \"a\", \"b\", \"c\")")
+        );
+
+        // Ignore empty
+        assert_eq!(
+            "a-c",
+            eval_to_string(&g, "TEXTJOIN(\"-\", TRUE, \"a\", \"\", \"c\")")
+        );
+
+        // Keep empty
+        assert_eq!(
+            "a--c",
+            eval_to_string(&g, "TEXTJOIN(\"-\", FALSE, \"a\", \"\", \"c\")")
+        );
+    }
 }

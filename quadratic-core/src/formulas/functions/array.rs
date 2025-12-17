@@ -741,4 +741,57 @@ mod tests {
         // Excel rejects this but it's perfectly reasonable
         assert_eq!("0", eval_to_string(&g, "SUMPRODUCT()"));
     }
+
+    #[test]
+    fn test_formula_transpose() {
+        let g = GridController::new();
+
+        // Basic transpose
+        assert_eq!(
+            "{1, 3; 2, 4}",
+            eval_to_string(&g, "TRANSPOSE({1, 2; 3, 4})")
+        );
+
+        // Single row to column
+        assert_eq!("{1; 2; 3}", eval_to_string(&g, "TRANSPOSE({1, 2, 3})"));
+
+        // Single column to row
+        assert_eq!("{1, 2, 3}", eval_to_string(&g, "TRANSPOSE({1; 2; 3})"));
+
+        // Single value (stays as single value)
+        assert_eq!("{42}", eval_to_string(&g, "TRANSPOSE({42})"));
+    }
+
+    #[test]
+    fn test_formula_sequence() {
+        let g = GridController::new();
+
+        // Basic sequence (vertical)
+        assert_eq!("{1; 2; 3; 4; 5}", eval_to_string(&g, "SEQUENCE(5)"));
+
+        // With columns (2D grid)
+        assert_eq!(
+            "{1, 2, 3; 4, 5, 6; 7, 8, 9}",
+            eval_to_string(&g, "SEQUENCE(3, 3)")
+        );
+
+        // With custom start
+        assert_eq!("{10; 11; 12}", eval_to_string(&g, "SEQUENCE(3, 1, 10)"));
+
+        // With custom step
+        assert_eq!("{0; 2; 4}", eval_to_string(&g, "SEQUENCE(3, 1, 0, 2)"));
+
+        // Negative step
+        assert_eq!("{10; 8; 6}", eval_to_string(&g, "SEQUENCE(3, 1, 10, -2)"));
+
+        // Error for invalid dimensions
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "SEQUENCE(0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "SEQUENCE(-1)").msg,
+        );
+    }
 }

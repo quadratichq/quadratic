@@ -300,4 +300,93 @@ mod tests {
             eval_to_err(&g, "IFNA(XLOOKUP(30, A1:A3, B1:B3), \"no match\")",).msg,
         );
     }
+
+    #[test]
+    fn test_formula_isblank() {
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Empty cell is blank
+        assert_eq!("TRUE", eval_to_string(&g, "ISBLANK(A1)"));
+
+        // Cell with value is not blank
+        g.set_cell_value(pos![sheet_id!A1], "hello".to_string(), None, false);
+        assert_eq!("FALSE", eval_to_string(&g, "ISBLANK(A1)"));
+
+        // Literal values
+        assert_eq!("FALSE", eval_to_string(&g, "ISBLANK(\"\")"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISBLANK(0)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISBLANK(FALSE)"));
+    }
+
+    #[test]
+    fn test_formula_isnumber() {
+        let g = GridController::new();
+
+        assert_eq!("TRUE", eval_to_string(&g, "ISNUMBER(123)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISNUMBER(3.14)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISNUMBER(\"123\")"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISNUMBER(TRUE)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISNUMBER(A1)"));
+    }
+
+    #[test]
+    fn test_formula_istext() {
+        let g = GridController::new();
+
+        assert_eq!("TRUE", eval_to_string(&g, "ISTEXT(\"hello\")"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISTEXT(\"\")"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISTEXT(123)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISTEXT(TRUE)"));
+    }
+
+    #[test]
+    fn test_formula_iserror() {
+        let g = GridController::new();
+
+        assert_eq!("TRUE", eval_to_string(&g, "ISERROR(1/0)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISERROR(SQRT(-1))"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISERROR(123)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISERROR(\"hello\")"));
+    }
+
+    #[test]
+    fn test_formula_islogical() {
+        let g = GridController::new();
+
+        assert_eq!("TRUE", eval_to_string(&g, "ISLOGICAL(TRUE)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISLOGICAL(FALSE)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISLOGICAL(1)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISLOGICAL(\"TRUE\")"));
+    }
+
+    #[test]
+    fn test_formula_iseven_isodd() {
+        let g = GridController::new();
+
+        // ISEVEN
+        assert_eq!("TRUE", eval_to_string(&g, "ISEVEN(2)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISEVEN(0)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISEVEN(-4)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISEVEN(3)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISEVEN(-1)"));
+
+        // ISODD
+        assert_eq!("TRUE", eval_to_string(&g, "ISODD(3)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISODD(-5)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISODD(2)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISODD(0)"));
+    }
+
+    #[test]
+    fn test_formula_isna() {
+        let g = GridController::new();
+
+        // Other errors should return false
+        assert_eq!("FALSE", eval_to_string(&g, "ISNA(1/0)"));
+
+        // Non-errors should return false
+        assert_eq!("FALSE", eval_to_string(&g, "ISNA(123)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISNA(\"hello\")"));
+    }
 }

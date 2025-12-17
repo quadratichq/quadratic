@@ -29,23 +29,17 @@ fn get_functions() -> Vec<FormulaFunction> {
                 match reference {
                     Some(arr) => {
                         // For an array, return the row number of the first cell
-                        // The span contains position information but we need to get the actual row
-                        // Since we're dealing with an array that was fetched, we need to return
-                        // an array of row numbers if it's a range
                         if arr.inner.height() == 1 && arr.inner.width() == 1 {
-                            // Single cell - return the row from the span's start
-                            // Note: span contains source code position, not cell position
-                            // We need to return the row of the current cell for now
-                            ctx.sheet_pos.y
+                            // y is 0-indexed internally, so add 1 for Excel-style 1-indexed
+                            ctx.sheet_pos.y + 1
                         } else {
-                            // Return array of row numbers
                             // For ranges, return the first row (simplified implementation)
-                            ctx.sheet_pos.y
+                            ctx.sheet_pos.y + 1
                         }
                     }
                     None => {
-                        // Return the row of the current cell (1-indexed)
-                        ctx.sheet_pos.y
+                        // Return the row of the current cell (y is 0-indexed, add 1)
+                        ctx.sheet_pos.y + 1
                     }
                 }
             }
@@ -57,11 +51,11 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn COLUMN(ctx: Ctx, reference: (Option<Spanned<Array>>)) {
                 match reference {
                     Some(_arr) => {
-                        // For now, return the column of the current cell
+                        // x is already 1-indexed internally
                         ctx.sheet_pos.x
                     }
                     None => {
-                        // Return the column of the current cell (1-indexed)
+                        // Return the column of the current cell (x is already 1-indexed)
                         ctx.sheet_pos.x
                     }
                 }
@@ -1539,6 +1533,60 @@ mod tests {
                 got: Some("numeric literal".into()),
             },
             check_syntax_to_err(&g, s).msg,
+        );
+    }
+
+    #[test]
+    fn test_row_column() {
+        let g = GridController::new();
+
+        // ROW and COLUMN without arguments return the current cell position
+        // The test evaluation context starts at origin (1, 1) which is A1
+        assert_eq!("1", eval_to_string(&g, "ROW()"));
+        assert_eq!("1", eval_to_string(&g, "COLUMN()"));
+    }
+
+    #[test]
+    fn test_rows_columns() {
+        let g = GridController::new();
+
+        // ROWS returns the number of rows in a range
+        assert_eq!("5", eval_to_string(&g, "ROWS(A1:A5)"));
+        assert_eq!("10", eval_to_string(&g, "ROWS(A1:C10)"));
+        assert_eq!("1", eval_to_string(&g, "ROWS(A1)"));
+
+        // COLUMNS returns the number of columns in a range
+        assert_eq!("3", eval_to_string(&g, "COLUMNS(A1:C1)"));
+        assert_eq!("5", eval_to_string(&g, "COLUMNS(A1:E10)"));
+        assert_eq!("1", eval_to_string(&g, "COLUMNS(A1)"));
+
+        // With arrays
+        assert_eq!("2", eval_to_string(&g, "ROWS({1,2;3,4})"));
+        assert_eq!("2", eval_to_string(&g, "COLUMNS({1,2;3,4})"));
+    }
+
+    #[test]
+    fn test_address() {
+        let g = GridController::new();
+
+        // Default A1 style with absolute references
+        assert_eq!("$A$1", eval_to_string(&g, "ADDRESS(1, 1)"));
+        assert_eq!("$C$5", eval_to_string(&g, "ADDRESS(5, 3)"));
+
+        // Different absolute/relative modes
+        assert_eq!("$A$1", eval_to_string(&g, "ADDRESS(1, 1, 1)")); // Absolute row and column
+        assert_eq!("A$1", eval_to_string(&g, "ADDRESS(1, 1, 2)")); // Absolute row
+        assert_eq!("$A1", eval_to_string(&g, "ADDRESS(1, 1, 3)")); // Absolute column
+        assert_eq!("A1", eval_to_string(&g, "ADDRESS(1, 1, 4)")); // Relative
+
+        // R1C1 style
+        assert_eq!("R1C1", eval_to_string(&g, "ADDRESS(1, 1, 1, FALSE)"));
+        assert_eq!("R5C3", eval_to_string(&g, "ADDRESS(5, 3, 1, FALSE)"));
+
+        // With sheet name
+        assert_eq!(
+            "Sheet1!$A$1",
+            eval_to_string(&g, "ADDRESS(1, 1, 1, TRUE, \"Sheet1\")")
         );
     }
 }
