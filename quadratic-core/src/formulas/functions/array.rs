@@ -309,7 +309,266 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        formula_fn!(
+            /// Returns the matrix determinant of an array.
+            ///
+            /// The array must be a square matrix (same number of rows and columns).
+            #[examples(
+                "MDETERM({1, 2; 3, 4}) = -2",
+                "MDETERM({1, 0, 0; 0, 1, 0; 0, 0, 1}) = 1"
+            )]
+            fn MDETERM(span: Span, array: (Spanned<Array>)) {
+                let size = array.inner.size();
+                if size.w != size.h {
+                    return Err(RunErrorMsg::NonRectangularArray.with_span(array.span));
+                }
+                let n = size.w.get() as usize;
+
+                // Convert to f64 matrix
+                let mut matrix: Vec<f64> = Vec::with_capacity(n * n);
+                for cv in array.inner.cell_values_slice().iter() {
+                    let val: f64 = cv.coerce_nonblank().ok_or_else(|| {
+                        RunErrorMsg::Expected {
+                            expected: "number".into(),
+                            got: Some(cv.type_name().into()),
+                        }
+                        .with_span(span)
+                    })?;
+                    matrix.push(val);
+                }
+
+                // Calculate determinant using LU decomposition
+                let det = matrix_determinant(&matrix, n);
+                det
+            }
+        ),
+        formula_fn!(
+            /// Returns the inverse matrix for the matrix stored in an array.
+            ///
+            /// The array must be a square matrix with a non-zero determinant.
+            #[examples("MINVERSE({1, 2; 3, 4})", "MINVERSE({4, 7; 2, 6})")]
+            fn MINVERSE(span: Span, array: (Spanned<Array>)) {
+                let size = array.inner.size();
+                if size.w != size.h {
+                    return Err(RunErrorMsg::NonRectangularArray.with_span(array.span));
+                }
+                let n = size.w.get() as usize;
+
+                // Convert to f64 matrix
+                let mut matrix: Vec<f64> = Vec::with_capacity(n * n);
+                for cv in array.inner.cell_values_slice().iter() {
+                    let val: f64 = cv.coerce_nonblank().ok_or_else(|| {
+                        RunErrorMsg::Expected {
+                            expected: "number".into(),
+                            got: Some(cv.type_name().into()),
+                        }
+                        .with_span(span)
+                    })?;
+                    matrix.push(val);
+                }
+
+                // Calculate inverse
+                let inverse = matrix_inverse(&matrix, n)
+                    .ok_or_else(|| RunErrorMsg::DivideByZero.with_span(span))?;
+
+                // Convert back to Array
+                let values: SmallVec<[CellValue; 1]> = inverse
+                    .into_iter()
+                    .map(|v| {
+                        CellValue::Number(
+                            rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default(),
+                        )
+                    })
+                    .collect();
+
+                Array::new_row_major(size, values)?
+            }
+        ),
+        formula_fn!(
+            /// Returns the matrix product of two arrays.
+            ///
+            /// The number of columns in `array1` must equal the number of rows
+            /// in `array2`. The result has the same number of rows as `array1`
+            /// and the same number of columns as `array2`.
+            #[examples("MMULT({1, 2; 3, 4}, {5, 6; 7, 8})", "MMULT({1, 2, 3}, {4; 5; 6})")]
+            fn MMULT(span: Span, array1: (Spanned<Array>), array2: (Spanned<Array>)) {
+                let size1 = array1.inner.size();
+                let size2 = array2.inner.size();
+
+                // Check that inner dimensions match
+                if size1.w != size2.h {
+                    return Err(RunErrorMsg::ArrayAxisMismatch {
+                        axis: Axis::X,
+                        expected: size1.w.get(),
+                        got: size2.h.get(),
+                    }
+                    .with_span(array2.span));
+                }
+
+                let rows = size1.h.get() as usize;
+                let cols = size2.w.get() as usize;
+                let inner = size1.w.get() as usize;
+
+                // Convert arrays to f64 vectors
+                let mut m1: Vec<f64> = Vec::with_capacity(rows * inner);
+                for cv in array1.inner.cell_values_slice().iter() {
+                    let val: f64 = cv.coerce_nonblank().ok_or_else(|| {
+                        RunErrorMsg::Expected {
+                            expected: "number".into(),
+                            got: Some(cv.type_name().into()),
+                        }
+                        .with_span(span)
+                    })?;
+                    m1.push(val);
+                }
+
+                let mut m2: Vec<f64> = Vec::with_capacity(inner * cols);
+                for cv in array2.inner.cell_values_slice().iter() {
+                    let val: f64 = cv.coerce_nonblank().ok_or_else(|| {
+                        RunErrorMsg::Expected {
+                            expected: "number".into(),
+                            got: Some(cv.type_name().into()),
+                        }
+                        .with_span(span)
+                    })?;
+                    m2.push(val);
+                }
+
+                // Perform matrix multiplication
+                let mut result: Vec<CellValue> = Vec::with_capacity(rows * cols);
+                for i in 0..rows {
+                    for j in 0..cols {
+                        let mut sum = 0.0;
+                        for k in 0..inner {
+                            sum += m1[i * inner + k] * m2[k * cols + j];
+                        }
+                        result.push(CellValue::Number(
+                            rust_decimal::Decimal::from_f64_retain(sum).unwrap_or_default(),
+                        ));
+                    }
+                }
+
+                let result_size = ArraySize::new(cols as u32, rows as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(result_size, result.into())?
+            }
+        ),
     ]
+}
+
+/// Calculate matrix determinant using LU decomposition with partial pivoting
+fn matrix_determinant(matrix: &[f64], n: usize) -> f64 {
+    if n == 1 {
+        return matrix[0];
+    }
+    if n == 2 {
+        return matrix[0] * matrix[3] - matrix[1] * matrix[2];
+    }
+
+    // Copy matrix for LU decomposition
+    let mut lu: Vec<f64> = matrix.to_vec();
+    let mut det = 1.0;
+
+    for col in 0..n {
+        // Find pivot
+        let mut max_val = lu[col * n + col].abs();
+        let mut max_row = col;
+        for row in (col + 1)..n {
+            let val = lu[row * n + col].abs();
+            if val > max_val {
+                max_val = val;
+                max_row = row;
+            }
+        }
+
+        // Swap rows if needed
+        if max_row != col {
+            for k in 0..n {
+                lu.swap(col * n + k, max_row * n + k);
+            }
+            det = -det;
+        }
+
+        let pivot = lu[col * n + col];
+        if pivot.abs() < 1e-15 {
+            return 0.0;
+        }
+
+        det *= pivot;
+
+        // Eliminate column
+        for row in (col + 1)..n {
+            let factor = lu[row * n + col] / pivot;
+            for k in col..n {
+                lu[row * n + k] -= factor * lu[col * n + k];
+            }
+        }
+    }
+
+    det
+}
+
+/// Calculate matrix inverse using Gauss-Jordan elimination
+fn matrix_inverse(matrix: &[f64], n: usize) -> Option<Vec<f64>> {
+    // Create augmented matrix [A|I]
+    let mut aug: Vec<f64> = vec![0.0; n * 2 * n];
+    for i in 0..n {
+        for j in 0..n {
+            aug[i * 2 * n + j] = matrix[i * n + j];
+        }
+        aug[i * 2 * n + n + i] = 1.0;
+    }
+
+    // Gauss-Jordan elimination
+    for col in 0..n {
+        // Find pivot
+        let mut max_val = aug[col * 2 * n + col].abs();
+        let mut max_row = col;
+        for row in (col + 1)..n {
+            let val = aug[row * 2 * n + col].abs();
+            if val > max_val {
+                max_val = val;
+                max_row = row;
+            }
+        }
+
+        // Swap rows if needed
+        if max_row != col {
+            for k in 0..(2 * n) {
+                aug.swap(col * 2 * n + k, max_row * 2 * n + k);
+            }
+        }
+
+        let pivot = aug[col * 2 * n + col];
+        if pivot.abs() < 1e-15 {
+            return None; // Matrix is singular
+        }
+
+        // Scale pivot row
+        for k in 0..(2 * n) {
+            aug[col * 2 * n + k] /= pivot;
+        }
+
+        // Eliminate column
+        for row in 0..n {
+            if row != col {
+                let factor = aug[row * 2 * n + col];
+                for k in 0..(2 * n) {
+                    aug[row * 2 * n + k] -= factor * aug[col * 2 * n + k];
+                }
+            }
+        }
+    }
+
+    // Extract inverse from augmented matrix
+    let mut inverse: Vec<f64> = vec![0.0; n * n];
+    for i in 0..n {
+        for j in 0..n {
+            inverse[i * n + j] = aug[i * 2 * n + n + j];
+        }
+    }
+
+    Some(inverse)
 }
 
 fn by_column_to_axis(by_column: Option<bool>) -> Axis {
@@ -792,6 +1051,101 @@ mod tests {
         assert_eq!(
             RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "SEQUENCE(-1)").msg,
+        );
+    }
+
+    #[test]
+    fn test_mdeterm() {
+        let g = GridController::new();
+
+        // 2x2 matrix
+        assert_eq!("-2", eval_to_string(&g, "MDETERM({1, 2; 3, 4})"));
+
+        // 3x3 identity matrix
+        assert_eq!(
+            "1",
+            eval_to_string(&g, "MDETERM({1, 0, 0; 0, 1, 0; 0, 0, 1})")
+        );
+
+        // 3x3 matrix
+        assert_eq!(
+            "0",
+            eval_to_string(&g, "MDETERM({1, 2, 3; 4, 5, 6; 7, 8, 9})")
+        );
+
+        // 1x1 matrix
+        assert_eq!("5", eval_to_string(&g, "MDETERM({5})"));
+
+        // Error for non-square matrix
+        assert_eq!(
+            RunErrorMsg::NonRectangularArray,
+            eval_to_err(&g, "MDETERM({1, 2, 3; 4, 5, 6})").msg,
+        );
+    }
+
+    #[test]
+    fn test_minverse() {
+        let g = GridController::new();
+
+        // 2x2 matrix inverse
+        // {4, 7; 2, 6} has inverse {0.6, -0.7; -0.2, 0.4}
+        let result = eval_to_string(&g, "MDETERM(MMULT({4, 7; 2, 6}, MINVERSE({4, 7; 2, 6})))");
+        // Result should be close to 1 (determinant of identity)
+        let det: f64 = result.parse().unwrap();
+        assert!((det - 1.0).abs() < 0.0001);
+
+        // 3x3 identity matrix inverse is itself
+        assert_eq!(
+            "{1, 0, 0; 0, 1, 0; 0, 0, 1}",
+            eval_to_string(&g, "MINVERSE({1, 0, 0; 0, 1, 0; 0, 0, 1})")
+        );
+
+        // Error for singular matrix
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "MINVERSE({1, 2; 2, 4})").msg,
+        );
+    }
+
+    #[test]
+    fn test_mmult() {
+        let g = GridController::new();
+
+        // 2x2 * 2x2
+        assert_eq!(
+            "{19, 22; 43, 50}",
+            eval_to_string(&g, "MMULT({1, 2; 3, 4}, {5, 6; 7, 8})")
+        );
+
+        // 1x3 * 3x1 (row * column = scalar)
+        assert_eq!("{32}", eval_to_string(&g, "MMULT({1, 2, 3}, {4; 5; 6})"));
+
+        // 3x1 * 1x3 (column * row = 3x3 matrix)
+        assert_eq!(
+            "{4, 5, 6; 8, 10, 12; 12, 15, 18}",
+            eval_to_string(&g, "MMULT({1; 2; 3}, {4, 5, 6})")
+        );
+
+        // 2x3 * 3x2
+        assert_eq!(
+            "{22, 28; 49, 64}",
+            eval_to_string(&g, "MMULT({1, 2, 3; 4, 5, 6}, {1, 2; 3, 4; 5, 6})")
+        );
+
+        // Identity matrix multiplication
+        assert_eq!(
+            "{1, 2; 3, 4}",
+            eval_to_string(&g, "MMULT({1, 2; 3, 4}, {1, 0; 0, 1})")
+        );
+
+        // Error for mismatched dimensions
+        assert_eq!(
+            RunErrorMsg::ArrayAxisMismatch {
+                axis: Axis::X,
+                expected: 2,
+                got: 3,
+            },
+            eval_to_err(&g, "MMULT({1, 2; 3, 4}, {1, 2, 3; 4, 5, 6; 7, 8, 9})").msg,
         );
     }
 }

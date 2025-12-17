@@ -1515,6 +1515,21 @@ export interface CoreClientSetFormula {
   error?: string;
 }
 
+export interface ClientCoreSetFormulas {
+  type: 'clientCoreSetFormulas';
+  id: number;
+  sheetId: string;
+  formulas: Array<[string, string]>; // [selection, formula_string]
+  cursor: string;
+}
+
+export interface CoreClientSetFormulas {
+  type: 'coreClientSetFormulas';
+  id: number;
+  transactionId: string | undefined;
+  error?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1618,7 +1633,8 @@ export type ClientCoreMessage =
   | ClientCoreGetAITransactions
   | ClientCoreUndo
   | ClientCoreRedo
-  | ClientCoreSetFormula;
+  | ClientCoreSetFormula
+  | ClientCoreSetFormulas;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1717,4 +1733,5 @@ export type CoreClientMessage =
   | CoreClientUndoResponse
   | CoreClientRedoResponse
   | CoreClientStartupTimer
-  | CoreClientSetFormula;
+  | CoreClientSetFormula
+  | CoreClientSetFormulas;

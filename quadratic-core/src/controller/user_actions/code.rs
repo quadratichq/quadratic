@@ -32,6 +32,21 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, true)
     }
 
+    /// Starts a transaction to set multiple formulas at once (batched, single transaction)
+    pub fn set_formulas(
+        &mut self,
+        formulas: Vec<(A1Selection, String)>,
+        cursor: Option<String>,
+    ) -> String {
+        let ops = formulas
+            .into_iter()
+            .flat_map(|(selection, code_string)| {
+                self.set_formula_operations(selection, code_string, None)
+            })
+            .collect();
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, true)
+    }
+
     /// Reruns code cells in grid.
     pub fn rerun_all_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> String {
         let ops = self.rerun_all_code_cells_operations();
@@ -184,5 +199,89 @@ mod tests {
         let ops =
             gc.set_formula_operations(A1Selection::test_a1("A10:A11"), "=A1".to_owned(), None);
         assert_eq!(ops.len(), 4);
+    }
+
+    #[test]
+    fn test_set_formulas_batched() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set some initial values
+        test_set_values(&mut gc, sheet_id, pos![A1], 1, 5);
+
+        // Set multiple formulas at once using the batched function
+        gc.set_formulas(
+            vec![
+                (A1Selection::test_a1("B1"), "=A1*2".to_owned()),
+                (A1Selection::test_a1("B2"), "=A2*3".to_owned()),
+                (A1Selection::test_a1("B3"), "=A3+10".to_owned()),
+            ],
+            None,
+        );
+
+        // Verify all formulas were applied correctly
+        // A1=0, A2=1, A3=2, A4=3, A5=4
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "0"); // B1 = A1*2 = 0*2 = 0
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "3"); // B2 = A2*3 = 1*3 = 3
+        assert_display_cell_value(&gc, sheet_id, 2, 3, "12"); // B3 = A3+10 = 2+10 = 12
+    }
+
+    #[test]
+    fn test_set_formulas_single_undo() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set some initial values
+        test_set_values(&mut gc, sheet_id, pos![A1], 1, 3);
+
+        // Set multiple formulas at once
+        gc.set_formulas(
+            vec![
+                (A1Selection::test_a1("B1"), "=A1+1".to_owned()),
+                (A1Selection::test_a1("B2"), "=A2+1".to_owned()),
+                (A1Selection::test_a1("B3"), "=A3+1".to_owned()),
+            ],
+            None,
+        );
+
+        // Verify formulas were applied
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "1"); // B1 = A1+1 = 0+1 = 1
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "2"); // B2 = A2+1 = 1+1 = 2
+        assert_display_cell_value(&gc, sheet_id, 2, 3, "3"); // B3 = A3+1 = 2+1 = 3
+
+        // Single undo should remove all formulas (since they were in one transaction)
+        gc.undo(1, None, false);
+
+        // All formula cells should now be blank
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        assert!(sheet.cell_value(pos![B1]).is_none());
+        assert!(sheet.cell_value(pos![B2]).is_none());
+        assert!(sheet.cell_value(pos![B3]).is_none());
+    }
+
+    #[test]
+    fn test_set_formulas_with_ranges() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set some initial values
+        test_set_values(&mut gc, sheet_id, pos![A1], 1, 5);
+
+        // Set formulas with a range and a single cell
+        gc.set_formulas(
+            vec![
+                (A1Selection::test_a1("B1:B3"), "=A1".to_owned()), // Range with relative refs
+                (A1Selection::test_a1("C1"), "=SUM(A1:A5)".to_owned()), // Single cell
+            ],
+            None,
+        );
+
+        // B1:B3 should have A1, A2, A3 values due to relative reference adjustment
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "0"); // B1 = A1 = 0
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "1"); // B2 = A2 = 1
+        assert_display_cell_value(&gc, sheet_id, 2, 3, "2"); // B3 = A3 = 2
+
+        // C1 should have the sum
+        assert_display_cell_value(&gc, sheet_id, 3, 1, "10"); // C1 = SUM(A1:A5) = 0+1+2+3+4 = 10
     }
 }

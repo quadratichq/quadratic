@@ -229,6 +229,86 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Rounds a number up to the nearest multiple of `increment`,
+            /// regardless of the sign of `number`. If `increment` is omitted,
+            /// it is assumed to be `1`. The sign of `increment` is ignored.
+            ///
+            /// Unlike `CEILING.MATH`, this function always rounds toward
+            /// positive infinity, even for negative numbers.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "CEILING.PRECISE"]
+            #[examples(
+                "CEILING.PRECISE(6.5)",
+                "CEILING.PRECISE(6.5, 2)",
+                "CEILING.PRECISE(-12, 5)",
+                "CEILING.PRECISE(-4.1)"
+            )]
+            #[zip_map]
+            fn CEILING_PRECISE([number]: f64, [increment]: (Option<f64>)) {
+                let increment = increment.unwrap_or(1.0).abs();
+
+                if increment == 0.0 {
+                    0.0
+                } else {
+                    (number / increment).ceil() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number down to the nearest multiple of `increment`,
+            /// regardless of the sign of `number`. If `increment` is omitted,
+            /// it is assumed to be `1`. The sign of `increment` is ignored.
+            ///
+            /// Unlike `FLOOR.MATH`, this function always rounds toward
+            /// negative infinity, even for negative numbers.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "FLOOR.PRECISE"]
+            #[examples(
+                "FLOOR.PRECISE(6.5)",
+                "FLOOR.PRECISE(6.5, 2)",
+                "FLOOR.PRECISE(-12, 5)",
+                "FLOOR.PRECISE(-4.1)"
+            )]
+            #[zip_map]
+            fn FLOOR_PRECISE([number]: f64, [increment]: (Option<f64>)) {
+                let increment = increment.unwrap_or(1.0).abs();
+
+                if increment == 0.0 {
+                    0.0
+                } else {
+                    (number / increment).floor() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number up to the nearest multiple of `increment`,
+            /// regardless of the sign of `number`. If `increment` is omitted,
+            /// it is assumed to be `1`. The sign of `increment` is ignored.
+            ///
+            /// This is an alias for `CEILING.PRECISE`.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "ISO.CEILING"]
+            #[examples(
+                "ISO.CEILING(6.5)",
+                "ISO.CEILING(6.5, 2)",
+                "ISO.CEILING(-12, 5)",
+                "ISO.CEILING(-4.1)"
+            )]
+            #[zip_map]
+            fn ISO_CEILING([number]: f64, [increment]: (Option<f64>)) {
+                let increment = increment.unwrap_or(1.0).abs();
+
+                if increment == 0.0 {
+                    0.0
+                } else {
+                    (number / increment).ceil() * increment
+                }
+            }
+        ),
+        formula_fn!(
             /// Rounds a number down to the next integer. Always rounds toward
             /// negative infinity.
             #[examples("INT(3.9)", "INT(-2.1)")]
@@ -583,6 +663,42 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns the number of combinations with repetitions for a given
+            /// number of items. This is also known as "n multichoose k".
+            ///
+            /// The formula is: (n + k - 1)! / (k! * (n - 1)!)
+            ///
+            /// For example, COMBINA(4, 3) returns 20, which is the number of
+            /// ways to choose 3 items from 4 items when repetition is allowed.
+            #[examples("COMBINA(4, 3) = 20", "COMBINA(10, 2) = 55")]
+            #[zip_map]
+            fn COMBINA(span: Span, [n]: (Spanned<i64>), [k]: (Spanned<i64>)) {
+                if n.inner < 0 || k.inner < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Special case: if both n and k are 0, return 1
+                if n.inner == 0 && k.inner == 0 {
+                    return Ok(1.0.into());
+                }
+                // Special case: if n is 0 but k > 0, return 0
+                if n.inner == 0 {
+                    return Ok(0.0.into());
+                }
+                let n = n.inner as u64;
+                let k = k.inner as u64;
+                // COMBINA(n, k) = COMBIN(n + k - 1, k) = (n + k - 1)! / (k! * (n - 1)!)
+                let total = n + k - 1;
+                // Use the smaller of k and (n-1) to minimize calculations
+                let smaller_k = k.min(n - 1);
+                // Calculate iteratively to avoid overflow
+                let mut result = 1.0_f64;
+                for i in 0..smaller_k {
+                    result = result * (total - i) as f64 / (i + 1) as f64;
+                }
+                result.round()
+            }
+        ),
+        formula_fn!(
             /// Returns the number of permutations of n items taken k at a time.
             #[examples("PERMUT(5, 2) = 20", "PERMUT(10, 3) = 720")]
             #[zip_map]
@@ -622,6 +738,95 @@ fn get_functions() -> Vec<FormulaFunction> {
                     return Err(RunErrorMsg::NaN.with_span(span));
                 }
                 (number * std::f64::consts::PI).sqrt()
+            }
+        ),
+        formula_fn!(
+            /// Converts a text representation of a number in a given base into
+            /// a decimal number.
+            ///
+            /// The `radix` must be between 2 and 36 (inclusive).
+            /// Valid digits for bases > 10 use letters A-Z (case insensitive).
+            #[examples(
+                "DECIMAL(\"FF\", 16) = 255",
+                "DECIMAL(\"111\", 2) = 7",
+                "DECIMAL(\"ZZ\", 36) = 1295"
+            )]
+            #[zip_map]
+            fn DECIMAL(span: Span, [text]: String, [radix]: (Spanned<i64>)) {
+                let radix_val = radix.inner;
+                if !(2..=36).contains(&radix_val) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(radix.span));
+                }
+                let text = text.trim();
+                if text.is_empty() {
+                    return Ok(0.0.into());
+                }
+                i64::from_str_radix(text, radix_val as u32)
+                    .map(|n| n as f64)
+                    .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number to the nearest multiple of `significance`.
+            ///
+            /// Both the number and significance must have the same sign, or
+            /// the significance must be zero.
+            #[examples("MROUND(10, 3) = 9", "MROUND(1.3, 0.2) = 1.4", "MROUND(-10, -3) = -9")]
+            #[zip_map]
+            fn MROUND(span: Span, [number]: f64, [significance]: f64) {
+                if significance == 0.0 {
+                    return Ok(0.0.into());
+                }
+                // Check that number and significance have the same sign
+                if (number > 0.0 && significance < 0.0) || (number < 0.0 && significance > 0.0) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                let result = (number / significance).round() * significance;
+                result
+            }
+        ),
+        formula_fn!(
+            /// Returns the multinomial of a set of numbers.
+            ///
+            /// The multinomial is the ratio of the factorial of the sum of values
+            /// to the product of the factorials of those values.
+            ///
+            /// MULTINOMIAL(a, b, c, ...) = (a + b + c + ...)! / (a! * b! * c! * ...)
+            #[examples("MULTINOMIAL(2, 3, 4) = 1260", "MULTINOMIAL(2, 3) = 10")]
+            fn MULTINOMIAL(span: Span, numbers: (Iter<i64>)) {
+                let values: Vec<i64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Ok(1.0.into());
+                }
+
+                // Check all values are non-negative
+                for &v in &values {
+                    if v < 0 {
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                    }
+                }
+
+                let sum: i64 = values.iter().sum();
+                if sum > 170 {
+                    return Err(RunErrorMsg::Overflow.with_span(span));
+                }
+
+                // Calculate (sum)! / (n1! * n2! * ... * nk!)
+                // We do this iteratively to avoid overflow
+                let mut result = 1.0_f64;
+                let mut remaining = sum;
+
+                for &v in &values {
+                    // Multiply by C(remaining, v) which is remaining! / (v! * (remaining-v)!)
+                    // This is more numerically stable than computing factorials directly
+                    for i in 0..v {
+                        result *= (remaining - i) as f64;
+                        result /= (i + 1) as f64;
+                    }
+                    remaining -= v;
+                }
+
+                Ok(result.round())
             }
         ),
     ]
@@ -1257,5 +1462,163 @@ mod tests {
         // SQRTPI(2) = sqrt(2π) ≈ 2.5066282746
         let result = eval_to_string(&g, "SQRTPI(2)");
         assert!(result.starts_with("2.50"));
+    }
+
+    #[test]
+    fn test_ceiling_precise() {
+        let g = GridController::new();
+
+        // Basic rounding up
+        assert_eq!("7", eval_to_string(&g, "CEILING.PRECISE(6.5)"));
+        assert_eq!("8", eval_to_string(&g, "CEILING.PRECISE(6.5, 2)"));
+        assert_eq!("-10", eval_to_string(&g, "CEILING.PRECISE(-12, 5)"));
+        assert_eq!("-4", eval_to_string(&g, "CEILING.PRECISE(-4.1)"));
+
+        // With negative increment (sign is ignored)
+        assert_eq!("8", eval_to_string(&g, "CEILING.PRECISE(6.5, -2)"));
+        assert_eq!("-10", eval_to_string(&g, "CEILING.PRECISE(-12, -5)"));
+
+        // Zero cases
+        assert_eq!("0", eval_to_string(&g, "CEILING.PRECISE(0)"));
+        assert_eq!("0", eval_to_string(&g, "CEILING.PRECISE(6.5, 0)"));
+
+        // Exact multiples
+        assert_eq!("6", eval_to_string(&g, "CEILING.PRECISE(6, 2)"));
+        assert_eq!("-6", eval_to_string(&g, "CEILING.PRECISE(-6, 2)"));
+    }
+
+    #[test]
+    fn test_floor_precise() {
+        let g = GridController::new();
+
+        // Basic rounding down
+        assert_eq!("6", eval_to_string(&g, "FLOOR.PRECISE(6.5)"));
+        assert_eq!("6", eval_to_string(&g, "FLOOR.PRECISE(6.5, 2)"));
+        assert_eq!("-15", eval_to_string(&g, "FLOOR.PRECISE(-12, 5)"));
+        assert_eq!("-5", eval_to_string(&g, "FLOOR.PRECISE(-4.1)"));
+
+        // With negative increment (sign is ignored)
+        assert_eq!("6", eval_to_string(&g, "FLOOR.PRECISE(6.5, -2)"));
+        assert_eq!("-15", eval_to_string(&g, "FLOOR.PRECISE(-12, -5)"));
+
+        // Zero cases
+        assert_eq!("0", eval_to_string(&g, "FLOOR.PRECISE(0)"));
+        assert_eq!("0", eval_to_string(&g, "FLOOR.PRECISE(6.5, 0)"));
+
+        // Exact multiples
+        assert_eq!("6", eval_to_string(&g, "FLOOR.PRECISE(6, 2)"));
+        assert_eq!("-6", eval_to_string(&g, "FLOOR.PRECISE(-6, 2)"));
+    }
+
+    #[test]
+    fn test_iso_ceiling() {
+        let g = GridController::new();
+
+        // ISO.CEILING is an alias for CEILING.PRECISE
+        assert_eq!("7", eval_to_string(&g, "ISO.CEILING(6.5)"));
+        assert_eq!("8", eval_to_string(&g, "ISO.CEILING(6.5, 2)"));
+        assert_eq!("-10", eval_to_string(&g, "ISO.CEILING(-12, 5)"));
+        assert_eq!("-4", eval_to_string(&g, "ISO.CEILING(-4.1)"));
+    }
+
+    #[test]
+    fn test_combina() {
+        let g = GridController::new();
+
+        // Basic tests
+        assert_eq!("20", eval_to_string(&g, "COMBINA(4, 3)")); // (4+3-1)!/(3!*(4-1)!) = 6!/(3!*3!) = 20
+        assert_eq!("55", eval_to_string(&g, "COMBINA(10, 2)")); // (10+2-1)!/(2!*(10-1)!) = 11!/(2!*9!) = 55
+        assert_eq!("1", eval_to_string(&g, "COMBINA(5, 0)")); // Choosing 0 items = 1
+        assert_eq!("5", eval_to_string(&g, "COMBINA(5, 1)")); // Choosing 1 item = n
+        assert_eq!("15", eval_to_string(&g, "COMBINA(5, 2)")); // (5+2-1)!/(2!*4!) = 6!/(2!*4!) = 15
+        assert_eq!("1", eval_to_string(&g, "COMBINA(1, 5)")); // Only one way to pick with repetition from 1 item
+
+        // Edge cases
+        assert_eq!("1", eval_to_string(&g, "COMBINA(0, 0)")); // Special case
+        assert_eq!("0", eval_to_string(&g, "COMBINA(0, 1)")); // Can't choose from 0 items
+
+        // Error cases
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "COMBINA(-1, 2)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "COMBINA(5, -1)").msg,
+        );
+    }
+
+    #[test]
+    fn test_decimal() {
+        let g = GridController::new();
+
+        // Basic conversions
+        assert_eq!("255", eval_to_string(&g, "DECIMAL(\"FF\", 16)"));
+        assert_eq!("255", eval_to_string(&g, "DECIMAL(\"ff\", 16)")); // case insensitive
+        assert_eq!("7", eval_to_string(&g, "DECIMAL(\"111\", 2)"));
+        assert_eq!("1295", eval_to_string(&g, "DECIMAL(\"ZZ\", 36)"));
+        assert_eq!("10", eval_to_string(&g, "DECIMAL(\"1010\", 2)"));
+        assert_eq!("63", eval_to_string(&g, "DECIMAL(\"77\", 8)"));
+
+        // Edge cases
+        assert_eq!("0", eval_to_string(&g, "DECIMAL(\"\", 16)")); // empty string
+        assert_eq!("0", eval_to_string(&g, "DECIMAL(\"0\", 10)"));
+
+        // Error cases
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "DECIMAL(\"FF\", 1)").msg, // radix too small
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "DECIMAL(\"FF\", 37)").msg, // radix too large
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "DECIMAL(\"GG\", 16)").msg, // invalid digits for base
+        );
+    }
+
+    #[test]
+    fn test_mround() {
+        let g = GridController::new();
+
+        // Basic rounding
+        assert_eq!("9", eval_to_string(&g, "MROUND(10, 3)"));
+        assert_eq!("1.4", eval_to_string(&g, "MROUND(1.3, 0.2)"));
+        assert_eq!("-9", eval_to_string(&g, "MROUND(-10, -3)"));
+        assert_eq!("6", eval_to_string(&g, "MROUND(5.5, 3)"));
+        assert_eq!("1.5", eval_to_string(&g, "MROUND(1.4, 0.5)"));
+
+        // Zero significance returns 0
+        assert_eq!("0", eval_to_string(&g, "MROUND(10, 0)"));
+
+        // Error case: different signs
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MROUND(10, -3)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MROUND(-10, 3)").msg,
+        );
+    }
+
+    #[test]
+    fn test_multinomial() {
+        let g = GridController::new();
+
+        // Basic multinomials
+        assert_eq!("1260", eval_to_string(&g, "MULTINOMIAL(2, 3, 4)")); // 9!/(2!*3!*4!) = 1260
+        assert_eq!("10", eval_to_string(&g, "MULTINOMIAL(2, 3)")); // 5!/(2!*3!) = 10
+        assert_eq!("1", eval_to_string(&g, "MULTINOMIAL(5)")); // 5!/5! = 1
+        assert_eq!("1", eval_to_string(&g, "MULTINOMIAL(0, 0)")); // 0!/(0!*0!) = 1
+        assert_eq!("1", eval_to_string(&g, "MULTINOMIAL(0)")); // 0!/0! = 1
+
+        // Error cases
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "MULTINOMIAL(-1, 2)").msg,
+        );
     }
 }

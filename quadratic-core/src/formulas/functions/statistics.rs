@@ -8,6 +8,69 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     get_functions,
 };
 
+/// Helper function to compute variance (sample or population)
+fn compute_variance(values: &[f64], is_population: bool) -> f64 {
+    if values.is_empty() {
+        return f64::NAN;
+    }
+    let n = values.len() as f64;
+    let mean: f64 = values.iter().sum::<f64>() / n;
+    let sum_sq: f64 = values.iter().map(|x| (x - mean).powi(2)).sum();
+    if is_population {
+        sum_sq / n
+    } else {
+        if values.len() < 2 {
+            return f64::NAN;
+        }
+        sum_sq / (n - 1.0)
+    }
+}
+
+/// Helper function to compute standard deviation (sample or population)
+fn compute_stdev(values: &[f64], is_population: bool) -> f64 {
+    compute_variance(values, is_population).sqrt()
+}
+
+/// Helper function to compute percentile
+fn compute_percentile(values: &mut [f64], k: f64, exclusive: bool) -> Option<f64> {
+    if values.is_empty() {
+        return None;
+    }
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let n = values.len();
+
+    if exclusive {
+        // PERCENTILE.EXC: k must be in (0, 1)
+        if k <= 0.0 || k >= 1.0 {
+            return None;
+        }
+        let pos = k * (n as f64 + 1.0) - 1.0;
+        if pos < 0.0 || pos >= n as f64 {
+            return None;
+        }
+        let lower = pos.floor() as usize;
+        let frac = pos - lower as f64;
+        if lower + 1 >= n {
+            Some(values[lower])
+        } else {
+            Some(values[lower] + frac * (values[lower + 1] - values[lower]))
+        }
+    } else {
+        // PERCENTILE.INC: k must be in [0, 1]
+        if !(0.0..=1.0).contains(&k) {
+            return None;
+        }
+        let pos = k * (n as f64 - 1.0);
+        let lower = pos.floor() as usize;
+        let frac = pos - lower as f64;
+        if lower + 1 >= n {
+            Some(values[lower])
+        } else {
+            Some(values[lower] + frac * (values[lower + 1] - values[lower]))
+        }
+    }
+}
+
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         formula_fn!(
@@ -320,6 +383,274 @@ fn get_functions() -> Vec<FormulaFunction> {
                         Ok(result.into())
                     },
                 )?
+            }
+        ),
+        formula_fn!(
+            /// Returns an aggregate in a list or database. The AGGREGATE function
+            /// can apply different aggregate functions to a list or database with
+            /// the option to ignore error values.
+            ///
+            /// `function_num` specifies which function to use:
+            /// - 1: AVERAGE
+            /// - 2: COUNT
+            /// - 3: COUNTA
+            /// - 4: MAX
+            /// - 5: MIN
+            /// - 6: PRODUCT
+            /// - 7: STDEV.S (sample standard deviation)
+            /// - 8: STDEV.P (population standard deviation)
+            /// - 9: SUM
+            /// - 10: VAR.S (sample variance)
+            /// - 11: VAR.P (population variance)
+            /// - 12: MEDIAN
+            /// - 13: MODE.SNGL
+            /// - 14: LARGE (requires `k` parameter)
+            /// - 15: SMALL (requires `k` parameter)
+            /// - 16: PERCENTILE.INC (requires `k` parameter)
+            /// - 17: QUARTILE.INC (requires `k` parameter)
+            /// - 18: PERCENTILE.EXC (requires `k` parameter)
+            /// - 19: QUARTILE.EXC (requires `k` parameter)
+            ///
+            /// `options` specifies which values to ignore:
+            /// - 0 or 1: Ignore nested SUBTOTAL and AGGREGATE functions
+            /// - 2 or 3: Ignore error values and nested SUBTOTAL/AGGREGATE functions
+            /// - 4 or 5: Ignore nothing
+            /// - 6 or 7: Ignore error values
+            #[examples(
+                "AGGREGATE(9, 6, A1:A10)",
+                "AGGREGATE(14, 6, A1:A10, 2)",
+                "AGGREGATE(4, 6, {1, 2, 3})"
+            )]
+            fn AGGREGATE(
+                span: Span,
+                function_num: (Spanned<i64>),
+                options: (Spanned<i64>),
+                array: (Spanned<Array>),
+                k_param: (Option<Spanned<f64>>),
+            ) {
+                let func_num = function_num.inner;
+                let opts = options.inner;
+
+                // Validate function_num (1-19)
+                if !(1..=19).contains(&func_num) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(function_num.span));
+                }
+
+                // Validate options (0-7)
+                if !(0..=7).contains(&opts) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(options.span));
+                }
+
+                // Determine if we should ignore errors
+                let ignore_errors = matches!(opts, 2 | 3 | 6 | 7);
+
+                // Collect values, optionally ignoring errors
+                let mut values: Vec<f64> = Vec::new();
+                for cv in array.inner.cell_values_slice().iter() {
+                    match cv {
+                        CellValue::Number(n) => {
+                            use rust_decimal::prelude::ToPrimitive;
+                            values.push(n.to_f64().unwrap_or(f64::NAN));
+                        }
+                        CellValue::Error(_) if ignore_errors => continue,
+                        CellValue::Error(e) => return Err(e.clone().with_span(span)),
+                        CellValue::Blank => continue,
+                        _ => continue, // Skip non-numeric values
+                    }
+                }
+
+                let result: f64 = match func_num {
+                    1 => {
+                        // AVERAGE
+                        if values.is_empty() {
+                            return Err(RunErrorMsg::DivideByZero.with_span(span));
+                        }
+                        values.iter().sum::<f64>() / values.len() as f64
+                    }
+                    2 => {
+                        // COUNT
+                        values.len() as f64
+                    }
+                    3 => {
+                        // COUNTA - count non-blank
+                        let count = array
+                            .inner
+                            .cell_values_slice()
+                            .iter()
+                            .filter(|cv| {
+                                if ignore_errors {
+                                    !matches!(cv, CellValue::Blank | CellValue::Error(_))
+                                } else {
+                                    !matches!(cv, CellValue::Blank)
+                                }
+                            })
+                            .count();
+                        count as f64
+                    }
+                    4 => {
+                        // MAX
+                        values.iter().cloned().fold(f64::NEG_INFINITY, f64::max)
+                    }
+                    5 => {
+                        // MIN
+                        values.iter().cloned().fold(f64::INFINITY, f64::min)
+                    }
+                    6 => {
+                        // PRODUCT
+                        values.iter().product()
+                    }
+                    7 => {
+                        // STDEV.S (sample)
+                        compute_stdev(&values, false)
+                    }
+                    8 => {
+                        // STDEV.P (population)
+                        compute_stdev(&values, true)
+                    }
+                    9 => {
+                        // SUM
+                        values.iter().sum()
+                    }
+                    10 => {
+                        // VAR.S (sample)
+                        compute_variance(&values, false)
+                    }
+                    11 => {
+                        // VAR.P (population)
+                        compute_variance(&values, true)
+                    }
+                    12 => {
+                        // MEDIAN
+                        if values.is_empty() {
+                            return Err(RunErrorMsg::EmptyArray.with_span(span));
+                        }
+                        values
+                            .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                        let len = values.len();
+                        if len % 2 == 0 {
+                            (values[len / 2 - 1] + values[len / 2]) / 2.0
+                        } else {
+                            values[len / 2]
+                        }
+                    }
+                    13 => {
+                        // MODE.SNGL - find most frequent value
+                        if values.is_empty() {
+                            return Err(RunErrorMsg::EmptyArray.with_span(span));
+                        }
+                        use std::collections::HashMap;
+                        let mut counts: HashMap<u64, usize> = HashMap::new();
+                        for &v in &values {
+                            let key = v.to_bits();
+                            *counts.entry(key).or_insert(0) += 1;
+                        }
+                        let (mode_bits, max_count) = counts
+                            .iter()
+                            .max_by_key(|&(_, count)| *count)
+                            .map(|(&k, &v)| (k, v))
+                            .unwrap();
+                        if max_count < 2 {
+                            // No mode found - all values appear only once
+                            return Err(RunErrorMsg::NotAvailable.with_span(span));
+                        }
+                        f64::from_bits(mode_bits)
+                    }
+                    14 => {
+                        // LARGE
+                        let k = k_param.ok_or_else(|| {
+                            RunErrorMsg::MissingRequiredArgument {
+                                func_name: "AGGREGATE".into(),
+                                arg_name: "k".into(),
+                            }
+                            .with_span(span)
+                        })?;
+                        let k_idx = k.inner as usize;
+                        if k_idx < 1 || k_idx > values.len() {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                        }
+                        values
+                            .sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+                        values[k_idx - 1]
+                    }
+                    15 => {
+                        // SMALL
+                        let k = k_param.ok_or_else(|| {
+                            RunErrorMsg::MissingRequiredArgument {
+                                func_name: "AGGREGATE".into(),
+                                arg_name: "k".into(),
+                            }
+                            .with_span(span)
+                        })?;
+                        let k_idx = k.inner as usize;
+                        if k_idx < 1 || k_idx > values.len() {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                        }
+                        values
+                            .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                        values[k_idx - 1]
+                    }
+                    16 => {
+                        // PERCENTILE.INC
+                        let k = k_param.ok_or_else(|| {
+                            RunErrorMsg::MissingRequiredArgument {
+                                func_name: "AGGREGATE".into(),
+                                arg_name: "k".into(),
+                            }
+                            .with_span(span)
+                        })?;
+                        compute_percentile(&mut values, k.inner, false)
+                            .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(k.span))?
+                    }
+                    17 => {
+                        // QUARTILE.INC
+                        let k = k_param.ok_or_else(|| {
+                            RunErrorMsg::MissingRequiredArgument {
+                                func_name: "AGGREGATE".into(),
+                                arg_name: "k".into(),
+                            }
+                            .with_span(span)
+                        })?;
+                        let quartile = k.inner as i64;
+                        if !(0..=4).contains(&quartile) {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                        }
+                        let pct = quartile as f64 * 0.25;
+                        compute_percentile(&mut values, pct, false)
+                            .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(k.span))?
+                    }
+                    18 => {
+                        // PERCENTILE.EXC
+                        let k = k_param.ok_or_else(|| {
+                            RunErrorMsg::MissingRequiredArgument {
+                                func_name: "AGGREGATE".into(),
+                                arg_name: "k".into(),
+                            }
+                            .with_span(span)
+                        })?;
+                        compute_percentile(&mut values, k.inner, true)
+                            .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(k.span))?
+                    }
+                    19 => {
+                        // QUARTILE.EXC
+                        let k = k_param.ok_or_else(|| {
+                            RunErrorMsg::MissingRequiredArgument {
+                                func_name: "AGGREGATE".into(),
+                                arg_name: "k".into(),
+                            }
+                            .with_span(span)
+                        })?;
+                        let quartile = k.inner as i64;
+                        if !(1..=3).contains(&quartile) {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(k.span));
+                        }
+                        let pct = quartile as f64 * 0.25;
+                        compute_percentile(&mut values, pct, true)
+                            .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(k.span))?
+                    }
+                    _ => unreachable!(),
+                };
+
+                Ok(CellValue::from(result))
             }
         ),
     ]
@@ -659,6 +990,72 @@ mod tests {
         assert_eq!(
             RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "SMALL({5, 2, 8}, 4)").msg,
+        );
+    }
+
+    #[test]
+    fn test_aggregate() {
+        let g = GridController::new();
+
+        // Test function_num 1: AVERAGE
+        assert_eq!("5", eval_to_string(&g, "AGGREGATE(1, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 2: COUNT
+        assert_eq!("4", eval_to_string(&g, "AGGREGATE(2, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 3: COUNTA
+        assert_eq!("4", eval_to_string(&g, "AGGREGATE(3, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 4: MAX
+        assert_eq!("8", eval_to_string(&g, "AGGREGATE(4, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 5: MIN
+        assert_eq!("2", eval_to_string(&g, "AGGREGATE(5, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 6: PRODUCT
+        assert_eq!("384", eval_to_string(&g, "AGGREGATE(6, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 9: SUM
+        assert_eq!("20", eval_to_string(&g, "AGGREGATE(9, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 12: MEDIAN
+        assert_eq!("5", eval_to_string(&g, "AGGREGATE(12, 6, {2, 4, 6, 8})"));
+
+        // Test function_num 14: LARGE
+        assert_eq!("8", eval_to_string(&g, "AGGREGATE(14, 6, {2, 4, 6, 8}, 1)"));
+        assert_eq!("6", eval_to_string(&g, "AGGREGATE(14, 6, {2, 4, 6, 8}, 2)"));
+
+        // Test function_num 15: SMALL
+        assert_eq!("2", eval_to_string(&g, "AGGREGATE(15, 6, {2, 4, 6, 8}, 1)"));
+        assert_eq!("4", eval_to_string(&g, "AGGREGATE(15, 6, {2, 4, 6, 8}, 2)"));
+
+        // Test invalid function_num
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "AGGREGATE(0, 6, {1, 2, 3})").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "AGGREGATE(20, 6, {1, 2, 3})").msg,
+        );
+
+        // Test invalid options
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "AGGREGATE(9, -1, {1, 2, 3})").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "AGGREGATE(9, 8, {1, 2, 3})").msg,
+        );
+
+        // Test LARGE/SMALL without k parameter
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "AGGREGATE".into(),
+                arg_name: "k".into(),
+            },
+            eval_to_err(&g, "AGGREGATE(14, 6, {1, 2, 3})").msg,
         );
     }
 }
