@@ -11,7 +11,6 @@ import {
   GroupIcon,
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ButtonGroup } from '@/shared/shadcn/ui/button-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +39,11 @@ export function UserFilesListFileTypeFilter() {
 
   return (
     <>
-      <ButtonGroup className="hidden rounded sm:flex">
+      <div className="hidden sm:flex">
         {fileTypeOptions.map(({ label, value, Icon }) => (
           <Button
             key={label}
-            variant="outline"
+            variant="ghost"
             className={cn('flex-shrink-0 px-3', filters.fileType === value && '!bg-foreground !text-background')}
             onClick={() =>
               setFilters({
@@ -56,7 +55,7 @@ export function UserFilesListFileTypeFilter() {
             {label}
           </Button>
         ))}
-      </ButtonGroup>
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="hidden">
