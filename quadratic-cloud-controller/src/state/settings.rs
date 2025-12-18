@@ -87,6 +87,11 @@ impl Settings {
             |message: &str| ControllerError::WorkerPresignedUrl(format!("{message}: {url:?}"));
         let mut url = Url::parse(url).map_err(|e| error(&e.to_string()))?;
 
+        // if this is an S3 presigned url (contains AWS signature parameters), just return the url
+        if url.query_pairs().any(|(key, _)| key == "X-Amz-Signature") {
+            return Ok(url);
+        }
+
         // replace the scheme
         let scheme = self.files_scheme();
         url.set_scheme(&scheme)
