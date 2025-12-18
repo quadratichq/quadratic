@@ -182,6 +182,28 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns the number of permutations of n items taken k at a time,
+            /// with repetitions allowed.
+            ///
+            /// The formula is: n^k
+            ///
+            /// For example, PERMUTATIONA(3, 2) returns 9, which is 3^2.
+            #[examples("PERMUTATIONA(3, 2) = 9", "PERMUTATIONA(4, 3) = 64")]
+            #[zip_map]
+            fn PERMUTATIONA(span: Span, [n]: (Spanned<i64>), [k]: (Spanned<i64>)) {
+                if n.inner < 0 || k.inner < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                let n = n.inner as f64;
+                let k = k.inner as u32;
+                let result = n.powi(k as i32);
+                if result.is_infinite() {
+                    return Err(RunErrorMsg::Overflow.with_span(span));
+                }
+                result.round()
+            }
+        ),
+        formula_fn!(
             /// Returns the multinomial of a set of numbers.
             ///
             /// The multinomial is the ratio of the factorial of the sum of values

@@ -321,42 +321,40 @@ fn values_match(db_value: &CellValue, crit_value: &CellValue) -> bool {
 
             if pattern.contains('*') || pattern.contains('?') {
                 wildcard_match(&text, &pattern)
-            } else if pattern.starts_with('>') {
+            } else if let Some(stripped) = pattern.strip_prefix('>') {
                 // Comparison operators in text
-                if let Ok(num) = pattern[1..].trim().parse::<f64>() {
-                    if let Ok(db_num) = text.parse::<f64>() {
-                        return db_num > num;
-                    }
+                if let Ok(num) = stripped.trim().parse::<f64>()
+                    && let Ok(db_num) = text.parse::<f64>()
+                {
+                    return db_num > num;
                 }
                 false
-            } else if pattern.starts_with('<') {
-                if pattern.starts_with("<>") {
-                    // Not equal
-                    text != pattern[2..].trim()
-                } else if pattern.starts_with("<=") {
-                    if let Ok(num) = pattern[2..].trim().parse::<f64>() {
-                        if let Ok(db_num) = text.parse::<f64>() {
-                            return db_num <= num;
-                        }
-                    }
-                    false
-                } else if let Ok(num) = pattern[1..].trim().parse::<f64>() {
-                    if let Ok(db_num) = text.parse::<f64>() {
-                        return db_num < num;
-                    }
-                    false
-                } else {
-                    false
-                }
-            } else if pattern.starts_with(">=") {
-                if let Ok(num) = pattern[2..].trim().parse::<f64>() {
-                    if let Ok(db_num) = text.parse::<f64>() {
-                        return db_num >= num;
-                    }
+            } else if let Some(stripped) = pattern.strip_prefix("<>") {
+                // Not equal
+                text != stripped.trim()
+            } else if let Some(stripped) = pattern.strip_prefix("<=") {
+                if let Ok(num) = stripped.trim().parse::<f64>()
+                    && let Ok(db_num) = text.parse::<f64>()
+                {
+                    return db_num <= num;
                 }
                 false
-            } else if pattern.starts_with('=') {
-                text == pattern[1..].trim()
+            } else if let Some(stripped) = pattern.strip_prefix('<') {
+                if let Ok(num) = stripped.trim().parse::<f64>()
+                    && let Ok(db_num) = text.parse::<f64>()
+                {
+                    return db_num < num;
+                }
+                false
+            } else if let Some(stripped) = pattern.strip_prefix(">=") {
+                if let Ok(num) = stripped.trim().parse::<f64>()
+                    && let Ok(db_num) = text.parse::<f64>()
+                {
+                    return db_num >= num;
+                }
+                false
+            } else if let Some(stripped) = pattern.strip_prefix('=') {
+                text == stripped.trim()
             } else {
                 text == pattern
             }
@@ -365,28 +363,28 @@ fn values_match(db_value: &CellValue, crit_value: &CellValue) -> bool {
             use rust_decimal::prelude::ToPrimitive;
             let num = n.to_f64().unwrap_or(0.0);
             // Handle comparison operators
-            if t.starts_with(">=") {
-                if let Ok(cmp) = t[2..].trim().parse::<f64>() {
+            if let Some(stripped) = t.strip_prefix(">=") {
+                if let Ok(cmp) = stripped.trim().parse::<f64>() {
                     return num >= cmp;
                 }
-            } else if t.starts_with("<=") {
-                if let Ok(cmp) = t[2..].trim().parse::<f64>() {
+            } else if let Some(stripped) = t.strip_prefix("<=") {
+                if let Ok(cmp) = stripped.trim().parse::<f64>() {
                     return num <= cmp;
                 }
-            } else if t.starts_with("<>") {
-                if let Ok(cmp) = t[2..].trim().parse::<f64>() {
+            } else if let Some(stripped) = t.strip_prefix("<>") {
+                if let Ok(cmp) = stripped.trim().parse::<f64>() {
                     return (num - cmp).abs() > f64::EPSILON;
                 }
-            } else if t.starts_with('>') {
-                if let Ok(cmp) = t[1..].trim().parse::<f64>() {
+            } else if let Some(stripped) = t.strip_prefix('>') {
+                if let Ok(cmp) = stripped.trim().parse::<f64>() {
                     return num > cmp;
                 }
-            } else if t.starts_with('<') {
-                if let Ok(cmp) = t[1..].trim().parse::<f64>() {
+            } else if let Some(stripped) = t.strip_prefix('<') {
+                if let Ok(cmp) = stripped.trim().parse::<f64>() {
                     return num < cmp;
                 }
-            } else if t.starts_with('=') {
-                if let Ok(cmp) = t[1..].trim().parse::<f64>() {
+            } else if let Some(stripped) = t.strip_prefix('=') {
+                if let Ok(cmp) = stripped.trim().parse::<f64>() {
                     return (num - cmp).abs() < f64::EPSILON;
                 }
             } else if let Ok(cmp) = t.parse::<f64>() {
@@ -483,14 +481,10 @@ fn extract_matching_values(
             row_matches_criteria(&row_vec, &headers, &criteria_headers, &crit_row_vec)
         });
 
-        if matches {
-            if let Some(cv) = row_vec.get(field_col) {
-                if let CellValue::Number(n) = cv {
-                    use rust_decimal::prelude::ToPrimitive;
-                    if let Some(f) = n.to_f64() {
-                        values.push(f);
-                    }
-                }
+        if matches && let Some(CellValue::Number(n)) = row_vec.get(field_col) {
+            use rust_decimal::prelude::ToPrimitive;
+            if let Some(f) = n.to_f64() {
+                values.push(f);
             }
         }
     }
@@ -530,10 +524,8 @@ fn extract_matching_cell_values(
             row_matches_criteria(&row_vec, &headers, &criteria_headers, &crit_row_vec)
         });
 
-        if matches {
-            if let Some(cv) = row_vec.get(field_col) {
-                values.push(cv.clone());
-            }
+        if matches && let Some(cv) = row_vec.get(field_col) {
+            values.push(cv.clone());
         }
     }
 
@@ -572,12 +564,11 @@ fn count_matching_nonblank(
             row_matches_criteria(&row_vec, &headers, &criteria_headers, &crit_row_vec)
         });
 
-        if matches {
-            if let Some(cv) = row_vec.get(field_col) {
-                if !cv.is_blank() {
-                    count += 1;
-                }
-            }
+        if matches
+            && let Some(cv) = row_vec.get(field_col)
+            && !cv.is_blank()
+        {
+            count += 1;
         }
     }
 

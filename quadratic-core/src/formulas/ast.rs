@@ -343,15 +343,14 @@ impl AstNode {
             // Single cell references: first check if it's a variable, then treat as cell reference
             AstNodeContents::CellRef(sheet_id, _) => {
                 // Check if this CellRef could be a variable reference
-                if sheet_id.is_none() {
-                    if let Some(identifier) = self.inner.try_as_identifier() {
-                        if let Some(value) = ctx.lookup_variable(&identifier) {
-                            return Ok(Spanned {
-                                span: self.span,
-                                inner: value.clone(),
-                            });
-                        }
-                    }
+                if sheet_id.is_none()
+                    && let Some(identifier) = self.inner.try_as_identifier()
+                    && let Some(value) = ctx.lookup_variable(&identifier)
+                {
+                    return Ok(Spanned {
+                        span: self.span,
+                        inner: value.clone(),
+                    });
                 }
                 // Not a variable, treat as cell reference
                 let ref_range = self.to_ref_range(ctx)?;

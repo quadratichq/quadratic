@@ -244,7 +244,111 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 fv
             }
         ),
+        formula_fn!(
+            /// Converts a number from one Euro member currency to another.
+            ///
+            /// Uses the fixed exchange rates established when each country adopted
+            /// the Euro. The `source` and `target` parameters are ISO 4217
+            /// currency codes (e.g., "EUR", "DEM", "FRF").
+            ///
+            /// If `full_precision` is FALSE (default), the result is rounded to 2
+            /// decimal places. If TRUE, all significant digits are returned.
+            ///
+            /// The `triangulation_precision` parameter specifies the number of
+            /// significant digits to use when converting via EUR (default is 3).
+            #[examples(
+                "EUROCONVERT(100, \"DEM\", \"EUR\") = 51.13",
+                "EUROCONVERT(100, \"FRF\", \"DEM\", TRUE)"
+            )]
+            #[zip_map]
+            fn EUROCONVERT(
+                span: Span,
+                [number]: f64,
+                [source]: String,
+                [target]: String,
+                [full_precision]: (Option<bool>),
+                [triangulation_precision]: (Option<i64>),
+            ) {
+                let full_prec = full_precision.unwrap_or(false);
+                let tri_prec = triangulation_precision.unwrap_or(3);
+                if !(0..=15).contains(&tri_prec) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let source_rate = euro_rate(&source.to_uppercase())
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
+                let target_rate = euro_rate(&target.to_uppercase())
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                // Triangulation precision only applies when converting between
+                // two non-EUR currencies (going through EUR as intermediate)
+                let use_triangulation = source_rate != 1.0 && target_rate != 1.0 && tri_prec > 0;
+
+                // Convert source currency to EUR
+                let eur_value = if source_rate == 1.0 {
+                    number
+                } else {
+                    let raw = number / source_rate;
+                    if use_triangulation {
+                        round_to_significant_digits(raw, tri_prec as usize)
+                    } else {
+                        raw
+                    }
+                };
+
+                // Convert EUR to target currency
+                let result = if target_rate == 1.0 {
+                    eur_value
+                } else {
+                    eur_value * target_rate
+                };
+
+                if full_prec {
+                    result
+                } else {
+                    (result * 100.0).round() / 100.0
+                }
+            }
+        ),
     ]
+}
+
+/// Returns the fixed Euro exchange rate for a currency.
+/// Rate represents how many units of the currency equal 1 EUR.
+fn euro_rate(currency: &str) -> Option<f64> {
+    match currency {
+        "EUR" => Some(1.0),
+        "ATS" => Some(13.7603),  // Austrian Schilling
+        "BEF" => Some(40.3399),  // Belgian Franc
+        "CYP" => Some(0.585274), // Cypriot Pound
+        "DEM" => Some(1.95583),  // German Mark
+        "EEK" => Some(15.6466),  // Estonian Kroon
+        "ESP" => Some(166.386),  // Spanish Peseta
+        "FIM" => Some(5.94573),  // Finnish Markka
+        "FRF" => Some(6.55957),  // French Franc
+        "GRD" => Some(340.75),   // Greek Drachma
+        "IEP" => Some(0.787564), // Irish Pound
+        "ITL" => Some(1936.27),  // Italian Lira
+        "LTL" => Some(3.4528),   // Lithuanian Litas
+        "LUF" => Some(40.3399),  // Luxembourgish Franc
+        "LVL" => Some(0.702804), // Latvian Lats
+        "MTL" => Some(0.4293),   // Maltese Lira
+        "NLG" => Some(2.20371),  // Dutch Guilder
+        "PTE" => Some(200.482),  // Portuguese Escudo
+        "SIT" => Some(239.64),   // Slovenian Tolar
+        "SKK" => Some(30.126),   // Slovak Koruna
+        _ => None,
+    }
+}
+
+/// Rounds a number to the specified number of significant digits.
+fn round_to_significant_digits(value: f64, digits: usize) -> f64 {
+    if value == 0.0 || digits == 0 {
+        return 0.0;
+    }
+    let magnitude = value.abs().log10().floor() as i32;
+    let scale = 10_f64.powi(digits as i32 - 1 - magnitude);
+    (value * scale).round() / scale
 }
 
 #[cfg(test)]
@@ -266,6 +370,43 @@ mod tests {
         assert!(
             !result.contains("Error"),
             "FVSCHEDULE should not return an error"
+        );
+    }
+
+    #[test]
+    fn test_euroconvert() {
+        let g = GridController::new();
+
+        // Convert 100 DEM to EUR (100 / 1.95583 ≈ 51.13)
+        let result: f64 = eval_to_string(&g, "EUROCONVERT(100, \"DEM\", \"EUR\")")
+            .parse()
+            .unwrap();
+        assert!((result - 51.13).abs() < 0.01);
+
+        // Convert EUR to EUR should be same value
+        assert_eq!(
+            "100",
+            eval_to_string(&g, "EUROCONVERT(100, \"EUR\", \"EUR\")")
+        );
+
+        // Convert FRF to DEM (triangulation via EUR)
+        let result: f64 = eval_to_string(&g, "EUROCONVERT(100, \"FRF\", \"DEM\")")
+            .parse()
+            .unwrap();
+        // 100 FRF -> EUR -> DEM = (100 / 6.55957) * 1.95583 ≈ 29.81
+        assert!((result - 29.81).abs() < 0.1);
+
+        // Test full precision
+        let result_full: f64 = eval_to_string(&g, "EUROCONVERT(100, \"DEM\", \"EUR\", TRUE)")
+            .parse()
+            .unwrap();
+        // Full precision should give more decimal places
+        assert!((result_full - 51.12918824).abs() < 0.0001);
+
+        // Test invalid currency
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "EUROCONVERT(100, \"XYZ\", \"EUR\")").msg,
         );
     }
 }

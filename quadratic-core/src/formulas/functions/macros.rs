@@ -510,11 +510,12 @@ macro_rules! params_list {
     // Entry points (at the bottom so that the other rules take priority)
     () => { vec![] };
     ($($arg_name:tt: $arg_type:tt),+ $(,)?) => {{
-        let mut result = vec![];
+        let mut result: Vec<Param> = vec![];
 
         $(
             params_list!(@append(result, $arg_name, $arg_type));
         )*
+        let _ = &mut result; // Silence unused_mut warning for Ctx-only functions
         result
     }};
 }

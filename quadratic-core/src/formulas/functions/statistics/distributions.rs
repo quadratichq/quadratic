@@ -282,7 +282,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if x < 0.0 {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if degrees_freedom < 1.0 || degrees_freedom > 1e10 {
+                if !(1.0..=1e10).contains(&degrees_freedom) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = ChiSquared::new(degrees_freedom)
@@ -304,7 +304,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if x < 0.0 {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if degrees_freedom < 1.0 || degrees_freedom > 1e10 {
+                if !(1.0..=1e10).contains(&degrees_freedom) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = ChiSquared::new(degrees_freedom)
@@ -318,10 +318,10 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             #[examples("CHISQ.INV(0.9, 5)")]
             #[zip_map]
             fn CHISQ_INV(span: Span, [probability]: f64, [degrees_freedom]: f64) {
-                if probability < 0.0 || probability >= 1.0 {
+                if !(0.0..1.0).contains(&probability) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if degrees_freedom < 1.0 || degrees_freedom > 1e10 {
+                if !(1.0..=1e10).contains(&degrees_freedom) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = ChiSquared::new(degrees_freedom)
@@ -338,7 +338,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if probability <= 0.0 || probability > 1.0 {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if degrees_freedom < 1.0 || degrees_freedom > 1e10 {
+                if !(1.0..=1e10).contains(&degrees_freedom) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = ChiSquared::new(degrees_freedom)
@@ -354,7 +354,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if x < 0.0 {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if degrees_freedom < 1.0 || degrees_freedom > 1e10 {
+                if !(1.0..=1e10).contains(&degrees_freedom) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = ChiSquared::new(degrees_freedom)
@@ -370,7 +370,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if probability <= 0.0 || probability > 1.0 {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if degrees_freedom < 1.0 || degrees_freedom > 1e10 {
+                if !(1.0..=1e10).contains(&degrees_freedom) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = ChiSquared::new(degrees_freedom)
@@ -435,7 +435,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 [degrees_freedom1]: f64,
                 [degrees_freedom2]: f64,
             ) {
-                if probability < 0.0 || probability >= 1.0 {
+                if !(0.0..1.0).contains(&probability) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 if degrees_freedom1 < 1.0 || degrees_freedom2 < 1.0 {
@@ -523,7 +523,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if number_s < 0 || (number_s as u64) > trials {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if probability_s < 0.0 || probability_s > 1.0 {
+                if !(0.0..=1.0).contains(&probability_s) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = Binomial::new(probability_s, trials)
@@ -543,10 +543,10 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             #[zip_map]
             fn BINOM_INV(span: Span, [trials]: f64, [probability_s]: f64, [alpha]: f64) {
                 let trials = trials.floor() as u64;
-                if probability_s < 0.0 || probability_s > 1.0 {
+                if !(0.0..=1.0).contains(&probability_s) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if alpha < 0.0 || alpha > 1.0 {
+                if !(0.0..=1.0).contains(&alpha) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = Binomial::new(probability_s, trials)
@@ -570,7 +570,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if number_s < 0 || (number_s as u64) > trials {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if probability_s < 0.0 || probability_s > 1.0 {
+                if !(0.0..=1.0).contains(&probability_s) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = Binomial::new(probability_s, trials)
@@ -601,7 +601,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if number_s > trials || number_s2 > trials || number_s > number_s2 {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if probability_s < 0.0 || probability_s > 1.0 {
+                if !(0.0..=1.0).contains(&probability_s) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = Binomial::new(probability_s, trials)
@@ -620,10 +620,10 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             #[zip_map]
             fn CRITBINOM(span: Span, [trials]: f64, [probability_s]: f64, [alpha]: f64) {
                 let trials = trials.floor() as u64;
-                if probability_s < 0.0 || probability_s > 1.0 {
+                if !(0.0..=1.0).contains(&probability_s) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
-                if alpha < 0.0 || alpha > 1.0 {
+                if !(0.0..=1.0).contains(&alpha) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 let dist = Binomial::new(probability_s, trials)
@@ -740,7 +740,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             #[examples("GAMMA.INV(0.5, 3, 2)")]
             #[zip_map]
             fn GAMMA_INV(span: Span, [probability]: f64, [alpha]: f64, [beta]: f64) {
-                if probability < 0.0 || probability >= 1.0 {
+                if !(0.0..1.0).contains(&probability) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 if alpha <= 0.0 || beta <= 0.0 {
@@ -777,7 +777,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             #[examples("GAMMAINV(0.5, 3, 2)")]
             #[zip_map]
             fn GAMMAINV(span: Span, [probability]: f64, [alpha]: f64, [beta]: f64) {
-                if probability < 0.0 || probability >= 1.0 {
+                if !(0.0..1.0).contains(&probability) {
                     return Err(RunErrorMsg::Num.with_span(span));
                 }
                 if alpha <= 0.0 || beta <= 0.0 {
@@ -1325,7 +1325,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if tails_val != 1 && tails_val != 2 {
                     return Err(RunErrorMsg::Num.with_span(tails.span));
                 }
-                if type_val < 1 || type_val > 3 {
+                if !(1..=3).contains(&type_val) {
                     return Err(RunErrorMsg::Num.with_span(test_type.span));
                 }
 
@@ -1381,12 +1381,11 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
                 let t_dist =
                     StudentsT::new(0.0, 1.0, df).map_err(|_| RunErrorMsg::Num.with_span(span))?;
-                let p = if tails_val == 1 {
+                if tails_val == 1 {
                     1.0 - t_dist.cdf(t_stat.abs())
                 } else {
                     2.0 * (1.0 - t_dist.cdf(t_stat.abs()))
-                };
-                p
+                }
             }
         ),
         formula_fn!(
@@ -1435,7 +1434,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 if tails_val != 1 && tails_val != 2 {
                     return Err(RunErrorMsg::Num.with_span(tails.span));
                 }
-                if type_val < 1 || type_val > 3 {
+                if !(1..=3).contains(&type_val) {
                     return Err(RunErrorMsg::Num.with_span(test_type.span));
                 }
 
@@ -1487,12 +1486,11 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
                 let t_dist =
                     StudentsT::new(0.0, 1.0, df).map_err(|_| RunErrorMsg::Num.with_span(span))?;
-                let p = if tails_val == 1 {
+                if tails_val == 1 {
                     1.0 - t_dist.cdf(t_stat.abs())
                 } else {
                     2.0 * (1.0 - t_dist.cdf(t_stat.abs()))
-                };
-                p
+                }
             }
         ),
         formula_fn!(

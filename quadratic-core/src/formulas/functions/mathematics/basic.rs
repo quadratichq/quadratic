@@ -232,7 +232,128 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
                 (number * std::f64::consts::PI).sqrt()
             }
         ),
+        formula_fn!(
+            /// Converts a Roman numeral to an Arabic numeral.
+            ///
+            /// Recognizes Roman numerals I, V, X, L, C, D, and M (case-insensitive).
+            #[examples("ARABIC(\"XIV\") = 14", "ARABIC(\"MCMXCIV\") = 1994")]
+            #[zip_map]
+            fn ARABIC(span: Span, [text]: String) {
+                roman_to_arabic(&text)
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?
+            }
+        ),
+        formula_fn!(
+            /// Converts a number into a text representation with the given radix (base).
+            ///
+            /// The radix must be between 2 and 36 inclusive. The optional `min_length`
+            /// parameter pads the result with leading zeros.
+            #[examples(
+                "BASE(255, 16) = \"FF\"",
+                "BASE(15, 2) = \"1111\"",
+                "BASE(15, 2, 8) = \"00001111\""
+            )]
+            #[zip_map]
+            fn BASE(span: Span, [number]: f64, [radix]: i64, [min_length]: (Option<i64>)) {
+                if number < 0.0 || number >= 2.0_f64.powi(53) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !(2..=36).contains(&radix) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                let min_len = min_length.unwrap_or(0);
+                if !(0..=255).contains(&min_len) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let n = number.trunc() as u64;
+                let result = number_to_base(n, radix as u32);
+
+                if (result.len() as i64) < min_len {
+                    format!("{:0>width$}", result, width = min_len as usize)
+                } else {
+                    result
+                }
+            }
+        ),
+        formula_fn!(
+            /// Calculates the percentage of a value relative to a total.
+            ///
+            /// Returns (value / total) * 100, which represents what percentage
+            /// the value is of the total.
+            ///
+            /// Note: This function returns a decimal (e.g., 0.25 for 25%), not
+            /// a percentage value (25). To display as a percentage, format the
+            /// cell as a percentage.
+            #[examples(
+                "PERCENTOF(25, 100) = 0.25",
+                "PERCENTOF(50, 200) = 0.25",
+                "PERCENTOF(A1, SUM(A1:A10))"
+            )]
+            #[zip_map]
+            fn PERCENTOF(span: Span, [value]: f64, [total]: f64) {
+                if total == 0.0 {
+                    return Err(RunErrorMsg::DivideByZero.with_span(span));
+                }
+                value / total
+            }
+        ),
     ]
+}
+
+/// Converts a Roman numeral string to its Arabic (integer) value.
+fn roman_to_arabic(s: &str) -> Option<i64> {
+    let s = s.trim().to_uppercase();
+    if s.is_empty() {
+        return Some(0);
+    }
+
+    let roman_value = |c: char| -> Option<i64> {
+        match c {
+            'I' => Some(1),
+            'V' => Some(5),
+            'X' => Some(10),
+            'L' => Some(50),
+            'C' => Some(100),
+            'D' => Some(500),
+            'M' => Some(1000),
+            _ => None,
+        }
+    };
+
+    let chars: Vec<char> = s.chars().collect();
+    let mut total: i64 = 0;
+    let mut prev_value: i64 = 0;
+
+    for c in chars.iter().rev() {
+        let value = roman_value(*c)?;
+        if value < prev_value {
+            total -= value;
+        } else {
+            total += value;
+        }
+        prev_value = value;
+    }
+
+    Some(total)
+}
+
+/// Converts a number to a string representation in the given base.
+fn number_to_base(mut n: u64, radix: u32) -> String {
+    if n == 0 {
+        return "0".to_string();
+    }
+
+    const DIGITS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let mut result = Vec::new();
+
+    while n > 0 {
+        let digit = (n % radix as u64) as usize;
+        result.push(DIGITS[digit] as char);
+        n /= radix as u64;
+    }
+
+    result.iter().rev().collect()
 }
 
 #[cfg(test)]
@@ -612,5 +733,51 @@ mod tests {
         // SQRTPI(2) = sqrt(2π) ≈ 2.5066282746
         let result = eval_to_string(&g, "SQRTPI(2)");
         assert!(result.starts_with("2.50"));
+    }
+
+    #[test]
+    fn test_arabic() {
+        let g = GridController::new();
+        assert_eq!("14", eval_to_string(&g, "ARABIC(\"XIV\")"));
+        assert_eq!("1994", eval_to_string(&g, "ARABIC(\"MCMXCIV\")"));
+        assert_eq!("9", eval_to_string(&g, "ARABIC(\"IX\")"));
+        assert_eq!("4", eval_to_string(&g, "ARABIC(\"IV\")"));
+        assert_eq!("1000", eval_to_string(&g, "ARABIC(\"M\")"));
+        assert_eq!("0", eval_to_string(&g, "ARABIC(\"\")"));
+        // Case insensitive
+        assert_eq!("14", eval_to_string(&g, "ARABIC(\"xiv\")"));
+
+        // Invalid Roman numeral
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "ARABIC(\"ABC\")").msg,
+        );
+    }
+
+    #[test]
+    fn test_base() {
+        let g = GridController::new();
+        assert_eq!("FF", eval_to_string(&g, "BASE(255, 16)"));
+        assert_eq!("1111", eval_to_string(&g, "BASE(15, 2)"));
+        assert_eq!("00001111", eval_to_string(&g, "BASE(15, 2, 8)"));
+        assert_eq!("10", eval_to_string(&g, "BASE(2, 2)"));
+        assert_eq!("0", eval_to_string(&g, "BASE(0, 16)"));
+        assert_eq!("Z", eval_to_string(&g, "BASE(35, 36)"));
+
+        // Invalid radix
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "BASE(10, 1)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "BASE(10, 37)").msg,
+        );
+
+        // Negative number
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "BASE(-1, 16)").msg,
+        );
     }
 }

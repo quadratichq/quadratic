@@ -92,7 +92,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn DEC2BIN(span: Span, [number]: (Spanned<i64>), [places]: (Option<Spanned<i64>>)) {
                 let n = number.inner;
                 // DEC2BIN supports -512 to 511
-                if n < -512 || n > 511 {
+                if !(-512..=511).contains(&n) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
                 }
                 format_binary(n, places, *span)?
@@ -105,7 +105,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn DEC2HEX(span: Span, [number]: (Spanned<i64>), [places]: (Option<Spanned<i64>>)) {
                 let n = number.inner;
                 // DEC2HEX supports -549755813888 to 549755813887 (40-bit)
-                if n < -549755813888 || n > 549755813887 {
+                if !(-549755813888..=549755813887).contains(&n) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
                 }
                 format_hex(n, places, *span)?
@@ -118,7 +118,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn DEC2OCT(span: Span, [number]: (Spanned<i64>), [places]: (Option<Spanned<i64>>)) {
                 let n = number.inner;
                 // DEC2OCT supports -536870912 to 536870911 (30-bit)
-                if n < -536870912 || n > 536870911 {
+                if !(-536870912..=536870911).contains(&n) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
                 }
                 format_octal(n, places, *span)?
@@ -167,7 +167,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     val as i64
                 };
                 // HEX2BIN only supports values that fit in 10-bit binary (-512 to 511)
-                if decimal < -512 || decimal > 511 {
+                if !(-512..=511).contains(&decimal) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
                 format_binary(decimal, places, *span)?
@@ -193,7 +193,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     val as i64
                 };
                 // HEX2OCT only supports values that fit in 30-bit octal
-                if decimal < -536870912 || decimal > 536870911 {
+                if !(-536870912..=536870911).contains(&decimal) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
                 format_octal(decimal, places, *span)?
@@ -242,7 +242,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     val as i64
                 };
                 // OCT2BIN only supports values that fit in 10-bit binary (-512 to 511)
-                if decimal < -512 || decimal > 511 {
+                if !(-512..=511).contains(&decimal) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
                 format_binary(decimal, places, *span)?
@@ -320,7 +320,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 if n < 0 {
                     return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
                 }
-                if shift < -53 || shift > 53 {
+                if !(-53..=53).contains(&shift) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(shift_amount.span));
                 }
                 if shift >= 0 {
@@ -340,7 +340,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 if n < 0 {
                     return Err(RunErrorMsg::InvalidArgument.with_span(number.span));
                 }
-                if shift < -53 || shift > 53 {
+                if !(-53..=53).contains(&shift) {
                     return Err(RunErrorMsg::InvalidArgument.with_span(shift_amount.span));
                 }
                 if shift >= 0 {
@@ -421,6 +421,29 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let (r2, i2) = parse_complex(&inumber2, *span)?;
                 let suffix = get_complex_suffix(&inumber1);
                 format_complex(r1 + r2, i1 + i2, &suffix)
+            }
+        ),
+        formula_fn!(
+            /// Returns the sum of multiple complex numbers.
+            #[examples("IMSUM(\"3+4i\", \"1+2i\", \"2+3i\") = \"6+9i\"")]
+            fn IMSUM(span: Span, numbers: (Iter<String>)) {
+                let mut real_sum = 0.0;
+                let mut imag_sum = 0.0;
+                let mut suffix = "i".to_string();
+                let mut first = true;
+
+                for num in numbers {
+                    let s = num?;
+                    let (r, i) = parse_complex(&s, span)?;
+                    real_sum += r;
+                    imag_sum += i;
+                    if first {
+                        suffix = get_complex_suffix(&s);
+                        first = false;
+                    }
+                }
+
+                format_complex(real_sum, imag_sum, &suffix)
             }
         ),
         formula_fn!(
@@ -821,7 +844,7 @@ fn format_binary(n: i64, places: Option<Spanned<i64>>, span: Span) -> CodeResult
 
     if let Some(p) = places {
         let places_val = p.inner;
-        if places_val < 1 || places_val > 10 {
+        if !(1..=10).contains(&places_val) {
             return Err(RunErrorMsg::InvalidArgument.with_span(p.span));
         }
         if n < 0 {
@@ -848,7 +871,7 @@ fn format_hex(n: i64, places: Option<Spanned<i64>>, span: Span) -> CodeResult<St
 
     if let Some(p) = places {
         let places_val = p.inner;
-        if places_val < 1 || places_val > 10 {
+        if !(1..=10).contains(&places_val) {
             return Err(RunErrorMsg::InvalidArgument.with_span(p.span));
         }
         if n < 0 {
@@ -874,7 +897,7 @@ fn format_octal(n: i64, places: Option<Spanned<i64>>, span: Span) -> CodeResult<
 
     if let Some(p) = places {
         let places_val = p.inner;
-        if places_val < 1 || places_val > 10 {
+        if !(1..=10).contains(&places_val) {
             return Err(RunErrorMsg::InvalidArgument.with_span(p.span));
         }
         if n < 0 {
@@ -1318,7 +1341,7 @@ fn bessel_j0(x: f64) -> f64 {
         let ans2 = -0.1562499995e-1
             + y * (0.1430488765e-3
                 + y * (-0.6911147651e-5 + y * (0.7621095161e-6 - y * 0.934945152e-7)));
-        (0.636619772 / ax).sqrt() * (xx.cos() * ans1 - z * xx.sin() * ans2)
+        (std::f64::consts::FRAC_2_PI / ax).sqrt() * (xx.cos() * ans1 - z * xx.sin() * ans2)
     }
 }
 
@@ -1344,7 +1367,8 @@ fn bessel_j1(x: f64) -> f64 {
         let ans2 = 0.04687499995
             + y * (-0.2002690873e-3
                 + y * (0.8449199096e-5 + y * (-0.88228987e-6 + y * 0.105787412e-6)));
-        let ans = (0.636619772 / ax).sqrt() * (xx.cos() * ans1 - z * xx.sin() * ans2);
+        let ans =
+            (std::f64::consts::FRAC_2_PI / ax).sqrt() * (xx.cos() * ans1 - z * xx.sin() * ans2);
         if x < 0.0 { -ans } else { ans }
     }
 }
@@ -1437,7 +1461,7 @@ fn bessel_y0(x: f64) -> f64 {
                 + y * (-512359803.6 + y * (10879881.29 + y * (-86327.92757 + y * 228.4622733))));
         let ans2 = 40076544269.0
             + y * (745249964.8 + y * (7189466.438 + y * (47447.26470 + y * (226.1030244 + y))));
-        (ans1 / ans2) + 0.636619772 * bessel_j0(x) * x.ln()
+        (ans1 / ans2) + std::f64::consts::FRAC_2_PI * bessel_j0(x) * x.ln()
     } else {
         let z = 8.0 / x;
         let y = z.powi(2);
@@ -1448,7 +1472,7 @@ fn bessel_y0(x: f64) -> f64 {
         let ans2 = -0.1562499995e-1
             + y * (0.1430488765e-3
                 + y * (-0.6911147651e-5 + y * (0.7621095161e-6 - y * 0.934945152e-7)));
-        (0.636619772 / x).sqrt() * (xx.sin() * ans1 + z * xx.cos() * ans2)
+        (std::f64::consts::FRAC_2_PI / x).sqrt() * (xx.sin() * ans1 + z * xx.cos() * ans2)
     }
 }
 
@@ -1464,7 +1488,7 @@ fn bessel_y1(x: f64) -> f64 {
             + y * (424441966400.0
                 + y * (3733650367.0
                     + y * (22459040.02 + y * (102042.605 + y * (354.9632885 + y)))));
-        (ans1 / ans2) + 0.636619772 * (bessel_j1(x) * x.ln() - 1.0 / x)
+        (ans1 / ans2) + std::f64::consts::FRAC_2_PI * (bessel_j1(x) * x.ln() - 1.0 / x)
     } else {
         let z = 8.0 / x;
         let y = z.powi(2);
@@ -1475,7 +1499,7 @@ fn bessel_y1(x: f64) -> f64 {
         let ans2 = 0.04687499995
             + y * (-0.2002690873e-3
                 + y * (0.8449199096e-5 + y * (-0.88228987e-6 + y * 0.105787412e-6)));
-        (0.636619772 / x).sqrt() * (xx.sin() * ans1 + z * xx.cos() * ans2)
+        (std::f64::consts::FRAC_2_PI / x).sqrt() * (xx.sin() * ans1 + z * xx.cos() * ans2)
     }
 }
 

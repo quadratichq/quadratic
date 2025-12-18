@@ -431,7 +431,7 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
 
                 let needle = search_key;
                 let haystack = search_range.try_as_linear_array()?;
-                let index = lookup(&needle, haystack, match_mode, search_mode)?
+                let index = lookup(needle, haystack, match_mode, search_mode)?
                     .ok_or(RunErrorMsg::NoMatch)?;
                 index as i64 + 1 // 1-indexed
             }

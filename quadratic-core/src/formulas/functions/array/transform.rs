@@ -433,13 +433,12 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     return Err(RunErrorMsg::InvalidArgument.with_span(wrap_count.span));
                 }
                 let wrap_count = wrap_count.inner as usize;
-                let values: Vec<CellValue> =
-                    vector.try_as_linear_array()?.iter().cloned().collect();
+                let values: Vec<CellValue> = vector.try_as_linear_array()?.to_vec();
                 if values.is_empty() {
                     return Err(RunErrorMsg::EmptyArray.with_span(span));
                 }
 
-                let num_cols = (values.len() + wrap_count - 1) / wrap_count;
+                let num_cols = values.len().div_ceil(wrap_count);
                 let num_rows = wrap_count;
                 let pad_value = pad_with.unwrap_or_else(|| {
                     CellValue::Error(Box::new(RunErrorMsg::NotAvailable.with_span(span)))
@@ -473,13 +472,12 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     return Err(RunErrorMsg::InvalidArgument.with_span(wrap_count.span));
                 }
                 let wrap_count = wrap_count.inner as usize;
-                let values: Vec<CellValue> =
-                    vector.try_as_linear_array()?.iter().cloned().collect();
+                let values: Vec<CellValue> = vector.try_as_linear_array()?.to_vec();
                 if values.is_empty() {
                     return Err(RunErrorMsg::EmptyArray.with_span(span));
                 }
 
-                let num_rows = (values.len() + wrap_count - 1) / wrap_count;
+                let num_rows = values.len().div_ceil(wrap_count);
                 let num_cols = wrap_count;
                 let pad_value = pad_with.unwrap_or_else(|| {
                     CellValue::Error(Box::new(RunErrorMsg::NotAvailable.with_span(span)))
@@ -506,6 +504,97 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             #[zip_map]
             fn HYPERLINK([link_location]: String, [friendly_name]: (Option<String>)) {
                 friendly_name.unwrap_or(link_location)
+            }
+        ),
+        formula_fn!(
+            /// Trims empty rows and columns from the edges of an array.
+            ///
+            /// Removes rows from the top, bottom, and columns from the left and
+            /// right that consist entirely of blank cells or empty strings.
+            ///
+            /// This is useful for cleaning up ranges that have extra empty space
+            /// around the actual data.
+            #[examples("TRIMRANGE(A1:E10)", "TRIMRANGE({, 1, 2, ; , 3, 4, })")]
+            fn TRIMRANGE(span: Span, array: (Spanned<Array>)) {
+                let arr = array.inner;
+                let width = arr.width() as usize;
+                let height = arr.height() as usize;
+
+                if width == 0 || height == 0 {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                // Helper to check if a cell is blank or empty
+                let is_empty = |cv: &CellValue| {
+                    cv.is_blank() || matches!(cv, CellValue::Text(t) if t.is_empty())
+                };
+
+                // Find first non-empty row
+                let mut top = 0;
+                'top: for y in 0..height {
+                    for x in 0..width {
+                        if !is_empty(arr.get(x as u32, y as u32).unwrap_or(&CellValue::Blank)) {
+                            top = y;
+                            break 'top;
+                        }
+                    }
+                    top = y + 1;
+                }
+
+                // Find last non-empty row
+                let mut bottom = height;
+                'bottom: for y in (0..height).rev() {
+                    for x in 0..width {
+                        if !is_empty(arr.get(x as u32, y as u32).unwrap_or(&CellValue::Blank)) {
+                            bottom = y + 1;
+                            break 'bottom;
+                        }
+                    }
+                    bottom = y;
+                }
+
+                // Find first non-empty column
+                let mut left = 0;
+                'left: for x in 0..width {
+                    for y in 0..height {
+                        if !is_empty(arr.get(x as u32, y as u32).unwrap_or(&CellValue::Blank)) {
+                            left = x;
+                            break 'left;
+                        }
+                    }
+                    left = x + 1;
+                }
+
+                // Find last non-empty column
+                let mut right = width;
+                'right: for x in (0..width).rev() {
+                    for y in 0..height {
+                        if !is_empty(arr.get(x as u32, y as u32).unwrap_or(&CellValue::Blank)) {
+                            right = x + 1;
+                            break 'right;
+                        }
+                    }
+                    right = x;
+                }
+
+                // Check if array is entirely empty
+                if top >= bottom || left >= right {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                let new_width = right - left;
+                let new_height = bottom - top;
+
+                let result_size = ArraySize::new(new_width as u32, new_height as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                let mut values: SmallVec<[CellValue; 1]> =
+                    SmallVec::with_capacity(result_size.len());
+                for y in top..bottom {
+                    for x in left..right {
+                        values.push(arr.get(x as u32, y as u32)?.clone());
+                    }
+                }
+                Array::new_row_major(result_size, values)?
             }
         ),
     ]

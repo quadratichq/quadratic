@@ -535,10 +535,11 @@ pub(crate) fn parse_value_text(s: &str) -> Option<f64> {
         if s.starts_with('(') && s.ends_with(')') {
             return Some(-n);
         }
-        if s.starts_with('-') || s.contains("-$") || s.contains("-€") {
-            if n > 0.0 && !cleaned.starts_with('-') {
-                return Some(-n);
-            }
+        if (s.starts_with('-') || s.contains("-$") || s.contains("-€"))
+            && n > 0.0
+            && !cleaned.starts_with('-')
+        {
+            return Some(-n);
         }
         return Some(n);
     }

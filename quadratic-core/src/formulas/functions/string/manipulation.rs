@@ -478,6 +478,32 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     .collect::<String>()
             }
         ),
+        formula_fn!(
+            /// Converts half-width (single-byte) characters to full-width
+            /// (double-byte) characters. This is specifically designed for
+            /// Japanese text and is an alias for DBCS.
+            ///
+            /// JIS stands for Japanese Industrial Standard. This function
+            /// converts half-width katakana and ASCII characters to their
+            /// full-width equivalents.
+            #[examples("JIS(\"ABC\") = \"ＡＢＣ\"", "JIS(\"ｱｲｳ\") = \"アイウ\"")]
+            #[zip_map]
+            fn JIS([s]: String) {
+                s.chars()
+                    .map(|c| {
+                        if ('!'..='~').contains(&c) {
+                            char::from_u32(c as u32 - 0x21 + 0xFF01).unwrap_or(c)
+                        } else if c == ' ' {
+                            '\u{3000}'
+                        } else if let Some(full) = half_to_full_katakana(c) {
+                            full
+                        } else {
+                            c
+                        }
+                    })
+                    .collect::<String>()
+            }
+        ),
     ]
 }
 

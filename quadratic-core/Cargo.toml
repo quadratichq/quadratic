@@ -32,6 +32,10 @@ path = "src/bin/convert_grid_to_json.rs"
 name = "upgrade_file"
 path = "src/bin/upgrade_file.rs"
 
+[[bin]]
+name = "export_formulas"
+path = "src/bin/export_formulas.rs"
+
 [features]
 default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)

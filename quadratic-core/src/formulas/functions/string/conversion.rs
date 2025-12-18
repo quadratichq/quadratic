@@ -280,7 +280,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn TEXT([value]: CellValue, [format_text]: String) {
-                format_value_with_pattern(&value, &format_text)?
+                format_value_with_pattern(value, &format_text)?
             }
         ),
         // Text extraction
@@ -485,7 +485,95 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        // URL encoding
+        formula_fn!(
+            /// Encodes a text string for use in a URL.
+            ///
+            /// Replaces spaces and other special characters with percent-encoded
+            /// representations (e.g., space becomes %20).
+            #[examples(
+                "ENCODEURL(\"Hello World\") = \"Hello%20World\"",
+                "ENCODEURL(\"a=1&b=2\") = \"a%3D1%26b%3D2\""
+            )]
+            #[zip_map]
+            fn ENCODEURL([text]: String) {
+                url_encode(&text)
+            }
+        ),
+        // ===== REGEX FUNCTIONS =====
+        formula_fn!(
+            /// Tests whether a text string matches a regular expression pattern.
+            ///
+            /// Returns TRUE if the text matches the pattern, FALSE otherwise.
+            /// The pattern uses regular expression syntax.
+            #[examples(
+                "REGEXTEST(\"hello123\", \"[0-9]+\") = TRUE",
+                "REGEXTEST(\"hello\", \"[0-9]+\") = FALSE",
+                "REGEXTEST(\"test@example.com\", \"^[a-z]+@[a-z]+\\\\.[a-z]+$\") = TRUE"
+            )]
+            #[zip_map]
+            fn REGEXTEST(span: Span, [text]: String, [pattern]: String) {
+                let re = regex::Regex::new(&pattern)
+                    .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+                re.is_match(&text)
+            }
+        ),
+        formula_fn!(
+            /// Extracts text that matches a regular expression pattern.
+            ///
+            /// Returns the first match of the pattern in the text.
+            /// If the pattern contains a capture group, returns the captured text.
+            /// Returns an error if no match is found.
+            #[examples(
+                "REGEXEXTRACT(\"hello123world\", \"[0-9]+\") = \"123\"",
+                "REGEXEXTRACT(\"John Smith\", \"(\\\\w+) (\\\\w+)\") = \"John Smith\"",
+                "REGEXEXTRACT(\"test@example.com\", \"@(\\\\w+)\") = \"@example\""
+            )]
+            #[zip_map]
+            fn REGEXEXTRACT(span: Span, [text]: String, [pattern]: String) {
+                let re = regex::Regex::new(&pattern)
+                    .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+                match re.find(&text) {
+                    Some(m) => m.as_str().to_string(),
+                    None => return Err(RunErrorMsg::NoMatch.with_span(span)),
+                }
+            }
+        ),
+        formula_fn!(
+            /// Replaces text matching a regular expression pattern with replacement text.
+            ///
+            /// Replaces all occurrences of the pattern in the text with the replacement.
+            /// The replacement can use $1, $2, etc. to refer to capture groups.
+            #[examples(
+                "REGEXREPLACE(\"hello123world\", \"[0-9]+\", \"XXX\") = \"helloXXXworld\"",
+                "REGEXREPLACE(\"John Smith\", \"(\\\\w+) (\\\\w+)\", \"$2, $1\") = \"Smith, John\"",
+                "REGEXREPLACE(\"2023-12-25\", \"(\\\\d+)-(\\\\d+)-(\\\\d+)\", \"$2/$3/$1\") = \"12/25/2023\""
+            )]
+            #[zip_map]
+            fn REGEXREPLACE(span: Span, [text]: String, [pattern]: String, [replacement]: String) {
+                let re = regex::Regex::new(&pattern)
+                    .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+                re.replace_all(&text, replacement.as_str()).to_string()
+            }
+        ),
     ]
+}
+
+/// URL-encodes a string for use in URLs.
+fn url_encode(s: &str) -> String {
+    let mut result = String::with_capacity(s.len() * 3);
+    for c in s.chars() {
+        // Characters that don't need encoding (RFC 3986 unreserved characters)
+        if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '~' {
+            result.push(c);
+        } else {
+            // Encode all other characters as UTF-8 percent-encoded
+            for byte in c.to_string().as_bytes() {
+                result.push_str(&format!("%{:02X}", byte));
+            }
+        }
+    }
+    result
 }
 
 /// Formats a number with currency symbol.
@@ -798,6 +886,28 @@ mod tests {
         assert_eq!(
             "{a, b, c}",
             eval_to_string(&g, "TEXTSPLIT(\"a,b,c\", \",\")")
+        );
+    }
+
+    #[test]
+    fn test_formula_encodeurl() {
+        let g = GridController::new();
+        assert_eq!(
+            "Hello%20World",
+            eval_to_string(&g, "ENCODEURL(\"Hello World\")")
+        );
+        assert_eq!(
+            "a%3D1%26b%3D2",
+            eval_to_string(&g, "ENCODEURL(\"a=1&b=2\")")
+        );
+        // Alphanumeric characters should not be encoded
+        assert_eq!("abc123", eval_to_string(&g, "ENCODEURL(\"abc123\")"));
+        // Special unreserved characters
+        assert_eq!("-_.~", eval_to_string(&g, "ENCODEURL(\"-_.~\")"));
+        // Unicode characters
+        assert_eq!(
+            "%E4%B8%AD%E6%96%87",
+            eval_to_string(&g, "ENCODEURL(\"中文\")")
         );
     }
 }

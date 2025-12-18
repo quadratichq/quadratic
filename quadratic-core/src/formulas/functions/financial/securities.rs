@@ -219,10 +219,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let dsm_e = dsm / e;
                 let yield_per_period = yld / frequency as f64;
 
-                let price = (redemption + odd_last_coupon) / (1.0 + dsm_e * yield_per_period)
-                    - coupon * a / e;
-
-                price
+                (redemption + odd_last_coupon) / (1.0 + dsm_e * yield_per_period) - coupon * a / e
             }
         ),
         formula_fn!(

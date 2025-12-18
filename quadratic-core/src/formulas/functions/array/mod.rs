@@ -75,12 +75,12 @@ pub(crate) fn eval_by_slice(
         Axis::Y => {
             let size = ArraySize::new(1, results.len() as u32)
                 .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
-            Array::new_row_major(size, results.into())?
+            Array::new_row_major(size, results)?
         }
         Axis::X => {
             let size = ArraySize::new(results.len() as u32, 1)
                 .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
-            Array::new_row_major(size, results.into())?
+            Array::new_row_major(size, results)?
         }
     };
 
@@ -120,8 +120,7 @@ pub(crate) fn apply_lambda_to_slices(
     let mut results = SmallVec::new();
 
     for slice in array.slices(axis) {
-        let slice_values: SmallVec<[CellValue; 1]> =
-            slice.into_iter().map(|cv| cv.clone()).collect();
+        let slice_values: SmallVec<[CellValue; 1]> = slice.into_iter().cloned().collect();
         let slice_array = match axis {
             Axis::Y => {
                 let size = ArraySize::new(slice_values.len() as u32, 1)

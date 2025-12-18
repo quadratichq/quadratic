@@ -458,6 +458,201 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        // ===== SHEET FUNCTIONS =====
+        formula_fn!(
+            /// Returns the sheet number of the referenced sheet.
+            ///
+            /// If no argument is provided, returns the sheet number of the current sheet.
+            /// Sheet numbers are 1-indexed based on the order of sheets in the workbook.
+            #[examples("SHEET()", "SHEET(Sheet2!A1)")]
+            fn SHEET(ctx: Ctx, _span: Span, reference: (Option<Spanned<Value>>)) {
+                let sheet_id_to_find = match reference {
+                    Some(_) => {
+                        // Get the sheet from cells_accessed
+                        ctx.cells_accessed
+                            .cells
+                            .keys()
+                            .next()
+                            .copied()
+                            .unwrap_or(ctx.sheet_pos.sheet_id)
+                    }
+                    None => ctx.sheet_pos.sheet_id,
+                };
+                let sheet_ids = ctx.grid_controller.sheet_ids();
+                let mut result = 1.0_f64;
+                for (i, &id) in sheet_ids.iter().enumerate() {
+                    if id == sheet_id_to_find {
+                        result = (i + 1) as f64;
+                        break;
+                    }
+                }
+                result
+            }
+        ),
+        formula_fn!(
+            /// Returns the number of sheets in the workbook.
+            #[examples("SHEETS()")]
+            fn SHEETS(ctx: Ctx) {
+                ctx.grid_controller.sheet_ids().len() as f64
+            }
+        ),
+        // ===== INFO FUNCTIONS =====
+        formula_fn!(
+            /// Returns information about the current operating environment.
+            ///
+            /// Supported type_text values:
+            /// - "directory" or "osversion" - Returns "Quadratic"
+            /// - "numfile" - Returns the number of sheets
+            /// - "origin" - Returns the origin reference "$A:$A$1"
+            /// - "system" - Returns the operating system identifier
+            /// - "release" - Returns the version "1.0"
+            #[examples("INFO(\"numfile\")", "INFO(\"system\")", "INFO(\"release\")")]
+            fn INFO(ctx: Ctx, span: Span, type_text: String) {
+                let type_lower = type_text.to_lowercase();
+                match type_lower.as_str() {
+                    "directory" | "osversion" => "Quadratic".to_string(),
+                    "numfile" => ctx.grid_controller.sheet_ids().len().to_string(),
+                    "origin" => "$A:$A$1".to_string(),
+                    "system" => {
+                        #[cfg(target_os = "windows")]
+                        {
+                            "pcdos".to_string()
+                        }
+                        #[cfg(target_os = "macos")]
+                        {
+                            "mac".to_string()
+                        }
+                        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+                        {
+                            "unix".to_string()
+                        }
+                    }
+                    "release" => "1.0".to_string(),
+                    _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the formula in a cell as a text string.
+            ///
+            /// If the referenced cell does not contain a formula, returns an error.
+            /// Note: This function currently returns N/A as formula inspection
+            /// is not yet fully implemented.
+            #[examples("FORMULATEXT(A1)", "FORMULATEXT(B2:C3)")]
+            fn FORMULATEXT(ctx: Ctx, span: Span, reference: (Option<Spanned<Array>>)) {
+                match reference {
+                    Some(_arr) => {
+                        // Get the position of the referenced cell from cells_accessed
+                        let a1_context = ctx.grid_controller.a1_context();
+                        let ref_info =
+                            ctx.cells_accessed
+                                .cells
+                                .iter()
+                                .find_map(|(&sheet_id, ranges)| {
+                                    ranges.iter().find_map(|range| {
+                                        range.to_rect(a1_context).map(|rect| (sheet_id, rect))
+                                    })
+                                });
+
+                        match ref_info {
+                            Some((sheet_id, rect)) => {
+                                let pos = Pos {
+                                    x: rect.min.x,
+                                    y: rect.min.y,
+                                };
+                                // Try to get the formula from the data table
+                                if let Some(sheet) = ctx.grid_controller.try_sheet(sheet_id) {
+                                    if let Some(code) = sheet.edit_code_value(pos, a1_context) {
+                                        format!("={}", code.code_string)
+                                    } else {
+                                        return Err(RunErrorMsg::NotAvailable.with_span(span));
+                                    }
+                                } else {
+                                    return Err(RunErrorMsg::NotAvailable.with_span(span));
+                                }
+                            }
+                            None => return Err(RunErrorMsg::NotAvailable.with_span(span)),
+                        }
+                    }
+                    None => {
+                        // No reference provided
+                        return Err(RunErrorMsg::MissingRequiredArgument {
+                            func_name: "FORMULATEXT".into(),
+                            arg_name: "reference".into(),
+                        }
+                        .with_span(span));
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns information about the formatting, location, or contents of a cell.
+            ///
+            /// Supported info_type values:
+            /// - "address" - Returns the cell address as text
+            /// - "col" - Returns the column number of the cell
+            /// - "row" - Returns the row number of the cell
+            /// - "type" - Returns "b" for blank, "l" for text, "v" for other values
+            /// - "contents" - Returns the cell's contents as text
+            #[examples("CELL(\"address\", A1)", "CELL(\"col\", B5)", "CELL(\"row\", C10)")]
+            fn CELL(ctx: Ctx, span: Span, info_type: String, reference: (Option<Spanned<Value>>)) {
+                let info_lower = info_type.to_lowercase();
+
+                // Get the position of the referenced cell
+                let a1_context = ctx.grid_controller.a1_context();
+                let ref_info = ctx
+                    .cells_accessed
+                    .cells
+                    .iter()
+                    .find_map(|(&sheet_id, ranges)| {
+                        ranges.iter().find_map(|range| {
+                            range.to_rect(a1_context).map(|rect| (sheet_id, rect))
+                        })
+                    });
+
+                match info_lower.as_str() {
+                    "address" => match ref_info {
+                        Some((_sheet_id, rect)) => {
+                            let pos = Pos {
+                                x: rect.min.x,
+                                y: rect.min.y,
+                            };
+                            format!("${}${}", crate::a1::column_name(pos.x), pos.y)
+                        }
+                        None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    },
+                    "col" => match ref_info {
+                        Some((_, rect)) => rect.min.x.to_string(),
+                        None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    },
+                    "row" => match ref_info {
+                        Some((_, rect)) => rect.min.y.to_string(),
+                        None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    },
+                    "type" => match &reference {
+                        Some(val) => match &val.inner {
+                            Value::Single(CellValue::Blank) => "b".to_string(),
+                            Value::Single(CellValue::Text(_)) => "l".to_string(),
+                            _ => "v".to_string(),
+                        },
+                        None => "b".to_string(),
+                    },
+                    "contents" => match reference {
+                        Some(val) => match val.inner {
+                            Value::Single(cv) => cv.to_display(),
+                            Value::Array(arr) => arr
+                                .cell_values_slice()
+                                .first()
+                                .map(|v| v.to_display())
+                                .unwrap_or_default(),
+                            _ => String::new(),
+                        },
+                        None => String::new(),
+                    },
+                    _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                }
+            }
+        ),
         formula_fn!(
             /// Evaluates an expression against a list of values and returns the
             /// result corresponding to the first matching value.

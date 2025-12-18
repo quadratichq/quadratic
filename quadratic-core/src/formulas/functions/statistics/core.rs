@@ -799,6 +799,48 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns a vertical array of the most frequently occurring values in a data set.
+            /// Returns all values that share the maximum frequency.
+            /// If no value occurs more than once, returns #N/A error.
+            #[name = "MODE.MULT"]
+            #[examples("MODE.MULT(A1:A10)", "MODE.MULT({1, 1, 2, 2, 3})")]
+            fn MODE_MULT(span: Span, numbers: (Iter<f64>)) {
+                let values: Vec<f64> = numbers.collect::<CodeResult<Vec<_>>>()?;
+                if values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+                use std::collections::HashMap;
+                let mut counts: HashMap<u64, usize> = HashMap::new();
+                for &v in &values {
+                    let key = v.to_bits();
+                    *counts.entry(key).or_insert(0) += 1;
+                }
+
+                // Find the maximum count
+                let max_count = counts.values().max().copied().unwrap_or(0);
+                if max_count < 2 {
+                    return Err(RunErrorMsg::NotAvailable.with_span(span));
+                }
+
+                // Collect all values with the maximum count
+                let mut modes: Vec<f64> = counts
+                    .iter()
+                    .filter(|&(_, count)| *count == max_count)
+                    .map(|(&bits, _)| f64::from_bits(bits))
+                    .collect();
+                modes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+                // Return as a vertical array
+                let array_data: SmallVec<[CellValue; 1]> =
+                    modes.into_iter().map(CellValue::from).collect();
+                let height = array_data.len() as u32;
+
+                let size = ArraySize::new(1, height)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, array_data)?
+            }
+        ),
+        formula_fn!(
             /// Returns the most frequently occurring value in a data set.
             /// This is an alias for MODE.SNGL.
             #[examples("MODE(A1:A10)", "MODE({1, 2, 2, 3, 3, 3})")]
@@ -924,8 +966,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     return Err(RunErrorMsg::NotAvailable.with_span(span));
                 }
                 // Average rank for ties
-                let rank = count_before as f64 + (count_equal as f64 + 1.0) / 2.0;
-                rank
+                count_before as f64 + (count_equal as f64 + 1.0) / 2.0
             }
         ),
         formula_fn!(
@@ -1513,7 +1554,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
                 // Return as a single-column array
                 let array_data: SmallVec<[CellValue; 1]> =
-                    results.into_iter().map(|v| CellValue::from(v)).collect();
+                    results.into_iter().map(CellValue::from).collect();
                 let height = array_data.len() as u32;
 
                 let size = ArraySize::new(1, height)
@@ -1577,7 +1618,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let results: Vec<f64> = predict_xs.iter().map(|x| a * (b * x).exp()).collect();
 
                 let array_data: SmallVec<[CellValue; 1]> =
-                    results.into_iter().map(|v| CellValue::from(v)).collect();
+                    results.into_iter().map(CellValue::from).collect();
                 let height = array_data.len() as u32;
 
                 let size = ArraySize::new(1, height)
@@ -1941,6 +1982,66 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             fn FISHERINV(y: f64) {
                 let e2y = (2.0 * y).exp();
                 (e2y - 1.0) / (e2y + 1.0)
+            }
+        ),
+        formula_fn!(
+            /// Returns a frequency distribution as a vertical array.
+            ///
+            /// Counts how many values in `data_array` fall within each bin
+            /// defined by `bins_array`. The result has one more element than
+            /// `bins_array` to account for values greater than the last bin.
+            ///
+            /// For example, if bins_array is {10, 20, 30}, the result will have
+            /// 4 elements: count of values ≤10, count of 10<values≤20,
+            /// count of 20<values≤30, and count of values>30.
+            #[examples("FREQUENCY(A1:A10, {10, 20, 30})", "FREQUENCY(A1:A20, B1:B5)")]
+            fn FREQUENCY(span: Span, data_array: (Spanned<Array>), bins_array: (Spanned<Array>)) {
+                // Extract data values
+                let data: Vec<f64> = data_array
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                // Extract bin boundaries
+                let mut bins: Vec<f64> = bins_array
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                // Sort bins in ascending order
+                bins.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+                // Create frequency counts array (bins.len() + 1 elements)
+                let mut counts: Vec<f64> = vec![0.0; bins.len() + 1];
+
+                // Count values in each bin
+                for value in &data {
+                    let mut placed = false;
+                    for (i, &bin) in bins.iter().enumerate() {
+                        if *value <= bin {
+                            counts[i] += 1.0;
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if !placed {
+                        // Value is greater than all bins
+                        counts[bins.len()] += 1.0;
+                    }
+                }
+
+                // Return as a vertical array
+                let array_data: SmallVec<[CellValue; 1]> =
+                    counts.into_iter().map(CellValue::from).collect();
+                let height = array_data.len() as u32;
+
+                let size = ArraySize::new(1, height)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, array_data)?
             }
         ),
         formula_fn!(
