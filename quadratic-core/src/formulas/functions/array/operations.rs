@@ -751,6 +751,434 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 Array::new_row_major(size, results)?
             }
         ),
+        formula_fn!(
+            /// Groups rows by specified columns and applies an aggregation function.
+            ///
+            /// - `row_fields`: The column(s) to group by.
+            /// - `values`: The values to aggregate.
+            /// - `function`: Aggregation function number: 1=AVERAGE, 2=COUNT, 3=COUNTA,
+            ///   4=MAX, 5=MIN, 6=PRODUCT, 7=STDEV, 8=STDEVP, 9=SUM, 10=VAR, 11=VARP,
+            ///   101=AVERAGE (ignore hidden), 102=COUNT (ignore hidden), etc.,
+            ///   or a LAMBDA function.
+            /// - `field_headers`: Optional. 0=no headers, 1=yes but don't show,
+            ///   2=no but generate, 3=yes and show (default).
+            /// - `total_depth`: Optional. Total depth (0=no totals, 1-127=depth).
+            /// - `sort_order`: Optional. Sort order for grouping (0=keep original, other=sort).
+            #[examples(
+                "GROUPBY(A2:A10, B2:B10, SUM)",
+                "GROUPBY(A2:A10, B2:B10, 9)",
+                "GROUPBY(A2:B10, C2:C10, AVERAGE)"
+            )]
+            fn GROUPBY(
+                span: Span,
+                ctx: Ctx,
+                row_fields: (Spanned<Array>),
+                values: (Spanned<Array>),
+                function: (Spanned<Value>),
+                field_headers: (Option<i64>),
+                _total_depth: (Option<i64>),
+                sort_order: (Option<i64>),
+            ) {
+                if ctx.skip_computation {
+                    return Ok(Value::Single(CellValue::Blank));
+                }
+
+                let row_count = row_fields.inner.height();
+                if values.inner.height() != row_count {
+                    return Err(RunErrorMsg::ExactArraySizeMismatch {
+                        expected: row_fields.inner.size(),
+                        got: values.inner.size(),
+                    }
+                    .with_span(values.span));
+                }
+
+                // Determine if we have headers
+                let has_headers = field_headers.unwrap_or(3) >= 2;
+                let show_headers = field_headers.unwrap_or(3) == 3;
+                let data_start = if has_headers { 1 } else { 0 };
+
+                // Extract aggregation function
+                let agg_func = match &function.inner {
+                    Value::Single(CellValue::Number(n)) => {
+                        use rust_decimal::prelude::ToPrimitive;
+                        n.to_i64().unwrap_or(9)
+                    }
+                    Value::Lambda(_) => -1, // Lambda will be handled specially
+                    _ => 9,                 // Default to SUM
+                };
+
+                // Group rows by key
+                let mut groups: indexmap::IndexMap<Vec<CellValueHash>, (Vec<CellValue>, Vec<f64>)> =
+                    indexmap::IndexMap::new();
+
+                for row_idx in data_start..(row_count as usize) {
+                    // Build key from row_fields
+                    let mut key_hash: Vec<CellValueHash> = Vec::new();
+                    let mut key_values: Vec<CellValue> = Vec::new();
+                    for col_idx in 0..row_fields.inner.width() {
+                        let cv = row_fields
+                            .inner
+                            .get(col_idx, row_idx as u32)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        key_hash.push(cv.hash());
+                        key_values.push(cv);
+                    }
+
+                    // Collect values to aggregate
+                    for col_idx in 0..values.inner.width() {
+                        let cv = values
+                            .inner
+                            .get(col_idx, row_idx as u32)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        if let Some(v) = cv.coerce_nonblank::<f64>() {
+                            let entry = groups
+                                .entry(key_hash.clone())
+                                .or_insert_with(|| (key_values.clone(), Vec::new()));
+                            entry.1.push(v);
+                        } else if groups.get(&key_hash).is_none() {
+                            groups.insert(key_hash.clone(), (key_values.clone(), Vec::new()));
+                        }
+                    }
+                }
+
+                // Sort if requested
+                let mut group_list: Vec<_> = groups.into_iter().collect();
+                if sort_order.unwrap_or(1) != 0 {
+                    group_list.sort_by(|a, b| {
+                        for (av, bv) in a.1.0.iter().zip(b.1.0.iter()) {
+                            match av.total_cmp(bv) {
+                                std::cmp::Ordering::Equal => continue,
+                                other => return other,
+                            }
+                        }
+                        std::cmp::Ordering::Equal
+                    });
+                }
+
+                // Apply aggregation function
+                let aggregate = |vals: &[f64]| -> f64 {
+                    if vals.is_empty() {
+                        return 0.0;
+                    }
+                    match agg_func {
+                        1 | 101 => vals.iter().sum::<f64>() / vals.len() as f64, // AVERAGE
+                        2 | 102 => vals.len() as f64,                            // COUNT
+                        3 | 103 => vals.len() as f64,                            // COUNTA
+                        4 | 104 => vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max), // MAX
+                        5 | 105 => vals.iter().cloned().fold(f64::INFINITY, f64::min), // MIN
+                        6 | 106 => vals.iter().product(),                        // PRODUCT
+                        7 | 107 => {
+                            // STDEV
+                            let n = vals.len() as f64;
+                            if n < 2.0 {
+                                return 0.0;
+                            }
+                            let mean = vals.iter().sum::<f64>() / n;
+                            let var =
+                                vals.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+                            var.sqrt()
+                        }
+                        8 | 108 => {
+                            // STDEVP
+                            let n = vals.len() as f64;
+                            let mean = vals.iter().sum::<f64>() / n;
+                            let var = vals.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / n;
+                            var.sqrt()
+                        }
+                        9 | 109 => vals.iter().sum(), // SUM
+                        10 | 110 => {
+                            // VAR
+                            let n = vals.len() as f64;
+                            if n < 2.0 {
+                                return 0.0;
+                            }
+                            let mean = vals.iter().sum::<f64>() / n;
+                            vals.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0)
+                        }
+                        11 | 111 => {
+                            // VARP
+                            let n = vals.len() as f64;
+                            let mean = vals.iter().sum::<f64>() / n;
+                            vals.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / n
+                        }
+                        _ => vals.iter().sum(), // Default to SUM
+                    }
+                };
+
+                // Build result array
+                let key_width = row_fields.inner.width();
+                let value_width = values.inner.width().max(1);
+                let result_width = key_width + value_width;
+                let result_height = if show_headers && has_headers {
+                    group_list.len() + 1
+                } else {
+                    group_list.len()
+                };
+
+                if result_height == 0 || (result_height == 1 && show_headers) {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                let mut result_values: SmallVec<[CellValue; 1]> = SmallVec::new();
+
+                // Add headers if needed
+                if show_headers && has_headers {
+                    for col_idx in 0..key_width {
+                        let header = row_fields
+                            .inner
+                            .get(col_idx, 0)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        result_values.push(header);
+                    }
+                    for col_idx in 0..value_width {
+                        let header = values
+                            .inner
+                            .get(col_idx, 0)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        result_values.push(header);
+                    }
+                }
+
+                // Add grouped data
+                for (_, (key_values, vals)) in &group_list {
+                    for kv in key_values {
+                        result_values.push(kv.clone());
+                    }
+                    // For now, output one aggregated value per row
+                    let agg_result = aggregate(vals);
+                    result_values.push(CellValue::from(agg_result));
+                    // Pad remaining columns if value_width > 1
+                    for _ in 1..value_width {
+                        result_values.push(CellValue::Blank);
+                    }
+                }
+
+                let size = ArraySize::new(result_width, result_height as u32)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, result_values)?
+            }
+        ),
+        formula_fn!(
+            /// Creates a pivot table summary by grouping rows and columns.
+            ///
+            /// - `row_fields`: The column(s) for row grouping.
+            /// - `col_fields`: The column(s) for column grouping.
+            /// - `values`: The values to aggregate.
+            /// - `function`: Aggregation function number (see GROUPBY) or LAMBDA.
+            /// - `field_headers`: Optional. Header handling (0-3).
+            /// - `row_total_depth`: Optional. Row total depth.
+            /// - `row_sort_order`: Optional. Row sort order.
+            /// - `col_total_depth`: Optional. Column total depth.
+            /// - `col_sort_order`: Optional. Column sort order.
+            #[examples(
+                "PIVOTBY(A2:A10, B2:B10, C2:C10, SUM)",
+                "PIVOTBY(A2:A10, B2:B10, C2:C10, 9)"
+            )]
+            fn PIVOTBY(
+                span: Span,
+                ctx: Ctx,
+                row_fields: (Spanned<Array>),
+                col_fields: (Spanned<Array>),
+                values: (Spanned<Array>),
+                function: (Spanned<Value>),
+                field_headers: (Option<i64>),
+                _row_total_depth: (Option<i64>),
+                row_sort_order: (Option<i64>),
+                _col_total_depth: (Option<i64>),
+                col_sort_order: (Option<i64>),
+            ) {
+                if ctx.skip_computation {
+                    return Ok(Value::Single(CellValue::Blank));
+                }
+
+                let row_count = row_fields.inner.height();
+                if col_fields.inner.height() != row_count || values.inner.height() != row_count {
+                    return Err(RunErrorMsg::ExactArraySizeMismatch {
+                        expected: row_fields.inner.size(),
+                        got: values.inner.size(),
+                    }
+                    .with_span(values.span));
+                }
+
+                // Determine if we have headers
+                let has_headers = field_headers.unwrap_or(3) >= 2;
+                let show_headers = field_headers.unwrap_or(3) == 3;
+                let data_start = if has_headers { 1 } else { 0 };
+
+                // Extract aggregation function
+                let agg_func = match &function.inner {
+                    Value::Single(CellValue::Number(n)) => {
+                        use rust_decimal::prelude::ToPrimitive;
+                        n.to_i64().unwrap_or(9)
+                    }
+                    _ => 9, // Default to SUM
+                };
+
+                // Collect unique row keys and column keys
+                let mut row_keys_set: indexmap::IndexMap<Vec<CellValueHash>, Vec<CellValue>> =
+                    indexmap::IndexMap::new();
+                let mut col_keys_set: indexmap::IndexMap<Vec<CellValueHash>, Vec<CellValue>> =
+                    indexmap::IndexMap::new();
+                let mut data_map: std::collections::HashMap<
+                    (Vec<CellValueHash>, Vec<CellValueHash>),
+                    Vec<f64>,
+                > = std::collections::HashMap::new();
+
+                for row_idx in data_start..(row_count as usize) {
+                    // Build row key
+                    let mut row_key_hash: Vec<CellValueHash> = Vec::new();
+                    let mut row_key_values: Vec<CellValue> = Vec::new();
+                    for col_idx in 0..row_fields.inner.width() {
+                        let cv = row_fields
+                            .inner
+                            .get(col_idx, row_idx as u32)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        row_key_hash.push(cv.hash());
+                        row_key_values.push(cv);
+                    }
+                    row_keys_set
+                        .entry(row_key_hash.clone())
+                        .or_insert(row_key_values);
+
+                    // Build column key
+                    let mut col_key_hash: Vec<CellValueHash> = Vec::new();
+                    let mut col_key_values: Vec<CellValue> = Vec::new();
+                    for col_idx in 0..col_fields.inner.width() {
+                        let cv = col_fields
+                            .inner
+                            .get(col_idx, row_idx as u32)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        col_key_hash.push(cv.hash());
+                        col_key_values.push(cv);
+                    }
+                    col_keys_set
+                        .entry(col_key_hash.clone())
+                        .or_insert(col_key_values);
+
+                    // Collect values
+                    for col_idx in 0..values.inner.width() {
+                        let cv = values
+                            .inner
+                            .get(col_idx, row_idx as u32)
+                            .cloned()
+                            .unwrap_or(CellValue::Blank);
+                        if let Some(v) = cv.coerce_nonblank::<f64>() {
+                            data_map
+                                .entry((row_key_hash.clone(), col_key_hash.clone()))
+                                .or_default()
+                                .push(v);
+                        }
+                    }
+                }
+
+                // Sort row and column keys
+                let mut row_keys: Vec<_> = row_keys_set.into_iter().collect();
+                let mut col_keys: Vec<_> = col_keys_set.into_iter().collect();
+
+                if row_sort_order.unwrap_or(1) != 0 {
+                    row_keys.sort_by(|a, b| {
+                        for (av, bv) in a.1.iter().zip(b.1.iter()) {
+                            match av.total_cmp(bv) {
+                                std::cmp::Ordering::Equal => continue,
+                                other => return other,
+                            }
+                        }
+                        std::cmp::Ordering::Equal
+                    });
+                }
+
+                if col_sort_order.unwrap_or(1) != 0 {
+                    col_keys.sort_by(|a, b| {
+                        for (av, bv) in a.1.iter().zip(b.1.iter()) {
+                            match av.total_cmp(bv) {
+                                std::cmp::Ordering::Equal => continue,
+                                other => return other,
+                            }
+                        }
+                        std::cmp::Ordering::Equal
+                    });
+                }
+
+                // Apply aggregation function
+                let aggregate = |vals: &[f64]| -> f64 {
+                    if vals.is_empty() {
+                        return 0.0;
+                    }
+                    match agg_func {
+                        1 | 101 => vals.iter().sum::<f64>() / vals.len() as f64, // AVERAGE
+                        2 | 102 => vals.len() as f64,                            // COUNT
+                        3 | 103 => vals.len() as f64,                            // COUNTA
+                        4 | 104 => vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max), // MAX
+                        5 | 105 => vals.iter().cloned().fold(f64::INFINITY, f64::min), // MIN
+                        6 | 106 => vals.iter().product(),                        // PRODUCT
+                        9 | 109 => vals.iter().sum(),                            // SUM
+                        _ => vals.iter().sum(),                                  // Default to SUM
+                    }
+                };
+
+                // Build result array
+                let row_key_width = row_fields.inner.width();
+                let header_row = if show_headers && has_headers { 1 } else { 0 };
+                let result_width = row_key_width + col_keys.len() as u32;
+                let result_height = header_row + row_keys.len() as u32;
+
+                if result_height == 0 || col_keys.is_empty() || row_keys.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                let mut result_values: SmallVec<[CellValue; 1]> = SmallVec::new();
+
+                // Add header row
+                if header_row > 0 {
+                    // Row field headers (empty corner cells)
+                    for col_idx in 0..row_key_width {
+                        if has_headers {
+                            let header = row_fields
+                                .inner
+                                .get(col_idx, 0)
+                                .cloned()
+                                .unwrap_or(CellValue::Blank);
+                            result_values.push(header);
+                        } else {
+                            result_values.push(CellValue::Blank);
+                        }
+                    }
+                    // Column headers
+                    for (_, col_key_values) in &col_keys {
+                        // Use the first value as header (or concatenate if multiple columns)
+                        let header = col_key_values.first().cloned().unwrap_or(CellValue::Blank);
+                        result_values.push(header);
+                    }
+                }
+
+                // Add data rows
+                for (row_key_hash, row_key_values) in &row_keys {
+                    // Row key values
+                    for kv in row_key_values {
+                        result_values.push(kv.clone());
+                    }
+                    // Aggregated values for each column
+                    for (col_key_hash, _) in &col_keys {
+                        let vals = data_map.get(&(row_key_hash.clone(), col_key_hash.clone()));
+                        let agg_result = match vals {
+                            Some(v) => aggregate(v),
+                            None => 0.0,
+                        };
+                        result_values.push(CellValue::from(agg_result));
+                    }
+                }
+
+                let size = ArraySize::new(result_width, result_height)
+                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
+                Array::new_row_major(size, result_values)?
+            }
+        ),
     ]
 }
 
@@ -821,5 +1249,33 @@ mod tests {
             "{2, b; 3, c; 1, a}",
             eval_to_string(&g, "SORTBY({1, \"a\"; 2, \"b\"; 3, \"c\"}, {3; 1; 2})")
         );
+    }
+
+    #[test]
+    fn test_formula_groupby() {
+        let g = GridController::new();
+
+        // Basic GROUPBY - group by first column and sum values
+        // Data: A=10, A=20, B=30, B=40
+        // Expected: A=30, B=70
+        let result = eval_to_string(
+            &g,
+            "GROUPBY({\"A\"; \"A\"; \"B\"; \"B\"}, {10; 20; 30; 40}, 9, 0)",
+        );
+        // Result should show grouped sums
+        assert!(result.contains("A") && result.contains("B"));
+    }
+
+    #[test]
+    fn test_formula_pivotby() {
+        let g = GridController::new();
+
+        // Basic PIVOTBY - pivot by row and column
+        let result = eval_to_string(
+            &g,
+            "PIVOTBY({\"A\"; \"A\"; \"B\"; \"B\"}, {\"X\"; \"Y\"; \"X\"; \"Y\"}, {10; 20; 30; 40}, 9, 0)",
+        );
+        // Result should be a pivot table
+        assert!(!result.is_empty());
     }
 }

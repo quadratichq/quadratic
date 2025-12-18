@@ -504,7 +504,145 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     .collect::<String>()
             }
         ),
+        formula_fn!(
+            /// Uses a specified XPath to query XML content and returns the matching value.
+            ///
+            /// Supports common XPath expressions:
+            /// - `/root/element` - absolute path to element
+            /// - `//element` - all elements with that name at any depth
+            /// - `/root/element/@attribute` - attribute value
+            /// - `/root/element[n]` - nth element (1-based indexing)
+            ///
+            /// Returns the text content of the first matching element or attribute.
+            #[examples(
+                "FILTERXML(\"<root><item>value</item></root>\", \"/root/item\")",
+                "FILTERXML(\"<root><item id='1'>A</item></root>\", \"/root/item/@id\")"
+            )]
+            #[zip_map]
+            fn FILTERXML(span: Span, [xml]: String, [xpath]: String) {
+                filter_xml_content(&xml, &xpath)
+                    .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))
+            }
+        ),
     ]
+}
+
+/// Parses XML and evaluates a simple XPath expression.
+fn filter_xml_content(xml: &str, xpath: &str) -> Result<String, ()> {
+    use roxmltree::Document;
+
+    let doc = Document::parse(xml).map_err(|_| ())?;
+
+    // Parse the XPath expression (simplified implementation)
+    let xpath = xpath.trim();
+
+    // Check for attribute query at the end
+    let (element_path, attr_name) = if xpath.contains("/@") {
+        let parts: Vec<&str> = xpath.rsplitn(2, "/@").collect();
+        if parts.len() == 2 {
+            (parts[1], Some(parts[0]))
+        } else {
+            (xpath, None)
+        }
+    } else {
+        (xpath, None)
+    };
+
+    // Handle descendant-or-self axis (//)
+    if element_path.starts_with("//") {
+        let tag_name = element_path.trim_start_matches("//");
+        // Handle index like //tag[n]
+        let (tag_name, index) = parse_element_index(tag_name);
+        let matching: Vec<_> = doc
+            .descendants()
+            .filter(|n| n.is_element() && n.tag_name().name() == tag_name)
+            .collect();
+
+        if matching.is_empty() {
+            return Err(());
+        }
+
+        let node = if let Some(idx) = index {
+            matching.get(idx - 1).ok_or(())?
+        } else {
+            matching.first().ok_or(())?
+        };
+
+        if let Some(attr) = attr_name {
+            return node.attribute(attr).map(|s| s.to_string()).ok_or(());
+        }
+
+        return Ok(get_element_text(node));
+    }
+
+    // Handle absolute path
+    let path = element_path.trim_start_matches('/');
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+
+    let mut current_node = doc.root_element();
+
+    // First segment should match root element
+    if !segments.is_empty() {
+        let (first_tag, first_index) = parse_element_index(segments[0]);
+        if current_node.tag_name().name() != first_tag {
+            return Err(());
+        }
+        if let Some(idx) = first_index {
+            if idx != 1 {
+                return Err(()); // Only one root
+            }
+        }
+    }
+
+    // Navigate through remaining segments
+    for segment in segments.iter().skip(1) {
+        let (tag_name, index) = parse_element_index(segment);
+        let children: Vec<_> = current_node
+            .children()
+            .filter(|n| n.is_element() && n.tag_name().name() == tag_name)
+            .collect();
+
+        if children.is_empty() {
+            return Err(());
+        }
+
+        current_node = if let Some(idx) = index {
+            *children.get(idx - 1).ok_or(())?
+        } else {
+            *children.first().ok_or(())?
+        };
+    }
+
+    if let Some(attr) = attr_name {
+        return current_node
+            .attribute(attr)
+            .map(|s| s.to_string())
+            .ok_or(());
+    }
+
+    Ok(get_element_text(&current_node))
+}
+
+/// Parses an element name that may include an index like "item[2]".
+fn parse_element_index(segment: &str) -> (&str, Option<usize>) {
+    if let Some(bracket_pos) = segment.find('[') {
+        if let Some(end_pos) = segment.find(']') {
+            let tag = &segment[..bracket_pos];
+            if let Ok(idx) = segment[bracket_pos + 1..end_pos].parse::<usize>() {
+                return (tag, Some(idx));
+            }
+        }
+    }
+    (segment, None)
+}
+
+/// Gets the text content of an XML node.
+fn get_element_text(node: &roxmltree::Node<'_, '_>) -> String {
+    node.descendants()
+        .filter(|n| n.is_text())
+        .map(|n| n.text().unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 #[cfg(test)]
@@ -670,5 +808,37 @@ mod tests {
         let g = GridController::new();
         assert_eq!("ＡＢＣ", eval_to_string(&g, "DBCS(\"ABC\")"));
         assert_eq!("１２３", eval_to_string(&g, "DBCS(\"123\")"));
+    }
+
+    #[test]
+    fn test_formula_filterxml() {
+        let g = GridController::new();
+
+        // Basic element selection
+        assert_eq!(
+            "value",
+            eval_to_string(
+                &g,
+                "FILTERXML(\"<root><item>value</item></root>\", \"/root/item\")"
+            )
+        );
+
+        // Attribute selection
+        assert_eq!(
+            "1",
+            eval_to_string(
+                &g,
+                "FILTERXML(\"<root><item id='1'>A</item></root>\", \"/root/item/@id\")"
+            )
+        );
+
+        // Descendant selection
+        assert_eq!(
+            "deep",
+            eval_to_string(
+                &g,
+                "FILTERXML(\"<root><a><b>deep</b></a></root>\", \"//b\")"
+            )
+        );
     }
 }

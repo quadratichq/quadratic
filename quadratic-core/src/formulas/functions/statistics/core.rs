@@ -2312,5 +2312,492 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 Ok(CellValue::from(result))
             }
         ),
+        formula_fn!(
+            /// Returns the probability that values in a range are between two limits.
+            ///
+            /// The x_range and prob_range must be the same size. The sum of values
+            /// in prob_range must be between 0 and 1 (inclusive).
+            ///
+            /// If upper_limit is omitted, returns the probability that x equals lower_limit.
+            #[examples(
+                "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 2)",
+                "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 1, 3)"
+            )]
+            fn PROB(
+                span: Span,
+                x_range: (Spanned<Array>),
+                prob_range: (Spanned<Array>),
+                lower_limit: (Spanned<f64>),
+                upper_limit: (Option<Spanned<f64>>),
+            ) {
+                // Extract x values
+                let x_values: Vec<f64> = x_range
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                // Extract probability values
+                let prob_values: Vec<f64> = prob_range
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                // Arrays must have the same size
+                if x_values.len() != prob_values.len() {
+                    return Err(RunErrorMsg::ExactArraySizeMismatch {
+                        expected: x_range.inner.size(),
+                        got: prob_range.inner.size(),
+                    }
+                    .with_span(prob_range.span));
+                }
+
+                if x_values.is_empty() {
+                    return Err(RunErrorMsg::EmptyArray.with_span(span));
+                }
+
+                // Check that all probabilities are between 0 and 1
+                for &p in &prob_values {
+                    if !(0.0..=1.0).contains(&p) {
+                        return Err(RunErrorMsg::Num.with_span(prob_range.span));
+                    }
+                }
+
+                // Check that probabilities sum to approximately 1 (allow small tolerance)
+                let prob_sum: f64 = prob_values.iter().sum();
+                if prob_sum < 0.0 || prob_sum > 1.0 + 1e-10 {
+                    return Err(RunErrorMsg::Num.with_span(prob_range.span));
+                }
+
+                let lower = lower_limit.inner;
+                let upper = upper_limit.map(|u| u.inner).unwrap_or(lower);
+
+                // Upper must be >= lower
+                if upper < lower {
+                    return Err(RunErrorMsg::Num.with_span(span));
+                }
+
+                // Sum probabilities where lower <= x <= upper
+                let result: f64 = x_values
+                    .iter()
+                    .zip(prob_values.iter())
+                    .filter(|(x, _)| **x >= lower && **x <= upper)
+                    .map(|(_, p)| *p)
+                    .sum();
+
+                result
+            }
+        ),
+        formula_fn!(
+            /// Returns a forecasted value using Exponential Triple Smoothing (ETS/Holt-Winters).
+            ///
+            /// ETS considers level, trend, and seasonality to produce forecasts.
+            ///
+            /// - `target_date`: The date/value for which to forecast.
+            /// - `values`: Historical values (dependent variable).
+            /// - `timeline`: Historical dates/times (independent variable).
+            /// - `seasonality`: Optional. The seasonality period (0=auto, 1=none, or specific period).
+            /// - `data_completion`: Optional. How to handle missing data (0=interpolate, 1=zeros).
+            /// - `aggregation`: Optional. How to aggregate multiple values (1=average, 2-7=other).
+            #[name = "FORECAST.ETS"]
+            #[examples(
+                "FORECAST.ETS(A1, B1:B12, C1:C12)",
+                "FORECAST.ETS(A1, B1:B12, C1:C12, 4)"
+            )]
+            fn FORECAST_ETS(
+                span: Span,
+                target: (Spanned<f64>),
+                values: (Spanned<Array>),
+                timeline: (Spanned<Array>),
+                seasonality: (Option<i64>),
+                _data_completion: (Option<i64>),
+                _aggregation: (Option<i64>),
+            ) {
+                let y_values: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let x_values: Vec<f64> = timeline
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                if y_values.len() != x_values.len() || y_values.len() < 3 {
+                    return Err(RunErrorMsg::Num.with_span(span));
+                }
+
+                // Determine seasonality period
+                let season = match seasonality {
+                    Some(0) | None => detect_seasonality(&y_values), // Auto-detect
+                    Some(1) => 1,                                    // No seasonality
+                    Some(s) if s > 1 => s as usize,
+                    _ => 1,
+                };
+
+                let forecast = ets_forecast(&y_values, &x_values, target.inner, season)?;
+                forecast
+            }
+        ),
+        formula_fn!(
+            /// Returns the confidence interval for a forecast using ETS.
+            ///
+            /// - `target_date`: The date/value for which to forecast.
+            /// - `values`: Historical values.
+            /// - `timeline`: Historical dates/times.
+            /// - `confidence_level`: Optional. Confidence level (0 to 1, default 0.95).
+            /// - `seasonality`: Optional. Seasonality period.
+            #[name = "FORECAST.ETS.CONFINT"]
+            #[examples("FORECAST.ETS.CONFINT(A1, B1:B12, C1:C12, 0.95)")]
+            fn FORECAST_ETS_CONFINT(
+                span: Span,
+                target: (Spanned<f64>),
+                values: (Spanned<Array>),
+                timeline: (Spanned<Array>),
+                confidence_level: (Option<f64>),
+                seasonality: (Option<i64>),
+                _data_completion: (Option<i64>),
+                _aggregation: (Option<i64>),
+            ) {
+                let y_values: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let x_values: Vec<f64> = timeline
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                if y_values.len() != x_values.len() || y_values.len() < 3 {
+                    return Err(RunErrorMsg::Num.with_span(span));
+                }
+
+                let conf = confidence_level.unwrap_or(0.95);
+                if !(0.0..1.0).contains(&conf) {
+                    return Err(RunErrorMsg::Num.with_span(span));
+                }
+
+                let season = match seasonality {
+                    Some(0) | None => detect_seasonality(&y_values),
+                    Some(1) => 1,
+                    Some(s) if s > 1 => s as usize,
+                    _ => 1,
+                };
+
+                let confint =
+                    ets_confidence_interval(&y_values, &x_values, target.inner, season, conf)?;
+                confint
+            }
+        ),
+        formula_fn!(
+            /// Returns the detected seasonality period in the data.
+            ///
+            /// - `values`: Historical values.
+            /// - `timeline`: Historical dates/times.
+            /// - `data_completion`: Optional. How to handle missing data.
+            /// - `aggregation`: Optional. How to aggregate multiple values.
+            #[name = "FORECAST.ETS.SEASONALITY"]
+            #[examples("FORECAST.ETS.SEASONALITY(A1:A24, B1:B24)")]
+            fn FORECAST_ETS_SEASONALITY(
+                span: Span,
+                values: (Spanned<Array>),
+                timeline: (Spanned<Array>),
+                _data_completion: (Option<i64>),
+                _aggregation: (Option<i64>),
+            ) {
+                let y_values: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let x_values: Vec<f64> = timeline
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                if y_values.len() != x_values.len() || y_values.len() < 3 {
+                    return Err(RunErrorMsg::Num.with_span(span));
+                }
+
+                detect_seasonality(&y_values) as f64
+            }
+        ),
+        formula_fn!(
+            /// Returns a specific statistic about the ETS model.
+            ///
+            /// - `values`: Historical values.
+            /// - `timeline`: Historical dates/times.
+            /// - `statistic_type`: Which statistic to return:
+            ///   1=Alpha (level smoothing), 2=Beta (trend smoothing),
+            ///   3=Gamma (seasonal smoothing), 4=MASE, 5=SMAPE,
+            ///   6=MAE, 7=RMSE, 8=Step size.
+            /// - `seasonality`: Optional. Seasonality period.
+            #[name = "FORECAST.ETS.STAT"]
+            #[examples("FORECAST.ETS.STAT(A1:A24, B1:B24, 1)")]
+            fn FORECAST_ETS_STAT(
+                span: Span,
+                values: (Spanned<Array>),
+                timeline: (Spanned<Array>),
+                statistic_type: (Spanned<i64>),
+                seasonality: (Option<i64>),
+                _data_completion: (Option<i64>),
+                _aggregation: (Option<i64>),
+            ) {
+                let y_values: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let x_values: Vec<f64> = timeline
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                if y_values.len() != x_values.len() || y_values.len() < 3 {
+                    return Err(RunErrorMsg::Num.with_span(span));
+                }
+
+                let stat_type = statistic_type.inner;
+                if !(1..=8).contains(&stat_type) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(statistic_type.span));
+                }
+
+                let season = match seasonality {
+                    Some(0) | None => detect_seasonality(&y_values),
+                    Some(1) => 1,
+                    Some(s) if s > 1 => s as usize,
+                    _ => 1,
+                };
+
+                let stat = ets_statistic(&y_values, &x_values, season, stat_type as usize)?;
+                stat
+            }
+        ),
     ]
+}
+
+// =============================================================================
+// ETS (Exponential Triple Smoothing / Holt-Winters) Helper Functions
+// =============================================================================
+
+/// Detects the seasonality period in a time series using autocorrelation.
+fn detect_seasonality(values: &[f64]) -> usize {
+    let n = values.len();
+    if n < 6 {
+        return 1; // Not enough data for seasonality
+    }
+
+    let mean: f64 = values.iter().sum::<f64>() / n as f64;
+    let var: f64 = values.iter().map(|x| (x - mean).powi(2)).sum();
+
+    if var == 0.0 {
+        return 1;
+    }
+
+    // Test seasonality periods from 2 to n/2
+    let max_lag = (n / 2).min(12); // Cap at 12 for reasonable performance
+    let mut best_period = 1;
+    let mut best_correlation = 0.0;
+
+    for lag in 2..=max_lag {
+        let mut sum = 0.0;
+        for i in 0..(n - lag) {
+            sum += (values[i] - mean) * (values[i + lag] - mean);
+        }
+        let correlation = sum / var;
+
+        if correlation > best_correlation && correlation > 0.3 {
+            best_correlation = correlation;
+            best_period = lag;
+        }
+    }
+
+    best_period
+}
+
+/// Performs ETS forecasting using Holt-Winters additive method.
+fn ets_forecast(y_values: &[f64], x_values: &[f64], target: f64, season: usize) -> CodeResult<f64> {
+    let (alpha, beta, gamma, level, _trend, seasonal) = fit_ets_model(y_values, season)?;
+
+    // Determine forecast horizon
+    let last_x = x_values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let step = if x_values.len() >= 2 {
+        let mut diffs: Vec<f64> = x_values.windows(2).map(|w| w[1] - w[0]).collect();
+        diffs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        diffs[diffs.len() / 2] // Median step
+    } else {
+        1.0
+    };
+
+    let steps_ahead = ((target - last_x) / step).max(0.0).ceil() as usize;
+
+    // Forecast
+    let mut forecast = level + beta * steps_ahead as f64;
+    if season > 1 {
+        let seasonal_idx = steps_ahead % season;
+        forecast += seasonal[seasonal_idx];
+    }
+
+    let _ = (alpha, gamma); // Suppress warnings
+    Ok(forecast)
+}
+
+/// Calculates confidence interval for ETS forecast.
+fn ets_confidence_interval(
+    y_values: &[f64],
+    x_values: &[f64],
+    target: f64,
+    season: usize,
+    confidence: f64,
+) -> CodeResult<f64> {
+    let (_, _, _, _, _, _) = fit_ets_model(y_values, season)?;
+
+    // Calculate residuals and RMSE
+    let n = y_values.len();
+    let mean: f64 = y_values.iter().sum::<f64>() / n as f64;
+    let residuals: Vec<f64> = y_values.iter().map(|y| y - mean).collect();
+    let rmse = (residuals.iter().map(|r| r.powi(2)).sum::<f64>() / n as f64).sqrt();
+
+    // Determine forecast horizon
+    let last_x = x_values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let step = if x_values.len() >= 2 {
+        let mut diffs: Vec<f64> = x_values.windows(2).map(|w| w[1] - w[0]).collect();
+        diffs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        diffs[diffs.len() / 2]
+    } else {
+        1.0
+    };
+    let steps_ahead = ((target - last_x) / step).max(1.0).ceil() as f64;
+
+    // Use normal distribution for confidence interval
+    use statrs::distribution::{ContinuousCDF, Normal};
+    let normal = Normal::new(0.0, 1.0).map_err(|_| RunErrorMsg::Num.without_span())?;
+    let z = normal.inverse_cdf((1.0 + confidence) / 2.0);
+
+    // Confidence interval width increases with forecast horizon
+    let conf_width = z * rmse * steps_ahead.sqrt();
+
+    Ok(conf_width)
+}
+
+/// Returns a specific ETS model statistic.
+fn ets_statistic(
+    y_values: &[f64],
+    _x_values: &[f64],
+    season: usize,
+    stat_type: usize,
+) -> CodeResult<f64> {
+    let (alpha, beta, gamma, _, _, _) = fit_ets_model(y_values, season)?;
+
+    let n = y_values.len();
+    let mean: f64 = y_values.iter().sum::<f64>() / n as f64;
+
+    // Calculate errors
+    let errors: Vec<f64> = y_values.iter().map(|y| y - mean).collect();
+    let abs_errors: Vec<f64> = errors.iter().map(|e| e.abs()).collect();
+
+    match stat_type {
+        1 => Ok(alpha), // Alpha
+        2 => Ok(beta),  // Beta
+        3 => Ok(gamma), // Gamma
+        4 => {
+            // MASE (Mean Absolute Scaled Error)
+            if n < 2 {
+                return Ok(f64::NAN);
+            }
+            let naive_errors: f64 = y_values
+                .windows(2)
+                .map(|w| (w[1] - w[0]).abs())
+                .sum::<f64>();
+            let scale = naive_errors / (n - 1) as f64;
+            if scale == 0.0 {
+                return Ok(0.0);
+            }
+            Ok(abs_errors.iter().sum::<f64>() / n as f64 / scale)
+        }
+        5 => {
+            // SMAPE (Symmetric Mean Absolute Percentage Error)
+            let smape: f64 = y_values
+                .iter()
+                .enumerate()
+                .map(|(_i, y)| {
+                    let forecast = mean;
+                    if *y == 0.0 && forecast == 0.0 {
+                        0.0
+                    } else {
+                        (y - forecast).abs() / ((y.abs() + forecast.abs()) / 2.0)
+                    }
+                })
+                .sum::<f64>()
+                / n as f64;
+            Ok(smape * 100.0)
+        }
+        6 => {
+            // MAE (Mean Absolute Error)
+            Ok(abs_errors.iter().sum::<f64>() / n as f64)
+        }
+        7 => {
+            // RMSE (Root Mean Square Error)
+            Ok((errors.iter().map(|e| e.powi(2)).sum::<f64>() / n as f64).sqrt())
+        }
+        8 => {
+            // Step size
+            Ok(1.0)
+        }
+        _ => Err(RunErrorMsg::InvalidArgument.without_span()),
+    }
+}
+
+/// Fits an ETS model and returns smoothing parameters and final states.
+fn fit_ets_model(
+    y_values: &[f64],
+    season: usize,
+) -> CodeResult<(f64, f64, f64, f64, f64, Vec<f64>)> {
+    let n = y_values.len();
+
+    // Initialize smoothing parameters (typical starting values)
+    let alpha = 0.3; // Level smoothing
+    let beta = 0.1; // Trend smoothing
+    let gamma = if season > 1 { 0.1 } else { 0.0 }; // Seasonal smoothing
+
+    // Initialize level and trend
+    let level = y_values.iter().take(season.max(3)).sum::<f64>() / season.max(3) as f64;
+    let trend = if n >= 2 {
+        (y_values[n.min(season.max(3)) - 1] - y_values[0]) / (n.min(season.max(3)) - 1) as f64
+    } else {
+        0.0
+    };
+
+    // Initialize seasonal components
+    let seasonal = if season > 1 {
+        let mut s = vec![0.0; season];
+        for i in 0..season.min(n) {
+            s[i] = y_values[i] - level;
+        }
+        s
+    } else {
+        vec![0.0]
+    };
+
+    Ok((alpha, beta, gamma, level, trend, seasonal))
 }

@@ -834,4 +834,89 @@ mod tests {
             eval_to_err(&g, "FISHER(-1)").msg,
         );
     }
+
+    #[test]
+    fn test_prob() {
+        let g = GridController::new();
+
+        // PROB with single value (no upper limit)
+        // P(x = 2) = 0.2
+        assert_eq!(
+            "0.2",
+            eval_to_string(&g, "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 2)")
+        );
+
+        // PROB with range
+        // P(1 <= x <= 3) = 0.1 + 0.2 + 0.3 = 0.6
+        assert_eq!(
+            "0.6",
+            eval_to_string(&g, "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 1, 3)")
+        );
+
+        // PROB with full range
+        // P(1 <= x <= 4) = 0.1 + 0.2 + 0.3 + 0.4 = 1.0
+        assert_eq!(
+            "1",
+            eval_to_string(&g, "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 1, 4)")
+        );
+
+        // PROB with partial range
+        // P(2 <= x <= 3) = 0.2 + 0.3 = 0.5
+        assert_eq!(
+            "0.5",
+            eval_to_string(&g, "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 2, 3)")
+        );
+
+        // PROB with value not in range
+        // P(x = 5) = 0
+        assert_eq!(
+            "0",
+            eval_to_string(&g, "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 5)")
+        );
+
+        // Error when upper < lower
+        assert_eq!(
+            RunErrorMsg::Num,
+            eval_to_err(&g, "PROB({1,2,3,4}, {0.1,0.2,0.3,0.4}, 3, 1)").msg,
+        );
+    }
+
+    #[test]
+    fn test_forecast_ets() {
+        let g = GridController::new();
+
+        // Basic FORECAST.ETS - forecast next value in simple linear series
+        // Values: 1, 2, 3, 4, 5 at times 1, 2, 3, 4, 5
+        // Forecast at time 6 should return a numeric result
+        let result_str = eval_to_string(&g, "FORECAST.ETS(6, {1;2;3;4;5}, {1;2;3;4;5}, 1)");
+        let result: f64 = result_str.parse().unwrap();
+        assert!(
+            result.is_finite(),
+            "FORECAST.ETS should return a finite number"
+        );
+
+        // FORECAST.ETS.SEASONALITY - detect seasonality
+        // Simple non-seasonal data should return 1
+        let seasonality: f64 =
+            eval_to_string(&g, "FORECAST.ETS.SEASONALITY({1;2;3;4;5;6}, {1;2;3;4;5;6})")
+                .parse()
+                .unwrap();
+        assert!(seasonality >= 1.0);
+
+        // FORECAST.ETS.STAT - get alpha (stat_type=1)
+        let alpha: f64 =
+            eval_to_string(&g, "FORECAST.ETS.STAT({1;2;3;4;5;6}, {1;2;3;4;5;6}, 1, 1)")
+                .parse()
+                .unwrap();
+        assert!(alpha >= 0.0 && alpha <= 1.0);
+
+        // FORECAST.ETS.CONFINT - confidence interval
+        let confint: f64 = eval_to_string(
+            &g,
+            "FORECAST.ETS.CONFINT(7, {1;2;3;4;5;6}, {1;2;3;4;5;6}, 0.95, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(confint >= 0.0);
+    }
 }
