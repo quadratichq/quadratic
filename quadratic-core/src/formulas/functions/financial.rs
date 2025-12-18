@@ -1353,7 +1353,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 if issue >= settlement {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
-                if issue >= first_interest {
+                if issue > first_interest {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
 
@@ -1621,11 +1621,16 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let life = 1.0 / rate;
 
                 // Determine the degressive coefficient based on asset life
+                // French accounting rules:
+                // - life < 3 years: 1.0
+                // - 3 ≤ life < 5 years: 1.5
+                // - 5 ≤ life ≤ 6 years: 2.0
+                // - life > 6 years: 2.5
                 let coefficient = if life < 3.0 {
                     1.0
                 } else if life < 5.0 {
                     1.5
-                } else if life < 7.0 {
+                } else if life <= 6.0 {
                     2.0
                 } else {
                     2.5
@@ -4508,6 +4513,22 @@ mod tests {
             &g,
             "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 2, 5)",
         );
+
+        // Test with issue == first_interest (should be valid per Excel behavior)
+        // 2020 has 366 days (leap year), from Jan 1 to Dec 31 = 365 days
+        // With 30/360 basis (basis=0): 360 days in a year, semi-annual = 180 days per period
+        // Days from Jan 1 to Dec 31 in 30/360 = 11*30 + 30 = 360 days
+        // This spans 2 complete periods, so accrued = 1000 * 0.1 = 100
+        assert_f64_approx_eq(
+            100.0,
+            eval_to_string(
+                &g,
+                r#"ACCRINT("2020-01-01", "2020-01-01", "2020-12-31", 0.1, 1000, 2, 0)"#,
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINT with issue == first_interest",
+        );
     }
 
     #[test]
@@ -4717,24 +4738,40 @@ mod tests {
         // Basic AMORDEGRC test
         // Cost 2400, purchased Aug 19, 2008, first period Dec 31, 2008
         // Salvage 300, period 1, rate 15%
-        // Asset life = 1/0.15 ≈ 6.67 years, so coefficient = 2.0
-        // Adjusted rate = 0.15 * 2.0 = 0.30
+        // Asset life = 1/0.15 ≈ 6.67 years (> 6), so coefficient = 2.5
+        // Adjusted rate = 0.15 * 2.5 = 0.375
+        // Period 0: round(2400 * 0.375 * 134/365) = round(330.41) = 330
+        // Period 1: round((2400 - 330) * 0.375) = round(776.25) = 776
         let period_1: f64 = eval_to_string(
             &g,
             "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
         )
         .parse()
         .unwrap();
-        assert!(period_1 > 0.0, "AMORDEGRC period 1 should be positive");
+        assert_f64_approx_eq(776.0, period_1, "AMORDEGRC period 1 should be 776");
 
         // Test first period (period 0) - prorated with coefficient
+        // round(2400 * 0.375 * 134/365) = round(330.41) = 330
         let first_period: f64 = eval_to_string(
             &g,
             "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 0, 0.15)",
         )
         .parse()
         .unwrap();
-        assert!(first_period > 0.0, "First period should be positive");
+        assert_f64_approx_eq(330.0, first_period, "AMORDEGRC period 0 should be 330");
+
+        // Test with explicit basis=1 (user-reported formula)
+        let period_1_basis_1: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert_f64_approx_eq(
+            776.0,
+            period_1_basis_1,
+            "AMORDEGRC with explicit basis=1 should be 776",
+        );
 
         // Test with rate that gives coefficient of 1.5 (life 3-4 years, rate 0.25-0.33)
         let coef_1_5: f64 = eval_to_string(
@@ -4745,7 +4782,7 @@ mod tests {
         .unwrap();
         assert!(coef_1_5 > 0.0, "AMORDEGRC with coefficient 1.5");
 
-        // Test with rate that gives coefficient of 2.5 (life >= 7 years, rate <= 0.14)
+        // Test with rate that gives coefficient of 2.5 (life > 6 years, rate < 0.167)
         let coef_2_5: f64 = eval_to_string(
             &g,
             "AMORDEGRC(10000, DATE(2020, 1, 1), DATE(2020, 12, 31), 1000, 1, 0.10)",
@@ -4806,7 +4843,8 @@ mod tests {
         // Test that different rates result in different depreciation due to coefficients
         // Rate 0.50 => life = 2 years => coefficient = 1.0 (no acceleration)
         // Rate 0.25 => life = 4 years => coefficient = 1.5
-        // Rate 0.15 => life = 6.67 years => coefficient = 2.0
+        // Rate 0.167 => life = 6 years => coefficient = 2.0
+        // Rate 0.15 => life = 6.67 years => coefficient = 2.5 (life > 6)
         // Rate 0.10 => life = 10 years => coefficient = 2.5
 
         // For the same cost, higher coefficient means faster depreciation in early periods
