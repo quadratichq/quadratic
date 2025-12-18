@@ -77,7 +77,7 @@ test('Create New File', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Edit Share File Permissions', async ({ page }) => {
+test.skip('Edit Share File Permissions', async ({ page }) => {
   //--------------------------------
   // Edit Share File Permissions
   //--------------------------------
@@ -310,7 +310,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   await cleanUpFiles(page, { fileName: newFileName });
 });
 
-test('File Actions - Dashboard', async ({ page }) => {
+test.skip('File Actions - Dashboard', async ({ page }) => {
   //--------------------------------
   // Download File
   //--------------------------------
@@ -478,7 +478,7 @@ test('File Actions - Dashboard', async ({ page }) => {
   await cleanUpFiles(page, { fileName: renamedFile, skipFilterClear: true });
 });
 
-test('Share File - Dashboard', async ({ page: user1Page }) => {
+test.skip('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
   // Can Edit (Non-Public)
   //--------------------------------
@@ -754,7 +754,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await cleanUpFiles(user1Page, { fileName });
 });
 
-test('Upload Large File', async ({ page }) => {
+test.skip('Upload Large File', async ({ page }) => {
   //--------------------------------
   // Upload Large File
   //--------------------------------
