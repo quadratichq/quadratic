@@ -2,7 +2,6 @@ import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
@@ -28,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { useAtomValue } from 'jotai';
 import { useRef } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
@@ -47,10 +45,9 @@ export function NewFileButton() {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
-  const filters = useAtomValue(userFilesListFiltersAtom);
 
-  // If we're looking at the private tab, make implicit new files private. Otherwise, team files.
-  const isPrivate = filters.fileType === 'private';
+  // Sets the creation of new files as private by default
+  const isPrivate = true;
 
   if (isMobile) {
     return null;
@@ -78,20 +75,6 @@ export function NewFileButton() {
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, false);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
-            return;
-          }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: false });
-        }}
-      >
-        <AddIcon className="mr-1" /> Team file
-      </Button>
-      <Button
-        variant="outline"
-        onClick={async (e) => {
-          e.preventDefault();
           const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
           if (hasReachedLimit) {
             showUpgradeDialog('fileLimitReached');
@@ -100,7 +83,7 @@ export function NewFileButton() {
           window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
         }}
       >
-        <AddIcon className="mr-1" /> Private file
+        New file
       </Button>
 
       <input
@@ -126,7 +109,7 @@ export function NewFileButton() {
           <DropdownMenuContent>
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <FileIcon className="mr-3 text-primary" />
+              <FileIcon className="mr-3" />
               <span className="flex flex-col">
                 Local file
                 <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid</span>
@@ -138,7 +121,7 @@ export function NewFileButton() {
                 reloadDocument
                 to={ROUTES.CREATE_FILE(teamUuid, { state: stateToInsertAndRun, private: isPrivate })}
               >
-                <ApiIcon className="mr-3 text-primary" />
+                <ApiIcon className="mr-3" />
                 <span className="flex flex-col">
                   API
                   <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
@@ -148,7 +131,7 @@ export function NewFileButton() {
 
             <DropdownMenuItem asChild>
               <Link to={ROUTES.TEMPLATES} className="flex items-center">
-                <ExamplesIcon className="mr-3 text-primary" />
+                <ExamplesIcon className="mr-3" />
 
                 <span className="flex flex-col">
                   Templates

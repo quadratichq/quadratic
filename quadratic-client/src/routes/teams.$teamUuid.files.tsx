@@ -4,12 +4,8 @@ import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { UserFilesList, type UserFilesListFile } from '@/dashboard/components/UserFilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
-import { Avatar } from '@/shared/components/Avatar';
-import { AddIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
-import { cn } from '@/shared/shadcn/utils';
 import { useMemo } from 'react';
-import { Link, useLoaderData, type LoaderFunctionArgs } from 'react-router';
+import { useLoaderData, type LoaderFunctionArgs } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClient.files.list({ shared: 'with-me' });
@@ -106,37 +102,13 @@ export const Component = () => {
     return allFiles.sort((a, b) => new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime());
   }, [teamFiles, filesPrivate, usersById, currentUser, sharedWithMeFiles]);
 
-  const sharedAvatarClasses = '-ml-1 outline outline-2 outline-background';
+  // const sharedAvatarClasses = '-ml-1 outline outline-2 outline-background';
 
   return (
     <div className="flex flex-grow flex-col">
       <OnboardingBanner />
 
-      <DashboardHeader
-        title="Files"
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="hidden lg:block">
-              <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="flex items-center">
-                {users.slice(0, 6).map((user, key) => (
-                  <Avatar key={key} alt={user.name} src={user.picture} className={sharedAvatarClasses}>
-                    {user.name ? user.name : user.email}
-                  </Avatar>
-                ))}
-                <div
-                  className={cn(
-                    sharedAvatarClasses,
-                    'flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground text-sm text-foreground'
-                  )}
-                >
-                  <AddIcon className="text-background" />
-                </div>
-              </Link>
-            </div>
-            {canEdit && <NewFileButton />}
-          </div>
-        }
-      />
+      <DashboardHeader title="Files" actions={canEdit && <NewFileButton />} />
 
       <UserFilesList files={suggestedFiles} teamUuid={teamUuid} />
     </div>

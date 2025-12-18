@@ -158,13 +158,13 @@ export function UserFilesList({
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
       <div className="mb-4 flex flex-row flex-wrap items-center gap-2">
-        <UserFilesListFileTypeFilter />
-
         <FilesListSearchInput
           value={filterValue}
           onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
           disabled={filterValue === '' && filesToRender.length === 0}
         />
+        <UserFilesListFileTypeFilter />
+
         <UserFilesListOtherFilters />
 
         <FilesListViewToggle

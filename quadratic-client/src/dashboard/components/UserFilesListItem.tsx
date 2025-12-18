@@ -16,9 +16,8 @@ import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { FilePrivateIcon, FileSharedWithMeIcon, GroupIcon, MoreVertIcon } from '@/shared/components/Icons';
+import { FilePrivateIcon, FileSharedWithMeIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -71,9 +70,6 @@ export function UserFilesListItem({
   // Determine if the user can move files
   const canMoveFiles = permissions.includes('FILE_MOVE');
 
-  // Determine if this is a private/personal file (for duplicate and move logic)
-  const isFilePrivate = fileType === 'private';
-
   const description =
     viewPreferences.sort === Sort.Created
       ? `Created ${timeAgo(file.createdDate)}`
@@ -121,6 +117,12 @@ export function UserFilesListItem({
     fileType = ownerUserId ? 'private' : 'team';
   }
 
+  // Determine if this is a private/personal file (for duplicate and move logic)
+  const isFilePrivate = fileType === 'private';
+
+  const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
+  const isDisabled = uuid.includes('duplicate');
+
   const renameFile = (value: string) => {
     // Update on the server and optimistically in the UI
     const data: FileAction['request.rename'] = { action: 'rename', name: value };
@@ -158,9 +160,6 @@ export function UserFilesListItem({
     trackEvent('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
-  const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
-  const isDisabled = uuid.includes('duplicate');
-
   return (
     <ListItem>
       <Link
@@ -178,29 +177,7 @@ export function UserFilesListItem({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
-            children={
-              <div className="mt-0.5 flex items-center gap-1">
-                {fileType === 'shared' ? (
-                  <Badge variant="secondary" className="px-1 py-0 font-normal">
-                    <FileSharedWithMeIcon size="xxs" className="mr-1" /> Shared with you
-                  </Badge>
-                ) : fileType === 'private' ? (
-                  <Badge variant="secondary" className="px-1 py-0 font-normal">
-                    <FilePrivateIcon size="xxs" className="mr-1" /> Private
-                  </Badge>
-                ) : fileType === 'team' ? (
-                  <Badge variant="outline" className="px-1 py-0 font-normal">
-                    <GroupIcon size="xxs" className="mr-1" />
-                    Team
-                  </Badge>
-                ) : null}
-                {publicLinkAccess !== 'NOT_SHARED' && (
-                  <Badge variant="outline" className="border-none px-1 py-0 font-normal text-muted-foreground">
-                    Shared publicly
-                  </Badge>
-                )}
-              </div>
-            }
+            children={<FileTypeBadge type={fileType} />}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>
@@ -310,5 +287,31 @@ export function UserFilesListItem({
         />
       )}
     </ListItem>
+  );
+}
+
+function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
+  if (type === 'team') return null;
+
+  return (
+    <div
+      className={cn(
+        'absolute left-3.5 top-3.5 flex items-center gap-1 text-xs',
+        'rounded-md py-0.5 pl-1 pr-1.5',
+        type === 'private' && 'bg-accent',
+        type === 'shared' && 'bg-accent'
+      )}
+    >
+      {type === 'shared' && (
+        <>
+          <FileSharedWithMeIcon size="xxs" className="!hidden" /> Shared with me
+        </>
+      )}
+      {type === 'private' && (
+        <>
+          <FilePrivateIcon size="xxs" className="!hidden" /> Private
+        </>
+      )}
+    </div>
   );
 }

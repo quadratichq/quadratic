@@ -9,7 +9,6 @@ import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgr
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
-  AIIcon,
   ArrowDropDownIcon,
   CheckIcon,
   DatabaseIcon,
@@ -17,8 +16,6 @@ import {
   ExamplesIcon,
   ExternalLinkIcon,
   FileIcon,
-  FilePrivateIcon,
-  GroupIcon,
   GroupSearchIcon,
   LabsIcon,
   LogoutIcon,
@@ -110,8 +107,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <FileIcon className={classNameIcons} />
               Files
               {canEditTeam && (
-                <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
-                  New
+                <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
+                  New file
                 </SidebarNavLinkCreateButton>
               )}
             </SidebarNavLink>
@@ -251,7 +248,7 @@ function SidebarNavLinkCreateButton({
   isPrivate: boolean;
   teamUuid: string;
 }) {
-  const handleClick = async ({ isPrivate }: { isPrivate: boolean }) => {
+  const handleClick = async () => {
     const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
@@ -260,55 +257,27 @@ function SidebarNavLinkCreateButton({
     window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
   };
 
-  return (
-    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
-      <DropdownMenu>
+  if (true) {
+    return (
+      <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="!bg-transparent opacity-30 hover:opacity-100">
-                <AddIcon />
-              </Button>
-            </DropdownMenuTrigger>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="!bg-transparent opacity-30 hover:opacity-100"
+              onClick={handleClick}
+            >
+              <AddIcon />
+            </Button>
           </TooltipTrigger>
           <TooltipPortal>
             <TooltipContent>{children}</TooltipContent>
           </TooltipPortal>
         </Tooltip>
-        <DropdownMenuContent>
-          <DropdownMenuItem
-            className="group"
-            onClick={() => {
-              // TODO: using navigate() doesn't work here?
-              window.location.href = ROUTES.TEAM_FILES_CREATE_AI(teamUuid);
-            }}
-          >
-            <AIIcon className="mr-2 text-muted-foreground" />
-            Start with AI
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={async (e) => {
-              e.preventDefault();
-              handleClick({ isPrivate: false });
-            }}
-          >
-            <GroupIcon className="mr-2 text-muted-foreground" />
-            Team file
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={async (e) => {
-              e.preventDefault();
-              handleClick({ isPrivate: true });
-            }}
-          >
-            <FilePrivateIcon className="mr-2 text-muted-foreground" />
-            Private file
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
+      </div>
+    );
+  }
 }
 
 const sidebarItemClasses = {

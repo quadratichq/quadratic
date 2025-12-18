@@ -111,7 +111,7 @@ export function FilesListViewToggle({
 
   return (
     <>
-      <div className={cn(`hidden xl:flex xl:flex-shrink-0 xl:flex-row xl:items-center xl:gap-1`, className)}>
+      <div className={cn(`hidden lg:flex lg:flex-shrink-0 lg:flex-row lg:items-center lg:gap-1`, className)}>
         {(viewPreferences.sort || viewPreferences.order) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -139,7 +139,7 @@ export function FilesListViewToggle({
 
         <div className="flex flex-shrink-0 items-center text-muted-foreground">
           <Button
-            className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `!opacity-100`)}
+            className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `h-8 w-8 !opacity-100`)}
             variant="ghost"
             size="icon"
             disabled={viewPreferences.layout === Layout.Grid}
@@ -148,7 +148,7 @@ export function FilesListViewToggle({
             <ViewGridIcon />
           </Button>
           <Button
-            className={cn(viewPreferences.layout === Layout.List && 'bg-accent', `!opacity-100`)}
+            className={cn(viewPreferences.layout === Layout.List && 'bg-accent', `h-8 w-8 !opacity-100`)}
             variant="ghost"
             size="icon"
             disabled={viewPreferences.layout === Layout.List}
@@ -159,7 +159,7 @@ export function FilesListViewToggle({
         </div>
       </div>
 
-      <div className={cn(`xl:hidden`, className)}>
+      <div className={cn(`lg:hidden`, className)}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon">

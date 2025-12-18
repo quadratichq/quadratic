@@ -29,9 +29,9 @@ export function UserFilesListOtherFilters() {
     <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
-          className={cn('relative flex-shrink-0', hasOtherFilters && 'bg-accent text-primary hover:text-primary')}
+          className={cn('relative flex-shrink-0', hasOtherFilters && '!bg-foreground !text-background')}
           aria-label="Other filters"
           onClick={() => setShowDropdown(true)}
         >
@@ -40,7 +40,7 @@ export function UserFilesListOtherFilters() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-h-[300px] w-56 overflow-y-auto">
         <DropdownMenuLabel className="flex items-center justify-between">
-          Other filters{' '}
+          Filter by{' '}
           <Button
             size="sm"
             variant="ghost"
@@ -55,6 +55,8 @@ export function UserFilesListOtherFilters() {
             Clear
           </Button>
         </DropdownMenuLabel>
+
+        <DropdownMenuSeparator />
 
         <DropdownMenuRadioGroup
           value={filters.sharedPublicly ? 'sharedPublicly' : (filters.fileCreator ?? '')}
@@ -74,11 +76,14 @@ export function UserFilesListOtherFilters() {
             setShowDropdown(false);
           }}
         >
-          <DropdownMenuSeparator className="!block" />
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Sharing</DropdownMenuLabel>
           <DropdownMenuRadioItem value="sharedPublicly">Shared publicly</DropdownMenuRadioItem>
+
           {users.length > 1 && filters.fileType !== 'shared' && filters.fileType !== 'private' && (
             <>
               <DropdownMenuSeparator className="!block" />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">File owner</DropdownMenuLabel>
+
               {users.map((user) => (
                 <DropdownMenuRadioItem key={user.id} value={user.email}>
                   <Avatar src={user.picture} className="mr-2" /> {user.name}
