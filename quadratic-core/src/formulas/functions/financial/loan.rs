@@ -520,11 +520,11 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     if p == 0 {
                         // First period - prorated
                         depreciation = cost * degressive_rate * first_period_rate;
-                        depreciation = ((depreciation * 2.0).round() / 2.0).round();
+                        depreciation = depreciation.round();
                     } else {
                         // Subsequent periods
                         depreciation = value * degressive_rate;
-                        depreciation = ((depreciation * 2.0).round() / 2.0).round();
+                        depreciation = depreciation.round();
                     }
 
                     // Don't depreciate below salvage value
