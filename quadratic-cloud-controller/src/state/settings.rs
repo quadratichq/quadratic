@@ -39,7 +39,9 @@ impl Settings {
             EncodingKey::from_rsa_pem(config.jwt_encoding_key.replace(r"\n", "\n").as_bytes())
                 .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
-        let jwks: JwkSet = serde_json::from_str(&config.jwks)
+        // Unescape the JWKS JSON string (Pulumi ESC escapes quotes as \")
+        let jwks_unescaped = config.jwks.replace("\\\"", "\"");
+        let jwks: JwkSet = serde_json::from_str(&jwks_unescaped)
             .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         let settings = Settings {

@@ -39,7 +39,7 @@ impl Config {
         dotenv().ok();
 
         // Try prefixed first, fall back to non-prefixed if that fails
-        let config = envy::prefixed("FILES__")
+        let config = envy::prefixed("CLOUD_CONTROLLER__")
             .from_env::<Config>()
             .or_else(|_| envy::from_env::<Config>())
             .map_err(|e| ControllerError::Config(e.to_string()))?;
