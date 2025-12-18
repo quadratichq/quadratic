@@ -34,7 +34,6 @@ const cloudWorkerECRName = config.require("cloud-worker-ecr-repo-name");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
-const certificateArn = config.require("certificate-arn");
 const vpcId = config.require("vpc-id");
 // Default to m5.2xlarge (8 vCPU, 32 GB RAM) - sized for controller + up to 20 cloud workers
 const instanceSize =
@@ -129,16 +128,14 @@ const nlb = new aws.lb.LoadBalancer("cloud-controller-nlb", {
   securityGroups: [cloudControllerNlbSecurityGroup.id],
 });
 
-// Create NLB Listener for TLS on port 443
+// Create NLB Listener for TCP on port 80
 const nlbListener = new aws.lb.Listener("cloud-controller-nlb-listener", {
   tags: {
     Name: `cloud-controller-nlb-${cloudControllerSubdomain}`,
   },
   loadBalancerArn: nlb.arn,
-  port: 443,
-  protocol: "TLS",
-  certificateArn: certificateArn,
-  sslPolicy: "ELBSecurityPolicy-2016-08",
+  port: 80,
+  protocol: "TCP",
   defaultActions: [
     {
       type: "forward",
@@ -169,8 +166,8 @@ const cloudControllerGlobalAcceleratorListener =
       protocol: "TCP",
       portRanges: [
         {
-          fromPort: 443,
-          toPort: 443,
+          fromPort: 80,
+          toPort: 80,
         },
       ],
       clientAffinity: "SOURCE_IP",
@@ -191,7 +188,7 @@ const cloudControllerGlobalAcceleratorEndpointGroup =
       ],
       endpointGroupRegion: aws.getRegionOutput().name,
       healthCheckProtocol: "TCP",
-      healthCheckPort: 443,
+      healthCheckPort: 80,
       healthCheckIntervalSeconds: 30,
       thresholdCount: 3,
       trafficDialPercentage: 100,

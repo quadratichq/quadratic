@@ -28,8 +28,8 @@ export const cloudControllerNlbSecurityGroup = new aws.ec2.SecurityGroup(
     ingress: [
       {
         protocol: "tcp",
-        fromPort: 443,
-        toPort: 443,
+        fromPort: 80,
+        toPort: 80,
         cidrBlocks: ["0.0.0.0/0"],
       },
     ],
