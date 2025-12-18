@@ -320,4 +320,58 @@ mod tests {
         // Should return the first array element
         assert_display_cell_value(&gc, sheet_id, 2, 1, "1");
     }
+
+    #[test]
+    fn test_set_formulas_with_dependencies_in_batch() {
+        // Test the case where formulas in a batch depend on each other
+        // This is the scenario reported as a bug where only the first formula executes
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set some initial values
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+
+        // Set multiple formulas where later formulas depend on earlier ones
+        gc.set_formulas(
+            vec![
+                (A1Selection::test_a1("B1"), "=A1*2".to_owned()), // B1 = 20
+                (A1Selection::test_a1("C1"), "=B1+5".to_owned()), // C1 = 25 (depends on B1)
+                (A1Selection::test_a1("D1"), "=C1*2".to_owned()), // D1 = 50 (depends on C1)
+            ],
+            None,
+        );
+
+        // Verify ALL formulas were executed correctly, not just the first
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "20"); // B1 = A1*2 = 10*2 = 20
+        assert_display_cell_value(&gc, sheet_id, 3, 1, "25"); // C1 = B1+5 = 20+5 = 25
+        assert_display_cell_value(&gc, sheet_id, 4, 1, "50"); // D1 = C1*2 = 25*2 = 50
+    }
+
+    #[test]
+    fn test_set_formulas_with_reverse_dependencies_in_batch() {
+        // Test the case where formulas are defined in reverse order of dependencies
+        // i.e., the dependent formula is defined before the formula it depends on
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set some initial values
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+
+        // Set formulas in reverse dependency order
+        gc.set_formulas(
+            vec![
+                (A1Selection::test_a1("D1"), "=C1*2".to_owned()), // D1 depends on C1 (not yet defined)
+                (A1Selection::test_a1("C1"), "=B1+5".to_owned()), // C1 depends on B1 (not yet defined)
+                (A1Selection::test_a1("B1"), "=A1*2".to_owned()), // B1 = 20
+            ],
+            None,
+        );
+
+        // Verify all formulas were executed correctly
+        // Note: B1, C1, D1 should all have computed values because the system
+        // should handle dependency ordering
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "20"); // B1 = A1*2 = 10*2 = 20
+        assert_display_cell_value(&gc, sheet_id, 3, 1, "25"); // C1 = B1+5 = 20+5 = 25
+        assert_display_cell_value(&gc, sheet_id, 4, 1, "50"); // D1 = C1*2 = 25*2 = 50
+    }
 }

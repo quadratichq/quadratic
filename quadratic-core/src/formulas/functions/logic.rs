@@ -1,4 +1,5 @@
 use super::*;
+use crate::Pos;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
@@ -242,6 +243,112 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns TRUE if value is any error except #N/A.
+            /// This is useful to catch errors while still allowing #N/A to propagate.
+            #[examples("ISERR(1/0) = TRUE", "ISERR(NA()) = FALSE")]
+            #[zip_map]
+            fn ISERR([value]: CellValue) {
+                matches!(&value, CellValue::Error(e) if !matches!(e.msg, RunErrorMsg::NoMatch | RunErrorMsg::NotAvailable))
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if value is not text.
+            /// Empty cells and errors are considered non-text.
+            #[examples("ISNONTEXT(123) = TRUE", "ISNONTEXT(\"hello\") = FALSE")]
+            #[zip_map]
+            fn ISNONTEXT([value]: CellValue) {
+                !matches!(value, CellValue::Text(_))
+            }
+        ),
+        formula_fn!(
+            /// Returns a number corresponding to the type of error.
+            ///
+            /// Returns:
+            /// - 1 for #NULL!
+            /// - 2 for #DIV/0!
+            /// - 3 for #VALUE!
+            /// - 4 for #REF!
+            /// - 5 for #NAME?
+            /// - 6 for #NUM!
+            /// - 7 for #N/A
+            /// - #N/A if the value is not an error
+            #[name = "ERROR.TYPE"]
+            #[examples("ERROR.TYPE(1/0) = 2", "ERROR.TYPE(#N/A) = 7")]
+            #[zip_map]
+            fn ERROR_TYPE(span: Span, [value]: CellValue) {
+                match &value {
+                    CellValue::Error(e) => match &e.msg {
+                        RunErrorMsg::Null => 1,
+                        RunErrorMsg::DivideByZero => 2,
+                        RunErrorMsg::Value
+                        | RunErrorMsg::BadOp { .. }
+                        | RunErrorMsg::NotANumber => 3,
+                        RunErrorMsg::BadCellReference => 4,
+                        RunErrorMsg::Name | RunErrorMsg::BadFunctionName => 5,
+                        RunErrorMsg::Num
+                        | RunErrorMsg::Overflow
+                        | RunErrorMsg::NaN
+                        | RunErrorMsg::NegativeExponent
+                        | RunErrorMsg::Infinity => 6,
+                        RunErrorMsg::NoMatch | RunErrorMsg::NotAvailable => 7,
+                        _ => {
+                            return Err(RunErrorMsg::NotAvailable.with_span(span));
+                        }
+                    },
+                    _ => {
+                        return Err(RunErrorMsg::NotAvailable.with_span(span));
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns a number indicating the data type of a value.
+            ///
+            /// Returns:
+            /// - 1 for numbers
+            /// - 2 for text
+            /// - 4 for logical values (TRUE/FALSE)
+            /// - 16 for error values
+            /// - 64 for arrays
+            /// - 1 for blank cells (treated as 0)
+            #[examples("TYPE(123) = 1", "TYPE(\"hello\") = 2", "TYPE(TRUE) = 4")]
+            #[zip_map]
+            fn TYPE([value]: CellValue) {
+                match value {
+                    CellValue::Blank => 1, // Blank is treated as 0, which is a number
+                    CellValue::Number(_) => 1,
+                    CellValue::Text(_) => 2,
+                    CellValue::Logical(_) => 4,
+                    CellValue::Error(_) => 16,
+                    _ => 1, // Default to number for other types
+                }
+            }
+        ),
+        formula_fn!(
+            /// Converts a value to a number.
+            ///
+            /// - Numbers are returned unchanged
+            /// - TRUE returns 1, FALSE returns 0
+            /// - Text and errors return 0
+            /// - Blank cells return 0
+            #[examples("N(123) = 123", "N(TRUE) = 1", "N(\"hello\") = 0")]
+            #[zip_map]
+            fn N([value]: CellValue) {
+                match value {
+                    CellValue::Number(n) => {
+                        use rust_decimal::prelude::ToPrimitive;
+                        n.to_f64().unwrap_or(0.0)
+                    }
+                    CellValue::Logical(true) => 1.0,
+                    CellValue::Logical(false) => 0.0,
+                    CellValue::Blank => 0.0,
+                    CellValue::Text(_) => 0.0,
+                    CellValue::Error(_) => 0.0,
+                    _ => 0.0,
+                }
+            }
+        ),
+        formula_fn!(
             /// Returns a value from a list of values based on an index number.
             ///
             /// The index is 1-based, so `CHOOSE(1, a, b, c)` returns `a`,
@@ -278,6 +385,77 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 // Return the chosen value (convert to 0-based index)
                 choices.into_iter().nth(index as usize - 1).unwrap().inner
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if the reference contains a formula.
+            ///
+            /// ISFORMULA checks whether a cell reference points to a cell that
+            /// contains a formula. Returns FALSE for cells with only values.
+            #[examples("ISFORMULA(A1)", "ISFORMULA(B2:B10)")]
+            fn ISFORMULA(ctx: Ctx, span: Span, reference: (Option<Spanned<Array>>)) {
+                match reference {
+                    Some(_arr) => {
+                        // Get the position of the referenced cell from cells_accessed
+                        let a1_context = ctx.grid_controller.a1_context();
+                        let ref_info =
+                            ctx.cells_accessed
+                                .cells
+                                .iter()
+                                .find_map(|(&sheet_id, ranges)| {
+                                    ranges.iter().find_map(|range| {
+                                        range.to_rect(a1_context).map(|rect| (sheet_id, rect))
+                                    })
+                                });
+
+                        match ref_info {
+                            Some((sheet_id, rect)) => {
+                                let pos = Pos {
+                                    x: rect.min.x,
+                                    y: rect.min.y,
+                                };
+                                if let Some(sheet) = ctx.grid_controller.try_sheet(sheet_id) {
+                                    sheet.is_formula_cell(pos)
+                                } else {
+                                    false
+                                }
+                            }
+                            None => false,
+                        }
+                    }
+                    None => {
+                        // No reference provided
+                        return Err(RunErrorMsg::MissingRequiredArgument {
+                            func_name: "ISFORMULA".into(),
+                            arg_name: "reference".into(),
+                        }
+                        .with_span(span));
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns TRUE if the value is a cell reference.
+            ///
+            /// ISREF checks if the argument is a valid reference. Note that in
+            /// Quadratic, this function checks if a reference was provided and
+            /// resolved successfully.
+            #[examples("ISREF(A1)", "ISREF(123)")]
+            fn ISREF(ctx: Ctx, span: Span, value: (Option<Spanned<Value>>)) {
+                match value {
+                    Some(_) => {
+                        // Check if there are any cells accessed - if so, the argument was a reference
+                        !ctx.cells_accessed.cells.is_empty()
+                    }
+                    None => {
+                        // No value provided means no reference
+                        return Err(RunErrorMsg::MissingRequiredArgument {
+                            func_name: "ISREF".into(),
+                            arg_name: "value".into(),
+                        }
+                        .with_span(span));
+                    }
+                }
             }
         ),
         formula_fn!(
@@ -681,6 +859,34 @@ mod tests {
     }
 
     #[test]
+    fn test_formula_iserr() {
+        let g = GridController::new();
+
+        // ISERR returns TRUE for errors other than #N/A
+        assert_eq!("TRUE", eval_to_string(&g, "ISERR(1/0)"));
+
+        // ISERR returns FALSE for #N/A errors
+        assert_eq!("FALSE", eval_to_string(&g, "ISERR(NA())"));
+
+        // ISERR returns FALSE for valid values
+        assert_eq!("FALSE", eval_to_string(&g, "ISERR(123)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISERR(\"hello\")"));
+    }
+
+    #[test]
+    fn test_formula_isnontext() {
+        let g = GridController::new();
+
+        // ISNONTEXT returns TRUE for non-text values
+        assert_eq!("TRUE", eval_to_string(&g, "ISNONTEXT(123)"));
+        assert_eq!("TRUE", eval_to_string(&g, "ISNONTEXT(TRUE)"));
+
+        // ISNONTEXT returns FALSE for text
+        assert_eq!("FALSE", eval_to_string(&g, "ISNONTEXT(\"hello\")"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISNONTEXT(\"\")"));
+    }
+
+    #[test]
     fn test_formula_let() {
         let g = GridController::new();
 
@@ -895,5 +1101,109 @@ mod tests {
             },
             eval_to_err(&g, "SWITCH(1)").msg,
         );
+    }
+
+    #[test]
+    fn test_error_type() {
+        let g = GridController::new();
+
+        // Test error types
+        assert_eq!("2", eval_to_string(&g, "ERROR.TYPE(1/0)")); // #DIV/0!
+        assert_eq!("7", eval_to_string(&g, "ERROR.TYPE(NA())")); // #N/A
+
+        // Non-error returns #N/A
+        assert_eq!(
+            RunErrorMsg::NotAvailable,
+            eval_to_err(&g, "ERROR.TYPE(123)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::NotAvailable,
+            eval_to_err(&g, "ERROR.TYPE(\"hello\")").msg,
+        );
+    }
+
+    #[test]
+    fn test_type_function() {
+        let g = GridController::new();
+
+        // Number
+        assert_eq!("1", eval_to_string(&g, "TYPE(123)"));
+        assert_eq!("1", eval_to_string(&g, "TYPE(3.14)"));
+
+        // Text
+        assert_eq!("2", eval_to_string(&g, "TYPE(\"hello\")"));
+
+        // Logical
+        assert_eq!("4", eval_to_string(&g, "TYPE(TRUE)"));
+        assert_eq!("4", eval_to_string(&g, "TYPE(FALSE)"));
+
+        // Error
+        assert_eq!("16", eval_to_string(&g, "TYPE(1/0)"));
+        assert_eq!("16", eval_to_string(&g, "TYPE(NA())"));
+    }
+
+    #[test]
+    fn test_n_function() {
+        let g = GridController::new();
+
+        // Number
+        assert_eq!("123", eval_to_string(&g, "N(123)"));
+        assert_eq!("3.14", eval_to_string(&g, "N(3.14)"));
+
+        // Logical
+        assert_eq!("1", eval_to_string(&g, "N(TRUE)"));
+        assert_eq!("0", eval_to_string(&g, "N(FALSE)"));
+
+        // Text returns 0
+        assert_eq!("0", eval_to_string(&g, "N(\"hello\")"));
+
+        // Error returns 0
+        assert_eq!("0", eval_to_string(&g, "N(1/0)"));
+    }
+
+    #[test]
+    fn test_formula_isformula() {
+        use crate::grid::CodeCellLanguage;
+
+        let mut g = GridController::test();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Set a formula cell
+        g.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Set a regular value
+        g.set_cell_value(pos![sheet_id!B1], "hello".to_string(), None, false);
+
+        // ISFORMULA on a formula cell should return TRUE
+        assert_eq!("TRUE", eval_to_string(&g, "ISFORMULA(A1)"));
+
+        // ISFORMULA on a value cell should return FALSE
+        assert_eq!("FALSE", eval_to_string(&g, "ISFORMULA(B1)"));
+
+        // ISFORMULA on an empty cell should return FALSE
+        assert_eq!("FALSE", eval_to_string(&g, "ISFORMULA(C1)"));
+    }
+
+    #[test]
+    fn test_formula_isref() {
+        let mut g = GridController::test();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Set a value
+        g.set_cell_value(pos![sheet_id!A1], "123".to_string(), None, false);
+
+        // ISREF on a cell reference should return TRUE
+        assert_eq!("TRUE", eval_to_string(&g, "ISREF(A1)"));
+
+        // ISREF on a literal should return FALSE
+        assert_eq!("FALSE", eval_to_string(&g, "ISREF(123)"));
+        assert_eq!("FALSE", eval_to_string(&g, "ISREF(\"hello\")"));
     }
 }
