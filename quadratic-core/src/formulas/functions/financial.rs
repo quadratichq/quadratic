@@ -2424,6 +2424,109 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns the Macaulay duration for a security with an assumed par value of $100.
+            ///
+            /// Duration is defined as the weighted average of the present value of cash flows,
+            /// and is used as a measure of a bond price's response to changes in yield.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - coupon: The security's annual coupon rate
+            /// - yld: The security's annual yield
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2)",
+                "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2, 1)"
+            )]
+            #[zip_map]
+            fn DURATION(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [coupon]: f64,
+                [yld]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if coupon < 0.0 || yld < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let duration = calculate_macaulay_duration(
+                    settlement, maturity, coupon, yld, frequency, basis,
+                )
+                .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                Ok(CellValue::from(duration))
+            }
+        ),
+        formula_fn!(
+            /// Returns the modified Macaulay duration for a security with an assumed par value of $100.
+            ///
+            /// Modified duration measures the price sensitivity of a bond to changes in yield.
+            /// It is calculated as: MDURATION = DURATION / (1 + yld/frequency)
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - coupon: The security's annual coupon rate
+            /// - yld: The security's annual yield
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2)",
+                "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2, 1)"
+            )]
+            #[zip_map]
+            fn MDURATION(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [coupon]: f64,
+                [yld]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if coupon < 0.0 || yld < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let duration = calculate_macaulay_duration(
+                    settlement, maturity, coupon, yld, frequency, basis,
+                )
+                .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                // Modified duration = Macaulay duration / (1 + yld/frequency)
+                let mduration = duration / (1.0 + yld / frequency as f64);
+
+                Ok(CellValue::from(mduration))
+            }
+        ),
+        formula_fn!(
             /// Returns the discount rate for a security.
             ///
             /// - settlement: The security's settlement date
@@ -3286,6 +3389,90 @@ fn calculate_bond_price(
     };
 
     Ok(price)
+}
+
+/// Helper function to calculate Macaulay duration for DURATION and MDURATION functions
+fn calculate_macaulay_duration(
+    settlement: NaiveDate,
+    maturity: NaiveDate,
+    coupon_rate: f64,
+    yld: f64,
+    frequency: i64,
+    basis: i64,
+) -> Result<f64, ()> {
+    // Get number of coupons
+    let n = count_coupons(settlement, maturity, frequency).ok_or(())?;
+
+    // Get previous and next coupon dates
+    let prev_coupon = find_previous_coupon_date(settlement, maturity, frequency).ok_or(())?;
+    let next_coupon = find_next_coupon_date(settlement, maturity, frequency).ok_or(())?;
+
+    // Calculate E = days in coupon period
+    let e = coupon_days_in_period(prev_coupon, next_coupon, frequency, basis);
+
+    // Calculate DSC = days from settlement to next coupon
+    let dsc = e - coupon_days_from_start(prev_coupon, settlement, basis);
+
+    // Coupon payment per period per $100 face value
+    let coupon = 100.0 * coupon_rate / frequency as f64;
+
+    // Yield per period
+    let yld_per_period = yld / frequency as f64;
+
+    // Fraction of period from settlement to next coupon
+    let dsc_frac = dsc / e;
+
+    // Calculate duration using the weighted average of present values
+    // Duration = (1/Price) * sum of (t * PV of cash flow at time t)
+    // where t is measured in years from settlement
+
+    let mut weighted_pv_sum = 0.0;
+    let mut pv_sum = 0.0;
+
+    if n == 1 {
+        // Special case: one coupon remaining
+        // Time to maturity in years
+        let t = dsc_frac / frequency as f64;
+
+        // PV of redemption + coupon at maturity
+        let pv = (100.0 + coupon) / (1.0 + dsc_frac * yld_per_period);
+
+        weighted_pv_sum = t * pv;
+        pv_sum = pv;
+    } else {
+        // General case: multiple coupons
+        // For each coupon payment k (k = 1 to n):
+        //   Time to payment = (dsc_frac + (k-1)) / frequency years
+        //   PV = coupon / (1 + yld_per_period)^(dsc_frac + (k-1))
+
+        for k in 1..=n {
+            let exponent = dsc_frac + (k - 1) as f64;
+            let discount_factor = (1.0 + yld_per_period).powf(exponent);
+            let pv_coupon = coupon / discount_factor;
+
+            // Time in years from settlement
+            let t = exponent / frequency as f64;
+
+            weighted_pv_sum += t * pv_coupon;
+            pv_sum += pv_coupon;
+        }
+
+        // Add redemption value at maturity
+        let exponent = dsc_frac + (n - 1) as f64;
+        let discount_factor = (1.0 + yld_per_period).powf(exponent);
+        let pv_redemption = 100.0 / discount_factor;
+        let t = exponent / frequency as f64;
+
+        weighted_pv_sum += t * pv_redemption;
+        pv_sum += pv_redemption;
+    }
+
+    // Duration = weighted sum / total PV
+    if pv_sum == 0.0 {
+        return Err(());
+    }
+
+    Ok(weighted_pv_sum / pv_sum)
 }
 
 /// Helper function to calculate bond price for securities with odd first period
@@ -6309,5 +6496,216 @@ mod tests {
         // Error: fraction < 1
         expect_err(&RunErrorMsg::InvalidArgument, &g, "DOLLARFR(1.125, 0)");
         expect_err(&RunErrorMsg::InvalidArgument, &g, "DOLLARFR(1.125, -1)");
+    }
+
+    #[test]
+    fn test_duration() {
+        let g = GridController::new();
+
+        // Basic DURATION calculation
+        // Based on Excel example: 8% coupon, 9% yield, semi-annual, 8 years
+        let duration: f64 = eval_to_string(
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (duration - 5.993775).abs() < 0.01,
+            "DURATION basic calculation: got {}",
+            duration
+        );
+
+        // Test with annual frequency
+        let duration_annual: f64 = eval_to_string(
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            duration_annual > 0.0 && duration_annual < 8.0,
+            "DURATION annual should be positive and less than maturity: got {}",
+            duration_annual
+        );
+
+        // Test with quarterly frequency
+        let duration_quarterly: f64 = eval_to_string(
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 4)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            duration_quarterly > 0.0,
+            "DURATION quarterly should be positive: got {}",
+            duration_quarterly
+        );
+
+        // Duration with different basis
+        let duration_actual: f64 = eval_to_string(
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            duration_actual > 0.0,
+            "DURATION with actual/actual basis should be positive: got {}",
+            duration_actual
+        );
+
+        // Zero coupon bond - duration should equal time to maturity (approximately)
+        let duration_zero: f64 = eval_to_string(
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0, 0.09, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (duration_zero - 8.0).abs() < 0.5,
+            "Zero coupon DURATION should be close to maturity: got {}",
+            duration_zero
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 3)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2, 5)",
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DURATION(DATE(2016, 1, 1), DATE(2008, 1, 1), 0.08, 0.09, 2)",
+        );
+
+        // Error: negative coupon rate
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), -0.08, 0.09, 2)",
+        );
+
+        // Error: negative yield
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, -0.09, 2)",
+        );
+    }
+
+    #[test]
+    fn test_mduration() {
+        let g = GridController::new();
+
+        // Basic MDURATION calculation
+        // MDURATION = DURATION / (1 + yld/frequency)
+        let mduration: f64 = eval_to_string(
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2)",
+        )
+        .parse()
+        .unwrap();
+
+        // Should be approximately 5.993775 / (1 + 0.09/2) = 5.993775 / 1.045 ≈ 5.735
+        assert!(
+            (mduration - 5.735).abs() < 0.1,
+            "MDURATION basic calculation: got {}",
+            mduration
+        );
+
+        // MDURATION should always be less than DURATION (when yield > 0)
+        let duration: f64 = eval_to_string(
+            &g,
+            "DURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            mduration < duration,
+            "MDURATION should be less than DURATION: {} vs {}",
+            mduration,
+            duration
+        );
+
+        // Test relationship: MDURATION = DURATION / (1 + yld/frequency)
+        let expected_mduration = duration / (1.0 + 0.09 / 2.0);
+        assert!(
+            (mduration - expected_mduration).abs() < 0.001,
+            "MDURATION relationship: got {} expected {}",
+            mduration,
+            expected_mduration
+        );
+
+        // Test with annual frequency
+        let mduration_annual: f64 = eval_to_string(
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            mduration_annual > 0.0,
+            "MDURATION annual should be positive: got {}",
+            mduration_annual
+        );
+
+        // Test with quarterly frequency
+        let mduration_quarterly: f64 = eval_to_string(
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 4)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            mduration_quarterly > 0.0,
+            "MDURATION quarterly should be positive: got {}",
+            mduration_quarterly
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 3)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, 0.09, 2, 5)",
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MDURATION(DATE(2016, 1, 1), DATE(2008, 1, 1), 0.08, 0.09, 2)",
+        );
+
+        // Error: negative coupon rate
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), -0.08, 0.09, 2)",
+        );
+
+        // Error: negative yield
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MDURATION(DATE(2008, 1, 1), DATE(2016, 1, 1), 0.08, -0.09, 2)",
+        );
     }
 }

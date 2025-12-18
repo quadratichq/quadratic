@@ -162,6 +162,7 @@
     "MAKEARRAY",
     "mdeterm",
     "MDSL",
+    "MDURATION",
     "micropip",
     "minmax",
     "minverse",
