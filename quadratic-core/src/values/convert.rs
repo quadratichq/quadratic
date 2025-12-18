@@ -234,6 +234,20 @@ impl<'a> TryFrom<&'a CellValue> for NaiveDateTime {
         match value {
             CellValue::DateTime(naive_date_time) => Ok(*naive_date_time),
             CellValue::Date(naive_date) => Ok((*naive_date).into()),
+            CellValue::Text(s) => {
+                // First try to parse as a full datetime
+                if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                    return Ok(dt);
+                }
+                // Fall back to parsing as just a date (with midnight time)
+                if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
+                    return Ok(d.into());
+                }
+                Err(RunErrorMsg::Expected {
+                    expected: "date time".into(),
+                    got: Some(value.type_name().into()),
+                })
+            }
             _ => Err(RunErrorMsg::Expected {
                 expected: "date time".into(),
                 got: Some(value.type_name().into()),
@@ -256,6 +270,20 @@ impl<'a> TryFrom<&'a CellValue> for NaiveTime {
             CellValue::DateTime(naive_date_time) => Ok(naive_date_time.time()),
             CellValue::Date(_) => Ok(NaiveTime::MIN),
             CellValue::Time(naive_time) => Ok(*naive_time),
+            CellValue::Text(s) => {
+                // First try to parse as time
+                if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
+                    return Ok(t);
+                }
+                // Fall back to parsing as datetime and extracting the time
+                if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                    return Ok(dt.time());
+                }
+                Err(RunErrorMsg::Expected {
+                    expected: "time".into(),
+                    got: Some(value.type_name().into()),
+                })
+            }
             _ => Err(RunErrorMsg::Expected {
                 expected: "time".into(),
                 got: Some(value.type_name().into()),
@@ -485,5 +513,50 @@ mod test {
         assert_eq!(duration, Duration::try_from(&duration_value).unwrap());
         assert_eq!(duration, Duration::try_from(&number_value).unwrap());
         Duration::try_from(&string_value).unwrap_err();
+    }
+
+    #[test]
+    fn test_string_to_date_conversions() {
+        // Test string to datetime conversion
+        let datetime_string = CellValue::from("2024-12-25 14:30:00");
+        let expected_dt = NaiveDate::from_ymd_opt(2024, 12, 25)
+            .unwrap()
+            .and_hms_opt(14, 30, 0)
+            .unwrap();
+        assert_eq!(
+            expected_dt,
+            NaiveDateTime::try_from(&datetime_string).unwrap()
+        );
+
+        // Test string to date conversion (from date-only string)
+        let date_string = CellValue::from("2024-12-25");
+        let expected_date = NaiveDate::from_ymd_opt(2024, 12, 25).unwrap();
+        assert_eq!(expected_date, NaiveDate::try_from(&date_string).unwrap());
+
+        // Test string to date conversion (from various formats)
+        let date_string_slash = CellValue::from("12/25/2024");
+        assert_eq!(
+            expected_date,
+            NaiveDate::try_from(&date_string_slash).unwrap()
+        );
+
+        // Test string to time conversion
+        let time_string = CellValue::from("14:30:00");
+        let expected_time = NaiveTime::from_hms_opt(14, 30, 0).unwrap();
+        assert_eq!(expected_time, NaiveTime::try_from(&time_string).unwrap());
+
+        // Test string to time conversion (from 12-hour format)
+        let time_string_12h = CellValue::from("2:30 PM");
+        let expected_time_pm = NaiveTime::from_hms_opt(14, 30, 0).unwrap();
+        assert_eq!(
+            expected_time_pm,
+            NaiveTime::try_from(&time_string_12h).unwrap()
+        );
+
+        // Test invalid string conversion
+        let invalid_string = CellValue::from("not a date");
+        NaiveDateTime::try_from(&invalid_string).unwrap_err();
+        NaiveDate::try_from(&invalid_string).unwrap_err();
+        NaiveTime::try_from(&invalid_string).unwrap_err();
     }
 }

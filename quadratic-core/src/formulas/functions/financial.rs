@@ -324,6 +324,66 @@ fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
+/// Calculates the number of coupon periods from a date to another, using quasi-coupon periods
+fn count_quasi_coupon_periods(start: NaiveDate, end: NaiveDate, frequency: i64) -> Option<i64> {
+    let months_per_period = frequency_to_months(frequency)?;
+
+    // Count the number of full periods from start to end
+    let mut count = 0i64;
+    let mut current = start;
+
+    while current < end {
+        current = current.checked_add_months(Months::new(months_per_period))?;
+        if current <= end {
+            count += 1;
+        }
+    }
+
+    Some(count)
+}
+
+/// Finds a quasi-coupon date by going backwards from the first coupon date
+fn find_quasi_coupon_before_issue(
+    issue: NaiveDate,
+    first_coupon: NaiveDate,
+    frequency: i64,
+) -> Option<NaiveDate> {
+    let months_per_period = frequency_to_months(frequency)?;
+
+    // Work backwards from first_coupon until we find a date <= issue
+    let mut quasi_date = first_coupon;
+    while quasi_date > issue {
+        quasi_date = quasi_date.checked_sub_months(Months::new(months_per_period))?;
+    }
+
+    Some(adjust_day_to_match(
+        quasi_date.year(),
+        quasi_date.month(),
+        first_coupon,
+    ))
+}
+
+/// Finds a quasi-coupon date by going forward from the last interest date
+fn find_quasi_coupon_after_maturity(
+    maturity: NaiveDate,
+    last_interest: NaiveDate,
+    frequency: i64,
+) -> Option<NaiveDate> {
+    let months_per_period = frequency_to_months(frequency)?;
+
+    // Work forward from last_interest until we find a date >= maturity
+    let mut quasi_date = last_interest;
+    while quasi_date < maturity {
+        quasi_date = quasi_date.checked_add_months(Months::new(months_per_period))?;
+    }
+
+    Some(adjust_day_to_match(
+        quasi_date.year(),
+        quasi_date.month(),
+        last_interest,
+    ))
+}
+
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         formula_fn!(
@@ -2001,8 +2061,1391 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Ok(CellValue::from(fv))
             }
         ),
+        formula_fn!(
+            /// Returns the price per $100 face value of a discounted security.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - discount: The security's discount rate
+            /// - redemption: The security's redemption value per $100 face value
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.0525, 100)",
+                "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.0525, 100, 2)"
+            )]
+            #[zip_map]
+            fn PRICEDISC(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [discount]: f64,
+                [redemption]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if discount <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate days from settlement to maturity
+                let dsm = days_between(settlement, maturity, basis);
+                let b = annual_basis(basis);
+
+                // Price = redemption - discount * redemption * (DSM / B)
+                // Which is equivalent to: redemption * (1 - discount * DSM / B)
+                let price = redemption * (1.0 - discount * dsm / b);
+
+                Ok(CellValue::from(price))
+            }
+        ),
+        formula_fn!(
+            /// Returns the price per $100 face value of a security that pays interest at maturity.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - issue: The security's issue date
+            /// - rate: The security's annual interest rate at date of issue
+            /// - yld: The security's annual yield
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.061, 0.061)",
+                "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.061, 0.061, 0)"
+            )]
+            #[zip_map]
+            fn PRICEMAT(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [issue]: NaiveDate,
+                [rate]: f64,
+                [yld]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= settlement {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || yld < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let b = annual_basis(basis);
+
+                // Calculate day counts
+                let dim = days_between(issue, maturity, basis); // Days from issue to maturity
+                let dsm = days_between(settlement, maturity, basis); // Days from settlement to maturity
+                let a = days_between(issue, settlement, basis); // Days from issue to settlement (accrued interest)
+
+                // Price formula for security paying interest at maturity:
+                // Price = (100 + (DIM/B * rate * 100)) / (1 + (DSM/B * yld)) - (A/B * rate * 100)
+                let numerator = 100.0 + (dim / b * rate * 100.0);
+                let denominator = 1.0 + (dsm / b * yld);
+                let accrued_interest = a / b * rate * 100.0;
+
+                let price = numerator / denominator - accrued_interest;
+
+                Ok(CellValue::from(price))
+            }
+        ),
+        formula_fn!(
+            /// Returns the price per $100 face value of a security that pays periodic interest.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - rate: The security's annual coupon rate
+            /// - yld: The security's annual yield
+            /// - redemption: The security's redemption value per $100 face value
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 2)",
+                "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 2, 0)"
+            )]
+            #[zip_map]
+            fn PRICE(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [rate]: f64,
+                [yld]: f64,
+                [redemption]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || yld < 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let price = calculate_bond_price(
+                    settlement, maturity, rate, yld, redemption, frequency, basis,
+                )
+                .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                Ok(CellValue::from(price))
+            }
+        ),
+        formula_fn!(
+            /// Returns the annual yield for a discounted security.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - price: The security's price per $100 face value
+            /// - redemption: The security's redemption value per $100 face value
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "YIELDDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100)",
+                "YIELDDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100, 2)"
+            )]
+            #[zip_map]
+            fn YIELDDISC(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [price]: f64,
+                [redemption]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if price <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate days from settlement to maturity
+                let dsm = days_between(settlement, maturity, basis);
+                let b = annual_basis(basis);
+
+                // Yield = ((redemption - price) / price) * (B / DSM)
+                let yld = ((redemption - price) / price) * (b / dsm);
+
+                Ok(CellValue::from(yld))
+            }
+        ),
+        formula_fn!(
+            /// Returns the annual yield of a security that pays interest at maturity.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - issue: The security's issue date
+            /// - rate: The security's annual interest rate at date of issue
+            /// - price: The security's price per $100 face value
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "YIELDMAT(DATE(2008, 3, 15), DATE(2008, 11, 3), DATE(2007, 11, 8), 0.0625, 100.0123)",
+                "YIELDMAT(DATE(2008, 3, 15), DATE(2008, 11, 3), DATE(2007, 11, 8), 0.0625, 100.0123, 0)"
+            )]
+            #[zip_map]
+            fn YIELDMAT(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [issue]: NaiveDate,
+                [rate]: f64,
+                [price]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= settlement {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || price <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let b = annual_basis(basis);
+
+                // Calculate day counts
+                let dim = days_between(issue, maturity, basis); // Days from issue to maturity
+                let dsm = days_between(settlement, maturity, basis); // Days from settlement to maturity
+                let a = days_between(issue, settlement, basis); // Days from issue to settlement (accrued interest)
+
+                // Yield formula for security paying interest at maturity:
+                // Yield = ((100 + DIM/B * rate * 100) / (price + A/B * rate * 100) - 1) * (B / DSM)
+                let term1 = 100.0 + (dim / b * rate * 100.0);
+                let term2 = price + (a / b * rate * 100.0);
+                let yld = (term1 / term2 - 1.0) * (b / dsm);
+
+                Ok(CellValue::from(yld))
+            }
+        ),
+        formula_fn!(
+            /// Returns the yield on a security that pays periodic interest.
+            ///
+            /// Uses Newton-Raphson iteration to find the yield.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - rate: The security's annual coupon rate
+            /// - price: The security's price per $100 face value
+            /// - redemption: The security's redemption value per $100 face value
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "YIELD(DATE(2008, 2, 15), DATE(2016, 11, 15), 0.0575, 95.04287, 100, 2)",
+                "YIELD(DATE(2008, 2, 15), DATE(2016, 11, 15), 0.0575, 95.04287, 100, 2, 0)"
+            )]
+            #[zip_map]
+            fn YIELD(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [rate]: f64,
+                [price]: f64,
+                [redemption]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || price <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Use Newton-Raphson to find yield such that PRICE(yield) = price
+                const MAX_ITERATIONS: i32 = 100;
+                const TOLERANCE: f64 = 1e-10;
+
+                // Initial guess: use coupon rate as starting point
+                let mut yld = if rate > 0.0 { rate } else { 0.1 };
+                let mut converged = false;
+
+                for _ in 0..MAX_ITERATIONS {
+                    // Calculate price at current yield
+                    let calc_price = match calculate_bond_price(
+                        settlement, maturity, rate, yld, redemption, frequency, basis,
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    };
+
+                    // Calculate price at yield + small delta for numerical derivative
+                    let delta = 0.0001;
+                    let calc_price_delta = match calculate_bond_price(
+                        settlement,
+                        maturity,
+                        rate,
+                        yld + delta,
+                        redemption,
+                        frequency,
+                        basis,
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    };
+
+                    let f = calc_price - price;
+                    let f_prime = (calc_price_delta - calc_price) / delta;
+
+                    if f.abs() < TOLERANCE {
+                        converged = true;
+                        break;
+                    }
+
+                    if f_prime.abs() < 1e-15 {
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                    }
+
+                    let new_yld = yld - f / f_prime;
+
+                    if (new_yld - yld).abs() < TOLERANCE {
+                        yld = new_yld;
+                        converged = true;
+                        break;
+                    }
+
+                    yld = new_yld;
+
+                    // Keep yield in reasonable bounds
+                    if yld < -0.99 {
+                        yld = -0.99;
+                    } else if yld > 10.0 {
+                        yld = 10.0;
+                    }
+                }
+
+                if !converged {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                Ok(CellValue::from(yld))
+            }
+        ),
+        formula_fn!(
+            /// Returns the discount rate for a security.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - pr: The security's price per $100 face value
+            /// - redemption: The security's redemption value per $100 face value
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100)",
+                "DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100, 2)"
+            )]
+            #[zip_map]
+            fn DISC(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [pr]: f64,
+                [redemption]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if pr <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate days from settlement to maturity
+                let dsm = days_between(settlement, maturity, basis);
+                let b = annual_basis(basis);
+
+                // DISC = (redemption - pr) / redemption * (B / DSM)
+                let disc = ((redemption - pr) / redemption) * (b / dsm);
+
+                Ok(CellValue::from(disc))
+            }
+        ),
+        formula_fn!(
+            /// Returns the interest rate for a fully invested security.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - investment: The amount invested in the security
+            /// - redemption: The amount to be received at maturity
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "INTRATE(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 1014420)",
+                "INTRATE(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 1014420, 2)"
+            )]
+            #[zip_map]
+            fn INTRATE(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [investment]: f64,
+                [redemption]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if investment <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate days from settlement to maturity
+                let dsm = days_between(settlement, maturity, basis);
+                let b = annual_basis(basis);
+
+                // INTRATE = (redemption - investment) / investment * (B / DSM)
+                let intrate = ((redemption - investment) / investment) * (b / dsm);
+
+                Ok(CellValue::from(intrate))
+            }
+        ),
+        formula_fn!(
+            /// Returns the amount received at maturity for a fully invested security.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - investment: The amount invested in the security
+            /// - discount: The security's discount rate
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 0.0575)",
+                "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 0.0575, 2)"
+            )]
+            #[zip_map]
+            fn RECEIVED(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [investment]: f64,
+                [discount]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if investment <= 0.0 || discount < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate days from settlement to maturity
+                let dsm = days_between(settlement, maturity, basis);
+                let b = annual_basis(basis);
+
+                // Check for division by zero
+                let denominator = 1.0 - discount * (dsm / b);
+                if denominator <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // RECEIVED = investment / (1 - discount * (DSM / B))
+                let received = investment / denominator;
+
+                Ok(CellValue::from(received))
+            }
+        ),
+        formula_fn!(
+            /// Returns the bond-equivalent yield for a Treasury bill.
+            ///
+            /// T-bills are short-term securities sold at a discount from face value. This function
+            /// calculates the bond-equivalent yield, which allows comparison with coupon bonds.
+            ///
+            /// - settlement: The Treasury bill's settlement date
+            /// - maturity: The Treasury bill's maturity date (must be within one year of settlement)
+            /// - discount: The Treasury bill's discount rate
+            ///
+            /// Note: Maturity must be more than one day but no more than one year after settlement.
+            #[examples(
+                "TBILLEQ(DATE(2008, 3, 31), DATE(2008, 6, 1), 0.0914)",
+                "TBILLEQ(DATE(2023, 1, 15), DATE(2023, 4, 15), 0.05)"
+            )]
+            #[zip_map]
+            fn TBILLEQ(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [discount]: f64,
+            ) {
+                // Calculate days from settlement to maturity
+                let dsm = days_actual(settlement, maturity) as f64;
+
+                // Validate inputs
+                // Maturity must be after settlement
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Maturity must be within one year (366 days to account for leap years)
+                if dsm > 366.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Discount rate must be positive
+                if discount <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Check for division by zero (when discount * dsm = 360)
+                let denominator = 360.0 - discount * dsm;
+                if denominator <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Bond-equivalent yield formula:
+                // TBILLEQ = (365 * discount) / (360 - discount * DSM)
+                let tbilleq = (365.0 * discount) / denominator;
+
+                Ok(CellValue::from(tbilleq))
+            }
+        ),
+        formula_fn!(
+            /// Returns the price per $100 face value for a Treasury bill.
+            ///
+            /// T-bills are short-term securities sold at a discount from face value.
+            /// This function calculates the price based on the discount rate.
+            ///
+            /// - settlement: The Treasury bill's settlement date
+            /// - maturity: The Treasury bill's maturity date (must be within one year of settlement)
+            /// - discount: The Treasury bill's discount rate
+            ///
+            /// Note: Maturity must be more than one day but no more than one year after settlement.
+            #[examples(
+                "TBILLPRICE(DATE(2008, 3, 31), DATE(2008, 6, 1), 0.09)",
+                "TBILLPRICE(DATE(2023, 1, 15), DATE(2023, 4, 15), 0.05)"
+            )]
+            #[zip_map]
+            fn TBILLPRICE(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [discount]: f64,
+            ) {
+                // Calculate days from settlement to maturity
+                let dsm = days_actual(settlement, maturity) as f64;
+
+                // Validate inputs
+                // Maturity must be after settlement
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Maturity must be within one year (366 days to account for leap years)
+                if dsm > 366.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Discount rate must be non-negative
+                if discount < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Price formula for T-bill:
+                // TBILLPRICE = 100 * (1 - discount * DSM / 360)
+                let price = 100.0 * (1.0 - discount * dsm / 360.0);
+
+                // Price must be positive
+                if price <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                Ok(CellValue::from(price))
+            }
+        ),
+        formula_fn!(
+            /// Returns the yield for a Treasury bill.
+            ///
+            /// T-bills are short-term securities sold at a discount from face value.
+            /// This function calculates the yield based on the price.
+            ///
+            /// - settlement: The Treasury bill's settlement date
+            /// - maturity: The Treasury bill's maturity date (must be within one year of settlement)
+            /// - price: The Treasury bill's price per $100 face value
+            ///
+            /// Note: Maturity must be more than one day but no more than one year after settlement.
+            #[examples(
+                "TBILLYIELD(DATE(2008, 3, 31), DATE(2008, 6, 1), 98.45)",
+                "TBILLYIELD(DATE(2023, 1, 15), DATE(2023, 4, 15), 98.75)"
+            )]
+            #[zip_map]
+            fn TBILLYIELD(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [price]: f64,
+            ) {
+                // Calculate days from settlement to maturity
+                let dsm = days_actual(settlement, maturity) as f64;
+
+                // Validate inputs
+                // Maturity must be after settlement
+                if settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Maturity must be within one year (366 days to account for leap years)
+                if dsm > 366.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // Price must be positive
+                if price <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Yield formula for T-bill:
+                // TBILLYIELD = ((100 - price) / price) * (360 / DSM)
+                let yld = ((100.0 - price) / price) * (360.0 / dsm);
+
+                Ok(CellValue::from(yld))
+            }
+        ),
+        formula_fn!(
+            /// Returns the effective annual interest rate given the nominal annual interest rate and the number of compounding periods per year.
+            ///
+            /// - nominal_rate: The nominal annual interest rate
+            /// - npery: The number of compounding periods per year
+            #[examples("EFFECT(0.0525, 4)", "EFFECT(0.1, 12)")]
+            #[zip_map]
+            fn EFFECT(span: Span, [nominal_rate]: f64, [npery]: f64) {
+                // Validate inputs
+                if nominal_rate <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if npery < 1.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Use floor of npery for compounding periods
+                let npery = npery.floor();
+
+                // EFFECT = (1 + nominal_rate/npery)^npery - 1
+                let effect = (1.0 + nominal_rate / npery).powf(npery) - 1.0;
+
+                Ok(CellValue::from(effect))
+            }
+        ),
+        formula_fn!(
+            /// Returns the nominal annual interest rate given the effective annual interest rate and the number of compounding periods per year.
+            ///
+            /// - effect_rate: The effective annual interest rate
+            /// - npery: The number of compounding periods per year
+            #[examples("NOMINAL(0.053543, 4)", "NOMINAL(0.1, 12)")]
+            #[zip_map]
+            fn NOMINAL(span: Span, [effect_rate]: f64, [npery]: f64) {
+                // Validate inputs
+                if effect_rate <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if npery < 1.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Use floor of npery for compounding periods
+                let npery = npery.floor();
+
+                // NOMINAL = npery * ((1 + effect_rate)^(1/npery) - 1)
+                let nominal = npery * ((1.0 + effect_rate).powf(1.0 / npery) - 1.0);
+
+                Ok(CellValue::from(nominal))
+            }
+        ),
+        formula_fn!(
+            /// Returns an equivalent interest rate for the growth of an investment.
+            ///
+            /// - nper: The number of periods for the investment
+            /// - pv: The present value of the investment
+            /// - fv: The future value of the investment
+            #[examples("RRI(96, 10000, 11000)", "RRI(12, 1000, 2000)")]
+            #[zip_map]
+            fn RRI(span: Span, [nper]: f64, [pv]: f64, [fv]: f64) {
+                // Validate inputs
+                if nper <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if pv == 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                // pv and fv must have the same sign
+                if (pv > 0.0 && fv < 0.0) || (pv < 0.0 && fv > 0.0) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // RRI = (fv/pv)^(1/nper) - 1
+                let rri = (fv / pv).powf(1.0 / nper) - 1.0;
+
+                Ok(CellValue::from(rri))
+            }
+        ),
+        formula_fn!(
+            /// Returns the number of periods required by an investment to reach a specified value.
+            ///
+            /// - rate: The interest rate per period
+            /// - pv: The present value of the investment
+            /// - fv: The future value of the investment
+            #[examples("PDURATION(0.025, 2000, 2200)", "PDURATION(0.05, 1000, 2000)")]
+            #[zip_map]
+            fn PDURATION(span: Span, [rate]: f64, [pv]: f64, [fv]: f64) {
+                // Validate inputs
+                if rate <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if pv <= 0.0 || fv <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // PDURATION = (log(fv) - log(pv)) / log(1 + rate)
+                let pduration = (fv.ln() - pv.ln()) / (1.0 + rate).ln();
+
+                Ok(CellValue::from(pduration))
+            }
+        ),
+        formula_fn!(
+            /// Returns the price per $100 face value of a security with an odd (short or long) first period.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - issue: The security's issue date
+            /// - first_coupon: The security's first coupon date
+            /// - rate: The security's annual coupon rate
+            /// - yld: The security's annual yield
+            /// - redemption: The security's redemption value per $100 face value
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 0.0625, 100, 2, 1)"
+            )]
+            #[zip_map]
+            fn ODDFPRICE(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [issue]: NaiveDate,
+                [first_coupon]: NaiveDate,
+                [rate]: f64,
+                [yld]: f64,
+                [redemption]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= settlement || settlement >= first_coupon || first_coupon >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || yld < 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let price = calculate_odd_first_price(
+                    settlement,
+                    maturity,
+                    issue,
+                    first_coupon,
+                    rate,
+                    yld,
+                    redemption,
+                    frequency,
+                    basis,
+                )
+                .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                Ok(CellValue::from(price))
+            }
+        ),
+        formula_fn!(
+            /// Returns the yield of a security with an odd (short or long) first period.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - issue: The security's issue date
+            /// - first_coupon: The security's first coupon date
+            /// - rate: The security's annual coupon rate
+            /// - price: The security's price per $100 face value
+            /// - redemption: The security's redemption value per $100 face value
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "ODDFYIELD(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 84.50, 100, 2, 1)"
+            )]
+            #[zip_map]
+            fn ODDFYIELD(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [issue]: NaiveDate,
+                [first_coupon]: NaiveDate,
+                [rate]: f64,
+                [price]: f64,
+                [redemption]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= settlement || settlement >= first_coupon || first_coupon >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || price <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Use Newton-Raphson to find yield such that ODDFPRICE(yield) = price
+                const MAX_ITERATIONS: i32 = 100;
+                const TOLERANCE: f64 = 1e-10;
+
+                // Initial guess
+                let mut yld = if rate > 0.0 { rate } else { 0.1 };
+                let mut converged = false;
+
+                for _ in 0..MAX_ITERATIONS {
+                    let calc_price = match calculate_odd_first_price(
+                        settlement,
+                        maturity,
+                        issue,
+                        first_coupon,
+                        rate,
+                        yld,
+                        redemption,
+                        frequency,
+                        basis,
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    };
+
+                    let delta = 0.0001;
+                    let calc_price_delta = match calculate_odd_first_price(
+                        settlement,
+                        maturity,
+                        issue,
+                        first_coupon,
+                        rate,
+                        yld + delta,
+                        redemption,
+                        frequency,
+                        basis,
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    };
+
+                    let f = calc_price - price;
+                    let f_prime = (calc_price_delta - calc_price) / delta;
+
+                    if f_prime.abs() < 1e-20 {
+                        break;
+                    }
+
+                    let new_yld = yld - f / f_prime;
+
+                    if (new_yld - yld).abs() < TOLERANCE {
+                        yld = new_yld;
+                        converged = true;
+                        break;
+                    }
+
+                    yld = new_yld;
+
+                    if yld <= -1.0 {
+                        yld = -0.99;
+                    }
+                }
+
+                if !converged {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                Ok(CellValue::from(yld))
+            }
+        ),
+        formula_fn!(
+            /// Returns the price per $100 face value of a security with an odd (short or long) last period.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - last_interest: The security's last coupon date before maturity
+            /// - rate: The security's annual coupon rate
+            /// - yld: The security's annual yield
+            /// - redemption: The security's redemption value per $100 face value
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "ODDLPRICE(DATE(2008, 2, 7), DATE(2008, 6, 15), DATE(2007, 10, 15), 0.0375, 0.0405, 100, 2, 0)"
+            )]
+            #[zip_map]
+            fn ODDLPRICE(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [last_interest]: NaiveDate,
+                [rate]: f64,
+                [yld]: f64,
+                [redemption]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if last_interest >= settlement || settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || yld < 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let price = calculate_odd_last_price(
+                    settlement,
+                    maturity,
+                    last_interest,
+                    rate,
+                    yld,
+                    redemption,
+                    frequency,
+                    basis,
+                )
+                .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+
+                Ok(CellValue::from(price))
+            }
+        ),
+        formula_fn!(
+            /// Returns the yield of a security with an odd (short or long) last period.
+            ///
+            /// - settlement: The security's settlement date
+            /// - maturity: The security's maturity date
+            /// - last_interest: The security's last coupon date before maturity
+            /// - rate: The security's annual coupon rate
+            /// - price: The security's price per $100 face value
+            /// - redemption: The security's redemption value per $100 face value
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "ODDLYIELD(DATE(2008, 4, 20), DATE(2008, 6, 15), DATE(2007, 12, 24), 0.0375, 99.875, 100, 2, 0)"
+            )]
+            #[zip_map]
+            fn ODDLYIELD(
+                span: Span,
+                [settlement]: NaiveDate,
+                [maturity]: NaiveDate,
+                [last_interest]: NaiveDate,
+                [rate]: f64,
+                [price]: f64,
+                [redemption]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if last_interest >= settlement || settlement >= maturity {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate < 0.0 || price <= 0.0 || redemption <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Use Newton-Raphson to find yield such that ODDLPRICE(yield) = price
+                const MAX_ITERATIONS: i32 = 100;
+                const TOLERANCE: f64 = 1e-10;
+
+                // Initial guess
+                let mut yld = if rate > 0.0 { rate } else { 0.1 };
+                let mut converged = false;
+
+                for _ in 0..MAX_ITERATIONS {
+                    let calc_price = match calculate_odd_last_price(
+                        settlement,
+                        maturity,
+                        last_interest,
+                        rate,
+                        yld,
+                        redemption,
+                        frequency,
+                        basis,
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    };
+
+                    let delta = 0.0001;
+                    let calc_price_delta = match calculate_odd_last_price(
+                        settlement,
+                        maturity,
+                        last_interest,
+                        rate,
+                        yld + delta,
+                        redemption,
+                        frequency,
+                        basis,
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                    };
+
+                    let f = calc_price - price;
+                    let f_prime = (calc_price_delta - calc_price) / delta;
+
+                    if f_prime.abs() < 1e-20 {
+                        break;
+                    }
+
+                    let new_yld = yld - f / f_prime;
+
+                    if (new_yld - yld).abs() < TOLERANCE {
+                        yld = new_yld;
+                        converged = true;
+                        break;
+                    }
+
+                    yld = new_yld;
+
+                    if yld <= -1.0 {
+                        yld = -0.99;
+                    }
+                }
+
+                if !converged {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                Ok(CellValue::from(yld))
+            }
+        ),
+        formula_fn!(
+            /// Converts a dollar price expressed as a fraction into a decimal number.
+            ///
+            /// In fractional notation, the decimal portion represents a fraction where `fraction`
+            /// is the denominator. For example, 1.02 with fraction=16 means 1 and 2/16 dollars.
+            ///
+            /// - fractional_dollar: A number expressed as an integer part and a fractional part
+            /// - fraction: The integer to use as the denominator of the fraction
+            ///
+            /// Returns the dollar value as a decimal number.
+            #[examples("DOLLARDE(1.02, 16)", "DOLLARDE(1.1, 8)")]
+            #[zip_map]
+            fn DOLLARDE(span: Span, [fractional_dollar]: f64, [fraction]: f64) {
+                // Fraction must be >= 1
+                let fraction = fraction.trunc();
+                if fraction < 1.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Handle the sign
+                let sign = fractional_dollar.signum();
+                let abs_value = fractional_dollar.abs();
+
+                // Split into integer and fractional parts
+                let integer_part = abs_value.trunc();
+                let fractional_part = abs_value - integer_part;
+
+                // Calculate the number of decimal places needed for the fraction
+                // This is ceil(log10(fraction))
+                let decimal_places = fraction.log10().ceil();
+                let multiplier = 10_f64.powf(decimal_places);
+
+                // Convert: the fractional part represents numerator/10^n, we want numerator/fraction
+                let decimal_value = integer_part + (fractional_part * multiplier) / fraction;
+
+                Ok(CellValue::from(sign * decimal_value))
+            }
+        ),
+        formula_fn!(
+            /// Converts a dollar price expressed as a decimal into a fractional notation.
+            ///
+            /// This is the inverse of DOLLARDE. The result uses fractional notation where
+            /// the decimal portion represents a fraction with `fraction` as the denominator.
+            ///
+            /// - decimal_dollar: A decimal number
+            /// - fraction: The integer to use as the denominator of the fraction
+            ///
+            /// Returns the dollar value in fractional notation.
+            #[examples("DOLLARFR(1.125, 16)", "DOLLARFR(1.125, 8)")]
+            #[zip_map]
+            fn DOLLARFR(span: Span, [decimal_dollar]: f64, [fraction]: f64) {
+                // Fraction must be >= 1
+                let fraction = fraction.trunc();
+                if fraction < 1.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Handle the sign
+                let sign = decimal_dollar.signum();
+                let abs_value = decimal_dollar.abs();
+
+                // Split into integer and fractional parts
+                let integer_part = abs_value.trunc();
+                let fractional_part = abs_value - integer_part;
+
+                // Calculate the number of decimal places needed for the fraction
+                let decimal_places = fraction.log10().ceil();
+                let divisor = 10_f64.powf(decimal_places);
+
+                // Convert: the fractional part (as decimal) becomes numerator/10^n
+                let fractional_value = integer_part + (fractional_part * fraction) / divisor;
+
+                Ok(CellValue::from(sign * fractional_value))
+            }
+        ),
     ]
 }
+
+/// Helper function to calculate bond price for PRICE and YIELD functions
+fn calculate_bond_price(
+    settlement: NaiveDate,
+    maturity: NaiveDate,
+    rate: f64,
+    yld: f64,
+    redemption: f64,
+    frequency: i64,
+    basis: i64,
+) -> Result<f64, ()> {
+    // Get number of coupons
+    let n = count_coupons(settlement, maturity, frequency).ok_or(())?;
+
+    // Get previous and next coupon dates
+    let prev_coupon = find_previous_coupon_date(settlement, maturity, frequency).ok_or(())?;
+    let next_coupon = find_next_coupon_date(settlement, maturity, frequency).ok_or(())?;
+
+    // Calculate E = days in coupon period
+    let e = coupon_days_in_period(prev_coupon, next_coupon, frequency, basis);
+
+    // Calculate DSC = days from settlement to next coupon
+    let dsc = e - coupon_days_from_start(prev_coupon, settlement, basis);
+
+    // Calculate A = days from beginning of coupon period to settlement (for accrued interest)
+    let a = coupon_days_from_start(prev_coupon, settlement, basis);
+
+    // Coupon payment per period
+    let coupon = 100.0 * rate / frequency as f64;
+
+    // Accrued interest
+    let accrued = coupon * a / e;
+
+    // Calculate price
+    let price = if n == 1 {
+        // Special case: one coupon remaining
+        // Price = (redemption + coupon) / (1 + (DSC/E) * (yld/freq)) - accrued
+        (redemption + coupon) / (1.0 + (dsc / e) * (yld / frequency as f64)) - accrued
+    } else {
+        // General case: multiple coupons
+        // Price = redemption / (1 + yld/freq)^(N-1+DSC/E)
+        //       + sum of coupon / (1 + yld/freq)^(k-1+DSC/E) for k = 1 to N
+        //       - accrued
+
+        let yld_per_period = yld / frequency as f64;
+        let dsc_frac = dsc / e;
+
+        // Redemption value discounted
+        let pv_redemption = redemption / (1.0 + yld_per_period).powf((n - 1) as f64 + dsc_frac);
+
+        // Sum of coupon payments discounted
+        let mut pv_coupons = 0.0;
+        for k in 1..=n {
+            pv_coupons += coupon / (1.0 + yld_per_period).powf((k - 1) as f64 + dsc_frac);
+        }
+
+        pv_redemption + pv_coupons - accrued
+    };
+
+    Ok(price)
+}
+
+/// Helper function to calculate bond price for securities with odd first period
+fn calculate_odd_first_price(
+    settlement: NaiveDate,
+    maturity: NaiveDate,
+    issue: NaiveDate,
+    first_coupon: NaiveDate,
+    rate: f64,
+    yld: f64,
+    redemption: f64,
+    frequency: i64,
+    basis: i64,
+) -> Result<f64, ()> {
+    // Validate frequency (returned value not needed)
+    frequency_to_months(frequency).ok_or(())?;
+
+    // Coupon payment per period per $100 face value
+    let coupon = 100.0 * rate / frequency as f64;
+
+    // Find the quasi-coupon date before the issue date
+    let dfc_start = find_quasi_coupon_before_issue(issue, first_coupon, frequency).ok_or(())?;
+
+    // Calculate the number of quasi-coupon periods in the odd first period
+    let nc = count_quasi_coupon_periods(dfc_start, first_coupon, frequency).ok_or(())?;
+
+    // Calculate E = days in a normal coupon period (using dates around settlement for basis 1)
+    let e = coupon_days_in_period(dfc_start, first_coupon, frequency, basis) / nc.max(1) as f64;
+
+    // Number of coupons remaining from first coupon to maturity
+    let n = count_coupons(first_coupon, maturity, frequency)
+        .ok_or(())?
+        .saturating_add(1); // +1 to include first coupon
+
+    // Determine if this is a short or long odd first period
+    // Short: settlement is between quasi-coupon date and first coupon (nc <= 1)
+    // Long: there are multiple quasi-coupon periods before first coupon (nc > 1)
+
+    let yld_per_period = yld / frequency as f64;
+
+    // Calculate DSC = days from settlement to first coupon
+    let dsc = days_between(settlement, first_coupon, basis);
+
+    // Calculate DFC = days from issue to first coupon (for odd first coupon payment)
+    let dfc = days_between(issue, first_coupon, basis);
+
+    // Calculate A = days from issue to settlement (for accrued interest)
+    let a = days_between(issue, settlement, basis);
+
+    if n == 1 {
+        // Only one coupon period (the odd first period) remaining
+        // This is the formula for odd first security maturing on first coupon
+
+        // First coupon is prorated based on the odd period
+        let odd_first_coupon = coupon * dfc / e;
+
+        // Accrued interest
+        let accrued = coupon * a / e;
+
+        // Price = (redemption + odd_first_coupon) / (1 + dsc/e * yld/freq) - accrued
+        let price = (redemption + odd_first_coupon) / (1.0 + (dsc / e) * yld_per_period) - accrued;
+
+        Ok(price)
+    } else {
+        // Multiple coupons remaining
+
+        // Calculate the number of whole coupon periods from first coupon to maturity
+        let n_whole = n - 1; // Number of regular coupon periods after first coupon
+
+        // Calculate Nq = number of quasi-coupon periods from settlement to first coupon
+        // For calculating the discount factor to the first coupon
+        let nq = dsc / e;
+
+        // Accrued interest for the odd first period
+        let accrued = coupon * a / e;
+
+        // Price calculation following the odd first coupon security formula
+
+        // Present value of redemption
+        let pv_redemption = redemption / (1.0 + yld_per_period).powf(n_whole as f64 + nq);
+
+        // First coupon amount (prorated for odd period)
+        let odd_first_coupon = coupon * dfc / e;
+
+        // Present value of first coupon
+        let pv_first_coupon = odd_first_coupon / (1.0 + yld_per_period).powf(nq);
+
+        // Present value of subsequent regular coupons
+        let mut pv_coupons = 0.0;
+        for k in 1..=n_whole {
+            pv_coupons += coupon / (1.0 + yld_per_period).powf(k as f64 + nq);
+        }
+
+        let price = pv_redemption + pv_first_coupon + pv_coupons - accrued;
+
+        Ok(price)
+    }
+}
+
+/// Helper function to calculate bond price for securities with odd last period
+fn calculate_odd_last_price(
+    settlement: NaiveDate,
+    maturity: NaiveDate,
+    last_interest: NaiveDate,
+    rate: f64,
+    yld: f64,
+    redemption: f64,
+    frequency: i64,
+    basis: i64,
+) -> Result<f64, ()> {
+    let months_per_period = frequency_to_months(frequency).ok_or(())?;
+
+    // Coupon payment per period per $100 face value
+    let coupon = 100.0 * rate / frequency as f64;
+
+    // Find the quasi-coupon date after maturity (if the last period were regular)
+    let quasi_coupon_after_maturity =
+        find_quasi_coupon_after_maturity(maturity, last_interest, frequency).ok_or(())?;
+
+    // Calculate number of quasi-coupon periods in the odd last period (for validation)
+    let _nc = count_quasi_coupon_periods(last_interest, quasi_coupon_after_maturity, frequency)
+        .ok_or(())?
+        .max(1);
+
+    // Calculate E = days in a normal coupon period
+    let e = coupon_days_in_period(
+        last_interest,
+        last_interest
+            .checked_add_months(Months::new(months_per_period))
+            .ok_or(())?,
+        frequency,
+        basis,
+    );
+
+    // Calculate DSM = days from settlement to maturity
+    let dsm = days_between(settlement, maturity, basis);
+
+    // Calculate DLM = days from last interest to maturity (for odd last coupon)
+    let dlm = days_between(last_interest, maturity, basis);
+
+    // Calculate A = days from last interest to settlement (accrued interest)
+    let a = days_between(last_interest, settlement, basis);
+
+    // Accrued interest
+    let accrued = coupon * a / e;
+
+    // Odd last coupon (prorated based on odd period)
+    let odd_last_coupon = coupon * dlm / e;
+
+    // For securities with odd last period, settlement is in the final period
+    // The formula is simpler as there's only the final redemption and last coupon
+
+    let yld_per_period = yld / frequency as f64;
+
+    // Price = (redemption + odd_last_coupon) / (1 + dsm/e * yld/freq) - accrued
+    let price = (redemption + odd_last_coupon) / (1.0 + (dsm / e) * yld_per_period) - accrued;
+
+    Ok(price)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::RunErrorMsg;
@@ -3482,5 +4925,1389 @@ mod tests {
 
         // Error: empty schedule
         expect_err(&RunErrorMsg::InvalidArgument, &g, "FVSCHEDULE(1000, {})");
+    }
+
+    #[test]
+    fn test_pricedisc() {
+        let g = GridController::new();
+
+        // Basic PRICEDISC calculation
+        // Settlement: Feb 16, 2008, Maturity: Mar 1, 2008, Discount: 5.25%, Redemption: 100
+        // Using basis 0 (30/360), days = 15
+        // Price = 100 * (1 - 0.0525 * 15/360) = 100 * (1 - 0.0021875) = 99.78125
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.0525, 100)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (price - 99.78).abs() < 0.1,
+            "PRICEDISC basic calculation: got {}",
+            price
+        );
+
+        // Test with basis 2 (Actual/360)
+        // Actual days from Feb 16 to Mar 1 = 14 days
+        let price_b2: f64 = eval_to_string(
+            &g,
+            "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.0525, 100, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            price_b2 > 99.0 && price_b2 < 100.0,
+            "PRICEDISC with basis 2: got {}",
+            price_b2
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICEDISC(DATE(2008, 3, 1), DATE(2008, 2, 16), 0.0525, 100)",
+        );
+
+        // Error: discount <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0, 100)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.0525, 100, 5)",
+        );
+    }
+
+    #[test]
+    fn test_pricemat() {
+        let g = GridController::new();
+
+        // Basic PRICEMAT calculation
+        // Settlement: Feb 15, 2008, Maturity: Apr 13, 2008, Issue: Nov 11, 2007
+        // Rate: 6.1%, Yield: 6.1%
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.061, 0.061)",
+        )
+        .parse()
+        .unwrap();
+        // When rate = yield, price should be close to par (100)
+        assert!(
+            (price - 99.98).abs() < 0.5,
+            "PRICEMAT when rate = yield should be near par: got {}",
+            price
+        );
+
+        // Test with different rate and yield
+        let price2: f64 = eval_to_string(
+            &g,
+            "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.05, 0.06)",
+        )
+        .parse()
+        .unwrap();
+        // Lower rate than yield means price < par
+        assert!(
+            price2 < 100.0,
+            "PRICEMAT with rate < yield should be below par: got {}",
+            price2
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICEMAT(DATE(2008, 5, 1), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.061, 0.061)",
+        );
+
+        // Error: issue >= settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2008, 3, 1), 0.061, 0.061)",
+        );
+
+        // Error: negative rate
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), -0.061, 0.061)",
+        );
+    }
+
+    #[test]
+    fn test_price() {
+        let g = GridController::new();
+
+        // Basic PRICE calculation
+        // Settlement: Feb 15, 2008, Maturity: Nov 15, 2017
+        // Rate: 5.75%, Yield: 6.5%, Redemption: 100, Frequency: 2 (semi-annual)
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 2)",
+        )
+        .parse()
+        .unwrap();
+        // Yield > coupon rate means price < par
+        assert!(
+            price > 90.0 && price < 100.0,
+            "PRICE with yield > rate should be below par: got {}",
+            price
+        );
+        // Expected value is approximately 94.63 based on Excel
+        assert!(
+            (price - 94.63).abs() < 1.0,
+            "PRICE expected ~94.63: got {}",
+            price
+        );
+
+        // Test with rate > yield (price > par)
+        let price_premium: f64 = eval_to_string(
+            &g,
+            "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.075, 0.06, 100, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            price_premium > 100.0,
+            "PRICE with rate > yield should be above par: got {}",
+            price_premium
+        );
+
+        // Test with quarterly frequency
+        let price_quarterly: f64 = eval_to_string(
+            &g,
+            "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 4)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            price_quarterly > 90.0 && price_quarterly < 100.0,
+            "PRICE with quarterly frequency: got {}",
+            price_quarterly
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICE(DATE(2018, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 2)",
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 3)",
+        );
+
+        // Error: negative rate
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), -0.0575, 0.065, 100, 2)",
+        );
+    }
+
+    #[test]
+    fn test_yielddisc() {
+        let g = GridController::new();
+
+        // Basic YIELDDISC calculation
+        // Settlement: Feb 16, 2008, Maturity: Mar 1, 2008, Price: 99.795, Redemption: 100
+        let yld: f64 = eval_to_string(
+            &g,
+            "YIELDDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100)",
+        )
+        .parse()
+        .unwrap();
+        // Yield = ((100 - 99.795) / 99.795) * (360 / days)
+        assert!(
+            yld > 0.04 && yld < 0.06,
+            "YIELDDISC basic calculation: got {}",
+            yld
+        );
+
+        // Verify relationship: PRICEDISC and YIELDDISC should be inverses
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.05, 100)",
+        )
+        .parse()
+        .unwrap();
+        let yield_back: f64 = eval_to_string(
+            &g,
+            &format!(
+                "YIELDDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), {}, 100)",
+                price
+            ),
+        )
+        .parse()
+        .unwrap();
+        // Note: YIELDDISC and PRICEDISC don't give exact inverses due to formula differences
+        // but yield should be positive and reasonable
+        assert!(
+            yield_back > 0.04 && yield_back < 0.06,
+            "YIELDDISC inverse check: got {}",
+            yield_back
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELDDISC(DATE(2008, 3, 1), DATE(2008, 2, 16), 99.795, 100)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELDDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0, 100)",
+        );
+    }
+
+    #[test]
+    fn test_yieldmat() {
+        let g = GridController::new();
+
+        // Basic YIELDMAT calculation
+        // Settlement: Mar 15, 2008, Maturity: Nov 3, 2008, Issue: Nov 8, 2007
+        // Rate: 6.25%, Price: 100.0123
+        let yld: f64 = eval_to_string(
+            &g,
+            "YIELDMAT(DATE(2008, 3, 15), DATE(2008, 11, 3), DATE(2007, 11, 8), 0.0625, 100.0123)",
+        )
+        .parse()
+        .unwrap();
+        // Yield should be close to rate when price is near par
+        assert!(
+            yld > 0.05 && yld < 0.08,
+            "YIELDMAT basic calculation: got {}",
+            yld
+        );
+
+        // Verify relationship: PRICEMAT and YIELDMAT should be approximately inverses
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICEMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.061, 0.061)",
+        )
+        .parse()
+        .unwrap();
+        let yield_back: f64 = eval_to_string(
+            &g,
+            &format!(
+                "YIELDMAT(DATE(2008, 2, 15), DATE(2008, 4, 13), DATE(2007, 11, 11), 0.061, {})",
+                price
+            ),
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (yield_back - 0.061).abs() < 0.001,
+            "YIELDMAT inverse of PRICEMAT: expected ~0.061, got {}",
+            yield_back
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELDMAT(DATE(2008, 12, 1), DATE(2008, 11, 3), DATE(2007, 11, 8), 0.0625, 100)",
+        );
+
+        // Error: issue >= settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELDMAT(DATE(2008, 3, 15), DATE(2008, 11, 3), DATE(2008, 4, 1), 0.0625, 100)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELDMAT(DATE(2008, 3, 15), DATE(2008, 11, 3), DATE(2007, 11, 8), 0.0625, 0)",
+        );
+    }
+
+    #[test]
+    fn test_yield() {
+        let g = GridController::new();
+
+        // Basic YIELD calculation
+        // Settlement: Feb 15, 2008, Maturity: Nov 15, 2016
+        // Rate: 5.75%, Price: 95.04287, Redemption: 100, Frequency: 2 (semi-annual)
+        let yld: f64 = eval_to_string(
+            &g,
+            "YIELD(DATE(2008, 2, 15), DATE(2016, 11, 15), 0.0575, 95.04287, 100, 2)",
+        )
+        .parse()
+        .unwrap();
+        // Price < par with positive coupon means yield > coupon rate
+        assert!(
+            yld > 0.0575 && yld < 0.10,
+            "YIELD basic calculation: got {}",
+            yld
+        );
+
+        // Verify relationship: PRICE and YIELD should be inverses
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICE(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, 0.065, 100, 2)",
+        )
+        .parse()
+        .unwrap();
+        let yield_back: f64 = eval_to_string(
+            &g,
+            &format!(
+                "YIELD(DATE(2008, 2, 15), DATE(2017, 11, 15), 0.0575, {}, 100, 2)",
+                price
+            ),
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (yield_back - 0.065).abs() < 0.001,
+            "YIELD inverse of PRICE: expected ~0.065, got {}",
+            yield_back
+        );
+
+        // Test with annual frequency
+        let yld_annual: f64 = eval_to_string(
+            &g,
+            "YIELD(DATE(2008, 2, 15), DATE(2016, 11, 15), 0.06, 98.0, 100, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            yld_annual > 0.06,
+            "YIELD with annual frequency: got {}",
+            yld_annual
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELD(DATE(2017, 2, 15), DATE(2016, 11, 15), 0.0575, 95.0, 100, 2)",
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELD(DATE(2008, 2, 15), DATE(2016, 11, 15), 0.0575, 95.0, 100, 3)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "YIELD(DATE(2008, 2, 15), DATE(2016, 11, 15), 0.0575, 0, 100, 2)",
+        );
+    }
+
+    #[test]
+    fn test_price_yield_consistency() {
+        let g = GridController::new();
+
+        // Test that PRICE and YIELD are true inverses for various parameters
+        let test_cases = [
+            (
+                "DATE(2020, 1, 15)",
+                "DATE(2025, 7, 15)",
+                "0.04",
+                "0.05",
+                "100",
+                "2",
+            ),
+            (
+                "DATE(2020, 3, 1)",
+                "DATE(2030, 3, 1)",
+                "0.06",
+                "0.055",
+                "100",
+                "2",
+            ),
+            (
+                "DATE(2020, 6, 15)",
+                "DATE(2022, 6, 15)",
+                "0.03",
+                "0.04",
+                "100",
+                "4",
+            ),
+            (
+                "DATE(2020, 1, 1)",
+                "DATE(2040, 1, 1)",
+                "0.05",
+                "0.05",
+                "100",
+                "1",
+            ),
+        ];
+
+        for (settle, mat, rate, yld, redemp, freq) in test_cases.iter() {
+            let price_formula = format!(
+                "PRICE({}, {}, {}, {}, {}, {})",
+                settle, mat, rate, yld, redemp, freq
+            );
+            let price: f64 = eval_to_string(&g, &price_formula).parse().unwrap();
+
+            let yield_formula = format!(
+                "YIELD({}, {}, {}, {}, {}, {})",
+                settle, mat, rate, price, redemp, freq
+            );
+            let yield_back: f64 = eval_to_string(&g, &yield_formula).parse().unwrap();
+
+            let expected_yld: f64 = yld.parse().unwrap();
+            assert!(
+                (yield_back - expected_yld).abs() < 0.0001,
+                "PRICE/YIELD consistency failed for rate={}, yield={}: got yield={}",
+                rate,
+                yld,
+                yield_back
+            );
+        }
+    }
+
+    #[test]
+    fn test_disc() {
+        let g = GridController::new();
+
+        // Basic DISC calculation
+        // Settlement: Feb 16, 2008, Maturity: Mar 1, 2008, Price: 99.795, Redemption: 100
+        // Using basis 0 (30/360), days = 15
+        // DISC = (100 - 99.795) / 100 * (360 / 15) = 0.00205 * 24 = 0.0492
+        let disc: f64 =
+            eval_to_string(&g, "DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100)")
+                .parse()
+                .unwrap();
+        assert!(
+            (disc - 0.0492).abs() < 0.01,
+            "DISC basic calculation: got {}",
+            disc
+        );
+
+        // Test with basis 2 (Actual/360)
+        let disc_b2: f64 = eval_to_string(
+            &g,
+            "DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            disc_b2 > 0.0 && disc_b2 < 1.0,
+            "DISC with basis 2: got {}",
+            disc_b2
+        );
+
+        // Verify DISC and PRICEDISC are inverses
+        let price: f64 = eval_to_string(
+            &g,
+            "PRICEDISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0.0525, 100)",
+        )
+        .parse()
+        .unwrap();
+        let disc_back: f64 = eval_to_string(
+            &g,
+            &format!("DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), {}, 100)", price),
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (disc_back - 0.0525).abs() < 0.0001,
+            "DISC inverse of PRICEDISC: expected 0.0525, got {}",
+            disc_back
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DISC(DATE(2008, 3, 1), DATE(2008, 2, 16), 99.795, 100)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 0, 100)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "DISC(DATE(2008, 2, 16), DATE(2008, 3, 1), 99.795, 100, 5)",
+        );
+    }
+
+    #[test]
+    fn test_intrate() {
+        let g = GridController::new();
+
+        // Basic INTRATE calculation
+        // Settlement: Feb 15, 2008, Maturity: May 15, 2008, Investment: 1000000, Redemption: 1014420
+        // Using basis 0 (30/360), days = 90
+        // INTRATE = (1014420 - 1000000) / 1000000 * (360 / 90) = 0.01442 * 4 = 0.05768
+        let intrate: f64 = eval_to_string(
+            &g,
+            "INTRATE(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 1014420)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (intrate - 0.05768).abs() < 0.01,
+            "INTRATE basic calculation: got {}",
+            intrate
+        );
+
+        // Test with basis 2 (Actual/360)
+        let intrate_b2: f64 = eval_to_string(
+            &g,
+            "INTRATE(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 1014420, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            intrate_b2 > 0.0 && intrate_b2 < 1.0,
+            "INTRATE with basis 2: got {}",
+            intrate_b2
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "INTRATE(DATE(2008, 5, 15), DATE(2008, 2, 15), 1000000, 1014420)",
+        );
+
+        // Error: investment <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "INTRATE(DATE(2008, 2, 15), DATE(2008, 5, 15), 0, 1014420)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "INTRATE(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 1014420, 5)",
+        );
+    }
+
+    #[test]
+    fn test_received() {
+        let g = GridController::new();
+
+        // Basic RECEIVED calculation
+        // Settlement: Feb 15, 2008, Maturity: May 15, 2008, Investment: 1000000, Discount: 5.75%
+        // Using basis 0 (30/360), days = 90
+        // RECEIVED = 1000000 / (1 - 0.0575 * 90/360) = 1000000 / (1 - 0.014375) = 1014584.65
+        let received: f64 = eval_to_string(
+            &g,
+            "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 0.0575)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (received - 1014584.65).abs() < 10.0,
+            "RECEIVED basic calculation: got {}",
+            received
+        );
+
+        // Test with basis 2 (Actual/360)
+        let received_b2: f64 = eval_to_string(
+            &g,
+            "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 0.0575, 2)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            received_b2 > 1000000.0,
+            "RECEIVED with basis 2: got {}",
+            received_b2
+        );
+
+        // Test with zero discount rate
+        let received_zero: f64 = eval_to_string(
+            &g,
+            "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 0)",
+        )
+        .parse()
+        .unwrap();
+        assert_f64_approx_eq(1000000.0, received_zero, "RECEIVED with zero discount rate");
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "RECEIVED(DATE(2008, 5, 15), DATE(2008, 2, 15), 1000000, 0.0575)",
+        );
+
+        // Error: investment <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 0, 0.0575)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "RECEIVED(DATE(2008, 2, 15), DATE(2008, 5, 15), 1000000, 0.0575, 5)",
+        );
+    }
+
+    #[test]
+    fn test_effect() {
+        let g = GridController::new();
+
+        // Basic EFFECT calculation
+        // Nominal: 5.25%, Periods: 4 (quarterly)
+        // EFFECT = (1 + 0.0525/4)^4 - 1 = 1.0131328^4 - 1 = 0.053543
+        let effect: f64 = eval_to_string(&g, "EFFECT(0.0525, 4)").parse().unwrap();
+        assert!(
+            (effect - 0.053543).abs() < 0.0001,
+            "EFFECT basic calculation: got {}",
+            effect
+        );
+
+        // Monthly compounding
+        let effect_monthly: f64 = eval_to_string(&g, "EFFECT(0.1, 12)").parse().unwrap();
+        // (1 + 0.1/12)^12 - 1 ≈ 0.1047
+        assert!(
+            (effect_monthly - 0.1047).abs() < 0.001,
+            "EFFECT monthly: got {}",
+            effect_monthly
+        );
+
+        // Daily compounding (365)
+        let effect_daily: f64 = eval_to_string(&g, "EFFECT(0.1, 365)").parse().unwrap();
+        assert!(
+            effect_daily > effect_monthly,
+            "EFFECT daily should be greater than monthly"
+        );
+
+        // Verify EFFECT and NOMINAL are inverses
+        let nominal_back: f64 = eval_to_string(&g, &format!("NOMINAL({}, 4)", effect))
+            .parse()
+            .unwrap();
+        assert!(
+            (nominal_back - 0.0525).abs() < 0.0001,
+            "NOMINAL inverse of EFFECT: expected 0.0525, got {}",
+            nominal_back
+        );
+
+        // Error: nominal_rate <= 0
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "EFFECT(0, 4)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "EFFECT(-0.1, 4)");
+
+        // Error: npery < 1
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "EFFECT(0.1, 0)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "EFFECT(0.1, 0.5)");
+    }
+
+    #[test]
+    fn test_nominal() {
+        let g = GridController::new();
+
+        // Basic NOMINAL calculation
+        // Effective: 5.3543%, Periods: 4 (quarterly)
+        // NOMINAL = 4 * ((1 + 0.053543)^(1/4) - 1) ≈ 0.0525
+        let nominal: f64 = eval_to_string(&g, "NOMINAL(0.053543, 4)").parse().unwrap();
+        assert!(
+            (nominal - 0.0525).abs() < 0.0001,
+            "NOMINAL basic calculation: got {}",
+            nominal
+        );
+
+        // Monthly compounding
+        let nominal_monthly: f64 = eval_to_string(&g, "NOMINAL(0.1047, 12)").parse().unwrap();
+        assert!(
+            (nominal_monthly - 0.1).abs() < 0.01,
+            "NOMINAL monthly: got {}",
+            nominal_monthly
+        );
+
+        // Verify NOMINAL and EFFECT are inverses
+        let effect_back: f64 = eval_to_string(&g, &format!("EFFECT({}, 4)", nominal))
+            .parse()
+            .unwrap();
+        assert!(
+            (effect_back - 0.053543).abs() < 0.0001,
+            "EFFECT inverse of NOMINAL: expected 0.053543, got {}",
+            effect_back
+        );
+
+        // Error: effect_rate <= 0
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "NOMINAL(0, 4)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "NOMINAL(-0.1, 4)");
+
+        // Error: npery < 1
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "NOMINAL(0.1, 0)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "NOMINAL(0.1, 0.5)");
+    }
+
+    #[test]
+    fn test_rri() {
+        let g = GridController::new();
+
+        // Basic RRI calculation
+        // 96 periods, PV: 10000, FV: 11000
+        // RRI = (11000/10000)^(1/96) - 1 = 1.1^(1/96) - 1 ≈ 0.000993
+        let rri: f64 = eval_to_string(&g, "RRI(96, 10000, 11000)").parse().unwrap();
+        assert!(
+            (rri - 0.000993).abs() < 0.0001,
+            "RRI basic calculation: got {}",
+            rri
+        );
+
+        // Doubling money in 12 periods
+        // RRI = (2000/1000)^(1/12) - 1 = 2^(1/12) - 1 ≈ 0.05946
+        let rri_double: f64 = eval_to_string(&g, "RRI(12, 1000, 2000)").parse().unwrap();
+        assert!(
+            (rri_double - 0.05946).abs() < 0.001,
+            "RRI doubling: got {}",
+            rri_double
+        );
+
+        // Negative growth (loss)
+        let rri_loss: f64 = eval_to_string(&g, "RRI(12, 1000, 500)").parse().unwrap();
+        assert!(
+            rri_loss < 0.0,
+            "RRI with loss should be negative: got {}",
+            rri_loss
+        );
+
+        // Error: nper <= 0
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "RRI(0, 1000, 2000)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "RRI(-1, 1000, 2000)");
+
+        // Error: pv == 0
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "RRI(12, 0, 2000)");
+
+        // Error: different signs for pv and fv
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "RRI(12, 1000, -2000)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "RRI(12, -1000, 2000)");
+    }
+
+    #[test]
+    fn test_pduration() {
+        let g = GridController::new();
+
+        // Basic PDURATION calculation
+        // Rate: 2.5%, PV: 2000, FV: 2200
+        // PDURATION = (ln(2200) - ln(2000)) / ln(1.025) = ln(1.1) / ln(1.025) ≈ 3.86
+        let pduration: f64 = eval_to_string(&g, "PDURATION(0.025, 2000, 2200)")
+            .parse()
+            .unwrap();
+        assert!(
+            (pduration - 3.86).abs() < 0.1,
+            "PDURATION basic calculation: got {}",
+            pduration
+        );
+
+        // Doubling money at 5%
+        // PDURATION = ln(2) / ln(1.05) ≈ 14.21
+        let pduration_double: f64 = eval_to_string(&g, "PDURATION(0.05, 1000, 2000)")
+            .parse()
+            .unwrap();
+        assert!(
+            (pduration_double - 14.21).abs() < 0.1,
+            "PDURATION doubling: got {}",
+            pduration_double
+        );
+
+        // Verify with FV calculation
+        // If we compound 1000 at 5% for pduration_double periods, we should get 2000
+        let fv_check: f64 =
+            eval_to_string(&g, &format!("FV(0.05, {}, 0, -1000)", pduration_double))
+                .parse()
+                .unwrap();
+        assert!(
+            (fv_check - 2000.0).abs() < 1.0,
+            "PDURATION verification: FV should be ~2000, got {}",
+            fv_check
+        );
+
+        // Error: rate <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PDURATION(0, 2000, 2200)",
+        );
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PDURATION(-0.025, 2000, 2200)",
+        );
+
+        // Error: pv <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PDURATION(0.025, 0, 2200)",
+        );
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PDURATION(0.025, -2000, 2200)",
+        );
+
+        // Error: fv <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PDURATION(0.025, 2000, 0)",
+        );
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "PDURATION(0.025, 2000, -2200)",
+        );
+    }
+
+    #[test]
+    fn test_oddfprice() {
+        let g = GridController::new();
+
+        // Test ODDFPRICE with Excel example:
+        // Settlement: 2008-11-11, Maturity: 2021-03-01, Issue: 2008-10-15
+        // First coupon: 2009-03-01, Rate: 7.85%, Yield: 6.25%, Redemption: 100
+        // Frequency: 2 (semi-annual), Basis: 1 (actual/actual)
+        // Expected result: approximately 113.60 (Excel value)
+        let price: f64 = eval_to_string(
+            &g,
+            "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 0.0625, 100, 2, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (price - 113.60).abs() < 1.0,
+            "ODDFPRICE basic calculation: expected ~113.60, got {}",
+            price
+        );
+
+        // Test with different basis
+        let price_basis0: f64 = eval_to_string(
+            &g,
+            "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 0.0625, 100, 2, 0)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            price_basis0 > 100.0,
+            "ODDFPRICE with basis 0: price should be > 100, got {}",
+            price_basis0
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 0.0625, 100, 5, 1)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 0.0625, 100, 2, 5)",
+        );
+
+        // Error: dates out of order (issue >= settlement)
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDFPRICE(DATE(2008, 10, 15), DATE(2021, 3, 1), DATE(2008, 11, 11), DATE(2009, 3, 1), 0.0785, 0.0625, 100, 2, 1)",
+        );
+
+        // Error: negative rate
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), -0.01, 0.0625, 100, 2, 1)",
+        );
+    }
+
+    #[test]
+    fn test_oddfyield() {
+        let g = GridController::new();
+
+        // Test ODDFYIELD - use a price and verify we can recover the yield
+        // Using the same example as ODDFPRICE but now solving for yield given price
+        let yld: f64 = eval_to_string(
+            &g,
+            "ODDFYIELD(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 113.60, 100, 2, 1)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (yld - 0.0625).abs() < 0.01,
+            "ODDFYIELD basic calculation: expected ~0.0625, got {}",
+            yld
+        );
+
+        // Verify round-trip: ODDFPRICE(ODDFYIELD(price)) ≈ price
+        let price_check: f64 = eval_to_string(
+            &g,
+            &format!(
+                "ODDFPRICE(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, {}, 100, 2, 1)",
+                yld
+            ),
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (price_check - 113.60).abs() < 0.1,
+            "ODDFYIELD round-trip: expected ~113.60, got {}",
+            price_check
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDFYIELD(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 100, 100, 5, 1)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDFYIELD(DATE(2008, 11, 11), DATE(2021, 3, 1), DATE(2008, 10, 15), DATE(2009, 3, 1), 0.0785, 0, 100, 2, 1)",
+        );
+    }
+
+    #[test]
+    fn test_oddlprice() {
+        let g = GridController::new();
+
+        // Test ODDLPRICE with example:
+        // Settlement: 2008-02-07, Maturity: 2008-06-15, Last interest: 2007-10-15
+        // Rate: 3.75%, Yield: 4.05%, Redemption: 100
+        // Frequency: 2 (semi-annual), Basis: 0
+        // Expected result: approximately 99.88
+        let price: f64 = eval_to_string(
+            &g,
+            "ODDLPRICE(DATE(2008, 2, 7), DATE(2008, 6, 15), DATE(2007, 10, 15), 0.0375, 0.0405, 100, 2, 0)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (price - 99.88).abs() < 1.0,
+            "ODDLPRICE basic calculation: expected ~99.88, got {}",
+            price
+        );
+
+        // Lower yield should give higher price
+        let price_low_yield: f64 = eval_to_string(
+            &g,
+            "ODDLPRICE(DATE(2008, 2, 7), DATE(2008, 6, 15), DATE(2007, 10, 15), 0.0375, 0.02, 100, 2, 0)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            price_low_yield > price,
+            "ODDLPRICE: lower yield should give higher price: {} vs {}",
+            price_low_yield,
+            price
+        );
+
+        // Error: invalid date order (last_interest >= settlement)
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDLPRICE(DATE(2007, 10, 15), DATE(2008, 6, 15), DATE(2008, 2, 7), 0.0375, 0.0405, 100, 2, 0)",
+        );
+
+        // Error: negative yield
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDLPRICE(DATE(2008, 2, 7), DATE(2008, 6, 15), DATE(2007, 10, 15), 0.0375, -0.01, 100, 2, 0)",
+        );
+    }
+
+    #[test]
+    fn test_oddlyield() {
+        let g = GridController::new();
+
+        // Test ODDLYIELD with example:
+        // Settlement: 2008-04-20, Maturity: 2008-06-15, Last interest: 2007-12-24
+        // Rate: 3.75%, Price: 99.875, Redemption: 100
+        // Frequency: 2 (semi-annual), Basis: 0
+        let yld: f64 = eval_to_string(
+            &g,
+            "ODDLYIELD(DATE(2008, 4, 20), DATE(2008, 6, 15), DATE(2007, 12, 24), 0.0375, 99.875, 100, 2, 0)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            yld > 0.0 && yld < 0.2,
+            "ODDLYIELD should return a reasonable yield: got {}",
+            yld
+        );
+
+        // Verify round-trip: ODDLPRICE(ODDLYIELD(price)) ≈ price
+        let price_check: f64 = eval_to_string(
+            &g,
+            &format!(
+                "ODDLPRICE(DATE(2008, 4, 20), DATE(2008, 6, 15), DATE(2007, 12, 24), 0.0375, {}, 100, 2, 0)",
+                yld
+            ),
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            (price_check - 99.875).abs() < 0.1,
+            "ODDLYIELD round-trip: expected ~99.875, got {}",
+            price_check
+        );
+
+        // Error: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDLYIELD(DATE(2008, 4, 20), DATE(2008, 6, 15), DATE(2007, 12, 24), 0.0375, 99.875, 100, 3, 0)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDLYIELD(DATE(2008, 4, 20), DATE(2008, 6, 15), DATE(2007, 12, 24), 0.0375, -1, 100, 2, 0)",
+        );
+
+        // Error: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ODDLYIELD(DATE(2008, 4, 20), DATE(2008, 6, 15), DATE(2007, 12, 24), 0.0375, 99.875, 100, 2, 6)",
+        );
+    }
+
+    #[test]
+    fn test_tbilleq() {
+        let g = GridController::new();
+
+        // Basic TBILLEQ calculation
+        // Settlement: Mar 31, 2008, Maturity: Jun 1, 2008, Discount: 9.14%
+        // DSM = 62 days (actual)
+        // TBILLEQ = (365 * 0.0914) / (360 - 0.0914 * 62) = 33.361 / 354.3332 ≈ 0.09416
+        let tbilleq: f64 =
+            eval_to_string(&g, "TBILLEQ(DATE(2008, 3, 31), DATE(2008, 6, 1), 0.0914)")
+                .parse()
+                .unwrap();
+        assert!(
+            (tbilleq - 0.0942).abs() < 0.001,
+            "TBILLEQ basic calculation: got {}",
+            tbilleq
+        );
+
+        // Test with a different discount rate
+        let tbilleq2: f64 =
+            eval_to_string(&g, "TBILLEQ(DATE(2023, 1, 15), DATE(2023, 4, 15), 0.05)")
+                .parse()
+                .unwrap();
+        assert!(
+            tbilleq2 > 0.05 && tbilleq2 < 0.06,
+            "TBILLEQ should be higher than discount rate: got {}",
+            tbilleq2
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLEQ(DATE(2008, 6, 1), DATE(2008, 3, 31), 0.0914)",
+        );
+
+        // Error: maturity more than one year after settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLEQ(DATE(2008, 1, 1), DATE(2009, 6, 1), 0.0914)",
+        );
+
+        // Error: discount <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLEQ(DATE(2008, 3, 31), DATE(2008, 6, 1), 0)",
+        );
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLEQ(DATE(2008, 3, 31), DATE(2008, 6, 1), -0.05)",
+        );
+    }
+
+    #[test]
+    fn test_tbillprice() {
+        let g = GridController::new();
+
+        // Basic TBILLPRICE calculation
+        // Settlement: Mar 31, 2008, Maturity: Jun 1, 2008, Discount: 9%
+        // DSM = 62 days (actual)
+        // TBILLPRICE = 100 * (1 - 0.09 * 62 / 360) = 100 * (1 - 0.0155) = 98.45
+        let price: f64 =
+            eval_to_string(&g, "TBILLPRICE(DATE(2008, 3, 31), DATE(2008, 6, 1), 0.09)")
+                .parse()
+                .unwrap();
+        assert!(
+            (price - 98.45).abs() < 0.01,
+            "TBILLPRICE basic calculation: got {}",
+            price
+        );
+
+        // Test with different discount rate
+        let price2: f64 =
+            eval_to_string(&g, "TBILLPRICE(DATE(2023, 1, 15), DATE(2023, 4, 15), 0.05)")
+                .parse()
+                .unwrap();
+        assert!(
+            price2 > 98.0 && price2 < 100.0,
+            "TBILLPRICE should be below 100 for positive discount: got {}",
+            price2
+        );
+
+        // Verify relationship with TBILLYIELD
+        let yield_back: f64 = eval_to_string(
+            &g,
+            &format!("TBILLYIELD(DATE(2008, 3, 31), DATE(2008, 6, 1), {})", price),
+        )
+        .parse()
+        .unwrap();
+        // Note: TBILLPRICE uses discount rate, TBILLYIELD returns yield (not discount rate)
+        // The yield should be reasonably close to the discount rate for short-term securities
+        assert!(
+            yield_back > 0.08 && yield_back < 0.10,
+            "TBILLYIELD from price should give reasonable yield: got {}",
+            yield_back
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLPRICE(DATE(2008, 6, 1), DATE(2008, 3, 31), 0.09)",
+        );
+
+        // Error: maturity more than one year after settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLPRICE(DATE(2008, 1, 1), DATE(2009, 6, 1), 0.09)",
+        );
+
+        // Error: discount < 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLPRICE(DATE(2008, 3, 31), DATE(2008, 6, 1), -0.05)",
+        );
+    }
+
+    #[test]
+    fn test_tbillyield() {
+        let g = GridController::new();
+
+        // Basic TBILLYIELD calculation
+        // Settlement: Mar 31, 2008, Maturity: Jun 1, 2008, Price: 98.45
+        // DSM = 62 days (actual)
+        // TBILLYIELD = ((100 - 98.45) / 98.45) * (360 / 62) ≈ 0.0914
+        let yld: f64 = eval_to_string(&g, "TBILLYIELD(DATE(2008, 3, 31), DATE(2008, 6, 1), 98.45)")
+            .parse()
+            .unwrap();
+        assert!(
+            (yld - 0.0914).abs() < 0.001,
+            "TBILLYIELD basic calculation: got {}",
+            yld
+        );
+
+        // Test with different price
+        let yld2: f64 = eval_to_string(
+            &g,
+            "TBILLYIELD(DATE(2023, 1, 15), DATE(2023, 4, 15), 98.75)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            yld2 > 0.04 && yld2 < 0.07,
+            "TBILLYIELD should give reasonable yield: got {}",
+            yld2
+        );
+
+        // Verify round-trip: TBILLPRICE(TBILLYIELD(price)) calculation
+        let price_test = 98.45_f64;
+        let yld_from_price: f64 = eval_to_string(
+            &g,
+            &format!(
+                "TBILLYIELD(DATE(2008, 3, 31), DATE(2008, 6, 1), {})",
+                price_test
+            ),
+        )
+        .parse()
+        .unwrap();
+        // Note: TBILLYIELD gives a simple yield, not the discount rate used in TBILLPRICE
+        // So the round-trip isn't perfect, but the yield should be reasonable
+        assert!(
+            yld_from_price > 0.0 && yld_from_price < 0.2,
+            "TBILLYIELD should return positive yield: got {}",
+            yld_from_price
+        );
+
+        // Error: settlement >= maturity
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLYIELD(DATE(2008, 6, 1), DATE(2008, 3, 31), 98.45)",
+        );
+
+        // Error: maturity more than one year after settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLYIELD(DATE(2008, 1, 1), DATE(2009, 6, 1), 98.45)",
+        );
+
+        // Error: price <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLYIELD(DATE(2008, 3, 31), DATE(2008, 6, 1), 0)",
+        );
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "TBILLYIELD(DATE(2008, 3, 31), DATE(2008, 6, 1), -5)",
+        );
+    }
+
+    #[test]
+    fn test_dollarde() {
+        let g = GridController::new();
+
+        // Basic test from Excel documentation
+        // DOLLARDE(1.02, 16) = 1 + 2/16 = 1.125
+        assert_f64_approx_eq(
+            1.125,
+            eval_to_string(&g, "DOLLARDE(1.02, 16)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARDE(1.02, 16)",
+        );
+
+        // DOLLARDE(1.1, 8) = 1 + 1/8 = 1.125
+        assert_f64_approx_eq(
+            1.125,
+            eval_to_string(&g, "DOLLARDE(1.1, 8)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARDE(1.1, 8)",
+        );
+
+        // DOLLARDE(1.1, 4) = 1 + 1/4 = 1.25
+        assert_f64_approx_eq(
+            1.25,
+            eval_to_string(&g, "DOLLARDE(1.1, 4)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARDE(1.1, 4)",
+        );
+
+        // Test with negative number
+        assert_f64_approx_eq(
+            -1.125,
+            eval_to_string(&g, "DOLLARDE(-1.02, 16)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARDE with negative",
+        );
+
+        // Test with whole number
+        assert_f64_approx_eq(
+            5.0,
+            eval_to_string(&g, "DOLLARDE(5, 16)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARDE with whole number",
+        );
+
+        // Error: fraction < 1
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "DOLLARDE(1.02, 0)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "DOLLARDE(1.02, -1)");
+    }
+
+    #[test]
+    fn test_dollarfr() {
+        let g = GridController::new();
+
+        // Basic test - inverse of DOLLARDE
+        // DOLLARFR(1.125, 16) = 1.02 (1 and 2/16)
+        assert_f64_approx_eq(
+            1.02,
+            eval_to_string(&g, "DOLLARFR(1.125, 16)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARFR(1.125, 16)",
+        );
+
+        // DOLLARFR(1.125, 8) = 1.1 (1 and 1/8)
+        assert_f64_approx_eq(
+            1.1,
+            eval_to_string(&g, "DOLLARFR(1.125, 8)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARFR(1.125, 8)",
+        );
+
+        // DOLLARFR(1.25, 4) = 1.1 (1 and 1/4)
+        assert_f64_approx_eq(
+            1.1,
+            eval_to_string(&g, "DOLLARFR(1.25, 4)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARFR(1.25, 4)",
+        );
+
+        // Test with negative number
+        assert_f64_approx_eq(
+            -1.02,
+            eval_to_string(&g, "DOLLARFR(-1.125, 16)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARFR with negative",
+        );
+
+        // Test with whole number
+        assert_f64_approx_eq(
+            5.0,
+            eval_to_string(&g, "DOLLARFR(5, 16)")
+                .parse::<f64>()
+                .unwrap(),
+            "DOLLARFR with whole number",
+        );
+
+        // Round-trip test: DOLLARDE(DOLLARFR(x, n), n) should equal x
+        let original = 1.5_f64;
+        let round_trip: f64 = eval_to_string(&g, "DOLLARDE(DOLLARFR(1.5, 32), 32)")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(original, round_trip, "DOLLARDE/DOLLARFR round-trip");
+
+        // Error: fraction < 1
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "DOLLARFR(1.125, 0)");
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "DOLLARFR(1.125, -1)");
     }
 }
