@@ -71,6 +71,9 @@ const instance = new aws.ec2.Instance("cloud-controller-instance", {
         CONNECTION_PORT: connectionPort,
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
+        // Bind to all interfaces so Docker port mapping works
+        PUBLIC_HOST: "0.0.0.0",
+        WORKER_ONLY_HOST: "0.0.0.0",
       },
     ),
   ),
