@@ -250,10 +250,78 @@ fn coupon_days_in_period(
 fn coupon_days_from_start(start: NaiveDate, date: NaiveDate, basis: i64) -> f64 {
     match basis {
         0 => days_30_360_us(start, date) as f64,
-        1 | 2 | 3 => days_actual(start, date) as f64,
+        1..=3 => days_actual(start, date) as f64,
         4 => days_30_360_eu(start, date) as f64,
         _ => days_30_360_us(start, date) as f64,
     }
+}
+
+/// Returns the annual basis (number of days in a year) for a given day count convention
+fn annual_basis(basis: i64) -> f64 {
+    match basis {
+        0 => 360.0, // 30/360 US
+        1 => 365.0, // Actual/Actual (approximation for year)
+        2 => 360.0, // Actual/360
+        3 => 365.0, // Actual/365
+        4 => 360.0, // 30/360 European
+        _ => 360.0,
+    }
+}
+
+/// Calculates days between two dates based on the day count basis
+fn days_between(start: NaiveDate, end: NaiveDate, basis: i64) -> f64 {
+    match basis {
+        0 => days_30_360_us(start, end) as f64,
+        1..=3 => days_actual(start, end) as f64,
+        4 => days_30_360_eu(start, end) as f64,
+        _ => days_30_360_us(start, end) as f64,
+    }
+}
+
+/// Calculates the year fraction for Actual/Actual day count basis
+fn year_fraction_actual_actual(start: NaiveDate, end: NaiveDate) -> f64 {
+    let days = days_actual(start, end) as f64;
+    let start_year = start.year();
+    let end_year = end.year();
+
+    if start_year == end_year {
+        // Same year - use that year's day count
+        let days_in_year = if is_leap_year(start_year) {
+            366.0
+        } else {
+            365.0
+        };
+        days / days_in_year
+    } else {
+        // Spans multiple years - calculate fraction for each year
+        let mut fraction = 0.0;
+
+        // Days remaining in start year
+        let end_of_start_year = NaiveDate::from_ymd_opt(start_year, 12, 31).unwrap();
+        let days_in_start_year = if is_leap_year(start_year) {
+            366.0
+        } else {
+            365.0
+        };
+        fraction += days_actual(start, end_of_start_year) as f64 / days_in_start_year;
+
+        // Full years in between
+        for _ in (start_year + 1)..end_year {
+            fraction += 1.0;
+        }
+
+        // Days in end year
+        let start_of_end_year = NaiveDate::from_ymd_opt(end_year, 1, 1).unwrap();
+        let days_in_end_year = if is_leap_year(end_year) { 366.0 } else { 365.0 };
+        fraction += days_actual(start_of_end_year, end) as f64 / days_in_end_year;
+
+        fraction
+    }
+}
+
+/// Checks if a year is a leap year
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
 fn get_functions() -> Vec<FormulaFunction> {
@@ -1182,6 +1250,757 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Ok(CellValue::from(days))
             }
         ),
+        formula_fn!(
+            /// Returns the accrued interest for a security that pays periodic interest.
+            ///
+            /// - issue: The security's issue date
+            /// - first_interest: The security's first interest date
+            /// - settlement: The security's settlement date
+            /// - rate: The security's annual coupon rate
+            /// - par: The security's par value (face value)
+            /// - frequency: The number of coupon payments per year (1=annual, 2=semi-annual, 4=quarterly)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            /// - [calc_method]: The calculation method for accrued interest. TRUE (default) calculates from issue to settlement. FALSE calculates from first_interest to settlement.
+            #[examples(
+                "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 2)",
+                "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 2, 0, TRUE)"
+            )]
+            #[zip_map]
+            fn ACCRINT(
+                span: Span,
+                [issue]: NaiveDate,
+                [first_interest]: NaiveDate,
+                [settlement]: NaiveDate,
+                [rate]: f64,
+                [par]: f64,
+                [frequency]: i64,
+                [basis]: (Option<i64>),
+                [calc_method]: (Option<bool>),
+            ) {
+                let basis = basis.unwrap_or(0);
+                let calc_method = calc_method.unwrap_or(true);
+
+                // Validate inputs
+                if frequency_to_months(frequency).is_none() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate <= 0.0 || par <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= settlement {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= first_interest {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let months_per_period = frequency_to_months(frequency).unwrap();
+
+                // Calculate accrued interest based on calc_method
+                let accrued = if calc_method {
+                    // TRUE: Calculate from issue to settlement, counting complete periods
+                    if settlement <= first_interest {
+                        // Settlement is before first interest date - simple case
+                        // Just calculate from issue to settlement
+                        let accrued_days = days_between(issue, settlement, basis);
+                        let days_in_period = coupon_days_in_period(
+                            issue,
+                            issue
+                                .checked_add_months(Months::new(months_per_period))
+                                .unwrap_or(first_interest),
+                            frequency,
+                            basis,
+                        );
+                        par * rate * (accrued_days / days_in_period) / frequency as f64
+                    } else {
+                        // Settlement is after first interest date
+                        // Sum up accrued interest from each coupon period from issue to settlement
+                        let mut total_accrued = 0.0;
+
+                        // First partial period: issue to first_interest
+                        let first_period_days = days_between(issue, first_interest, basis);
+                        let first_period_total =
+                            coupon_days_in_period(issue, first_interest, frequency, basis);
+                        total_accrued += par * rate * (first_period_days / first_period_total)
+                            / frequency as f64;
+
+                        // Count complete periods from first_interest to settlement
+                        let mut current_date = first_interest;
+                        while let Some(next_date) =
+                            current_date.checked_add_months(Months::new(months_per_period))
+                        {
+                            if next_date > settlement {
+                                // Final partial period
+                                let partial_days = days_between(current_date, settlement, basis);
+                                let period_days = coupon_days_in_period(
+                                    current_date,
+                                    next_date,
+                                    frequency,
+                                    basis,
+                                );
+                                total_accrued +=
+                                    par * rate * (partial_days / period_days) / frequency as f64;
+                                break;
+                            } else {
+                                // Complete period
+                                total_accrued += par * rate / frequency as f64;
+                                current_date = next_date;
+                            }
+                        }
+
+                        total_accrued
+                    }
+                } else {
+                    // FALSE: Calculate from first_interest to settlement only
+                    if settlement <= first_interest {
+                        0.0
+                    } else {
+                        // Find the last coupon date before or on settlement
+                        let prev_coupon = find_previous_coupon_date(
+                            settlement,
+                            first_interest
+                                .checked_add_months(Months::new(months_per_period * 100))
+                                .unwrap_or(settlement),
+                            frequency,
+                        )
+                        .unwrap_or(first_interest);
+
+                        let next_coupon = prev_coupon
+                            .checked_add_months(Months::new(months_per_period))
+                            .unwrap_or(settlement);
+
+                        let accrued_days = days_between(prev_coupon, settlement, basis);
+                        let period_days =
+                            coupon_days_in_period(prev_coupon, next_coupon, frequency, basis);
+
+                        par * rate * (accrued_days / period_days) / frequency as f64
+                    }
+                };
+
+                Ok(CellValue::from(accrued))
+            }
+        ),
+        formula_fn!(
+            /// Returns the accrued interest for a security that pays interest at maturity.
+            ///
+            /// - issue: The security's issue date
+            /// - settlement: The security's settlement (maturity) date
+            /// - rate: The security's annual coupon rate
+            /// - par: The security's par value (face value)
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000)",
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000, 1)"
+            )]
+            #[zip_map]
+            fn ACCRINTM(
+                span: Span,
+                [issue]: NaiveDate,
+                [settlement]: NaiveDate,
+                [rate]: f64,
+                [par]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if rate <= 0.0 || par <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if issue >= settlement {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate year fraction based on basis
+                let year_fraction = if basis == 1 {
+                    // Actual/Actual
+                    year_fraction_actual_actual(issue, settlement)
+                } else {
+                    // For other bases, use accrued days / annual basis
+                    let accrued_days = days_between(issue, settlement, basis);
+                    accrued_days / annual_basis(basis)
+                };
+
+                // Accrued interest = par * rate * year_fraction
+                let accrued = par * rate * year_fraction;
+
+                Ok(CellValue::from(accrued))
+            }
+        ),
+        formula_fn!(
+            /// Returns the depreciation for each accounting period using straight-line (linear) depreciation.
+            ///
+            /// This function calculates depreciation based on the date of purchase, prorating
+            /// the first and last periods appropriately.
+            ///
+            /// - cost: The cost of the asset
+            /// - date_purchased: The date the asset was purchased
+            /// - first_period: The end date of the first accounting period
+            /// - salvage: The salvage value at the end of the asset's life
+            /// - period: The period number (0-based)
+            /// - rate: The annual depreciation rate
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
+                "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 0, 0.15, 1)"
+            )]
+            #[zip_map]
+            fn AMORLINC(
+                span: Span,
+                [cost]: f64,
+                [date_purchased]: NaiveDate,
+                [first_period]: NaiveDate,
+                [salvage]: f64,
+                [period]: i64,
+                [rate]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if cost < 0.0 || salvage < 0.0 || rate <= 0.0 || period < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if date_purchased > first_period {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate the annual depreciation amount
+                let annual_depreciation = cost * rate;
+
+                // Calculate the number of days in the first period
+                let days_in_first_period = days_between(date_purchased, first_period, basis);
+                let year_basis = annual_basis(basis);
+
+                // Calculate the first period depreciation (prorated)
+                let first_period_depreciation =
+                    annual_depreciation * days_in_first_period / year_basis;
+
+                // Track accumulated depreciation
+                let max_depreciation = cost - salvage;
+
+                let depreciation = if period == 0 {
+                    // First period: prorated depreciation
+                    first_period_depreciation.min(max_depreciation)
+                } else {
+                    // Calculate accumulated depreciation up to this period
+                    let mut accumulated = first_period_depreciation;
+
+                    for _ in 1..period {
+                        if accumulated >= max_depreciation {
+                            break;
+                        }
+                        let period_dep = annual_depreciation.min(max_depreciation - accumulated);
+                        accumulated += period_dep;
+                    }
+
+                    if accumulated >= max_depreciation {
+                        0.0
+                    } else {
+                        // This period's depreciation
+                        annual_depreciation.min(max_depreciation - accumulated)
+                    }
+                };
+
+                Ok(CellValue::from(depreciation))
+            }
+        ),
+        formula_fn!(
+            /// Returns the depreciation for each accounting period using degressive (declining balance) depreciation with a coefficient.
+            ///
+            /// This function uses a degressive depreciation coefficient based on the asset's life:
+            /// - Life between 3-4 years: coefficient = 1.5
+            /// - Life between 5-6 years: coefficient = 2.0
+            /// - Life of 7 or more years: coefficient = 2.5
+            ///
+            /// - cost: The cost of the asset
+            /// - date_purchased: The date the asset was purchased
+            /// - first_period: The end date of the first accounting period
+            /// - salvage: The salvage value at the end of the asset's life
+            /// - period: The period number (0-based)
+            /// - rate: The annual depreciation rate
+            /// - [basis]: The day count basis (0=US 30/360, 1=Actual/actual, 2=Actual/360, 3=Actual/365, 4=European 30/360). Default is 0.
+            #[examples(
+                "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
+                "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 0, 0.15, 1)"
+            )]
+            #[zip_map]
+            fn AMORDEGRC(
+                span: Span,
+                [cost]: f64,
+                [date_purchased]: NaiveDate,
+                [first_period]: NaiveDate,
+                [salvage]: f64,
+                [period]: i64,
+                [rate]: f64,
+                [basis]: (Option<i64>),
+            ) {
+                let basis = basis.unwrap_or(0);
+
+                // Validate inputs
+                if !is_valid_basis(basis) {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if cost < 0.0 || salvage < 0.0 || rate <= 0.0 || period < 0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+                if date_purchased > first_period {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate the asset life from the rate
+                let life = 1.0 / rate;
+
+                // Determine the degressive coefficient based on asset life
+                let coefficient = if life < 3.0 {
+                    1.0
+                } else if life < 5.0 {
+                    1.5
+                } else if life < 7.0 {
+                    2.0
+                } else {
+                    2.5
+                };
+
+                // Apply the coefficient to the rate
+                let adjusted_rate = rate * coefficient;
+
+                // Calculate the number of days in the first period
+                let days_in_first_period = days_between(date_purchased, first_period, basis);
+                let year_basis = annual_basis(basis);
+
+                // Calculate first period depreciation (prorated and rounded)
+                let first_period_depreciation =
+                    (cost * adjusted_rate * days_in_first_period / year_basis).round();
+
+                // Track book value and accumulated depreciation
+                let mut book_value = cost - first_period_depreciation;
+                let max_depreciation = cost - salvage;
+                let mut accumulated = first_period_depreciation;
+
+                if period == 0 {
+                    // First period: prorated depreciation
+                    let result = first_period_depreciation.min(max_depreciation);
+                    return Ok(CellValue::from(result));
+                }
+
+                // For subsequent periods, calculate depreciation
+                for p in 1..=period {
+                    if accumulated >= max_depreciation {
+                        return Ok(CellValue::from(0.0));
+                    }
+
+                    // Calculate this period's depreciation (rounded)
+                    let period_depreciation = (book_value * adjusted_rate).round();
+
+                    // Check if we've reached the end of depreciation
+                    // The last period gets the remaining amount
+                    let remaining = max_depreciation - accumulated;
+
+                    if p == period {
+                        // This is the period we're calculating
+                        // Check if this is one of the final periods
+                        if period_depreciation >= remaining {
+                            // Return the remaining amount
+                            return Ok(CellValue::from(remaining));
+                        } else {
+                            return Ok(CellValue::from(period_depreciation));
+                        }
+                    }
+
+                    // Update for next period
+                    let actual_depreciation = period_depreciation.min(remaining);
+                    accumulated += actual_depreciation;
+                    book_value -= actual_depreciation;
+                }
+
+                Ok(CellValue::from(0.0))
+            }
+        ),
+        formula_fn!(
+            /// Calculates the net present value of an investment based on a discount rate
+            /// and a series of future periodic cash flows.
+            ///
+            /// - rate: The discount rate over one period
+            /// - values: Cash flows, occurring at the end of each period (1, 2, 3, ...).
+            ///   The first value is discounted by (1+rate)^1, the second by (1+rate)^2, etc.
+            ///
+            /// Note: NPV differs from PV in that it discounts the first cash flow.
+            /// To include an initial investment at time 0, add it separately: NPV(rate, values) + initial_investment
+            #[examples(
+                "NPV(0.1, -10000, 3000, 4200, 6800)",
+                "NPV(0.08, 8000, 9200, 10000, 12000, 14500) + (-40000)"
+            )]
+            fn NPV(span: Span, rate: (f64), values: (Iter<f64>)) {
+                if rate == -1.0 {
+                    return Err(RunErrorMsg::DivideByZero.with_span(span));
+                }
+
+                let mut npv = 0.0;
+                let mut period = 1;
+
+                for value in values {
+                    let cf = value?;
+                    npv += cf / (1.0 + rate).powi(period);
+                    period += 1;
+                }
+
+                Ok(CellValue::from(npv))
+            }
+        ),
+        formula_fn!(
+            /// Calculates the internal rate of return for a series of periodic cash flows.
+            ///
+            /// - values: An array or range containing cash flows. Must contain at least one
+            ///   positive and one negative value.
+            /// - [guess]: An initial guess for the rate. Default is 0.1 (10%).
+            ///
+            /// IRR finds the rate where NPV of the cash flows equals zero.
+            /// The first value typically represents the initial investment (negative).
+            #[examples(
+                "IRR({-100, 30, 35, 40, 45})",
+                "IRR({-70000, 12000, 15000, 18000, 21000, 26000}, 0.15)"
+            )]
+            fn IRR(span: Span, values: (Spanned<Array>), guess: (Option<f64>)) {
+                let cash_flows: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                if cash_flows.len() < 2 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Check for at least one positive and one negative value
+                let has_positive = cash_flows.iter().any(|&v| v > 0.0);
+                let has_negative = cash_flows.iter().any(|&v| v < 0.0);
+                if !has_positive || !has_negative {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let guess = guess.unwrap_or(0.1);
+                let mut rate = guess;
+                let max_iterations = 100;
+                let tolerance = 1e-10;
+                let mut converged = false;
+
+                // Newton-Raphson method
+                for _ in 0..max_iterations {
+                    let mut npv = 0.0;
+                    let mut dnpv = 0.0; // derivative of NPV with respect to rate
+
+                    for (i, &cf) in cash_flows.iter().enumerate() {
+                        let factor = (1.0 + rate).powi(i as i32);
+                        if factor == 0.0 {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                        }
+                        npv += cf / factor;
+                        if i > 0 {
+                            dnpv -= (i as f64) * cf / (1.0 + rate).powi(i as i32 + 1);
+                        }
+                    }
+
+                    if npv.abs() < tolerance {
+                        converged = true;
+                        break;
+                    }
+
+                    if dnpv.abs() < 1e-15 {
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                    }
+
+                    let new_rate = rate - npv / dnpv;
+
+                    if (new_rate - rate).abs() < tolerance {
+                        rate = new_rate;
+                        converged = true;
+                        break;
+                    }
+
+                    rate = new_rate;
+
+                    // Prevent rate from going too far negative
+                    if rate <= -1.0 {
+                        rate = -0.99;
+                    }
+                }
+
+                if !converged {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                Ok(CellValue::from(rate))
+            }
+        ),
+        formula_fn!(
+            /// Calculates the modified internal rate of return for a series of periodic cash flows.
+            ///
+            /// MIRR considers both the cost of investment (finance rate) and the interest
+            /// received on reinvestment of cash (reinvestment rate).
+            ///
+            /// - values: An array or range containing cash flows. Must contain at least one
+            ///   positive and one negative value.
+            /// - finance_rate: The interest rate paid on money used for the investment (cost of borrowing)
+            /// - reinvest_rate: The interest rate received on cash flows when reinvested
+            #[examples("MIRR({-120000, 39000, 30000, 21000, 37000, 46000}, 0.10, 0.12)")]
+            fn MIRR(
+                span: Span,
+                values: (Spanned<Array>),
+                finance_rate: (f64),
+                reinvest_rate: (f64),
+            ) {
+                let cash_flows: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let n = cash_flows.len();
+                if n < 2 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Check for at least one positive and one negative value
+                let has_positive = cash_flows.iter().any(|&v| v > 0.0);
+                let has_negative = cash_flows.iter().any(|&v| v < 0.0);
+                if !has_positive || !has_negative {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Calculate present value of negative cash flows (at finance rate)
+                let mut pv_negative = 0.0;
+                // Calculate future value of positive cash flows (at reinvestment rate)
+                let mut fv_positive = 0.0;
+
+                for (i, &cf) in cash_flows.iter().enumerate() {
+                    if cf < 0.0 {
+                        pv_negative += cf / (1.0 + finance_rate).powi(i as i32);
+                    } else {
+                        fv_positive += cf * (1.0 + reinvest_rate).powi((n - 1 - i) as i32);
+                    }
+                }
+
+                if pv_negative >= 0.0 || fv_positive <= 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // MIRR = (FV_positive / -PV_negative)^(1/(n-1)) - 1
+                let mirr = (-fv_positive / pv_negative).powf(1.0 / (n - 1) as f64) - 1.0;
+
+                Ok(CellValue::from(mirr))
+            }
+        ),
+        formula_fn!(
+            /// Calculates the net present value for cash flows that are not necessarily periodic.
+            ///
+            /// - rate: The discount rate to apply
+            /// - values: A series of cash flows corresponding to the dates
+            /// - dates: A series of dates corresponding to the cash flows
+            ///
+            /// The first date is the basis for discounting. Cash flows are discounted
+            /// based on a 365-day year.
+            #[examples(
+                "XNPV(0.09, {-10000, 2750, 4250, 3250, 2750}, {DATE(2008,1,1), DATE(2008,3,1), DATE(2008,10,30), DATE(2009,2,15), DATE(2009,4,1)})"
+            )]
+            fn XNPV(span: Span, rate: (f64), values: (Spanned<Array>), dates: (Spanned<Array>)) {
+                if rate <= -1.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let cash_flows: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let date_values: Vec<NaiveDate> = dates
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|cv| match cv {
+                        CellValue::Date(d) => Some(*d),
+                        CellValue::DateTime(dt) => Some(dt.date()),
+                        _ => None,
+                    })
+                    .collect();
+
+                if cash_flows.is_empty() || date_values.is_empty() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                if cash_flows.len() != date_values.len() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // First date is the basis
+                let base_date = date_values[0];
+
+                let mut npv = 0.0;
+                for (i, &cf) in cash_flows.iter().enumerate() {
+                    let days = (date_values[i] - base_date).num_days() as f64;
+                    let years = days / 365.0;
+                    npv += cf / (1.0 + rate).powf(years);
+                }
+
+                Ok(CellValue::from(npv))
+            }
+        ),
+        formula_fn!(
+            /// Calculates the internal rate of return for cash flows that are not necessarily periodic.
+            ///
+            /// - values: A series of cash flows. Must contain at least one positive and one negative value.
+            /// - dates: A series of dates corresponding to the cash flows. The first date is the start of the investment.
+            /// - [guess]: An initial guess for the rate. Default is 0.1 (10%).
+            ///
+            /// XIRR finds the rate where XNPV of the cash flows equals zero.
+            #[examples(
+                "XIRR({-10000, 2750, 4250, 3250, 2750}, {DATE(2008,1,1), DATE(2008,3,1), DATE(2008,10,30), DATE(2009,2,15), DATE(2009,4,1)}, 0.1)"
+            )]
+            fn XIRR(
+                span: Span,
+                values: (Spanned<Array>),
+                dates: (Spanned<Array>),
+                guess: (Option<f64>),
+            ) {
+                let cash_flows: Vec<f64> = values
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                let date_values: Vec<NaiveDate> = dates
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|cv| match cv {
+                        CellValue::Date(d) => Some(*d),
+                        CellValue::DateTime(dt) => Some(dt.date()),
+                        _ => None,
+                    })
+                    .collect();
+
+                if cash_flows.len() < 2 || date_values.len() < 2 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                if cash_flows.len() != date_values.len() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                // Check for at least one positive and one negative value
+                let has_positive = cash_flows.iter().any(|&v| v > 0.0);
+                let has_negative = cash_flows.iter().any(|&v| v < 0.0);
+                if !has_positive || !has_negative {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let base_date = date_values[0];
+                let guess = guess.unwrap_or(0.1);
+                let mut rate = guess;
+                let max_iterations = 100;
+                let tolerance = 1e-10;
+                let mut converged = false;
+
+                // Calculate year fractions once
+                let year_fractions: Vec<f64> = date_values
+                    .iter()
+                    .map(|d| ((*d - base_date).num_days() as f64) / 365.0)
+                    .collect();
+
+                // Newton-Raphson method
+                for _ in 0..max_iterations {
+                    let mut xnpv = 0.0;
+                    let mut dxnpv = 0.0; // derivative
+
+                    for (i, &cf) in cash_flows.iter().enumerate() {
+                        let t = year_fractions[i];
+                        let factor = (1.0 + rate).powf(t);
+                        if factor == 0.0 || factor.is_nan() || factor.is_infinite() {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                        }
+                        xnpv += cf / factor;
+                        if t != 0.0 {
+                            dxnpv -= t * cf / (1.0 + rate).powf(t + 1.0);
+                        }
+                    }
+
+                    if xnpv.abs() < tolerance {
+                        converged = true;
+                        break;
+                    }
+
+                    if dxnpv.abs() < 1e-15 {
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                    }
+
+                    let new_rate = rate - xnpv / dxnpv;
+
+                    if (new_rate - rate).abs() < tolerance {
+                        rate = new_rate;
+                        converged = true;
+                        break;
+                    }
+
+                    rate = new_rate;
+
+                    // Prevent rate from going too far negative
+                    if rate <= -1.0 {
+                        rate = -0.99;
+                    }
+                }
+
+                if !converged {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                Ok(CellValue::from(rate))
+            }
+        ),
+        formula_fn!(
+            /// Calculates the future value of an initial principal after applying a series of compound interest rates.
+            ///
+            /// - principal: The initial value (present value) of the investment
+            /// - schedule: An array of interest rates to apply. Each rate is applied in sequence.
+            ///
+            /// FVSCHEDULE is useful for calculating compound growth with variable rates.
+            #[examples(
+                "FVSCHEDULE(1, {0.09, 0.11, 0.1})",
+                "FVSCHEDULE(10000, {0.05, 0.06, 0.07, 0.08})"
+            )]
+            fn FVSCHEDULE(span: Span, principal: (f64), schedule: (Spanned<Array>)) {
+                let rates: Vec<f64> = schedule
+                    .inner
+                    .cell_values_slice()
+                    .iter()
+                    .filter_map(|v| v.coerce_nonblank::<f64>())
+                    .collect();
+
+                if rates.is_empty() {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
+                let mut fv = principal;
+                for rate in rates {
+                    fv *= 1.0 + rate;
+                }
+
+                Ok(CellValue::from(fv))
+            }
+        ),
     ]
 }
 #[cfg(test)]
@@ -1965,5 +2784,703 @@ mod tests {
             eval_to_string(&g, "COUPPCD(DATE(2023, 4, 15), DATE(2025, 7, 31), 2)"),
             "2023-01-31"
         );
+    }
+
+    #[test]
+    fn test_accrint() {
+        let g = GridController::new();
+
+        // Basic ACCRINT test: Issue Jan 1, First Interest Jul 1, Settlement Apr 1
+        // Rate 5%, Par 1000, Semi-annual, 30/360 basis
+        // Days from Jan 1 to Apr 1 = 90 days (30/360)
+        // Days in period = 180 (semi-annual, 30/360)
+        // Accrued = 1000 * 0.05 * (90/180) / 2 = 1000 * 0.05 * 0.5 / 2 = 12.5
+        assert_f64_approx_eq(
+            12.5,
+            eval_to_string(
+                &g,
+                "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 2)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINT basic semi-annual",
+        );
+
+        // Test with quarterly frequency
+        // Days from Jan 1 to Apr 1 = 90 days (30/360)
+        // Days in period = 90 (quarterly, 30/360)
+        // Accrued = 1000 * 0.05 * (90/90) / 4 = 1000 * 0.05 * 1.0 / 4 = 12.5
+        assert_f64_approx_eq(
+            12.5,
+            eval_to_string(
+                &g,
+                "ACCRINT(DATE(2020, 1, 1), DATE(2020, 4, 1), DATE(2020, 4, 1), 0.05, 1000, 4)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINT quarterly",
+        );
+
+        // Test with annual frequency
+        // Days from Jan 1 to Apr 1 = 90 days (30/360)
+        // Days in period = 360 (annual, 30/360)
+        // Accrued = 1000 * 0.05 * (90/360) / 1 = 1000 * 0.05 * 0.25 = 12.5
+        assert_f64_approx_eq(
+            12.5,
+            eval_to_string(
+                &g,
+                "ACCRINT(DATE(2020, 1, 1), DATE(2021, 1, 1), DATE(2020, 4, 1), 0.05, 1000, 1)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINT annual",
+        );
+
+        // Test with Actual/365 basis
+        // Days from Jan 1 to Apr 1 = 91 actual days (leap year 2020)
+        // Days in period = 182.5 (semi-annual, Actual/365)
+        // Accrued = 1000 * 0.05 * (91/182.5) / 2 ≈ 12.466
+        assert_f64_approx_eq(
+            12.46575,
+            eval_to_string(
+                &g,
+                "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 2, 3)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINT with Actual/365",
+        );
+
+        // Invalid: issue >= settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINT(DATE(2020, 4, 1), DATE(2020, 7, 1), DATE(2020, 1, 1), 0.05, 1000, 2)",
+        );
+
+        // Invalid: rate <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0, 1000, 2)",
+        );
+
+        // Invalid: invalid frequency
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 3)",
+        );
+
+        // Invalid: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINT(DATE(2020, 1, 1), DATE(2020, 7, 1), DATE(2020, 4, 1), 0.05, 1000, 2, 5)",
+        );
+    }
+
+    #[test]
+    fn test_accrintm() {
+        let g = GridController::new();
+
+        // Basic ACCRINTM test: Issue Jan 1, 2020, Settlement Apr 1, 2020
+        // Rate 5%, Par 1000, 30/360 basis
+        // Days = 90 (30/360: Jan 1 to Apr 1)
+        // Accrued = 1000 * 0.05 * 90 / 360 = 12.5
+        assert_f64_approx_eq(
+            12.5,
+            eval_to_string(
+                &g,
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINTM basic 30/360",
+        );
+
+        // Test with Actual/360 basis
+        // Days = 91 actual days (2020 is leap year: Jan has 31, Feb has 29, Mar has 31)
+        // Accrued = 1000 * 0.05 * 91 / 360 ≈ 12.639
+        assert_f64_approx_eq(
+            12.63889,
+            eval_to_string(
+                &g,
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000, 2)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINTM Actual/360",
+        );
+
+        // Test with Actual/365 basis
+        // Days = 91 actual days
+        // Accrued = 1000 * 0.05 * 91 / 365 ≈ 12.466
+        assert_f64_approx_eq(
+            12.46575,
+            eval_to_string(
+                &g,
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000, 3)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINTM Actual/365",
+        );
+
+        // Test with 30/360 European basis
+        // Days = 90 (30/360 European)
+        // Accrued = 1000 * 0.05 * 90 / 360 = 12.5
+        assert_f64_approx_eq(
+            12.5,
+            eval_to_string(
+                &g,
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000, 4)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINTM 30/360 European",
+        );
+
+        // Test one full year
+        // Days = 360 (30/360)
+        // Accrued = 1000 * 0.05 * 360 / 360 = 50
+        assert_f64_approx_eq(
+            50.0,
+            eval_to_string(
+                &g,
+                "ACCRINTM(DATE(2020, 1, 1), DATE(2021, 1, 1), 0.05, 1000)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "ACCRINTM one year",
+        );
+
+        // Invalid: issue >= settlement
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINTM(DATE(2020, 4, 1), DATE(2020, 1, 1), 0.05, 1000)",
+        );
+
+        // Invalid: rate <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0, 1000)",
+        );
+
+        // Invalid: par <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 0)",
+        );
+
+        // Invalid: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "ACCRINTM(DATE(2020, 1, 1), DATE(2020, 4, 1), 0.05, 1000, 5)",
+        );
+    }
+
+    #[test]
+    fn test_amorlinc() {
+        let g = GridController::new();
+
+        // Basic AMORLINC test
+        // Cost 2400, purchased Aug 19, 2008, first period Dec 31, 2008
+        // Salvage 300, period 1, rate 15%
+        // Annual depreciation = 2400 * 0.15 = 360
+        // First period (period 0): prorated from Aug 19 to Dec 31
+        // Period 1 onwards: full annual depreciation until salvage is reached
+        assert_f64_approx_eq(
+            360.0,
+            eval_to_string(
+                &g,
+                "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "AMORLINC period 1",
+        );
+
+        // Test first period (period 0) - prorated
+        // Days from Aug 19 to Dec 31 with 30/360 basis
+        // Aug: 30-19 = 11, Sep-Dec: 4 * 30 = 120, total = 131 days
+        // First period = 360 * 131/360 ≈ 130.83
+        let first_period: f64 = eval_to_string(
+            &g,
+            "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 0, 0.15)",
+        )
+        .parse()
+        .unwrap();
+        assert!(
+            first_period > 0.0 && first_period < 360.0,
+            "First period should be prorated"
+        );
+
+        // Test with different rate
+        // Cost 10000, salvage 1000, rate 20%
+        // Annual depreciation = 10000 * 0.20 = 2000
+        assert_f64_approx_eq(
+            2000.0,
+            eval_to_string(
+                &g,
+                "AMORLINC(10000, DATE(2020, 1, 1), DATE(2020, 12, 31), 1000, 1, 0.20)",
+            )
+            .parse::<f64>()
+            .unwrap(),
+            "AMORLINC with 20% rate",
+        );
+
+        // Test that depreciation stops at salvage value
+        // After enough periods, depreciation should be 0
+        let late_period: f64 = eval_to_string(
+            &g,
+            "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 10, 0.15)",
+        )
+        .parse()
+        .unwrap();
+        assert_f64_approx_eq(0.0, late_period, "AMORLINC should stop at salvage value");
+
+        // Invalid: negative cost
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORLINC(-2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
+        );
+
+        // Invalid: negative period
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, -1, 0.15)",
+        );
+
+        // Invalid: rate <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0)",
+        );
+
+        // Invalid: purchase date after first period
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORLINC(2400, DATE(2009, 1, 1), DATE(2008, 12, 31), 300, 1, 0.15)",
+        );
+
+        // Invalid: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORLINC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15, 5)",
+        );
+    }
+
+    #[test]
+    fn test_amordegrc() {
+        let g = GridController::new();
+
+        // Basic AMORDEGRC test
+        // Cost 2400, purchased Aug 19, 2008, first period Dec 31, 2008
+        // Salvage 300, period 1, rate 15%
+        // Asset life = 1/0.15 ≈ 6.67 years, so coefficient = 2.0
+        // Adjusted rate = 0.15 * 2.0 = 0.30
+        let period_1: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
+        )
+        .parse()
+        .unwrap();
+        assert!(period_1 > 0.0, "AMORDEGRC period 1 should be positive");
+
+        // Test first period (period 0) - prorated with coefficient
+        let first_period: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 0, 0.15)",
+        )
+        .parse()
+        .unwrap();
+        assert!(first_period > 0.0, "First period should be positive");
+
+        // Test with rate that gives coefficient of 1.5 (life 3-4 years, rate 0.25-0.33)
+        let coef_1_5: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(10000, DATE(2020, 1, 1), DATE(2020, 12, 31), 1000, 1, 0.30)",
+        )
+        .parse()
+        .unwrap();
+        assert!(coef_1_5 > 0.0, "AMORDEGRC with coefficient 1.5");
+
+        // Test with rate that gives coefficient of 2.5 (life >= 7 years, rate <= 0.14)
+        let coef_2_5: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(10000, DATE(2020, 1, 1), DATE(2020, 12, 31), 1000, 1, 0.10)",
+        )
+        .parse()
+        .unwrap();
+        assert!(coef_2_5 > 0.0, "AMORDEGRC with coefficient 2.5");
+
+        // Test that depreciation eventually stops at salvage value
+        let late_period: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 20, 0.15)",
+        )
+        .parse()
+        .unwrap();
+        assert_f64_approx_eq(0.0, late_period, "AMORDEGRC should stop at salvage value");
+
+        // Invalid: negative cost
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORDEGRC(-2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15)",
+        );
+
+        // Invalid: negative period
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, -1, 0.15)",
+        );
+
+        // Invalid: rate <= 0
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0)",
+        );
+
+        // Invalid: purchase date after first period
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORDEGRC(2400, DATE(2009, 1, 1), DATE(2008, 12, 31), 300, 1, 0.15)",
+        );
+
+        // Invalid: invalid basis
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "AMORDEGRC(2400, DATE(2008, 8, 19), DATE(2008, 12, 31), 300, 1, 0.15, 5)",
+        );
+    }
+
+    #[test]
+    fn test_amordegrc_coefficients() {
+        let g = GridController::new();
+
+        // Test that different rates result in different depreciation due to coefficients
+        // Rate 0.50 => life = 2 years => coefficient = 1.0 (no acceleration)
+        // Rate 0.25 => life = 4 years => coefficient = 1.5
+        // Rate 0.15 => life = 6.67 years => coefficient = 2.0
+        // Rate 0.10 => life = 10 years => coefficient = 2.5
+
+        // For the same cost, higher coefficient means faster depreciation in early periods
+        let dep_coef_1: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(10000, DATE(2020, 1, 1), DATE(2020, 12, 31), 0, 0, 0.50)",
+        )
+        .parse()
+        .unwrap();
+
+        let dep_coef_1_5: f64 = eval_to_string(
+            &g,
+            "AMORDEGRC(10000, DATE(2020, 1, 1), DATE(2020, 12, 31), 0, 0, 0.25)",
+        )
+        .parse()
+        .unwrap();
+
+        // With coefficient 1.0, adjusted rate is 0.50, so first year = 10000 * 0.50 = 5000
+        // With coefficient 1.5, adjusted rate is 0.375, so first year = 10000 * 0.375 = 3750
+        // The lower rate with coefficient 1.5 should still give less than coefficient 1.0 case
+        assert!(
+            dep_coef_1 > dep_coef_1_5,
+            "Higher raw rate (coef 1.0) should have higher first period depreciation"
+        );
+    }
+
+    #[test]
+    fn test_npv() {
+        let g = GridController::new();
+
+        // Basic NPV calculation
+        // NPV(10%, -10000, 3000, 4200, 6800) should calculate correctly
+        // = 3000/1.1 + 4200/1.1^2 + 6800/1.1^3
+        // = 2727.27 + 3471.07 + 5108.41 = 11306.76 (approximately)
+        let npv: f64 = eval_to_string(&g, "NPV(0.1, 3000, 4200, 6800)")
+            .parse()
+            .unwrap();
+        assert!(
+            (npv - 11306.76).abs() < 1.0,
+            "NPV basic calculation: got {}",
+            npv
+        );
+
+        // NPV with array syntax
+        let npv_array: f64 = eval_to_string(&g, "NPV(0.1, {3000, 4200, 6800})")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(
+            npv,
+            npv_array,
+            "NPV with array should equal NPV with individual values",
+        );
+
+        // NPV of initial investment project
+        // Initial investment -10000 at time 0 (not discounted), followed by cash flows
+        let project_npv: f64 = eval_to_string(&g, "NPV(0.1, 3000, 4200, 6800) + (-10000)")
+            .parse()
+            .unwrap();
+        assert!(project_npv > 0.0, "Project NPV should be positive");
+
+        // Test with zero rate - should sum all values
+        let npv_zero_rate: f64 = eval_to_string(&g, "NPV(0, 1000, 2000, 3000)")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(
+            6000.0,
+            npv_zero_rate,
+            "NPV with zero rate should sum values",
+        );
+
+        // Test with rate = -1 should error (divide by zero)
+        expect_err(&RunErrorMsg::DivideByZero, &g, "NPV(-1, 1000, 2000)");
+    }
+
+    #[test]
+    fn test_irr() {
+        let g = GridController::new();
+
+        // Basic IRR calculation
+        // For cash flows -100, 30, 35, 40, 45
+        let irr: f64 = eval_to_string(&g, "IRR({-100, 30, 35, 40, 45})")
+            .parse()
+            .unwrap();
+        // The IRR should be around 17-18%
+        assert!(
+            irr > 0.15 && irr < 0.20,
+            "IRR should be approximately 17-18%: got {}",
+            irr
+        );
+
+        // Verify IRR: NPV at the IRR rate should be approximately 0
+        let formula = format!("NPV({}, 30, 35, 40, 45) + (-100)", irr);
+        let npv_at_irr: f64 = eval_to_string(&g, &formula).parse().unwrap();
+        assert!(
+            npv_at_irr.abs() < 0.01,
+            "NPV at IRR should be ~0, got {}",
+            npv_at_irr
+        );
+
+        // IRR with custom guess
+        let irr_with_guess: f64 =
+            eval_to_string(&g, "IRR({-70000, 12000, 15000, 18000, 21000, 26000}, 0.15)")
+                .parse()
+                .unwrap();
+        assert!(
+            irr_with_guess > 0.05 && irr_with_guess < 0.15,
+            "IRR with guess: got {}",
+            irr_with_guess
+        );
+
+        // Error: all positive values
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "IRR({100, 200, 300})");
+
+        // Error: all negative values
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "IRR({-100, -200, -300})");
+
+        // Error: too few values
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "IRR({-100})");
+    }
+
+    #[test]
+    fn test_mirr() {
+        let g = GridController::new();
+
+        // Basic MIRR calculation
+        // Cash flows: -120000 initial, then positive returns
+        let mirr: f64 = eval_to_string(
+            &g,
+            "MIRR({-120000, 39000, 30000, 21000, 37000, 46000}, 0.10, 0.12)",
+        )
+        .parse()
+        .unwrap();
+        // MIRR should be around 12-13%
+        assert!(
+            mirr > 0.10 && mirr < 0.15,
+            "MIRR should be approximately 12-13%: got {}",
+            mirr
+        );
+
+        // MIRR with equal finance and reinvestment rates
+        let mirr_equal: f64 = eval_to_string(&g, "MIRR({-10000, 4000, 4000, 4000}, 0.08, 0.08)")
+            .parse()
+            .unwrap();
+        assert!(
+            mirr_equal > 0.05 && mirr_equal < 0.15,
+            "MIRR with equal rates: got {}",
+            mirr_equal
+        );
+
+        // Error: all positive values
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MIRR({100, 200, 300}, 0.1, 0.1)",
+        );
+
+        // Error: all negative values
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "MIRR({-100, -200, -300}, 0.1, 0.1)",
+        );
+
+        // Error: too few values
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "MIRR({-100}, 0.1, 0.1)");
+    }
+
+    #[test]
+    fn test_xnpv() {
+        let g = GridController::new();
+
+        // Basic XNPV calculation with irregular dates
+        let xnpv: f64 = eval_to_string(
+            &g,
+            "XNPV(0.09, {-10000, 2750, 4250, 3250, 2750}, {DATE(2008,1,1), DATE(2008,3,1), DATE(2008,10,30), DATE(2009,2,15), DATE(2009,4,1)})",
+        )
+        .parse()
+        .unwrap();
+        // XNPV should be positive
+        assert!(xnpv > 0.0, "XNPV should be positive: got {}", xnpv);
+
+        // XNPV with all same-day payments (like regular NPV)
+        let xnpv_same_day: f64 = eval_to_string(
+            &g,
+            "XNPV(0.1, {1000, 1000}, {DATE(2020,1,1), DATE(2021,1,1)})",
+        )
+        .parse()
+        .unwrap();
+        // First payment at day 0: 1000
+        // Second payment at day 365 (1 year): 1000 / 1.1 = 909.09
+        assert!(
+            (xnpv_same_day - 1909.09).abs() < 10.0,
+            "XNPV annual: got {}",
+            xnpv_same_day
+        );
+
+        // Error: rate <= -1
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "XNPV(-1, {1000, 2000}, {DATE(2020,1,1), DATE(2020,6,1)})",
+        );
+
+        // Error: mismatched array sizes
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "XNPV(0.1, {1000, 2000, 3000}, {DATE(2020,1,1), DATE(2020,6,1)})",
+        );
+    }
+
+    #[test]
+    fn test_xirr() {
+        let g = GridController::new();
+
+        // Basic XIRR calculation
+        let xirr: f64 = eval_to_string(
+            &g,
+            "XIRR({-10000, 2750, 4250, 3250, 2750}, {DATE(2008,1,1), DATE(2008,3,1), DATE(2008,10,30), DATE(2009,2,15), DATE(2009,4,1)}, 0.1)",
+        )
+        .parse()
+        .unwrap();
+        // XIRR should be positive and reasonable
+        assert!(
+            xirr > 0.0 && xirr < 1.0,
+            "XIRR should be positive: got {}",
+            xirr
+        );
+
+        // Verify XIRR: XNPV at the XIRR rate should be approximately 0
+        let formula = format!(
+            "XNPV({}, {{-10000, 2750, 4250, 3250, 2750}}, {{DATE(2008,1,1), DATE(2008,3,1), DATE(2008,10,30), DATE(2009,2,15), DATE(2009,4,1)}})",
+            xirr
+        );
+        let xnpv_at_xirr: f64 = eval_to_string(&g, &formula).parse().unwrap();
+        assert!(
+            xnpv_at_xirr.abs() < 1.0,
+            "XNPV at XIRR should be ~0, got {}",
+            xnpv_at_xirr
+        );
+
+        // Error: all positive values
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "XIRR({100, 200, 300}, {DATE(2020,1,1), DATE(2020,6,1), DATE(2020,12,1)})",
+        );
+
+        // Error: all negative values
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "XIRR({-100, -200, -300}, {DATE(2020,1,1), DATE(2020,6,1), DATE(2020,12,1)})",
+        );
+
+        // Error: mismatched array sizes
+        expect_err(
+            &RunErrorMsg::InvalidArgument,
+            &g,
+            "XIRR({-1000, 2000, 3000}, {DATE(2020,1,1), DATE(2020,6,1)})",
+        );
+    }
+
+    #[test]
+    fn test_fvschedule() {
+        let g = GridController::new();
+
+        // Basic FVSCHEDULE calculation
+        // 1 * (1 + 0.09) * (1 + 0.11) * (1 + 0.1) = 1.33089
+        let fv: f64 = eval_to_string(&g, "FVSCHEDULE(1, {0.09, 0.11, 0.1})")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(1.33089, fv, "FVSCHEDULE basic calculation");
+
+        // FVSCHEDULE with larger principal
+        let fv_large: f64 = eval_to_string(&g, "FVSCHEDULE(10000, {0.05, 0.06, 0.07, 0.08})")
+            .parse()
+            .unwrap();
+        // 10000 * 1.05 * 1.06 * 1.07 * 1.08 = 12861.828
+        assert!(
+            (fv_large - 12861.828).abs() < 1.0,
+            "FVSCHEDULE with large principal: got {}",
+            fv_large
+        );
+
+        // FVSCHEDULE with single rate
+        let fv_single: f64 = eval_to_string(&g, "FVSCHEDULE(1000, {0.1})")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(1100.0, fv_single, "FVSCHEDULE with single rate");
+
+        // FVSCHEDULE with negative rate (loss)
+        let fv_loss: f64 = eval_to_string(&g, "FVSCHEDULE(1000, {-0.1})")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(900.0, fv_loss, "FVSCHEDULE with negative rate");
+
+        // FVSCHEDULE with zero rate
+        let fv_zero: f64 = eval_to_string(&g, "FVSCHEDULE(1000, {0, 0, 0})")
+            .parse()
+            .unwrap();
+        assert_f64_approx_eq(1000.0, fv_zero, "FVSCHEDULE with zero rates");
+
+        // Error: empty schedule
+        expect_err(&RunErrorMsg::InvalidArgument, &g, "FVSCHEDULE(1000, {})");
     }
 }
