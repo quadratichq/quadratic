@@ -5,7 +5,7 @@ import { TYPE } from '@/shared/constants/appConstants';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { GlobeIcon } from '@radix-ui/react-icons';
+import { ClockIcon, GlobeIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
@@ -17,6 +17,7 @@ export function FilesListItemCore({
   creator,
   hasNetworkError,
   isShared,
+  hasScheduledTasks,
   isPrivate,
   isSharedWithMe,
   viewPreferences,
@@ -31,6 +32,7 @@ export function FilesListItemCore({
   creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
   isShared?: boolean;
+  hasScheduledTasks?: boolean;
   isPrivate?: boolean;
   isSharedWithMe?: boolean;
   actions?: ReactNode;
@@ -61,6 +63,11 @@ export function FilesListItemCore({
                     {isPrivate ? 'Personal' : 'Team'}
                   </Badge>
                 )
+              )}
+              {hasScheduledTasks && (
+                <span className="mr-1">
+                  <ClockIcon className="relative -top-[1px] inline h-3 w-3" />
+                </span>
               )}
 
               {description}

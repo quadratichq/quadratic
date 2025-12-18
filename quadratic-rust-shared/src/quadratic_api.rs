@@ -1,5 +1,6 @@
 //! Interacting with the Quadratic API
 
+use chrono::{DateTime, Utc};
 use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
@@ -106,7 +107,7 @@ pub async fn get_user_file_perms(
     let client = get_client(&file_url, &jwt);
     let response = client.send().await?;
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     let deserialized = response.json::<FilePermsPayload>().await?;
 
@@ -126,7 +127,7 @@ pub async fn get_file_checkpoint(
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     Ok(response.json::<Checkpoint>().await?.last_checkpoint)
 }
@@ -156,7 +157,7 @@ pub async fn set_file_checkpoint(
         .send()
         .await?;
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
     Ok(deserialized)
@@ -187,6 +188,7 @@ pub async fn get_connection<T: DeserializeOwned>(
             "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
         )
     };
+
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
@@ -197,7 +199,7 @@ pub async fn get_connection<T: DeserializeOwned>(
         )));
     }
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     Ok(response.json::<Connection<T>>().await?)
 }
@@ -219,8 +221,6 @@ pub async fn get_connections_by_type<T: DeserializeOwned>(
         )));
     }
 
-    handle_response(&response)?;
-
     Ok(response.json::<Vec<Connection<T>>>().await?)
 }
 
@@ -237,20 +237,45 @@ pub async fn get_team(base_url: &str, jwt: &str, email: &str, team_id: &Uuid) ->
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     Ok(response.json::<Team>().await?)
 }
 
-fn handle_response(response: &Response) -> Result<()> {
-    match response.status() {
-        StatusCode::OK => Ok(()),
-        StatusCode::FORBIDDEN => Err(SharedError::QuadraticApi("Forbidden".into())),
-        StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi("Unauthorized".into())),
-        StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("Not found".into())),
-        _ => Err(SharedError::QuadraticApi(format!(
-            "Unexpected response: {response:?}"
-        ))),
+/// Extract the response body from a response.
+async fn extract_response_body(response: Response) -> String {
+    response
+        .text()
+        .await
+        .unwrap_or_else(|_| "Unable to read response body".to_string())
+}
+
+/// Handle a response from the quadratic API server.
+async fn handle_response(response: Response) -> Result<Response> {
+    let status = response.status();
+    match status {
+        StatusCode::OK => Ok(response),
+        StatusCode::BAD_REQUEST
+        | StatusCode::FORBIDDEN
+        | StatusCode::UNAUTHORIZED
+        | StatusCode::NOT_FOUND => {
+            let body = extract_response_body(response).await;
+            let error_msg = match status {
+                StatusCode::BAD_REQUEST => format!("Bad request: {}", body),
+                StatusCode::FORBIDDEN => format!("Forbidden: {}", body),
+                StatusCode::UNAUTHORIZED => format!("Unauthorized: {}", body),
+                StatusCode::NOT_FOUND => format!("Not found: {}", body),
+                _ => unreachable!(),
+            };
+            Err(SharedError::QuadraticApi(error_msg))
+        }
+        _ => {
+            let body = extract_response_body(response).await;
+            Err(SharedError::QuadraticApi(format!(
+                "Unexpected response status {}: {}",
+                status, body
+            )))
+        }
     }
 }
 
@@ -262,6 +287,166 @@ pub fn can_view(role: &[FilePermRole]) -> bool {
 /// Validate that role allows editing a file
 pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetFileInitDataResponse {
+    pub team_id: Uuid,
+    pub sequence_number: u32,
+    pub presigned_url: String,
+    pub timezone: Option<String>,
+}
+pub async fn get_file_init_data(
+    base_url: &str,
+    jwt: &str,
+    file_id: Uuid,
+) -> Result<GetFileInitDataResponse> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/init-data");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    let response = handle_response(response).await?;
+
+    let file_init_data = response
+        .json::<GetFileInitDataResponse>()
+        .await
+        .map_err(|e| SharedError::QuadraticApi(format!("Error getting file init data: {e}")))?;
+
+    Ok(file_init_data)
+}
+
+#[derive(Debug, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct Task {
+    #[bincode(with_serde)]
+    pub file_id: Uuid,
+    #[bincode(with_serde)]
+    pub task_id: Uuid,
+    #[bincode(with_serde)]
+    pub next_run_time: Option<DateTime<Utc>>,
+    pub operations: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskRun {
+    #[bincode(with_serde)]
+    pub file_id: Uuid,
+    #[bincode(with_serde)]
+    pub task_id: Uuid,
+    #[bincode(with_serde)]
+    pub run_id: Uuid,
+    pub operations: Vec<u8>,
+}
+
+impl From<Task> for TaskRun {
+    fn from(task: Task) -> Self {
+        TaskRun {
+            file_id: task.file_id,
+            task_id: task.task_id,
+            run_id: Uuid::new_v4(),
+            operations: task.operations,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ScheduledTaskLogStatus {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAILED,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScheduledTaskLogRequest {
+    pub run_id: Uuid,
+    pub status: ScheduledTaskLogStatus,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScheduledTaskLogResponse {
+    pub id: u64,
+    pub scheduled_task_id: u64,
+    pub run_id: Uuid,
+    pub status: ScheduledTaskLogStatus,
+    pub error: Option<String>,
+    pub created_date: DateTime<Utc>,
+}
+
+impl TaskRun {
+    pub fn as_bytes(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).map_err(|e| SharedError::Serialization(e.to_string()))
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        if bytes.is_empty() {
+            return Err(SharedError::Serialization("Task data is empty".to_string()));
+        }
+
+        // Check if bytes contain only whitespace
+        if bytes.iter().all(|&b| b.is_ascii_whitespace()) {
+            return Err(SharedError::Serialization(
+                "TaskRun data contains only whitespace".to_string(),
+            ));
+        }
+
+        let task_run = serde_json::from_slice::<Self>(bytes)?;
+
+        Ok(task_run)
+    }
+}
+
+/// Retrieve all scheduled tasks from the quadratic API server.
+pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>> {
+    let url = format!("{base_url}/v0/internal/scheduled-tasks");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    let response = handle_response(response).await?;
+
+    let tasks = response.json::<Vec<Task>>().await?;
+
+    Ok(tasks)
+}
+
+/// Create a scheduled task log for a scheduled task.
+pub async fn create_scheduled_task_log(
+    base_url: &str,
+    jwt: &str,
+    run_id: Uuid,
+    scheduled_task_id: Uuid,
+    status: ScheduledTaskLogStatus,
+    error: Option<String>,
+) -> Result<ScheduledTaskLogResponse> {
+    tracing::info!(
+        "Creating scheduled task log, run_id: {run_id}, scheduled_task_id: {scheduled_task_id}, status: {status:?}"
+    );
+
+    let url = format!("{base_url}/v0/internal/scheduled-tasks/{scheduled_task_id}/log");
+    let body = ScheduledTaskLogRequest {
+        run_id,
+        status,
+        error,
+    };
+
+    let response = reqwest::Client::new()
+        .post(url)
+        .header("Authorization", format!("Bearer {jwt}"))
+        .json(&body)
+        .send()
+        .await?;
+
+    let response = handle_response(response).await?;
+
+    let scheduled_task_log = response.json::<ScheduledTaskLogResponse>().await?;
+
+    Ok(scheduled_task_log)
 }
 
 #[cfg(test)]

@@ -13,8 +13,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
+  labelClassName?: string;
+
   initial?: A1Selection;
   onChangeSelection: (jsSelection: JsSelection | undefined) => void;
+  onError?: (error: string | undefined) => void;
 
   // used to trigger an error if the range is empty
   triggerError?: boolean;
@@ -29,11 +32,13 @@ interface Props {
 
   onlyCurrentSheet?: string;
   onlyCurrentSheetError?: string;
+
+  forceSheetName?: boolean;
 }
 
 export const SheetRange = (props: Props) => {
   const {
-    onChangeSelection: onChangeRange,
+    onChangeSelection,
     label,
     initial,
     triggerError,
@@ -41,10 +46,12 @@ export const SheetRange = (props: Props) => {
     readOnly,
     onlyCurrentSheet,
     onlyCurrentSheetError,
+    forceSheetName,
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const [input, setInput] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const isFocusingRef = useRef(false);
 
   const a1SheetId = useMemo((): string => {
     if (onlyCurrentSheet) {
@@ -57,35 +64,42 @@ export const SheetRange = (props: Props) => {
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     const jsSelection = sheets.sheet.cursor.jsSelection;
-    setInput(jsSelection.toA1String(a1SheetId, sheets.jsA1Context));
-    onChangeRange(jsSelection);
+    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
+    onChangeSelection(jsSelection);
     setRangeError(undefined);
-  }, [a1SheetId, onChangeRange]);
+  }, [a1SheetId, onChangeSelection, forceSheetName]);
 
   const updateValue = useCallback(
     (value: string) => {
       try {
         const selection = sheets.stringToSelection(value, a1SheetId);
-        onChangeRange(selection);
+        onChangeSelection(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+          isFocusingRef.current = true;
           sheets.changeSelection(selection);
 
           // need to call focus again since changeSelection will change focus
-          inputRef.current?.focus();
+          setTimeout(() => {
+            inputRef.current?.focus();
+            isFocusingRef.current = false;
+          }, 0);
         }
       } catch (e: any) {
         try {
           const parsed = JSON.parse(e);
           if (parsed.InvalidSheetName) {
             setRangeError(onlyCurrentSheetError ?? 'Invalid sheet name');
+            props.onError?.(onlyCurrentSheetError ?? 'Invalid sheet name');
+          } else {
+            const error = parsed.type === 'InvalidCellReference' ? 'Invalid cell reference' : parsed.type;
+            setRangeError(error);
+            props.onError?.(error);
           }
-        } catch (_) {
-          // ignore
-        }
+        } catch {}
       }
     },
-    [a1SheetId, onChangeRange, onlyCurrentSheetError]
+    [a1SheetId, onChangeSelection, onlyCurrentSheetError, props]
   );
 
   const onBlur = useCallback(
@@ -103,19 +117,25 @@ export const SheetRange = (props: Props) => {
     }
 
     const jsSelection = sheets.A1SelectionToJsSelection(initial);
-    setInput(jsSelection.toA1String(a1SheetId, sheets.jsA1Context));
+    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
     jsSelection.free();
-  }, [changeCursor, a1SheetId, initial]);
+  }, [changeCursor, a1SheetId, initial, forceSheetName]);
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;
+    if (isFocusingRef.current) return; // prevent infinite loop
+
     try {
       const selection = sheets.stringToSelection(input, a1SheetId);
       if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+        isFocusingRef.current = true;
         sheets.changeSelection(selection);
 
         // need to call focus again since changeSelection will change focus
-        inputRef.current?.focus();
+        setTimeout(() => {
+          inputRef.current?.focus();
+          isFocusingRef.current = false;
+        }, 0);
       }
     } catch (_) {
       // there was an error parsing the range, so nothing more to do
@@ -135,10 +155,14 @@ export const SheetRange = (props: Props) => {
 
   return (
     <div>
-      {props.label && <Label htmlFor={label}>{label}</Label>}
+      {props.label && (
+        <Label className={props.labelClassName} htmlFor={label}>
+          {label}
+        </Label>
+      )}
 
       <div className="flex w-full items-center space-x-2">
-        <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>
+        <div className={'w-full'}>
           <Input
             ref={inputRef}
             id={props.label}
@@ -151,6 +175,7 @@ export const SheetRange = (props: Props) => {
             onBlur={onBlur}
             onFocus={onFocus}
             readOnly={readOnly}
+            className={cn((rangeError || isError) && 'border-destructive')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && props.onEnter) {
                 updateValue(e.currentTarget.value);
@@ -165,7 +190,7 @@ export const SheetRange = (props: Props) => {
             label={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
             side="bottom"
           >
-            <Button size="sm" onClick={onInsert} disabled={disableButton}>
+            <Button variant="outline" size="icon" onClick={onInsert} disabled={disableButton} className="flex-shrink-0">
               <InsertCellRefIcon />
             </Button>
           </TooltipPopover>

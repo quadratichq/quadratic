@@ -3,7 +3,7 @@
 use serde::Deserialize;
 use strum_macros::Display;
 
-#[derive(Display, Deserialize, Debug, PartialEq)]
+#[derive(Display, Deserialize, Debug, PartialEq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum Environment {
     Local,
@@ -14,10 +14,6 @@ pub enum Environment {
 }
 
 impl Environment {
-    pub fn is_local(&self) -> bool {
-        self == &Environment::Local
-    }
-
     pub fn is_production(&self) -> bool {
         self == &Environment::Production
     }
@@ -34,6 +30,10 @@ impl Environment {
         self == &Environment::Test
     }
 
+    pub fn is_local(&self) -> bool {
+        self == &Environment::Local
+    }
+
     pub fn is_local_or_docker(&self) -> bool {
         self == &Environment::Local || self == &Environment::Docker
     }
@@ -47,8 +47,8 @@ mod tests {
     fn test_environment_is_production() {
         assert!(Environment::Production.is_production());
         assert!(Environment::Development.is_development());
-        assert!(Environment::Local.is_local());
         assert!(Environment::Docker.is_docker());
         assert!(Environment::Test.is_test());
+        assert!(Environment::Local.is_local());
     }
 }
