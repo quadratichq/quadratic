@@ -51,7 +51,7 @@ export const cloudControllerEc2SecurityGroup = new aws.ec2.SecurityGroup(
         protocol: "tcp",
         fromPort: 80,
         toPort: 80,
-        securityGroups: [cloudControllerNlbSecurityGroup.id],
+        cidrBlocks: ["0.0.0.0/0"],
       },
       // Worker-only server port (internal communication from cloud workers)
       // Cloud workers are Docker containers on the same host, so they communicate
@@ -63,4 +63,3 @@ export const cloudControllerEc2SecurityGroup = new aws.ec2.SecurityGroup(
     tags: { Name: "cloud-controller-ec2-sg" },
   },
 );
-
