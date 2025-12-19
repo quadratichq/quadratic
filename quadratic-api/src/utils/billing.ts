@@ -17,19 +17,15 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
     SubscriptionStatus.UNPAID,
   ];
 
-  let updateComplete = false;
   // If team has a recoverable status, sync with Stripe to check if it's now active
   if (team.stripeSubscriptionStatus && recoverableStatuses.includes(team.stripeSubscriptionStatus)) {
     await updateBilling(team);
-    updateComplete = true;
   }
 
   if (team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE && !!team.stripeCurrentPeriodEnd) {
     // If the team is on a paid plan, but the current period has ended, update the billing info
     if (team.stripeCurrentPeriodEnd < new Date()) {
-      if (!updateComplete) {
-        await updateBilling(team);
-      }
+      await updateBilling(team);
 
       const dbTeam = await dbClient.team.findUnique({
         where: {
