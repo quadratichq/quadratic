@@ -64,6 +64,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
         },
       },
       TeamInvite: {
+        where: {
+          status: 'PENDING',
+        },
         orderBy: {
           createdDate: 'asc',
         },

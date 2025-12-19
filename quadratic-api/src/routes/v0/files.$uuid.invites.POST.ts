@@ -47,8 +47,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     throw new ApiError(403, 'You do not have permission to invite others to this file.');
   }
 
-  // Are you trying to create an invite that already exists? That's a conflict
-  // (We don't want to figure out if you're updating the existing record or not)
+  // Check if an invite already exists
   const existingInvite = await dbClient.fileInvite.findUnique({
     where: {
       email_fileId: {
@@ -57,8 +56,30 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
       },
     },
   });
+
   if (existingInvite) {
-    throw new ApiError(409, 'An invite with this email already exists.');
+    if (existingInvite.status === 'PENDING') {
+      throw new ApiError(409, 'An invite with this email already exists.');
+    }
+
+    if (existingInvite.status === 'ACCEPTED') {
+      throw new ApiError(400, 'This user has already accepted this invite.');
+    }
+
+    // status === 'DELETED' - re-invite by updating the existing record
+    if (existingInvite.status === 'DELETED') {
+      const updatedInvite = await dbClient.fileInvite.update({
+        where: { id: existingInvite.id },
+        data: {
+          status: 'PENDING',
+          role,
+          invitedByUserId: userMakingRequestId,
+        },
+      });
+
+      await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
+      return res.status(200).json({ email: updatedInvite.email, role: updatedInvite.role, id: updatedInvite.id });
+    }
   }
 
   // Get the auth0 info (email/name) for the user making the request
@@ -87,6 +108,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
         email,
         role,
         fileId,
+        status: 'PENDING',
+        invitedByUserId: userMakingRequestId,
       },
     });
     await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
