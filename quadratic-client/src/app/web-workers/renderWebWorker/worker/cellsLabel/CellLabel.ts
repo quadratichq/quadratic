@@ -137,9 +137,8 @@ export class CellLabel {
   // Used for row height calculation to ensure text isn't clipped.
   // Note: textHeight already includes actual glyph heights (including descenders).
   get textHeightWithDescenders(): number {
-    // Include vertical padding that's applied when positioning text (top and bottom)
-    const verticalPadding = (CELL_VERTICAL_PADDING / LINE_HEIGHT) * this.lineHeight;
-    return this.textHeight + verticalPadding * 2;
+    // Include constant vertical padding (top and bottom) - not scaled with font size
+    return this.textHeight + CELL_VERTICAL_PADDING * 2;
   }
 
   // overflow values
@@ -392,10 +391,9 @@ export class CellLabel {
       this.position.y = actualTop;
       this.actualTop = actualTop;
     } else {
-      // Apply vertical alignment with padding from edges (scaled to font size)
-      const verticalPadding = (CELL_VERTICAL_PADDING / LINE_HEIGHT) * this.lineHeight;
+      // Apply vertical alignment with constant padding from edges
       if (this.verticalAlign === 'bottom') {
-        const actualTop = this.AABB.bottom - this.textHeight - verticalPadding;
+        const actualTop = this.AABB.bottom - this.textHeight - CELL_VERTICAL_PADDING;
         this.position.y = actualTop;
         this.actualTop = actualTop;
       } else if (this.verticalAlign === 'middle') {
@@ -404,7 +402,7 @@ export class CellLabel {
         this.actualTop = actualTop;
       } else {
         // 'top' alignment
-        const actualTop = this.AABB.top + verticalPadding;
+        const actualTop = this.AABB.top + CELL_VERTICAL_PADDING;
         this.position.y = actualTop;
         this.actualTop = actualTop;
       }
@@ -497,7 +495,6 @@ export class CellLabel {
     let lastBreakWidth = 0;
     let spacesRemoved = 0;
     let spaceCount = 0;
-    let hasEmoji = false;
     let i: number;
     for (i = 0; i < charsInput.length; i++) {
       const char = charsInput[i];
@@ -548,7 +545,6 @@ export class CellLabel {
         }
 
         if (isEmoji) {
-          hasEmoji = true;
           const emojiSize = this.lineHeight / scale;
           // Approximate baseline offset: for most fonts, baseline is ~80% down from top
           // This aligns emoji bottom roughly with text baseline
@@ -657,12 +653,8 @@ export class CellLabel {
       calculatedTextHeight = this.lineHeight * (line + 1);
     }
 
-    // Emojis have a yOffset that shifts them down for baseline alignment.
-    // Add this offset to ensure the height accounts for emoji positioning.
-    if (hasEmoji) {
-      const emojiBaselineOffset = data.lineHeight * 0.2 * scale;
-      calculatedTextHeight += emojiBaselineOffset;
-    }
+    // Note: Emoji yOffset is already included in char.position.y and accounted for
+    // in maxCharBottom calculation, so no additional offset is needed here.
 
     // Add space for underlines if present (underlines extend below the text baseline)
     // Note: underlineOffset is in bitmap font coordinates and needs to be scaled
@@ -687,6 +679,8 @@ export class CellLabel {
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.getUnwrappedTextWidth`);
 
     const scale = this.fontSize / data.size;
+    // Emoji size uses lineHeight (matching processText)
+    const emojiSize = this.lineHeight / scale;
 
     const charsInput = splitTextToCharacters(text);
     let prevCharCode = null;
@@ -701,8 +695,39 @@ export class CellLabel {
         continue;
       }
       const charCode = extractCharCode(char);
-      const charData = data.chars[charCode];
-      if (!charData) continue;
+      let charData = data.chars[charCode];
+
+      // Handle emojis that don't have charData in the bitmap font
+      if (!charData) {
+        let isEmoji = emojiStrings.has(char);
+        let skipNextChar = false;
+
+        // Check for variation selector combinations
+        if (!isEmoji && char.length === 1) {
+          const nextChar = i + 1 < charsInput.length ? charsInput[i + 1] : '';
+          const withVariationSelector = char + '\uFE0F';
+
+          if (nextChar === '\uFE0F' && emojiStrings.has(withVariationSelector)) {
+            isEmoji = true;
+            skipNextChar = true;
+          } else if (emojiStrings.has(withVariationSelector)) {
+            isEmoji = true;
+          }
+        }
+
+        if (isEmoji) {
+          // Use emojiSize for width (matching processText)
+          curUnwrappedTextWidth += emojiSize + this.letterSpacing;
+          maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
+          prevCharCode = null;
+
+          if (skipNextChar) {
+            i++;
+          }
+        }
+        continue;
+      }
+
       if (prevCharCode && charData.kerning[prevCharCode]) {
         curUnwrappedTextWidth += charData.kerning[prevCharCode];
       }
