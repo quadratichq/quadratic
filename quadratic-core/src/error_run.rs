@@ -130,7 +130,7 @@ impl fmt::Display for RunErrorMsg {
                 write!(f, "Spill error")
             }
             Self::Unimplemented(_) => {
-                write!(f, "#UNIMPLEMENTED")
+                write!(f, "#UNSUPPORTED")
             }
             Self::UnknownError => {
                 write!(f, "(unknown error)")

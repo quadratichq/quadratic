@@ -24,7 +24,7 @@ lazy_static! {
   static ref PREFIX_RE: regex::Regex = regex::Regex::new(r"^_xl(?:fn|udf)\.").unwrap();
 }
 
-const EXCEL_FUNCTIONS_LIST: [&str; 510] = [
+const EXCEL_FUNCTIONS_LIST: [&str; 511] = [
     "ABS",
     "ACCRINT",
     "ACCRINTM",
@@ -103,6 +103,7 @@ const EXCEL_FUNCTIONS_LIST: [&str; 510] = [
     "CONFIDENCE.NORM",
     "CONFIDENCE.T",
     "CONVERT",
+    "COPILOT",
     "CORREL",
     "COS",
     "COSH",
