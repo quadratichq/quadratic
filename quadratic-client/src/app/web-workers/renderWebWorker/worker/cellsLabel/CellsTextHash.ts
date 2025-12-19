@@ -261,7 +261,9 @@ export class CellsTextHash {
       let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
       columnsMax.set(column, maxWidth);
 
-      let height = label.textHeight;
+      // Use textHeightWithDescenders for row sizing to ensure characters
+      // with descenders (g, y, p, q, j) aren't clipped
+      let height = label.textHeightWithDescenders;
       let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
       rowsMax.set(row, maxHeight);
     });

@@ -133,6 +133,17 @@ export class CellLabel {
   textHeight = CELL_HEIGHT;
   unwrappedTextWidth = CELL_WIDTH;
 
+  // Returns textHeight plus space for descenders (g, y, p, q, j).
+  // Used for row height calculation to ensure descenders aren't clipped.
+  get textHeightWithDescenders(): number {
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) return this.textHeight;
+    const scale = this.fontSize / data.size;
+    const fontLineHeightAtCurrentSize = data.lineHeight * scale;
+    const descenderSpace = fontLineHeightAtCurrentSize - this.lineHeight;
+    return this.textHeight + Math.max(0, descenderSpace);
+  }
+
   // overflow values
   private overflowRight = 0;
   private overflowLeft = 0;
@@ -405,6 +416,9 @@ export class CellLabel {
 
   updateText = (labelMeshes: LabelMeshes): void => {
     if (!this.visible) return;
+
+    // Recalculate cell limits (including maxWidth for wrapping) in case AABB changed
+    this.updateCellLimits();
 
     let processedText = this.processText(labelMeshes, this.text);
     if (!processedText) return;
@@ -784,7 +798,8 @@ export class CellLabel {
     }
 
     // If text is vertically clipped, replace each character with a middle dot
-    if (hasVerticalClipping && this.text.trim() !== '') {
+    // BUT: don't show dots for wrapped cells - they will auto-resize to fit the content
+    if (hasVerticalClipping && this.text.trim() !== '' && this.wrap !== 'wrap') {
       const dotCharCode = extractCharCode('·');
       const dotCharData = data.chars[dotCharCode];
 
