@@ -1396,7 +1396,7 @@ fn bessel_k(x: f64, n: u32) -> f64 {
 fn bessel_k0(x: f64) -> f64 {
     if x <= 2.0 {
         let y = x * x / 4.0;
-        -x.ln() * bessel_i0(x)
+        -(x / 2.0).ln() * bessel_i0(x)
             + (-0.57721566
                 + y * (0.42278420
                     + y * (0.23069756
@@ -1415,7 +1415,7 @@ fn bessel_k0(x: f64) -> f64 {
 fn bessel_k1(x: f64) -> f64 {
     if x <= 2.0 {
         let y = x * x / 4.0;
-        x.ln() * bessel_i1(x)
+        (x / 2.0).ln() * bessel_i1(x)
             + (1.0 / x)
                 * (1.0
                     + y * (0.15443144
@@ -1740,5 +1740,13 @@ mod tests {
         // BESSELI(0, 0) = 1
         let result: f64 = eval_to_string(&g, "BESSELI(0, 0)").parse().unwrap();
         assert!((result - 1.0).abs() < 0.001);
+
+        // BESSELK(1, 0) ≈ 0.421024421 (Excel value)
+        let result: f64 = eval_to_string(&g, "BESSELK(1, 0)").parse().unwrap();
+        assert!((result - 0.421024421).abs() < 0.0001);
+
+        // BESSELK(1.5, 1) ≈ 0.277388 (Excel value)
+        let result: f64 = eval_to_string(&g, "BESSELK(1.5, 1)").parse().unwrap();
+        assert!((result - 0.277388).abs() < 0.001);
     }
 }
