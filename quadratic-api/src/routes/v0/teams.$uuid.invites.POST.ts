@@ -53,8 +53,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'You cannot invite someone to a role higher than their own.');
   }
 
-  // Are you trying to create an invite that already exists? That's a conflict
-  // (We don't want to figure out if you're updating the existing record or not)
+  // Check if an invite already exists
   const existingInvite = await dbClient.teamInvite.findUnique({
     where: {
       email_teamId: {
@@ -63,8 +62,30 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       },
     },
   });
+
   if (existingInvite) {
-    throw new ApiError(409, 'An invite with this email already exists.');
+    if (existingInvite.status === 'PENDING') {
+      throw new ApiError(409, 'An invite with this email already exists.');
+    }
+
+    if (existingInvite.status === 'ACCEPTED') {
+      throw new ApiError(400, 'This user has already accepted this invite.');
+    }
+
+    // status === 'DELETED' - re-invite by updating the existing record
+    if (existingInvite.status === 'DELETED') {
+      const updatedInvite = await dbClient.teamInvite.update({
+        where: { id: existingInvite.id },
+        data: {
+          status: 'PENDING',
+          role,
+          invitedByUserId: userMakingRequestId,
+        },
+      });
+
+      await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
+      return res.status(200).json({ email: updatedInvite.email, role: updatedInvite.role, id: updatedInvite.id });
+    }
   }
 
   // Get the auth0 info (email/name) for the user making the request
@@ -88,6 +109,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
         email,
         role,
         teamId,
+        status: 'PENDING',
+        invitedByUserId: userMakingRequestId,
       },
     });
     await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));

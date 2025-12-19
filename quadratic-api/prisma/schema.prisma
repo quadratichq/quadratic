@@ -32,6 +32,10 @@ model User {
     // AI Settings
     aiRules String? @map("ai_rules") // User-specific AI rules/instructions
 
+    // Invite tracking
+    TeamInvitesCreated TeamInvite[] @relation("TeamInviteCreatedBy")
+    FileInvitesCreated FileInvite[] @relation("FileInviteCreatedBy")
+
     @@index([auth0Id])
     @@index([email])
 }
@@ -210,14 +214,28 @@ model UserTeamRole {
 }
 
 model TeamInvite {
-    id          Int      @id @default(autoincrement())
+    id          Int          @id @default(autoincrement())
     email       String
-    teamId      Int      @map("team_id")
-    team        Team     @relation(fields: [teamId], references: [id])
+    teamId      Int          @map("team_id")
+    team        Team         @relation(fields: [teamId], references: [id])
     role        TeamRole
-    createdDate DateTime @default(now()) @map("created_date")
+    status      InviteStatus @default(PENDING)
+    createdDate DateTime     @default(now()) @map("created_date")
+    updatedDate DateTime     @updatedAt @map("updated_date")
+
+    // Track who created/last sent the invite
+    // Note: null for invites created before this tracking was added
+    invitedByUserId Int?  @map("invited_by_user_id")
+    invitedBy       User? @relation("TeamInviteCreatedBy", fields: [invitedByUserId], references: [id])
 
     @@unique([email, teamId])
+    @@index([teamId, status])
+}
+
+enum InviteStatus {
+    PENDING
+    ACCEPTED
+    DELETED
 }
 
 enum FileRole {
@@ -239,14 +257,22 @@ model UserFileRole {
 }
 
 model FileInvite {
-    id          Int      @id @default(autoincrement())
+    id          Int          @id @default(autoincrement())
     email       String
-    fileId      Int      @map("file_id")
-    file        File     @relation(fields: [fileId], references: [id])
+    fileId      Int          @map("file_id")
+    file        File         @relation(fields: [fileId], references: [id])
     role        FileRole
-    createdDate DateTime @default(now()) @map("created_date")
+    status      InviteStatus @default(PENDING)
+    createdDate DateTime     @default(now()) @map("created_date")
+    updatedDate DateTime     @updatedAt @map("updated_date")
+
+    // Track who created/last sent the invite
+    // Note: null for invites created before this tracking was added
+    invitedByUserId Int?  @map("invited_by_user_id")
+    invitedBy       User? @relation("FileInviteCreatedBy", fields: [invitedByUserId], references: [id])
 
     @@unique([email, fileId])
+    @@index([fileId, status])
 }
 
 // Future: folders

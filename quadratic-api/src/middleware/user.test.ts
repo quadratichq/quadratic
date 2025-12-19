@@ -107,14 +107,16 @@ describe('A user coming in to the system for the first time and accessing _any_ 
           email: 'firsttimeuser@test.com',
         },
       });
-      expect(teamInvitesAfter.length).toBe(0);
+      expect(teamInvitesAfter.length).toBe(1);
+      expect(teamInvitesAfter[0].status).toBe('ACCEPTED');
 
       const fileInvitesAfter = await dbClient.fileInvite.findMany({
         where: {
           email: 'firsttimeuser@test.com',
         },
       });
-      expect(fileInvitesAfter.length).toBe(0);
+      expect(fileInvitesAfter.length).toBe(1);
+      expect(fileInvitesAfter[0].status).toBe('ACCEPTED');
     });
   });
 });

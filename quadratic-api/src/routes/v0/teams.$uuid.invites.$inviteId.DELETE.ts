@@ -49,10 +49,18 @@ async function handler(
     throw new ApiError(404, 'Invite does not exist');
   }
 
-  // Ok, delete it
-  await dbClient.teamInvite.delete({
+  // Can only delete pending invites
+  if (invite.status !== 'PENDING') {
+    throw new ApiError(400, 'Can only delete pending invites');
+  }
+
+  // Soft delete by updating status
+  await dbClient.teamInvite.update({
     where: {
       id: inviteId,
+    },
+    data: {
+      status: 'DELETED',
     },
   });
 
