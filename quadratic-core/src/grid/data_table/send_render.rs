@@ -158,13 +158,12 @@ impl DataTable {
                     continue;
                 }
 
-                if let Some(cell_value) = self.cell_value_at(data_x as u32, data_y as u32) {
-                    if let crate::CellValue::Text(text) = cell_value {
-                        if text.contains('\n') || text.contains('\r') {
-                            rows_to_resize.insert(actual_row);
-                            break;
-                        }
-                    }
+                if let Some(crate::CellValue::Text(text)) =
+                    self.cell_value_at(data_x as u32, data_y as u32)
+                    && (text.contains('\n') || text.contains('\r'))
+                {
+                    rows_to_resize.insert(actual_row);
+                    break;
                 }
             }
         }

@@ -472,12 +472,11 @@ impl Sheet {
 
         // Include rows with multi-line text (containing newlines)
         for pos in self.columns.iter_content_in_rect(rect) {
-            if !rows.contains(&pos.y) {
-                if let Some(CellValue::Text(text)) = self.columns.get_value(&pos) {
-                    if text.contains('\n') || text.contains('\r') {
-                        rows.insert(pos.y);
-                    }
-                }
+            if !rows.contains(&pos.y)
+                && let Some(CellValue::Text(text)) = self.columns.get_value(&pos)
+                && (text.contains('\n') || text.contains('\r'))
+            {
+                rows.insert(pos.y);
             }
         }
 
