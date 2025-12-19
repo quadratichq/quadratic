@@ -333,6 +333,10 @@
       "password": "E2E_test"
     },
     {
+      "email": "e2e_glyph_sizing_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
       "email": "e2e_insert_delete_column_chromium@quadratichq.com",
       "password": "E2E_test"
     },
