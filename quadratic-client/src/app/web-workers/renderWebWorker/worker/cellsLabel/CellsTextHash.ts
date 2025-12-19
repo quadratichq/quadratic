@@ -511,7 +511,10 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.columnsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
+    // Update the hash if it's dirty (needs cell fetch), has dirty cells (array),
+    // or just needs text recalculation. This ensures correct width measurement
+    // for auto-resize.
+    if (visibleOrNeighbor && (this.dirty || this.dirtyText)) {
       await this.update(true);
     }
     return this.columnsMaxCache ?? new Map();
@@ -526,7 +529,10 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.rowsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
+    // Update the hash if it's dirty (needs cell fetch), has dirty cells (array),
+    // or just needs text recalculation. This ensures correct height measurement
+    // for auto-resize, including cells with newlines.
+    if (visibleOrNeighbor && (this.dirty || this.dirtyText)) {
       await this.update(true);
     }
     return this.rowsMaxCache ?? new Map();

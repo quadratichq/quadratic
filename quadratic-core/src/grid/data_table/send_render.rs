@@ -122,6 +122,54 @@ impl DataTable {
         }
     }
 
+    /// Returns the rows with multi-line text (containing newlines) in the given display rect.
+    pub(crate) fn get_rows_with_multiline_text_in_display_rect(
+        &self,
+        data_table_pos: &Pos,
+        display_rect: &Rect,
+        rows_to_resize: &mut HashSet<i64>,
+    ) {
+        let y_adjustment = self.y_adjustment(true);
+        let reverse_display_buffer = self.get_reverse_display_buffer();
+
+        // Iterate through the display rect and check for multi-line text
+        for y in display_rect.y_range() {
+            let data_y = y - data_table_pos.y - y_adjustment;
+            if data_y < 0 {
+                continue;
+            }
+
+            // Calculate the actual row in sheet coordinates
+            let actual_row = data_table_pos.y
+                + y_adjustment
+                + self.get_display_index_from_reverse_display_buffer(
+                    data_y as u64,
+                    reverse_display_buffer.as_ref(),
+                ) as i64;
+
+            if rows_to_resize.contains(&actual_row) {
+                continue;
+            }
+
+            // Check cells in this row for multi-line text
+            for x in display_rect.x_range() {
+                let data_x = x - data_table_pos.x;
+                if data_x < 0 {
+                    continue;
+                }
+
+                if let Some(cell_value) = self.cell_value_at(data_x as u32, data_y as u32) {
+                    if let crate::CellValue::Text(text) = cell_value {
+                        if text.contains('\n') || text.contains('\r') {
+                            rows_to_resize.insert(actual_row);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Returns the dirty hashes and rows changed for the formats
     pub(crate) fn mark_formats_dirty(
         &self,

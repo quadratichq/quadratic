@@ -47,6 +47,7 @@ type EditActionSpec = Pick<
   | Action.DeleteCell
   | Action.CloseInlineEditor
   | Action.SaveInlineEditor
+  | Action.InsertNewLine
   | Action.SaveInlineEditorMoveUp
   | Action.SaveInlineEditorMoveRight
   | Action.SaveInlineEditorMoveLeft
@@ -211,6 +212,10 @@ export const editActionsSpec: EditActionSpec = {
   [Action.SaveInlineEditor]: {
     label: () => 'Save inline editor',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
+  },
+  [Action.InsertNewLine]: {
+    label: () => 'Insert new line',
+    run: () => {},
   },
   [Action.SaveInlineEditorMoveUp]: {
     label: () => 'Save inline editor and move up',

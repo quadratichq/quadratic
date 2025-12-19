@@ -150,6 +150,7 @@ export enum Action {
   TriggerCell = 'trigger_cell',
   InsertToday = 'insert_today',
   InsertTodayTime = 'insert_today_time',
+  InsertNewLine = 'insert_new_line',
   InsertColumnLeft = 'insert_column_left',
   InsertColumnRight = 'insert_column_right',
   InsertRowAbove = 'insert_row_above',

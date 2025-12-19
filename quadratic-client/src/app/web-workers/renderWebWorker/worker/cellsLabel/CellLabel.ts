@@ -485,6 +485,7 @@ export class CellLabel {
     let lastBreakWidth = 0;
     let spacesRemoved = 0;
     let spaceCount = 0;
+    let hasEmoji = false;
     let i: number;
     for (i = 0; i < charsInput.length; i++) {
       const char = charsInput[i];
@@ -535,6 +536,7 @@ export class CellLabel {
         }
 
         if (isEmoji) {
+          hasEmoji = true;
           const emojiSize = this.lineHeight / scale;
           // Approximate baseline offset: for most fonts, baseline is ~80% down from top
           // This aligns emoji bottom roughly with text baseline
@@ -633,6 +635,13 @@ export class CellLabel {
     // Use this.lineHeight to match the spacing used when positioning lines
     // The 'line' variable is 0-indexed, so (line + 1) gives us the total number of lines
     let calculatedTextHeight = this.lineHeight * (line + 1);
+
+    // Emojis have a yOffset that shifts them down for baseline alignment.
+    // Add this offset to ensure the height accounts for emoji positioning.
+    if (hasEmoji) {
+      const emojiBaselineOffset = data.lineHeight * 0.2 * scale;
+      calculatedTextHeight += emojiBaselineOffset;
+    }
 
     // Add space for underlines if present (underlines extend below the text baseline)
     // Note: underlineOffset is in bitmap font coordinates and needs to be scaled
@@ -755,15 +764,20 @@ export class CellLabel {
 
     // Check if text is being vertically clipped beyond the cell bounds
     // We need to check against the actual cell (AABB) to know when to replace with dots
+    // Note: We don't include OPEN_SANS_FIX.y here since it's a visual adjustment for
+    // rendering, not an indicator of whether text actually fits in the cell bounds.
+    // Use strict inequality (<, >) with a small epsilon to avoid floating point issues
+    // and match the rendering clipping behavior.
+    const CLIP_EPSILON = 0.5;
     let hasVerticalClipping = false;
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
-      const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
+      const yPos = this.position.y + char.position.y * scale;
       const charTop = yPos;
       const charBottom = yPos + char.charData.frame.height * scale;
 
-      // Check if character extends beyond the cell bounds
-      if (charTop < this.AABB.top || charBottom > this.AABB.bottom) {
+      // Check if character extends beyond the cell bounds (with epsilon tolerance)
+      if (charTop < this.AABB.top - CLIP_EPSILON || charBottom > this.AABB.bottom + CLIP_EPSILON) {
         hasVerticalClipping = true;
         break;
       }
@@ -888,7 +902,11 @@ export class CellLabel {
         const charBottom = yPos + textureFrame.height * scale;
 
         // remove letters that are outside the clipping bounds
-        if (charLeft <= clipLeft || charRight >= clipRight || charTop <= clipTop || charBottom >= clipBottom) {
+        // Use strict inequality with small tolerance for vertical clipping to avoid
+        // floating point issues that could cause emojis to oscillate between visible and clipped
+        const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + CLIP_EPSILON;
+        const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
+        if (horizontallyClipped || verticallyClipped) {
           // this removes extra characters from the mesh after a clip
           buffer.reduceSize(6);
 
