@@ -30,7 +30,8 @@ model User {
     ScheduledTask ScheduledTask[]
 
     // AI Settings
-    aiRules String? @map("ai_rules") // User-specific AI rules/instructions
+    aiRules     String? @map("ai_rules") // User-specific AI rules/instructions
+    aiLanguages Json?   @map("ai_languages") // User AI language preferences (formulas, python, javascript)
 
     @@index([auth0Id])
     @@index([email])

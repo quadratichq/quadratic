@@ -658,6 +658,10 @@ export const ThumbDownIcon: IconComponent = (props) => {
   return <Icon {...props}>thumb_down_alt</Icon>;
 };
 
+export const TuneIcon: IconComponent = (props) => {
+  return <Icon {...props}>tune</Icon>;
+};
+
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
 };

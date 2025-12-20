@@ -236,6 +236,7 @@ const InternalContextTypeSchema = z.enum([
   'fileSummary',
   'aiUpdates',
   'aiRules',
+  'aiLanguages',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
