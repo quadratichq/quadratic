@@ -108,6 +108,13 @@ impl fmt::Display for Duration {
         let years = months / 12;
         months -= years * 12;
 
+        // Try to display as a single fractional unit if possible (e.g., 5.5m instead of 5m 30s)
+        if self.months == 0 {
+            if let Some(result) = self.try_display_as_single_unit() {
+                return write!(f, "{result}");
+            }
+        }
+
         // Split seconds into days, hours, minutes, and seconds.
         let mut seconds = self.seconds;
         let mut minutes = (seconds / 60.0).trunc();
@@ -198,10 +205,18 @@ impl FromStr for Duration {
             let count_str = segments[1].trim();
 
             let unit_str = &segments[2].trim();
-            let unit: TimeUnit = unit_str
-                .strip_suffix(',')
-                .unwrap_or(unit_str)
-                .to_ascii_lowercase()
+            let stripped = unit_str.strip_suffix(',').unwrap_or(unit_str);
+
+            // Only apply lowercase for multi-character units. Single-character
+            // units must be lowercase to avoid false positives like "5M" being
+            // parsed as 5 minutes (when it might mean megabytes or just text).
+            let normalized = if stripped.len() > 1 {
+                stripped.to_ascii_lowercase()
+            } else {
+                stripped.to_string()
+            };
+
+            let unit: TimeUnit = normalized
                 .parse()
                 .map_err(|()| ParseDurationError::InvalidUnit)?;
 
@@ -492,6 +507,46 @@ impl Duration {
         })
     }
 
+    /// Tries to display the duration as a single fractional unit (e.g., "5.5m"
+    /// instead of "5m 30s"). Returns None if it can't be cleanly represented.
+    fn try_display_as_single_unit(&self) -> Option<String> {
+        // Only works for durations without months
+        if self.months != 0 {
+            return None;
+        }
+
+        let abs_seconds = self.seconds.abs();
+
+        // Try each unit from largest to smallest
+        let units_and_divisors = [
+            (TimeUnit::Day, 86400.0),
+            (TimeUnit::Hour, 3600.0),
+            (TimeUnit::Minute, 60.0),
+            (TimeUnit::Second, 1.0),
+        ];
+
+        for (unit, divisor) in units_and_divisors {
+            let quantity = abs_seconds / divisor;
+
+            // If quantity is >= 1 and has a clean decimal (up to 3 decimal places)
+            if quantity >= 1.0 {
+                let rounded = (quantity * 1000.0).round() / 1000.0;
+                // Check if the rounded value exactly represents the original seconds
+                let reconstructed = rounded * divisor;
+                if (reconstructed - abs_seconds).abs() < 0.0001 {
+                    let signed_quantity = if self.seconds < 0.0 {
+                        -rounded
+                    } else {
+                        rounded
+                    };
+                    return Some(format!("{signed_quantity}{unit}"));
+                }
+            }
+        }
+
+        None
+    }
+
     /// Returns the number of seconds as a `chrono::TimeDelta`, ignoring months.
     fn to_chrono_timedelta(self) -> chrono::TimeDelta {
         chrono::TimeDelta::seconds(self.seconds.trunc() as i64)
@@ -667,6 +722,9 @@ mod tests {
             ("1 year month", Err(())),               // two units in a row
             ("0.5 year", Err(())),                   // fractional year is not allowed
             ("3 mo, 10year", Err(())),               // nondecreasing unit order
+            ("5M", Err(())),                         // uppercase single-letter unit should NOT match
+            ("5S", Err(())),                         // uppercase single-letter unit should NOT match
+            ("5H", Err(())),                         // uppercase single-letter unit should NOT match
         ] {
             println!("Parsing duration {input:?}");
             let result = input.parse::<Duration>();
@@ -693,11 +751,31 @@ mod tests {
         assert_eq!(Duration::from_years(3).to_string(), "3y");
         assert_eq!(Duration::from_months(3).to_string(), "3mo");
 
-        assert_eq!(Duration::from_days(3.25).to_string(), "3d 6h");
+        // Fractional days display as fractional (not mixed units)
+        assert_eq!(Duration::from_days(3.25).to_string(), "3.25d");
 
         assert_eq!(Duration::from_attoseconds(3.2).to_string(), "3.2as");
         assert_eq!(Duration::from_femtoseconds(3.2).to_string(), "3.2fs");
         assert_eq!(Duration::from_picoseconds(3.2).to_string(), "3.2ps");
+    }
+
+    #[test]
+    fn test_duration_fractional_display() {
+        // 5.5m should stay as 5.5m, not become 5m 30s
+        assert_eq!(Duration::from_str("5.5m").unwrap().to_string(), "5.5m");
+        assert_eq!(Duration::from_str("2.5h").unwrap().to_string(), "2.5h");
+        assert_eq!(Duration::from_str("1.5d").unwrap().to_string(), "1.5d");
+
+        // Clean fractions work
+        assert_eq!(Duration::from_str("5.25m").unwrap().to_string(), "5.25m");
+        assert_eq!(Duration::from_str("5.125m").unwrap().to_string(), "5.125m");
+
+        // Non-clean fractions fall back to mixed units
+        // 5m 35s = 335 seconds = 5.5833... minutes (not a clean decimal)
+        assert_eq!(
+            (Duration::from_str("5m").unwrap() + Duration::from_str("35s").unwrap()).to_string(),
+            "5m 35s"
+        );
     }
 
     #[test]

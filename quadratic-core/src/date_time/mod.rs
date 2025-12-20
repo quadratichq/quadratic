@@ -195,23 +195,25 @@ pub fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
     time.format_with_items(items.iter()).to_string()
 }
 
-/// Parses a time string using a list of possible formats.
-pub fn parse_time(value: &str) -> Option<NaiveTime> {
+/// Parses a time string using a list of possible formats, returning the parsed
+/// time and the strftime format string that matches the user's input format.
+pub fn parse_time_with_format(value: &str) -> Option<(NaiveTime, String)> {
+    // Formats paired with their output format for display
     let formats = [
-        "%H:%M:%S",
-        "%I:%M:%S %p",
-        "%I:%M:%S%p",
-        "%I:%M %p",
-        "%I:%M%p",
-        "%H:%M",
-        "%I:%M:%S",
-        "%I:%M",
-        "%H:%M:%S%.3f",
+        ("%H:%M:%S", "%-H:%M:%S"),
+        ("%I:%M:%S %p", "%-I:%M:%S %p"),
+        ("%I:%M:%S%p", "%-I:%M:%S %p"),
+        ("%I:%M %p", "%-I:%M %p"),
+        ("%I:%M%p", "%-I:%M %p"),
+        ("%H:%M", "%-H:%M"),
+        ("%I:%M:%S", "%-I:%M:%S"),
+        ("%I:%M", "%-I:%M"),
+        ("%H:%M:%S%.3f", "%-H:%M:%S"),
     ];
 
-    for &format in formats.iter() {
-        if let Ok(parsed_time) = NaiveTime::parse_from_str(value, format) {
-            return Some(parsed_time);
+    for &(parse_format, output_format) in formats.iter() {
+        if let Ok(parsed_time) = NaiveTime::parse_from_str(value, parse_format) {
+            return Some((parsed_time, output_format.to_string()));
         }
 
         // this is a hack to handle the case where the user leaves out minutes in a time
@@ -225,12 +227,18 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
             continue;
         };
         if let Ok(parsed_time) =
-            NaiveTime::parse_from_str(&format!("{time_number}:00 {am_pm}"), format)
+            NaiveTime::parse_from_str(&format!("{time_number}:00 {am_pm}"), parse_format)
         {
-            return Some(parsed_time);
+            // For AM/PM input, always use the AM/PM format for output
+            return Some((parsed_time, "%-I:%M %p".to_string()));
         }
     }
     None
+}
+
+/// Parses a time string using a list of possible formats.
+pub fn parse_time(value: &str) -> Option<NaiveTime> {
+    parse_time_with_format(value).map(|(time, _)| time)
 }
 
 #[derive(Debug, Clone)]
@@ -266,6 +274,54 @@ impl ParsedDateComponents {
 
     fn len(&self) -> usize {
         self.components.len()
+    }
+
+    /// Converts the internal format string to a strftime format string that
+    /// preserves the user's input style (separator, month name vs number, etc.)
+    pub fn to_strftime_format(&self, format: &str) -> String {
+        let sep = if self.separator == ' ' {
+            " ".to_string()
+        } else {
+            self.separator.to_string()
+        };
+
+        let parts: Vec<String> = format
+            .chars()
+            .zip(&self.components)
+            .map(|(format_char, component)| {
+                match format_char {
+                    'y' | 'Y' => {
+                        // Use %Y for 4-digit years, %y for 2-digit
+                        if matches!(component, ParsedDateComponent::Year(_)) {
+                            "%Y".to_string()
+                        } else {
+                            "%y".to_string()
+                        }
+                    }
+                    'm' | 'M' => {
+                        // Use %b for named months, %m or %-m for numeric
+                        if matches!(component, ParsedDateComponent::Month(_)) {
+                            "%b".to_string()
+                        } else if component.has_leading_zero() {
+                            "%m".to_string() // preserve leading zero
+                        } else {
+                            "%-m".to_string() // no padding
+                        }
+                    }
+                    'd' | 'D' => {
+                        // Preserve leading zero if present
+                        if component.has_leading_zero() {
+                            "%d".to_string() // with padding
+                        } else {
+                            "%-d".to_string() // no padding
+                        }
+                    }
+                    c => panic!("unexpected char {c:?} in date format"),
+                }
+            })
+            .collect();
+
+        parts.join(&sep)
     }
 
     /// Takes a 2- or 3-character format string and tries to return this date,
@@ -326,6 +382,8 @@ enum ParsedDateComponent {
         year: Option<u32>,
         month: Option<u32>,
         day: Option<u32>,
+        /// Whether the original string had a leading zero (e.g., "01" vs "1")
+        has_leading_zero: bool,
     },
 }
 
@@ -346,14 +404,17 @@ impl FromStr for ParsedDateComponent {
             Ok(Self::Day(ordinal.parse().map_err(|_| ())?))
         } else {
             let n = s.parse().map_err(|_| ())?;
+            // Check if the string has a leading zero (e.g., "01" vs "1")
+            let has_leading_zero = s.len() == 2 && s.starts_with('0');
             match s.len() {
                 // 1-digit number must be day or month. Example: `3`
                 1 => Ok(Self::Ambiguous {
                     year: None,
                     month: Some(n),
                     day: Some(n),
+                    has_leading_zero: false,
                 }),
-                // 2-digit number could be anything. Example: `12`
+                // 2-digit number could be anything. Example: `12` or `01`
                 2 => Ok(Self::Ambiguous {
                     year: match n {
                         ..CENTURY_CUTOFF => n.checked_add(2000),
@@ -361,6 +422,7 @@ impl FromStr for ParsedDateComponent {
                     },
                     month: Some(n),
                     day: Some(n),
+                    has_leading_zero,
                 }),
                 // 4-digit number must be year. Example: `1619`
                 4 => Ok(Self::Year(n)),
@@ -385,6 +447,14 @@ impl ParsedDateComponent {
             _ => None,
         }
     }
+    fn has_leading_zero(self) -> bool {
+        match self {
+            ParsedDateComponent::Ambiguous {
+                has_leading_zero, ..
+            } => has_leading_zero,
+            _ => false,
+        }
+    }
     fn day(self) -> Option<u32> {
         match self {
             ParsedDateComponent::Day(day) => Some(day),
@@ -397,8 +467,9 @@ impl ParsedDateComponent {
     }
 }
 
-/// Parses a date string using a list of possible formats.
-pub fn parse_date(value: &str) -> Option<NaiveDate> {
+/// Parses a date string using a list of possible formats, returning the parsed
+/// date and a strftime format string that matches the user's input format.
+pub fn parse_date_with_format(value: &str) -> Option<(NaiveDate, String)> {
     let components = ParsedDateComponents::from_str(value).ok()?;
     let sep = components.separator;
 
@@ -414,8 +485,11 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         // When using spaces, a month name is always required.
         &[
             "MdY", // Dec 10 2024
+            "Mdy", // Dec 10 24 (2-digit year)
             "dMY", // 10 Dec 2024
+            "dMy", // 10 Dec 24 (2-digit year)
             "YMd", // 2024 Dec 10
+            "yMd", // 24 Dec 10 (2-digit year)
             "dM",  // 10 Dec
             "Md",  // Dec 10
             "MY",  // Dec 2024
@@ -448,7 +522,18 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         ]
     };
 
-    formats.iter().find_map(|f| components.try_format(f))
+    for format in formats {
+        if let Some(date) = components.try_format(format) {
+            let strftime_format = components.to_strftime_format(format);
+            return Some((date, strftime_format));
+        }
+    }
+    None
+}
+
+/// Parses a date string using a list of possible formats.
+pub fn parse_date(value: &str) -> Option<NaiveDate> {
+    parse_date_with_format(value).map(|(date, _)| date)
 }
 
 /// Convert the entire time into seconds since midnight
@@ -581,6 +666,78 @@ mod tests {
         assert_eq!(parse_date("1902-06"), NaiveDate::from_ymd_opt(1902, 6, 1));
         assert_eq!(parse_date("01-1893"), NaiveDate::from_ymd_opt(1893, 1, 1));
         assert_eq!(parse_date("06-1902"), NaiveDate::from_ymd_opt(1902, 6, 1));
+    }
+
+    #[test]
+    fn test_parse_date_with_format() {
+        // Test that format preserves separator (/ vs -)
+        let (_, format) = parse_date_with_format("12/23/2024").unwrap();
+        assert_eq!(format, "%-m/%-d/%Y");
+
+        let (_, format) = parse_date_with_format("12-23-2024").unwrap();
+        assert_eq!(format, "%-m-%-d-%Y");
+
+        // Test that format preserves named months
+        let (_, format) = parse_date_with_format("Dec 15").unwrap();
+        assert_eq!(format, "%b %-d");
+
+        let (_, format) = parse_date_with_format("15 Dec").unwrap();
+        assert_eq!(format, "%-d %b");
+
+        // Test 2-component dates without year
+        let (_, format) = parse_date_with_format("5/15").unwrap();
+        assert_eq!(format, "%-m/%-d");
+
+        let (_, format) = parse_date_with_format("5-5").unwrap();
+        assert_eq!(format, "%-m-%-d");
+
+        // Test named month with 2-digit year (Jan 5 24)
+        let (date, format) = parse_date_with_format("Jan 5 24").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 1, 5).unwrap());
+        assert_eq!(format, "%b %-d %y");
+
+        // Test leading zeros are preserved
+        let (date, format) = parse_date_with_format("01/02/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%m/%d/%Y");
+        // Verify rendering
+        assert_eq!(date.format(&format).to_string(), "01/02/2020");
+
+        // Single digit without leading zero
+        let (date, format) = parse_date_with_format("1/2/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%-m/%-d/%Y");
+        // Verify rendering
+        assert_eq!(date.format(&format).to_string(), "1/2/2020");
+
+        // Test 01/05/2024 specifically - with AMERICAN=true, this is January 5, 2024
+        let (date, format) = parse_date_with_format("01/05/2024").unwrap();
+        // Verify it's parsed as January 5, 2024 (month=1, day=5)
+        assert_eq!(date.month(), 1);
+        assert_eq!(date.day(), 5);
+        assert_eq!(date.year(), 2024);
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 1, 5).unwrap());
+        // Format should preserve leading zeros
+        assert_eq!(format, "%m/%d/%Y");
+        // Verify it renders as "01/05/2024", NOT "2024/01/05"
+        assert_eq!(date.format(&format).to_string(), "01/05/2024");
+    }
+
+    #[test]
+    fn test_parse_time_with_format() {
+        // Test AM/PM format preservation
+        let (_, format) = parse_time_with_format("4:45 PM").unwrap();
+        assert_eq!(format, "%-I:%M:%S %p");
+
+        let (_, format) = parse_time_with_format("4pm").unwrap();
+        assert_eq!(format, "%-I:%M %p");
+
+        // Test 24-hour format
+        let (_, format) = parse_time_with_format("16:45").unwrap();
+        assert_eq!(format, "%-H:%M");
+
+        let (_, format) = parse_time_with_format("16:45:30").unwrap();
+        assert_eq!(format, "%-H:%M:%S");
     }
 
     #[test]
