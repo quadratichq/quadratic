@@ -83,7 +83,7 @@ export const ConnectionStatusIcon = () => {
   } else {
     const isOffline = syncState === 'no internet' || syncState === 'waiting to reconnect';
     if (isOffline) {
-      tooltip = 'Network offline • Recent changes only saved locally';
+      tooltip = 'Network offline · Recent changes only saved locally';
     } else {
       tooltip = 'Recent changes only saved locally';
     }

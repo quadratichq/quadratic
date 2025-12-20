@@ -1,0 +1,18 @@
+---
+globs: **/*.tsx,**/*.ts
+alwaysApply: false
+---
+
+Text Delimiters
+
+When adding delimiters between inline text elements, use the **middle dot** character (`·`, U+00B7) instead of the **bullet** character (`•`, U+2022).
+
+```tsx
+// ✅ Correct — use middle dot
+<span>Item A · Item B · Item C</span>
+
+// ❌ Incorrect — don't use bullet
+<span>Item A • Item B • Item C</span>
+```
+
+The middle dot (`·`) is the preferred separator for inline metadata, breadcrumbs, and other text where items are delimited horizontally.

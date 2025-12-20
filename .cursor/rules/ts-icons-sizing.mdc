@@ -1,0 +1,26 @@
+---
+globs: **/*.tsx
+alwaysApply: false
+---
+
+Icon Component Sizing
+
+When using icon components from `@/shared/components/Icons.tsx`, do **not** add `w-` or `h-` Tailwind classes (e.g., `className="h-4 w-4"`) unless explicitly asked to do so.
+
+Icon sizing should be controlled via the `size` prop:
+
+```tsx
+// ✅ Correct — use the size prop
+<CheckIcon size="sm" />
+<CheckIcon size="lg" />
+
+// ❌ Incorrect — don't use w-/h- classes for sizing
+<CheckIcon className="h-4 w-4" />
+```
+
+Available sizes:
+- `sm` (default, 20px)
+- `lg` (40px)
+- `2xl` (64px)
+
+The `className` prop can still be used for other styling purposes (e.g., colors, animations) but not for width/height sizing.
