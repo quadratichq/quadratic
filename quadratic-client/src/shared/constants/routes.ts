@@ -116,4 +116,6 @@ export const SEARCH_PARAMS = {
   CHECKPOINT: { KEY: 'checkpoint' },
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
+  // Used to show full-screen chat overlay, e.g. /file/123?chat=true
+  CHAT: { KEY: 'chat' },
 } as const;

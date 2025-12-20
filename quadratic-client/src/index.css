@@ -75,3 +75,10 @@ a {
 .dark .dark-mode-hack {
   filter: invert(1) hue-rotate(185deg);
 }
+
+/* Full-screen chat z-index overrides for popovers, tooltips, and hover cards that portal to document.body */
+body[data-fullscreen-chat='true'] .quadratic-popover,
+body[data-fullscreen-chat='true'] .quadratic-hover-card,
+body[data-fullscreen-chat='true'] [data-radix-popper-content-wrapper] {
+  z-index: 10000 !important;
+}
