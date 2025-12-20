@@ -165,10 +165,11 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     }
                 }
 
+                // Return negative value (interest payments are cash outflows)
                 if payment_type == 1.0 && per == 1.0 {
                     0.0
                 } else {
-                    balance * rate
+                    -(balance * rate)
                 }
             }
         ),
@@ -205,10 +206,11 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     }
                 }
 
+                // ipmt is negative (interest payments are cash outflows)
                 let ipmt = if payment_type == 1.0 && per == 1.0 {
                     0.0
                 } else {
-                    balance * rate
+                    -(balance * rate)
                 };
                 pmt - ipmt
             }
@@ -672,5 +674,21 @@ mod tests {
         assert_eq!("3690", eval_to_string(&g, "DB(10000, 1000, 5, 1)"));
         // Excel: DB(1000, 100, 10, 1) = 206
         assert_eq!("206", eval_to_string(&g, "DB(1000, 100, 10, 1)"));
+    }
+
+    #[test]
+    fn test_ipmt_returns_negative() {
+        let g = GridController::new();
+        // IPMT should return a negative value (interest payments are cash outflows)
+        // Excel: IPMT(0.1/12, 1, 12, 1000) ≈ -8.333
+        assert_f64_eval(&g, -8.333333333, "IPMT(0.1/12, 1, 12, 1000)");
+    }
+
+    #[test]
+    fn test_ppmt_returns_negative() {
+        let g = GridController::new();
+        // PPMT should return a negative value (principal payments are cash outflows)
+        // Excel: PPMT(0.1/12, 1, 12, 1000) ≈ -79.5826
+        assert_f64_eval(&g, -79.582553896676, "PPMT(0.1/12, 1, 12, 1000)");
     }
 }

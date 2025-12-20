@@ -118,6 +118,9 @@ pub enum RunErrorMsg {
 
     NotANumber,
     Infinity,
+
+    /// Formula is too deeply nested or complex to parse
+    FormulaTooComplex,
 }
 
 impl fmt::Display for RunErrorMsg {
@@ -264,6 +267,9 @@ impl fmt::Display for RunErrorMsg {
             Self::InvalidArgument => write!(f, "Invalid argument"),
             Self::NotANumber => write!(f, "Not a number"),
             Self::Infinity => write!(f, "Unexpected Infinity"),
+            Self::FormulaTooComplex => {
+                write!(f, "Formula is too complex (too deeply nested or too many operations)")
+            }
         }
     }
 }

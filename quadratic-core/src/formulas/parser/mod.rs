@@ -247,6 +247,10 @@ fn replace_cell_range_references(
     replaced
 }
 
+/// Maximum recursion depth for parsing expressions.
+/// This prevents stack overflow on deeply nested formulas.
+const MAX_PARSE_DEPTH: u32 = 256;
+
 /// Token parser used to assemble an AST.
 #[derive(Debug, Copy, Clone)]
 pub struct Parser<'a> {
@@ -261,6 +265,9 @@ pub struct Parser<'a> {
     pub ctx: &'a A1Context,
     /// Location where this formula was entered.
     pub pos: SheetPos,
+
+    /// Current recursion depth for parsing.
+    pub depth: u32,
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
@@ -277,6 +284,7 @@ impl<'a> Parser<'a> {
 
             ctx,
             pos,
+            depth: 0,
         };
 
         // Skip leading `=`
@@ -286,6 +294,28 @@ impl<'a> Parser<'a> {
             ret.cursor = None;
         }
         ret
+    }
+
+    /// Checks if the recursion depth limit has been exceeded and returns an
+    /// error if so.
+    pub fn check_depth(&self) -> CodeResult<()> {
+        if self.depth >= MAX_PARSE_DEPTH {
+            Err(RunErrorMsg::FormulaTooComplex.with_span(self.span()))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Increments the recursion depth, returning an error if the limit is
+    /// exceeded.
+    pub fn enter_depth(&mut self) -> CodeResult<()> {
+        self.depth += 1;
+        self.check_depth()
+    }
+
+    /// Decrements the recursion depth.
+    pub fn exit_depth(&mut self) {
+        self.depth = self.depth.saturating_sub(1);
     }
 
     /// Returns the token at the cursor.
@@ -554,5 +584,22 @@ mod tests {
         assert!(!simple_parse_and_check_formula("*1"));
         assert!(!simple_parse_and_check_formula("(1*)*1"));
         assert!(!simple_parse_and_check_formula("(*1)*1"));
+    }
+
+    #[test]
+    fn test_formula_depth_limit() {
+        // A reasonably nested formula should parse fine
+        let formula = "((((1 + 2) * 3) / 4) - 5)";
+        assert!(simple_parse_formula(formula).is_ok());
+
+        // A deeply nested formula should return FormulaTooComplex error
+        // Each level of parentheses adds depth. We need to exceed MAX_PARSE_DEPTH (256)
+        // Each paren adds about 10 depth levels (for each precedence level traversal)
+        // So we need roughly 256 / 10 = ~26 levels of nesting to trigger the limit
+        let deeply_nested = format!("{}1{}", "(".repeat(50), ")".repeat(50));
+        let result = simple_parse_formula(&deeply_nested);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.msg, RunErrorMsg::FormulaTooComplex);
     }
 }

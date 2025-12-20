@@ -604,5 +604,4 @@ mod tests {
         // Test offset from a range - returns array of the offset range
         assert_eq!("{8; 9}", eval_to_string(&g, "OFFSET(A1:A2, 1, 2)")); // C2:C3
     }
-
 }

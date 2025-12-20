@@ -598,6 +598,13 @@ mod tests {
     #[test]
     fn test_formula_time() {
         let g = GridController::new();
+
+        // Verify TIME outputs CellValue::Time
+        assert!(matches!(
+            eval(&g, "TIME(12, 30, 45)"),
+            Value::Single(CellValue::Time(_)),
+        ));
+
         assert_eq!(eval_to_string(&g, "TIME(2, 30, 45)"), "02:30:45");
         assert_eq!(eval_to_string(&g, "TIME(2, 30, -45)"), "02:29:15");
         assert_eq!(eval_to_string(&g, "TIME(2, -30, 45)"), "01:30:45");

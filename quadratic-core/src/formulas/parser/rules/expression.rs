@@ -216,9 +216,12 @@ impl SyntaxRule for ExpressionWithPrecedence {
         }
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        // Check recursion depth to prevent stack overflow
+        p.enter_depth()?;
+
         // Consume an expression at the given precedence level, which may
         // consist of expressions with higher precedence.
-        match self.0 {
+        let result = match self.0 {
             OpPrecedence::Atom => parse_one_of!(
                 p,
                 [
@@ -240,7 +243,10 @@ impl SyntaxRule for ExpressionWithPrecedence {
             prec if !prec.prefix_ops().is_empty() => parse_prefix_ops(p, prec),
             prec if !prec.suffix_ops().is_empty() => parse_suffix_ops(p, prec),
             prec => internal_error!("don't know what to do for precedence {:?}", prec),
-        }
+        };
+
+        p.exit_depth();
+        result
     }
 }
 
