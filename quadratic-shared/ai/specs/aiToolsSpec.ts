@@ -65,6 +65,14 @@ export enum AITool {
   Redo = 'redo',
   ContactUs = 'contact_us',
   OptimizePrompt = 'optimize_prompt',
+  // AI Spreadsheet tools
+  AddInputNode = 'add_input_node',
+  AddTransformNode = 'add_transform_node',
+  AddOutputNode = 'add_output_node',
+  ConnectNodes = 'connect_nodes',
+  RemoveNode = 'remove_node',
+  UpdateNode = 'update_node',
+  ClearCanvas = 'clear_canvas',
 }
 
 export const AIToolSchema = z.enum([
@@ -121,6 +129,14 @@ export const AIToolSchema = z.enum([
   AITool.Redo,
   AITool.ContactUs,
   AITool.OptimizePrompt,
+  // AI Spreadsheet tools
+  AITool.AddInputNode,
+  AITool.AddTransformNode,
+  AITool.AddOutputNode,
+  AITool.ConnectNodes,
+  AITool.RemoveNode,
+  AITool.UpdateNode,
+  AITool.ClearCanvas,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -546,6 +562,55 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
+  }),
+  // AI Spreadsheet tools
+  [AITool.AddInputNode]: z.object({
+    node_id: stringSchema,
+    label: stringSchema,
+    input_type: z.enum(['connection', 'file', 'cell', 'web_search', 'html']),
+    connection_uuid: stringSchema.nullable().optional(),
+    connection_name: stringSchema.nullable().optional(),
+    connection_type: stringSchema.nullable().optional(),
+    query: stringSchema.nullable().optional(),
+    file_name: stringSchema.nullable().optional(),
+    file_type: stringSchema.nullable().optional(),
+    value: stringSchema.nullable().optional(),
+    search_query: stringSchema.nullable().optional(),
+    html_content: stringSchema.nullable().optional(),
+  }),
+  [AITool.AddTransformNode]: z.object({
+    node_id: stringSchema,
+    label: stringSchema,
+    transform_type: z.enum(['code', 'formula']),
+    language: z.enum(['python', 'javascript']).nullable().optional(),
+    code: stringSchema.nullable().optional(),
+    formula: stringSchema.nullable().optional(),
+  }),
+  [AITool.AddOutputNode]: z.object({
+    node_id: stringSchema,
+    label: stringSchema,
+    output_type: z.enum(['table', 'chart', 'html']),
+    chart_type: z.enum(['bar', 'line', 'pie', 'scatter']).nullable().optional(),
+    columns: z.array(stringSchema).nullable().optional(),
+  }),
+  [AITool.ConnectNodes]: z.object({
+    source_node_id: stringSchema,
+    target_node_id: stringSchema,
+    label: stringSchema.nullable().optional(),
+  }),
+  [AITool.RemoveNode]: z.object({
+    node_id: stringSchema,
+  }),
+  [AITool.UpdateNode]: z.object({
+    node_id: stringSchema,
+    label: stringSchema.nullable().optional(),
+    code: stringSchema.nullable().optional(),
+    formula: stringSchema.nullable().optional(),
+    query: stringSchema.nullable().optional(),
+    value: stringSchema.nullable().optional(),
+  }),
+  [AITool.ClearCanvas]: z.object({
+    confirm: booleanSchema,
   }),
 } as const;
 
@@ -2891,5 +2956,152 @@ Optimized:\n
 - Place the result directly below the Revenue column\n
 
 Be specific, detailed, and actionable in every bullet point.\n`,
+  },
+
+  // ==========================================
+  // AI SPREADSHEET TOOLS
+  // ==========================================
+  [AITool.AddInputNode]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Add an input node to the canvas. Input nodes are data sources.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'Unique identifier for this node (snake_case)' },
+        label: { type: 'string', description: 'Human-readable name for the node' },
+        input_type: { type: 'string', description: 'Type of input: connection, file, cell, web_search, or html' },
+        connection_uuid: { type: 'string', description: 'Database connection UUID (for connection type)' },
+        connection_name: { type: 'string', description: 'Connection display name' },
+        connection_type: { type: 'string', description: 'Database type (POSTGRES, MYSQL, etc.)' },
+        query: { type: 'string', description: 'SQL query to execute' },
+        file_name: { type: 'string', description: 'Name of the file to import' },
+        file_type: { type: 'string', description: 'MIME type of the file' },
+        value: { type: 'string', description: 'Manual input value (for cell type)' },
+        search_query: { type: 'string', description: 'Web search query' },
+        html_content: { type: 'string', description: 'Custom HTML content' },
+      },
+      required: ['node_id', 'label', 'input_type'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddInputNode],
+    prompt: `Add an input node to the visual canvas. Input nodes are data sources:
+- connection: Database query (use connection_uuid and query)
+- file: CSV, Excel, or Parquet file import
+- cell: Manual value entry
+- web_search: Search the web for data
+- html: Custom HTML input form\n`,
+  },
+  [AITool.AddTransformNode]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Add a transform node that processes data using code or formulas.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'Unique identifier for this node (snake_case)' },
+        label: { type: 'string', description: 'Human-readable name for the node' },
+        transform_type: { type: 'string', description: 'Type of transformation: code or formula' },
+        language: { type: 'string', description: 'Programming language: python or javascript (for code type)' },
+        code: { type: 'string', description: 'Code to execute' },
+        formula: { type: 'string', description: 'Spreadsheet formula' },
+      },
+      required: ['node_id', 'label', 'transform_type'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddTransformNode],
+    prompt: `Add a transform node to process data:
+- code: Python or JavaScript for complex transformations
+- formula: Spreadsheet formulas for simple calculations
+Write actual working code or formulas.\n`,
+  },
+  [AITool.AddOutputNode]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Add an output node to display results as a table, chart, or HTML.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'Unique identifier for this node (snake_case)' },
+        label: { type: 'string', description: 'Human-readable name for the node' },
+        output_type: { type: 'string', description: 'Type of output: table, chart, or html' },
+        chart_type: { type: 'string', description: 'Chart type: bar, line, pie, or scatter (for chart output)' },
+        columns: { type: ['string'], description: 'Expected column names (for table output)' },
+      },
+      required: ['node_id', 'label', 'output_type'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddOutputNode],
+    prompt: `Add an output node to display results:
+- table: Data table view
+- chart: Bar, line, pie, or scatter chart (specify chart_type)
+- html: Custom HTML visualization\n`,
+  },
+  [AITool.ConnectNodes]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Connect two nodes with an arrow showing data flow from source to target.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        source_node_id: { type: 'string', description: 'ID of the source node (data flows FROM)' },
+        target_node_id: { type: 'string', description: 'ID of the target node (data flows TO)' },
+        label: { type: 'string', description: 'Optional label for the connection arrow' },
+      },
+      required: ['source_node_id', 'target_node_id'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ConnectNodes],
+    prompt: `Connect nodes to show data flow. Data flows from source to target node.\n`,
+  },
+  [AITool.RemoveNode]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Remove a node from the canvas. Also removes any connections to/from this node.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'ID of the node to remove' },
+      },
+      required: ['node_id'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.RemoveNode],
+    prompt: `Remove a node and its connections from the canvas.\n`,
+  },
+  [AITool.UpdateNode]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Update properties of an existing node.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'ID of the node to update' },
+        label: { type: 'string', description: 'New label for the node' },
+        code: { type: 'string', description: 'Updated code (for code transform nodes)' },
+        formula: { type: 'string', description: 'Updated formula (for formula nodes)' },
+        query: { type: 'string', description: 'Updated SQL query (for connection input nodes)' },
+        value: { type: 'string', description: 'Updated value (for cell input nodes)' },
+      },
+      required: ['node_id'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UpdateNode],
+    prompt: `Update an existing node's properties. Only include the properties you want to change.\n`,
+  },
+  [AITool.ClearCanvas]: {
+    sources: ['AISpreadsheet'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `Clear all nodes and connections from the canvas. Requires confirmation.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        confirm: { type: 'boolean', description: 'Must be true to confirm clearing' },
+      },
+      required: ['confirm'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ClearCanvas],
+    prompt: `Clear all nodes from the canvas. Set confirm to true to execute.\n`,
   },
 } as const;
