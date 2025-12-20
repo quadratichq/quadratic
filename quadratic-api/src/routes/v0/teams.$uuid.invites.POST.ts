@@ -4,6 +4,7 @@ import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers } from '../../auth/providers/auth';
 import dbClient from '../../dbClient';
+import { addTeamInviteToMailchimp } from '../../email/mailchimp';
 import { sendEmail } from '../../email/sendEmail';
 import { templates } from '../../email/templates';
 import { addUserToTeam } from '../../internal/addUserToTeam';
@@ -90,7 +91,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
         teamId,
       },
     });
+
+    // Send immediate invite email via SendGrid
     await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
+
+    // Add to Mailchimp for follow-up drip campaign (non-blocking)
+    addTeamInviteToMailchimp({
+      email,
+      teamName,
+      teamUuid: uuid,
+      inviterName: userMakingRequestName,
+      inviterEmail: userMakingRequestEmail,
+    });
+
     return dbInvite;
   };
 
