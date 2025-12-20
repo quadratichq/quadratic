@@ -1401,4 +1401,41 @@ mod tests {
         assert_eq!("FALSE", eval_to_string(&g, "ISREF(123)"));
         assert_eq!("FALSE", eval_to_string(&g, "ISREF(\"hello\")"));
     }
+
+    #[test]
+    fn test_formula_formulatext() {
+        use crate::grid::CodeCellLanguage;
+
+        let mut g = GridController::test();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Set a formula cell with "1 + 1"
+        g.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Set a regular value
+        g.set_cell_value(pos![sheet_id!B1], "hello".to_string(), None, false);
+
+        // FORMULATEXT on a formula cell should return the formula text
+        let result = eval_to_string(&g, "FORMULATEXT(A1)");
+        assert!(
+            result.contains("1 + 1") || result.contains("1+1"),
+            "Expected formula text containing '1 + 1', got: {}",
+            result
+        );
+
+        // FORMULATEXT on a value cell should return N/A error
+        let result = eval_to_string(&g, "FORMULATEXT(B1)");
+        assert!(
+            result.contains("N/A") || result.contains("#N/A"),
+            "Expected N/A error for non-formula cell, got: {}",
+            result
+        );
+    }
 }

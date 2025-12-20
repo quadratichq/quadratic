@@ -919,4 +919,54 @@ mod tests {
         .unwrap();
         assert!(confint >= 0.0);
     }
+
+    #[test]
+    fn test_forecast_ets_stat_alpha_optimization() {
+        let g = GridController::new();
+
+        // Test case from user: FORECAST.ETS.STAT({2,4,6,8,10}, {1,2,3,4,5}, 1)
+        // Excel returns 0.9 for alpha on this linear series
+        // The optimizer should find a high alpha value (close to 1.0) for perfectly linear data
+        let alpha: f64 = eval_to_string(&g, "FORECAST.ETS.STAT({2;4;6;8;10}, {1;2;3;4;5}, 1, 1)")
+            .parse()
+            .unwrap();
+
+        // Alpha should be high (>0.8) for linear data since level changes predictably
+        // Excel returns ~0.9, our optimizer returns ~0.9999 (clamped at upper bound)
+        assert!(
+            alpha > 0.8,
+            "Alpha should be high for linear data (Excel returns ~0.9), got {}",
+            alpha
+        );
+
+        // Also verify beta (stat_type=2) is reasonable
+        let beta: f64 = eval_to_string(&g, "FORECAST.ETS.STAT({2;4;6;8;10}, {1;2;3;4;5}, 2, 1)")
+            .parse()
+            .unwrap();
+        assert!(
+            beta >= 0.0 && beta <= 1.0,
+            "Beta should be between 0 and 1, got {}",
+            beta
+        );
+    }
+
+    #[test]
+    fn test_forecast_ets_linear_series() {
+        let g = GridController::new();
+
+        // Test case: FORECAST.ETS(6, {2,4,6,8,10}, {1,2,3,4,5})
+        // This is a perfectly linear series (increases by 2 each period)
+        // At time 6, the value should be 12
+        // Excel returns 12
+        let forecast: f64 = eval_to_string(&g, "FORECAST.ETS(6, {2;4;6;8;10}, {1;2;3;4;5}, 1)")
+            .parse()
+            .unwrap();
+
+        // Allow small tolerance for numerical precision
+        assert!(
+            (forecast - 12.0).abs() < 0.5,
+            "FORECAST.ETS(6, {{2,4,6,8,10}}, {{1,2,3,4,5}}) should be ~12, got {}",
+            forecast
+        );
+    }
 }

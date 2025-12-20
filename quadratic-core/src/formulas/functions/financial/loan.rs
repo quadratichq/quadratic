@@ -214,7 +214,8 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Calculates the interest paid between two periods.
+            /// Calculates the cumulative interest paid between two periods.
+            /// Returns a negative value because interest payments are cash outflows.
             #[examples("CUMIPMT(0.08/12, 12*5, 10000, 1, 12, 0)")]
             fn CUMIPMT(
                 span: Span,
@@ -252,11 +253,13 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     }
                 }
 
-                cum_interest
+                // Return negative value (interest payments are cash outflows)
+                -cum_interest
             }
         ),
         formula_fn!(
-            /// Calculates the principal paid between two periods.
+            /// Calculates the cumulative principal paid between two periods.
+            /// Returns a negative value because principal payments are cash outflows.
             #[examples("CUMPRINC(0.08/12, 12*5, 10000, 1, 12, 0)")]
             fn CUMPRINC(
                 span: Span,
@@ -285,10 +288,13 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                         balance += pmt;
                     }
                     let interest = balance * rate;
-                    let principal = pmt - interest;
+                    // Principal portion of payment: pmt is negative, interest is positive
+                    // principal = pmt + interest is negative (cash outflow)
+                    let principal = pmt + interest;
                     if period >= start_period as i64 {
                         cum_principal += principal;
                     }
+                    // Update balance: balance + interest + pmt = balance + principal
                     balance = balance + interest + pmt;
                     if payment_type == 1.0 {
                         balance -= pmt;
@@ -347,7 +353,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 }
 
                 // Calculate rate rounded to 3 decimal places
-                let rate = (1.0 - (salvage / cost).powf(1.0 / life) * 1000.0).round() / 1000.0;
+                let rate = ((1.0 - (salvage / cost).powf(1.0 / life)) * 1000.0).round() / 1000.0;
                 let rate = rate.max(0.0);
                 let mut value = cost;
                 let mut depreciation = 0.0;
@@ -636,5 +642,35 @@ mod tests {
     fn test_sln() {
         let g = GridController::new();
         assert_eq!("90", eval_to_string(&g, "SLN(1000, 100, 10)"));
+    }
+
+    #[test]
+    fn test_cumipmt_returns_negative() {
+        let g = GridController::new();
+        // CUMIPMT should return a negative value (interest payments are cash outflows)
+        // Excel: CUMIPMT(0.05/12, 60, 50000, 1, 12, 0) ≈ -2294.99
+        let result = eval_to_string(&g, "CUMIPMT(0.05/12, 60, 50000, 1, 12, 0)");
+        assert!(
+            result.starts_with("-2294.9"),
+            "CUMIPMT should return approximately -2294.99, got: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_cumprinc_returns_negative() {
+        let g = GridController::new();
+        // CUMPRINC should return a negative value (principal payments are cash outflows)
+        // Excel: CUMPRINC(0.05/12, 60, 50000, 1, 12, 0) ≈ -9027.762649
+        assert_f64_eval(&g, -9027.762649, "CUMPRINC(0.05/12, 60, 50000, 1, 12, 0)");
+    }
+
+    #[test]
+    fn test_db() {
+        let g = GridController::new();
+        // Excel: DB(10000, 1000, 5, 1) = 3690
+        assert_eq!("3690", eval_to_string(&g, "DB(10000, 1000, 5, 1)"));
+        // Excel: DB(1000, 100, 10, 1) = 206
+        assert_eq!("206", eval_to_string(&g, "DB(1000, 100, 10, 1)"));
     }
 }

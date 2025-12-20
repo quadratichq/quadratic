@@ -428,82 +428,6 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 strings.join(&delimiter)
             }
         ),
-        // Character width conversions
-        formula_fn!(
-            /// Converts full-width (double-byte) characters to half-width
-            /// (single-byte) characters. This is useful for converting Japanese
-            /// katakana and other East Asian characters.
-            ///
-            /// Characters that don't have a half-width equivalent are left
-            /// unchanged.
-            #[examples("ASC(\"ＡＢＣ\") = \"ABC\"", "ASC(\"１２３\") = \"123\"")]
-            #[zip_map]
-            fn ASC([s]: String) {
-                s.chars()
-                    .map(|c| {
-                        if ('\u{FF01}'..='\u{FF5E}').contains(&c) {
-                            char::from_u32(c as u32 - 0xFF01 + 0x21).unwrap_or(c)
-                        } else if c == '\u{3000}' {
-                            ' '
-                        } else if let Some(half) = full_to_half_katakana(c) {
-                            half
-                        } else {
-                            c
-                        }
-                    })
-                    .collect::<String>()
-            }
-        ),
-        formula_fn!(
-            /// Converts half-width (single-byte) characters to full-width
-            /// (double-byte) characters. This is the opposite of ASC.
-            ///
-            /// Characters that don't have a full-width equivalent are left
-            /// unchanged.
-            #[examples("DBCS(\"ABC\") = \"ＡＢＣ\"", "DBCS(\"123\") = \"１２３\"")]
-            #[zip_map]
-            fn DBCS([s]: String) {
-                s.chars()
-                    .map(|c| {
-                        if ('!'..='~').contains(&c) {
-                            char::from_u32(c as u32 - 0x21 + 0xFF01).unwrap_or(c)
-                        } else if c == ' ' {
-                            '\u{3000}'
-                        } else if let Some(full) = half_to_full_katakana(c) {
-                            full
-                        } else {
-                            c
-                        }
-                    })
-                    .collect::<String>()
-            }
-        ),
-        formula_fn!(
-            /// Converts half-width (single-byte) characters to full-width
-            /// (double-byte) characters. This is specifically designed for
-            /// Japanese text and is an alias for DBCS.
-            ///
-            /// JIS stands for Japanese Industrial Standard. This function
-            /// converts half-width katakana and ASCII characters to their
-            /// full-width equivalents.
-            #[examples("JIS(\"ABC\") = \"ＡＢＣ\"", "JIS(\"ｱｲｳ\") = \"アイウ\"")]
-            #[zip_map]
-            fn JIS([s]: String) {
-                s.chars()
-                    .map(|c| {
-                        if ('!'..='~').contains(&c) {
-                            char::from_u32(c as u32 - 0x21 + 0xFF01).unwrap_or(c)
-                        } else if c == ' ' {
-                            '\u{3000}'
-                        } else if let Some(full) = half_to_full_katakana(c) {
-                            full
-                        } else {
-                            c
-                        }
-                    })
-                    .collect::<String>()
-            }
-        ),
         formula_fn!(
             /// Uses a specified XPath to query XML content and returns the matching value.
             ///
@@ -794,20 +718,6 @@ mod tests {
             "a, b, c",
             eval_to_string(&g, "TEXTJOIN(\", \", TRUE, \"a\", \"b\", \"c\")"),
         );
-    }
-
-    #[test]
-    fn test_formula_asc() {
-        let g = GridController::new();
-        assert_eq!("ABC", eval_to_string(&g, "ASC(\"ＡＢＣ\")"));
-        assert_eq!("123", eval_to_string(&g, "ASC(\"１２３\")"));
-    }
-
-    #[test]
-    fn test_formula_dbcs() {
-        let g = GridController::new();
-        assert_eq!("ＡＢＣ", eval_to_string(&g, "DBCS(\"ABC\")"));
-        assert_eq!("１２３", eval_to_string(&g, "DBCS(\"123\")"));
     }
 
     #[test]

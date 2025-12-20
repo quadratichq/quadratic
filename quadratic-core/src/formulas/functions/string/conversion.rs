@@ -231,14 +231,6 @@ pub fn get_functions() -> Vec<FormulaFunction> {
         ),
         // Currency formatting
         formula_fn!(
-            /// Converts a number to Thai text (Thai Baht currency format).
-            #[examples("BAHTTEXT(123) = \"หนึ่งร้อยยี่สิบสามบาทถ้วน\"")]
-            #[zip_map]
-            fn BAHTTEXT([n]: f64) {
-                number_to_baht_text(n)
-            }
-        ),
-        formula_fn!(
             /// Formats a number as text with a dollar sign.
             #[examples(
                 "DOLLAR(1234.567) = \"$1,234.57\"",
@@ -264,14 +256,6 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         // Text formatting
-        formula_fn!(
-            /// Extracts phonetic (furigana) characters from a text string.
-            #[examples("PHONETIC(\"東京\") = \"東京\"")]
-            #[zip_map]
-            fn PHONETIC([s]: String) {
-                s
-            }
-        ),
         formula_fn!(
             /// Formats a value using a format string.
             #[examples(
@@ -636,85 +620,6 @@ fn add_thousands_separator(s: &str) -> String {
     } else {
         format!("{}{}", with_commas, dec_part)
     }
-}
-
-/// Converts a number to Thai Baht text.
-fn number_to_baht_text(n: f64) -> String {
-    if n == 0.0 {
-        return "ศูนย์บาทถ้วน".to_string();
-    }
-
-    let thai_digits = [
-        "",
-        "หนึ่ง",
-        "สอง",
-        "สาม",
-        "สี่",
-        "ห้า",
-        "หก",
-        "เจ็ด",
-        "แปด",
-        "เก้า",
-    ];
-    let thai_units = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
-
-    fn convert_group(num: i64, digits: &[&str], units: &[&str]) -> String {
-        if num == 0 {
-            return String::new();
-        }
-
-        let mut result = String::new();
-        let mut n = num;
-        let mut position = 0;
-
-        while n > 0 {
-            let digit = (n % 10) as usize;
-            if digit != 0 {
-                let digit_word = if position == 0 && digit == 1 {
-                    "เอ็ด"
-                } else if position == 1 && digit == 1 {
-                    ""
-                } else if position == 1 && digit == 2 {
-                    "ยี่"
-                } else {
-                    digits[digit]
-                };
-                result = format!("{}{}{}", digit_word, units[position], result);
-            }
-            n /= 10;
-            position += 1;
-        }
-        result
-    }
-
-    let abs_n = n.abs();
-    let baht = abs_n.trunc() as i64;
-    let satang = ((abs_n.fract() * 100.0).round() as i64) % 100;
-
-    let mut result = String::new();
-
-    if baht > 0 {
-        if baht >= 1_000_000 {
-            result.push_str(&convert_group(baht / 1_000_000, &thai_digits, &thai_units));
-            result.push_str("ล้าน");
-            let remainder = baht % 1_000_000;
-            if remainder > 0 {
-                result.push_str(&convert_group(remainder, &thai_digits, &thai_units));
-            }
-        } else {
-            result.push_str(&convert_group(baht, &thai_digits, &thai_units));
-        }
-        result.push_str("บาท");
-    }
-
-    if satang > 0 {
-        result.push_str(&convert_group(satang, &thai_digits, &thai_units));
-        result.push_str("สตางค์");
-    } else if baht > 0 {
-        result.push_str("ถ้วน");
-    }
-
-    result
 }
 
 /// Formats a value with a pattern.

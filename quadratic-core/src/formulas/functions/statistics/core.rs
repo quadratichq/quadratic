@@ -2637,7 +2637,7 @@ fn detect_seasonality(values: &[f64]) -> usize {
 
 /// Performs ETS forecasting using Holt-Winters additive method.
 fn ets_forecast(y_values: &[f64], x_values: &[f64], target: f64, season: usize) -> CodeResult<f64> {
-    let (alpha, beta, gamma, level, _trend, seasonal) = fit_ets_model(y_values, season)?;
+    let (_alpha, _beta, _gamma, level, trend, seasonal) = fit_ets_model(y_values, season)?;
 
     // Determine forecast horizon
     let last_x = x_values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
@@ -2651,14 +2651,13 @@ fn ets_forecast(y_values: &[f64], x_values: &[f64], target: f64, season: usize) 
 
     let steps_ahead = ((target - last_x) / step).max(0.0).ceil() as usize;
 
-    // Forecast
-    let mut forecast = level + beta * steps_ahead as f64;
+    // Forecast using Holt-Winters: level + trend * h + seasonal component
+    let mut forecast = level + trend * steps_ahead as f64;
     if season > 1 {
         let seasonal_idx = steps_ahead % season;
         forecast += seasonal[seasonal_idx];
     }
 
-    let _ = (alpha, gamma); // Suppress warnings
     Ok(forecast)
 }
 
@@ -2703,93 +2702,107 @@ fn ets_confidence_interval(
 /// Returns a specific ETS model statistic.
 fn ets_statistic(
     y_values: &[f64],
-    _x_values: &[f64],
+    x_values: &[f64],
     season: usize,
     stat_type: usize,
 ) -> CodeResult<f64> {
     let (alpha, beta, gamma, _, _, _) = fit_ets_model(y_values, season)?;
 
     let n = y_values.len();
-    let mean: f64 = y_values.iter().sum::<f64>() / n as f64;
-
-    // Calculate errors
-    let errors: Vec<f64> = y_values.iter().map(|y| y - mean).collect();
-    let abs_errors: Vec<f64> = errors.iter().map(|e| e.abs()).collect();
 
     match stat_type {
         1 => Ok(alpha), // Alpha
         2 => Ok(beta),  // Beta
         3 => Ok(gamma), // Gamma
-        4 => {
-            // MASE (Mean Absolute Scaled Error)
-            if n < 2 {
-                return Ok(f64::NAN);
-            }
-            let naive_errors: f64 = y_values
-                .windows(2)
-                .map(|w| (w[1] - w[0]).abs())
-                .sum::<f64>();
-            let scale = naive_errors / (n - 1) as f64;
-            if scale == 0.0 {
-                return Ok(0.0);
-            }
-            Ok(abs_errors.iter().sum::<f64>() / n as f64 / scale)
-        }
-        5 => {
-            // SMAPE (Symmetric Mean Absolute Percentage Error)
-            let smape: f64 = y_values
+        4 | 5 | 6 | 7 => {
+            // For error metrics, we need the fitted values (one-step-ahead forecasts)
+            let fitted = ets_fitted_values(y_values, alpha, beta, gamma, season);
+
+            // Calculate errors: actual - fitted
+            let errors: Vec<f64> = y_values
                 .iter()
-                .enumerate()
-                .map(|(_i, y)| {
-                    let forecast = mean;
-                    if *y == 0.0 && forecast == 0.0 {
-                        0.0
-                    } else {
-                        (y - forecast).abs() / ((y.abs() + forecast.abs()) / 2.0)
+                .zip(&fitted)
+                .map(|(y, f)| y - f)
+                .collect();
+            let abs_errors: Vec<f64> = errors.iter().map(|e| e.abs()).collect();
+
+            match stat_type {
+                4 => {
+                    // MASE (Mean Absolute Scaled Error)
+                    if n < 2 {
+                        return Ok(f64::NAN);
                     }
-                })
-                .sum::<f64>()
-                / n as f64;
-            Ok(smape * 100.0)
-        }
-        6 => {
-            // MAE (Mean Absolute Error)
-            Ok(abs_errors.iter().sum::<f64>() / n as f64)
-        }
-        7 => {
-            // RMSE (Root Mean Square Error)
-            Ok((errors.iter().map(|e| e.powi(2)).sum::<f64>() / n as f64).sqrt())
+                    let naive_errors: f64 = y_values
+                        .windows(2)
+                        .map(|w| (w[1] - w[0]).abs())
+                        .sum::<f64>();
+                    let scale = naive_errors / (n - 1) as f64;
+                    if scale == 0.0 {
+                        return Ok(0.0);
+                    }
+                    Ok(abs_errors.iter().sum::<f64>() / n as f64 / scale)
+                }
+                5 => {
+                    // SMAPE (Symmetric Mean Absolute Percentage Error)
+                    let smape: f64 = y_values
+                        .iter()
+                        .zip(&fitted)
+                        .map(|(y, f)| {
+                            if *y == 0.0 && *f == 0.0 {
+                                0.0
+                            } else {
+                                (y - f).abs() / ((y.abs() + f.abs()) / 2.0)
+                            }
+                        })
+                        .sum::<f64>()
+                        / n as f64;
+                    Ok(smape * 100.0)
+                }
+                6 => {
+                    // MAE (Mean Absolute Error)
+                    Ok(abs_errors.iter().sum::<f64>() / n as f64)
+                }
+                7 => {
+                    // RMSE (Root Mean Square Error)
+                    Ok((errors.iter().map(|e| e.powi(2)).sum::<f64>() / n as f64).sqrt())
+                }
+                _ => unreachable!(),
+            }
         }
         8 => {
-            // Step size
-            Ok(1.0)
+            // Step size (median of timeline differences)
+            if x_values.len() < 2 {
+                return Ok(1.0);
+            }
+            let mut diffs: Vec<f64> = x_values.windows(2).map(|w| (w[1] - w[0]).abs()).collect();
+            diffs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            Ok(diffs[diffs.len() / 2])
         }
         _ => Err(RunErrorMsg::InvalidArgument.without_span()),
     }
 }
 
-/// Fits an ETS model and returns smoothing parameters and final states.
-fn fit_ets_model(
+/// Calculate one-step-ahead fitted values using ETS model.
+fn ets_fitted_values(
     y_values: &[f64],
+    alpha: f64,
+    beta: f64,
+    gamma: f64,
     season: usize,
-) -> CodeResult<(f64, f64, f64, f64, f64, Vec<f64>)> {
+) -> Vec<f64> {
     let n = y_values.len();
-
-    // Initialize smoothing parameters (typical starting values)
-    let alpha = 0.3; // Level smoothing
-    let beta = 0.1; // Trend smoothing
-    let gamma = if season > 1 { 0.1 } else { 0.0 }; // Seasonal smoothing
+    let init_period = season.max(3).min(n);
 
     // Initialize level and trend
-    let level = y_values.iter().take(season.max(3)).sum::<f64>() / season.max(3) as f64;
-    let trend = if n >= 2 {
-        (y_values[n.min(season.max(3)) - 1] - y_values[0]) / (n.min(season.max(3)) - 1) as f64
+    let mut level = y_values.iter().take(init_period).sum::<f64>() / init_period as f64;
+    let mut trend = if n >= 2 {
+        (y_values[init_period - 1] - y_values[0]) / (init_period - 1) as f64
     } else {
         0.0
     };
 
     // Initialize seasonal components
-    let seasonal = if season > 1 {
+    let mut seasonal = if season > 1 {
         let mut s = vec![0.0; season];
         for i in 0..season.min(n) {
             s[i] = y_values[i] - level;
@@ -2799,5 +2812,329 @@ fn fit_ets_model(
         vec![0.0]
     };
 
-    Ok((alpha, beta, gamma, level, trend, seasonal))
+    let mut fitted = Vec::with_capacity(n);
+
+    for i in 0..n {
+        // Forecast for this period (before updating state)
+        let seasonal_component = if season > 1 { seasonal[i % season] } else { 0.0 };
+        let forecast = level + trend + seasonal_component;
+        fitted.push(forecast);
+
+        // Update states using Holt-Winters additive method
+        let old_level = level;
+        level = alpha * (y_values[i] - seasonal_component) + (1.0 - alpha) * (level + trend);
+        trend = beta * (level - old_level) + (1.0 - beta) * trend;
+
+        if season > 1 {
+            seasonal[i % season] =
+                gamma * (y_values[i] - level) + (1.0 - gamma) * seasonal[i % season];
+        }
+    }
+
+    fitted
+}
+
+/// Fits an ETS model and returns smoothing parameters and final states.
+/// Uses Nelder-Mead optimization to find optimal alpha, beta, (and gamma for seasonal).
+fn fit_ets_model(
+    y_values: &[f64],
+    season: usize,
+) -> CodeResult<(f64, f64, f64, f64, f64, Vec<f64>)> {
+    let n = y_values.len();
+
+    // Initialize level and trend using first few observations
+    let init_period = season.max(3).min(n);
+    let initial_level = y_values.iter().take(init_period).sum::<f64>() / init_period as f64;
+    let initial_trend = if n >= 2 {
+        (y_values[init_period - 1] - y_values[0]) / (init_period - 1) as f64
+    } else {
+        0.0
+    };
+
+    // Initialize seasonal components
+    let initial_seasonal = if season > 1 {
+        let mut s = vec![0.0; season];
+        for i in 0..season.min(n) {
+            s[i] = y_values[i] - initial_level;
+        }
+        s
+    } else {
+        vec![0.0]
+    };
+
+    // Optimize alpha and beta (and gamma if seasonal) using Nelder-Mead
+    let (alpha, beta, gamma) = if season > 1 {
+        // Optimize all three parameters for seasonal data
+        let objective = |params: &[f64]| -> f64 {
+            ets_sse(
+                y_values,
+                params[0],
+                params[1],
+                params[2],
+                initial_level,
+                initial_trend,
+                &initial_seasonal,
+                season,
+            )
+        };
+        let result = nelder_mead_optimize(&[0.3, 0.1, 0.1], &objective, 200);
+        (
+            result[0].clamp(0.0001, 0.9999),
+            result[1].clamp(0.0001, 0.9999),
+            result[2].clamp(0.0001, 0.9999),
+        )
+    } else {
+        // Optimize only alpha and beta for non-seasonal data
+        let objective = |params: &[f64]| -> f64 {
+            ets_sse(
+                y_values,
+                params[0],
+                params[1],
+                0.0,
+                initial_level,
+                initial_trend,
+                &initial_seasonal,
+                season,
+            )
+        };
+        let result = nelder_mead_optimize(&[0.3, 0.1], &objective, 200);
+        (
+            result[0].clamp(0.0001, 0.9999),
+            result[1].clamp(0.0001, 0.9999),
+            0.0,
+        )
+    };
+
+    // Run ETS one more time with optimal parameters to get final states
+    let (final_level, final_trend, final_seasonal) = run_ets(
+        y_values,
+        alpha,
+        beta,
+        gamma,
+        initial_level,
+        initial_trend,
+        &initial_seasonal,
+        season,
+    );
+
+    Ok((alpha, beta, gamma, final_level, final_trend, final_seasonal))
+}
+
+/// Calculate Sum of Squared Errors for ETS model with given parameters.
+fn ets_sse(
+    y_values: &[f64],
+    alpha: f64,
+    beta: f64,
+    gamma: f64,
+    initial_level: f64,
+    initial_trend: f64,
+    initial_seasonal: &[f64],
+    season: usize,
+) -> f64 {
+    // Clamp parameters to valid range [0, 1]
+    let alpha = alpha.clamp(0.0001, 0.9999);
+    let beta = beta.clamp(0.0001, 0.9999);
+    let gamma = gamma.clamp(0.0001, 0.9999);
+
+    let n = y_values.len();
+    let mut level = initial_level;
+    let mut trend = initial_trend;
+    let mut seasonal = initial_seasonal.to_vec();
+
+    let mut sse = 0.0;
+
+    for i in 0..n {
+        // Forecast for this period
+        let seasonal_component = if season > 1 { seasonal[i % season] } else { 0.0 };
+        let forecast = level + trend + seasonal_component;
+
+        // Error
+        let error = y_values[i] - forecast;
+        sse += error * error;
+
+        // Update states using Holt-Winters additive method
+        let old_level = level;
+        level = alpha * (y_values[i] - seasonal_component) + (1.0 - alpha) * (level + trend);
+        trend = beta * (level - old_level) + (1.0 - beta) * trend;
+
+        if season > 1 {
+            seasonal[i % season] =
+                gamma * (y_values[i] - level) + (1.0 - gamma) * seasonal[i % season];
+        }
+    }
+
+    sse
+}
+
+/// Run ETS model and return final states.
+fn run_ets(
+    y_values: &[f64],
+    alpha: f64,
+    beta: f64,
+    gamma: f64,
+    initial_level: f64,
+    initial_trend: f64,
+    initial_seasonal: &[f64],
+    season: usize,
+) -> (f64, f64, Vec<f64>) {
+    let n = y_values.len();
+    let mut level = initial_level;
+    let mut trend = initial_trend;
+    let mut seasonal = initial_seasonal.to_vec();
+
+    for i in 0..n {
+        let seasonal_component = if season > 1 { seasonal[i % season] } else { 0.0 };
+
+        // Update states using Holt-Winters additive method
+        let old_level = level;
+        level = alpha * (y_values[i] - seasonal_component) + (1.0 - alpha) * (level + trend);
+        trend = beta * (level - old_level) + (1.0 - beta) * trend;
+
+        if season > 1 {
+            seasonal[i % season] =
+                gamma * (y_values[i] - level) + (1.0 - gamma) * seasonal[i % season];
+        }
+    }
+
+    (level, trend, seasonal)
+}
+
+/// Nelder-Mead simplex optimization algorithm.
+/// Finds parameters that minimize the objective function.
+fn nelder_mead_optimize<F>(initial: &[f64], objective: &F, max_iter: usize) -> Vec<f64>
+where
+    F: Fn(&[f64]) -> f64,
+{
+    let n = initial.len();
+
+    // Nelder-Mead parameters
+    let alpha_nm = 1.0; // Reflection
+    let gamma_nm = 2.0; // Expansion
+    let rho = 0.5; // Contraction
+    let sigma = 0.5; // Shrink
+
+    // Initialize simplex with n+1 vertices
+    let mut simplex: Vec<Vec<f64>> = Vec::with_capacity(n + 1);
+    simplex.push(initial.to_vec());
+
+    for i in 0..n {
+        let mut vertex = initial.to_vec();
+        // Step size: 0.1 for small initial values, proportional otherwise
+        let step = if initial[i].abs() < 0.1 {
+            0.1
+        } else {
+            initial[i] * 0.2
+        };
+        vertex[i] += step;
+        simplex.push(vertex);
+    }
+
+    // Evaluate objective at each vertex
+    let mut values: Vec<f64> = simplex.iter().map(|v| objective(v)).collect();
+
+    for _ in 0..max_iter {
+        // Sort vertices by objective value
+        let mut indices: Vec<usize> = (0..=n).collect();
+        indices.sort_by(|&a, &b| values[a].partial_cmp(&values[b]).unwrap());
+
+        let best_idx = indices[0];
+        let worst_idx = indices[n];
+        let second_worst_idx = indices[n - 1];
+
+        // Check convergence
+        let best_val = values[best_idx];
+        let worst_val = values[worst_idx];
+        if (worst_val - best_val).abs() < 1e-10 {
+            return simplex[best_idx].clone();
+        }
+
+        // Calculate centroid (excluding worst point)
+        let mut centroid = vec![0.0; n];
+        for &idx in &indices[0..n] {
+            for j in 0..n {
+                centroid[j] += simplex[idx][j];
+            }
+        }
+        for j in 0..n {
+            centroid[j] /= n as f64;
+        }
+
+        // Reflection
+        let mut reflected: Vec<f64> = centroid
+            .iter()
+            .zip(&simplex[worst_idx])
+            .map(|(&c, &w)| c + alpha_nm * (c - w))
+            .collect();
+        // Clamp to valid range [0, 1]
+        for val in &mut reflected {
+            *val = val.clamp(0.0, 1.0);
+        }
+        let reflected_val = objective(&reflected);
+
+        if reflected_val < values[second_worst_idx] && reflected_val >= best_val {
+            // Accept reflection
+            simplex[worst_idx] = reflected;
+            values[worst_idx] = reflected_val;
+            continue;
+        }
+
+        if reflected_val < best_val {
+            // Try expansion
+            let mut expanded: Vec<f64> = centroid
+                .iter()
+                .zip(&reflected)
+                .map(|(&c, &r)| c + gamma_nm * (r - c))
+                .collect();
+            for val in &mut expanded {
+                *val = val.clamp(0.0, 1.0);
+            }
+            let expanded_val = objective(&expanded);
+
+            if expanded_val < reflected_val {
+                simplex[worst_idx] = expanded;
+                values[worst_idx] = expanded_val;
+            } else {
+                simplex[worst_idx] = reflected;
+                values[worst_idx] = reflected_val;
+            }
+            continue;
+        }
+
+        // Contraction
+        let mut contracted: Vec<f64> = centroid
+            .iter()
+            .zip(&simplex[worst_idx])
+            .map(|(&c, &w)| c + rho * (w - c))
+            .collect();
+        for val in &mut contracted {
+            *val = val.clamp(0.0, 1.0);
+        }
+        let contracted_val = objective(&contracted);
+
+        if contracted_val < values[worst_idx] {
+            simplex[worst_idx] = contracted;
+            values[worst_idx] = contracted_val;
+            continue;
+        }
+
+        // Shrink: move all points toward best
+        for &idx in &indices[1..] {
+            for j in 0..n {
+                simplex[idx][j] =
+                    simplex[best_idx][j] + sigma * (simplex[idx][j] - simplex[best_idx][j]);
+                simplex[idx][j] = simplex[idx][j].clamp(0.0, 1.0);
+            }
+            values[idx] = objective(&simplex[idx]);
+        }
+    }
+
+    // Return best vertex
+    let best_idx = values
+        .iter()
+        .enumerate()
+        .min_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+        .map(|(i, _)| i)
+        .unwrap_or(0);
+
+    simplex[best_idx].clone()
 }
