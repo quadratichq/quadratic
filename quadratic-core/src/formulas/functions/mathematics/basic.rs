@@ -244,39 +244,6 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Converts a number into a text representation with the given radix (base).
-            ///
-            /// The radix must be between 2 and 36 inclusive. The optional `min_length`
-            /// parameter pads the result with leading zeros.
-            #[examples(
-                "BASE(255, 16) = \"FF\"",
-                "BASE(15, 2) = \"1111\"",
-                "BASE(15, 2, 8) = \"00001111\""
-            )]
-            #[zip_map]
-            fn BASE(span: Span, [number]: f64, [radix]: i64, [min_length]: (Option<i64>)) {
-                if number < 0.0 || number >= 2.0_f64.powi(53) {
-                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
-                }
-                if !(2..=36).contains(&radix) {
-                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
-                }
-                let min_len = min_length.unwrap_or(0);
-                if !(0..=255).contains(&min_len) {
-                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
-                }
-
-                let n = number.trunc() as u64;
-                let result = number_to_base(n, radix as u32);
-
-                if (result.len() as i64) < min_len {
-                    format!("{:0>width$}", result, width = min_len as usize)
-                } else {
-                    result
-                }
-            }
-        ),
-        formula_fn!(
             /// Calculates the percentage of a value relative to a total.
             ///
             /// Returns (value / total) * 100, which represents what percentage
@@ -336,24 +303,6 @@ fn roman_to_arabic(s: &str) -> Option<i64> {
     }
 
     Some(total)
-}
-
-/// Converts a number to a string representation in the given base.
-fn number_to_base(mut n: u64, radix: u32) -> String {
-    if n == 0 {
-        return "0".to_string();
-    }
-
-    const DIGITS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let mut result = Vec::new();
-
-    while n > 0 {
-        let digit = (n % radix as u64) as usize;
-        result.push(DIGITS[digit] as char);
-        n /= radix as u64;
-    }
-
-    result.iter().rev().collect()
 }
 
 #[cfg(test)]

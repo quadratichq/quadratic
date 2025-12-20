@@ -164,6 +164,44 @@ impl AstNode {
                 Value::Lambda(LambdaValue::new(params, body))
             }
 
+            // Special handling for ISOMITTED
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("ISOMITTED") =>
+            {
+                // ISOMITTED(parameter_name)
+                // Returns TRUE if the parameter was omitted in a LAMBDA call, FALSE otherwise
+                if args.is_empty() {
+                    return Err(RunErrorMsg::MissingRequiredArgument {
+                        func_name: "ISOMITTED".into(),
+                        arg_name: "value".into(),
+                    }
+                    .with_span(self.span));
+                }
+                if args.len() > 1 {
+                    return Err(RunErrorMsg::TooManyArguments {
+                        func_name: "ISOMITTED".into(),
+                        max_arg_count: 1,
+                    }
+                    .with_span(args[1].span));
+                }
+
+                // Check if the argument is a variable reference that was omitted
+                let arg = &args[0];
+                let is_omitted = match &arg.inner {
+                    AstNodeContents::CellRef(None, _) => {
+                        // Try to extract the identifier name
+                        if let Some(identifier) = arg.inner.try_as_identifier() {
+                            ctx.is_variable_omitted(&identifier)
+                        } else {
+                            false
+                        }
+                    }
+                    _ => false,
+                };
+
+                Value::from(is_omitted)
+            }
+
             // Special handling for LET
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("LET") =>
@@ -240,9 +278,10 @@ impl AstNode {
 
                 match callee_value {
                     Value::Lambda(lambda) => {
-                        // Check argument count
+                        // Check argument count - allow fewer arguments (for ISOMITTED support)
+                        // but not more arguments than parameters
                         let call_args = &args[1..];
-                        if call_args.len() != lambda.param_count() {
+                        if call_args.len() > lambda.param_count() {
                             return Err(RunErrorMsg::TooManyArguments {
                                 func_name: "LAMBDA".into(),
                                 max_arg_count: lambda.param_count(),
@@ -257,15 +296,22 @@ impl AstNode {
                             .collect();
 
                         // Create bindings from parameters to argument values
-                        let bindings: Vec<(String, Value)> = lambda
-                            .params
-                            .iter()
-                            .zip(arg_values)
-                            .map(|(name, val)| (name.clone(), val))
-                            .collect();
+                        // Parameters without arguments get a blank value and are marked as omitted
+                        let mut bindings: Vec<(String, Value)> = Vec::new();
+                        let mut omitted: Vec<String> = Vec::new();
 
-                        // Create child context with bindings and evaluate body
-                        let mut child_ctx = ctx.with_bindings(&bindings);
+                        for (i, param) in lambda.params.iter().enumerate() {
+                            if let Some(value) = arg_values.get(i) {
+                                bindings.push((param.clone(), value.clone()));
+                            } else {
+                                // Parameter is omitted - bind to blank value
+                                bindings.push((param.clone(), Value::Single(CellValue::Blank)));
+                                omitted.push(param.clone());
+                            }
+                        }
+
+                        // Create child context with bindings and omitted variables, then evaluate body
+                        let mut child_ctx = ctx.with_bindings_and_omitted(&bindings, &omitted);
                         lambda.body.eval(&mut child_ctx).inner
                     }
                     _ => {

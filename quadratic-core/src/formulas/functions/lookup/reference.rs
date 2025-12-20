@@ -1,4 +1,4 @@
-//! Reference functions: ROW, COLUMN, ROWS, COLUMNS, ADDRESS, INDIRECT, INDEX, OFFSET, AREAS, RTD
+//! Reference functions: ROW, COLUMN, ROWS, COLUMNS, ADDRESS, INDIRECT, INDEX, OFFSET, AREAS
 
 use crate::{ArraySize, CodeResultExt, a1::SheetCellRefRange, a1::column_name};
 
@@ -321,28 +321,6 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
                 ctx.get_cell_array(sheet_rect, span)?.inner
             }
         ),
-        formula_fn!(
-            /// Retrieves real-time data from a COM server.
-            ///
-            /// In traditional Excel, RTD connects to a COM automation server to
-            /// receive real-time data updates (e.g., stock prices, financial data).
-            ///
-            /// - `prog_id`: The program ID of the RTD server.
-            /// - `server`: The server name (empty string for local).
-            /// - `topics`: One or more topic strings that identify the data to retrieve.
-            ///
-            /// **Note**: RTD is not implemented in Quadratic as it requires
-            /// Windows COM servers which are not supported in a browser environment.
-            #[examples("RTD(\"MyServer.RTD\", \"\", \"Topic1\")")]
-            fn RTD(span: Span, _prog_id: String, _server: String, _topics: (Iter<String>)) {
-                CellValue::Error(Box::new(
-                    RunErrorMsg::Unimplemented(
-                        "RTD requires COM servers which are not supported".into(),
-                    )
-                    .with_span(span),
-                ))
-            }
-        ),
     ]
 }
 
@@ -627,26 +605,4 @@ mod tests {
         assert_eq!("{8; 9}", eval_to_string(&g, "OFFSET(A1:A2, 1, 2)")); // C2:C3
     }
 
-    #[test]
-    fn test_rtd() {
-        let g = GridController::new();
-
-        // RTD should return an unimplemented error
-        let result = eval(&g, "RTD(\"MyServer.RTD\", \"\", \"Topic1\")");
-        let cell_values = result.cell_values_slice();
-        assert!(cell_values.is_ok());
-        let values = cell_values.unwrap();
-        assert_eq!(values.len(), 1);
-
-        match &values[0] {
-            CellValue::Error(e) => {
-                assert!(
-                    matches!(&e.msg, RunErrorMsg::Unimplemented(_)),
-                    "Expected Unimplemented error, got {:?}",
-                    e.msg
-                );
-            }
-            other => panic!("Expected error, got {:?}", other),
-        }
-    }
 }

@@ -527,7 +527,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             "unix".to_string()
                         }
                     }
-                    "release" => "1.0".to_string(),
+                    "release" => env!("CARGO_PKG_VERSION").to_string(),
                     _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
                 }
             }
@@ -1400,6 +1400,76 @@ mod tests {
         // ISREF on a literal should return FALSE
         assert_eq!("FALSE", eval_to_string(&g, "ISREF(123)"));
         assert_eq!("FALSE", eval_to_string(&g, "ISREF(\"hello\")"));
+    }
+
+    #[test]
+    fn test_formula_isomitted() {
+        let g = GridController::new();
+
+        // ISOMITTED returns TRUE when parameter is omitted
+        assert_eq!("TRUE", eval_to_string(&g, "LAMBDA(x, ISOMITTED(x))()"));
+
+        // ISOMITTED returns FALSE when parameter is provided
+        assert_eq!("FALSE", eval_to_string(&g, "LAMBDA(x, ISOMITTED(x))(5)"));
+
+        // ISOMITTED with multiple parameters - first omitted
+        assert_eq!("TRUE", eval_to_string(&g, "LAMBDA(a, b, ISOMITTED(a))()"));
+
+        // ISOMITTED with multiple parameters - second omitted
+        assert_eq!("TRUE", eval_to_string(&g, "LAMBDA(a, b, ISOMITTED(b))(1)"));
+
+        // ISOMITTED with multiple parameters - none omitted
+        assert_eq!(
+            "FALSE",
+            eval_to_string(&g, "LAMBDA(a, b, ISOMITTED(a))(1, 2)")
+        );
+        assert_eq!(
+            "FALSE",
+            eval_to_string(&g, "LAMBDA(a, b, ISOMITTED(b))(1, 2)")
+        );
+
+        // ISOMITTED returns FALSE for non-variable arguments
+        assert_eq!("FALSE", eval_to_string(&g, "LAMBDA(x, ISOMITTED(5))()"));
+
+        // Using ISOMITTED to provide default value
+        assert_eq!(
+            "10",
+            eval_to_string(&g, "LAMBDA(x, IF(ISOMITTED(x), 10, x))()")
+        );
+        assert_eq!(
+            "42",
+            eval_to_string(&g, "LAMBDA(x, IF(ISOMITTED(x), 10, x))(42)")
+        );
+
+        // Omitted parameter with blank vs provided blank
+        assert_eq!("TRUE", eval_to_string(&g, "LAMBDA(x, ISOMITTED(x))()"));
+        // Empty string is NOT omitted
+        assert_eq!("FALSE", eval_to_string(&g, "LAMBDA(x, ISOMITTED(x))(\"\")"));
+        // Zero is NOT omitted
+        assert_eq!("FALSE", eval_to_string(&g, "LAMBDA(x, ISOMITTED(x))(0)"));
+        // FALSE is NOT omitted
+        assert_eq!(
+            "FALSE",
+            eval_to_string(&g, "LAMBDA(x, ISOMITTED(x))(FALSE)")
+        );
+
+        // Error: missing argument
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "ISOMITTED".into(),
+                arg_name: "value".into(),
+            },
+            eval_to_err(&g, "ISOMITTED()").msg,
+        );
+
+        // Error: too many arguments
+        assert_eq!(
+            RunErrorMsg::TooManyArguments {
+                func_name: "ISOMITTED".into(),
+                max_arg_count: 1,
+            },
+            eval_to_err(&g, "ISOMITTED(1, 2)").msg,
+        );
     }
 
     #[test]
