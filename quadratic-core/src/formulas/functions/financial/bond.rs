@@ -1,7 +1,7 @@
 //! Bond, coupon, and securities functions.
 
 use super::*;
-use crate::formulas::functions::datetime::{date_to_excel_serial, parse_date_from_cell_value};
+use crate::formulas::functions::datetime::parse_date_from_cell_value;
 
 pub fn get_functions() -> Vec<FormulaFunction> {
     vec![
@@ -28,7 +28,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
                 let pcd = find_previous_coupon_date(settlement, maturity, frequency)
                     .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
-                date_to_excel_serial(pcd) as f64
+                CellValue::Date(pcd)
             }
         ),
         formula_fn!(
@@ -54,7 +54,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
                 let ncd = find_next_coupon_date(settlement, maturity, frequency)
                     .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
-                date_to_excel_serial(ncd) as f64
+                CellValue::Date(ncd)
             }
         ),
         formula_fn!(
@@ -818,7 +818,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, formulas::tests::*};
+    use crate::{controller::GridController, formulas::tests::*, CellValue, Value};
 
     #[test]
     fn test_effect() {
@@ -835,6 +835,82 @@ mod tests {
         assert!(
             !result.contains("Error"),
             "NOMINAL should not return an error"
+        );
+    }
+
+    #[test]
+    fn test_couppcd_returns_date() {
+        let g = GridController::new();
+        // COUPPCD should return a date, not a number
+        assert!(matches!(
+            eval(&g, "COUPPCD(\"2021-01-15\", \"2030-01-15\", 2, 0)"),
+            Value::Single(CellValue::Date(_)),
+        ));
+        // Verify the actual date value (previous coupon date before settlement)
+        assert_eq!(
+            "2021-01-15",
+            eval_to_string(&g, "COUPPCD(\"2021-01-15\", \"2030-01-15\", 2, 0)")
+        );
+    }
+
+    #[test]
+    fn test_coupncd_returns_date() {
+        let g = GridController::new();
+        // COUPNCD should return a date, not a number
+        assert!(matches!(
+            eval(&g, "COUPNCD(\"2021-01-15\", \"2030-01-15\", 2, 0)"),
+            Value::Single(CellValue::Date(_)),
+        ));
+        // Verify the actual date value
+        assert_eq!(
+            "2021-07-15",
+            eval_to_string(&g, "COUPNCD(\"2021-01-15\", \"2030-01-15\", 2, 0)")
+        );
+    }
+
+    #[test]
+    fn test_coupnum_returns_number() {
+        let g = GridController::new();
+        // COUPNUM should return a number
+        assert!(matches!(
+            eval(&g, "COUPNUM(\"2021-01-15\", \"2030-01-15\", 2, 0)"),
+            Value::Single(CellValue::Number(_)),
+        ));
+        // Verify the value (18 semi-annual coupons from 2021-01-15 to 2030-01-15)
+        assert_eq!(
+            "18",
+            eval_to_string(&g, "COUPNUM(\"2021-01-15\", \"2030-01-15\", 2, 0)")
+        );
+    }
+
+    #[test]
+    fn test_coupdays_returns_number() {
+        let g = GridController::new();
+        // COUPDAYS should return a number
+        assert!(matches!(
+            eval(&g, "COUPDAYS(\"2021-01-15\", \"2030-01-15\", 2, 0)"),
+            Value::Single(CellValue::Number(_)),
+        ));
+        // For basis 0 (30/360), semi-annual coupon period = 180 days
+        assert_eq!(
+            "180",
+            eval_to_string(&g, "COUPDAYS(\"2021-01-15\", \"2030-01-15\", 2, 0)")
+        );
+    }
+
+    #[test]
+    fn test_coupdaysnc_returns_number() {
+        let g = GridController::new();
+        // COUPDAYSNC should return a number
+        assert!(matches!(
+            eval(&g, "COUPDAYSNC(\"2021-01-15\", \"2030-01-15\", 2, 0)"),
+            Value::Single(CellValue::Number(_)),
+        ));
+        // Verify the result is a reasonable number (days until next coupon)
+        let result = eval_to_string(&g, "COUPDAYSNC(\"2021-01-15\", \"2030-01-15\", 2, 0)");
+        assert!(
+            !result.contains("Error"),
+            "COUPDAYSNC should not return an error"
         );
     }
 }

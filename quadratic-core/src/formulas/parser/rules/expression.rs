@@ -377,8 +377,10 @@ fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<
                     allow_empty: true,
                 })?;
 
-                // Create a CALL function with the callee as the first argument
-                // and the call arguments as remaining arguments
+                // Create an internal __LAMBDA_INVOKE__ node with the callee as the first
+                // argument and the call arguments as remaining arguments.
+                // Note: We use __LAMBDA_INVOKE__ (not CALL) to avoid conflicting with
+                // the Excel CALL function, which should remain unimplemented.
                 let mut args = vec![ret];
                 args.extend(call_args.inner);
 
@@ -387,7 +389,7 @@ fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<
                     inner: ast::AstNodeContents::FunctionCall {
                         func: Spanned {
                             span: call_args.span,
-                            inner: "CALL".to_string(),
+                            inner: "__LAMBDA_INVOKE__".to_string(),
                         },
                         args,
                     },
