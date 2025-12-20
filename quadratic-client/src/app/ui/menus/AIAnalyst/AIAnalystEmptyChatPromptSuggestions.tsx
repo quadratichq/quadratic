@@ -4,6 +4,8 @@ import {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
+import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -39,8 +41,28 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
+    const [sheetHasData, setSheetHasData] = useState(fileHasData());
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
+
+    // Listen for sheet content changes to update suggestions when data is added/removed
+    useEffect(() => {
+      const checkSheetData = () => {
+        const hasData = fileHasData();
+        setSheetHasData((prev) => {
+          // Only trigger update if the data presence changed
+          if (prev !== hasData) {
+            return hasData;
+          }
+          return prev;
+        });
+      };
+
+      events.on('hashContentChanged', checkSheetData);
+      return () => {
+        events.off('hashContentChanged', checkSheetData);
+      };
+    }, []);
 
     useEffect(() => {
       const updatePromptSuggestions = async () => {
@@ -78,7 +100,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       };
 
       updatePromptSuggestions();
-    }, [context, files, importFiles, getEmptyChatPromptSuggestions]);
+    }, [context, files, importFiles, sheetHasData, getEmptyChatPromptSuggestions]);
 
     useEffect(() => {
       if (aiAnalystLoading) {
