@@ -43,13 +43,6 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
   await page.waitForTimeout(2500);
 
-  // setup dialog alerts to be yes
-  page.on('dialog', (dialog) => {
-    dialog.accept().catch((error) => {
-      console.error('Failed to accept the dialog:', error);
-    });
-  });
-
   // loop through and delete all the files
   const fileCount = await page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).count();
   for (let i = 0; i < fileCount; i++) {
@@ -57,8 +50,8 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
       .locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`)
       .first()
       .click({ timeout: 60 * 1000 });
-    await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
-    await page.waitForTimeout(5 * 1000);
+    await page.locator('[data-testid="dashboard-file-actions-delete"]').click({ timeout: 60 * 1000 });
+    await page.waitForTimeout(2 * 1000);
   }
 
   // once complete clear out search bar

@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
-import { gotoCells, waitForKernelMenuIdle } from './helpers/sheet.helper';
+import { clickFontSizeIncrease, clickTextWrapWrap } from './helpers/format.helper';
+import { gotoCells, resizeColumn, waitForKernelMenuIdle } from './helpers/sheet.helper';
 
 test('Row auto-resize with descenders', async ({ page }) => {
   // Constants
   const fileName = 'Glyph_Sizing_Descenders';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_descenders` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -61,12 +62,12 @@ test('Row auto-resize with descenders', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Wrapped text row sizing', async ({ page }) => {
+test('Wrapped text row sizing', async ({ page }) => {
   // Constants
   const fileName = 'Glyph_Sizing_Wrapped';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_wrapped` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -87,26 +88,12 @@ test.only('Wrapped text row sizing', async ({ page }) => {
   await gotoCells(page, { a1: 'A1' });
 
   // Click on the "Text Wrap" button in the formatting bar and select "Wrap"
-  await page.getByRole('button', { name: 'format_text_overflow' }).click({ timeout: 60 * 1000 });
-  await page.locator('div[role="menuitem"] >> text=Wrap').click({ timeout: 60 * 1000 });
+  await clickTextWrapWrap(page);
 
   await page.waitForTimeout(2000);
 
   // Make column A narrower to force wrapping
-  // Drag column A right border to make it narrower
-  const canvas = page.locator('#QuadraticCanvasID');
-  await expect(canvas).toBeVisible({ timeout: 60 * 1000 });
-  const canvasBox = await canvas.boundingBox();
-  if (!canvasBox) {
-    throw new Error('Canvas bounding box not found');
-  }
-
-  // Shrink column A width (drag from x ~168 to x ~100)
-  await page.mouse.move(canvasBox.x + 103, canvasBox.y + 12);
-  await page.mouse.down();
-  await page.mouse.move(canvasBox.x + 60, canvasBox.y + 12, { steps: 20 });
-  await page.mouse.up();
-  await page.waitForTimeout(2000);
+  await resizeColumn(page, 'A', -50);
 
   // Navigate away to deselect for clean screenshot
   await gotoCells(page, { a1: 'B1' });
@@ -129,7 +116,7 @@ test('Text with emojis sizing', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Emojis';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_emojis` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -186,7 +173,7 @@ test('Multi-line text with descenders', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Multiline';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_multiline` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -201,8 +188,7 @@ test('Multi-line text with descenders', async ({ page }) => {
   await gotoCells(page, { a1: 'A1' });
 
   // First set wrap mode using the formatting bar button
-  await page.getByRole('button', { name: 'format_text_overflow' }).click({ timeout: 60 * 1000 });
-  await page.locator('div[role="menuitem"] >> text=Wrap').click({ timeout: 60 * 1000 });
+  await clickTextWrapWrap(page);
 
   await page.waitForTimeout(1000);
 
@@ -247,7 +233,7 @@ test('Table with wrapped text and descenders', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Table_Wrap';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_table_wrap` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -307,8 +293,7 @@ df`);
   await page.waitForTimeout(500);
 
   // Click on the "Text Wrap" button in the formatting bar and select "Wrap"
-  await page.getByRole('button', { name: 'format_text_overflow' }).click({ timeout: 60 * 1000 });
-  await page.locator('div[role="menuitem"] >> text=Wrap').click({ timeout: 60 * 1000 });
+  await clickTextWrapWrap(page);
 
   await page.waitForTimeout(2000);
 
@@ -350,7 +335,7 @@ test('Table cell height with descenders after resize', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Table_Resize';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_table_resize` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -432,7 +417,7 @@ test('Different font sizes row sizing', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Font_Sizes';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_font_sizes` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -459,7 +444,7 @@ test('Different font sizes row sizing', async ({ page }) => {
   await gotoCells(page, { a1: 'A2' });
   // From 10: 11, 12, 14, 16, 18 = 5 clicks
   for (let i = 0; i < 5; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -473,7 +458,7 @@ test('Different font sizes row sizing', async ({ page }) => {
   await gotoCells(page, { a1: 'A3' });
   // From 10: 11, 12, 14, 16, 18, 20, 24, 28, 32, 36 = 10 clicks
   for (let i = 0; i < 10; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -487,7 +472,7 @@ test('Different font sizes row sizing', async ({ page }) => {
   await gotoCells(page, { a1: 'A4' });
   // From 10: 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 = 12 clicks
   for (let i = 0; i < 12; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -526,7 +511,7 @@ test('Emojis with different font sizes', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Emoji_Fonts';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_emoji_fonts` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -553,7 +538,7 @@ test('Emojis with different font sizes', async ({ page }) => {
   await gotoCells(page, { a1: 'A2' });
   // From 10: 11, 12, 14, 16, 18 = 5 clicks
   for (let i = 0; i < 5; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -567,7 +552,7 @@ test('Emojis with different font sizes', async ({ page }) => {
   await gotoCells(page, { a1: 'A3' });
   // From 10: 11, 12, 14, 16, 18, 20, 24 = 7 clicks
   for (let i = 0; i < 7; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -581,7 +566,7 @@ test('Emojis with different font sizes', async ({ page }) => {
   await gotoCells(page, { a1: 'A4' });
   // From 10: 10 clicks to reach 36
   for (let i = 0; i < 10; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -595,7 +580,7 @@ test('Emojis with different font sizes', async ({ page }) => {
   await gotoCells(page, { a1: 'A5' });
   // From 10: 11 clicks to reach 48
   for (let i = 0; i < 11; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 
@@ -642,7 +627,7 @@ test('Large font size column auto-resize', async ({ page }) => {
   const fileName = 'Glyph_Sizing_Large_Font_Column';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_glyph_sizing` });
+  await logIn(page, { emailPrefix: `e2e_glyph_large_font` });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -662,7 +647,7 @@ test('Large font size column auto-resize', async ({ page }) => {
   // Select A1 and set font size to 36
   await gotoCells(page, { a1: 'A1' });
   for (let i = 0; i < 10; i++) {
-    await page.getByRole('button', { name: 'text_increase' }).click({ timeout: 5 * 1000 });
+    await clickFontSizeIncrease(page);
     await page.waitForTimeout(100);
   }
 

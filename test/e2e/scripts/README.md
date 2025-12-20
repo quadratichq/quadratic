@@ -1,90 +1,73 @@
 # E2E Test Scripts
 
-## createUser.js
+## ensureUserExists.ts
 
-Creates a validated user in QA and/or Staging WorkOS environments.
+This script ensures all E2E test users exist in WorkOS environments (staging and preview).
 
 ### Prerequisites
 
-1. Set up environment variables in a `.env` file in the `test/e2e` directory (or export them in your shell):
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```env
-# QA environment
-WORKOS_QA_API_KEY=your_qa_api_key
-WORKOS_QA_CLIENT_ID=your_qa_client_id
+2. Set up environment variables in a `.env` file:
+   ```env
+   # Staging environment
+   WORKOS_STAGING_API_KEY=your_staging_api_key
+   WORKOS_STAGING_CLIENT_ID=your_staging_client_id
 
-# Staging environment
-WORKOS_STAGING_API_KEY=your_staging_api_key
-WORKOS_STAGING_CLIENT_ID=your_staging_client_id
-```
-
-2. Install dependencies (from `test/e2e` directory):
-
-```bash
-npm install
-```
+   # Preview environment
+   WORKOS_PREVIEW_API_KEY=your_preview_api_key
+   WORKOS_PREVIEW_CLIENT_ID=your_preview_client_id
+   ```
 
 ### Usage
 
-**Important:** When using `npm run`, you must add `--` before the arguments!
+Run the script to create/verify all users from `test-users.json`:
 
 ```bash
-# From test/e2e directory (note the -- before arguments)
-npm run create-user -- --email <email> [options]
-
-# Or run directly (no -- needed)
-node scripts/createUser.js --email <email> [options]
+npm run ensure-users
 ```
 
-### Options
-
-| Option | Short | Description | Default |
-|--------|-------|-------------|---------|
-| `--email` | `-e` | User email address (required) | - |
-| `--password` | `-p` | User password | `E2E_test` |
-| `--firstName` | `-f` | User first name | `E2E` |
-| `--lastName` | `-l` | User last name | `Test` |
-| `--env` | - | Target environment: `qa`, `staging`, or `all` | `all` |
-| `--help` | `-h` | Show help message | - |
-
-### Examples
+Or run it directly:
 
 ```bash
-# Create user in both QA and Staging (default)
-npm run create-user -- --email test@example.com --password SecurePass123
-
-# Create user in QA only
-npm run create-user -- --email test@example.com --env qa
-
-# Create user in Staging only
-npm run create-user -- --email test@example.com --env staging
-
-# Create user with custom name
-npm run create-user -- --email test@example.com --firstName John --lastName Doe
+npx tsx scripts/ensureUserExists.ts
 ```
 
 ### What it does
 
-1. Checks if the user already exists in the specified environment(s)
-2. If user exists: ensures their email is marked as verified
-3. If user doesn't exist: creates them with `emailVerified: true`
-4. Provides progress feedback and a summary report
+1. Reads all users from `test-users.json`
+2. For each user, ensures they exist in both staging and preview WorkOS environments
+3. Creates users if they don't exist
+4. Verifies email addresses if users already exist
+5. Provides progress feedback and a summary report
 
-### Programmatic Usage
+### Features
 
-You can also import and use the `createUser` function in your own scripts:
+- **Progress tracking**: Shows current progress as `[X/Total]`
+- **Error handling**: Continues processing even if individual users fail
+- **Summary report**: Shows success/failure counts at the end
+- **Rate limiting**: Adds small delays between requests to avoid API throttling
+- **CI-aware**: Automatically skips in CI environments
 
-```javascript
-import { createUser } from './scripts/createUser.js';
+### User Format
 
-const results = await createUser({
-  email: 'test@example.com',
-  password: 'SecurePass123',
-  firstName: 'Test',
-  lastName: 'User',
-}, 'all'); // 'qa', 'staging', or 'all'
+Users are defined in `test-users.json` with the following structure:
 
-results.forEach(result => {
-  console.log(`${result.environment}: ${result.created ? 'Created' : 'Exists'}`);
-});
+```json
+{
+  "users": [
+    {
+      "email": "e2e_test_user_chromium@quadratichq.com",
+      "password": "E2E_test"
+    }
+  ]
+}
 ```
+
+All users are created with:
+- First name: "E2E"
+- Last name: "Test"
+- Email verified: true

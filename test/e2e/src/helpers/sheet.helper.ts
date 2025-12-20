@@ -150,3 +150,44 @@ export const pasteFromClipboard = async (page: Page, a1?: string) => {
 export const waitForKernelMenuIdle = async (page: Page, timeout = 60 * 1000) => {
   await expect(page.locator('[data-testid="kernel-menu-busy"]')).toBeHidden({ timeout });
 };
+
+// Column resize handle position constants
+// NOTE: This only works when columns are at their default sizes (100px each)
+const COLUMN_RESIZE_HANDLE_X = 169; // X position of column A's right edge resize handle
+const COLUMN_RESIZE_HANDLE_Y = 94; // Y position for column resize handles (in header area)
+
+/**
+ * Converts a column letter (A, B, C, etc.) to a 1-based index.
+ * A = 1, B = 2, ..., Z = 26, AA = 27, etc.
+ */
+const columnLetterToIndex = (column: string): number => {
+  let index = 0;
+  for (let i = 0; i < column.length; i++) {
+    index = index * 26 + (column.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
+  }
+  return index;
+};
+
+/**
+ * Resizes a column by dragging its right edge resize handle.
+ *
+ * NOTE: This only works when columns are at their default sizes (100px each).
+ * If columns have been resized, the handle positions will be incorrect.
+ *
+ * @param page - Playwright page
+ * @param column - Column letter (e.g., 'A', 'B', 'C')
+ * @param deltaX - Number of pixels to drag (positive = wider, negative = narrower)
+ */
+export const resizeColumn = async (page: Page, column: string, deltaX: number) => {
+  const columnIndex = columnLetterToIndex(column.toUpperCase());
+  // Each column after A is 100 pixels away from the previous one
+  const handleX = COLUMN_RESIZE_HANDLE_X + (columnIndex - 1) * CELL_WIDTH;
+  const handleY = COLUMN_RESIZE_HANDLE_Y;
+
+  // Move to the resize handle, then drag
+  await page.mouse.move(handleX, handleY);
+  await page.mouse.down();
+  await page.mouse.move(handleX + deltaX, handleY, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+};

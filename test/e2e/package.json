@@ -7,7 +7,6 @@
   "scripts": {
     "lint:ts": "npm install --no-audit --no-fund && tsc --noemit",
     "ensure-users": "tsx scripts/ensureUserExists.ts",
-    "create-user": "node scripts/createUser.js",
     "test": "npm run lint:ts && npx playwright test",
     "test:bail": "npm run lint:ts && npx playwright test -x",
     "test:ui": "npm run lint:ts && npx playwright test --ui",
