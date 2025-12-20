@@ -139,17 +139,25 @@ test('Text with emojis sizing', async ({ page }) => {
   await page.keyboard.type('🎉🎊🎈', { delay: 100 });
   await page.keyboard.press('Enter', { delay: 100 });
 
-  // Auto-resize column A by double-clicking the column border
-  const canvas = page.locator('#QuadraticCanvasID');
-  await expect(canvas).toBeVisible({ timeout: 60 * 1000 });
-  const canvasBox = await canvas.boundingBox();
-  if (!canvasBox) {
-    throw new Error('Canvas bounding box not found');
+  // Select A1 and increase font size to 18 using keyboard shortcut (Ctrl+Shift+.)
+  await gotoCells(page, { a1: 'A1' });
+  await page.waitForTimeout(500);
+  // From 10: 11, 12, 14, 16, 18 = 5 presses
+  for (let i = 0; i < 5; i++) {
+    await page.keyboard.press('Control+Shift+.');
+    await page.waitForTimeout(200);
   }
 
-  // Double-click on column A right border to auto-resize
-  await page.mouse.move(168, 91);
-  await page.mouse.dblclick(168, 91);
+  // Select A2 and increase font size to 24 using keyboard shortcut
+  await gotoCells(page, { a1: 'A2' });
+  await page.waitForTimeout(500);
+  // From 10: 11, 12, 14, 16, 18, 20, 24 = 7 presses
+  for (let i = 0; i < 7; i++) {
+    await page.keyboard.press('Control+Shift+.');
+    await page.waitForTimeout(200);
+  }
+
+  // Wait for font changes to render
   await page.waitForTimeout(2000);
 
   // Navigate away to deselect for clean screenshot
