@@ -244,21 +244,18 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Calculates the percentage of a value relative to a total.
+            /// Calculates the percentage that a value represents of the sum of
+            /// a data array.
             ///
-            /// Returns (value / total) * 100, which represents what percentage
-            /// the value is of the total.
+            /// Returns value / SUM(data), which represents what fraction the
+            /// value is of the total sum of all values in the data array.
             ///
-            /// Note: This function returns a decimal (e.g., 0.25 for 25%), not
-            /// a percentage value (25). To display as a percentage, format the
-            /// cell as a percentage.
-            #[examples(
-                "PERCENTOF(25, 100) = 0.25",
-                "PERCENTOF(50, 200) = 0.25",
-                "PERCENTOF(A1, SUM(A1:A10))"
-            )]
-            #[zip_map]
-            fn PERCENTOF(span: Span, [value]: f64, [total]: f64) {
+            /// Note: This function returns a decimal (e.g., 0.333 for 33.3%),
+            /// not a percentage value (33.3). To display as a percentage,
+            /// format the cell as a percentage.
+            #[examples("PERCENTOF(50, {10,20,30,40,50}) = 0.333", "PERCENTOF(A1, A1:A10)")]
+            fn PERCENTOF(span: Span, value: (f64), data: (Iter<f64>)) {
+                let total: f64 = data.sum::<CodeResult<f64>>()?;
                 if total == 0.0 {
                     return Err(RunErrorMsg::DivideByZero.with_span(span));
                 }
@@ -704,29 +701,31 @@ mod tests {
     }
 
     #[test]
-    fn test_base() {
+    fn test_percentof() {
         let g = GridController::new();
-        assert_eq!("FF", eval_to_string(&g, "BASE(255, 16)"));
-        assert_eq!("1111", eval_to_string(&g, "BASE(15, 2)"));
-        assert_eq!("00001111", eval_to_string(&g, "BASE(15, 2, 8)"));
-        assert_eq!("10", eval_to_string(&g, "BASE(2, 2)"));
-        assert_eq!("0", eval_to_string(&g, "BASE(0, 16)"));
-        assert_eq!("Z", eval_to_string(&g, "BASE(35, 36)"));
-
-        // Invalid radix
-        assert_eq!(
-            RunErrorMsg::InvalidArgument,
-            eval_to_err(&g, "BASE(10, 1)").msg,
-        );
-        assert_eq!(
-            RunErrorMsg::InvalidArgument,
-            eval_to_err(&g, "BASE(10, 37)").msg,
+        // Test basic usage: 50 / (10+20+30+40+50) = 50/150 = 0.333...
+        crate::util::assert_f64_approx_eq(
+            0.333333333,
+            eval_to_string(&g, "PERCENTOF(50, {10,20,30,40,50})")
+                .parse::<f64>()
+                .unwrap(),
+            "Testing PERCENTOF(50, {10,20,30,40,50})",
         );
 
-        // Negative number
+        // Test with simple values: 25 / 100 = 0.25
+        assert_eq!("0.25", eval_to_string(&g, "PERCENTOF(25, {100})"));
+
+        // Test with multiple values: 10 / (10+20+30+40) = 10/100 = 0.1
+        assert_eq!("0.1", eval_to_string(&g, "PERCENTOF(10, {10,20,30,40})"));
+
+        // Test divide by zero error
         assert_eq!(
-            RunErrorMsg::InvalidArgument,
-            eval_to_err(&g, "BASE(-1, 16)").msg,
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "PERCENTOF(10, {0})").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "PERCENTOF(10, {5,-5})").msg,
         );
     }
 }

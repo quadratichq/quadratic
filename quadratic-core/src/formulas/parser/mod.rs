@@ -249,7 +249,9 @@ fn replace_cell_range_references(
 
 /// Maximum recursion depth for parsing expressions.
 /// This prevents stack overflow on deeply nested formulas.
-const MAX_PARSE_DEPTH: u32 = 256;
+/// Note: WASM has limited stack size (~1MB in browsers), so this value
+/// must be kept low enough to leave headroom for parsing operations.
+const MAX_PARSE_DEPTH: u32 = 100;
 
 /// Token parser used to assemble an AST.
 #[derive(Debug, Copy, Clone)]
@@ -593,10 +595,11 @@ mod tests {
         assert!(simple_parse_formula(formula).is_ok());
 
         // A deeply nested formula should return FormulaTooComplex error
-        // Each level of parentheses adds depth. We need to exceed MAX_PARSE_DEPTH (256)
+        // Each level of parentheses adds depth. We need to exceed MAX_PARSE_DEPTH (100)
         // Each paren adds about 10 depth levels (for each precedence level traversal)
-        // So we need roughly 256 / 10 = ~26 levels of nesting to trigger the limit
-        let deeply_nested = format!("{}1{}", "(".repeat(50), ")".repeat(50));
+        // So we need roughly 100 / 10 = ~10 levels of nesting to trigger the limit
+        // Using 15 parens to ensure we exceed the limit
+        let deeply_nested = format!("{}1{}", "(".repeat(15), ")".repeat(15));
         let result = simple_parse_formula(&deeply_nested);
         assert!(result.is_err());
         let err = result.unwrap_err();

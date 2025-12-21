@@ -484,6 +484,7 @@ mod tests {
                 x: 3,
                 y: 3,
                 special: Some(JsRenderCellSpecial::RunError),
+                error_text: Some("Array is too big".to_string()),
                 ..Default::default()
             },
         );

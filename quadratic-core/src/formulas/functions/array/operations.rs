@@ -181,6 +181,17 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let array_value = args.take_next_required("array")?;
                 let array: Array = array_value.try_coerce()?.inner;
 
+                // Determine axis: if array is horizontal (1 row, multiple cols), sort columns (Axis::X)
+                // Otherwise, sort rows (Axis::Y)
+                let axis = if array.height() == 1 && array.width() > 1 {
+                    Axis::X
+                } else {
+                    Axis::Y
+                };
+
+                // The number of slices to sort (rows for Y axis, columns for X axis)
+                let num_slices = array.size()[axis].get();
+
                 // Collect sort criteria pairs
                 let mut sort_criteria: Vec<(Vec<CellValue>, i64)> = Vec::new();
 
@@ -188,23 +199,36 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     let by_array_value = args.take_next_required("by_array")?;
                     let by_array: Spanned<Array> = by_array_value.try_coerce()?;
 
-                    // Validate that by_array has same number of rows as array
-                    if by_array.inner.height() != array.height() {
+                    // Validate that by_array has same dimension along the sort axis as array
+                    let by_num_slices = by_array.inner.size()[axis].get();
+                    if by_num_slices != num_slices {
                         return Err(RunErrorMsg::ArrayAxisMismatch {
-                            axis: Axis::Y,
-                            expected: array.height(),
-                            got: by_array.inner.height(),
+                            axis,
+                            expected: num_slices,
+                            got: by_num_slices,
                         }
                         .with_span(by_array.span));
                     }
 
-                    let by_values: Vec<CellValue> = by_array
-                        .inner
-                        .cell_values_slice()
-                        .iter()
-                        .take(array.height() as usize)
-                        .cloned()
-                        .collect();
+                    // Extract by_values along the appropriate axis
+                    let by_values: Vec<CellValue> = match axis {
+                        Axis::Y => {
+                            // For rows: take the first column of each row
+                            by_array
+                                .inner
+                                .cell_values_slice()
+                                .iter()
+                                .take(num_slices as usize)
+                                .cloned()
+                                .collect()
+                        }
+                        Axis::X => {
+                            // For columns: take values from the first (and only) row
+                            (0..num_slices)
+                                .filter_map(|i| by_array.inner.get(i, 0).ok().cloned())
+                                .collect()
+                        }
+                    };
 
                     // Get optional sort order (default ascending = 1)
                     let sort_order = if args.has_next() {
@@ -236,7 +260,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 }
 
                 // Create indices and sort them
-                let mut indices: Vec<usize> = (0..array.height() as usize).collect();
+                let mut indices: Vec<usize> = (0..num_slices as usize).collect();
                 indices.sort_by(|&a, &b| {
                     for (by_values, order) in &sort_criteria {
                         let val_a = by_values.get(a).unwrap_or(&CellValue::Blank);
@@ -253,20 +277,10 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     std::cmp::Ordering::Equal
                 });
 
-                // Build result array with sorted rows
-                let width = array.width();
-                let height = array.height();
-                let mut result_values: SmallVec<[CellValue; 1]> = SmallVec::new();
-
-                for &idx in &indices {
-                    for x in 0..width {
-                        result_values.push(array.get(x, idx as u32)?.clone());
-                    }
-                }
-
-                let size = ArraySize::new(width, height)
-                    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
-                Array::new_row_major(size, result_values)?
+                // Collect slices and reorder them based on sorted indices
+                let slices: Vec<Vec<&CellValue>> = array.slices(axis).collect();
+                let sorted_slices = indices.iter().map(|&i| slices[i].clone());
+                Array::from_slices(span, axis, sorted_slices)?
             }
         ),
         formula_fn!(
@@ -1248,6 +1262,24 @@ mod tests {
         assert_eq!(
             "{2, b; 3, c; 1, a}",
             eval_to_string(&g, "SORTBY({1, \"a\"; 2, \"b\"; 3, \"c\"}, {3; 1; 2})")
+        );
+
+        // SORTBY with horizontal array (1 row, multiple columns) - should sort columns
+        // Array {1, 2, 3} with sort keys {3, 1, 2}
+        // Column 0 (value 1) has sort key 3
+        // Column 1 (value 2) has sort key 1
+        // Column 2 (value 3) has sort key 2
+        // Sorting by keys ascending: key 1 (column 1), key 2 (column 2), key 3 (column 0)
+        // Result: {2, 3, 1}
+        assert_eq!(
+            "{2, 3, 1}",
+            eval_to_string(&g, "SORTBY({1, 2, 3}, {3, 1, 2})")
+        );
+
+        // SORTBY horizontal descending
+        assert_eq!(
+            "{1, 3, 2}",
+            eval_to_string(&g, "SORTBY({1, 2, 3}, {3, 1, 2}, -1)")
         );
     }
 
