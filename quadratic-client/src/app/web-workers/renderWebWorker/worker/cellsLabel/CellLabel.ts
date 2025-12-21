@@ -639,22 +639,20 @@ export class CellLabel {
       horizontalAlignOffsets.push(alignOffset);
     }
 
-    // Calculate text height based on actual character extents
-    // This ensures the height accounts for all glyphs, regardless of font size
-    let maxCharBottom = 0;
-    for (const char of chars) {
-      const charBottom = char.position.y + char.charData.frame.height;
-      maxCharBottom = Math.max(maxCharBottom, charBottom);
-    }
-    let calculatedTextHeight = maxCharBottom * scale;
+    // Use lineHeight as the base for text height (maintains consistent positioning)
+    let calculatedTextHeight = this.lineHeight * (line + 1);
 
-    // Fallback to line-based calculation if no chars
-    if (chars.length === 0) {
-      calculatedTextHeight = this.lineHeight * (line + 1);
+    // Check if any character extends beyond the line height (e.g., descenders like g, p, y)
+    // If so, use the glyph-based height to prevent clipping
+    if (chars.length > 0) {
+      let maxCharBottom = 0;
+      for (const char of chars) {
+        const charBottom = char.position.y + char.charData.frame.height;
+        maxCharBottom = Math.max(maxCharBottom, charBottom);
+      }
+      const glyphBasedHeight = maxCharBottom * scale;
+      calculatedTextHeight = Math.max(calculatedTextHeight, glyphBasedHeight);
     }
-
-    // Note: Emoji yOffset is already included in char.position.y and accounted for
-    // in maxCharBottom calculation, so no additional offset is needed here.
 
     // Add space for underlines if present (underlines extend below the text baseline)
     // Note: underlineOffset is in bitmap font coordinates and needs to be scaled
