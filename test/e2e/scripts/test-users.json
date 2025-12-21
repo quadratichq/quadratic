@@ -789,6 +789,10 @@
       "password": "E2E_test"
     },
     {
+      "email": "e2e_tile_paste_fmt_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
       "email": "e2e_time_date_formatting_chromium@quadratichq.com",
       "password": "E2E_test"
     },

@@ -14,11 +14,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-opus-4-5
+          timeout_minutes: 30
+          allowed_tools: |
+            Read
+            Grep
+            Glob
+            Bash(find:*)
+            Bash(ls:*)
+            mcp__github_inline_comment__create_inline_comment
+            Bash(gh pr comment:*)
+            Bash(gh pr diff:*)
+            Bash(gh pr view:*)
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -29,12 +41,11 @@ jobs:
             - Security implications
             - Performance considerations
 
+            First, use `gh pr diff ${{ github.event.pull_request.number }}` to see what changed.
+            Then read relevant files for context if needed.
+
             Provide detailed feedback using inline comments for specific issues.
 
-            Only leave comments related to negative feedback. 
+            Only leave comments related to negative feedback.
 
             You don't need to comment every time if you don't have anything substantive to add; only provide substantive feedback.
-
-          claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
-            --model claude-opus-4-5
