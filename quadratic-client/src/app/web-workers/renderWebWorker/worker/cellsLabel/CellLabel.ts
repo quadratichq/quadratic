@@ -814,22 +814,21 @@ export class CellLabel {
     let textBottom = -Infinity;
 
     // Check which lines are vertically clipped beyond the cell bounds
-    // We need to check against the actual cell (AABB) to know when to replace with dots
-    // Note: We don't include OPEN_SANS_FIX.y here since it's a visual adjustment for
-    // rendering, not an indicator of whether text actually fits in the cell bounds.
-    // Use strict inequality (<, >) with a small epsilon to avoid floating point issues
-    // and match the rendering clipping behavior.
+    // We check against lineHeight-based bounds (not actual glyph extents) because:
+    // 1. Text is positioned based on lineHeight for consistent alignment
+    // 2. Descenders naturally extend slightly beyond lineHeight - this is expected
+    // 3. Only show dots when the line itself doesn't fit, not for descender overflow
     const CLIP_EPSILON = 0.5;
     const clippedLines = new Set<number>();
-    for (let i = 0; i < this.chars.length; i++) {
-      const char = this.chars[i];
-      const yPos = this.position.y + char.position.y * scale;
-      const charTop = yPos;
-      const charBottom = yPos + char.charData.frame.height * scale;
+    const maxLine = this.chars.length > 0 ? Math.max(...this.chars.map((c) => c.line)) : 0;
+    for (let line = 0; line <= maxLine; line++) {
+      // Calculate the line's vertical bounds based on lineHeight (consistent with positioning)
+      const lineTop = this.position.y + line * this.lineHeight;
+      const lineBottom = lineTop + this.lineHeight;
 
-      // Check if character extends beyond the cell bounds (with epsilon tolerance)
-      if (charTop < this.AABB.top - CLIP_EPSILON || charBottom > this.AABB.bottom + CLIP_EPSILON) {
-        clippedLines.add(char.line);
+      // Check if the line (based on lineHeight) extends beyond the cell bounds
+      if (lineTop < this.AABB.top - CLIP_EPSILON || lineBottom > this.AABB.bottom + CLIP_EPSILON) {
+        clippedLines.add(line);
       }
     }
 

@@ -16,7 +16,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: 0,
-  /* Use 1 worker on CI since we parallelize via shards (164 shards), not workers */
+  /* Use 1 worker on CI since we parallelize via shards (36 shards), not workers */
   /* Locally, use 50% of CPUs for parallel test execution */
   /* Use 50% of CPUs locally for better performance */
   workers: process.env.CI ? 1 : '50%',
