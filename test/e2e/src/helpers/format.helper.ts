@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { gotoCells } from './sheet.helper';
 
 // This function clicks the "more formatting" icon in the formatting bar. This
 // is only needed when there are hidden items based on screen width.
@@ -112,6 +113,18 @@ export const clickFontSizeIncrease = async (page: Page) => {
 
 export const clickFontSizeDecrease = async (page: Page) => {
   await clickFormattingButton(page, 'format_font_size_decrease');
+};
+
+// Available font sizes (must match FONT_SIZES in gridConstants.ts)
+const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72, 96] as const;
+type FontSize = (typeof FONT_SIZES)[number];
+
+export const selectFontSize = async (page: Page, a1: string, size: FontSize) => {
+  await gotoCells(page, { a1 });
+  await clickMoreFormattingIcon(page);
+  await page.locator('[data-testid="font-size"]').click();
+  // Click the menu item that has the exact font size text
+  await page.locator(`[role="menuitem"]:has-text("${size}")`).first().click();
 };
 
 // ============================================================================

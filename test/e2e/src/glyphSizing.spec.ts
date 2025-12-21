@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
-import { clickFontSizeIncrease, clickTextWrapWrap } from './helpers/format.helper';
-import { gotoCells, resizeColumn, waitForKernelMenuIdle } from './helpers/sheet.helper';
+import { clickFontSizeIncrease, clickTextWrapWrap, selectFontSize } from './helpers/format.helper';
+import { gotoCells, resizeColumn, setValueInCell, waitForKernelMenuIdle } from './helpers/sheet.helper';
 
 test('Row auto-resize with descenders', async ({ page }) => {
   // Constants
@@ -128,37 +128,19 @@ test('Text with emojis sizing', async ({ page }) => {
   // Test emoji sizing
   //--------------------------------
   // Type text with emoji in A1
-  await gotoCells(page, { a1: 'A1' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('Hello 👋', { delay: 100 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A1', 'Hello 👋');
 
   // Type text with multiple emojis in A2
-  await gotoCells(page, { a1: 'A2' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('🎉🎊🎈', { delay: 100 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A2', '🎉🎊🎈');
 
-  // Select A1 and increase font size to 18 using keyboard shortcut (Ctrl+Shift+.)
-  await gotoCells(page, { a1: 'A1' });
-  await page.waitForTimeout(500);
-  // From 10: 11, 12, 14, 16, 18 = 5 presses
-  for (let i = 0; i < 5; i++) {
-    await page.keyboard.press('Control+Shift+.');
-    await page.waitForTimeout(200);
-  }
+  // Set font size to 18 for A1
+  await selectFontSize(page, 'A1', 18);
 
-  // Select A2 and increase font size to 24 using keyboard shortcut
-  await gotoCells(page, { a1: 'A2' });
-  await page.waitForTimeout(500);
-  // From 10: 11, 12, 14, 16, 18, 20, 24 = 7 presses
-  for (let i = 0; i < 7; i++) {
-    await page.keyboard.press('Control+Shift+.');
-    await page.waitForTimeout(200);
-  }
+  // Set font size to 24 for A2
+  await selectFontSize(page, 'A2', 24);
 
   // Wait for font changes to render
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
 
   // Navigate away to deselect for clean screenshot
   await gotoCells(page, { a1: 'C1' });
@@ -201,24 +183,10 @@ test('Multi-line text with descenders', async ({ page }) => {
   await page.waitForTimeout(1000);
 
   // Now type multi-line text
-  await page.keyboard.press('Enter', { delay: 100 });
-  // Create multi-line by making the column narrow first
-  await page.keyboard.type('gypsy jumping quickly', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
-
-  const canvas = page.locator('#QuadraticCanvasID');
-  await expect(canvas).toBeVisible({ timeout: 60 * 1000 });
-  const canvasBox = await canvas.boundingBox();
-  if (!canvasBox) {
-    throw new Error('Canvas bounding box not found');
-  }
+  await setValueInCell(page, 'A1', 'gypsy jumping quickly');
 
   // Shrink column A to force text wrapping
-  await page.mouse.move(canvasBox.x + 103, canvasBox.y + 12);
-  await page.mouse.down();
-  await page.mouse.move(canvasBox.x + 50, canvasBox.y + 12, { steps: 20 });
-  await page.mouse.up();
-  await page.waitForTimeout(2000);
+  await resizeColumn(page, 'A', -50);
 
   // Navigate away to deselect for clean screenshot
   await gotoCells(page, { a1: 'B1' });
@@ -437,24 +405,13 @@ test('Different font sizes row sizing', async ({ page }) => {
   // Test different font sizes with descenders
   //--------------------------------
   // Type text with descenders at default size (10) in A1
-  await gotoCells(page, { a1: 'A1' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('gjypq size 10', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A1', 'gjypq size 10');
 
   // Type text in A2 with larger font size (18)
-  await gotoCells(page, { a1: 'A2' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('gjypq size 18', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A2', 'gjypq size 18');
 
-  // Select A2 and increase font size to 18
-  await gotoCells(page, { a1: 'A2' });
-  // From 10: 11, 12, 14, 16, 18 = 5 clicks
-  for (let i = 0; i < 5; i++) {
-    await clickFontSizeIncrease(page);
-    await page.waitForTimeout(100);
-  }
+  // Set font size to 18 for A2
+  await selectFontSize(page, 'A2', 18);
 
   // Type text in A3 with large font size (36)
   await gotoCells(page, { a1: 'A3' });
@@ -531,66 +488,31 @@ test('Emojis with different font sizes', async ({ page }) => {
   // Test emojis at different font sizes
   //--------------------------------
   // Emoji at default size (10) in A1
-  await gotoCells(page, { a1: 'A1' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('Hello 👋 size 10', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A1', 'Hello 👋 size 10');
 
   // Emoji at size 18 in A2
-  await gotoCells(page, { a1: 'A2' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('Hello 👋 size 18', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A2', 'Hello 👋 size 18');
 
   // Select A2 and increase font size to 18
-  await gotoCells(page, { a1: 'A2' });
-  // From 10: 11, 12, 14, 16, 18 = 5 clicks
-  for (let i = 0; i < 5; i++) {
-    await clickFontSizeIncrease(page);
-    await page.waitForTimeout(100);
-  }
+  await selectFontSize(page, 'A2', 18);
 
   // Multiple emojis at size 24 in A3
-  await gotoCells(page, { a1: 'A3' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('🎉🎊🎈 size 24', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A3', '🎉🎊🎈 size 24');
 
   // Select A3 and set font size to 24
-  await gotoCells(page, { a1: 'A3' });
-  // From 10: 11, 12, 14, 16, 18, 20, 24 = 7 clicks
-  for (let i = 0; i < 7; i++) {
-    await clickFontSizeIncrease(page);
-    await page.waitForTimeout(100);
-  }
+  await selectFontSize(page, 'A3', 24);
 
   // Emoji with descenders at size 36 in A4
-  await gotoCells(page, { a1: 'A4' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('gypsy 🚀🌟 size 36', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A4', 'gypsy 🚀🌟 size 36');
 
   // Select A4 and set font size to 36
-  await gotoCells(page, { a1: 'A4' });
-  // From 10: 10 clicks to reach 36
-  for (let i = 0; i < 10; i++) {
-    await clickFontSizeIncrease(page);
-    await page.waitForTimeout(100);
-  }
+  await selectFontSize(page, 'A4', 36);
 
   // Large emoji at size 48 in A5
-  await gotoCells(page, { a1: 'A5' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('🦄 size 48', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A5', '🦄 size 48');
 
   // Select A5 and set font size to 48
-  await gotoCells(page, { a1: 'A5' });
-  // From 10: 11 clicks to reach 48
-  for (let i = 0; i < 11; i++) {
-    await clickFontSizeIncrease(page);
-    await page.waitForTimeout(100);
-  }
+  await selectFontSize(page, 'A5', 48);
 
   await page.waitForTimeout(1000);
 
@@ -647,17 +569,10 @@ test('Large font size column auto-resize', async ({ page }) => {
   // Test column auto-resize with large font sizes
   //--------------------------------
   // Type long text at large font size to test column auto-resize
-  await gotoCells(page, { a1: 'A1' });
-  await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('Wide text with descenders gjypq', { delay: 30 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A1', 'Wide text with descenders gjypq');
 
   // Select A1 and set font size to 36
-  await gotoCells(page, { a1: 'A1' });
-  for (let i = 0; i < 10; i++) {
-    await clickFontSizeIncrease(page);
-    await page.waitForTimeout(100);
-  }
+  await selectFontSize(page, 'A1', 36);
 
   await page.waitForTimeout(500);
 

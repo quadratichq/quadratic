@@ -25,9 +25,11 @@ export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
 export const setValueInCell = async (page: Page, a1: string, value: string) => {
   await gotoCells(page, { a1 });
   await page.keyboard.press('Enter', { delay: 250 });
+  // Wait for cell editor to be ready before typing
+  await page.waitForTimeout(500);
   await page.keyboard.type(value, { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
-  await page.waitForTimeout(2 * 1000);
+  await page.waitForTimeout(250);
 };
 
 /**
