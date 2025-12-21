@@ -133,12 +133,14 @@ export class CellLabel {
   textHeight = CELL_HEIGHT;
   unwrappedTextWidth = CELL_WIDTH;
 
-  // Returns textHeight plus vertical padding applied when positioning text.
-  // Used for row height calculation to ensure text isn't clipped.
-  // Note: textHeight already includes actual glyph heights (including descenders).
+  // Tracks actual glyph height which may exceed textHeight for descenders (g, p, y, etc.)
+  private glyphHeight = CELL_HEIGHT;
+
+  // Returns the height needed for row sizing to ensure text isn't clipped.
+  // Uses actual glyph height (including descenders) plus vertical padding.
   get textHeightWithDescenders(): number {
     // Include constant vertical padding (top and bottom) - not scaled with font size
-    return this.textHeight + CELL_VERTICAL_PADDING * 2;
+    return this.glyphHeight + CELL_VERTICAL_PADDING * 2;
   }
 
   // overflow values
@@ -422,6 +424,7 @@ export class CellLabel {
     this.chars = processedText.chars;
     this.textWidth = processedText.textWidth;
     this.textHeight = processedText.textHeight;
+    this.glyphHeight = processedText.glyphHeight;
     this.horizontalAlignOffsets = processedText.horizontalAlignOffsets;
     this.lineWidths = processedText.lineWidths;
     this.unwrappedTextWidth = this.getUnwrappedTextWidth(this.text);
@@ -445,6 +448,7 @@ export class CellLabel {
       this.chars = processedText.chars;
       this.textWidth = processedText.textWidth;
       this.textHeight = processedText.textHeight;
+      this.glyphHeight = processedText.glyphHeight;
       this.horizontalAlignOffsets = processedText.horizontalAlignOffsets;
       this.lineWidths = processedText.lineWidths;
 
@@ -639,11 +643,12 @@ export class CellLabel {
       horizontalAlignOffsets.push(alignOffset);
     }
 
-    // Use lineHeight as the base for text height (maintains consistent positioning)
+    // Use lineHeight for text height (ensures consistent alignment across cells)
     let calculatedTextHeight = this.lineHeight * (line + 1);
 
-    // Check if any character extends beyond the line height (e.g., descenders like g, p, y)
-    // If so, use the glyph-based height to prevent clipping
+    // Calculate actual glyph height separately (for row sizing to prevent clipping)
+    // This accounts for descenders (g, p, y) that extend below the baseline
+    let calculatedGlyphHeight = calculatedTextHeight;
     if (chars.length > 0) {
       let maxCharBottom = 0;
       for (const char of chars) {
@@ -651,7 +656,7 @@ export class CellLabel {
         maxCharBottom = Math.max(maxCharBottom, charBottom);
       }
       const glyphBasedHeight = maxCharBottom * scale;
-      calculatedTextHeight = Math.max(calculatedTextHeight, glyphBasedHeight);
+      calculatedGlyphHeight = Math.max(calculatedGlyphHeight, glyphBasedHeight);
     }
 
     // Add space for underlines if present (underlines extend below the text baseline)
@@ -659,12 +664,14 @@ export class CellLabel {
     if (this.underline) {
       const underlineHeight = this.lineHeight * line + this.underlineOffset * scale + HORIZONTAL_LINE_THICKNESS;
       calculatedTextHeight = Math.max(calculatedTextHeight, underlineHeight);
+      calculatedGlyphHeight = Math.max(calculatedGlyphHeight, underlineHeight);
     }
 
     return {
       chars,
       textWidth: maxLineWidth * scale + OPEN_SANS_FIX.x * 2,
       textHeight: calculatedTextHeight,
+      glyphHeight: calculatedGlyphHeight,
       displayText,
       horizontalAlignOffsets,
       lineWidths,
