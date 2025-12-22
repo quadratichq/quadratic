@@ -2168,7 +2168,7 @@ test.skip('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Quadratic Formulas Validation', async ({ page }) => {
+test('Quadratic Formulas Validation', async ({ page }) => {
   //--------------------------------
   // Quadratic Formulas Validation
   // Verifies that all formulas in the Quadratic Formulas.grid file pass validation
