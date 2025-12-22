@@ -25,6 +25,7 @@ fn get_quasi_coupon_dates(
 }
 
 /// Calculate ODDFPRICE for short first coupon period (DFC <= E)
+#[allow(clippy::too_many_arguments)]
 fn oddfprice_short(
     issue: NaiveDate,
     settlement: NaiveDate,
@@ -64,6 +65,7 @@ fn oddfprice_short(
 }
 
 /// Calculate ODDFPRICE for long first coupon period (DFC > E)
+#[allow(clippy::too_many_arguments)]
 fn oddfprice_long(
     issue: NaiveDate,
     settlement: NaiveDate,

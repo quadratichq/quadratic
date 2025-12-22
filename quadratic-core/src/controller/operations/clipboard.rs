@@ -2615,7 +2615,7 @@ mod test {
         let a1_context = gc.a1_context();
         let code_cell = gc
             .sheet(sheet_id)
-            .edit_code_value(pos![A1], &a1_context)
+            .edit_code_value(pos![A1], a1_context)
             .expect("Should have a code cell at A1");
 
         // The stored code should NOT have the '=' prefix

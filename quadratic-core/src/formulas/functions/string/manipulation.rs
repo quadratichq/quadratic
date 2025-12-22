@@ -511,10 +511,10 @@ fn filter_xml_content(xml: &str, xpath: &str) -> Result<String, ()> {
         if current_node.tag_name().name() != first_tag {
             return Err(());
         }
-        if let Some(idx) = first_index {
-            if idx != 1 {
-                return Err(()); // Only one root
-            }
+        if let Some(idx) = first_index
+            && idx != 1
+        {
+            return Err(()); // Only one root
         }
     }
 
@@ -549,12 +549,12 @@ fn filter_xml_content(xml: &str, xpath: &str) -> Result<String, ()> {
 
 /// Parses an element name that may include an index like "item[2]".
 fn parse_element_index(segment: &str) -> (&str, Option<usize>) {
-    if let Some(bracket_pos) = segment.find('[') {
-        if let Some(end_pos) = segment.find(']') {
-            let tag = &segment[..bracket_pos];
-            if let Ok(idx) = segment[bracket_pos + 1..end_pos].parse::<usize>() {
-                return (tag, Some(idx));
-            }
+    if let Some(bracket_pos) = segment.find('[')
+        && let Some(end_pos) = segment.find(']')
+    {
+        let tag = &segment[..bracket_pos];
+        if let Ok(idx) = segment[bracket_pos + 1..end_pos].parse::<usize>() {
+            return (tag, Some(idx));
         }
     }
     (segment, None)

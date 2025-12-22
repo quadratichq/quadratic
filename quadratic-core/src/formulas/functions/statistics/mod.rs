@@ -908,7 +908,7 @@ mod tests {
             eval_to_string(&g, "FORECAST.ETS.STAT({1;2;3;4;5;6}, {1;2;3;4;5;6}, 1, 1)")
                 .parse()
                 .unwrap();
-        assert!(alpha >= 0.0 && alpha <= 1.0);
+        assert!((0.0..=1.0).contains(&alpha));
 
         // FORECAST.ETS.CONFINT - confidence interval
         let confint: f64 = eval_to_string(
@@ -944,7 +944,7 @@ mod tests {
             .parse()
             .unwrap();
         assert!(
-            beta >= 0.0 && beta <= 1.0,
+            (0.0..=1.0).contains(&beta),
             "Beta should be between 0 and 1, got {}",
             beta
         );

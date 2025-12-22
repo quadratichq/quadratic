@@ -2368,7 +2368,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
 
                 // Check that probabilities sum to approximately 1 (allow small tolerance)
                 let prob_sum: f64 = prob_values.iter().sum();
-                if prob_sum < 0.0 || prob_sum > 1.0 + 1e-10 {
+                if !(0.0..=1.0 + 1e-10).contains(&prob_sum) {
                     return Err(RunErrorMsg::Num.with_span(prob_range.span));
                 }
 
@@ -2442,8 +2442,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     _ => 1,
                 };
 
-                let forecast = ets_forecast(&y_values, &x_values, target.inner, season)?;
-                forecast
+                ets_forecast(&y_values, &x_values, target.inner, season)?
             }
         ),
         formula_fn!(
@@ -2496,9 +2495,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     _ => 1,
                 };
 
-                let confint =
-                    ets_confidence_interval(&y_values, &x_values, target.inner, season, conf)?;
-                confint
+                ets_confidence_interval(&y_values, &x_values, target.inner, season, conf)?
             }
         ),
         formula_fn!(
@@ -2589,8 +2586,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     _ => 1,
                 };
 
-                let stat = ets_statistic(&y_values, &x_values, season, stat_type as usize)?;
-                stat
+                ets_statistic(&y_values, &x_values, season, stat_type as usize)?
             }
         ),
     ]
@@ -2686,7 +2682,7 @@ fn ets_confidence_interval(
     } else {
         1.0
     };
-    let steps_ahead = ((target - last_x) / step).max(1.0).ceil() as f64;
+    let steps_ahead = ((target - last_x) / step).max(1.0).ceil();
 
     // Use normal distribution for confidence interval
     use statrs::distribution::{ContinuousCDF, Normal};
@@ -2714,7 +2710,7 @@ fn ets_statistic(
         1 => Ok(alpha), // Alpha
         2 => Ok(beta),  // Beta
         3 => Ok(gamma), // Gamma
-        4 | 5 | 6 | 7 => {
+        4..=7 => {
             // For error metrics, we need the fitted values (one-step-ahead forecasts)
             let fitted = ets_fitted_values(y_values, alpha, beta, gamma, season);
 
@@ -2921,6 +2917,7 @@ fn fit_ets_model(
 }
 
 /// Calculate Sum of Squared Errors for ETS model with given parameters.
+#[allow(clippy::too_many_arguments)]
 fn ets_sse(
     y_values: &[f64],
     alpha: f64,
@@ -2967,6 +2964,7 @@ fn ets_sse(
 }
 
 /// Run ETS model and return final states.
+#[allow(clippy::too_many_arguments)]
 fn run_ets(
     y_values: &[f64],
     alpha: f64,
@@ -3051,12 +3049,12 @@ where
         // Calculate centroid (excluding worst point)
         let mut centroid = vec![0.0; n];
         for &idx in &indices[0..n] {
-            for j in 0..n {
-                centroid[j] += simplex[idx][j];
+            for (j, c) in centroid.iter_mut().enumerate().take(n) {
+                *c += simplex[idx][j];
             }
         }
-        for j in 0..n {
-            centroid[j] /= n as f64;
+        for c in centroid.iter_mut().take(n) {
+            *c /= n as f64;
         }
 
         // Reflection

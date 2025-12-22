@@ -756,11 +756,11 @@ mod tests {
 
         // RAND returns a value between 0 and 1
         let result: f64 = eval_to_string(&g, "RAND()").parse().unwrap();
-        assert!(result >= 0.0 && result < 1.0);
+        assert!((0.0..1.0).contains(&result));
 
         // Multiple calls should work (though we can't test randomness easily)
         let result2: f64 = eval_to_string(&g, "RAND()").parse().unwrap();
-        assert!(result2 >= 0.0 && result2 < 1.0);
+        assert!((0.0..1.0).contains(&result2));
     }
 
     #[test]
@@ -770,13 +770,13 @@ mod tests {
         // Basic range
         for _ in 0..10 {
             let result: i64 = eval_to_string(&g, "RANDBETWEEN(1, 10)").parse().unwrap();
-            assert!(result >= 1 && result <= 10);
+            assert!((1..=10).contains(&result));
         }
 
         // Negative range
         for _ in 0..10 {
             let result: i64 = eval_to_string(&g, "RANDBETWEEN(-5, 5)").parse().unwrap();
-            assert!(result >= -5 && result <= 5);
+            assert!((-5..=5).contains(&result));
         }
 
         // Same value for bottom and top
