@@ -61,6 +61,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Click on the Left Alignment button
   // Click on the dropdown arrow icon
+  await clickMoreFormattingIcon(page);
   await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   // Click on the menu item containing the 'format_align_left' icon and the text 'Left'
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
@@ -75,6 +76,8 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Click on the center Alignment button
+  await page.keyboard.press('Escape'); // Close any open menus
+  await clickMoreFormattingIcon(page);
   await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Center').click({ timeout: 60 * 1000 });
 
@@ -85,6 +88,8 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Click on the Right Alignment button
+  await page.keyboard.press('Escape'); // Close any open menus
+  await clickMoreFormattingIcon(page);
   await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Right').click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
@@ -99,9 +104,12 @@ test('Cell Formatting', async ({ page }) => {
 
   // Reset to left alignment
   // Click on the dropdown arrow icon
+  await page.keyboard.press('Escape'); // Close any open menus
+  await clickMoreFormattingIcon(page);
   await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   // Click on the menu item containing the 'format_align_left' icon and the text 'Left'
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape'); // Close any open menus
   await page.waitForTimeout(2000);
 
   //--------------------------------
@@ -112,6 +120,8 @@ test('Cell Formatting', async ({ page }) => {
 
   // Click on the all Borders Icon
   await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 60 * 1000 });
+  // Close the popover before screenshot
+  await page.keyboard.press('Escape');
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -122,9 +132,14 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Inner Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_inner` }).click({ timeout: 60 * 1000 });
   // Click the Border button to make it disappear for screenshot
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
@@ -136,9 +151,13 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Outer Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_outer` }).click({ timeout: 60 * 1000 });
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
@@ -150,9 +169,13 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Horizontal Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_horizontal` }).click({ timeout: 60 * 1000 });
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
@@ -164,9 +187,13 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Vertical Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_vertical` }).click({ timeout: 60 * 1000 });
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
@@ -182,12 +209,16 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click on the Left Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_left` }).click({ timeout: 60 * 1000 });
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
@@ -202,9 +233,13 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Top Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page
     .getByRole(`radio`, { name: `border_top` })
     .first()
@@ -218,9 +253,13 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Right Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 60 * 1000 });
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
@@ -231,9 +270,13 @@ test('Cell Formatting', async ({ page }) => {
 
   // Clear Border Filters
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
-  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
+  await page.getByText(`Clear borders`).click({ timeout: 60 * 1000 });
+  await page.keyboard.press('Escape');
 
   // Click on the Bottom Borders Icon
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).waitFor({ state: 'visible' });
   await page.getByRole(`radio`, { name: `border_bottom` }).click({ timeout: 60 * 1000 });
   await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
@@ -294,6 +337,7 @@ test('Cell Formatting', async ({ page }) => {
 
   // Click the Format Color Icon
   await page.locator('[data-testid="format_fill_color"]').click({ timeout: 60 * 1000 });
+  await page.locator(`[aria-label="Select color #E74C3C"]`).waitFor({ state: 'visible' });
 
   //--------------------------------
   // Act:

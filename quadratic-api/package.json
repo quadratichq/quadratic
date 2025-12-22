@@ -66,7 +66,7 @@
     "multer-s3": "^3.0.1",
     "openai": "^6.2.0",
     "raindrop-ai": "^0.0.59",
-    "stripe": "^14.16.0",
+    "stripe": "^14.24.0",
     "supertest": "^6.3.3",
     "winston": "^3.17.0",
     "zod": "^3.25.3"
