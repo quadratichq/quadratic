@@ -544,7 +544,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 36
+      matrix_runner: 8
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -595,7 +595,6 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 8  # Limit concurrent shards to avoid overloading the preview server
       matrix: ${{ fromJson(needs.test-e2e-start-comment.outputs.matrix) }}
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
