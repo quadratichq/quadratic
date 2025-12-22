@@ -238,6 +238,19 @@ impl State {
 
         Ok(length > 0)
     }
+
+    /// Remove an active channel if it is empty
+    pub(crate) async fn remove_active_channel_if_empty(&self, file_id: Uuid) -> Result<()> {
+        self.reconnect_pubsub_if_unhealthy().await;
+        self.subscribe_pubsub(file_id).await?;
+
+        let mut pubsub = self.pubsub.lock().await;
+        pubsub
+            .connection
+            .remove_active_channel_if_empty(ACTIVE_CHANNELS, &file_id)
+            .await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

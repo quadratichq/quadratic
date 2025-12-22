@@ -21,6 +21,9 @@ async fn main() -> Result<()> {
         .await
         .map_err(|e| WorkerError::CreateWorker(e.to_string()))?;
 
+    // TODO(ddimaria): remove this
+    info!("Worker created for file: {file_id}");
+
     // Always shutdown, even if run() fails
     let run_result = worker.run().await;
 

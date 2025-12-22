@@ -67,7 +67,7 @@ impl Controller {
         let files_waiting = total_file_count - files_to_process.len();
 
         info!(
-            "Creating {} workers (max: {}, active: {}, waiting: {})",
+            "Attempting to create {} workers (max: {}, active: {}, waiting: {})",
             files_to_process.len(),
             MAX_CONCURRENT_WORKERS,
             active_worker_count,
@@ -205,7 +205,15 @@ impl Controller {
         let (tasks, ids) = self.binary_tasks_for_file(&file_id).await?;
 
         if ids.is_empty() {
-            info!("No tasks to create worker for file {file_id}");
+            info!(
+                "No tasks to create worker for file {file_id}, something failed, ack the active channel and exit"
+            );
+
+            self.state
+                .pubsub
+                .remove_active_channel_if_empty(file_id)
+                .await?;
+
             return Ok(());
         }
 
