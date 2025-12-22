@@ -1161,4 +1161,106 @@ mod test {
             })
         );
     }
+
+    #[test]
+    fn test_set_formats_a1() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create multiple format entries for different selections
+        let format_entries = vec![
+            (
+                A1Selection::test_a1("A1:B2"),
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+            ),
+            (
+                A1Selection::test_a1("C1:D2"),
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    fill_color: Some(Some("red".to_string())),
+                    ..Default::default()
+                },
+            ),
+            (
+                A1Selection::test_a1("E1"),
+                FormatUpdate {
+                    underline: Some(Some(true)),
+                    text_color: Some(Some("blue".to_string())),
+                    ..Default::default()
+                },
+            ),
+        ];
+
+        // Apply all formats in a single transaction
+        gc.set_formats_a1(format_entries, None, false);
+
+        // Verify the changes were applied to the first selection
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![A1]);
+        assert_eq!(format.bold, Some(true));
+        assert_eq!(format.italic, None);
+
+        let format = sheet.cell_format(pos![B2]);
+        assert_eq!(format.bold, Some(true));
+
+        // Verify the changes were applied to the second selection
+        let format = sheet.cell_format(pos![C1]);
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.fill_color, Some("red".to_string()));
+        assert_eq!(format.bold, None);
+
+        let format = sheet.cell_format(pos![D2]);
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.fill_color, Some("red".to_string()));
+
+        // Verify the changes were applied to the third selection
+        let format = sheet.cell_format(pos![E1]);
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.text_color, Some("blue".to_string()));
+        assert_eq!(format.bold, None);
+        assert_eq!(format.italic, None);
+    }
+
+    #[test]
+    fn test_set_formats_a1_single_undo() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create multiple format entries
+        let format_entries = vec![
+            (
+                A1Selection::test_a1("A1"),
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+            ),
+            (
+                A1Selection::test_a1("B1"),
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    ..Default::default()
+                },
+            ),
+        ];
+
+        // Apply all formats in a single transaction
+        gc.set_formats_a1(format_entries, None, false);
+
+        // Verify both formats were applied
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.cell_format(pos![A1]).bold, Some(true));
+        assert_eq!(sheet.cell_format(pos![B1]).italic, Some(true));
+
+        // Undo should revert both changes in one operation
+        gc.undo(1, None, false);
+
+        // Verify both formats were reverted
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.cell_format(pos![A1]).bold, None);
+        assert_eq!(sheet.cell_format(pos![B1]).italic, None);
+    }
 }
