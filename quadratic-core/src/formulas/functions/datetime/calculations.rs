@@ -485,7 +485,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let days_since_jan1 = (date - jan1).num_days();
 
                 // Week number
-                ((days_since_jan1 + jan1_offset) / 7 + 1) as i64
+                (days_since_jan1 + jan1_offset) / 7 + 1
             }
         ),
         formula_fn!(
