@@ -25,6 +25,10 @@ use crate::{
 
 const MAX_BACKOFF_SECONDS: u64 = 60;
 
+/// Build the worker-only app.
+///
+/// This server is within the VPC, so authentication is not needed.
+/// The port is not exposed to the public internet.
 pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
     trace!("Building worker-only app");
 

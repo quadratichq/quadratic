@@ -95,7 +95,8 @@ impl Worker {
             for (key, task) in tasks {
                 let task_start = std::time::Instant::now();
 
-                // get a fresh JWT token
+                // get a fresh JWT token, we want this to fail if the token
+                // isn't retrieved as it represents a catastrophic error
                 let jwt = get_token(&self.controller_url, self.file_id)
                     .await
                     .map_err(|e| WorkerError::GetToken(e.to_string()))?;
