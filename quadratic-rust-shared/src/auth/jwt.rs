@@ -24,6 +24,15 @@ pub struct Claims {
     pub exp: usize,
 }
 
+impl Claims {
+    pub fn new(email: String, exp_seconds: usize) -> Self {
+        let exp = (chrono::Utc::now() + chrono::Duration::seconds(exp_seconds as i64)).timestamp()
+            as usize;
+
+        Self { email, exp }
+    }
+}
+
 /// Generate a JWT token with the specified key ID (kid) for JWKS-based validation
 pub fn generate_jwt<T: Serialize>(
     claims: T,
