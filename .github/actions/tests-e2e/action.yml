@@ -28,17 +28,15 @@ runs:
       uses: useblacksmith/setup-node@v5
       with:
         node-version: 24
-        cache: 'npm'
-        cache-dependency-path: test/e2e/package-lock.json
 
     - name: Install Dependencies
-      run: cd test/e2e && npm ci --no-audit --no-fund
+      run: cd test/e2e && npm install
       shell: bash
 
     - name: Run Playwright tests
       id: run-tests
       continue-on-error: true
-      run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npx playwright test --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
+      run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       shell: bash
       env:
         CI: true

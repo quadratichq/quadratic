@@ -37,15 +37,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ⏳ Building images (0/7)
-            - ⏳ api
-            - ⏳ client
-            - ⏳ cloud-controller
-            - ⏳ cloud-worker
-            - ⏳ connection
-            - ⏳ files
-            - ⏳ multiplayer
-
+            ⏳ Building images...
             ⏳ Deploy images
             ⏳ Tests-E2E
 
@@ -207,42 +199,6 @@ jobs:
           cache-to: type=registry,mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,force-compression=true,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
           cache-from: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
 
-      - name: Find Build & Deploy Images Comment for success update
-        if: success()
-        uses: peter-evans/find-comment@v3
-        id: preview-build-deploy-images-comment-success
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Tests-E2E"
-
-      - name: Update comment on build image success
-        if: success()
-        run: |
-          # Get the current comment body
-          COMMENT_BODY=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/issues/comments/${{ steps.preview-build-deploy-images-comment-success.outputs.comment-id }} \
-            --jq '.body')
-
-          # Update this service's status from ⏳ to ✅
-          UPDATED_BODY=$(echo "$COMMENT_BODY" | sed 's/- ⏳ ${{ matrix.service }}$/- ✅ ${{ matrix.service }}/')
-
-          # Count completed images
-          COMPLETED=$(echo "$UPDATED_BODY" | grep -c '- ✅' || echo 0)
-
-          # Update the counter in the header
-          UPDATED_BODY=$(echo "$UPDATED_BODY" | sed "s/⏳ Building images ([0-9]*\/7)/⏳ Building images ($COMPLETED\/7)/")
-
-          # Update the comment
-          gh api \
-            --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/issues/comments/${{ steps.preview-build-deploy-images-comment-success.outputs.comment-id }} \
-            -f body="$UPDATED_BODY"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Find Build & Deploy Images Comment
         if: failure()
         uses: peter-evans/find-comment@v3
@@ -254,35 +210,18 @@ jobs:
 
       - name: Update comment on build images failure
         if: failure()
-        run: |
-          # Get the current comment body
-          COMMENT_BODY=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/issues/comments/${{ steps.preview-build-deploy-images-comment.outputs.comment-id }} \
-            --jq '.body')
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            ❌ Build images
+            ❌ Deploy images
+            ❌ Tests-E2E
 
-          # Update this service's status from ⏳ to ❌
-          UPDATED_BODY=$(echo "$COMMENT_BODY" | sed 's/- ⏳ ${{ matrix.service }}$/- ❌ ${{ matrix.service }}/')
-
-          # Update the header to show failure
-          UPDATED_BODY=$(echo "$UPDATED_BODY" | sed 's/⏳ Building images ([0-9]*\/7)/❌ Build images FAILED/')
-
-          # Mark deploy and tests as skipped
-          UPDATED_BODY=$(echo "$UPDATED_BODY" | sed 's/⏳ Deploy images/❌ Deploy images/')
-          UPDATED_BODY=$(echo "$UPDATED_BODY" | sed 's/⏳ Tests-E2E/❌ Tests-E2E/')
-
-          # Update the footer
-          UPDATED_BODY=$(echo "$UPDATED_BODY" | sed 's/🔍 Track progress in the/🔍 Please check the/')
-          UPDATED_BODY=$(echo "$UPDATED_BODY" | sed 's/actions\/runs\/[^)]*)/actions\/runs\/${{ github.run_id }}) for details./')
-
-          # Update the comment
-          gh api \
-            --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/issues/comments/${{ steps.preview-build-deploy-images-comment.outputs.comment-id }} \
-            -f body="$UPDATED_BODY"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
 
       - name: Update deployment status (failure)
         if: failure()
@@ -331,15 +270,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ✅ Build images (7/7)
-            - ✅ api
-            - ✅ client
-            - ✅ cloud-controller
-            - ✅ cloud-worker
-            - ✅ connection
-            - ✅ files
-            - ✅ multiplayer
-
+            ✅ Build images
             ⏳ Deploying images...
             ⏳ Tests-E2E
 
@@ -504,7 +435,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ✅ Build images (7/7)
+            ✅ Build images
             ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
             ⏳ Tests-E2E
 
@@ -519,7 +450,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ✅ Build images (7/7)
+            ✅ Build images
             ❌ Deploy images
             ❌ Tests-E2E
 
@@ -613,7 +544,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 20
+      matrix_runner: 164
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -640,7 +571,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ✅ Build images (7/7)
+            ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ⏳ Tests-E2E running...
 
@@ -656,7 +587,7 @@ jobs:
         verify_deployed_version,
         test-e2e-start-comment,
       ]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble
       options: --user root
@@ -786,7 +717,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ✅ Build images (7/7)
+            ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }})
           edit-mode: replace
@@ -799,7 +730,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            ✅ Build images (7/7)
+            ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
