@@ -11,7 +11,7 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use quadratic_rust_shared::auth::jwt::{Claims, authorize, authorize_m2m};
+use quadratic_rust_shared::auth::jwt::{authorize, authorize_m2m};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -19,6 +19,13 @@ use crate::{
     error::{ConnectionError, Result},
     state::State,
 };
+
+// TODO(ddimaria): this is duplicated in files, abstract in quadratic-rust-shared
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct Claims {
+    pub email: String,
+    pub exp: usize,
+}
 
 /// Instance of Axum's middleware that also contains a copy of state
 #[cfg(not(test))]

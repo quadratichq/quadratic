@@ -12,10 +12,17 @@ use axum_extra::{
     headers::{Authorization, authorization::Bearer},
 };
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::auth::jwt::{Claims, authorize};
+use quadratic_rust_shared::auth::jwt::authorize;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{FilesError, Result};
+
+// TODO(ddimaria): this is duplicated in files, abstract in quadratic-rust-shared
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct Claims {
+    pub email: String,
+    pub exp: usize,
+}
 
 /// Instance of Axum's middleware that also contains a copy of state
 #[cfg(not(test))]

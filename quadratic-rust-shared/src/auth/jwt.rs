@@ -135,10 +135,7 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
 
     Ok(TokenData {
         header: Header::default(),
-        claims: Claims {
-            email: "m2m@quadratic.com".into(),
-            exp: 0,
-        },
+        claims: Claims::new("m2m@quadratic.com".into(), 0),
     })
 }
 
@@ -172,11 +169,7 @@ pub mod tests {
         let jwks: jwk::JwkSet = serde_json::from_str(TEST_JWKS).expect("Failed to parse test JWKS");
         let encoding_key = EncodingKey::from_rsa_pem(TEST_PRIVATE_KEY.as_bytes())
             .expect("Failed to create encoding key");
-        let claims = Claims {
-            email: "test@example.com".to_string(),
-            exp: 3600,
-        };
-
+        let claims = Claims::new("test@example.com".into(), 3600);
         let token =
             generate_jwt(claims.clone(), TEST_KID, &encoding_key).expect("Failed to generate JWT");
         let decoded =

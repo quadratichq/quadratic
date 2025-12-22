@@ -73,13 +73,10 @@ impl Settings {
 
     pub(crate) fn generate_worker_jwt(&self) -> Result<String> {
         let kid = get_kid_from_jwks(&self.jwks)?;
-        let claims = Claims {
-            email: self.worker_jwt_email.clone(),
-        let claims = Claims {
-            email: self.worker_jwt_email.clone(),
-            exp: (chrono::Utc::now() + chrono::Duration::seconds(self.jwt_expiration_seconds as i64)).timestamp() as usize,
-        };
-        };
+        let claims = Claims::new(
+            self.worker_jwt_email.to_owned(),
+            self.jwt_expiration_seconds as usize,
+        );
         let jwt = generate_jwt(claims, &kid, &self.jwt_encoding_key)?;
 
         Ok(jwt)
