@@ -323,7 +323,7 @@ impl super::PubSub for RedisConnection {
     }
 
     // Insert only once per dedupe key; returns true if added, false if already exists
-    pub async fn publish_once_with_dedupe_key(
+    async fn publish_once_with_dedupe_key(
         &mut self,
         dedupe_key_prefix: &str,
         channel: &str,
@@ -607,7 +607,7 @@ impl RedisConnection {
     }
 
     /// Remove an a key within an active channel
-    async fn remove_active_channel_if_empty(
+    pub async fn remove_active_channel_if_empty(
         &mut self,
         set_key: &str,
         channel: &str,

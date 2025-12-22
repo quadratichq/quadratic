@@ -209,10 +209,7 @@ impl Controller {
                 "No tasks to create worker for file {file_id}, something failed, ack the active channel and exit"
             );
 
-            self.state
-                .pubsub
-                .remove_active_channel_if_empty(file_id)
-                .await?;
+            self.state.remove_active_channel_if_empty(file_id).await?;
 
             return Ok(());
         }
