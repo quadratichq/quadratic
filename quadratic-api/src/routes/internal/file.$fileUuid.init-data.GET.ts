@@ -48,7 +48,13 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
 
   return res
     .status(200)
-    .json({ teamId: result.ownerTeam.uuid, sequenceNumber, presignedUrl, timezone: result.timezone });
+    .json({
+      teamId: result.ownerTeam.uuid,
+      email: result.ownerUser.email,
+      sequenceNumber,
+      presignedUrl,
+      timezone: result.timezone,
+    });
 });
 
 export default router;

@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::controller::Controller;
 use crate::error::{ControllerError, Result};
-use crate::quadratic_api::{insert_completed_logs, insert_failed_logs};
+use crate::quadratic_api::{file_init_data, insert_completed_logs, insert_failed_logs};
 use crate::state::State;
 
 /// Handle JWKS requests.
@@ -32,8 +32,13 @@ fn get_file_id_from_headers(headers: HeaderMap) -> Result<Uuid> {
 /// Get token for a worker
 pub(crate) async fn get_token_for_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
 ) -> Result<Json<String>> {
-    let token = state.settings.generate_worker_jwt()?;
+    let file_id = get_file_id_from_headers(headers)?;
+    let file_init_data = file_init_data(&state, file_id).await?;
+    let token = state
+        .settings
+        .generate_worker_jwt(&file_init_data.email, file_id)?;
 
     Ok(Json(token))
 }

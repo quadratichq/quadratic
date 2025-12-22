@@ -81,6 +81,7 @@ pub async fn worker_post_request<T: Serialize, R: DeserializeOwned>(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetWorkerInitDataResponse {
     pub team_id: Uuid,
+    pub email: String,
     pub sequence_number: u32,
     pub presigned_url: String,
     pub timezone: Option<String>,

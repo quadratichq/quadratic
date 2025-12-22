@@ -12,6 +12,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use tokio::sync::OnceCell;
+use uuid::Uuid;
 
 use crate::auth::error::Auth;
 use crate::error::{Result, SharedError};
@@ -23,19 +24,26 @@ pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 /// This is the claims that are included in the JWT token.
 /// The email is the email of the user who is authenticated.
 /// The exp is the expiration time of the JWT token.
+/// The file_id is an optional file identifier for file-scoped tokens.
 /// Other fields like sub, iat, jti, etc. are not included since they are not used.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Claims {
     pub email: String,
     pub exp: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_id: Option<Uuid>,
 }
 
 impl Claims {
-    pub fn new(email: String, exp_seconds: usize) -> Self {
+    pub fn new(email: String, exp_seconds: usize, file_id: Option<Uuid>) -> Self {
         let exp = (chrono::Utc::now() + chrono::Duration::seconds(exp_seconds as i64)).timestamp()
             as usize;
 
-        Self { email, exp }
+        Self {
+            email,
+            exp,
+            file_id,
+        }
     }
 }
 
@@ -141,7 +149,7 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
 
     Ok(TokenData {
         header: Header::default(),
-        claims: Claims::new("m2m@quadratic.com".into(), 0),
+        claims: Claims::new("m2m@quadratic.com".into(), 0, None),
     })
 }
 
@@ -175,7 +183,7 @@ pub mod tests {
         let jwks: jwk::JwkSet = serde_json::from_str(TEST_JWKS).expect("Failed to parse test JWKS");
         let encoding_key = EncodingKey::from_rsa_pem(TEST_PRIVATE_KEY.as_bytes())
             .expect("Failed to create encoding key");
-        let claims = Claims::new("test@example.com".into(), 3600);
+        let claims = Claims::new("test@example.com".into(), 3600, None);
         let token =
             generate_jwt(claims.clone(), TEST_KID, &encoding_key).expect("Failed to generate JWT");
         let decoded =

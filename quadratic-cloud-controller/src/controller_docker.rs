@@ -151,6 +151,7 @@ impl Controller {
 
         let worker_init_data = GetWorkerInitDataResponse {
             team_id: file_init_data.team_id,
+            email: file_init_data.email,
             sequence_number: file_init_data.sequence_number,
             presigned_url: file_init_data.presigned_url,
             timezone: file_init_data.timezone,
@@ -219,10 +220,12 @@ impl Controller {
         let controller_url = self.state.settings.controller_url();
         let multiplayer_url = self.state.settings.multiplayer_url();
         let connection_url = self.state.settings.connection_url();
-        let worker_jwt = self.state.settings.generate_worker_jwt()?;
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
+        let worker_jwt = self
+            .state
+            .settings
+            .generate_worker_jwt(&worker_init_data.email, file_id)?;
         let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
-
         let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
 
         let env_vars = vec![
