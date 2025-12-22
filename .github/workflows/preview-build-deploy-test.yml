@@ -544,7 +544,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 8
+      matrix_runner: 164
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
