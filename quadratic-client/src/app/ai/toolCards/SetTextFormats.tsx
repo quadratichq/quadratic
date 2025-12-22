@@ -7,30 +7,40 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
+type FormatEntry = SetTextFormatsResponse['formats'][number];
 
 interface FormatItem {
   label: string;
   colorSwatch?: string;
 }
 
-function getFormattingItems(data: SetTextFormatsResponse): FormatItem[] {
+function getFormattingItemsForEntry(entry: FormatEntry): FormatItem[] {
   const items: FormatItem[] = [];
 
-  if (data.bold === true) items.push({ label: 'bold' });
-  if (data.italic === true) items.push({ label: 'italic' });
-  if (data.underline === true) items.push({ label: 'underline' });
-  if (data.strike_through === true) items.push({ label: 'strikethrough' });
-  if (data.text_color) items.push({ label: 'text', colorSwatch: data.text_color });
-  if (data.fill_color) items.push({ label: 'fill', colorSwatch: data.fill_color });
-  if (data.align) items.push({ label: `align: ${data.align}` });
-  if (data.vertical_align) items.push({ label: `v-align: ${data.vertical_align}` });
-  if (data.wrap) items.push({ label: `wrap: ${data.wrap}` });
-  if (data.numeric_commas === true) items.push({ label: 'commas' });
-  if (data.number_type) items.push({ label: data.number_type });
-  if (data.currency_symbol) items.push({ label: `currency: ${data.currency_symbol}` });
-  if (data.date_time) items.push({ label: `date: ${data.date_time}` });
-  if (data.font_size !== undefined && data.font_size !== null) items.push({ label: `${data.font_size}pt` });
+  if (entry.bold === true) items.push({ label: 'bold' });
+  if (entry.italic === true) items.push({ label: 'italic' });
+  if (entry.underline === true) items.push({ label: 'underline' });
+  if (entry.strike_through === true) items.push({ label: 'strikethrough' });
+  if (entry.text_color) items.push({ label: 'text', colorSwatch: entry.text_color });
+  if (entry.fill_color) items.push({ label: 'fill', colorSwatch: entry.fill_color });
+  if (entry.align) items.push({ label: `align: ${entry.align}` });
+  if (entry.vertical_align) items.push({ label: `v-align: ${entry.vertical_align}` });
+  if (entry.wrap) items.push({ label: `wrap: ${entry.wrap}` });
+  if (entry.numeric_commas === true) items.push({ label: 'commas' });
+  if (entry.number_type) items.push({ label: entry.number_type });
+  if (entry.currency_symbol) items.push({ label: `currency: ${entry.currency_symbol}` });
+  if (entry.date_time) items.push({ label: `date: ${entry.date_time}` });
+  if (entry.font_size !== undefined && entry.font_size !== null) items.push({ label: `${entry.font_size}pt` });
 
+  return items;
+}
+
+export function getFormattingItems(data: SetTextFormatsResponse): FormatItem[] {
+  // Aggregate all formatting items from all entries (for grouped display)
+  const items: FormatItem[] = [];
+  for (const entry of data.formats) {
+    items.push(...getFormattingItemsForEntry(entry));
+  }
   return items;
 }
 
@@ -64,9 +74,17 @@ export const SetTextFormats = memo(
     const icon = <FormatPaintIcon />;
 
     const label = useMemo(() => {
-      const range = toolArgs?.success && toolArgs.data?.selection ? toolArgs.data.selection : '...';
+      if (!toolArgs?.success || !toolArgs.data?.formats?.length) {
+        const verb = loading ? 'Formatting' : 'Formatted';
+        return `${verb} ...`;
+      }
+
       const verb = loading ? 'Formatting' : 'Formatted';
-      return `${verb} ${range}`;
+      const selections = toolArgs.data.formats.map((f) => f.selection);
+      if (selections.length === 1) {
+        return `${verb} ${selections[0]}`;
+      }
+      return `${verb} ${selections.length} selections`;
     }, [toolArgs, loading]);
 
     const formattingItems = useMemo(() => {
@@ -95,12 +113,14 @@ export const SetTextFormats = memo(
     }, [formattingItems]);
 
     const handleClick = useCallback(() => {
-      if (!toolArgs?.success || !toolArgs.data?.selection) return;
+      if (!toolArgs?.success || !toolArgs.data?.formats?.length) return;
       try {
-        const sheetId = toolArgs.data.sheet_name
-          ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+        // Select the first format entry's selection
+        const firstEntry = toolArgs.data.formats[0];
+        const sheetId = firstEntry.sheet_name
+          ? (sheets.getSheetByName(firstEntry.sheet_name)?.id ?? sheets.current)
           : sheets.current;
-        const selection = sheets.stringToSelection(toolArgs.data.selection, sheetId);
+        const selection = sheets.stringToSelection(firstEntry.selection, sheetId);
         sheets.changeSelection(selection);
       } catch (e) {
         console.warn('Failed to select range:', e);
