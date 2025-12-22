@@ -241,6 +241,10 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let mut balance = pv;
                 let mut cum_interest = 0.0;
 
+                if !end_period.is_finite() || end_period as i64 > i64::MAX {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
+
                 for period in 1..=end_period as i64 {
                     if payment_type == 1.0 {
                         balance += pmt;
@@ -284,6 +288,10 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let pmt = calculate_pmt(rate, nper, pv, 0.0, payment_type);
                 let mut balance = pv;
                 let mut cum_principal = 0.0;
+
+                if !end_period.is_finite() || end_period as i64 > i64::MAX {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
 
                 for period in 1..=end_period as i64 {
                     if payment_type == 1.0 {

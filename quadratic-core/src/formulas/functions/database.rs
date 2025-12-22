@@ -86,10 +86,11 @@ fn get_functions() -> Vec<FormulaFunction> {
                 if values.is_empty() {
                     return Err(RunErrorMsg::NoMatch.with_span(span));
                 }
-                if values.len() > 1 {
-                    return Err(RunErrorMsg::Num.with_span(span));
+                if let Some(value) = values.into_iter().next() {
+                    value
+                } else {
+                    return Err(RunErrorMsg::NoMatch.with_span(span));
                 }
-                values.into_iter().next().unwrap()
             }
         ),
         formula_fn!(

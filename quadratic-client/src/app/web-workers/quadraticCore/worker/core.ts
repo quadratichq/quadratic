@@ -417,7 +417,7 @@ class Core {
       return { contents, version };
     } catch (error: unknown) {
       this.sendAnalyticsError('upgradeGridFile', error);
-      return { error: error as string };
+      return { error: error instanceof Error ? error.message : String(error) };
     }
   }
 
@@ -455,7 +455,7 @@ class Core {
         return { contents, version };
       } catch (error: unknown) {
         this.sendAnalyticsError('importFile.Dashboard', error);
-        return { error: error as string };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
     } else {
       try {
