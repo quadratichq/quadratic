@@ -2168,6 +2168,74 @@ test.skip('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
+test.only('Quadratic Formulas Validation', async ({ page }) => {
+  //--------------------------------
+  // Quadratic Formulas Validation
+  // Verifies that all formulas in the Quadratic Formulas.grid file pass validation
+  //--------------------------------
+
+  // Constants
+  const fileName = 'Quadratic Formulas';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: 'e2e_quadratic_formulas' });
+
+  // Clean up file
+  await cleanUpFiles(page, { fileName });
+
+  // Upload file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Act & Assert - Initial load check:
+  //--------------------------------
+
+  // Navigate to cell A8 in the first sheet to check the formula validation result
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 8 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('No failing formulas'); // Assert the initial state
+
+  //--------------------------------
+  // Act - Rerun all formulas in the file:
+  //--------------------------------
+
+  // Click search icon
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
+
+  // Fill the search field
+  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in file`);
+
+  // Press "Enter" to choose the option
+  await page.keyboard.press('Enter');
+
+  // Wait for the code to finish processing
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Assert - After rerun check:
+  //--------------------------------
+
+  // Navigate back to cell A8 to verify the result after rerunning all formulas
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 8 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('No failing formulas'); // Assert the result after rerun
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await cleanUpFiles(page, { fileName });
+});
+
 test.skip('Types: Series and Data-Frames', async ({ page }) => {
   //--------------------------------
   // Types: Series and Data-Frames
