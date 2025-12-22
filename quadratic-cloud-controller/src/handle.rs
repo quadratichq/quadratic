@@ -26,7 +26,7 @@ fn get_file_id_from_headers(headers: HeaderMap) -> Result<Uuid> {
         .get(FILE_ID_HEADER)
         .and_then(|h| h.to_str().ok())
         .and_then(|s| Uuid::parse_str(s).ok())
-        .ok_or_else(|| ControllerError::FileIdFromHeaders)
+        .ok_or_else(ControllerError::FileIdFromHeaders)
 }
 
 /// Get token for a worker

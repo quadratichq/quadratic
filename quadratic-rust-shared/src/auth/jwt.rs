@@ -18,6 +18,12 @@ use crate::error::{Result, SharedError};
 
 pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 
+/// Claims for a JWT token
+///
+/// This is the claims that are included in the JWT token.
+/// The email is the email of the user who is authenticated.
+/// The exp is the expiration time of the JWT token.
+/// Other fields like sub, iat, jti, etc. are not included since they are not used.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Claims {
     pub email: String,
