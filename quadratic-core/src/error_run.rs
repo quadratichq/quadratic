@@ -268,7 +268,10 @@ impl fmt::Display for RunErrorMsg {
             Self::NotANumber => write!(f, "Not a number"),
             Self::Infinity => write!(f, "Unexpected Infinity"),
             Self::FormulaTooComplex => {
-                write!(f, "Formula is too complex (too deeply nested or too many operations)")
+                write!(
+                    f,
+                    "Formula is too complex (too deeply nested or too many operations)"
+                )
             }
         }
     }
