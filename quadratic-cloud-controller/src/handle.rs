@@ -32,7 +32,11 @@ fn get_file_id_from_headers(headers: HeaderMap) -> Result<Uuid> {
 /// Get token for a worker
 pub(crate) async fn get_token_for_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
 ) -> Result<Json<String>> {
+    // validate the file id exists in the headers
+    get_file_id_from_headers(headers)?;
+
     let token = state.settings.generate_worker_jwt()?;
 
     Ok(Json(token))

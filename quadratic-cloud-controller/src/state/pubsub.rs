@@ -244,10 +244,11 @@ impl State {
         self.reconnect_pubsub_if_unhealthy().await;
         self.subscribe_pubsub(file_id).await?;
 
+        let channel = PubSub::file_id_to_channel(file_id);
         let mut pubsub = self.pubsub.lock().await;
         pubsub
             .connection
-            .remove_active_channel_if_empty(ACTIVE_CHANNELS, &file_id)
+            .remove_active_channel_if_empty(ACTIVE_CHANNELS, &channel, GROUP)
             .await?;
         Ok(())
     }

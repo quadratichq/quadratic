@@ -61,7 +61,7 @@ impl Worker {
     /// This will process the tasks until no more are available.
     pub(crate) async fn run(&mut self) -> Result<()> {
         // TODO(ddimaria): remove this
-        info!("Worker running for file: {file_id}");
+        info!("Worker running for file: {}", self.file_id);
 
         let container_id = self.container_id;
         let file_id = self.file_id;
