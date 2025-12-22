@@ -3,6 +3,7 @@ import { POSTGRES_DB } from './constants/db';
 import { cleanUpServerConnections, clearCodeEditor, navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
+import { waitForKernelMenuIdle } from './helpers/sheet.helper';
 
 test.skip('API Calls', async ({ page }) => {
   //--------------------------------
@@ -2214,6 +2215,7 @@ test('Quadratic Formulas Validation', async ({ page }) => {
 
   // Wait for the code to finish processing
   await page.waitForTimeout(5 * 1000);
+  await waitForKernelMenuIdle(page);
   await page.keyboard.press('Escape');
 
   //--------------------------------
