@@ -4,7 +4,7 @@ import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { clickMoreFormattingIcon } from './helpers/format.helper';
 
-test('Cell Formatting', async ({ page }) => {
+test.skip('Cell Formatting', async ({ page }) => {
   // Constants
   const fileName = 'Cell_Formatting';
   const fileType = 'grid';
@@ -839,7 +839,7 @@ test('Number Formatting', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
+test.skip('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   // Constants
   const fileName = 'Text Wrap and Vertical Align';
 

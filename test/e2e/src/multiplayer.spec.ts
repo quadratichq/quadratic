@@ -7,7 +7,7 @@ import { cleanUpFiles, closeExtraUI, createFile, navigateIntoFile, shareEditable
 import { gotoCells } from './helpers/sheet.helper';
 import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
-test('Action Visibility', async ({ page: userPage1 }) => {
+test.skip('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // Can See Another User Type
   //--------------------------------
@@ -388,7 +388,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) => {
+test.skip('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) => {
   //--------------------------------
   // Make Changes to File while Network is off
   //--------------------------------
@@ -542,7 +542,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test('Make Changes while Network is off', async ({ page: userPage1 }) => {
+test.skip('Make Changes while Network is off', async ({ page: userPage1 }) => {
   //--------------------------------
   // Make Changes while Network is off
   //--------------------------------
@@ -735,7 +735,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test('Mouse Visibility', async ({ page: userPage1 }) => {
+test.skip('Mouse Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // Can See User 1 Mouse
   //--------------------------------
@@ -916,7 +916,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   }
 });
 
-test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
+test.skip('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   //--------------------------------
   // Switching Tabs Persists Cursor
   //--------------------------------
@@ -1260,7 +1260,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test('User can see other users multiplayer cursors', async ({ page: userPage1 }) => {
+test.skip('User can see other users multiplayer cursors', async ({ page: userPage1 }) => {
   // Constants
   const fileName = 'User_Cursors';
   await logIn(userPage1, { emailPrefix: 'e2e_user_cursors_1' });

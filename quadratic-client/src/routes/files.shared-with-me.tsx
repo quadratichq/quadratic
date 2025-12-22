@@ -11,15 +11,18 @@ import { useLoaderData, useRouteError } from 'react-router';
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClient.files.list({ shared: 'with-me' });
   // TODO: add these permissions one day
-  const filesWithPermissions = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
-    name,
-    thumbnail,
-    createdDate,
-    updatedDate,
-    uuid,
-    publicLinkAccess,
-    permissions: [],
-  }));
+  const filesWithPermissions = files.map(
+    ({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail, hasScheduledTasks }) => ({
+      name,
+      thumbnail,
+      createdDate,
+      updatedDate,
+      uuid,
+      publicLinkAccess,
+      permissions: [],
+      hasScheduledTasks,
+    })
+  );
   return filesWithPermissions;
 };
 

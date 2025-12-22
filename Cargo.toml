@@ -3,6 +3,9 @@ resolver = "2"
 members = [
   "quadratic-connection",
   "quadratic-core",
+  "quadratic-cloud-controller",
+  "quadratic-cloud-worker",
+  "quadratic-core-cloud",
   "quadratic-files",
   "quadratic-multiplayer",
   "quadratic-rust-shared",
@@ -23,3 +26,9 @@ version = "0.22.1"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+
+
+
+
+

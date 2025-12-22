@@ -360,3 +360,19 @@ Adjust `E2E_URL` as needed.
 ```shell
 E2E_URL=https://qa.quadratic-preview.com/ npx playwright test -g "Connection goes down in Multiplayer Session" --update-snapshots --workers=1
 ```
+
+### Process for Updating All Snapshots
+
+First, update all snapshots:
+
+```shell
+E2E_URL=https://qa.quadratic-preview.com/ ./update-all-snapshots.sh
+```
+
+Next, go to the PR in GitHub and look at the diffs of the images.  For any diff that seems like a legitamate bug, copy the image path.  After you collected all image paths, revert those files from the previous commit.
+
+```shell
+git restore --source HEAD^ <file_path>
+git add .
+git commit -m "Remove snapshots for actual bugs"
+```
