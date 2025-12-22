@@ -56,24 +56,24 @@ impl Grid {
     ///
     /// This runs in O(n) time.
     ///
-    /// `name` is automatically case-folded.
+    /// `name` is automatically case-folded and trimmed.
     pub fn try_sheet_from_name(&self, name: &str) -> Option<&Sheet> {
         let name = case_fold(name.trim());
         self.sheets
             .values()
-            .find(|sheet| case_fold(&sheet.name) == name)
+            .find(|sheet| case_fold(sheet.name.trim()) == name)
     }
 
     /// Returns a mutable reference to the sheet with the given name.
     ///
     /// This runs in O(n) time.
     ///
-    /// `name` is automatically case-folded.
+    /// `name` is automatically case-folded and trimmed.
     pub fn try_sheet_mut_from_name(&mut self, name: &str) -> Option<&mut Sheet> {
         let name = case_fold(name.trim());
         self.sheets
             .values_mut()
-            .find(|sheet| case_fold(&sheet.name) == name)
+            .find(|sheet| case_fold(sheet.name.trim()) == name)
     }
 
     /// Parses `id` to a `SheetId` and returns the sheet with that ID.
@@ -115,15 +115,16 @@ impl Grid {
     }
 
     /// Returns a unique sheet name for a given name.
+    /// The input name is trimmed before processing.
     pub fn unique_sheet_name(&self, name: &str) -> String {
-        let mut unique_name = name.to_owned();
+        let mut unique_name = name.trim().to_owned();
         let mut index = 1;
         loop {
             let folded_new_name = case_fold(&unique_name);
             if self
                 .sheets
                 .values()
-                .any(|old_sheet| case_fold(&old_sheet.name) == folded_new_name)
+                .any(|old_sheet| case_fold(old_sheet.name.trim()) == folded_new_name)
             {
                 unique_name = format!("{}({})", unique_name, index);
                 index += 1;
