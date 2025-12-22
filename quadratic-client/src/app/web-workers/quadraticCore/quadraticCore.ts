@@ -110,6 +110,7 @@ import type {
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetFormatsA1,
   CoreClientSetFormula,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
@@ -849,6 +850,25 @@ class QuadraticCore {
         sheetId,
         selection,
         formats,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  setFormatsA1(
+    formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[],
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormatsA1) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetFormatsA1',
+        id,
+        formatEntries,
         cursor: sheets.getCursorPosition(),
         isAi,
       });

@@ -703,88 +703,88 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetTextFormats]: async (args) => {
     try {
-      const results: string[] = [];
-      const errors: string[] = [];
+      const formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[] = [];
+      const descriptions: string[] = [];
 
       for (const formatEntry of args.formats) {
-        try {
-          let numericFormat: NumericFormat | null = null;
-          if (formatEntry.number_type !== undefined) {
-            const kind = formatEntry.number_type
-              ? expectedEnum<NumericFormatKind>(formatEntry.number_type, [
-                  'NUMBER',
-                  'CURRENCY',
-                  'PERCENTAGE',
-                  'EXPONENTIAL',
-                ])
-              : null;
-            if (kind) {
-              numericFormat = {
-                type: kind,
-                symbol: formatEntry.currency_symbol ?? null,
-              };
-            } else {
-              numericFormat = null;
-            }
-          }
-          const formatUpdates = {
-            ...(formatEntry.bold !== undefined && { bold: formatEntry.bold }),
-            ...(formatEntry.italic !== undefined && { italic: formatEntry.italic }),
-            ...(formatEntry.underline !== undefined && { underline: formatEntry.underline }),
-            ...(formatEntry.strike_through !== undefined && { strike_through: formatEntry.strike_through }),
-            ...(formatEntry.text_color !== undefined && { text_color: formatEntry.text_color }),
-            ...(formatEntry.fill_color !== undefined && { fill_color: formatEntry.fill_color }),
-            ...(formatEntry.align !== undefined && {
-              align: formatEntry.align ? expectedEnum<CellAlign>(formatEntry.align, ['left', 'center', 'right']) : null,
-            }),
-            ...(formatEntry.vertical_align !== undefined && {
-              vertical_align: formatEntry.vertical_align
-                ? expectedEnum<CellVerticalAlign>(formatEntry.vertical_align, ['top', 'middle', 'bottom'])
-                : null,
-            }),
-            ...(formatEntry.wrap !== undefined && {
-              wrap: formatEntry.wrap ? expectedEnum<CellWrap>(formatEntry.wrap, ['wrap', 'overflow', 'clip']) : null,
-            }),
-            ...(formatEntry.numeric_commas !== undefined && { numeric_commas: formatEntry.numeric_commas }),
-            ...(formatEntry.number_type !== undefined && { numeric_format: numericFormat }),
-            ...(formatEntry.date_time !== undefined && { date_time: formatEntry.date_time }),
-            // Convert user-facing font size to internal (AI thinks in user-facing values like the UI)
-            ...(formatEntry.font_size !== undefined && {
-              font_size: formatEntry.font_size !== null ? formatEntry.font_size - FONT_SIZE_DISPLAY_ADJUSTMENT : null,
-            }),
-          } as FormatUpdate;
-
-          const sheetId = formatEntry.sheet_name
-            ? (sheets.getSheetByName(formatEntry.sheet_name)?.id ?? sheets.current)
-            : sheets.current;
-
-          // Move AI cursor to the cells being formatted (use last selection)
-          try {
-            const jsSelection = sheets.stringToSelection(formatEntry.selection, sheetId);
-            const selectionString = jsSelection.save();
-            aiUser.updateSelection(selectionString, sheetId);
-          } catch (e) {
-            console.warn('Failed to update AI user selection:', e);
-          }
-
-          const response = await quadraticCore.setFormats(sheetId, formatEntry.selection, formatUpdates, true);
-          if (response?.result) {
-            results.push(
-              `Formatted ${formatEntry.selection}: ${describeFormatUpdates(formatUpdates, formatEntry)}`
-            );
+        let numericFormat: NumericFormat | null = null;
+        if (formatEntry.number_type !== undefined) {
+          const kind = formatEntry.number_type
+            ? expectedEnum<NumericFormatKind>(formatEntry.number_type, [
+                'NUMBER',
+                'CURRENCY',
+                'PERCENTAGE',
+                'EXPONENTIAL',
+              ])
+            : null;
+          if (kind) {
+            numericFormat = {
+              type: kind,
+              symbol: formatEntry.currency_symbol ?? null,
+            };
           } else {
-            errors.push(`Error formatting ${formatEntry.selection}: ${response?.error}`);
+            numericFormat = null;
           }
+        }
+        const formatUpdates = {
+          ...(formatEntry.bold !== undefined && { bold: formatEntry.bold }),
+          ...(formatEntry.italic !== undefined && { italic: formatEntry.italic }),
+          ...(formatEntry.underline !== undefined && { underline: formatEntry.underline }),
+          ...(formatEntry.strike_through !== undefined && { strike_through: formatEntry.strike_through }),
+          ...(formatEntry.text_color !== undefined && { text_color: formatEntry.text_color }),
+          ...(formatEntry.fill_color !== undefined && { fill_color: formatEntry.fill_color }),
+          ...(formatEntry.align !== undefined && {
+            align: formatEntry.align ? expectedEnum<CellAlign>(formatEntry.align, ['left', 'center', 'right']) : null,
+          }),
+          ...(formatEntry.vertical_align !== undefined && {
+            vertical_align: formatEntry.vertical_align
+              ? expectedEnum<CellVerticalAlign>(formatEntry.vertical_align, ['top', 'middle', 'bottom'])
+              : null,
+          }),
+          ...(formatEntry.wrap !== undefined && {
+            wrap: formatEntry.wrap ? expectedEnum<CellWrap>(formatEntry.wrap, ['wrap', 'overflow', 'clip']) : null,
+          }),
+          ...(formatEntry.numeric_commas !== undefined && { numeric_commas: formatEntry.numeric_commas }),
+          ...(formatEntry.number_type !== undefined && { numeric_format: numericFormat }),
+          ...(formatEntry.date_time !== undefined && { date_time: formatEntry.date_time }),
+          // Convert user-facing font size to internal (AI thinks in user-facing values like the UI)
+          ...(formatEntry.font_size !== undefined && {
+            font_size: formatEntry.font_size !== null ? formatEntry.font_size - FONT_SIZE_DISPLAY_ADJUSTMENT : null,
+          }),
+        } as FormatUpdate;
+
+        const sheetId = formatEntry.sheet_name
+          ? (sheets.getSheetByName(formatEntry.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+
+        formatEntries.push({
+          sheetId,
+          selection: formatEntry.selection,
+          formats: formatUpdates,
+        });
+
+        descriptions.push(`${formatEntry.selection}: ${describeFormatUpdates(formatUpdates, formatEntry)}`);
+      }
+
+      // Move AI cursor to the last selection
+      if (formatEntries.length > 0) {
+        const lastEntry = formatEntries[formatEntries.length - 1];
+        try {
+          const jsSelection = sheets.stringToSelection(lastEntry.selection, lastEntry.sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, lastEntry.sheetId);
         } catch (e) {
-          errors.push(`Error formatting ${formatEntry.selection}: ${e}`);
+          console.warn('Failed to update AI user selection:', e);
         }
       }
 
-      if (errors.length > 0) {
-        return [createTextContent(`Set formats completed with errors:\n${results.join('\n')}\nErrors:\n${errors.join('\n')}`)];
+      // Execute all formats in a single transaction
+      const response = await quadraticCore.setFormatsA1(formatEntries, true);
+      if (response?.result) {
+        return [createTextContent(`Set formats completed successfully:\n${descriptions.join('\n')}`)];
+      } else {
+        return [createTextContent(`There was an error executing the set formats tool: ${response?.error}`)];
       }
-
-      return [createTextContent(`Set formats completed successfully:\n${results.join('\n')}`)];
     } catch (e) {
       return [createTextContent(`Error executing set formats tool: ${e}`)];
     }

@@ -489,6 +489,22 @@ impl GridController {
         let ops = self.format_ops(selection, format_update, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
+
+    /// Sets multiple format updates in a single transaction.
+    /// Each entry is a (selection, format_update) pair.
+    pub(crate) fn set_formats_a1(
+        &mut self,
+        format_entries: Vec<(A1Selection, FormatUpdate)>,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let mut all_ops = vec![];
+        for (selection, format_update) in format_entries {
+            let ops = self.format_ops(&selection, format_update, false);
+            all_ops.extend(ops);
+        }
+        self.start_user_ai_transaction(all_ops, cursor, TransactionName::SetFormats, is_ai);
+    }
 }
 
 #[cfg(test)]

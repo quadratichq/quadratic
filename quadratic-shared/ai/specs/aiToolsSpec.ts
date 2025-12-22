@@ -1331,8 +1331,6 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
       properties: {
         formats: {
           type: 'array',
-          description:
-            'An array of format entries. Each entry specifies a selection and the formats to apply to it. Use multiple entries to format different selections with different styles in one call.',
           items: {
             type: 'object',
             properties: {
