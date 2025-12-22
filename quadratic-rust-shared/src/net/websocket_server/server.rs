@@ -11,22 +11,17 @@ use axum_extra::TypedHeader;
 use bytes::Bytes;
 use futures::stream::SplitSink;
 use futures_util::SinkExt;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
 
+use crate::auth::jwt::Claims;
 use crate::auth::jwt::{authorize, extract_m2m_token};
 use crate::net::websocket_server::error::{Result, WebsocketServerError};
 use crate::net::websocket_server::pre_connection::PreConnection;
 
 pub type SplitSinkSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
 pub type SharedSplitSinkSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    sub: String,
-    exp: usize,
-}
 
 pub struct WebsocketServer {}
 

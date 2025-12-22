@@ -12,6 +12,9 @@ pub(crate) enum ControllerError {
     #[error("Error acknowledging tasks: {0}")]
     AckTasks(String),
 
+    #[error("Auth error: {0}")]
+    Auth(String),
+
     #[error("Client error: {0}")]
     Client(String),
 
@@ -23,6 +26,9 @@ pub(crate) enum ControllerError {
 
     #[error("Docker error: {0}")]
     Docker(String),
+
+    #[error("Missing or invalid file-id header")]
+    FileIdFromHeaders,
 
     #[error("Error getting tasks for worker: {0}")]
     GetTasksForWorker(String),
@@ -105,6 +111,7 @@ impl From<SharedError> for ControllerError {
     fn from(error: SharedError) -> Self {
         match error {
             SharedError::PubSub(error) => ControllerError::PubSub(error),
+            SharedError::Auth(error) => ControllerError::Auth(error.to_string()),
             _ => ControllerError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }

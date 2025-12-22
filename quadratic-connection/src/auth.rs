@@ -11,7 +11,7 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use quadratic_rust_shared::auth::jwt::{authorize, authorize_m2m};
+use quadratic_rust_shared::auth::jwt::{Claims, authorize, authorize_m2m};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -19,14 +19,6 @@ use crate::{
     error::{ConnectionError, Result},
     state::State,
 };
-
-/// The claims from the Quadratic/Auth JWT token.
-/// We need our own implementation of this because we need to impl on it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    pub email: String,
-    pub exp: usize,
-}
 
 /// Instance of Axum's middleware that also contains a copy of state
 #[cfg(not(test))]

@@ -1,7 +1,7 @@
 use quadratic_core_cloud::worker::Worker as Core;
 use quadratic_rust_shared::quadratic_api::TaskRun;
 use quadratic_rust_shared::quadratic_cloud::{
-    GetWorkerInitDataResponse, ack_tasks, get_tasks, worker_shutdown,
+    GetWorkerInitDataResponse, ack_tasks, get_tasks, get_token, worker_shutdown,
 };
 use std::time::Duration;
 use tracing::{error, info, trace};
@@ -15,7 +15,6 @@ pub(crate) struct Worker {
     container_id: Uuid,
     file_id: Uuid,
     worker_init_data: GetWorkerInitDataResponse,
-    m2m_auth_token: String,
     controller_url: String,
     tasks: Vec<(String, TaskRun)>,
 }
@@ -33,7 +32,6 @@ impl Worker {
         let file_id = config.file_id.to_owned();
         let container_id = config.container_id.to_owned();
         let worker_init_data = config.worker_init_data;
-        let m2m_auth_token = config.m2m_auth_token.to_owned();
         let controller_url = config.controller_url.to_owned();
         let tasks = config.tasks;
 
@@ -41,7 +39,7 @@ impl Worker {
             file_id,
             worker_init_data.sequence_number.to_owned() as u64,
             &worker_init_data.presigned_url.to_owned(),
-            config.m2m_auth_token.to_owned(),
+            config.jwt.to_owned(),
             config.multiplayer_url.to_owned(),
             config.connection_url.to_owned(),
         )
@@ -53,7 +51,6 @@ impl Worker {
             container_id,
             file_id,
             worker_init_data,
-            m2m_auth_token,
             controller_url,
             tasks,
         })
@@ -86,6 +83,11 @@ impl Worker {
             for (key, task) in tasks {
                 let task_start = std::time::Instant::now();
 
+                // get a fresh JWT token
+                let jwt = get_token(&self.controller_url, self.file_id)
+                    .await
+                    .map_err(|e| WorkerError::GetToken(e.to_string()))?;
+
                 info!(
                     "Starting task {} (run_id: {}, task_id: {})",
                     key, task.run_id, task.task_id
@@ -94,11 +96,7 @@ impl Worker {
                 // process the operations
                 match self
                     .core
-                    .process_operations(
-                        task.operations,
-                        team_id.to_owned(),
-                        self.m2m_auth_token.to_owned(),
-                    )
+                    .process_operations(task.operations, team_id.to_owned(), jwt)
                     .await
                 {
                     Ok(_) => {

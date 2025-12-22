@@ -3,7 +3,7 @@ use axum::{
     routing::{get, post},
 };
 use quadratic_rust_shared::quadratic_cloud::{
-    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_SHUTDOWN_ROUTE,
+    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_TOKEN_ROUTE, WORKER_SHUTDOWN_ROUTE,
 };
 use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
@@ -16,7 +16,9 @@ use crate::{
     config::Config,
     controller_docker::IMAGE_NAME,
     error::{ControllerError, Result},
-    handle::{ack_tasks_for_worker, get_tasks_for_worker, jwks, shutdown_worker},
+    handle::{
+        ack_tasks_for_worker, get_tasks_for_worker, get_token_for_worker, jwks, shutdown_worker,
+    },
     health::{full_healthcheck, healthcheck},
     state::State,
 };
@@ -32,6 +34,9 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
         //
         // Get tasks for a worker
         .route(WORKER_GET_TASKS_ROUTE, get(get_tasks_for_worker))
+        //
+        // Get token for a worker
+        .route(WORKER_GET_TOKEN_ROUTE, get(get_token_for_worker))
         //
         // Shutdown a worker
         .route(WORKER_SHUTDOWN_ROUTE, post(shutdown_worker))

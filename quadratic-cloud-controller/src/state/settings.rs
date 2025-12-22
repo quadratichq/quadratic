@@ -1,4 +1,5 @@
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
+use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks};
 use quadratic_rust_shared::environment::Environment;
 use url::Url;
 
@@ -20,10 +21,10 @@ pub(crate) struct Settings {
     pub(crate) connection_port: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
-    pub(crate) _jwt_encoding_key: EncodingKey,
-    pub(crate) _jwt_expiration_seconds: u64,
+    pub(crate) jwt_encoding_key: EncodingKey,
+    pub(crate) jwt_expiration_seconds: u64,
     pub(crate) jwks: JwkSet,
-    pub(crate) _worker_jwt_email: String,
+    pub(crate) worker_jwt_email: String,
     pub(crate) _namespace: String,
     pub(crate) version: String,
 }
@@ -59,15 +60,26 @@ impl Settings {
             files_port: config.files_port.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
-            _jwt_encoding_key: jwt_encoding_key,
-            _jwt_expiration_seconds: config.jwt_expiration_seconds,
+            jwt_encoding_key: jwt_encoding_key,
+            jwt_expiration_seconds: config.jwt_expiration_seconds,
             jwks,
-            _worker_jwt_email: config.worker_jwt_email.to_owned(),
+            worker_jwt_email: config.worker_jwt_email.to_owned(),
             _namespace: config.namespace.to_owned(),
             version: version(),
         };
 
         Ok(settings)
+    }
+
+    pub(crate) fn generate_worker_jwt(&self) -> Result<String> {
+        let kid = get_kid_from_jwks(&self.jwks)?;
+        let claims = Claims {
+            email: self.worker_jwt_email.clone(),
+            exp: self.jwt_expiration_seconds as usize,
+        };
+        let jwt = generate_jwt(claims, &kid, &self.jwt_encoding_key)?;
+
+        Ok(jwt)
     }
 
     // Get the scheme for the files service

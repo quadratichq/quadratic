@@ -12,18 +12,10 @@ use axum_extra::{
     headers::{Authorization, authorization::Bearer},
 };
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::auth::jwt::authorize;
+use quadratic_rust_shared::auth::jwt::{Claims, authorize};
 use serde::{Deserialize, Serialize};
 
 use crate::error::{FilesError, Result};
-
-/// The claims from the Quadratic/Auth JWT token.
-/// We need our own implementation of this because we need to impl on it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    pub email: String,
-    pub exp: usize,
-}
 
 /// Instance of Axum's middleware that also contains a copy of state
 #[cfg(not(test))]

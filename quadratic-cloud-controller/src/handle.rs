@@ -21,6 +21,23 @@ pub(crate) async fn jwks(Extension(state): Extension<Arc<State>>) -> Json<JwkSet
     Json(state.settings.jwks.clone())
 }
 
+fn get_file_id_from_headers(headers: HeaderMap) -> Result<Uuid> {
+    headers
+        .get(FILE_ID_HEADER)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| ControllerError::FileIdFromHeaders)
+}
+
+/// Get token for a worker
+pub(crate) async fn get_token_for_worker(
+    Extension(state): Extension<Arc<State>>,
+) -> Result<Json<String>> {
+    let token = state.settings.generate_worker_jwt()?;
+
+    Ok(Json(token))
+}
+
 /// Get tasks for a worker to process.
 ///
 /// This is called by the worker to get the next tasks to process before
@@ -31,13 +48,7 @@ pub(crate) async fn get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>> {
-    let file_id = headers
-        .get(FILE_ID_HEADER)
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| Uuid::parse_str(s).ok())
-        .ok_or_else(|| {
-            ControllerError::GetTasksForWorker("Missing or invalid file-id header".into())
-        })?;
+    let file_id = get_file_id_from_headers(headers)?;
 
     trace!("Worker requesting tasks for file {file_id}");
 

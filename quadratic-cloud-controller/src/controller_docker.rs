@@ -214,7 +214,7 @@ impl Controller {
         let controller_url = self.state.settings.controller_url();
         let multiplayer_url = self.state.settings.multiplayer_url();
         let connection_url = self.state.settings.connection_url();
-        let m2m_auth_token = self.state.settings.m2m_auth_token.to_owned();
+        let worker_jwt = self.state.settings.generate_worker_jwt()?;
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
         let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
 
@@ -227,7 +227,7 @@ impl Controller {
             format!("MULTIPLAYER_URL={multiplayer_url}"),
             format!("CONNECTION_URL={connection_url}"),
             format!("FILE_ID={file_id}"),
-            format!("M2M_AUTH_TOKEN={m2m_auth_token}"),
+            format!("JWT={worker_jwt}"),
             format!("TASKS={}", encoded_tasks),
             format!("WORKER_INIT_DATA={}", worker_init_data_json),
             format!(

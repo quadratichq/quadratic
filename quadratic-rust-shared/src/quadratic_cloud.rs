@@ -1,5 +1,6 @@
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use reqwest::{Response, StatusCode};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -8,6 +9,7 @@ use crate::error::Result;
 use crate::quadratic_api::{Task, TaskRun};
 
 pub const WORKER_GET_WORKER_INIT_DATA_ROUTE: &str = "/worker/get-worker-init-data";
+pub const WORKER_GET_TOKEN_ROUTE: &str = "/worker/get-token";
 pub const WORKER_GET_TASKS_ROUTE: &str = "/worker/get-tasks";
 pub const WORKER_ACK_TASKS_ROUTE: &str = "/worker/ack-tasks";
 pub const WORKER_SHUTDOWN_ROUTE: &str = "/worker/shutdown";
@@ -36,6 +38,46 @@ fn handle_response(response: &Response) -> Result<()> {
     }
 }
 
+/// Get a worker init data
+pub async fn worker_get_request<T: DeserializeOwned>(
+    base_url: &str,
+    route: &str,
+    file_id: Uuid,
+) -> Result<T> {
+    let url = format!("{base_url}{route}");
+
+    let response = reqwest::Client::new()
+        .get(url)
+        .header(FILE_ID_HEADER, file_id.to_string())
+        .send()
+        .await?;
+
+    handle_response(&response)?;
+
+    let worker_init_data = response.json::<T>().await?;
+
+    Ok(worker_init_data)
+}
+
+pub async fn worker_post_request<T: Serialize, R: DeserializeOwned>(
+    base_url: &str,
+    route: &str,
+    request: T,
+) -> Result<R> {
+    let url = format!("{base_url}{route}");
+
+    let response = reqwest::Client::new()
+        .post(url)
+        .json(&request)
+        .send()
+        .await?;
+
+    handle_response(&response)?;
+
+    let response = response.json::<R>().await?;
+
+    Ok(response)
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetWorkerInitDataResponse {
     pub team_id: Uuid,
@@ -48,37 +90,24 @@ pub async fn get_worker_init_data(
     base_url: &str,
     file_id: Uuid,
 ) -> Result<GetWorkerInitDataResponse> {
-    let url = format!("{base_url}{WORKER_GET_WORKER_INIT_DATA_ROUTE}");
-
-    let response = reqwest::Client::new()
-        .get(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let worker_init_data = response.json::<GetWorkerInitDataResponse>().await?;
-
-    Ok(worker_init_data)
+    worker_get_request::<GetWorkerInitDataResponse>(
+        base_url,
+        WORKER_GET_WORKER_INIT_DATA_ROUTE,
+        file_id,
+    )
+    .await
 }
 
 pub type GetTasksResponse = Vec<(String, TaskRun)>;
 /// Get the next scheduled tasks for a worker
 pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse> {
-    let url = format!("{base_url}{WORKER_GET_TASKS_ROUTE}");
+    worker_get_request::<GetTasksResponse>(base_url, WORKER_GET_TASKS_ROUTE, file_id).await
+}
 
-    let response = reqwest::Client::new()
-        .get(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let scheduled_tasks_response = response.json::<GetTasksResponse>().await?;
-
-    Ok(scheduled_tasks_response)
+pub type GetTokenResponse = String;
+/// Get the JWT token for the worker
+pub async fn get_token(base_url: &str, file_id: Uuid) -> Result<GetTokenResponse> {
+    worker_get_request::<GetTokenResponse>(base_url, WORKER_GET_TOKEN_ROUTE, file_id).await
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -106,25 +135,17 @@ pub async fn ack_tasks(
     // (key, run_id, task_id, error)
     failed_tasks: Vec<(String, Uuid, Uuid, String)>,
 ) -> Result<AckTasksResponse> {
-    let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
-
-    let request = AckTasksRequest {
-        container_id,
-        file_id,
-        successful_tasks,
-        failed_tasks,
-    };
-
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&request)
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let ack_response = response.json::<AckTasksResponse>().await?;
-    Ok(ack_response)
+    worker_post_request::<AckTasksRequest, AckTasksResponse>(
+        base_url,
+        WORKER_ACK_TASKS_ROUTE,
+        AckTasksRequest {
+            container_id,
+            file_id,
+            successful_tasks,
+            failed_tasks,
+        },
+    )
+    .await
 }
 
 #[derive(Serialize, Deserialize)]
@@ -143,23 +164,17 @@ pub async fn worker_shutdown(
     container_id: Uuid,
     file_id: Uuid,
 ) -> Result<ShutdownResponse> {
-    let url = format!("{base_url}{WORKER_SHUTDOWN_ROUTE}");
-
     let request = ShutdownRequest {
         container_id,
         file_id,
     };
 
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&request)
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let shutdown_response = response.json::<ShutdownResponse>().await?;
-    Ok(shutdown_response)
+    worker_post_request::<ShutdownRequest, ShutdownResponse>(
+        base_url,
+        WORKER_SHUTDOWN_ROUTE,
+        request,
+    )
+    .await
 }
 
 pub fn compress_and_encode_tasks(tasks: Vec<(String, TaskRun)>) -> Result<String> {
