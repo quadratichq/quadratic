@@ -5,7 +5,6 @@ import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getFileUrl } from '../../storage/storage';
 import type { Request } from '../../types/Request';
-import { ApiError } from '../../utils/ApiError';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 
@@ -29,7 +28,7 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
     },
     select: {
       timezone: true,
-      ownerUser: {
+      creator: {
         select: {
           email: true,
         },
@@ -48,16 +47,12 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
     },
   });
 
-  if (!result.ownerUser) {
-    throw new ApiError(400, `File ${fileUuid} does not have an owner user.`);
-  }
-
   const { s3Key, sequenceNumber } = result.FileCheckpoint[0];
   const presignedUrl = await getFileUrl(s3Key);
 
   return res.status(200).json({
     teamId: result.ownerTeam.uuid,
-    email: result.ownerUser.email,
+    email: result.creator.email,
     sequenceNumber,
     presignedUrl,
     timezone: result.timezone,
