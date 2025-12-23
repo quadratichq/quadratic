@@ -209,26 +209,6 @@ pub fn extract_m2m_token(headers: &HeaderMap) -> Option<String> {
     })
 }
 
-/// Decode a JWT without validation to extract claims.
-/// Use this only after the JWT has already been validated elsewhere.
-pub fn decode_claims_unverified(token: &str) -> Result<Claims> {
-    // Decode header to get the algorithm
-    let header = decode_header(token)?;
-    let alg = header.alg;
-
-    // Create a validation that skips all checks
-    let mut validation = Validation::new(alg);
-    validation.insecure_disable_signature_validation();
-    validation.validate_exp = false;
-    validation.validate_aud = false;
-
-    // Use an empty key since we're not validating
-    let key = DecodingKey::from_secret(&[]);
-    let token_data = decode::<Claims>(token, &key, &validation)?;
-
-    Ok(token_data.claims)
-}
-
 pub mod tests {
     #![allow(unused)]
     use http::HeaderValue;

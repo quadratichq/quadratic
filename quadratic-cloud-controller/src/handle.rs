@@ -48,9 +48,8 @@ pub(crate) async fn get_token_for_worker(
     let file_id = get_file_id_from_headers(&headers)?;
     let current_jwt = get_ephemeral_token_from_headers(&headers)?;
 
-    // Decode the JWT to extract the JTI (we validate signature but not expiry since
-    // we're about to issue a new token anyway)
-    let token_data = authorize::<Claims>(&state.settings.quadratic_jwks, &current_jwt, false, false)
+    // Validate signature AND expiry - expired tokens cannot be rotated even with valid JTI
+    let token_data = authorize::<Claims>(&state.settings.quadratic_jwks, &current_jwt, false, true)
         .map_err(|e| {
             // Log details to help diagnose signature issues
             if let Ok(header) = jsonwebtoken::decode_header(&current_jwt) {

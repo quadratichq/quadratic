@@ -4,11 +4,16 @@ use quadratic_rust_shared::quadratic_cloud::{
     GetWorkerInitDataResponse, ack_tasks, get_tasks, get_token, worker_shutdown,
 };
 use std::time::Duration;
-use tracing::{error, info, trace};
+use tracing::{error, info, trace, warn};
 use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::{Result, WorkerError};
+
+/// Maximum number of retry attempts for token refresh
+const TOKEN_REFRESH_MAX_RETRIES: u32 = 3;
+/// Initial delay in milliseconds for token refresh retry (doubles each attempt)
+const TOKEN_REFRESH_INITIAL_DELAY_MS: u64 = 100;
 
 pub(crate) struct Worker {
     core: Core,
@@ -90,9 +95,47 @@ impl Worker {
                 // Get a fresh JWT token by presenting our current JWT.
                 // The controller validates and consumes our current JTI,
                 // then issues a new JWT with a new JTI.
-                let jwt = get_token(&self.controller_url, self.file_id, &self.current_jwt)
-                    .await
-                    .map_err(|e| WorkerError::GetToken(e.to_string()))?;
+                // Retry with exponential backoff for transient failures.
+                let jwt = {
+                    let mut last_error = None;
+                    let mut token = None;
+
+                    for attempt in 0..TOKEN_REFRESH_MAX_RETRIES {
+                        match get_token(&self.controller_url, self.file_id, &self.current_jwt).await
+                        {
+                            Ok(t) => {
+                                token = Some(t);
+                                break;
+                            }
+                            Err(e) => {
+                                let delay = TOKEN_REFRESH_INITIAL_DELAY_MS * 2_u64.pow(attempt);
+                                warn!(
+                                    "Token refresh attempt {}/{} failed for file {} (task {}): {}. Retrying in {}ms...",
+                                    attempt + 1,
+                                    TOKEN_REFRESH_MAX_RETRIES,
+                                    self.file_id,
+                                    key,
+                                    e,
+                                    delay
+                                );
+                                last_error = Some(e);
+                                tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+                            }
+                        }
+                    }
+
+                    match token {
+                        Some(t) => t,
+                        None => {
+                            let e = last_error.expect("last_error should be set if token is None");
+                            error!(
+                                "Failed to refresh JWT for file {} (task {}) after {} attempts: {}",
+                                self.file_id, key, TOKEN_REFRESH_MAX_RETRIES, e
+                            );
+                            return Err(WorkerError::GetToken(e.to_string()));
+                        }
+                    }
+                };
 
                 // Update our current JWT for the next request
                 self.current_jwt = jwt.clone();

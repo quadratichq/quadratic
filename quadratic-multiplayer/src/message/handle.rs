@@ -7,7 +7,6 @@
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use quadratic_rust_shared::ErrorLevel;
-use quadratic_rust_shared::auth::jwt::decode_claims_unverified;
 use quadratic_rust_shared::multiplayer::message::response::{
     BinaryTransaction, ResponseError, Transaction,
 };
@@ -20,20 +19,18 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 /// Validate that the file_id in the JWT matches the requested file_id.
-/// Only applies to M2M connections (workers) that have a JWT with file_id claim.
+/// Only applies to M2M connections (workers) that have validated claims with file_id.
 fn validate_jwt_file_id(pre_connection: &PreConnection, requested_file_id: Uuid) -> Result<()> {
-    // Only validate for M2M connections with a JWT
+    // Only validate for M2M connections
     if !pre_connection.is_m2m() {
         return Ok(());
     }
 
-    let jwt = match &pre_connection.jwt {
-        Some(jwt) => jwt,
-        None => return Ok(()), // No JWT to validate
+    // Use the already-validated claims from PreConnection
+    let claims = match &pre_connection.claims {
+        Some(claims) => claims,
+        None => return Ok(()), // No claims to validate (e.g., M2M without JWT)
     };
-
-    let claims = decode_claims_unverified(jwt)
-        .map_err(|e| MpError::Authentication(format!("Failed to decode JWT claims: {}", e)))?;
 
     match claims.file_id {
         Some(jwt_file_id) if jwt_file_id == requested_file_id => Ok(()),
@@ -499,7 +496,7 @@ pub(crate) mod tests {
             request,
             state.clone(),
             stream,
-            PreConnection::new(None, None),
+            PreConnection::new(None, None, None),
         )
         .await
         .unwrap();

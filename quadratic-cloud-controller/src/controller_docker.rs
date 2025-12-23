@@ -228,18 +228,36 @@ impl Controller {
             .worker_jtis
             .register(file_id, initial_jti.clone());
 
+        // Helper to clean up JTI if worker creation fails after registration
+        let cleanup_jti_on_error = |state: &State, file_id: Uuid, err| {
+            state.worker_jtis.remove(&file_id);
+            err
+        };
+
         // Generate JWT with the initial JTI
-        let worker_jwt = self.state.settings.generate_worker_jwt_with_jti(
-            &worker_init_data.email,
-            file_id,
-            worker_init_data.team_id,
-            &initial_jti,
-        )?;
+        let worker_jwt = self
+            .state
+            .settings
+            .generate_worker_jwt_with_jti(
+                &worker_init_data.email,
+                file_id,
+                worker_init_data.team_id,
+                &initial_jti,
+            )
+            .map_err(|e| cleanup_jti_on_error(&self.state, file_id, e))?;
 
-        let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
+        let worker_init_data_json = serde_json::to_string(&worker_init_data)
+            .map_err(|e| cleanup_jti_on_error(&self.state, file_id, e.into()))?;
         let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
-        let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
+        let encoded_tasks = encode_tasks(tasks).map_err(|e| {
+            cleanup_jti_on_error(&self.state, file_id, Self::error("create_worker", e))
+        })?;
 
+        // Note: While env vars are visible via `docker inspect` or `/proc/<pid>/environ`,
+        // the JWT passed here is safe because:
+        // 1. The worker rotates to a new JWT (via get_token) before running any user code
+        // 2. The initial JWT's JTI is consumed/invalidated on first use
+        // 3. By the time untrusted code (Python/JS) executes, this JWT is already invalid
         let env_vars = vec![
             format!("RUST_LOG={}", "info"), // change this to info for seeing all logs
             format!("CONTAINER_ID={container_id}"),
@@ -247,7 +265,7 @@ impl Controller {
             format!("MULTIPLAYER_URL={multiplayer_url}"),
             format!("CONNECTION_URL={connection_url}"),
             format!("FILE_ID={file_id}"),
-            format!("JWT={worker_jwt}"),
+            format!("JWT={worker_jwt}"), // One-time use token, rotated before user code runs
             format!("TASKS={}", encoded_tasks),
             format!("WORKER_INIT_DATA={}", worker_init_data_json),
             format!("TZ={}", timezone),
@@ -282,7 +300,7 @@ impl Controller {
             Some(binds),
         )
         .await
-        .map_err(|e| Self::error("create_worker", e))?;
+        .map_err(|e| cleanup_jti_on_error(&self.state, file_id, Self::error("create_worker", e)))?;
 
         info!("About to add and start container for file {file_id}");
 
@@ -292,7 +310,9 @@ impl Controller {
             .await
             .add_container(container, true)
             .await
-            .map_err(|e| Self::error("create_worker", e))?;
+            .map_err(|e| {
+                cleanup_jti_on_error(&self.state, file_id, Self::error("create_worker", e))
+            })?;
 
         info!("Successfully added and started worker for file {file_id}");
 

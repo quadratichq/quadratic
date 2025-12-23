@@ -104,9 +104,10 @@ where
                         }
                         Some(header_id) => {
                             tracing::warn!(
-                                "JWT team_id {} does not match x-team-id header {}",
+                                "JWT team_id {} does not match x-team-id header {} (file_id: {:?})",
                                 jwt_team_id,
-                                header_id
+                                header_id,
+                                token_data.claims.file_id
                             );
                             return Err(ConnectionError::Authentication(
                                 "team_id mismatch".to_string(),
@@ -115,8 +116,9 @@ where
                         None => {
                             // JWT has team_id but header is missing - reject to prevent bypass
                             tracing::warn!(
-                                "JWT has team_id {} but x-team-id header is missing",
-                                jwt_team_id
+                                "JWT has team_id {} but x-team-id header is missing (file_id: {:?})",
+                                jwt_team_id,
+                                token_data.claims.file_id
                             );
                             return Err(ConnectionError::Authentication(
                                 "missing x-team-id header".to_string(),

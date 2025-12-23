@@ -4,7 +4,7 @@
 //! Each worker has exactly one valid JTI at a time. When a worker requests
 //! a new token, we validate the current JTI, remove it, and issue a new one.
 
-use dashmap::DashMap;
+use dashmap::{DashMap, Entry};
 use uuid::Uuid;
 
 /// Store for tracking the current valid JTI for each worker
@@ -53,19 +53,15 @@ impl WorkerJtiStore {
     /// * `Some(new_jti)` - If the provided JTI was valid, returns the new JTI
     /// * `None` - If the provided JTI was invalid or not found
     pub fn validate_and_rotate(&self, file_id: Uuid, provided_jti: &str) -> Option<String> {
-        // Use entry API for atomic check-and-update
-        let mut entry = self.file_jtis.get_mut(&file_id)?;
-        
-        // Check if the provided JTI matches
-        if entry.value() != provided_jti {
-            return None;
-        }
-
-        // Generate new JTI and update
         let new_jti = Uuid::new_v4().to_string();
-        *entry = new_jti.clone();
-        
-        Some(new_jti)
+
+        match self.file_jtis.entry(file_id) {
+            Entry::Occupied(mut entry) if entry.get() == provided_jti => {
+                entry.insert(new_jti.clone());
+                Some(new_jti)
+            }
+            _ => None,
+        }
     }
 
     /// Remove a worker's JTI entry (when worker shuts down)
@@ -145,7 +141,11 @@ mod tests {
         let unknown_file_id = Uuid::new_v4();
 
         // Unknown file should fail
-        assert!(store.validate_and_rotate(unknown_file_id, "any-jti").is_none());
+        assert!(
+            store
+                .validate_and_rotate(unknown_file_id, "any-jti")
+                .is_none()
+        );
     }
 
     #[test]
@@ -176,4 +176,3 @@ mod tests {
         assert!(store.validate_and_rotate(file_id_2, "jti-2").is_some());
     }
 }
-

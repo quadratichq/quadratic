@@ -43,7 +43,8 @@ impl WebsocketServer {
         });
         let addr = addr.to_string();
 
-        let mut jwt = jwt_override;
+        let mut jwt = jwt_override.clone();
+        let mut claims: Option<Claims> = None;
 
         if authenticate_jwt && jwt.is_none() {
             let jwks = jwks.ok_or_else(|| auth_error("No JWKS found"))?;
@@ -52,9 +53,10 @@ impl WebsocketServer {
             let result = {
                 let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
                 if let Some(token) = cookie.get("jwt") {
-                    authorize::<Claims>(&jwks, token, false, true)?;
+                    let token_data = authorize::<Claims>(&jwks, token, false, true)?;
 
                     jwt = Some(token.to_owned());
+                    claims = Some(token_data.claims);
 
                     Ok::<_, WebsocketServerError>(())
                 } else {
@@ -74,7 +76,7 @@ impl WebsocketServer {
         // check if the connection is m2m service connection
         // strip "Bearer " from the token
         let m2m_token = extract_m2m_token(&headers);
-        let pre_connection = PreConnection::new(jwt, m2m_token);
+        let pre_connection = PreConnection::new(jwt, m2m_token, claims);
 
         tracing::info!(
             "New connection {}, `{user_agent}` at {addr}, is_m2m={}",
