@@ -126,7 +126,7 @@ impl Grid {
                 .values()
                 .any(|old_sheet| case_fold(old_sheet.name.trim()) == folded_new_name)
             {
-                unique_name = format!("{}({})", unique_name, index);
+                unique_name = format!("{}({})", name.trim(), index);
                 index += 1;
             } else {
                 break;
