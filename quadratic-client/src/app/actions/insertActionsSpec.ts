@@ -13,6 +13,7 @@ import {
   CheckBoxIcon,
   DataValidationsIcon,
   FormatDateTimeIcon,
+  ScheduledTasksIcon,
   SheetIcon,
   TableConvertIcon,
 } from '@/shared/components/Icons';
@@ -31,6 +32,7 @@ type InsertActionSpec = Pick<
   | Action.InsertCheckbox
   | Action.InsertDropdown
   | Action.ToggleDataValidation
+  | Action.InsertScheduledTask
   | Action.InsertCellReference
   | Action.RemoveInsertedCells
   | Action.InsertToday
@@ -322,6 +324,15 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         showValidation: true,
       }));
+    },
+  },
+  [Action.InsertScheduledTask]: {
+    label: () => 'Scheduled task',
+    labelVerbose: 'Insert scheduled task',
+    Icon: ScheduledTasksIcon,
+    run: async () => {
+      const { showScheduledTasksDialog, CREATE_TASK_ID } = await import('@/jotai/scheduledTasksAtom');
+      showScheduledTasksDialog(CREATE_TASK_ID);
     },
   },
   [Action.InsertCellReference]: {

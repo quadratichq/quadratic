@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
+import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -84,6 +85,8 @@ const FileSchema = z.object({
   lastCheckpointDataUrl: z.string().url(),
   publicLinkAccess: PublicLinkAccessSchema,
   thumbnail: z.string().url().nullable(),
+  timezone: z.string().nullable(),
+  hasScheduledTasks: z.boolean(),
 });
 
 const TeamPrivateFileSchema = FileSchema.pick({
@@ -93,6 +96,7 @@ const TeamPrivateFileSchema = FileSchema.pick({
   updatedDate: true,
   publicLinkAccess: true,
   thumbnail: true,
+  hasScheduledTasks: true,
 });
 const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
   creatorId: z.number(),
@@ -154,6 +158,8 @@ export const ApiSchemas = {
       updatedDate: true,
       publicLinkAccess: true,
       thumbnail: true,
+      timezone: true,
+      hasScheduledTasks: true,
     })
   ),
   '/v0/files.POST.request': z.object({
@@ -202,10 +208,12 @@ export const ApiSchemas = {
   '/v0/files/:uuid.PATCH.request': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
+    timezone: FileSchema.shape.timezone.optional(),
   }),
   '/v0/files/:uuid.PATCH.response': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.optional(),
+    timezone: FileSchema.shape.timezone.optional(),
   }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
@@ -479,6 +487,11 @@ export const ApiSchemas = {
    * Connections (which are all under `/v0/teams/:uuid/connections/*`)
    */
   ...ApiSchemasConnections,
+
+  /**
+   * Scheduled Tasks (which are all under `/v0/files/:uuid/scheduled-tasks/*`)
+   */
+  ...ApiSchemasScheduledTasks,
 
   /**
    * ===========================================================================

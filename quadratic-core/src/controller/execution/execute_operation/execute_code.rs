@@ -258,6 +258,52 @@ impl GridController {
         }
     }
 
+    pub(super) fn execute_compute_code_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeCodeSelection { selection } = op {
+            let mut new_ops = Vec::new();
+
+            if let Some(selection) = selection {
+                let sheet_id = selection.sheet_id;
+                let Some(sheet) = self.try_sheet(sheet_id) else {
+                    // sheet may have been deleted in a multiplayer operation
+                    return;
+                };
+
+                // Use the cache to efficiently find all code runs in the selection
+                for rect in selection.rects_unbounded(self.a1_context()) {
+                    sheet
+                        .data_tables
+                        .get_code_runs_in_rect(rect, false)
+                        .for_each(|(_, pos, _)| {
+                            new_ops.push(Operation::ComputeCode {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                            });
+                        });
+                }
+            } else {
+                // Recompute all code cells in all sheets
+                let sheets = self.sheets();
+                for sheet in sheets {
+                    if let Some(bounds) = sheet.data_tables.finite_bounds() {
+                        sheet
+                            .data_tables
+                            .get_code_runs_in_rect(bounds, false)
+                            .for_each(|(_, pos, _)| {
+                                new_ops.push(Operation::ComputeCode {
+                                    sheet_pos: pos.to_sheet_pos(sheet.id),
+                                });
+                            });
+                    }
+                }
+            }
+            transaction.operations.extend(new_ops);
+        }
+    }
+
     /// Notifies the client about all code operations (currently executing + pending)
     /// If current is None, all operations are pending. If current is Some, that operation is running.
     pub(crate) fn notify_code_running_state(
@@ -348,8 +394,12 @@ impl GridController {
 mod tests {
     use crate::{
         CellValue, SheetPos,
+        a1::A1Selection,
         controller::{
-            GridController, active_transactions::pending_transaction::PendingTransaction,
+            GridController,
+            active_transactions::{
+                pending_transaction::PendingTransaction, transaction_name::TransactionName,
+            },
             operations::operation::Operation,
         },
         grid::CodeCellLanguage,
@@ -475,5 +525,55 @@ mod tests {
             sheet.data_table_at(&pos![A1]).unwrap().chart_output,
             Some((4, 5))
         );
+    }
+
+    #[test]
+    fn test_execute_compute_code_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single code cell for testing
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "NOW()".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        let value1 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // Test execute_compute_code_selection
+        let ops = vec![Operation::ComputeCodeSelection { selection: None }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        let value2 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value2 != value1);
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let ops = vec![Operation::ComputeCodeSelection {
+            selection: Some(A1Selection::from_single_cell(pos![sheet_id!A1])),
+        }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        let value3 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value3 != value2);
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let ops = vec![Operation::ComputeCodeSelection {
+            selection: Some(A1Selection::all(sheet_id)),
+        }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value4 != value3);
     }
 }

@@ -192,7 +192,11 @@
     {
       "Sid": "VisualEditor9",
       "Effect": "Allow",
-      "Action": ["pi:DescribeDimensionKeys", "pi:GetResourceMetrics"],
+      "Action": [
+        "pi:DescribeDimensionKeys",
+        "pi:GetResourceMetrics",
+        "ec2:MonitorInstances"
+      ],
       "Resource": "*"
     }
   ]

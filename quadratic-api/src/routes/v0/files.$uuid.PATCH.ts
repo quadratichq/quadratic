@@ -1,13 +1,14 @@
-import { Response } from 'express';
-import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import type { RequestWithUser } from '../../types/Request';
+import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
 const { FILE_EDIT, FILE_MOVE } = FilePermissionSchema.enum;
 
@@ -26,7 +27,7 @@ async function handler(
 ) {
   const {
     params: { uuid },
-    body: { name, ownerUserId },
+    body: { name, ownerUserId, timezone },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -35,8 +36,9 @@ async function handler(
     userMakingRequest: { filePermissions, id: userMakingRequestId },
   } = await getFile({ uuid, userId });
 
-  // Can't change both at once
-  if (ownerUserId && name) {
+  // Can't change multiple things at once
+  const fieldsToUpdate = [name, ownerUserId, timezone].filter((field) => field !== undefined);
+  if (fieldsToUpdate.length > 1) {
     return res.status(400).json({ error: { message: 'You can only change one thing at a time' } });
   }
 
@@ -48,7 +50,7 @@ async function handler(
   //
   // Updating the name?
   //
-  if (name) {
+  if (name !== undefined) {
     const { name: newName } = await dbClient.file.update({
       where: {
         uuid,
@@ -58,6 +60,21 @@ async function handler(
       },
     });
     return res.status(200).json({ name: newName });
+  }
+
+  //
+  // Updating the timezone?
+  //
+  if (timezone !== undefined) {
+    const { timezone: newTimezone } = await dbClient.file.update({
+      where: {
+        uuid,
+      },
+      data: {
+        timezone,
+      },
+    });
+    return res.status(200).json({ timezone: newTimezone ?? null });
   }
 
   //
@@ -106,6 +123,6 @@ async function handler(
     return res.status(200).json({ ownerUserId: undefined });
   }
 
-  // We don’t know what you're asking for
+  // We don't know what you're asking for
   return res.status(400).json({ error: { message: 'Invalid request' } });
 }

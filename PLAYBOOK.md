@@ -5,6 +5,9 @@
 - [Reverting a Deployment](#reverting-a-deployment)
 - [Adding/Modifying Environment Variables](#addingmodifying-environment-variables)
 - [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+- [Troubleshooting Preview Branches](#troubleshooting-preview-branches)
+  - [View Build Logs](#view-build-logs)
+  - [Ensure Images are Pulled](#ensure-images-are-pulled)
 - [SSH into the QA Branch](#ssh-into-the-qa-branch)
 - [Recording a session for future network debugging (HAR)](#recording-a-session-for-future-network-debugging-har)
 
@@ -45,21 +48,22 @@
    4. Set the value and save
 8. For `qa` and `prod`:
    1. Log into Pulumi (likely through the Github SSO) (https://app.pulumi.com/quadratic)
-   2. Click on the `Environments` link in the left-hand sidebar
-   3. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
-   4. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
-   5. Click on the `Save` button
+   1. Click on the `Environments` link in the left-hand sidebar
+   1. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
+   1. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
+   1. Click on the `Save` button
+   1. For QA, close and reopen the QA PR
 
 ## SSH into a Preview Branch
 1. Locate the PR number in Github
-1. Log into the `Quadratic Development` AWS account (`us-west-2`)
+1. Log into the `Quadratic Development` AWS account (`us-west-2`) - login is at https://d-9067937699.awsapps.com/start/#/?tab=accounts
 1. Navigate to the `EC2` service
 1. Click on the `Instances` link in the left-hand sidebar or in the middle `Resources` section
 1. Type in the PR number in the search interface
 1. Click on the `Instance ID` link for the matching instance
 1. Click on the `Connect` button in the upper right corner
 1. Make sure the `Connect using a Public IP` option is selected and hit the orange `Connect` button
-1. Wait a few momemnts for the SSH UI to load
+1. Wait a few moments for the SSH UI to load
 1. Enter `docker ps` to see the running docker containers
 1. There will be a container for every service, note the `CONTAINER ID` for each
 1. Commands:
@@ -67,7 +71,18 @@
    1. View live logs: docker logs -f `CONTAINER ID`
    1. View live tail logs: docker logs -f --tail 100 `CONTAINER ID`
    1. Enter into the container: docker exec -it `CONTAINER ID` bash
-   6. Click on the `Save` button
+
+## Troubleshooting Preview Branches
+
+### View Build Logs
+1. [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+1. Enter into the command line: `tail -100 /var/log/cloud-init-output.log`
+1. Ensure no errors
+
+### Ensure Images are Pulled
+1. [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+1. Enter into the command line: `docker images`
+1. All services should be listed.  As of this writing, 11 containers should be running.
 
 ## SSH into the QA Branch
 1. Locate the PR number in Github

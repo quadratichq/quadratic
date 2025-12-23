@@ -80,10 +80,7 @@ afterEach(clearDb);
 describe('POST /v0/files/:uuid/restore', () => {
   describe('bad requests', () => {
     it('responds with a 401 for unauthorized request', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/restore')
-        .expect(401)
-        .expect(expectError);
+      await request(app).post('/v0/files/00000000-0000-4000-8000-000000000001/restore').expect(401).expect(expectError);
     });
 
     it('responds with a 404 for requesting a file that does not exist', async () => {
@@ -179,4 +176,3 @@ describe('POST /v0/files/:uuid/restore', () => {
     });
   });
 });
-

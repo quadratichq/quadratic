@@ -30,7 +30,7 @@ export async function xhrFromApi<T>(
     const skipRedirect = window.location.pathname.includes('/login-result');
     const token = isAuthenticated ? await authClient.getTokenOrRedirect(skipRedirect) : '';
     const headers: Record<string, string> = { ...config.headers };
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     if (!(data instanceof FormData)) {
@@ -60,6 +60,26 @@ export async function xhrFromApi<T>(
     }
 
     xhr.onload = () => {
+      // Check if the response status indicates an error
+      if (xhr.status >= 400) {
+        let details = 'No detailed error message provided';
+        try {
+          const json = JSON.parse(xhr.responseText);
+          if (json.error?.message) {
+            details = json.error.message;
+          } else if (json.errors) {
+            details = JSON.stringify(json.errors);
+          } else {
+            details = JSON.stringify(json);
+          }
+        } catch (error) {
+          // If parsing fails, use the raw response text
+          details = xhr.responseText;
+        }
+        reject(new ApiError(`Request failed with status ${xhr.status}`, xhr.status, method, details));
+        return;
+      }
+
       try {
         const json = JSON.parse(xhr.responseText);
         const result = schema.safeParse(json);

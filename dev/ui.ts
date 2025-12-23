@@ -81,7 +81,26 @@ export class UI {
     }
   }
 
+  writeWarning(text: string, highlight: boolean) {
+    // Handle undefined, null, or non-string values
+    if (text == null) {
+      return;
+    }
+
+    if (highlight) {
+      process.stdout.write(chalk.yellow.bgRed(text));
+    } else {
+      process.stdout.write(chalk.red(text));
+    }
+    this.trackPromptTextSize(text);
+  }
+
   write(text: string, color?: string, underline?: boolean) {
+    // Handle undefined, null, or non-string values
+    if (text == null) {
+      return;
+    }
+
     if (underline) {
       process.stdout.write(
         color ? chalk[color].underline(text) : chalk.underline(text),
@@ -93,6 +112,11 @@ export class UI {
   }
 
   trackPromptTextSize(text: string) {
+    // Handle undefined, null, or non-string values
+    if (text == null || typeof text !== "string") {
+      return;
+    }
+
     const width = process.stdout.getWindowSize()[0];
 
     // keep track of the cursor and wraps to remove the menu bar when writing logs
@@ -188,6 +212,7 @@ export class UI {
     this.statusItem("types");
     this.statusItem("python");
     this.statusItem("shared");
+    this.statusItem("cloudController");
     if (this.help === "cli") {
       this.write(helpCLI);
     } else if (this.help) {

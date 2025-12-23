@@ -2,6 +2,7 @@
 //!
 //! Functions to interact with requests
 
+#[cfg(feature = "httpmock")]
 use httpmock::{MockServer, Recording};
 use std::path::PathBuf;
 
@@ -13,6 +14,7 @@ pub fn scenario_path(scenario: &str) -> PathBuf {
     PathBuf::from(scenario_path)
 }
 
+#[cfg(feature = "httpmock")]
 /// Get a server
 pub fn get_server(record: bool, scenario: &str, url: &str) -> MockServer {
     match record {
@@ -21,6 +23,7 @@ pub fn get_server(record: bool, scenario: &str, url: &str) -> MockServer {
     }
 }
 
+#[cfg(feature = "httpmock")]
 /// Get a recording server
 pub fn recording_server(url: &str) -> MockServer {
     let recording_server = MockServer::start();
@@ -35,6 +38,7 @@ pub fn recording_server(url: &str) -> MockServer {
     recording_server
 }
 
+#[cfg(feature = "httpmock")]
 /// Get a playback server
 pub fn playback_server(scenario: &str) -> MockServer {
     let path = scenario_path(scenario);
@@ -44,6 +48,7 @@ pub fn playback_server(scenario: &str) -> MockServer {
     playback_server
 }
 
+#[cfg(feature = "httpmock")]
 /// Start recording
 pub fn record_start(recording_server: &MockServer) -> Recording<'_> {
     recording_server.record(|rule| {
@@ -53,6 +58,7 @@ pub fn record_start(recording_server: &MockServer) -> Recording<'_> {
     })
 }
 
+#[cfg(feature = "httpmock")]
 /// Stop recording
 pub async fn record_stop(scenario: &str, recording: Recording<'_>) {
     let path = scenario_path(scenario);

@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.22.1",
+  "version": "0.23.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -40,6 +40,7 @@
     "build:wasm:javascript:function-timer": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js,function-timer",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
     "build:python": "./quadratic-kernels/python-wasm/package.sh",
+    "build:cloud-worker": "docker build -t quadratic-cloud-worker -f quadratic-cloud-worker/Dockerfile .",
     "build:file:blank": "cd quadratic-core && cargo run --bin generate_blank_current_file",
     "build:file:convert": "cd quadratic-core && cargo run --bin convert_grid_to_json",
     "build:file:upgrade": "cd quadratic-core && cargo run --bin upgrade_file",
@@ -95,5 +96,8 @@
   },
   "engines": {
     "node": "24.x"
+  },
+  "dependencies": {
+    "jotai": "^2.13.1"
   }
 }

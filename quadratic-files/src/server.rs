@@ -5,8 +5,10 @@
 
 use axum::Json;
 use axum::http::Method;
-use axum::response::IntoResponse;
+use axum::middleware::map_response;
+use axum::response::{IntoResponse, Response};
 use axum::{Extension, Router, routing::get};
+use http::{HeaderValue, header::HeaderName};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
 use std::time::Duration;
@@ -86,6 +88,16 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // state
         .layer(Extension(state))
+        //
+        // add Cross-Origin-Resource-Policy header for COEP compatibility
+        .layer(map_response(|mut response: Response| async move {
+            let headers = response.headers_mut();
+            headers.insert(
+                HeaderName::from_static("cross-origin-resource-policy"),
+                HeaderValue::from_static("cross-origin"),
+            );
+            response
+        }))
         //
         // cors
         .layer(cors)

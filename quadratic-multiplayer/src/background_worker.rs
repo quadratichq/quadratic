@@ -3,12 +3,7 @@ use std::{sync::Arc, time::Duration};
 use tokio::{task::JoinHandle, time};
 use uuid::Uuid;
 
-use crate::{
-    error::Result,
-    get_room,
-    message::{broadcast, response::MessageResponse},
-    state::State,
-};
+use crate::{error::Result, get_room, message::broadcast, state::State};
 
 const BACKGROUND_WORKER_INTERVAL_MS: u64 = 1000;
 
@@ -90,8 +85,7 @@ async fn remove_stale_users_in_room(
         return Ok(None);
     }
 
-    let users = get_room!(state, file_id)?.users.to_owned();
-    let message = MessageResponse::from((users, &state.settings.version));
+    let message = get_room!(state, file_id)?.to_users_in_room_response(&state.settings.version);
 
     Ok(Some(broadcast(
         vec![],
@@ -112,7 +106,7 @@ mod tests {
     async fn remove_stale_users_in_room() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let user = add_new_user_to_room(file_id, state.clone()).await;
+        let user = add_new_user_to_room(file_id, state.clone(), 0).await;
 
         let room = state.get_room(&file_id).await.unwrap();
         assert_eq!(room.get_user(&user.session_id).unwrap(), user);

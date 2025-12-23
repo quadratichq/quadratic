@@ -19,6 +19,7 @@ export enum Action {
   InsertCheckbox = 'insert_checkbox',
   InsertDropdown = 'insert_dropdown',
   ToggleDataValidation = 'toggle_data_validation',
+  InsertScheduledTask = 'insert_scheduled_task',
   Copy = 'copy',
   Cut = 'cut',
   Paste = 'paste',

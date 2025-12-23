@@ -1,0 +1,71 @@
+import CronExpressionParser from 'cron-parser';
+import z from 'zod';
+
+export const ScheduledTaskCronExpressionSchema = z
+  .string()
+  .min(1, 'cronExpression is required')
+  .refine((val) => {
+    try {
+      CronExpressionParser.parse(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Invalid cron expression');
+
+export const ScheduledTaskOperationsSchema = z.array(z.number());
+
+export const ScheduledTaskSchema = z.object({
+  id: z.number(),
+  uuid: z.string(),
+  fileId: z.number(),
+  userId: z.number(),
+  nextRunTime: z.string().datetime(),
+  lastRunTime: z.union([z.literal(''), z.string().datetime()]).nullable(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
+  cronExpression: ScheduledTaskCronExpressionSchema,
+  operations: ScheduledTaskOperationsSchema,
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
+});
+
+export type ScheduledTask = z.infer<typeof ScheduledTaskSchema>;
+
+export const ScheduledTaskLogSchema = z.object({
+  id: z.number(),
+  scheduledTaskId: z.number(),
+  runId: z.string().uuid(),
+  status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
+  error: z.string().optional(),
+  createdDate: z.string().datetime(),
+});
+
+export type ScheduledTaskLog = z.infer<typeof ScheduledTaskLogSchema>;
+
+export const ApiSchemasScheduledTasks = {
+  // List Scheduled Tasks
+  '/v0/files/:uuid/scheduled-tasks.GET.response': z.array(ScheduledTaskSchema),
+
+  // Create a Scheduled Task
+  '/v0/files/:uuid/scheduled-tasks.POST.request': z.object({
+    cronExpression: ScheduledTaskCronExpressionSchema,
+    operations: ScheduledTaskOperationsSchema,
+  }),
+  '/v0/files/:uuid/scheduled-tasks.POST.response': ScheduledTaskSchema,
+
+  // Get a Scheduled Task
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.GET.response': ScheduledTaskSchema,
+
+  // Update a Scheduled Task
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.PATCH.request': z.object({
+    cronExpression: ScheduledTaskCronExpressionSchema,
+    operations: ScheduledTaskOperationsSchema,
+  }),
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.PATCH.response': ScheduledTaskSchema,
+
+  // Delete a Scheduled Task
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.DELETE.response': z.object({ message: z.string() }),
+
+  // List Scheduled Task Logs
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid/log.GET.response': z.array(ScheduledTaskLogSchema),
+};

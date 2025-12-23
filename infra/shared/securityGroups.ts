@@ -1,5 +1,7 @@
 import * as aws from "@pulumi/aws";
 
+import { cloudControllerEc2SecurityGroup } from "../cloud-controller/cloud_controller_network";
+
 // Create a Security Group for the Files EC2 instance
 export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
   ingress: [
@@ -59,6 +61,7 @@ export const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
       fromPort: 6379,
       toPort: 6379,
       securityGroups: [
+        cloudControllerEc2SecurityGroup.id,
         filesEc2SecurityGroup.id,
         multiplayerEc2SecurityGroup.id,
       ],

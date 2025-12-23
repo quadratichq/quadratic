@@ -165,9 +165,52 @@ export class HtmlCell {
 
   update(htmlCell: JsHtmlOutput) {
     if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell.update');
+
+    // If the HTML content has changed, create a new iframe and swap it to avoid flickering
     if (htmlCell.html !== this.htmlCell.html) {
-      this.iframe.srcdoc = htmlCell.html;
+      const newIframe = document.createElement('iframe');
+      newIframe.className = 'html-cell-iframe';
+      newIframe.style.pointerEvents = 'none';
+      newIframe.srcdoc = htmlCell.html;
+      newIframe.setAttribute('border', '0');
+      newIframe.setAttribute('scrolling', 'no');
+      newIframe.style.backgroundColor = '#fff';
+
+      // Hide the new iframe while it loads
+      newIframe.style.opacity = '0';
+      newIframe.style.position = 'absolute';
+      newIframe.style.top = '0';
+      newIframe.style.left = '0';
+
+      // Set up the load handler to swap the iframes
+      const onLoad = () => {
+        // Remove the old iframe and clean up its event listeners
+        const oldIframe = this.iframe;
+        if (oldIframe.contentWindow?.document) {
+          oldIframe.contentWindow.document.removeEventListener('wheel', this.handleWheel);
+        }
+        oldIframe.removeEventListener('load', this.afterLoad);
+
+        // Make the new iframe visible and reset styles
+        newIframe.style.opacity = '1';
+        newIframe.style.position = '';
+        newIframe.style.top = '';
+        newIframe.style.left = '';
+
+        // Remove the old iframe and update reference
+        oldIframe.remove();
+        this.iframe = newIframe;
+
+        // Set up the new iframe
+        this.afterLoad();
+      };
+
+      newIframe.addEventListener('load', onLoad, { once: true });
+
+      // Add the new iframe to the DOM so it can load (hidden initially)
+      this.div.appendChild(newIframe);
     }
+
     this.htmlCell = htmlCell;
     this.offset = this.sheet.getScreenRectangle(htmlCell.x, htmlCell.y + 1, htmlCell.w, htmlCell.h - 1);
     this.iframe.width = this.width.toString();

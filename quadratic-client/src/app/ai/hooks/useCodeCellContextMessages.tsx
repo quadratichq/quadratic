@@ -17,7 +17,6 @@ export function useCodeCellContextMessages() {
       const a1Pos = xyToA1(pos.x, pos.y);
       const language = getConnectionKind(codeCell.language);
       text = `This is a new ${language} code cell located at ${a1Pos}.`;
-      console.error('Error getting code cell markdown in useCodeCellContextMessages', e);
     }
 
     return [

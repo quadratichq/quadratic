@@ -90,6 +90,8 @@ pub(crate) fn get_claims() -> Claims {
     Claims {
         email: "test@test.com".to_string(),
         exp: 0,
+        file_id: None,
+        team_id: None,
     }
 }
 
