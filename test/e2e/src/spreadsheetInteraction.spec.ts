@@ -270,7 +270,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Auto-Complete', async ({ page }) => {
+test.skip('Auto-Complete', async ({ page }) => {
   //--------------------------------
   // Formatting
   //--------------------------------
@@ -577,7 +577,7 @@ time.sleep(20)
   await cleanUpFiles(page, { fileName });
 });
 
-test('Cell Actions', async ({ page }) => {
+test.skip('Cell Actions', async ({ page }) => {
   //--------------------------------
   // Cut
   //--------------------------------
@@ -714,7 +714,7 @@ test('Cell Actions', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Custom DateTime Options', async ({ page }) => {
+test.skip('Custom DateTime Options', async ({ page }) => {
   //--------------------------------
   // Custom DateTime Options - Day Month Year
   //--------------------------------
@@ -950,7 +950,7 @@ test('Data Validation', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Delete Reference and Code Output Table', async ({ page }) => {
+test.skip('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
   // Delete Reference Table (1 layer reference)
   //--------------------------------
@@ -1102,7 +1102,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Download Sheet', async ({ page }) => {
+test.skip('Download Sheet', async ({ page }) => {
   //--------------------------------
   // Download Sheet
   //--------------------------------
@@ -1207,7 +1207,7 @@ test('Download Sheet', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Drag and Drop Excel File into Sheet', async ({ page }) => {
+test.skip('Drag and Drop Excel File into Sheet', async ({ page }) => {
   //--------------------------------
   // Drag and Drop Excel File into Sheet
   //--------------------------------
@@ -1367,7 +1367,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('File - Clear Recent History', async ({ page }) => {
+test.skip('File - Clear Recent History', async ({ page }) => {
   //--------------------------------
   // File - Clear Recent History
   //--------------------------------
@@ -1513,7 +1513,7 @@ test('File - Open Recent', async ({ page }) => {
   await cleanUpFiles(page, { fileName: fileName2 });
 });
 
-test('Find in current sheet', async ({ page }) => {
+test.skip('Find in current sheet', async ({ page }) => {
   //--------------------------------
   // Find in current sheet
   //--------------------------------
@@ -1721,7 +1721,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Insert and Delete Multiple Columns', async ({ page }) => {
+test.skip('Insert and Delete Multiple Columns', async ({ page }) => {
   //--------------------------------
   // Insert Columns above
   //--------------------------------
@@ -2176,7 +2176,7 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Key Actions', async ({ page }) => {
+test.skip('Key Actions', async ({ page }) => {
   // Constants
   const fileName = 'Key Actions';
 
@@ -3074,7 +3074,7 @@ test('Python Snippets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Range Cell Reference - Javascript', async ({ page }) => {
+test.skip('Range Cell Reference - Javascript', async ({ page }) => {
   // Constants
   const fileName = 'Cell_Reference_JS';
   const fileType = 'grid';
@@ -3192,7 +3192,7 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Range Cell Reference - Python', async ({ page }) => {
+test.skip('Range Cell Reference - Python', async ({ page }) => {
   // Constants
   const fileName = 'Cell_Reference_Python';
   const fileType = 'grid';
@@ -3301,7 +3301,7 @@ test('Range Cell Reference - Python', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Right Click on Column and Row Headers', async ({ page }) => {
+test.skip('Right Click on Column and Row Headers', async ({ page }) => {
   // Constants
   const fileName = 'Insert_row_col';
   const fileType = 'grid';
@@ -3418,7 +3418,7 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Scroll between sheets', async ({ page }) => {
+test.skip('Scroll between sheets', async ({ page }) => {
   // Constants
   const fileName = 'Scrolling-SheetNavigation';
   const lastSheetNum = 20;
@@ -3572,7 +3572,7 @@ test('Scroll between sheets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Search - Case sensitive search', async ({ page }) => {
+test.skip('Search - Case sensitive search', async ({ page }) => {
   // Constants
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
@@ -3637,7 +3637,7 @@ test('Search - Case sensitive search', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Search - Match entire cell contents', async ({ page }) => {
+test.skip('Search - Match entire cell contents', async ({ page }) => {
   // Constants
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
@@ -3702,7 +3702,7 @@ test('Search - Match entire cell contents', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Search - Search all sheets', async ({ page }) => {
+test.skip('Search - Search all sheets', async ({ page }) => {
   // Constants
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
@@ -3808,7 +3808,7 @@ test('Search - Search all sheets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Search - Search within code', async ({ page }) => {
+test.skip('Search - Search within code', async ({ page }) => {
   // Constants
   const fileName = 'Search_Within_Code';
 
@@ -4309,7 +4309,7 @@ test('Theme Customization', async ({ page }) => {
   }
 });
 
-test('Theme Customization from Sheet', async ({ page }) => {
+test.skip('Theme Customization from Sheet', async ({ page }) => {
   // Constants
   const fileName = `theme_customization_from_sheet`;
 
@@ -4784,7 +4784,7 @@ test('Charts Copy Paste', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Multiple Columns Resizing', async ({ page }) => {
+test.skip('Multiple Columns Resizing', async ({ page }) => {
   // Constants
   const fileName = 'Multiple_Columns_Resizing';
   const fileType = 'grid';

@@ -107,12 +107,15 @@ export const ValidationMoreOptions = (props: { validationData: ValidationData })
   return <Button onClick={toggleMoreOptions}>{moreOptions ? 'Hide' : 'Show'} Messages</Button>;
 };
 
+export type DropdownOption = (string | { value: string; label: string | JSX.Element })[];
+
 interface DropdownProps {
   label?: string;
+  labelClassName?: string;
   value: string;
   className?: string;
   onChange: (value: string) => void;
-  options: (string | { value: string; label: string | JSX.Element })[];
+  options: DropdownOption;
   disabled?: boolean;
   readOnly?: boolean;
   style?: React.CSSProperties;
@@ -123,13 +126,25 @@ interface DropdownProps {
 }
 
 export const ValidationDropdown = forwardRef((props: DropdownProps, ref: React.Ref<HTMLDivElement>) => {
-  const { label, value, className, onChange, options, disabled, readOnly, includeBlank, style, tabIndex } = props;
+  const {
+    label,
+    labelClassName,
+    value,
+    className,
+    onChange,
+    options,
+    disabled,
+    readOnly,
+    includeBlank,
+    style,
+    tabIndex,
+  } = props;
 
   const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
   return (
     <div ref={ref} className={className} style={style}>
-      {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
+      {label && <div className={`${labelClassName ?? ''} ${disabled ? 'opacity-50' : ''}`}>{label}</div>}
       <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
           className="select-none"

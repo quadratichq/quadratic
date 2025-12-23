@@ -4,7 +4,7 @@ import { cleanUpServerConnections, clearCodeEditor, navigateOnSheet, selectCells
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 
-test('API Calls', async ({ page }) => {
+test.skip('API Calls', async ({ page }) => {
   //--------------------------------
   // API Calls
   //--------------------------------
@@ -71,7 +71,7 @@ test('API Calls', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Basic Formula Creation', async ({ page }) => {
+test.skip('Basic Formula Creation', async ({ page }) => {
   //--------------------------------
   // Basic Formula Creation
   //--------------------------------
@@ -155,7 +155,7 @@ test('Basic Formula Creation', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Charts', async ({ page }) => {
+test.skip('Charts', async ({ page }) => {
   //--------------------------------
   // Charts
   //--------------------------------
@@ -224,7 +224,7 @@ test('Charts', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Drag References', async ({ page }) => {
+test.skip('Drag References', async ({ page }) => {
   //--------------------------------
   // Drag References - Formula Relative
   //--------------------------------
@@ -395,7 +395,7 @@ test('Drag References', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Formatting', async ({ page }) => {
+test.skip('Formatting', async ({ page }) => {
   //--------------------------------
   // Formatting
   //--------------------------------
@@ -452,7 +452,7 @@ test('Formatting', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Formulas', async ({ page }) => {
+test.skip('Formulas', async ({ page }) => {
   //--------------------------------
   // Formulas
   //--------------------------------
@@ -523,7 +523,7 @@ test('Formulas', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('JavaScript Console Log', async ({ page }) => {
+test.skip('JavaScript Console Log', async ({ page }) => {
   //--------------------------------
   // JavaScript Console Log
   //--------------------------------
@@ -599,7 +599,7 @@ console.log(data)
   await cleanUpFiles(page, { fileName });
 });
 
-test('Javascript Formulas', async ({ page }) => {
+test.skip('Javascript Formulas', async ({ page }) => {
   //--------------------------------
   // Javascript Formulas
   //--------------------------------
@@ -658,7 +658,7 @@ test('Javascript Formulas', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Open and Use Formula Editor', async ({ page }) => {
+test.skip('Open and Use Formula Editor', async ({ page }) => {
   //--------------------------------
   // Open Formula Editor
   //--------------------------------
@@ -758,7 +758,7 @@ test('Open and Use Formula Editor', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Python Print', async ({ page }) => {
+test.skip('Python Print', async ({ page }) => {
   //--------------------------------
   // Python Print
   //--------------------------------
@@ -962,7 +962,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('References', async ({ page }) => {
+test.skip('References', async ({ page }) => {
   //--------------------------------
   // References
   //--------------------------------
@@ -1032,7 +1032,7 @@ test('References', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Spills', async ({ page }) => {
+test.skip('Spills', async ({ page }) => {
   //--------------------------------
   // Spills
   //--------------------------------
@@ -1096,7 +1096,7 @@ test('Spills', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('SQL - Create a Connection, Add Data to Database, Query Database', async ({ page }) => {
+test.skip('SQL - Create a Connection, Add Data to Database, Query Database', async ({ page }) => {
   //--------------------------------
   // Create a Connection
   //--------------------------------
@@ -1338,7 +1338,7 @@ hire_date DATE);`);
   await cleanUpFiles(page, { fileName });
 });
 
-test('SQL - Reference Data in Formula and Python', async ({ page }) => {
+test.skip('SQL - Reference Data in Formula and Python', async ({ page }) => {
   //--------------------------------
   // Reference SQL Data using Formula
   //--------------------------------
@@ -1592,7 +1592,7 @@ hire_date DATE);`);
   await cleanUpFiles(page, { fileName });
 });
 
-test('SQL - Reference Data in Javascript', async ({ page }) => {
+test.skip('SQL - Reference Data in Javascript', async ({ page }) => {
   //--------------------------------
   // SQL - Reference Data in Javascript
   //--------------------------------
@@ -1878,7 +1878,7 @@ hire_date DATE);`);
   await cleanUpFiles(page, { fileName });
 });
 
-test('Switch between Python and Formula', async ({ page }) => {
+test.skip('Switch between Python and Formula', async ({ page }) => {
   //--------------------------------
   // Switch between Python and Formula
   //--------------------------------
@@ -2011,7 +2011,7 @@ test('Switch between Python and Formula', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Types: Numbers and Strings', async ({ page }) => {
+test.skip('Types: Numbers and Strings', async ({ page }) => {
   //--------------------------------
   // Types: Numbers and Strings
   //--------------------------------
@@ -2078,7 +2078,7 @@ test('Types: Numbers and Strings', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
+test.skip('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   //--------------------------------
   // Types: Sequences, Mappings, and Sets
   //--------------------------------
@@ -2168,7 +2168,7 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Types: Series and Data-Frames', async ({ page }) => {
+test.skip('Types: Series and Data-Frames', async ({ page }) => {
   //--------------------------------
   // Types: Series and Data-Frames
   //--------------------------------

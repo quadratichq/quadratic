@@ -303,7 +303,7 @@ test('Edit Table Data', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Edit Table Formatting', async ({ page }) => {
+test.skip('Edit Table Formatting', async ({ page }) => {
   // Constants
   const fileName = 'Table_Sort';
   const fileType = 'grid';

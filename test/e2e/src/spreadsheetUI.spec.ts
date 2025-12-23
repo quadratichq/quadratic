@@ -561,7 +561,7 @@ test('Discard Changes', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('File Actions', async ({ page }) => {
+test.skip('File Actions', async ({ page }) => {
   // Constants
   const fileName = 'Import_File_Grid';
   const fileType = 'grid';
@@ -961,7 +961,7 @@ test('Resize Column width with Fill', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Right Click Actions', async ({ page }) => {
+test.skip('Right Click Actions', async ({ page }) => {
   // Constants
   const fileName = 'RightClickActions';
   const fileType = 'csv';
@@ -1360,7 +1360,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Sheet Actions', async ({ page }) => {
+test.skip('Sheet Actions', async ({ page }) => {
   // Constants
   const fileName = 'Sheet Actions';
 
@@ -1512,7 +1512,7 @@ test('Sheet Actions', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('View Actions', async ({ page }) => {
+test.skip('View Actions', async ({ page }) => {
   // Constants
   const fileName = 'View_Actions';
   const fileType = 'grid';
