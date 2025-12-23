@@ -191,9 +191,11 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
         return Err(SharedError::Auth(Auth::Jwt("Invalid m2m token".into())));
     }
 
+    // M2M tokens are validated by string comparison, not JWT claims,
+    // but we use a long expiration to avoid confusion if claims are inspected
     Ok(TokenData {
         header: Header::default(),
-        claims: Claims::new("m2m@quadratic.com".into(), 0, None, None),
+        claims: Claims::new("m2m@quadratic.com".into(), 86400 * 365, None, None), // 1 year
     })
 }
 

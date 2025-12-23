@@ -64,27 +64,15 @@ impl Worker {
     ///
     /// This will process the tasks until no more are available.
     pub(crate) async fn run(&mut self) -> Result<()> {
-        // TODO(ddimaria): remove this
-        info!("Worker running for file: {}", self.file_id);
-
         let container_id = self.container_id;
         let file_id = self.file_id;
         let team_id = self.worker_init_data.team_id.to_string();
         let controller_url = self.controller_url.to_owned();
 
-        // TODO(ddimaria): remove this
-        info!("Worker running for file: {file_id}");
-
         // Loop to process batches of tasks until no more are available
         loop {
             // swap the tasks in memory and replace with an empty vec
             let tasks = std::mem::take(&mut self.tasks);
-
-            // TODO(ddimaria): remove this
-            info!(
-                "Worker processing {} tasks for file: {file_id}",
-                tasks.len()
-            );
 
             if tasks.is_empty() {
                 info!("No more tasks to process");

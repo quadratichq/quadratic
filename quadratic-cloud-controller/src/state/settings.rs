@@ -22,9 +22,9 @@ pub(crate) struct Settings {
     pub(crate) connection_port: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
-    pub(crate) jwt_encoding_key: EncodingKey,
-    pub(crate) jwt_expiration_seconds: u64,
-    pub(crate) jwks: JwkSet,
+    pub(crate) quadratic_jwt_encoding_key: EncodingKey,
+    pub(crate) quadratic_jwt_expiration_seconds: u64,
+    pub(crate) quadratic_jwks: JwkSet,
     pub(crate) _worker_jwt_email: String,
     pub(crate) _namespace: String,
     pub(crate) version: String,
@@ -37,12 +37,16 @@ pub(crate) fn version() -> String {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Result<Self> {
-        let jwt_encoding_key =
-            EncodingKey::from_rsa_pem(config.jwt_encoding_key.replace(r"\n", "\n").as_bytes())
-                .map_err(|e| ControllerError::Settings(e.to_string()))?;
+        let jwt_encoding_key = EncodingKey::from_rsa_pem(
+            config
+                .quadratic_jwt_encoding_key
+                .replace(r"\n", "\n")
+                .as_bytes(),
+        )
+        .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         // Unescape the JWKS JSON string (Pulumi ESC escapes quotes as \")
-        let jwks_unescaped = config.jwks.replace("\\\"", "\"");
+        let jwks_unescaped = config.quadratic_jwks.replace("\\\"", "\"");
         let jwks: JwkSet = serde_json::from_str(&jwks_unescaped)
             .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
@@ -61,9 +65,9 @@ impl Settings {
             files_port: config.files_port.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
-            jwt_encoding_key,
-            jwt_expiration_seconds: config.jwt_expiration_seconds,
-            jwks,
+            quadratic_jwt_encoding_key: jwt_encoding_key,
+            quadratic_jwt_expiration_seconds: config.quadratic_jwt_expiration_seconds,
+            quadratic_jwks: jwks,
             _worker_jwt_email: config.worker_jwt_email.to_owned(),
             _namespace: config.namespace.to_owned(),
             version: version(),
@@ -80,15 +84,15 @@ impl Settings {
         team_id: Uuid,
         jti: &str,
     ) -> Result<String> {
-        let kid = get_kid_from_jwks(&self.jwks)?;
+        let kid = get_kid_from_jwks(&self.quadratic_jwks)?;
         let mut claims = Claims::new(
             email.into(),
-            self.jwt_expiration_seconds as usize,
+            self.quadratic_jwt_expiration_seconds as usize,
             Some(file_id),
             Some(team_id),
         );
         claims.jti = Some(jti.to_string());
-        let jwt = generate_jwt(claims, &kid, &self.jwt_encoding_key)?;
+        let jwt = generate_jwt(claims, &kid, &self.quadratic_jwt_encoding_key)?;
 
         Ok(jwt)
     }

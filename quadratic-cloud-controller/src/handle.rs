@@ -19,7 +19,7 @@ use crate::state::State;
 /// This is called by the worker to get the JWKS for the worker to use to
 /// verify the JWT tokens.
 pub(crate) async fn jwks(Extension(state): Extension<Arc<State>>) -> Json<JwkSet> {
-    Json(state.settings.jwks.clone())
+    Json(state.settings.quadratic_jwks.clone())
 }
 
 fn get_file_id_from_headers(headers: &HeaderMap) -> Result<Uuid> {
@@ -50,14 +50,14 @@ pub(crate) async fn get_token_for_worker(
 
     // Decode the JWT to extract the JTI (we validate signature but not expiry since
     // we're about to issue a new token anyway)
-    let token_data = authorize::<Claims>(&state.settings.jwks, &current_jwt, false, false)
+    let token_data = authorize::<Claims>(&state.settings.quadratic_jwks, &current_jwt, false, false)
         .map_err(|e| {
             // Log details to help diagnose signature issues
             if let Ok(header) = jsonwebtoken::decode_header(&current_jwt) {
                 warn!(
                     "Failed to decode worker JWT for file {file_id}: {e}. JWT kid: {:?}, JWKS kids: {:?}",
                     header.kid,
-                    state.settings.jwks.keys.iter().filter_map(|k| k.common.key_id.as_ref()).collect::<Vec<_>>()
+                    state.settings.quadratic_jwks.keys.iter().filter_map(|k| k.common.key_id.as_ref()).collect::<Vec<_>>()
                 );
             } else {
                 warn!("Failed to decode worker JWT for file {file_id}: {e}");

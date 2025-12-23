@@ -92,12 +92,9 @@ pub(crate) async fn serve() -> Result<()> {
     // Fetch JWKS from the remote URI (e.g., WorkOS)
     let mut jwks = get_jwks(&config.jwks_uri).await?;
 
-    // If a local JWKS is configured (e.g., cloud-controller keys), merge it
-    if let Some(ref local_jwks_json) = config.jwks {
-        let local_jwks = parse_jwks(local_jwks_json)?;
-        jwks = merge_jwks(jwks, local_jwks);
-        tracing::info!("Merged {} additional JWKS keys", local_jwks_json.len());
-    }
+    // Merge the local JWKS with the remote JWKS
+    let local_jwks = parse_jwks(&config.quadratic_jwks)?;
+    jwks = merge_jwks(jwks, local_jwks);
 
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));

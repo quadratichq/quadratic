@@ -113,8 +113,14 @@ where
                             ));
                         }
                         None => {
-                            // No header, but JWT has team_id - this is fine for backwards compat
-                            // The connection will still be scoped to the connection_id
+                            // JWT has team_id but header is missing - reject to prevent bypass
+                            tracing::warn!(
+                                "JWT has team_id {} but x-team-id header is missing",
+                                jwt_team_id
+                            );
+                            return Err(ConnectionError::Authentication(
+                                "missing x-team-id header".to_string(),
+                            ));
                         }
                     }
                 }

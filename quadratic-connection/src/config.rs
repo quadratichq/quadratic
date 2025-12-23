@@ -20,8 +20,7 @@ pub(crate) struct Config {
     pub(crate) environment: Environment,
 
     pub(crate) jwks_uri: String,
-    /// Optional JWKS JSON string for additional keys (e.g., cloud-controller keys)
-    pub(crate) jwks: Option<String>,
+    pub(crate) quadratic_jwks: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) max_response_bytes: u64,
