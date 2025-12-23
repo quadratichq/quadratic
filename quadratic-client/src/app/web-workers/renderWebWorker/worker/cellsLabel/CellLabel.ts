@@ -783,7 +783,7 @@ export class CellLabel {
     const charCode = extractCharCode('#');
     const charData = data.chars[charCode];
     const charWidth = Math.max(charData.xAdvance, charData.frame.width) * scale + this.letterSpacing;
-    const count = Math.floor((this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3) / charWidth);
+    const count = Math.max(0, Math.floor((this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3) / charWidth));
     const text = '#'.repeat(count);
     return text;
   };
