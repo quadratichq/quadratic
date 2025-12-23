@@ -333,6 +333,46 @@
       "password": "E2E_test"
     },
     {
+      "email": "e2e_glyph_sizing_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_descenders_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_emoji_fonts_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_emojis_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_font_sizes_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_large_font_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_multiline_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_table_resize_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_table_wrap_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_glyph_wrapped_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
       "email": "e2e_insert_delete_column_chromium@quadratichq.com",
       "password": "E2E_test"
     },
@@ -746,6 +786,10 @@
     },
     {
       "email": "e2e_tile_paste_formatting_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
+      "email": "e2e_tile_paste_fmt_chromium@quadratichq.com",
       "password": "E2E_test"
     },
     {

@@ -389,4 +389,61 @@ impl GridController {
             Ok(None)
         })
     }
+
+    /// Sets multiple format entries in a single transaction.
+    /// Each entry in the array contains a selection string and format properties.
+    #[wasm_bindgen(js_name = "setFormatsA1")]
+    pub fn js_set_formats_a1(
+        &mut self,
+        formats_json: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            #[derive(serde::Deserialize)]
+            struct FormatEntryInput {
+                sheet_id: String,
+                selection: String,
+                #[serde(flatten)]
+                format: Format,
+            }
+
+            let entries: Vec<FormatEntryInput> = serde_json::from_str(&formats_json)
+                .map_err(|e| format!("Invalid formats array: {e}"))?;
+
+            let mut format_entries = vec![];
+            for entry in entries {
+                let sheet_id = SheetId::from_str(&entry.sheet_id)
+                    .map_err(|e| format!("Invalid sheet ID: {e}"))?;
+
+                let selection =
+                    A1Selection::parse_a1(&entry.selection, sheet_id, self.a1_context())
+                        .map_err(|e| format!("Invalid selection '{}': {e}", entry.selection))?;
+
+                let mut format_update = FormatUpdate::from(entry.format);
+
+                // handle clear text and fill color properly
+                if format_update
+                    .text_color
+                    .as_ref()
+                    .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+                {
+                    format_update.text_color = Some(None);
+                }
+
+                if format_update
+                    .fill_color
+                    .as_ref()
+                    .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+                {
+                    format_update.fill_color = Some(None);
+                }
+
+                format_entries.push((selection, format_update));
+            }
+
+            self.set_formats_a1(format_entries, cursor, is_ai);
+            Ok(None)
+        })
+    }
 }

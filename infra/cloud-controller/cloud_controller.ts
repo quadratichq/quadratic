@@ -7,9 +7,7 @@ import { redisHost, redisPort } from "../shared/redis";
 
 import {
   cloudControllerEc2SecurityGroup,
-  cloudControllerNlbSecurityGroup,
   cloudControllerSubnet1,
-  cloudControllerSubnet2,
 } from "./cloud_controller_network";
 import { runCloudControllerBashScript } from "./cloud_controller_user_data";
 
@@ -34,8 +32,6 @@ const cloudWorkerECRName = config.require("cloud-worker-ecr-repo-name");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
-const certificateArn = config.require("certificate-arn");
-const vpcId = config.require("vpc-id");
 // Default to m5.2xlarge (8 vCPU, 32 GB RAM) - sized for controller + up to 20 cloud workers
 const instanceSize =
   config.get("cloud-controller-instance-size") ?? "m5.2xlarge";
@@ -72,6 +68,9 @@ const instance = new aws.ec2.Instance("cloud-controller-instance", {
         CONNECTION_PORT: connectionPort,
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
+        // Bind to all interfaces so external connections work
+        PUBLIC_HOST: "0.0.0.0",
+        WORKER_ONLY_HOST: "0.0.0.0",
       },
     ),
   ),
@@ -86,118 +85,6 @@ const instance = new aws.ec2.Instance("cloud-controller-instance", {
   monitoring: false,
 });
 
-// Create a new Target Group
-const targetGroup = new aws.lb.TargetGroup("cloud-controller-nlb-tg", {
-  tags: { Name: `cloud-controller-tg-${cloudControllerSubdomain}` },
-
-  port: 80,
-  protocol: "TCP",
-  targetType: "instance",
-  vpcId: vpcId,
-
-  // Health check configuration
-  healthCheck: {
-    enabled: true,
-    path: "/health",
-    protocol: "HTTP",
-    healthyThreshold: 2,
-    unhealthyThreshold: 2,
-    timeout: 5,
-    interval: 10,
-    matcher: "200",
-  },
-
-  // Connection draining
-  deregistrationDelay: 30,
-});
-
-// Attach the instance to the new Target Group
-const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
-  "cloud-controller-attach-instance-tg",
-  {
-    targetId: instance.id,
-    targetGroupArn: targetGroup.arn,
-  },
-);
-
-// Create a new Network Load Balancer
-const nlb = new aws.lb.LoadBalancer("cloud-controller-nlb", {
-  internal: false,
-  loadBalancerType: "network",
-  subnets: [cloudControllerSubnet1, cloudControllerSubnet2],
-  enableCrossZoneLoadBalancing: true,
-  securityGroups: [cloudControllerNlbSecurityGroup.id],
-});
-
-// Create NLB Listener for TLS on port 443
-const nlbListener = new aws.lb.Listener("cloud-controller-nlb-listener", {
-  tags: {
-    Name: `cloud-controller-nlb-${cloudControllerSubdomain}`,
-  },
-  loadBalancerArn: nlb.arn,
-  port: 443,
-  protocol: "TLS",
-  certificateArn: certificateArn,
-  sslPolicy: "ELBSecurityPolicy-2016-08",
-  defaultActions: [
-    {
-      type: "forward",
-      targetGroupArn: targetGroup.arn,
-    },
-  ],
-});
-
-// Create Global Accelerator
-const cloudControllerGlobalAccelerator = new aws.globalaccelerator.Accelerator(
-  "cloud-controller-global-accelerator",
-  {
-    name: `cloud-controller-global-accelerator-${cloudControllerSubdomain}`,
-    ipAddressType: "IPV4",
-    enabled: true,
-    tags: {
-      Name: "cloud-controller-global-accelerator",
-      Environment: pulumi.getStack(),
-    },
-  },
-);
-
-const cloudControllerGlobalAcceleratorListener =
-  new aws.globalaccelerator.Listener(
-    "cloud-controller-global-accelerator-listener",
-    {
-      acceleratorArn: cloudControllerGlobalAccelerator.id,
-      protocol: "TCP",
-      portRanges: [
-        {
-          fromPort: 443,
-          toPort: 443,
-        },
-      ],
-      clientAffinity: "SOURCE_IP",
-    },
-  );
-
-const cloudControllerGlobalAcceleratorEndpointGroup =
-  new aws.globalaccelerator.EndpointGroup(
-    "cloud-controller-globalaccelerator-endpoint-group",
-    {
-      listenerArn: cloudControllerGlobalAcceleratorListener.id,
-      endpointConfigurations: [
-        {
-          endpointId: nlb.arn,
-          weight: 100,
-          clientIpPreservationEnabled: false,
-        },
-      ],
-      endpointGroupRegion: aws.getRegionOutput().name,
-      healthCheckProtocol: "TCP",
-      healthCheckPort: 443,
-      healthCheckIntervalSeconds: 30,
-      thresholdCount: 3,
-      trafficDialPercentage: 100,
-    },
-  );
-
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
   aws.route53.getZone(
@@ -208,18 +95,13 @@ const hostedZone = pulumi.output(
   ),
 );
 
-// Create a Route 53 record pointing to Global Accelerator
+// Create a Route 53 record pointing to EC2 instance
 const dnsRecord = new aws.route53.Record("cloud-controller-r53-record", {
   zoneId: hostedZone.id,
   name: `${cloudControllerSubdomain}.${domain}`,
   type: "A",
-  aliases: [
-    {
-      name: cloudControllerGlobalAccelerator.dnsName,
-      zoneId: "Z2BJ6XQ5FK7U4H", // AWS Global Accelerator zone ID
-      evaluateTargetHealth: true,
-    },
-  ],
+  ttl: 300,
+  records: [instance.publicIp],
 });
 
 export const cloudControllerPublicDns = dnsRecord.name;

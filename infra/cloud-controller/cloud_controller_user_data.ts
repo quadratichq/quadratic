@@ -89,9 +89,9 @@ sudo docker pull ${ecrRegistryUrl}/${controllerImageRepositoryName}:${imageTag}
 # Key networking architecture:
 #   - Controller exposes port 80 (public/healthcheck) and port 8080 (worker-only) on the HOST
 #   - Cloud workers are spawned as sibling containers by the controller
-#   - Workers use "host.docker.internal" to reach the controller via the host machine
-#   - The Container implementation in quadratic-rust-shared automatically adds
-#     host.docker.internal:host-gateway to worker containers
+#   - Workers use WORKER_INTERNAL_HOST (configured via Pulumi) to reach the controller
+#   - For local Docker: use "host.docker.internal" with host-gateway mapping
+#   - For cloud: use the actual host/IP where the controller is accessible
 #
 # Port mapping:
 #   - 80:80   -> Public server (health checks, JWKS)
@@ -105,7 +105,6 @@ sudo docker run -d \\
             -v /var/run/docker.sock:/var/run/docker.sock \\
             --env-file .env \\
             -e DOCKER_HOST=unix:///var/run/docker.sock \\
-            -e WORKER_INTERNAL_HOST=host.docker.internal \\
             ${ecrRegistryUrl}/${controllerImageRepositoryName}:${imageTag}
 
 # In preview environments disable datadog by not passing DD_API_KEY in Pulumi ENV
@@ -119,4 +118,3 @@ docker run -d --name datadog-agent \\
             -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \\
             datadog/agent:latest`;
 };
-

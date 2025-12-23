@@ -124,8 +124,14 @@ impl Settings {
     pub(crate) fn multiplayer_url(&self) -> String {
         let multiplayer_port = self.multiplayer_port.to_string();
         let multiplayer_host = self.multiplayer_host.to_string();
+        let is_dev_or_prod = self.environment == Environment::Development
+            || self.environment == Environment::Production;
 
-        format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
+        if is_dev_or_prod {
+            format!("wss://{multiplayer_host}/ws")
+        } else {
+            format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
+        }
     }
 
     // Get the URL for the connection
@@ -133,7 +139,15 @@ impl Settings {
         let connection_port = self.connection_port.to_string();
         let connection_host = self.connection_host.to_string();
 
-        format!("http://{connection_host}:{connection_port}")
+        let scheme = if self.environment == Environment::Development
+            || self.environment == Environment::Production
+        {
+            "https"
+        } else {
+            "http"
+        };
+
+        format!("{scheme}://{connection_host}:{connection_port}")
     }
 }
 

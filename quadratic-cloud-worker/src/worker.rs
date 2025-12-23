@@ -4,7 +4,7 @@ use quadratic_rust_shared::quadratic_cloud::{
     GetWorkerInitDataResponse, ack_tasks, get_tasks, worker_shutdown,
 };
 use std::time::Duration;
-use tracing::{error, info};
+use tracing::{error, info, trace};
 use uuid::Uuid;
 
 use crate::config::Config;
@@ -131,7 +131,7 @@ impl Worker {
             }
 
             // wait for all tasks to be complete
-            info!("Waiting for all code executions to complete...");
+            tracing::trace!("Waiting for all code executions to complete...");
 
             let mut wait_count = 0;
 
@@ -139,7 +139,7 @@ impl Worker {
                 wait_count += 1;
 
                 if wait_count % 5 == 0 {
-                    info!(
+                    trace!(
                         "Still waiting for code executions... ({}s elapsed)",
                         wait_count
                     );
@@ -148,7 +148,7 @@ impl Worker {
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
 
-            info!("All code executions completed");
+            trace!("All code executions completed");
 
             // Store counts before moving the vectors
             let successful_count = successful_tasks.len();
@@ -174,7 +174,7 @@ impl Worker {
             }
 
             // Check for more tasks before shutting down
-            info!("Checking for more tasks...");
+            trace!("Checking for more tasks...");
 
             match get_tasks(&controller_url, file_id).await {
                 Ok(new_tasks) => {
