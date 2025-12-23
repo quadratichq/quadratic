@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::controller::Controller;
 use crate::error::{ControllerError, Result};
-use crate::quadratic_api::{file_init_data, insert_completed_logs, insert_failed_logs};
+use crate::quadratic_api::{insert_completed_logs, insert_failed_logs};
 use crate::state::State;
 
 /// Handle JWKS requests.
@@ -64,6 +64,16 @@ pub(crate) async fn get_token_for_worker(
             ControllerError::InvalidEphemeralToken
         })?;
 
+    // Validate that the JWT's file_id matches the request file_id
+    // This prevents a compromised worker from using a JWT issued for a different file
+    if token_data.claims.file_id != Some(file_id) {
+        warn!(
+            "JWT file_id {:?} does not match request file_id {}",
+            token_data.claims.file_id, file_id
+        );
+        return Err(ControllerError::InvalidEphemeralToken);
+    }
+
     // Extract the JTI from the claims
     let jti = token_data.claims.jti.ok_or_else(|| {
         warn!("Worker JWT for file {file_id} missing JTI claim");
@@ -79,14 +89,17 @@ pub(crate) async fn get_token_for_worker(
             ControllerError::InvalidEphemeralToken
         })?;
 
-    // Get the email for generating the new JWT
-    let file_init_data = file_init_data(&state, file_id).await?;
+    // Get cached worker data for generating the new JWT (stored during worker creation)
+    let worker_data = state.worker_jtis.get_worker_data(&file_id).ok_or_else(|| {
+        warn!("No cached worker data for file {file_id}");
+        ControllerError::InvalidEphemeralToken
+    })?;
 
     // Generate new JWT with the new JTI
     let new_jwt = state.settings.generate_worker_jwt_with_jti(
-        &file_init_data.email,
+        &worker_data.email,
         file_id,
-        file_init_data.team_id,
+        worker_data.team_id,
         &new_jti,
     )?;
 

@@ -222,11 +222,15 @@ impl Controller {
         let connection_url = self.state.settings.connection_url();
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
 
-        // Generate initial JTI for this worker and register it
+        // Generate initial JTI for this worker and register it along with cached worker data
+        // (email and team_id are cached to avoid API calls during token rotation)
         let initial_jti = Uuid::new_v4().to_string();
-        self.state
-            .worker_jtis
-            .register(file_id, initial_jti.clone());
+        self.state.worker_jtis.register(
+            file_id,
+            initial_jti.clone(),
+            worker_init_data.email.clone(),
+            worker_init_data.team_id,
+        );
 
         // Helper to clean up JTI if worker creation fails after registration
         let cleanup_jti_on_error = |state: &State, file_id: Uuid, err| {
