@@ -105,7 +105,9 @@ pub async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
 
 /// Parse a JWKS from a JSON string.
 pub fn parse_jwks(jwks_json: &str) -> Result<jwk::JwkSet> {
-    serde_json::from_str(jwks_json)
+    let jwks_unescaped = jwks_json.replace("\\\"", "\"");
+
+    serde_json::from_str(&jwks_unescaped)
         .map_err(|e| SharedError::Auth(Auth::Jwt(format!("Failed to parse JWKS: {}", e))))
 }
 

@@ -1,5 +1,5 @@
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
-use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks};
+use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks, parse_jwks};
 use quadratic_rust_shared::environment::Environment;
 use url::Url;
 use uuid::Uuid;
@@ -45,10 +45,7 @@ impl Settings {
         )
         .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
-        // Unescape the JWKS JSON string (Pulumi ESC escapes quotes as \")
-        let quadratic_jwks_unescaped = config.quadratic_jwks.replace("\\\"", "\"");
-        let quadratic_jwks: JwkSet = serde_json::from_str(&quadratic_jwks_unescaped)
-            .map_err(|e| ControllerError::Settings(e.to_string()))?;
+        let quadratic_jwks = parse_jwks(&config.quadratic_jwks)?;
 
         let settings = Settings {
             environment: config.environment,
