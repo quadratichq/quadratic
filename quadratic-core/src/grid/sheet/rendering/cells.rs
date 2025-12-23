@@ -3,7 +3,7 @@ use crate::{
     a1::A1Context,
     grid::{
         CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
-        js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
+        js_types::{JsNumber, JsRenderCell, JsRenderCellLinkSpan, JsRenderCellSpecial},
     },
 };
 
@@ -64,8 +64,28 @@ impl Sheet {
             None
         };
 
+        // Extract hyperlink spans from RichText (with character ranges)
+        let link_spans = if let CellValue::RichText(spans) = value {
+            let mut char_offset: u32 = 0;
+            spans
+                .iter()
+                .filter_map(|span| {
+                    let start = char_offset;
+                    let len = span.text.chars().count() as u32;
+                    char_offset += len;
+                    span.link.as_ref().map(|url| JsRenderCellLinkSpan {
+                        start,
+                        end: char_offset,
+                        url: url.clone(),
+                    })
+                })
+                .collect()
+        } else {
+            vec![]
+        };
+
         let mut number: Option<JsNumber> = None;
-        let value = match value {
+        let display_value = match value {
             CellValue::Number(_) => {
                 // get numeric_format and numeric_decimal to turn number into a string
                 // if align is not set, set it to right only for numbers
@@ -81,7 +101,7 @@ impl Sheet {
         JsRenderCell {
             x,
             y,
-            value,
+            value: display_value,
             language,
             align: format.align.or(align),
             wrap: format.wrap,
@@ -96,6 +116,7 @@ impl Sheet {
             font_size: format.font_size,
             table_name: None,
             column_header: None,
+            link_spans,
         }
     }
 

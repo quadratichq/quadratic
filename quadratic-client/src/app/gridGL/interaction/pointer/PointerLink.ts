@@ -76,9 +76,17 @@ export class PointerLink {
     if (matchShortcut(Action.CmdClick, event) && !sheets.sheet.cursor.isMultiCursor()) {
       const link = this.checkHoverLink(world);
       if (link?.pos) {
-        quadraticCore.getDisplayCell(content.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {
-          if (url) openLink(url);
-        });
+        // If link has a URL (RichText hyperlink), use it directly
+        if (link.url) {
+          openLink(link.url);
+        } else {
+          // For naked URLs, fetch the display cell value
+          quadraticCore
+            .getDisplayCell(content.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y)
+            .then((url) => {
+              if (url) openLink(url);
+            });
+        }
         return true;
       }
     }

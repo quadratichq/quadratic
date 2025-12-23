@@ -138,6 +138,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Image(_) => Ok(String::new()),
+            CellValue::RichText(spans) => Ok(spans.iter().map(|s| s.text.as_str()).collect()),
         }
     }
 }
@@ -179,6 +180,10 @@ impl<'a> TryFrom<&'a CellValue> for Decimal {
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(_) => Ok(Decimal::zero()),
             CellValue::Image(_) => Ok(Decimal::zero()),
+            CellValue::RichText(_) => Err(RunErrorMsg::Expected {
+                expected: "number".into(),
+                got: Some(value.type_name().into()),
+            }),
         }
     }
 }
@@ -483,5 +488,42 @@ mod test {
         assert_eq!(duration, Duration::try_from(&duration_value).unwrap());
         assert_eq!(duration, Duration::try_from(&number_value).unwrap());
         Duration::try_from(&string_value).unwrap_err();
+    }
+
+    #[test]
+    fn test_rich_text_to_string() {
+        use crate::TextSpan;
+
+        let rich = CellValue::RichText(vec![
+            TextSpan::plain("Hello "),
+            TextSpan::link("world", "https://example.com"),
+        ]);
+
+        // RichText should convert to concatenated string
+        let s: String = String::try_from(&rich).unwrap();
+        assert_eq!(s, "Hello world");
+    }
+
+    #[test]
+    fn test_rich_text_to_decimal_fails() {
+        use crate::TextSpan;
+        use rust_decimal::Decimal;
+
+        let rich = CellValue::RichText(vec![TextSpan::plain("123")]);
+
+        // RichText should NOT convert to Decimal (returns error)
+        let result = Decimal::try_from(&rich);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_rich_text_to_bool_fails() {
+        use crate::TextSpan;
+
+        let rich = CellValue::RichText(vec![TextSpan::plain("true")]);
+
+        // RichText should NOT convert to bool (returns error)
+        let result = bool::try_from(&rich);
+        assert!(result.is_err());
     }
 }

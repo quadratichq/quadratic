@@ -126,6 +126,10 @@ export class CellLabel {
   private italic: boolean;
 
   link: boolean;
+  /** Link spans with character ranges and URLs (for RichText hyperlinks). */
+  linkSpans: Array<{ start: number; end: number; url: string }>;
+  /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
+  linkRectangles: Array<{ rect: Rectangle; url: string }>;
   private underline: boolean;
   private strikeThrough: boolean;
 
@@ -204,6 +208,8 @@ export class CellLabel {
     this.cellsLabels = cellsLabels;
     this.originalText = cell.value;
     this.text = this.getText(cell);
+    this.linkSpans = [];
+    this.linkRectangles = [];
     this.link = this.isLink(cell);
     this.fontSize = cell.fontSize ?? DEFAULT_FONT_SIZE;
     this.lineHeight = (this.fontSize / DEFAULT_FONT_SIZE) * LINE_HEIGHT;
@@ -281,10 +287,20 @@ export class CellLabel {
   };
 
   private isLink = (cell: JsRenderCell): boolean => {
+    // Check for RichText hyperlink spans from Rust
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const linkSpans = (cell as any).linkSpans as Array<{ start: number; end: number; url: string }> | undefined;
+    if (linkSpans && linkSpans.length > 0) {
+      this.linkSpans = linkSpans;
+      return true;
+    }
+    // Check for naked URL in cell value
     if (cell.number !== undefined || cell.special !== undefined) return false;
     if (!URL_REGEX.test(cell.value)) return false;
     try {
       new URL(cell.value);
+      // Treat entire text as a single link span
+      this.linkSpans = [{ start: 0, end: cell.value.length, url: cell.value }];
       return true;
     } catch (e) {
       return false;
@@ -999,6 +1015,9 @@ export class CellLabel {
     this.textTop = textTop;
     this.textBottom = textBottom;
 
+    // Calculate link rectangles based on character positions
+    this.calculateLinkRectangles(scale);
+
     this.horizontalLines = [];
 
     if (this.underline && !hasVerticalClipping) {
@@ -1010,6 +1029,45 @@ export class CellLabel {
     }
 
     return bounds;
+  };
+
+  /** Calculate pixel rectangles for each link span based on character positions. */
+  private calculateLinkRectangles = (scale: number) => {
+    this.linkRectangles = [];
+    if (this.linkSpans.length === 0 || this.chars.length === 0) return;
+
+    for (const span of this.linkSpans) {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
+      // Find characters within this span's range
+      for (let i = 0; i < this.chars.length; i++) {
+        if (i >= span.start && i < span.end) {
+          const char = this.chars[i];
+          const horizontalOffset =
+            char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
+          const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
+          const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
+          const charRight = xPos + char.charData.frame.width * scale;
+          const charBottom = yPos + char.charData.frame.height * scale;
+
+          minX = Math.min(minX, xPos);
+          maxX = Math.max(maxX, charRight);
+          minY = Math.min(minY, yPos);
+          maxY = Math.max(maxY, charBottom);
+        }
+      }
+
+      // If we found characters for this span, create a rectangle
+      if (minX < Infinity) {
+        this.linkRectangles.push({
+          rect: new Rectangle(minX, minY, maxX - minX, maxY - minY),
+          url: span.url,
+        });
+      }
+    }
   };
 
   private insertBuffers = (options: {

@@ -72,6 +72,7 @@ pub enum JsCellValueKind {
     Error,
     Html,
     Image,
+    RichText,
 }
 
 impl From<CellValue> for JsCellValueKind {
@@ -89,6 +90,7 @@ impl From<CellValue> for JsCellValueKind {
             CellValue::Error(_) => JsCellValueKind::Error,
             CellValue::Html(_) => JsCellValueKind::Html,
             CellValue::Image(_) => JsCellValueKind::Image,
+            CellValue::RichText(_) => JsCellValueKind::RichText,
         }
     }
 }
@@ -171,6 +173,18 @@ pub struct JsChartContext {
     pub spill: bool,
 }
 
+/// A hyperlink span within a cell, with character range and URL.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsRenderCellLinkSpan {
+    /// Start character index (inclusive).
+    pub start: u32,
+    /// End character index (exclusive).
+    pub end: u32,
+    /// The hyperlink URL.
+    pub url: String,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
@@ -208,6 +222,9 @@ pub struct JsRenderCell {
     pub table_name: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub column_header: Option<bool>,
+    /// Hyperlink spans for RichText cells with hyperlinks (character ranges + URLs).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub link_spans: Vec<JsRenderCellLinkSpan>,
 }
 
 #[cfg(test)]

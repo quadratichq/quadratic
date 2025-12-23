@@ -302,8 +302,11 @@ export class CellsTextHash {
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
       }
-      if (cellLabel.link) {
-        this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
+      if (cellLabel.link && cellLabel.linkRectangles.length > 0) {
+        // Push individual link rectangles for each hyperlink span
+        for (const linkRect of cellLabel.linkRectangles) {
+          this.links.push({ pos: cellLabel.location, textRectangle: linkRect.rect, url: linkRect.url });
+        }
       }
       this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
       this.special.addEmojis(cellLabel.emojis);
