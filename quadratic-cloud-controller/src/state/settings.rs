@@ -1,6 +1,8 @@
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
+use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks};
 use quadratic_rust_shared::environment::Environment;
 use url::Url;
+use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::{ControllerError, Result};
@@ -20,9 +22,9 @@ pub(crate) struct Settings {
     pub(crate) connection_port: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
-    pub(crate) _jwt_encoding_key: EncodingKey,
-    pub(crate) _jwt_expiration_seconds: u64,
-    pub(crate) jwks: JwkSet,
+    pub(crate) quadratic_jwt_encoding_key: EncodingKey,
+    pub(crate) quadratic_jwt_expiration_seconds: u64,
+    pub(crate) quadratic_jwks: JwkSet,
     pub(crate) _worker_jwt_email: String,
     pub(crate) _namespace: String,
     pub(crate) version: String,
@@ -35,13 +37,17 @@ pub(crate) fn version() -> String {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Result<Self> {
-        let jwt_encoding_key =
-            EncodingKey::from_rsa_pem(config.jwt_encoding_key.replace(r"\n", "\n").as_bytes())
-                .map_err(|e| ControllerError::Settings(e.to_string()))?;
+        let quadratic_jwt_encoding_key = EncodingKey::from_rsa_pem(
+            config
+                .quadratic_jwt_encoding_key
+                .replace(r"\n", "\n")
+                .as_bytes(),
+        )
+        .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         // Unescape the JWKS JSON string (Pulumi ESC escapes quotes as \")
-        let jwks_unescaped = config.jwks.replace("\\\"", "\"");
-        let jwks: JwkSet = serde_json::from_str(&jwks_unescaped)
+        let quadratic_jwks_unescaped = config.quadratic_jwks.replace("\\\"", "\"");
+        let quadratic_jwks: JwkSet = serde_json::from_str(&quadratic_jwks_unescaped)
             .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         let settings = Settings {
@@ -59,15 +65,36 @@ impl Settings {
             files_port: config.files_port.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
-            _jwt_encoding_key: jwt_encoding_key,
-            _jwt_expiration_seconds: config.jwt_expiration_seconds,
-            jwks,
+            quadratic_jwt_encoding_key,
+            quadratic_jwt_expiration_seconds: config.quadratic_jwt_expiration_seconds,
+            quadratic_jwks,
             _worker_jwt_email: config.worker_jwt_email.to_owned(),
             _namespace: config.namespace.to_owned(),
             version: version(),
         };
 
         Ok(settings)
+    }
+
+    /// Generate a JWT token for a worker with a specific JTI for one-time use
+    pub(crate) fn generate_worker_jwt_with_jti(
+        &self,
+        email: &str,
+        file_id: Uuid,
+        team_id: Uuid,
+        jti: &str,
+    ) -> Result<String> {
+        let kid = get_kid_from_jwks(&self.quadratic_jwks)?;
+        let mut claims = Claims::new(
+            email.into(),
+            self.quadratic_jwt_expiration_seconds as usize,
+            Some(file_id),
+            Some(team_id),
+        );
+        claims.jti = Some(jti.to_string());
+        let jwt = generate_jwt(claims, &kid, &self.quadratic_jwt_encoding_key)?;
+
+        Ok(jwt)
     }
 
     // Get the scheme for the files service

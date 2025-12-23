@@ -83,7 +83,7 @@ impl WorkerStatus {
 /// // load file
 /// // establish ws connection
 /// // send EnterRoom message
-/// let worker = Worker::new(file_id, sequence_num, presigned_url, m2m_auth_token).await?;
+/// let worker = Worker::new(file_id, sequence_num, presigned_url, jwt).await?;
 ///
 /// // receive catchup transactions
 /// // receive room transactions
@@ -102,7 +102,7 @@ impl WorkerStatus {
 /// * `session_id` - The session ID of the worker.
 /// * `file` - The file to process.
 /// * `transaction_id` - The ID of the transaction to process.
-/// * `m2m_auth_token` - The M2M auth token to use for the worker.
+/// * `jwt` - The JWT to use for the worker.
 /// * `websocket_sender` - The websocket sender to use for the worker.
 /// * `websocket_receiver` - The websocket receiver to use for the worker.
 /// * `websocket_receiver_handle` - The websocket receiver handle to use for the worker.
@@ -113,7 +113,7 @@ pub struct Worker {
     pub(crate) session_id: Uuid,
     pub(crate) file: Arc<Mutex<GridController>>,
     pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
-    pub(crate) m2m_auth_token: String,
+    pub(crate) jwt: String,
     pub(crate) multiplayer_url: String,
     pub(crate) connection_url: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
@@ -144,7 +144,7 @@ impl Worker {
     /// * `file_id` - The ID of the file to process.
     /// * `sequence_num` - The sequence number of the file to process.
     /// * `presigned_url` - The presigned URL of the file to process.
-    /// * `m2m_auth_token` - The M2M auth token to use for the worker.
+    /// * `jwt` - The JWT to use for the worker.
     /// * `multiplayer_url` - The URL of the multiplayer websocket server.
     /// * `connection_url` - The URL of the connection service.
     ///
@@ -153,7 +153,7 @@ impl Worker {
         file_id: Uuid,
         sequence_num: u64,
         presigned_url: &str,
-        m2m_auth_token: String,
+        jwt: String,
         multiplayer_url: String,
         connection_url: String,
     ) -> Result<Self> {
@@ -165,7 +165,7 @@ impl Worker {
             sequence_num,
             session_id,
             file: Arc::new(Mutex::new(file)),
-            m2m_auth_token,
+            jwt,
             multiplayer_url,
             connection_url,
             transaction_id: Arc::new(Mutex::new(None)),
@@ -246,8 +246,7 @@ impl Worker {
     /// sender and receiver.
     async fn connect(&mut self) -> Result<()> {
         if !self.is_connected() {
-            let (websocket, _response) =
-                connect(&self.multiplayer_url, &self.m2m_auth_token).await?;
+            let (websocket, _response) = connect(&self.multiplayer_url, &self.jwt).await?;
             let (sender, receiver) = websocket.split();
 
             self.websocket_sender = Some(Arc::new(Mutex::new(sender)));
@@ -611,7 +610,7 @@ mod tests {
         let full_file_url = format!("{file_id}-{sequence_num}.grid");
         let presigned_url = storage.presigned_url(&full_file_url).await.unwrap();
         let team_id = "test_team_id".to_string();
-        let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
+        let jwt = "M2M_AUTH_TOKEN".to_string();
 
         let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let operations = vec![Operation::ComputeCode { sheet_pos }];
@@ -622,7 +621,7 @@ mod tests {
             file_id,
             sequence_num,
             &presigned_url,
-            m2m_auth_token.clone(),
+            jwt.clone(),
             "ws://localhost:3001/ws".to_string(),
             "http://localhost:3003".to_string(),
         )
@@ -631,7 +630,7 @@ mod tests {
 
         // send a transaction to the server so that worker_1 gets a catchup transaction message
         browser_worker
-            .process_operations(binary_ops.clone(), team_id.clone(), m2m_auth_token.clone())
+            .process_operations(binary_ops.clone(), team_id.clone(), jwt.clone())
             .await
             .unwrap();
 
@@ -643,7 +642,7 @@ mod tests {
             file_id,
             sequence_num,
             &presigned_url,
-            m2m_auth_token.clone(),
+            jwt.clone(),
             "ws://localhost:3001/ws".to_string(),
             "http://localhost:3003".to_string(),
         )
@@ -651,7 +650,7 @@ mod tests {
         .unwrap();
 
         cloud_worker
-            .process_operations(binary_ops, team_id, m2m_auth_token)
+            .process_operations(binary_ops, team_id, jwt)
             .await
             .unwrap();
 

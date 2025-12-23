@@ -1,11 +1,12 @@
 use axum::{Extension, http::HeaderMap, response::Json};
 use jsonwebtoken::jwk::JwkSet;
+use quadratic_rust_shared::auth::jwt::{Claims, authorize};
 use quadratic_rust_shared::quadratic_cloud::{
     AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse, ShutdownRequest,
-    ShutdownResponse,
+    ShutdownResponse, WORKER_EPHEMERAL_TOKEN_HEADER,
 };
 use std::sync::Arc;
-use tracing::{info, trace};
+use tracing::{info, trace, warn};
 use uuid::Uuid;
 
 use crate::controller::Controller;
@@ -18,7 +19,121 @@ use crate::state::State;
 /// This is called by the worker to get the JWKS for the worker to use to
 /// verify the JWT tokens.
 pub(crate) async fn jwks(Extension(state): Extension<Arc<State>>) -> Json<JwkSet> {
-    Json(state.settings.jwks.clone())
+    Json(state.settings.quadratic_jwks.clone())
+}
+
+fn get_file_id_from_headers(headers: &HeaderMap) -> Result<Uuid> {
+    headers
+        .get(FILE_ID_HEADER)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or(ControllerError::FileIdFromHeaders)
+}
+
+fn get_ephemeral_token_from_headers(headers: &HeaderMap) -> Result<String> {
+    headers
+        .get(WORKER_EPHEMERAL_TOKEN_HEADER)
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string())
+        .ok_or(ControllerError::MissingEphemeralToken)
+}
+
+/// Validate the ephemeral JWT token and ensure the file_id matches.
+/// This is used by endpoints that need authentication but don't rotate the token.
+fn validate_worker_token(state: &State, headers: &HeaderMap, expected_file_id: Uuid) -> Result<()> {
+    let token = get_ephemeral_token_from_headers(headers)?;
+
+    // Validate signature and expiry
+    let token_data = authorize::<Claims>(&state.settings.quadratic_jwks, &token, false, true)
+        .map_err(|e| {
+            warn!("Invalid worker JWT: {e}");
+            ControllerError::InvalidEphemeralToken
+        })?;
+
+    // Validate file_id matches
+    if token_data.claims.file_id != Some(expected_file_id) {
+        warn!(
+            "JWT file_id {:?} does not match request file_id {}",
+            token_data.claims.file_id, expected_file_id
+        );
+        return Err(ControllerError::InvalidEphemeralToken);
+    }
+
+    Ok(())
+}
+
+/// Get token for a worker.
+/// The worker must provide its current JWT in the WORKER_EPHEMERAL_TOKEN_HEADER.
+/// We validate the JTI from the JWT, consume it (rotate), and issue a new JWT with a new JTI.
+pub(crate) async fn get_token_for_worker(
+    Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
+) -> Result<Json<String>> {
+    let file_id = get_file_id_from_headers(&headers)?;
+    let current_jwt = get_ephemeral_token_from_headers(&headers)?;
+
+    // Validate signature AND expiry - expired tokens cannot be rotated even with valid JTI
+    let token_data = authorize::<Claims>(&state.settings.quadratic_jwks, &current_jwt, false, true)
+        .map_err(|e| {
+            // Log details to help diagnose signature issues
+            if let Ok(header) = jsonwebtoken::decode_header(&current_jwt) {
+                warn!(
+                    "Failed to decode worker JWT for file {file_id}: {e}. JWT kid: {:?}, JWKS kids: {:?}",
+                    header.kid,
+                    state.settings.quadratic_jwks.keys.iter().filter_map(|k| k.common.key_id.as_ref()).collect::<Vec<_>>()
+                );
+            } else {
+                warn!("Failed to decode worker JWT for file {file_id}: {e}");
+            }
+            ControllerError::InvalidEphemeralToken
+        })?;
+
+    // Validate that the JWT's file_id matches the request file_id
+    // This prevents a compromised worker from using a JWT issued for a different file
+    if token_data.claims.file_id != Some(file_id) {
+        warn!(
+            "JWT file_id {:?} does not match request file_id {}",
+            token_data.claims.file_id, file_id
+        );
+        return Err(ControllerError::InvalidEphemeralToken);
+    }
+
+    // Extract the JTI from the claims
+    let jti = token_data.claims.jti.ok_or_else(|| {
+        warn!("Worker JWT for file {file_id} missing JTI claim");
+        ControllerError::InvalidEphemeralToken
+    })?;
+
+    // Validate and rotate the JTI atomically.
+    // Note: After this succeeds, the old JTI is invalid. If the worker crashes or loses
+    // connectivity before receiving the new JWT, it cannot recover with its current token.
+    // This is intentional - workers are ephemeral containers and the controller will
+    // recreate the worker with a fresh JTI if needed.
+    let new_jti = state
+        .worker_jtis
+        .validate_and_rotate(file_id, &jti)
+        .ok_or_else(|| {
+            warn!("Invalid or already-used JTI for file {file_id}");
+            ControllerError::InvalidEphemeralToken
+        })?;
+
+    // Get cached worker data for generating the new JWT (stored during worker creation)
+    let worker_data = state.worker_jtis.get_worker_data(&file_id).ok_or_else(|| {
+        warn!("No cached worker data for file {file_id}");
+        ControllerError::InvalidEphemeralToken
+    })?;
+
+    // Generate new JWT with the new JTI
+    let new_jwt = state.settings.generate_worker_jwt_with_jti(
+        &worker_data.email,
+        file_id,
+        worker_data.team_id,
+        &new_jti,
+    )?;
+
+    trace!("Issued new JWT with rotated JTI for file {file_id}");
+
+    Ok(Json(new_jwt))
 }
 
 /// Get tasks for a worker to process.
@@ -27,17 +142,16 @@ pub(crate) async fn jwks(Extension(state): Extension<Arc<State>>) -> Json<JwkSet
 /// shutting down.  While minimally useful now, it will become useful
 /// once cloud computing is in place and the controller is just on source
 /// of tasks for the worker (will be multiplayer in cloud computing).
+///
+/// Requires a valid ephemeral JWT with matching file_id.
 pub(crate) async fn get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>> {
-    let file_id = headers
-        .get(FILE_ID_HEADER)
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| Uuid::parse_str(s).ok())
-        .ok_or_else(|| {
-            ControllerError::GetTasksForWorker("Missing or invalid file-id header".into())
-        })?;
+    let file_id = get_file_id_from_headers(&headers)?;
+
+    // Validate the worker's JWT before returning tasks
+    validate_worker_token(&state, &headers, file_id)?;
 
     trace!("Worker requesting tasks for file {file_id}");
 
@@ -52,11 +166,17 @@ pub(crate) async fn get_tasks_for_worker(
 }
 
 /// Acknowledge tasks completion
+///
+/// Requires a valid ephemeral JWT with matching file_id.
 pub(crate) async fn ack_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>> {
     let file_id = ack_request.file_id;
+
+    // Validate the worker's JWT before acknowledging tasks
+    validate_worker_token(&state, &headers, file_id)?;
 
     info!(
         "Acknowledging tasks for worker for file {file_id}: {:?}",
@@ -97,12 +217,18 @@ pub(crate) async fn ack_tasks_for_worker(
 }
 
 /// Shutdown the worker
+///
+/// Requires a valid ephemeral JWT with matching file_id.
 pub(crate) async fn shutdown_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
     Json(shutdown_request): Json<ShutdownRequest>,
 ) -> Result<Json<ShutdownResponse>> {
     let container_id = shutdown_request.container_id;
     let file_id = shutdown_request.file_id;
+
+    // Validate the worker's JWT before allowing shutdown
+    validate_worker_token(&state, &headers, file_id)?;
 
     Controller::shutdown_worker(Arc::clone(&state), &container_id, &file_id)
         .await
