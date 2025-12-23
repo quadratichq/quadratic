@@ -5,6 +5,7 @@ import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getFileUrl } from '../../storage/storage';
 import type { Request } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 
@@ -46,6 +47,10 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
       },
     },
   });
+
+  if (!result.creator) {
+    throw new ApiError(400, `File ${fileUuid} does not have a creator user.`);
+  }
 
   const { s3Key, sequenceNumber } = result.FileCheckpoint[0];
   const presignedUrl = await getFileUrl(s3Key);

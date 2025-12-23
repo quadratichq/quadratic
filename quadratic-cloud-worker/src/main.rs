@@ -2,7 +2,7 @@ mod config;
 mod error;
 mod worker;
 
-use tracing::info;
+use tracing::{error, info};
 
 use crate::config::Config;
 use crate::error::{Result, WorkerError};
@@ -12,7 +12,15 @@ use crate::worker::Worker;
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let config = Config::new().map_err(|e| WorkerError::Config(e.to_string()))?;
+    info!("Parsing config from environment...");
+
+    let config = match Config::new() {
+        Ok(config) => config,
+        Err(e) => {
+            error!("Failed to parse config: {}", e);
+            return Err(WorkerError::Config(e.to_string()));
+        }
+    };
     let file_id = config.file_id;
 
     info!("Starting worker for file: {}", file_id);
