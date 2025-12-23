@@ -246,7 +246,9 @@ mod tests {
     };
     use quadratic_rust_shared::{
         quadratic_api::TaskRun,
-        quadratic_cloud::{GetTasksResponse, WORKER_GET_TASKS_ROUTE},
+        quadratic_cloud::{
+            GetTasksResponse, WORKER_EPHEMERAL_TOKEN_HEADER, WORKER_GET_TASKS_ROUTE,
+        },
     };
     use std::sync::Arc;
     use tower::ServiceExt;
@@ -257,6 +259,16 @@ mod tests {
         test_util::new_state,
     };
 
+    /// Generate a valid JWT for testing
+    fn generate_test_jwt(state: &State, file_id: Uuid) -> String {
+        let team_id = Uuid::new_v4();
+        let jti = Uuid::new_v4().to_string();
+        state
+            .settings
+            .generate_worker_jwt_with_jti("test@example.com", file_id, team_id, &jti)
+            .expect("Failed to generate test JWT")
+    }
+
     async fn get_tasks_response(
         state: Arc<State>,
         file_id: Option<String>,
@@ -266,8 +278,14 @@ mod tests {
             .method(http::Method::GET)
             .uri(WORKER_GET_TASKS_ROUTE);
 
-        if let Some(file_id) = file_id {
-            builder = builder.header(FILE_ID_HEADER, file_id);
+        if let Some(ref file_id_str) = file_id {
+            builder = builder.header(FILE_ID_HEADER, file_id_str.clone());
+
+            // Generate and include a valid JWT if file_id is a valid UUID
+            if let Ok(file_uuid) = Uuid::parse_str(file_id_str) {
+                let jwt = generate_test_jwt(&state, file_uuid);
+                builder = builder.header(WORKER_EPHEMERAL_TOKEN_HEADER, jwt);
+            }
         }
 
         app.oneshot(builder.body(Body::empty()).unwrap())
