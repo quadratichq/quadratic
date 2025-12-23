@@ -274,7 +274,6 @@ impl GridController {
     ) -> Result<(Vec<Operation>, String)> {
         let mut ops: Vec<Operation> = vec![];
         let mut response_prompt = format!("Imported {} as sheets - ", file_name);
-        let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
         let xlsx_range_to_pos = |(row, col)| Pos {
             x: col as i64 + 1,
             y: row as i64 + 1,
@@ -282,19 +281,31 @@ impl GridController {
 
         // detect file extension
         let path = Path::new(file_name);
+        let extension = path.extension().and_then(|e| e.to_str());
         let cursor = Cursor::new(file);
-        let mut workbook = match path.extension().and_then(|e| e.to_str()) {
-            Some("xls") | Some("xla") => {
-                Sheets::Xls(open_workbook_from_rs(cursor).map_err(CalamineError::Xls)?)
+        let mut workbook = match extension {
+            Some("xls") | Some("xla") => Sheets::Xls(
+                open_workbook_from_rs(cursor)
+                    .map_err(|e| anyhow!("Failed to open XLS workbook '{file_name}': {e}"))?,
+            ),
+            Some("xlsx") | Some("xlsm") | Some("xlam") => Sheets::Xlsx(
+                open_workbook_from_rs(cursor)
+                    .map_err(|e| anyhow!("Failed to open XLSX workbook '{file_name}': {e}"))?,
+            ),
+            Some("xlsb") => Sheets::Xlsb(
+                open_workbook_from_rs(cursor)
+                    .map_err(|e| anyhow!("Failed to open XLSB workbook '{file_name}': {e}"))?,
+            ),
+            Some("ods") => Sheets::Ods(
+                open_workbook_from_rs(cursor)
+                    .map_err(|e| anyhow!("Failed to open ODS workbook '{file_name}': {e}"))?,
+            ),
+            _ => {
+                return Err(anyhow!(
+                    "Cannot detect file format for '{file_name}' (extension: {:?})",
+                    extension
+                ))
             }
-            Some("xlsx") | Some("xlsm") | Some("xlam") => {
-                Sheets::Xlsx(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsx)?)
-            }
-            Some("xlsb") => {
-                Sheets::Xlsb(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsb)?)
-            }
-            Some("ods") => Sheets::Ods(open_workbook_from_rs(cursor).map_err(CalamineError::Ods)?),
-            _ => return Err(anyhow!("Cannot detect file format")),
         };
 
         let sheets = workbook.sheet_names().to_owned();
@@ -307,7 +318,11 @@ impl GridController {
                 // counted twice because we have to read values and formulas
                 Ok(acc + 2 * range.rows().count())
             })
-            .map_err(error)?;
+            .map_err(|e: CalamineError| {
+                anyhow!(
+                    "Failed to calculate total rows in '{file_name}' while reading sheet ranges: {e}"
+                )
+            })?;
         let mut current_y_values = 0;
         let mut current_y_formula = 0;
 
@@ -322,13 +337,17 @@ impl GridController {
 
         // add data from excel file to grid
         for sheet_name in sheets.iter() {
-            let sheet = gc
-                .try_sheet_from_name(sheet_name)
-                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+            let sheet = gc.try_sheet_from_name(sheet_name).ok_or_else(|| {
+                anyhow!(
+                    "Failed to find sheet '{sheet_name}' in '{file_name}' after creation (internal error)"
+                )
+            })?;
             let sheet_id = sheet.id;
 
             // values
-            let range = workbook.worksheet_range(sheet_name).map_err(error)?;
+            let range = workbook.worksheet_range(sheet_name).map_err(|e| {
+                anyhow!("Failed to read values from sheet '{sheet_name}' in '{file_name}': {e}")
+            })?;
             let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -378,9 +397,11 @@ impl GridController {
                         x: values_insert_at.x + x as i64,
                         y: values_insert_at.y + y as i64,
                     };
-                    let sheet = gc
-                        .try_sheet_mut(sheet_id)
-                        .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                    let sheet = gc.try_sheet_mut(sheet_id).ok_or_else(|| {
+                        anyhow!(
+                            "Failed to access sheet '{sheet_name}' (id: {sheet_id}) for setting value at row {y}, col {x} in '{file_name}'"
+                        )
+                    })?;
                     sheet.set_value(pos, cell_value);
                 }
 
@@ -398,7 +419,9 @@ impl GridController {
             }
 
             // formulas
-            let formula = workbook.worksheet_formula(sheet_name).map_err(error)?;
+            let formula = workbook.worksheet_formula(sheet_name).map_err(|e| {
+                anyhow!("Failed to read formulas from sheet '{sheet_name}' in '{file_name}': {e}")
+            })?;
             let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -455,7 +478,9 @@ impl GridController {
             }
 
             // styles
-            let range = workbook.worksheet_style(sheet_name).map_err(error)?;
+            let range = workbook.worksheet_style(sheet_name).map_err(|e| {
+                anyhow!("Failed to read styles from sheet '{sheet_name}' in '{file_name}': {e}")
+            })?;
             let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
@@ -546,7 +571,9 @@ impl GridController {
             }
 
             // layout
-            let layout = workbook.worksheet_layout(sheet_name).map_err(error)?;
+            let layout = workbook.worksheet_layout(sheet_name).map_err(|e| {
+                anyhow!("Failed to read layout from sheet '{sheet_name}' in '{file_name}': {e}")
+            })?;
             let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
             for column_width in layout.column_widths.iter() {
@@ -577,7 +604,11 @@ impl GridController {
             let unique_sheet_name = gc_duplicate_name.grid.unique_sheet_name(new_sheet_name);
             let sheet_id = gc
                 .try_sheet_from_name(new_sheet_name)
-                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?
+                .ok_or_else(|| {
+                    anyhow!(
+                        "Failed to find sheet '{new_sheet_name}' while processing duplicate names in '{file_name}' (internal error)"
+                    )
+                })?
                 .id;
             gc.grid.update_sheet_name(sheet_id, &unique_sheet_name)?;
             gc_duplicate_name.server_add_sheet_with_name(unique_sheet_name);
