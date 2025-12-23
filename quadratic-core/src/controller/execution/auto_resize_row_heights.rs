@@ -935,4 +935,31 @@ mod tests {
         gc.undo(1, None, false);
         assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
     }
+
+    #[test]
+    fn test_table_rows_resize_on_multiline_text() {
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![M20]);
+
+        clear_js_calls();
+
+        // should trigger auto resize row heights for setting multiline value
+        // (even without wrap formatting)
+        let ops = vec![Operation::SetDataTableAt {
+            sheet_pos: pos![M22].to_sheet_pos(sheet_id),
+            values: vec![vec!["line1\nline2\nline3"]].into(),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 22,
+            height: 48f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[22]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 48f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+    }
 }

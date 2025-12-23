@@ -157,9 +157,7 @@ impl Worker {
         multiplayer_url: String,
         connection_url: String,
     ) -> Result<Self> {
-        tracing::info!("📂 [Worker] Loading file {} from presigned URL", file_id);
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
-        tracing::info!("✅ [Worker] File loaded successfully");
 
         let session_id = Uuid::new_v4();
         let mut worker = Worker {
@@ -179,9 +177,7 @@ impl Worker {
         };
 
         // first, connect to the multiplayer server
-        tracing::info!("🔌 [Worker] Connecting to multiplayer server");
         worker.connect().await?;
-        tracing::info!("✅ [Worker] Connected to multiplayer");
 
         let enter_room_notify = Arc::clone(&worker.status.lock().await.enter_room_notify);
         let catchup_notify = Arc::clone(&worker.status.lock().await.catchup_notify);
@@ -190,31 +186,22 @@ impl Worker {
         let catchup_notified = catchup_notify.notified();
 
         // then, enter the room
-        tracing::info!("🚪 [Worker] Entering room for file {}", file_id);
         worker.enter_room(file_id).await?;
 
         // Wait for EnterRoom response from server before proceeding
         // This ensures the multiplayer server has registered our session
-        tracing::info!("⏳ [Worker] Waiting for EnterRoom confirmation...");
         enter_room_notified.await;
-        tracing::info!("✅ [Worker] Entered room confirmed");
 
         // finally, get the catchup transactions
         // Request transactions starting from sequence_num + 1 since the loaded file
         // already contains all transactions up to and including sequence_num
-        tracing::info!(
-            "📥 [Worker] Requesting catchup transactions from sequence {}",
-            sequence_num + 1
-        );
         worker
             .get_transactions(file_id, worker.session_id, worker.sequence_num + 1)
             .await?;
 
         // Wait for catchup transactions to be received before proceeding
         // This ensures we don't have a race condition on the first run
-        tracing::info!("⏳ [Worker] Waiting for catchup transactions...");
         catchup_notified.await;
-        tracing::info!("✅ [Worker] Catchup transactions received");
 
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
@@ -306,8 +293,8 @@ impl Worker {
                                         file_id: room_file_id,
                                         sequence_num: room_seq,
                                     } => {
-                                        tracing::info!(
-                                            "📨 [Worker] Received EnterRoom confirmation for file {} at sequence {}",
+                                        tracing::trace!(
+                                            "[Worker] Received EnterRoom confirmation for file {} at sequence {}",
                                             room_file_id,
                                             room_seq
                                         );
@@ -391,7 +378,7 @@ impl Worker {
                             }
                         }
                         Ok(WebsocketMessage::Close(_)) => {
-                            tracing::info!("WebSocket closed normally");
+                            tracing::trace!("WebSocket closed normally");
                             break;
                         }
                         Ok(_) => {}
@@ -427,7 +414,7 @@ impl Worker {
             let user_id = Uuid::new_v4();
             enter_room(&mut *sender.lock().await, user_id, file_id, self.session_id).await?;
 
-            tracing::info!("Entered room {file_id}");
+            tracing::trace!("Entered room {file_id}");
         }
 
         Ok(())
@@ -462,28 +449,8 @@ impl Worker {
         team_id: String,
         token: String,
     ) -> Result<()> {
-        tracing::info!("🔄 [Worker] Deserializing operations");
         let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
             .map_err(|e| CoreCloudError::Serialization(e.to_string()))?;
-
-        tracing::info!("⚙️  [Worker] Processing {} operation(s)", operations.len());
-
-        // Log what operations we're executing
-        for op in &operations {
-            match op {
-                Operation::ComputeCode { sheet_pos } => {
-                    tracing::info!(
-                        "🔧 [Worker] Executing code at position {}:{}",
-                        sheet_pos.x,
-                        sheet_pos.y
-                    );
-                }
-                Operation::ComputeCodeSelection { selection } => {
-                    tracing::info!("🔧 [Worker] Executing code selection: {:?}", selection);
-                }
-                _ => {}
-            }
-        }
 
         let transaction_id = match process_transaction(
             Arc::clone(&self.file),
@@ -514,10 +481,6 @@ impl Worker {
             forward_transaction.operations.to_owned()
         };
 
-        tracing::info!(
-            "📡 [Worker] Sending transaction {} to multiplayer",
-            transaction_id
-        );
         if let Some(sender) = self.websocket_sender.as_mut() {
             send_transaction(
                 &mut *sender.lock().await,
@@ -528,14 +491,14 @@ impl Worker {
             )
             .await?;
         }
-        tracing::info!("✅ [Worker] Transaction sent");
+        tracing::trace!("[Worker] Transaction sent");
 
         Ok(())
     }
 
     /// Leave the room for a given file.
     pub async fn leave_room(&mut self) -> Result<()> {
-        tracing::info!("🚪 [Worker] Leaving room for file {}", self.file_id);
+        tracing::trace!("Worker] Leaving room for file {}", self.file_id);
 
         // First, abort the heartbeat task to prevent it from trying to send after closing
         if let Some(handle) = &self.heartbeat_handle {
@@ -550,25 +513,25 @@ impl Worker {
             // Send leave room message - log errors but don't fail
             match leave_room(&mut sender_lock, self.session_id, self.file_id).await {
                 Ok(_) => {
-                    tracing::info!("✅ [Worker] Leave room message sent successfully");
+                    tracing::trace!("[Worker] Leave room message sent successfully");
                     // Give the server a moment to process the leave room message
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }
                 Err(e) => {
-                    tracing::warn!("⚠️  [Worker] Error sending leave room message: {}", e);
+                    tracing::warn!("[Worker] Error sending leave room message: {}", e);
                 }
             }
 
             // Close the WebSocket connection gracefully
             match sender_lock.close().await {
-                Ok(_) => tracing::info!("✅ [Worker] WebSocket connection closed gracefully"),
+                Ok(_) => tracing::trace!("[Worker] WebSocket connection closed gracefully"),
                 Err(e) => {
                     // Suppress benign shutdown errors
                     let error_str = format!("{:?}", e);
                     if !error_str.contains("AlreadyClosed")
                         && !error_str.contains("ResetWithoutClosingHandshake")
                     {
-                        tracing::warn!("⚠️  [Worker] Error closing WebSocket: {}", e);
+                        tracing::warn!("[Worker] Error closing WebSocket: {}", e);
                     }
                 }
             }
@@ -599,10 +562,7 @@ impl Worker {
             }
         }
 
-        tracing::info!(
-            "✅ [Worker] Successfully left room for file {}",
-            self.file_id
-        );
+        tracing::trace!("[Worker] Successfully left room for file {}", self.file_id);
         Ok(())
     }
 

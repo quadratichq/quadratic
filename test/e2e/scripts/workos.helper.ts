@@ -1,9 +1,13 @@
 import type { CreateUserOptions } from '@workos-inc/node';
 import { WorkOS } from '@workos-inc/node';
 import * as dotenv from 'dotenv';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from test/e2e/.env file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env') });
 
 /**
  * Environment configuration for WorkOS
@@ -31,9 +35,6 @@ const getEnvironments = (): WorkOSEnvironment[] => {
       apiKey: stagingApiKey,
       clientId: stagingClientId,
     });
-  } else {
-    console.warn('⚠️  WorkOS staging credentials not found in .env file');
-    console.warn('   Required: WORKOS_STAGING_API_KEY, WORKOS_CLIENT_ID');
   }
 
   if (previewApiKey && previewClientId) {
@@ -42,9 +43,6 @@ const getEnvironments = (): WorkOSEnvironment[] => {
       apiKey: previewApiKey,
       clientId: previewClientId,
     });
-  } else {
-    console.warn('⚠️  WorkOS preview credentials not found in .env file');
-    console.warn('   Required: WORKOS_PREVIEW_API_KEY, WORKOS_CLIENT_ID');
   }
 
   if (environments.length === 0) {
@@ -81,23 +79,52 @@ const createWorkOSClient = (env: WorkOSEnvironment): WorkOS => {
  * @param options - User data including email, firstName, lastName, and optional password
  * @returns Promise with user information including whether they were created
  */
-const ensureUserInEnvironment = async (env: WorkOSEnvironment, options: EnsureUserOptions): Promise<void> => {
+const ensureUserInEnvironment = async (
+  env: WorkOSEnvironment,
+  options: EnsureUserOptions,
+  verbose = false
+): Promise<void> => {
   const workos = createWorkOSClient(env);
 
   try {
     // Check if user already exists
     const existingUsers = await workos.userManagement.listUsers({ email: options.email });
 
+    if (verbose) {
+      console.log(`  [${env.name}] Found ${existingUsers.data?.length ?? 0} existing user(s)`);
+    }
+
     if (existingUsers.data && existingUsers.data.length > 0) {
       const existingUser = existingUsers.data[0];
 
-      // Check if emailVerified is true, if not, update it
+      if (verbose) {
+        console.log(`  [${env.name}] User ID: ${existingUser.id}`);
+        console.log(`  [${env.name}] Email verified: ${existingUser.emailVerified}`);
+      }
+
+      // Always update user to ensure password and emailVerified are correct
+      const updateData: { userId: string; emailVerified?: boolean; password?: string } = {
+        userId: existingUser.id,
+      };
+
       if (!existingUser.emailVerified) {
-        await workos.userManagement.updateUser({
-          userId: existingUser.id,
-          emailVerified: true,
-        });
-        console.log(`✓ Email verified status updated in ${env.name}: ${options.email}`);
+        updateData.emailVerified = true;
+      }
+
+      // Always reset the password to ensure it matches the expected value
+      if (options.password) {
+        updateData.password = options.password;
+      }
+
+      // Only call update if there's something to update
+      if (updateData.emailVerified !== undefined || updateData.password) {
+        const updatedUser = await workos.userManagement.updateUser(updateData);
+        if (verbose) {
+          console.log(`  [${env.name}] Update response - ID: ${updatedUser.id}, emailVerified: ${updatedUser.emailVerified}`);
+        }
+        console.log(`✓ User updated in ${env.name}: ${options.email}`);
+      } else {
+        console.log(`✓ User already up-to-date in ${env.name}: ${options.email}`);
       }
 
       return;
@@ -114,7 +141,14 @@ const ensureUserInEnvironment = async (env: WorkOSEnvironment, options: EnsureUs
       emailVerified: true,
     };
 
-    await workos.userManagement.createUser(userData);
+    if (verbose) {
+      console.log(`  [${env.name}] Creating with data:`, { ...userData, password: '***' });
+    }
+
+    const createdUser = await workos.userManagement.createUser(userData);
+    if (verbose) {
+      console.log(`  [${env.name}] Created user ID: ${createdUser.id}, emailVerified: ${createdUser.emailVerified}`);
+    }
     console.log(`✓ User created in ${env.name}: ${options.email}`);
   } catch (error) {
     console.error(`❌ Error ensuring user exists in ${env.name}:`, error);
@@ -146,7 +180,7 @@ const ensureUserInEnvironment = async (env: WorkOSEnvironment, options: EnsureUs
  * });
  * ```
  */
-export const ensureUserExists = async (options: EnsureUserOptions): Promise<void> => {
+export const ensureUserExists = async (options: EnsureUserOptions, verbose = false): Promise<void> => {
   // we do not yet have .env files for CI, so we skip this for now
   if (process.env.CI) return;
 
@@ -155,10 +189,27 @@ export const ensureUserExists = async (options: EnsureUserOptions): Promise<void
   // Process each environment sequentially to avoid rate limiting
   for (const env of environments) {
     try {
-      await ensureUserInEnvironment(env, options);
+      await ensureUserInEnvironment(env, options, verbose);
     } catch (error) {
       // Log error but continue with other environments
       console.error(`Failed to process ${env.name}:`, error);
     }
   }
+};
+
+/**
+ * Get list of configured environment names
+ */
+export const getConfiguredEnvironments = (): string[] => {
+  const environments: string[] = [];
+
+  if (process.env.WORKOS_STAGING_API_KEY && process.env.WORKOS_STAGING_CLIENT_ID) {
+    environments.push('staging');
+  }
+
+  if (process.env.WORKOS_PREVIEW_API_KEY && process.env.WORKOS_PREVIEW_CLIENT_ID) {
+    environments.push('preview');
+  }
+
+  return environments;
 };

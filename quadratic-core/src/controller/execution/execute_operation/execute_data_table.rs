@@ -289,6 +289,21 @@ impl GridController {
                 true,
                 &mut rows_to_resize,
             );
+
+            // Also check if the new values contain multiline text (newlines)
+            // that would require row resizing
+            for column in values.columns.iter() {
+                for (&y, cell_value) in column.iter() {
+                    if let CellValue::Text(text) = cell_value
+                        && (text.contains('\n') || text.contains('\r'))
+                    {
+                        // Calculate the actual row in sheet coordinates
+                        let sheet_row = pos.y + y as i64;
+                        rows_to_resize.insert(sheet_row);
+                    }
+                }
+            }
+
             if !rows_to_resize.is_empty() {
                 transaction
                     .resize_rows
