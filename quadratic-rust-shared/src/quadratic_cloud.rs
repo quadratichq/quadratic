@@ -38,19 +38,24 @@ fn handle_response(response: &Response) -> Result<()> {
     }
 }
 
-/// Get a worker init data
+/// Make a GET request to the controller
 pub async fn worker_get_request<T: DeserializeOwned>(
     base_url: &str,
     route: &str,
     file_id: Uuid,
+    jwt: Option<&str>,
 ) -> Result<T> {
     let url = format!("{base_url}{route}");
 
-    let response = reqwest::Client::new()
+    let mut request = reqwest::Client::new()
         .get(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
-        .send()
-        .await?;
+        .header(FILE_ID_HEADER, file_id.to_string());
+
+    if let Some(token) = jwt {
+        request = request.header(WORKER_EPHEMERAL_TOKEN_HEADER, token);
+    }
+
+    let response = request.send().await?;
 
     handle_response(&response)?;
 
@@ -59,18 +64,22 @@ pub async fn worker_get_request<T: DeserializeOwned>(
     Ok(worker_init_data)
 }
 
+/// Make a POST request to the controller
 pub async fn worker_post_request<T: Serialize, R: DeserializeOwned>(
     base_url: &str,
     route: &str,
     request: T,
+    jwt: Option<&str>,
 ) -> Result<R> {
     let url = format!("{base_url}{route}");
 
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&request)
-        .send()
-        .await?;
+    let mut req = reqwest::Client::new().post(url).json(&request);
+
+    if let Some(token) = jwt {
+        req = req.header(WORKER_EPHEMERAL_TOKEN_HEADER, token);
+    }
+
+    let response = req.send().await?;
 
     handle_response(&response)?;
 
@@ -86,7 +95,7 @@ pub struct GetWorkerInitDataResponse {
     pub presigned_url: String,
     pub timezone: Option<String>,
 }
-/// Get a worker init data
+/// Get a worker init data (no JWT required - called before worker has a token)
 pub async fn get_worker_init_data(
     base_url: &str,
     file_id: Uuid,
@@ -95,14 +104,16 @@ pub async fn get_worker_init_data(
         base_url,
         WORKER_GET_WORKER_INIT_DATA_ROUTE,
         file_id,
+        None,
     )
     .await
 }
 
 pub type GetTasksResponse = Vec<(String, TaskRun)>;
 /// Get the next scheduled tasks for a worker
-pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse> {
-    worker_get_request::<GetTasksResponse>(base_url, WORKER_GET_TASKS_ROUTE, file_id).await
+pub async fn get_tasks(base_url: &str, file_id: Uuid, jwt: &str) -> Result<GetTasksResponse> {
+    worker_get_request::<GetTasksResponse>(base_url, WORKER_GET_TASKS_ROUTE, file_id, Some(jwt))
+        .await
 }
 
 pub type GetTokenResponse = String;
@@ -154,6 +165,7 @@ pub async fn ack_tasks(
     successful_tasks: Vec<(String, Uuid, Uuid)>,
     // (key, run_id, task_id, error)
     failed_tasks: Vec<(String, Uuid, Uuid, String)>,
+    jwt: &str,
 ) -> Result<AckTasksResponse> {
     worker_post_request::<AckTasksRequest, AckTasksResponse>(
         base_url,
@@ -164,6 +176,7 @@ pub async fn ack_tasks(
             successful_tasks,
             failed_tasks,
         },
+        Some(jwt),
     )
     .await
 }
@@ -183,6 +196,7 @@ pub async fn worker_shutdown(
     base_url: &str,
     container_id: Uuid,
     file_id: Uuid,
+    jwt: &str,
 ) -> Result<ShutdownResponse> {
     let request = ShutdownRequest {
         container_id,
@@ -193,6 +207,7 @@ pub async fn worker_shutdown(
         base_url,
         WORKER_SHUTDOWN_ROUTE,
         request,
+        Some(jwt),
     )
     .await
 }

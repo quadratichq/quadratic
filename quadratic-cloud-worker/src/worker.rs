@@ -49,9 +49,15 @@ impl Worker {
             .await
             .map_err(|e| WorkerError::CreateWorker(format!("Failed to rotate initial JWT: {e}")))?;
 
-        // Note: Core stores this JWT for the initial multiplayer connection. Core doesn't
-        // implement reconnection - if the websocket drops, the worker fails. The JWT stored
-        // in Core won't be updated on rotation, but this is safe because:
+        // IMPORTANT: Core stores this JWT for the initial multiplayer connection but does NOT
+        // receive updates when tokens are rotated. This is safe ONLY because Core doesn't
+        // implement reconnection - if the websocket drops, the worker fails.
+        //
+        // If reconnection is ever added to Core, it would attempt to reconnect with an
+        // old/consumed JTI and fail silently. In that case, Core would need a callback or
+        // method to get the current JWT from the Worker instead of storing its own copy.
+        //
+        // Current safety relies on:
         // 1. Workers are short-lived (process tasks and exit)
         // 2. No reconnection means the stored JWT is used only once
         // 3. Each task rotation updates self.current_jwt (not Core's copy)
@@ -101,6 +107,10 @@ impl Worker {
 
             info!("Processing {} task(s) for file: {}", tasks.len(), file_id);
 
+            // Note: If token refresh fails mid-batch, any already-processed tasks won't be
+            // acknowledged and may be re-processed when the controller recreates the worker.
+            // This is acceptable because tasks should be idempotent - running a task twice
+            // should produce the same result as running it once.
             for (key, task) in tasks {
                 let task_start = std::time::Instant::now();
 
@@ -222,6 +232,7 @@ impl Worker {
                 file_id,
                 successful_tasks,
                 failed_tasks,
+                &self.current_jwt,
             )
             .await
             .map_err(|e| WorkerError::AckTasks(e.to_string()));
@@ -238,7 +249,7 @@ impl Worker {
             // Check for more tasks before shutting down
             trace!("Checking for more tasks...");
 
-            match get_tasks(&controller_url, file_id).await {
+            match get_tasks(&controller_url, file_id, &self.current_jwt).await {
                 Ok(new_tasks) => {
                     if new_tasks.is_empty() {
                         info!("No more tasks available, ready to shutdown");
@@ -280,7 +291,14 @@ impl Worker {
         }
 
         // send worker shutdown request to the controller
-        match worker_shutdown(&self.controller_url, self.container_id, self.file_id).await {
+        match worker_shutdown(
+            &self.controller_url,
+            self.container_id,
+            self.file_id,
+            &self.current_jwt,
+        )
+        .await
+        {
             Ok(_) => info!("Successfully notified controller of shutdown"),
             Err(e) => {
                 error!("Error notifying controller of shutdown: {}", e);

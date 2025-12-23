@@ -239,12 +239,16 @@ impl Controller {
         let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
         let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
 
-        // Note: While env vars are visible via `docker inspect` or `/proc/<pid>/environ`,
-        // the JWT passed here is safe because:
+        // Security Note: Env vars are visible via `docker inspect` or `/proc/<pid>/environ`.
+        // The JWT passed here is safe because:
         // 1. The worker rotates to a new JWT (via get_token) immediately on startup, before
-        //    any network operations (including multiplayer connection)
+        //    connecting to multiplayer or running any user code
         // 2. The initial JWT's JTI is consumed/invalidated on first use
         // 3. By the time untrusted code (Python/JS) executes, this JWT is already invalid
+        //
+        // Threat model assumption: Container isolation prevents untrusted code from reading
+        // another container's /proc filesystem. If a container escape vulnerability exists,
+        // an attacker could read the initial JWT during the brief window before rotation.
         let env_vars = vec![
             format!("RUST_LOG={}", "info"), // change this to info for seeing all logs
             format!("CONTAINER_ID={container_id}"),

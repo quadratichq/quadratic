@@ -38,6 +38,30 @@ fn get_ephemeral_token_from_headers(headers: &HeaderMap) -> Result<String> {
         .ok_or(ControllerError::MissingEphemeralToken)
 }
 
+/// Validate the ephemeral JWT token and ensure the file_id matches.
+/// This is used by endpoints that need authentication but don't rotate the token.
+fn validate_worker_token(state: &State, headers: &HeaderMap, expected_file_id: Uuid) -> Result<()> {
+    let token = get_ephemeral_token_from_headers(headers)?;
+
+    // Validate signature and expiry
+    let token_data = authorize::<Claims>(&state.settings.quadratic_jwks, &token, false, true)
+        .map_err(|e| {
+            warn!("Invalid worker JWT: {e}");
+            ControllerError::InvalidEphemeralToken
+        })?;
+
+    // Validate file_id matches
+    if token_data.claims.file_id != Some(expected_file_id) {
+        warn!(
+            "JWT file_id {:?} does not match request file_id {}",
+            token_data.claims.file_id, expected_file_id
+        );
+        return Err(ControllerError::InvalidEphemeralToken);
+    }
+
+    Ok(())
+}
+
 /// Get token for a worker.
 /// The worker must provide its current JWT in the WORKER_EPHEMERAL_TOKEN_HEADER.
 /// We validate the JTI from the JWT, consume it (rotate), and issue a new JWT with a new JTI.
@@ -80,7 +104,11 @@ pub(crate) async fn get_token_for_worker(
         ControllerError::InvalidEphemeralToken
     })?;
 
-    // Validate and rotate the JTI
+    // Validate and rotate the JTI atomically.
+    // Note: After this succeeds, the old JTI is invalid. If the worker crashes or loses
+    // connectivity before receiving the new JWT, it cannot recover with its current token.
+    // This is intentional - workers are ephemeral containers and the controller will
+    // recreate the worker with a fresh JTI if needed.
     let new_jti = state
         .worker_jtis
         .validate_and_rotate(file_id, &jti)
@@ -114,11 +142,16 @@ pub(crate) async fn get_token_for_worker(
 /// shutting down.  While minimally useful now, it will become useful
 /// once cloud computing is in place and the controller is just on source
 /// of tasks for the worker (will be multiplayer in cloud computing).
+///
+/// Requires a valid ephemeral JWT with matching file_id.
 pub(crate) async fn get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>> {
     let file_id = get_file_id_from_headers(&headers)?;
+
+    // Validate the worker's JWT before returning tasks
+    validate_worker_token(&state, &headers, file_id)?;
 
     trace!("Worker requesting tasks for file {file_id}");
 
@@ -133,11 +166,17 @@ pub(crate) async fn get_tasks_for_worker(
 }
 
 /// Acknowledge tasks completion
+///
+/// Requires a valid ephemeral JWT with matching file_id.
 pub(crate) async fn ack_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>> {
     let file_id = ack_request.file_id;
+
+    // Validate the worker's JWT before acknowledging tasks
+    validate_worker_token(&state, &headers, file_id)?;
 
     info!(
         "Acknowledging tasks for worker for file {file_id}: {:?}",
@@ -178,12 +217,18 @@ pub(crate) async fn ack_tasks_for_worker(
 }
 
 /// Shutdown the worker
+///
+/// Requires a valid ephemeral JWT with matching file_id.
 pub(crate) async fn shutdown_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
     Json(shutdown_request): Json<ShutdownRequest>,
 ) -> Result<Json<ShutdownResponse>> {
     let container_id = shutdown_request.container_id;
     let file_id = shutdown_request.file_id;
+
+    // Validate the worker's JWT before allowing shutdown
+    validate_worker_token(&state, &headers, file_id)?;
 
     Controller::shutdown_worker(Arc::clone(&state), &container_id, &file_id)
         .await

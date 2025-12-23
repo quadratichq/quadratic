@@ -41,6 +41,11 @@ impl WorkerJtiStore {
     /// Register an initial JTI and worker metadata.
     /// Called when creating a new worker.
     ///
+    /// This overwrites any existing entry for the file_id, which handles the edge case where
+    /// a previous worker crashed mid-rotation (after get_token rotated the JTI server-side
+    /// but before the worker received the response). When the controller recreates the worker,
+    /// this register call replaces the stale entry with a fresh JTI.
+    ///
     /// # Arguments
     /// * `file_id` - The file ID the worker is processing
     /// * `jti` - The initial JTI to register
