@@ -61,7 +61,7 @@ impl Settings {
             files_port: config.files_port.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
-            jwt_encoding_key: jwt_encoding_key,
+            jwt_encoding_key,
             jwt_expiration_seconds: config.jwt_expiration_seconds,
             jwks,
             _worker_jwt_email: config.worker_jwt_email.to_owned(),

@@ -226,6 +226,7 @@ impl Controller {
             .settings
             .generate_worker_jwt(&worker_init_data.email, file_id)?;
         let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
+        let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
         let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
 
         let env_vars = vec![
@@ -238,10 +239,7 @@ impl Controller {
             format!("JWT={worker_jwt}"),
             format!("TASKS={}", encoded_tasks),
             format!("WORKER_INIT_DATA={}", worker_init_data_json),
-            format!(
-                "TZ={}",
-                worker_init_data.timezone.unwrap_or("UTC".to_string())
-            ),
+            format!("TZ={}", timezone),
         ];
 
         // Mount volume to persist Python packages between container runs
