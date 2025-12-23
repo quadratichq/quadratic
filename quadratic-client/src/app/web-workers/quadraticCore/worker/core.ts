@@ -1385,6 +1385,24 @@ class Core {
     }
   }
 
+  setFormatsA1(
+    formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[],
+    cursor: string,
+    isAi: boolean
+  ): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const entries = formatEntries.map((entry) => ({
+        sheet_id: entry.sheetId,
+        selection: entry.selection,
+        ...entry.formats,
+      }));
+      return this.gridController.setFormatsA1(JSON.stringify(entries), cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('setFormatsA1', e);
+    }
+  }
+
   getAICellFormats(sheetId: string, selection: string, page: number): string | JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
