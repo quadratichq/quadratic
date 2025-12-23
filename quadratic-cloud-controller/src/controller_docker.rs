@@ -221,10 +221,21 @@ impl Controller {
         let multiplayer_url = self.state.settings.multiplayer_url();
         let connection_url = self.state.settings.connection_url();
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
-        let worker_jwt = self
-            .state
-            .settings
-            .generate_worker_jwt(&worker_init_data.email, file_id)?;
+
+        // Generate initial JTI for this worker and register it
+        let initial_jti = Uuid::new_v4().to_string();
+        self.state
+            .worker_jtis
+            .register(file_id, initial_jti.clone());
+
+        // Generate JWT with the initial JTI
+        let worker_jwt = self.state.settings.generate_worker_jwt_with_jti(
+            &worker_init_data.email,
+            file_id,
+            worker_init_data.team_id,
+            &initial_jti,
+        )?;
+
         let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
         let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
         let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
@@ -296,6 +307,10 @@ impl Controller {
         file_id: &Uuid,
     ) -> Result<()> {
         tracing::trace!("Shutting down worker");
+
+        // Remove the worker's JTI from the store
+        state.worker_jtis.remove(file_id);
+
         let mut client = state.client.lock().await;
         client
             .remove_container(container_id)

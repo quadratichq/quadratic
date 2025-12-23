@@ -33,6 +33,12 @@ pub(crate) enum ControllerError {
     #[error("Error getting tasks for worker: {0}")]
     GetTasksForWorker(String),
 
+    #[error("Invalid or expired ephemeral token")]
+    InvalidEphemeralToken,
+
+    #[error("Missing ephemeral token header")]
+    MissingEphemeralToken,
+
     #[error("PubSub error: {0}")]
     PubSub(String),
 
@@ -75,6 +81,9 @@ impl IntoResponse for ControllerError {
         let (status, error) = match &self {
             ControllerError::GetTasksForWorker(error) => {
                 (StatusCode::BAD_REQUEST, clean_errors(error))
+            }
+            ControllerError::InvalidEphemeralToken | ControllerError::MissingEphemeralToken => {
+                (StatusCode::UNAUTHORIZED, self.to_string())
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };

@@ -7,6 +7,7 @@
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use quadratic_rust_shared::ErrorLevel;
+use quadratic_rust_shared::auth::jwt::decode_claims_unverified;
 use quadratic_rust_shared::multiplayer::message::response::{
     BinaryTransaction, ResponseError, Transaction,
 };
@@ -17,6 +18,34 @@ use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::{ADMIN_PERMS, get_file_perms};
 use std::sync::Arc;
 use uuid::Uuid;
+
+/// Validate that the file_id in the JWT matches the requested file_id.
+/// Only applies to M2M connections (workers) that have a JWT with file_id claim.
+fn validate_jwt_file_id(pre_connection: &PreConnection, requested_file_id: Uuid) -> Result<()> {
+    // Only validate for M2M connections with a JWT
+    if !pre_connection.is_m2m() {
+        return Ok(());
+    }
+
+    let jwt = match &pre_connection.jwt {
+        Some(jwt) => jwt,
+        None => return Ok(()), // No JWT to validate
+    };
+
+    let claims = decode_claims_unverified(jwt)
+        .map_err(|e| MpError::Authentication(format!("Failed to decode JWT claims: {}", e)))?;
+
+    match claims.file_id {
+        Some(jwt_file_id) if jwt_file_id == requested_file_id => Ok(()),
+        Some(jwt_file_id) => Err(MpError::Authentication(format!(
+            "JWT file_id {} does not match requested file_id {}",
+            jwt_file_id, requested_file_id
+        ))),
+        None => Err(MpError::Authentication(
+            "JWT missing file_id claim".to_string(),
+        )),
+    }
+}
 
 use crate::error::{MpError, Result};
 use crate::get_mut_room;
@@ -54,11 +83,19 @@ pub(crate) async fn handle_message(
             viewport,
             follow,
         } => {
+            // For M2M connections (workers), validate that the JWT file_id matches
+            validate_jwt_file_id(&pre_connection, file_id)?;
+
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
 
-            // anonymous users can log in without a jwt
-            let jwt = pre_connection.jwt.to_owned().unwrap_or_default();
+            // For M2M connections (workers), use multiplayer's M2M token for API calls.
+            // For regular users, use their JWT.
+            let (jwt, m2m_token) = if pre_connection.is_m2m() {
+                (String::new(), Some(state.settings.m2m_auth_token.as_str()))
+            } else {
+                (pre_connection.jwt.to_owned().unwrap_or_default(), None)
+            };
 
             // default to all roles for tests
             let (permissions, sequence_num) = if cfg!(test) {
@@ -66,8 +103,7 @@ pub(crate) async fn handle_message(
             } else {
                 // get permission and sequence_num from the quadratic api
                 let (permissions, mut sequence_num) =
-                    get_file_perms(base_url, jwt, file_id, pre_connection.m2m_token.as_deref())
-                        .await?;
+                    get_file_perms(base_url, jwt, file_id, m2m_token).await?;
 
                 tracing::trace!("permissions: {:?}", permissions);
 

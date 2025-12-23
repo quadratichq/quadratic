@@ -106,9 +106,28 @@ pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse
 }
 
 pub type GetTokenResponse = String;
-/// Get the JWT token for the worker
-pub async fn get_token(base_url: &str, file_id: Uuid) -> Result<GetTokenResponse> {
-    worker_get_request::<GetTokenResponse>(base_url, WORKER_GET_TOKEN_ROUTE, file_id).await
+/// Get a new JWT token for the worker.
+/// The worker must provide its current JWT so the controller can validate
+/// and consume the JTI before issuing a new token.
+pub async fn get_token(
+    base_url: &str,
+    file_id: Uuid,
+    current_jwt: &str,
+) -> Result<GetTokenResponse> {
+    let url = format!("{base_url}{WORKER_GET_TOKEN_ROUTE}");
+
+    let response = reqwest::Client::new()
+        .get(url)
+        .header(FILE_ID_HEADER, file_id.to_string())
+        .header(WORKER_EPHEMERAL_TOKEN_HEADER, current_jwt)
+        .send()
+        .await?;
+
+    handle_response(&response)?;
+
+    let token = response.json::<GetTokenResponse>().await?;
+
+    Ok(token)
 }
 
 #[derive(Serialize, Deserialize, Debug)]

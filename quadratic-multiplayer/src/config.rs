@@ -25,6 +25,8 @@ pub(crate) struct Config {
     pub(crate) pubsub_active_channels: String,
 
     pub(crate) jwks_uri: String,
+    /// Optional JWKS JSON string for additional keys (e.g., cloud-controller keys)
+    pub(crate) jwks: Option<String>,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
 }

@@ -1,11 +1,12 @@
 use axum::{Extension, http::HeaderMap, response::Json};
 use jsonwebtoken::jwk::JwkSet;
+use quadratic_rust_shared::auth::jwt::{Claims, authorize};
 use quadratic_rust_shared::quadratic_cloud::{
     AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse, ShutdownRequest,
-    ShutdownResponse,
+    ShutdownResponse, WORKER_EPHEMERAL_TOKEN_HEADER,
 };
 use std::sync::Arc;
-use tracing::{info, trace};
+use tracing::{info, trace, warn};
 use uuid::Uuid;
 
 use crate::controller::Controller;
@@ -21,7 +22,7 @@ pub(crate) async fn jwks(Extension(state): Extension<Arc<State>>) -> Json<JwkSet
     Json(state.settings.jwks.clone())
 }
 
-fn get_file_id_from_headers(headers: HeaderMap) -> Result<Uuid> {
+fn get_file_id_from_headers(headers: &HeaderMap) -> Result<Uuid> {
     headers
         .get(FILE_ID_HEADER)
         .and_then(|h| h.to_str().ok())
@@ -29,18 +30,70 @@ fn get_file_id_from_headers(headers: HeaderMap) -> Result<Uuid> {
         .ok_or(ControllerError::FileIdFromHeaders)
 }
 
-/// Get token for a worker
+fn get_ephemeral_token_from_headers(headers: &HeaderMap) -> Result<String> {
+    headers
+        .get(WORKER_EPHEMERAL_TOKEN_HEADER)
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string())
+        .ok_or(ControllerError::MissingEphemeralToken)
+}
+
+/// Get token for a worker.
+/// The worker must provide its current JWT in the WORKER_EPHEMERAL_TOKEN_HEADER.
+/// We validate the JTI from the JWT, consume it (rotate), and issue a new JWT with a new JTI.
 pub(crate) async fn get_token_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<String>> {
-    let file_id = get_file_id_from_headers(headers)?;
-    let file_init_data = file_init_data(&state, file_id).await?;
-    let token = state
-        .settings
-        .generate_worker_jwt(&file_init_data.email, file_id)?;
+    let file_id = get_file_id_from_headers(&headers)?;
+    let current_jwt = get_ephemeral_token_from_headers(&headers)?;
 
-    Ok(Json(token))
+    // Decode the JWT to extract the JTI (we validate signature but not expiry since
+    // we're about to issue a new token anyway)
+    let token_data = authorize::<Claims>(&state.settings.jwks, &current_jwt, false, false)
+        .map_err(|e| {
+            // Log details to help diagnose signature issues
+            if let Ok(header) = jsonwebtoken::decode_header(&current_jwt) {
+                warn!(
+                    "Failed to decode worker JWT for file {file_id}: {e}. JWT kid: {:?}, JWKS kids: {:?}",
+                    header.kid,
+                    state.settings.jwks.keys.iter().filter_map(|k| k.common.key_id.as_ref()).collect::<Vec<_>>()
+                );
+            } else {
+                warn!("Failed to decode worker JWT for file {file_id}: {e}");
+            }
+            ControllerError::InvalidEphemeralToken
+        })?;
+
+    // Extract the JTI from the claims
+    let jti = token_data.claims.jti.ok_or_else(|| {
+        warn!("Worker JWT for file {file_id} missing JTI claim");
+        ControllerError::InvalidEphemeralToken
+    })?;
+
+    // Validate and rotate the JTI
+    let new_jti = state
+        .worker_jtis
+        .validate_and_rotate(file_id, &jti)
+        .ok_or_else(|| {
+            warn!("Invalid or already-used JTI for file {file_id}");
+            ControllerError::InvalidEphemeralToken
+        })?;
+
+    // Get the email for generating the new JWT
+    let file_init_data = file_init_data(&state, file_id).await?;
+
+    // Generate new JWT with the new JTI
+    let new_jwt = state.settings.generate_worker_jwt_with_jti(
+        &file_init_data.email,
+        file_id,
+        file_init_data.team_id,
+        &new_jti,
+    )?;
+
+    trace!("Issued new JWT with rotated JTI for file {file_id}");
+
+    Ok(Json(new_jwt))
 }
 
 /// Get tasks for a worker to process.
@@ -53,7 +106,7 @@ pub(crate) async fn get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>> {
-    let file_id = get_file_id_from_headers(headers)?;
+    let file_id = get_file_id_from_headers(&headers)?;
 
     trace!("Worker requesting tasks for file {file_id}");
 

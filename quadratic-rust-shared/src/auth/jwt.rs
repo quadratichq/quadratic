@@ -25,17 +25,27 @@ pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 /// The email is the email of the user who is authenticated.
 /// The exp is the expiration time of the JWT token.
 /// The file_id is an optional file identifier for file-scoped tokens.
-/// Other fields like sub, iat, jti, etc. are not included since they are not used.
+/// The team_id is an optional team identifier for team-scoped tokens.
+/// The jti is an optional unique identifier for one-time use tokens.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Claims {
     pub email: String,
     pub exp: usize,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub team_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jti: Option<String>,
 }
 
 impl Claims {
-    pub fn new(email: String, exp_seconds: usize, file_id: Option<Uuid>) -> Self {
+    pub fn new(
+        email: String,
+        exp_seconds: usize,
+        file_id: Option<Uuid>,
+        team_id: Option<Uuid>,
+    ) -> Self {
         let exp = (chrono::Utc::now() + chrono::Duration::seconds(exp_seconds as i64)).timestamp()
             as usize;
 
@@ -43,6 +53,27 @@ impl Claims {
             email,
             exp,
             file_id,
+            team_id,
+            jti: None,
+        }
+    }
+
+    /// Create claims for a one-time use token with a unique jti
+    pub fn new_one_time(
+        email: String,
+        exp_seconds: usize,
+        file_id: Option<Uuid>,
+        team_id: Option<Uuid>,
+    ) -> Self {
+        let exp = (chrono::Utc::now() + chrono::Duration::seconds(exp_seconds as i64)).timestamp()
+            as usize;
+
+        Self {
+            email,
+            exp,
+            file_id,
+            team_id,
+            jti: Some(Uuid::new_v4().to_string()),
         }
     }
 }
@@ -70,6 +101,19 @@ pub async fn get_const_jwks(jwks_uri: &str) -> &'static JwkSet {
 pub async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
     let jwks = reqwest::get(url).await?.json::<jwk::JwkSet>().await?;
     Ok(jwks)
+}
+
+/// Parse a JWKS from a JSON string.
+pub fn parse_jwks(jwks_json: &str) -> Result<jwk::JwkSet> {
+    serde_json::from_str(jwks_json)
+        .map_err(|e| SharedError::Auth(Auth::Jwt(format!("Failed to parse JWKS: {}", e))))
+}
+
+/// Merge multiple JWKS into one. Keys from later JWKS will be appended.
+pub fn merge_jwks(base: jwk::JwkSet, additional: jwk::JwkSet) -> jwk::JwkSet {
+    let mut keys = base.keys;
+    keys.extend(additional.keys);
+    jwk::JwkSet { keys }
 }
 
 /// Get the kid from the JWKS.
@@ -149,7 +193,7 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
 
     Ok(TokenData {
         header: Header::default(),
-        claims: Claims::new("m2m@quadratic.com".into(), 0, None),
+        claims: Claims::new("m2m@quadratic.com".into(), 0, None, None),
     })
 }
 
@@ -161,6 +205,26 @@ pub fn extract_m2m_token(headers: &HeaderMap) -> Option<String> {
             .ok()
             .map(|s| s.to_string().replace("Bearer ", ""))
     })
+}
+
+/// Decode a JWT without validation to extract claims.
+/// Use this only after the JWT has already been validated elsewhere.
+pub fn decode_claims_unverified(token: &str) -> Result<Claims> {
+    // Decode header to get the algorithm
+    let header = decode_header(token)?;
+    let alg = header.alg;
+
+    // Create a validation that skips all checks
+    let mut validation = Validation::new(alg);
+    validation.insecure_disable_signature_validation();
+    validation.validate_exp = false;
+    validation.validate_aud = false;
+
+    // Use an empty key since we're not validating
+    let key = DecodingKey::from_secret(&[]);
+    let token_data = decode::<Claims>(token, &key, &validation)?;
+
+    Ok(token_data.claims)
 }
 
 pub mod tests {
@@ -183,7 +247,7 @@ pub mod tests {
         let jwks: jwk::JwkSet = serde_json::from_str(TEST_JWKS).expect("Failed to parse test JWKS");
         let encoding_key = EncodingKey::from_rsa_pem(TEST_PRIVATE_KEY.as_bytes())
             .expect("Failed to create encoding key");
-        let claims = Claims::new("test@example.com".into(), 3600, None);
+        let claims = Claims::new("test@example.com".into(), 3600, None, None);
         let token =
             generate_jwt(claims.clone(), TEST_KID, &encoding_key).expect("Failed to generate JWT");
         let decoded =

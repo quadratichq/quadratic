@@ -17,6 +17,8 @@ pub(crate) struct Worker {
     worker_init_data: GetWorkerInitDataResponse,
     controller_url: String,
     tasks: Vec<(String, TaskRun)>,
+    /// Current JWT with JTI - used to authenticate with controller and rotated on each token request
+    current_jwt: String,
 }
 
 impl Worker {
@@ -34,12 +36,13 @@ impl Worker {
         let worker_init_data = config.worker_init_data;
         let controller_url = config.controller_url.to_owned();
         let tasks = config.tasks;
+        let current_jwt = config.jwt.to_owned();
 
         let core = Core::new(
             file_id,
             worker_init_data.sequence_number.to_owned() as u64,
             &worker_init_data.presigned_url.to_owned(),
-            config.jwt.to_owned(),
+            current_jwt.clone(),
             config.multiplayer_url.to_owned(),
             config.connection_url.to_owned(),
         )
@@ -53,6 +56,7 @@ impl Worker {
             worker_init_data,
             controller_url,
             tasks,
+            current_jwt,
         })
     }
 
@@ -95,11 +99,15 @@ impl Worker {
             for (key, task) in tasks {
                 let task_start = std::time::Instant::now();
 
-                // get a fresh JWT token, we want this to fail if the token
-                // isn't retrieved as it represents a catastrophic error
-                let jwt = get_token(&self.controller_url, self.file_id)
+                // Get a fresh JWT token by presenting our current JWT.
+                // The controller validates and consumes our current JTI,
+                // then issues a new JWT with a new JTI.
+                let jwt = get_token(&self.controller_url, self.file_id, &self.current_jwt)
                     .await
                     .map_err(|e| WorkerError::GetToken(e.to_string()))?;
+
+                // Update our current JWT for the next request
+                self.current_jwt = jwt.clone();
 
                 info!(
                     "Starting task {} (run_id: {}, task_id: {})",

@@ -15,7 +15,10 @@ use http::{
     header::{CACHE_CONTROL, PRAGMA},
 };
 use quadratic_rust_shared::sql::Connection;
-use quadratic_rust_shared::{auth::jwt::get_jwks, cache::memory::MemoryCache};
+use quadratic_rust_shared::{
+    auth::jwt::{get_jwks, merge_jwks, parse_jwks},
+    cache::memory::MemoryCache,
+};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 use tokio::time;
@@ -237,7 +240,17 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Fetch JWKS from the remote URI (e.g., WorkOS)
+    let mut jwks = get_jwks(&config.jwks_uri).await?;
+
+    // If a local JWKS is configured (e.g., cloud-controller keys), merge it
+    if let Some(ref local_jwks_json) = config.jwks {
+        let local_jwks = parse_jwks(local_jwks_json)?;
+        jwks = merge_jwks(jwks, local_jwks);
+        tracing::info!("Merged {} additional JWKS keys", local_jwks_json.len());
+    }
+
     let state = Arc::new(State::new(&config, Some(jwks.clone())).await?);
     let app = app(state.clone())?;
 

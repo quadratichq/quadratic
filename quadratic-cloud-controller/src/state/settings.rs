@@ -72,14 +72,22 @@ impl Settings {
         Ok(settings)
     }
 
-    /// Generate a JWT token for a worker
-    pub(crate) fn generate_worker_jwt(&self, email: &str, file_id: Uuid) -> Result<String> {
+    /// Generate a JWT token for a worker with a specific JTI for one-time use
+    pub(crate) fn generate_worker_jwt_with_jti(
+        &self,
+        email: &str,
+        file_id: Uuid,
+        team_id: Uuid,
+        jti: &str,
+    ) -> Result<String> {
         let kid = get_kid_from_jwks(&self.jwks)?;
-        let claims = Claims::new(
+        let mut claims = Claims::new(
             email.into(),
             self.jwt_expiration_seconds as usize,
             Some(file_id),
+            Some(team_id),
         );
+        claims.jti = Some(jti.to_string());
         let jwt = generate_jwt(claims, &kid, &self.jwt_encoding_key)?;
 
         Ok(jwt)
