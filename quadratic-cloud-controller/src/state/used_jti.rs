@@ -71,6 +71,12 @@ impl WorkerJtiStore {
     /// # Returns
     /// * `Some(new_jti)` - If the provided JTI was valid, returns the new JTI
     /// * `None` - If the provided JTI was invalid or not found
+    ///
+    /// # Note on Worker Crashes
+    /// If a worker crashes after receiving a new JWT but before using it, it cannot
+    /// recover with its old JWT (the previous JTI is no longer valid). This is expected
+    /// behavior - workers are ephemeral Docker containers that don't restart. If a worker
+    /// fails, the controller detects this and recreates it with a fresh JTI.
     pub fn validate_and_rotate(&self, file_id: Uuid, provided_jti: &str) -> Option<String> {
         match self.file_data.entry(file_id) {
             Entry::Occupied(mut entry) if entry.get().jti == provided_jti => {

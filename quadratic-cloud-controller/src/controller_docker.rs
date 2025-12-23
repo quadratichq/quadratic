@@ -222,44 +222,27 @@ impl Controller {
         let connection_url = self.state.settings.connection_url();
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
 
-        // Generate initial JTI for this worker and register it along with cached worker data
-        // (email and team_id are cached to avoid API calls during token rotation)
+        // Generate initial JTI and JWT for this worker
+        // Note: We don't register the JTI until the container is successfully started
+        // to avoid orphaned JTI entries if container creation fails
         let initial_jti = Uuid::new_v4().to_string();
-        self.state.worker_jtis.register(
-            file_id,
-            initial_jti.clone(),
-            worker_init_data.email.clone(),
-            worker_init_data.team_id,
-        );
-
-        // Helper to clean up JTI if worker creation fails after registration
-        let cleanup_jti_on_error = |state: &State, file_id: Uuid, err| {
-            state.worker_jtis.remove(&file_id);
-            err
-        };
 
         // Generate JWT with the initial JTI
-        let worker_jwt = self
-            .state
-            .settings
-            .generate_worker_jwt_with_jti(
-                &worker_init_data.email,
-                file_id,
-                worker_init_data.team_id,
-                &initial_jti,
-            )
-            .map_err(|e| cleanup_jti_on_error(&self.state, file_id, e))?;
+        let worker_jwt = self.state.settings.generate_worker_jwt_with_jti(
+            &worker_init_data.email,
+            file_id,
+            worker_init_data.team_id,
+            &initial_jti,
+        )?;
 
-        let worker_init_data_json = serde_json::to_string(&worker_init_data)
-            .map_err(|e| cleanup_jti_on_error(&self.state, file_id, e.into()))?;
+        let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
         let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
-        let encoded_tasks = encode_tasks(tasks).map_err(|e| {
-            cleanup_jti_on_error(&self.state, file_id, Self::error("create_worker", e))
-        })?;
+        let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
 
         // Note: While env vars are visible via `docker inspect` or `/proc/<pid>/environ`,
         // the JWT passed here is safe because:
-        // 1. The worker rotates to a new JWT (via get_token) before running any user code
+        // 1. The worker rotates to a new JWT (via get_token) immediately on startup, before
+        //    any network operations (including multiplayer connection)
         // 2. The initial JWT's JTI is consumed/invalidated on first use
         // 3. By the time untrusted code (Python/JS) executes, this JWT is already invalid
         let env_vars = vec![
@@ -304,7 +287,7 @@ impl Controller {
             Some(binds),
         )
         .await
-        .map_err(|e| cleanup_jti_on_error(&self.state, file_id, Self::error("create_worker", e)))?;
+        .map_err(|e| Self::error("create_worker", e))?;
 
         info!("About to add and start container for file {file_id}");
 
@@ -314,9 +297,17 @@ impl Controller {
             .await
             .add_container(container, true)
             .await
-            .map_err(|e| {
-                cleanup_jti_on_error(&self.state, file_id, Self::error("create_worker", e))
-            })?;
+            .map_err(|e| Self::error("create_worker", e))?;
+
+        // Register the JTI only after the container is successfully started
+        // This avoids orphaned JTI entries if container creation fails
+        // (email and team_id are cached to avoid API calls during token rotation)
+        self.state.worker_jtis.register(
+            file_id,
+            initial_jti,
+            worker_init_data.email.clone(),
+            worker_init_data.team_id,
+        );
 
         info!("Successfully added and started worker for file {file_id}");
 

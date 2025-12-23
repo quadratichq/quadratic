@@ -41,8 +41,20 @@ impl Worker {
         let worker_init_data = config.worker_init_data;
         let controller_url = config.controller_url.to_owned();
         let tasks = config.tasks;
-        let current_jwt = config.jwt.to_owned();
 
+        // Rotate the token immediately to invalidate the environment JWT.
+        // This ensures the JWT passed via environment (visible in /proc/<pid>/environ)
+        // is consumed before any network operations, making it useless if leaked.
+        let current_jwt = get_token(&controller_url, file_id, &config.jwt)
+            .await
+            .map_err(|e| WorkerError::CreateWorker(format!("Failed to rotate initial JWT: {e}")))?;
+
+        // Note: Core stores this JWT for the initial multiplayer connection. Core doesn't
+        // implement reconnection - if the websocket drops, the worker fails. The JWT stored
+        // in Core won't be updated on rotation, but this is safe because:
+        // 1. Workers are short-lived (process tasks and exit)
+        // 2. No reconnection means the stored JWT is used only once
+        // 3. Each task rotation updates self.current_jwt (not Core's copy)
         let core = Core::new(
             file_id,
             worker_init_data.sequence_number.to_owned() as u64,
