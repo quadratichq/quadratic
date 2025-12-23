@@ -37,7 +37,7 @@ pub(crate) fn version() -> String {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Result<Self> {
-        let jwt_encoding_key = EncodingKey::from_rsa_pem(
+        let quadratic_jwt_encoding_key = EncodingKey::from_rsa_pem(
             config
                 .quadratic_jwt_encoding_key
                 .replace(r"\n", "\n")
@@ -46,8 +46,8 @@ impl Settings {
         .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         // Unescape the JWKS JSON string (Pulumi ESC escapes quotes as \")
-        let jwks_unescaped = config.quadratic_jwks.replace("\\\"", "\"");
-        let jwks: JwkSet = serde_json::from_str(&jwks_unescaped)
+        let quadratic_jwks_unescaped = config.quadratic_jwks.replace("\\\"", "\"");
+        let quadratic_jwks: JwkSet = serde_json::from_str(&quadratic_jwks_unescaped)
             .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         let settings = Settings {
@@ -65,9 +65,9 @@ impl Settings {
             files_port: config.files_port.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
-            quadratic_jwt_encoding_key: jwt_encoding_key,
+            quadratic_jwt_encoding_key,
             quadratic_jwt_expiration_seconds: config.quadratic_jwt_expiration_seconds,
-            quadratic_jwks: jwks,
+            quadratic_jwks,
             _worker_jwt_email: config.worker_jwt_email.to_owned(),
             _namespace: config.namespace.to_owned(),
             version: version(),
