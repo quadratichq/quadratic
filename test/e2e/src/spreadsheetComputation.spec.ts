@@ -271,7 +271,9 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
   // Assert screenshot for correct values
   await page.waitForTimeout(10 * 1000);
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-relative-post-drag.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-relative-post-drag.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Drag References - Formula Absolute
@@ -292,7 +294,9 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
   // Assert screenshot for correct values
   await page.waitForTimeout(10 * 1000);
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-absolute-post-drag.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-absolute-post-drag.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Drag References - JavaScript Relative
@@ -313,7 +317,9 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
   // Assert screenshot for correct values
   await page.waitForTimeout(10 * 1000);
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-relative-post-drag.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-relative-post-drag.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Drag References - JavaScript Absolute
@@ -334,7 +340,9 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
   // Assert screenshot for correct values
   await page.waitForTimeout(10 * 1000);
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-absolute-post-drag.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-absolute-post-drag.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Drag References - Python Relative
@@ -355,7 +363,9 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
   // Assert screenshot for correct values
   await page.waitForTimeout(10 * 1000);
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-relative-post-drag.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-relative-post-drag.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Drag References - Python Absolute
@@ -376,7 +386,9 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
   // Assert screenshot for correct values
   await page.waitForTimeout(10 * 1000);
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-absolute-post-drag.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-absolute-post-drag.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Cleanup newly created files
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });

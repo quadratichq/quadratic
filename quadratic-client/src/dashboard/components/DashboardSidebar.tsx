@@ -322,6 +322,7 @@ function SidebarNavLink({
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
       {...(dataTestId ? { 'data-testid': dataTestId } : {})}
+      {...dropProps}
     >
       {children}
     </NavLink>

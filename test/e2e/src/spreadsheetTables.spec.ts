@@ -508,7 +508,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(500);
 
   // Click on the "Text Wrap" icon and select "Overflow"
-  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole('button', { name: 'format_text_overflow' }).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Overflow').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -518,12 +518,12 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click on the "Text Wrap" icon and select "Clip"
-  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole('button', { name: 'format_text_overflow' }).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Clip').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Text Wrap" icon and select "Wrap"
-  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole('button', { name: 'format_text_overflow' }).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Wrap').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 

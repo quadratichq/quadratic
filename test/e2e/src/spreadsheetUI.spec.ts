@@ -813,13 +813,13 @@ test('Open Formula Editor', async ({ page }) => {
   await page.keyboard.type(formulaCode);
 
   // Check autocorrect by asserting if SUMIF option becomes visible in popup menu
-  await expect(page.getByLabel('SUMIF', { exact: true }).locator('a')).toBeVisible();
+  // Note: Monaco autocomplete uses .monaco-list-row elements, not standard role="option"
+  // We use getByText to find SUMIF regardless of how it's structured in spans
+  const sumifOption = page.getByText(/SUMIF/i).first();
+  await expect(sumifOption).toBeVisible();
 
   // Click SUMIF option from popup menu
-  await page
-    .getByLabel('SUMIF', { exact: true })
-    .locator('a')
-    .click({ timeout: 60 * 1000 });
+  await sumifOption.click({ timeout: 60 * 1000 });
 
   // Check autocorrect by asserting if the code autocompletes
   await expect(
@@ -1210,11 +1210,11 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Navigate to file (removed redundant 10s waitForTimeout, fixed to wait on recipientPage)
   await recipientFileCard.click({ timeout: 60 * 1000 });
-  await recipientPage.waitForLoadState('domcontentloaded');
+  await recipientPage.waitForLoadState('networkidle');
 
   // Assert "Read-only" message appears
   await expect(
-    recipientPage.locator(`:text("Read-only. Duplicate or ask the owner for permission to edit.")`).first()
+    recipientPage.locator('text=Read-only. Duplicate or ask the owner for permission to edit.').first()
   ).toBeVisible();
 
   //--------------------------------
