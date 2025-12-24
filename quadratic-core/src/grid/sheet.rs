@@ -952,7 +952,8 @@ mod test {
             js_cell_value,
             Some(JsCellValue {
                 value: "test".to_string(),
-                kind: JsCellValueKind::Text
+                kind: JsCellValueKind::Text,
+                spans: None,
             })
         );
     }
