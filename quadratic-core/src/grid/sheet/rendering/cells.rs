@@ -3,7 +3,10 @@ use crate::{
     a1::A1Context,
     grid::{
         CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
-        js_types::{JsNumber, JsRenderCell, JsRenderCellLinkSpan, JsRenderCellSpecial},
+        js_types::{
+            JsNumber, JsRenderCell, JsRenderCellFormatSpan, JsRenderCellLinkSpan,
+            JsRenderCellSpecial,
+        },
     },
 };
 
@@ -64,24 +67,51 @@ impl Sheet {
             None
         };
 
-        // Extract hyperlink spans from RichText (with character ranges)
-        let link_spans = if let CellValue::RichText(spans) = value {
+        // Extract hyperlink spans and formatting spans from RichText (with character ranges)
+        let (link_spans, format_spans) = if let CellValue::RichText(spans) = value {
             let mut char_offset: u32 = 0;
-            spans
-                .iter()
-                .filter_map(|span| {
-                    let start = char_offset;
-                    let len = span.text.chars().count() as u32;
-                    char_offset += len;
-                    span.link.as_ref().map(|url| JsRenderCellLinkSpan {
+            let mut links = Vec::new();
+            let mut formats = Vec::new();
+
+            for span in spans.iter() {
+                let start = char_offset;
+                let len = span.text.chars().count() as u32;
+                char_offset += len;
+                let end = char_offset;
+
+                // Extract hyperlink span
+                if let Some(url) = &span.link {
+                    links.push(JsRenderCellLinkSpan {
                         start,
-                        end: char_offset,
+                        end,
                         url: url.clone(),
-                    })
-                })
-                .collect()
+                    });
+                }
+
+                // Extract formatting span if it has any formatting overrides
+                if span.bold.is_some()
+                    || span.italic.is_some()
+                    || span.underline.is_some()
+                    || span.strike_through.is_some()
+                    || span.text_color.is_some()
+                    || span.link.is_some()
+                {
+                    formats.push(JsRenderCellFormatSpan {
+                        start,
+                        end,
+                        bold: span.bold,
+                        italic: span.italic,
+                        underline: span.underline,
+                        strike_through: span.strike_through,
+                        text_color: span.text_color.clone(),
+                        link: span.link.clone(),
+                    });
+                }
+            }
+
+            (links, formats)
         } else {
-            vec![]
+            (vec![], vec![])
         };
 
         let mut number: Option<JsNumber> = None;
@@ -117,6 +147,7 @@ impl Sheet {
             table_name: None,
             column_header: None,
             link_spans,
+            format_spans,
         }
     }
 

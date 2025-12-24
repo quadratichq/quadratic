@@ -11,9 +11,21 @@ import * as monaco from 'monaco-editor';
 // CSS class for hyperlink styling - injected into DOM
 const HYPERLINK_STYLE_ID = 'inline-editor-hyperlink-styles';
 const HYPERLINK_CLASS = 'inline-hyperlink';
+const BOLD_CLASS = 'inline-bold';
+const ITALIC_CLASS = 'inline-italic';
+const UNDERLINE_CLASS = 'inline-underline';
+const STRIKE_THROUGH_CLASS = 'inline-strike-through';
 
 // Regex to match URLs (http:// or https://)
 const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
+
+export interface SpanFormatting {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikeThrough?: boolean;
+  textColor?: string;
+}
 
 interface TrackedSpan {
   start: number;
@@ -32,7 +44,7 @@ interface PendingHyperlink {
   selectedText: string;
 }
 
-class InlineEditorHyperlinks {
+class InlineEditorSpans {
   private decorations: monaco.editor.IEditorDecorationsCollection | null = null;
   private spans: TrackedSpan[] = [];
   private active = false;
@@ -144,6 +156,28 @@ class InlineEditorHyperlinks {
         text-decoration: underline !important;
         cursor: pointer;
       }
+      .${BOLD_CLASS} {
+        font-family: 'OpenSans-Bold', sans-serif !important;
+        font-weight: bold !important;
+      }
+      .${ITALIC_CLASS} {
+        font-family: 'OpenSans-Italic', sans-serif !important;
+        font-style: italic !important;
+      }
+      .${BOLD_CLASS}.${ITALIC_CLASS} {
+        font-family: 'OpenSans-BoldItalic', sans-serif !important;
+        font-weight: bold !important;
+        font-style: italic !important;
+      }
+      .${UNDERLINE_CLASS} {
+        text-decoration: underline !important;
+      }
+      .${STRIKE_THROUGH_CLASS} {
+        text-decoration: line-through !important;
+      }
+      .${UNDERLINE_CLASS}.${STRIKE_THROUGH_CLASS} {
+        text-decoration: underline line-through !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -199,6 +233,7 @@ class InlineEditorHyperlinks {
     this.spans = [];
     this.decorations?.clear();
     this.decorations = null;
+    this.cleanupDynamicColorStyles();
   }
 
   /**
@@ -207,22 +242,43 @@ class InlineEditorHyperlinks {
   private updateDecorations() {
     if (!this.active) return;
 
+    // Clean up old dynamic styles before creating new ones
+    this.cleanupDynamicColorStyles();
+
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
     for (const span of this.spans) {
-      if (!span.link) continue;
+      // Skip spans that have no formatting
+      if (!span.link && !span.bold && !span.italic && !span.underline && !span.strikeThrough && !span.textColor) {
+        continue;
+      }
 
       const startPos = this.offsetToPosition(span.start);
       const endPos = this.offsetToPosition(span.end);
 
       if (!startPos || !endPos) continue;
 
+      // Build the class name based on formatting
+      const classes: string[] = [];
+      if (span.link) classes.push(HYPERLINK_CLASS);
+      if (span.bold) classes.push(BOLD_CLASS);
+      if (span.italic) classes.push(ITALIC_CLASS);
+      if (span.underline) classes.push(UNDERLINE_CLASS);
+      if (span.strikeThrough) classes.push(STRIKE_THROUGH_CLASS);
+
+      // For text color, create a unique class and inject a dynamic style
+      if (span.textColor) {
+        const colorClass = this.getOrCreateColorClass(span.textColor);
+        classes.push(colorClass);
+      }
+
       newDecorations.push({
         range: new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
         options: {
-          inlineClassName: HYPERLINK_CLASS,
+          inlineClassName: classes.length > 0 ? classes.join(' ') : undefined,
+          inlineClassNameAffectsLetterSpacing: true,
           stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-          hoverMessage: { value: span.link },
+          hoverMessage: span.link ? { value: span.link } : undefined,
         },
       });
     }
@@ -232,6 +288,44 @@ class InlineEditorHyperlinks {
     } else {
       this.decorations = inlineEditorMonaco.createDecorationsCollection(newDecorations);
     }
+  }
+
+  // Map of color values to their CSS class names
+  private colorClassMap: Map<string, string> = new Map();
+  private colorClassCounter = 0;
+
+  /**
+   * Get or create a CSS class for a specific color.
+   */
+  private getOrCreateColorClass(color: string): string {
+    const existing = this.colorClassMap.get(color);
+    if (existing) return existing;
+
+    // Create a new class for this color
+    const className = `inline-text-color-${this.colorClassCounter++}`;
+    this.colorClassMap.set(color, className);
+
+    // Inject the style
+    const styleId = `inline-color-style-${className}`;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `.${className} { color: ${color} !important; }`;
+    document.head.appendChild(style);
+
+    return className;
+  }
+
+  /**
+   * Clean up dynamic color styles.
+   */
+  private cleanupDynamicColorStyles() {
+    for (const className of this.colorClassMap.values()) {
+      const styleId = `inline-color-style-${className}`;
+      const style = document.getElementById(styleId);
+      if (style) style.remove();
+    }
+    this.colorClassMap.clear();
+    this.colorClassCounter = 0;
   }
 
   /**
@@ -433,6 +527,204 @@ class InlineEditorHyperlinks {
   }
 
   /**
+   * Apply formatting to the current selection.
+   * Returns true if formatting was applied to a selection, false otherwise.
+   */
+  applyFormattingToSelection(formatting: SpanFormatting): boolean {
+    const selection = inlineEditorMonaco.getSelection();
+    if (!selection) {
+      return false;
+    }
+
+    const offsets = this.rangeToOffsets(selection.range);
+    if (!offsets || offsets.start === offsets.end) {
+      return false;
+    }
+
+    this.addFormattingSpan(offsets.start, offsets.end, formatting);
+    return true;
+  }
+
+  /**
+   * Toggle a specific formatting property for the current selection.
+   * Returns true if formatting was toggled for a selection, false otherwise.
+   */
+  toggleFormattingForSelection(property: keyof SpanFormatting): boolean {
+    const selection = inlineEditorMonaco.getSelection();
+    if (!selection) {
+      return false;
+    }
+
+    const offsets = this.rangeToOffsets(selection.range);
+    if (!offsets || offsets.start === offsets.end) {
+      return false;
+    }
+
+    // Check if the selection already has this formatting
+    const currentValue = this.getFormattingForRange(offsets.start, offsets.end, property);
+
+    // Toggle the formatting
+    const newValue = !currentValue;
+    this.addFormattingSpan(offsets.start, offsets.end, { [property]: newValue });
+    return true;
+  }
+
+  /**
+   * Check if a range has a specific formatting property set.
+   * Returns true if any part of the range has the formatting.
+   */
+  getFormattingForRange(startOffset: number, endOffset: number, property: keyof SpanFormatting): boolean {
+    for (const span of this.spans) {
+      // Check if span overlaps with the range
+      if (span.end > startOffset && span.start < endOffset) {
+        if (span[property]) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Add or update a formatting span for a given character range.
+   * Merges formatting with existing spans in the range.
+   */
+  addFormattingSpan(startOffset: number, endOffset: number, formatting: SpanFormatting) {
+    if (!this.active) {
+      // Activate tracking if not already active
+      this.active = true;
+    }
+
+    // Process spans that overlap with the new range
+    const newSpans: TrackedSpan[] = [];
+
+    for (const span of this.spans) {
+      if (span.end <= startOffset || span.start >= endOffset) {
+        // Span is entirely outside the new range - keep it
+        newSpans.push(span);
+      } else if (span.start >= startOffset && span.end <= endOffset) {
+        // Span is entirely inside the new range - merge formatting
+        newSpans.push({
+          ...span,
+          bold: formatting.bold !== undefined ? formatting.bold : span.bold,
+          italic: formatting.italic !== undefined ? formatting.italic : span.italic,
+          underline: formatting.underline !== undefined ? formatting.underline : span.underline,
+          strikeThrough: formatting.strikeThrough !== undefined ? formatting.strikeThrough : span.strikeThrough,
+          textColor: formatting.textColor !== undefined ? formatting.textColor : span.textColor,
+        });
+      } else if (span.start < startOffset && span.end > endOffset) {
+        // Span encompasses the new range - split into three
+        newSpans.push({ ...span, end: startOffset });
+        newSpans.push({
+          ...span,
+          start: startOffset,
+          end: endOffset,
+          bold: formatting.bold !== undefined ? formatting.bold : span.bold,
+          italic: formatting.italic !== undefined ? formatting.italic : span.italic,
+          underline: formatting.underline !== undefined ? formatting.underline : span.underline,
+          strikeThrough: formatting.strikeThrough !== undefined ? formatting.strikeThrough : span.strikeThrough,
+          textColor: formatting.textColor !== undefined ? formatting.textColor : span.textColor,
+        });
+        newSpans.push({ ...span, start: endOffset });
+      } else if (span.start < startOffset && span.end > startOffset) {
+        // Span overlaps start - split into two
+        newSpans.push({ ...span, end: startOffset });
+        newSpans.push({
+          ...span,
+          start: startOffset,
+          bold: formatting.bold !== undefined ? formatting.bold : span.bold,
+          italic: formatting.italic !== undefined ? formatting.italic : span.italic,
+          underline: formatting.underline !== undefined ? formatting.underline : span.underline,
+          strikeThrough: formatting.strikeThrough !== undefined ? formatting.strikeThrough : span.strikeThrough,
+          textColor: formatting.textColor !== undefined ? formatting.textColor : span.textColor,
+        });
+      } else if (span.start < endOffset && span.end > endOffset) {
+        // Span overlaps end - split into two
+        newSpans.push({
+          ...span,
+          end: endOffset,
+          bold: formatting.bold !== undefined ? formatting.bold : span.bold,
+          italic: formatting.italic !== undefined ? formatting.italic : span.italic,
+          underline: formatting.underline !== undefined ? formatting.underline : span.underline,
+          strikeThrough: formatting.strikeThrough !== undefined ? formatting.strikeThrough : span.strikeThrough,
+          textColor: formatting.textColor !== undefined ? formatting.textColor : span.textColor,
+        });
+        newSpans.push({ ...span, start: endOffset });
+      }
+    }
+
+    // Check if we covered the entire range with existing spans
+    // If not, add a new span for the uncovered portion
+    const coveredRanges = newSpans
+      .filter((s) => s.start >= startOffset && s.end <= endOffset)
+      .sort((a, b) => a.start - b.start);
+
+    let lastEnd = startOffset;
+    for (const covered of coveredRanges) {
+      if (covered.start > lastEnd) {
+        // Gap before this span - add a new formatting span
+        newSpans.push({
+          start: lastEnd,
+          end: covered.start,
+          ...formatting,
+        });
+      }
+      lastEnd = Math.max(lastEnd, covered.end);
+    }
+
+    // Add span for any remaining gap
+    if (lastEnd < endOffset) {
+      newSpans.push({
+        start: lastEnd,
+        end: endOffset,
+        ...formatting,
+      });
+    }
+
+    // Sort spans by start position and filter out empty spans
+    this.spans = newSpans.filter((s) => s.end > s.start).sort((a, b) => a.start - b.start);
+
+    // Merge adjacent spans with identical formatting
+    this.mergeAdjacentSpans();
+
+    this.updateDecorations();
+  }
+
+  /**
+   * Merge adjacent spans that have identical formatting.
+   */
+  private mergeAdjacentSpans() {
+    if (this.spans.length < 2) return;
+
+    const merged: TrackedSpan[] = [];
+    let current = this.spans[0];
+
+    for (let i = 1; i < this.spans.length; i++) {
+      const next = this.spans[i];
+
+      // Check if spans are adjacent and have identical formatting
+      if (
+        current.end === next.start &&
+        current.link === next.link &&
+        current.bold === next.bold &&
+        current.italic === next.italic &&
+        current.underline === next.underline &&
+        current.strikeThrough === next.strikeThrough &&
+        current.textColor === next.textColor
+      ) {
+        // Merge the spans
+        current = { ...current, end: next.end };
+      } else {
+        merged.push(current);
+        current = next;
+      }
+    }
+
+    merged.push(current);
+    this.spans = merged;
+  }
+
+  /**
    * Convert a Monaco range to character offsets.
    */
   rangeToOffsets(range: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number }): {
@@ -551,6 +843,17 @@ class InlineEditorHyperlinks {
       (span) => span.link || span.bold || span.italic || span.underline || span.strikeThrough || span.textColor
     );
   }
+
+  /**
+   * Clear all formatting from all spans, converting the cell to plain text.
+   * This removes all tracked spans so the cell will be saved as regular text.
+   */
+  clearAllFormatting(): void {
+    this.spans = [];
+    this.decorations?.clear();
+    this.cleanupDynamicColorStyles();
+    this.updateDecorations();
+  }
 }
 
-export const inlineEditorHyperlinks = new InlineEditorHyperlinks();
+export const inlineEditorSpans = new InlineEditorSpans();

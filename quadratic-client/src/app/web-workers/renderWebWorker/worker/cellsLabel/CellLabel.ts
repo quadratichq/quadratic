@@ -46,10 +46,32 @@ import { Point, Rectangle } from 'pixi.js';
 interface CharRenderData {
   charData: RenderBitmapChar;
   labelMeshId: string;
+  fontName: string;
   line: number;
   charCode: number;
   position: Point;
   prevSpaces: number;
+}
+
+/** Format span with character range and style overrides (from JsRenderCellFormatSpan). */
+interface FormatSpan {
+  start: number;
+  end: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikeThrough?: boolean;
+  textColor?: string;
+  link?: string;
+}
+
+/** Effective formatting for a character, merging cell defaults with span overrides. */
+interface CharFormatting {
+  fontName: string;
+  textColor: number | undefined;
+  underline: boolean;
+  strikeThrough: boolean;
+  isLink: boolean;
 }
 
 // Maximum number of characters to render per cell
@@ -128,6 +150,8 @@ export class CellLabel {
   link: boolean;
   /** Link spans with character ranges and URLs (for RichText hyperlinks). */
   linkSpans: Array<{ start: number; end: number; url: string }>;
+  /** Format spans with character ranges and style overrides (from RichText). */
+  private formatSpans: FormatSpan[];
   /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
   linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number; linkText: string }>;
   private underline: boolean;
@@ -209,8 +233,10 @@ export class CellLabel {
     this.originalText = cell.value;
     this.text = this.getText(cell);
     this.linkSpans = [];
+    this.formatSpans = [];
     this.linkRectangles = [];
     this.link = this.isLink(cell);
+    this.initFormatSpans(cell);
     this.fontSize = cell.fontSize ?? DEFAULT_FONT_SIZE;
     this.lineHeight = (this.fontSize / DEFAULT_FONT_SIZE) * LINE_HEIGHT;
     this.underlineOffset = UNDERLINE_OFFSET;
@@ -275,6 +301,70 @@ export class CellLabel {
     const bold = this.bold ? 'Bold' : '';
     const italic = this.italic ? 'Italic' : '';
     this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+  };
+
+  /** Initialize format spans from cell data. */
+  private initFormatSpans = (cell: JsRenderCell) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const formatSpans = (cell as any).formatSpans as FormatSpan[] | undefined;
+    if (formatSpans && formatSpans.length > 0) {
+      this.formatSpans = formatSpans;
+    }
+  };
+
+  /** Check if this cell has any format spans (requiring per-character rendering). */
+  private hasFormatSpans = (): boolean => {
+    return this.formatSpans.length > 0;
+  };
+
+  /** Get the font name for a character based on its span formatting. */
+  private getFontNameForChar = (charIndex: number): string => {
+    // Start with cell defaults
+    let bold = this.bold;
+    let italic = this.italic;
+
+    // Find span containing this character and override
+    for (const span of this.formatSpans) {
+      if (charIndex >= span.start && charIndex < span.end) {
+        if (span.bold !== undefined) bold = span.bold;
+        if (span.italic !== undefined) italic = span.italic;
+        break; // Spans don't overlap
+      }
+    }
+
+    const boldStr = bold ? 'Bold' : '';
+    const italicStr = italic ? 'Italic' : '';
+    return `OpenSans${boldStr || italicStr ? '-' : ''}${boldStr}${italicStr}`;
+  };
+
+  /** Get the effective formatting for a character, merging cell defaults with span overrides. */
+  private getCharFormatting = (charIndex: number): CharFormatting => {
+    // Start with cell defaults
+    let bold = this.bold;
+    let italic = this.italic;
+    let underline = this.underline;
+    let strikeThrough = this.strikeThrough;
+    let textColor: number | undefined = this.tint || undefined;
+    let isLink = this.link;
+
+    // Find span containing this character and override
+    for (const span of this.formatSpans) {
+      if (charIndex >= span.start && charIndex < span.end) {
+        if (span.bold !== undefined) bold = span.bold;
+        if (span.italic !== undefined) italic = span.italic;
+        if (span.underline !== undefined) underline = span.underline;
+        if (span.strikeThrough !== undefined) strikeThrough = span.strikeThrough;
+        if (span.textColor !== undefined) textColor = convertColorStringToTint(span.textColor);
+        if (span.link !== undefined) isLink = true;
+        break; // Spans don't overlap
+      }
+    }
+
+    const boldStr = bold ? 'Bold' : '';
+    const italicStr = italic ? 'Italic' : '';
+    const fontName = `OpenSans${boldStr || italicStr ? '-' : ''}${boldStr}${italicStr}`;
+
+    return { fontName, textColor, underline, strikeThrough, isLink };
   };
 
   private updateCellLimits = () => {
@@ -487,7 +577,7 @@ export class CellLabel {
           const needsSeparateMesh = this.chars[0].charData.textureUid !== dotCharData.textureUid;
           if (needsSeparateMesh) {
             // Add one dot mesh entry per character so we have enough buffers
-            const needsColor = !!this.tint || (!this.link && this.linkSpans.length > 0);
+            const needsColor = !!this.tint || (!this.link && this.linkSpans.length > 0) || this.hasFormatSpans();
             for (let i = 0; i < this.chars.length; i++) {
               labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, needsColor);
             }
@@ -501,8 +591,9 @@ export class CellLabel {
   private processText = (labelMeshes: LabelMeshes, originalText: string) => {
     if (!this.visible) return;
 
-    const data = this.cellsLabels.bitmapFonts[this.fontName];
-    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.processText`);
+    // Use base font for scale calculation (font size is constant across cell)
+    const baseData = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!baseData) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.processText`);
 
     const pos = new Point();
     const chars = [];
@@ -510,7 +601,7 @@ export class CellLabel {
     const lineSpaces: number[] = [];
     const displayText = originalText.replace(/(?:\r\n|\r)/g, '\n') || '';
     const charsInput = splitTextToCharacters(displayText);
-    const scale = this.fontSize / data.size;
+    const scale = this.fontSize / baseData.size;
     const maxWidth = this.maxWidth;
     let prevCharCode = null;
     let lastLineWidth = 0;
@@ -521,6 +612,10 @@ export class CellLabel {
     let spacesRemoved = 0;
     let spaceCount = 0;
     let i: number;
+
+    // Check if we need per-character font selection
+    const hasFormatSpans = this.hasFormatSpans();
+
     for (i = 0; i < charsInput.length; i++) {
       const char = charsInput[i];
       const charCode = extractCharCode(char);
@@ -543,7 +638,13 @@ export class CellLabel {
         spaceCount = 0;
         continue;
       }
-      let charData = data.chars[charCode];
+
+      // Get the font for this character based on its span formatting
+      const charFontName = hasFormatSpans ? this.getFontNameForChar(i) : this.fontName;
+      const fontData = this.cellsLabels.bitmapFonts[charFontName];
+      if (!fontData) throw new Error(`Expected BitmapFont ${charFontName} to be defined in CellLabel.processText`);
+
+      let charData = fontData.chars[charCode];
       // if not a normal character and not an emoji character, then we don't render it
       if (!charData) {
         // Check if this is a known emoji (including multi-codepoint emojis with variation selectors)
@@ -573,7 +674,7 @@ export class CellLabel {
           const emojiSize = this.lineHeight / scale;
           // Approximate baseline offset: for most fonts, baseline is ~80% down from top
           // This aligns emoji bottom roughly with text baseline
-          const baselineOffset = data.lineHeight * 0.2;
+          const baselineOffset = baseData.lineHeight * 0.2;
           charData = {
             specialEmoji: emojiToRender,
             textureUid: 0,
@@ -599,14 +700,15 @@ export class CellLabel {
         }
       }
 
-      // Need color support if we have a tint OR if we have partial hyperlinks (which use linkColor)
-      const needsColor = !!this.tint || (!this.link && this.linkSpans.length > 0);
-      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, needsColor);
+      // Need color support if we have a tint OR if we have partial hyperlinks OR if we have format spans
+      const needsColor = !!this.tint || (!this.link && this.linkSpans.length > 0) || hasFormatSpans;
+      const labelMeshId = labelMeshes.add(charFontName, this.fontSize, charData.textureUid, needsColor);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
       const charRenderData: CharRenderData = {
         labelMeshId,
+        fontName: charFontName,
         charData,
         line,
         charCode: charCode,
@@ -821,9 +923,11 @@ export class CellLabel {
 
     const scale = this.fontSize / data.size;
     const hasPartialLinks = !this.link && this.linkSpans.length > 0;
-    // For partial hyperlinks, we need a default color for non-link text
+    const hasFormatSpans = this.hasFormatSpans();
+    // For partial hyperlinks or format spans, we need a default color for non-styled text
     // because the buffer is created with color support
-    const defaultTextColor = hasPartialLinks ? convertTintToArray(colors.cellFontColor) : undefined;
+    const needsDefaultColor = hasPartialLinks || hasFormatSpans;
+    const defaultTextColor = needsDefaultColor ? convertTintToArray(colors.cellFontColor) : undefined;
     const color = this.tint ? convertTintToArray(this.tint) : defaultTextColor;
     // Pre-calculate link color for partial hyperlinks
     const linkColor = hasPartialLinks ? convertTintToArray(convertColorStringToTint(colors.link)) : undefined;
@@ -972,9 +1076,9 @@ export class CellLabel {
         // This line is NOT clipped - render normally
         // If we have dot data and need separate mesh, clean up unused dot buffer
         if (dotCharData && char.charData.textureUid !== dotCharData.textureUid) {
-          const needsColorForCleanup = !!this.tint || (!this.link && this.linkSpans.length > 0);
+          const needsColorForCleanup = !!this.tint || (!this.link && this.linkSpans.length > 0) || hasFormatSpans;
           const dotLabelMeshId = labelMeshes.add(
-            this.fontName,
+            char.fontName,
             this.fontSize,
             dotCharData.textureUid,
             needsColorForCleanup
@@ -1030,8 +1134,20 @@ export class CellLabel {
           textRight = Math.max(textRight, charRight);
           textTop = Math.min(textTop, charTop);
           textBottom = Math.max(textBottom, charBottom);
-          // Use link color for characters within link spans (partial hyperlinks)
-          const charColor = linkColor && this.isCharInLinkSpan(i) ? linkColor : color;
+          // Get color for this character based on its formatting
+          let charColor = color;
+          if (hasFormatSpans) {
+            // Use format span color if available
+            const formatting = this.getCharFormatting(i);
+            if (formatting.isLink) {
+              charColor = convertTintToArray(convertColorStringToTint(colors.link));
+            } else if (formatting.textColor !== undefined) {
+              charColor = convertTintToArray(formatting.textColor);
+            }
+          } else if (linkColor && this.isCharInLinkSpan(i)) {
+            // Legacy: use link color for characters within link spans (partial hyperlinks)
+            charColor = linkColor;
+          }
           this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color: charColor });
         }
       }
@@ -1047,12 +1163,19 @@ export class CellLabel {
 
     this.horizontalLines = [];
 
-    if (this.underline && !hasVerticalClipping) {
-      this.addLine(this.underlineOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
-    }
-
-    if (this.strikeThrough && !hasVerticalClipping) {
-      this.addLine(this.strikeThroughOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
+    if (!hasVerticalClipping) {
+      if (hasFormatSpans) {
+        // Per-span underline/strikethrough
+        this.addSpanLines(scale, clipLeft, clipRight, clipTop, clipBottom);
+      } else {
+        // Cell-level underline/strikethrough
+        if (this.underline) {
+          this.addLine(this.underlineOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
+        }
+        if (this.strikeThrough) {
+          this.addLine(this.strikeThroughOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
+        }
+      }
     }
 
     return bounds;
@@ -1205,6 +1328,100 @@ export class CellLabel {
       this.horizontalLines.push(rect);
       maxHeight = Math.max(maxHeight, height + HORIZONTAL_LINE_THICKNESS);
     });
+    this.textHeight = Math.max(this.textHeight, maxHeight);
+  };
+
+  /** Add underline/strikethrough lines for format spans (per-character formatting). */
+  private addSpanLines = (scale: number, clipLeft: number, clipRight: number, clipTop: number, clipBottom: number) => {
+    if (this.chars.length === 0) return;
+
+    const baseData = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!baseData) return;
+
+    // Track consecutive runs of underlined/strikethrough characters
+    interface LineRun {
+      startCharIdx: number;
+      endCharIdx: number;
+      line: number;
+      type: 'underline' | 'strikethrough';
+    }
+
+    const runs: LineRun[] = [];
+    let currentUnderlineStart: number | null = null;
+    let currentUnderlineLine = 0;
+    let currentStrikeStart: number | null = null;
+    let currentStrikeLine = 0;
+
+    for (let i = 0; i <= this.chars.length; i++) {
+      const formatting = i < this.chars.length ? this.getCharFormatting(i) : null;
+      const charLine = i < this.chars.length ? this.chars[i].line : -1;
+
+      // Handle underline runs
+      if (formatting?.underline && currentUnderlineStart === null) {
+        currentUnderlineStart = i;
+        currentUnderlineLine = charLine;
+      } else if ((!formatting?.underline || charLine !== currentUnderlineLine) && currentUnderlineStart !== null) {
+        runs.push({
+          startCharIdx: currentUnderlineStart,
+          endCharIdx: i - 1,
+          line: currentUnderlineLine,
+          type: 'underline',
+        });
+        currentUnderlineStart = formatting?.underline ? i : null;
+        currentUnderlineLine = charLine;
+      }
+
+      // Handle strikethrough runs
+      if (formatting?.strikeThrough && currentStrikeStart === null) {
+        currentStrikeStart = i;
+        currentStrikeLine = charLine;
+      } else if ((!formatting?.strikeThrough || charLine !== currentStrikeLine) && currentStrikeStart !== null) {
+        runs.push({
+          startCharIdx: currentStrikeStart,
+          endCharIdx: i - 1,
+          line: currentStrikeLine,
+          type: 'strikethrough',
+        });
+        currentStrikeStart = formatting?.strikeThrough ? i : null;
+        currentStrikeLine = charLine;
+      }
+    }
+
+    // Convert runs to rectangles
+    let maxHeight = 0;
+    for (const run of runs) {
+      const startChar = this.chars[run.startCharIdx];
+      const endChar = this.chars[run.endCharIdx];
+
+      const yOffset = run.type === 'underline' ? this.underlineOffset : this.strikeThroughOffset;
+      const height = this.lineHeight * run.line + yOffset * scale;
+      const yPos = this.position.y + height + OPEN_SANS_FIX.y;
+
+      if (yPos < clipTop || yPos + HORIZONTAL_LINE_THICKNESS > clipBottom) continue;
+
+      // Calculate x positions from character positions
+      let startHorizontalOffset =
+        startChar.position.x +
+        this.horizontalAlignOffsets[startChar.line] * (this.align === 'justify' ? startChar.prevSpaces : 1);
+      if (this.roundPixels) startHorizontalOffset = Math.round(startHorizontalOffset);
+      const startXPos = Math.max(this.position.x + startHorizontalOffset * scale + OPEN_SANS_FIX.x, clipLeft);
+
+      let endHorizontalOffset =
+        endChar.position.x +
+        this.horizontalAlignOffsets[endChar.line] * (this.align === 'justify' ? endChar.prevSpaces : 1);
+      if (this.roundPixels) endHorizontalOffset = Math.round(endHorizontalOffset);
+      const endXPos = this.position.x + endHorizontalOffset * scale + OPEN_SANS_FIX.x;
+      const endCharWidth = endChar.charData.frame.width * scale;
+      const lineEndX = Math.min(endXPos + endCharWidth, clipRight);
+
+      const width = lineEndX - startXPos;
+      if (width > 0) {
+        const rect = new Rectangle(startXPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
+        this.horizontalLines.push(rect);
+        maxHeight = Math.max(maxHeight, height + HORIZONTAL_LINE_THICKNESS);
+      }
+    }
+
     this.textHeight = Math.max(this.textHeight, maxHeight);
   };
 

@@ -110,6 +110,7 @@ export class Pointer {
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(e) ||
       this.pointerHtmlCells.pointerDown(e) ||
+      this.pointerLink.pointerDown(world, e) ||
       this.pointerTable.pointerDown(world, e) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerTableResize.pointerDown(world) ||

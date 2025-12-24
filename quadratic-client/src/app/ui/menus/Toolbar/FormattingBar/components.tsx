@@ -6,7 +6,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { DateFormat } from '@/app/ui/components/DateFormat';
-import { textFormatSetCurrency } from '@/app/ui/helpers/formatCells';
+import { shouldKeepInlineEditorFocus, textFormatSetCurrency } from '@/app/ui/helpers/formatCells';
 import { useDefaultCurrency } from '@/app/ui/hooks/useDefaultCurrency';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -71,7 +71,10 @@ export const FormatButtonDropdown = memo(
           className={cn('w-fit min-w-fit px-4 hover:bg-background', className)}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            focusGrid();
+            // Don't focus grid if the inline editor should keep focus (for span formatting)
+            if (!shouldKeepInlineEditorFocus()) {
+              focusGrid();
+            }
           }}
         >
           {children}
@@ -119,7 +122,10 @@ export const FormatButtonPopover = memo(
           className={className + ' w-fit p-1'}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            focusGrid();
+            // Don't focus grid if the inline editor should keep focus (for span formatting)
+            if (!shouldKeepInlineEditorFocus()) {
+              focusGrid();
+            }
           }}
         >
           {children}
@@ -239,7 +245,10 @@ export const FormatButton = memo(
     const handleMouseUp = useCallback(() => {
       if (!enableHoldToRepeat) return;
       clearTimers();
-      focusGrid();
+      // Don't focus grid if the inline editor should keep focus (for span formatting)
+      if (!shouldKeepInlineEditorFocus()) {
+        focusGrid();
+      }
     }, [enableHoldToRepeat, clearTimers]);
 
     const handleMouseLeave = useCallback(() => {
@@ -250,7 +259,10 @@ export const FormatButton = memo(
     const handleClick = useCallback(() => {
       if (!enableHoldToRepeat) {
         executeAction();
-        focusGrid();
+        // Don't focus grid if the inline editor should keep focus (for span formatting)
+        if (!shouldKeepInlineEditorFocus()) {
+          focusGrid();
+        }
       }
     }, [enableHoldToRepeat, executeAction]);
 
@@ -321,11 +333,17 @@ export const FormatColorPickerButton = memo(
             color={activeColor}
             onChangeComplete={(color) => {
               actionSpec.run(color);
-              focusGrid();
+              // Don't focus grid if the inline editor should keep focus (for span formatting)
+              if (!shouldKeepInlineEditorFocus()) {
+                focusGrid();
+              }
             }}
             onClear={() => {
               actionSpec.run(undefined);
-              focusGrid();
+              // Don't focus grid if the inline editor should keep focus (for span formatting)
+              if (!shouldKeepInlineEditorFocus()) {
+                focusGrid();
+              }
             }}
           />
         </DropdownMenuItem>

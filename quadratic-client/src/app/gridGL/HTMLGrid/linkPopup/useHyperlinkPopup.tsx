@@ -1,8 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { inlineEditorHyperlinks } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHyperlinks';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
@@ -429,7 +429,7 @@ export function useHyperlinkPopup() {
 
     if (linkData.source === 'inline') {
       // Save to inline editor's hyperlink tracking
-      inlineEditorHyperlinks.completePendingHyperlink(normalizedUrl, text);
+      inlineEditorSpans.completePendingHyperlink(normalizedUrl, text);
       inlineEditorMonaco.focus();
     } else {
       // Save directly to cell
@@ -451,7 +451,7 @@ export function useHyperlinkPopup() {
 
   const handleCancelEdit = useCallback(() => {
     if (linkData?.source === 'inline') {
-      inlineEditorHyperlinks.cancelPendingHyperlink();
+      inlineEditorSpans.cancelPendingHyperlink();
       inlineEditorMonaco.focus();
     }
     closePopup(true);

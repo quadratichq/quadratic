@@ -312,14 +312,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleItalic, e)) {
       e.preventDefault();
       e.stopPropagation();
-      inlineEditorHandler.toggleItalics();
-      if (inlineEditorHandler.location) {
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleItalicForSelection()) {
+        inlineEditorHandler.toggleItalics();
+        if (inlineEditorHandler.location) {
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic, false);
+        }
       }
     }
 
@@ -327,14 +330,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleBold, e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (inlineEditorHandler.location) {
-        inlineEditorHandler.toggleBold();
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleBoldForSelection()) {
+        if (inlineEditorHandler.location) {
+          inlineEditorHandler.toggleBold();
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold, false);
+        }
       }
     }
 
@@ -342,14 +348,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleUnderline, e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (inlineEditorHandler.location) {
-        inlineEditorHandler.toggleUnderline();
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleUnderlineForSelection()) {
+        if (inlineEditorHandler.location) {
+          inlineEditorHandler.toggleUnderline();
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline, false);
+        }
       }
     }
 
@@ -357,14 +366,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleStrikeThrough, e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (inlineEditorHandler.location) {
-        inlineEditorHandler.toggleStrikeThrough();
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleStrikeThroughForSelection()) {
+        if (inlineEditorHandler.location) {
+          inlineEditorHandler.toggleStrikeThrough();
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
+        }
       }
     }
 

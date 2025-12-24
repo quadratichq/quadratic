@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { content } from '@/app/gridGL/pixiApp/Content';
+import { openLink } from '@/app/helpers/links';
 import type { Link } from '@/app/shared/types/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { FederatedPointerEvent, Point } from 'pixi.js';
@@ -16,6 +17,29 @@ export class PointerLink {
     }
     const link = content.cellsSheets.current.cellsLabels.intersectsLink(world);
     return link;
+  };
+
+  // Handle cmd/ctrl + click to open link directly
+  pointerDown = (world: Point, event: FederatedPointerEvent): boolean => {
+    if (!(event.metaKey || event.ctrlKey)) return false;
+
+    const link = this.checkHoverLink(world);
+    if (!link) return false;
+
+    if (link.url) {
+      openLink(link.url);
+      return true;
+    } else if (link.pos) {
+      // For naked URLs, fetch the URL from cell value
+      quadraticCore.getDisplayCell(content.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {
+        if (url) {
+          openLink(url);
+        }
+      });
+      return true;
+    }
+
+    return false;
   };
 
   private emitHoverLink = (link?: Link) => {
@@ -50,10 +74,11 @@ export class PointerLink {
     }
   };
 
-  pointerMove = (world: Point, _event: FederatedPointerEvent): boolean => {
+  pointerMove = (world: Point, event: FederatedPointerEvent): boolean => {
     const link = this.checkHoverLink(world);
     if (link) {
-      this.cursor = 'pointer';
+      // Only show pointer cursor when cmd/ctrl is pressed (i.e., when clicking will open the link)
+      this.cursor = event.metaKey || event.ctrlKey ? 'pointer' : undefined;
       this.emitHoverLink(link);
       return true;
     }

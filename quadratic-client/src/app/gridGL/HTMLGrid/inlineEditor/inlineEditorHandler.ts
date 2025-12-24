@@ -6,7 +6,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
-import { inlineEditorHyperlinks } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHyperlinks';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -90,7 +90,7 @@ class InlineEditorHandler {
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
-    inlineEditorHyperlinks.clear();
+    inlineEditorSpans.clear();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
     this.hideDiv();
@@ -285,7 +285,7 @@ class InlineEditorHandler {
 
       // Initialize hyperlink tracking after Monaco has the content
       if (richTextSpans) {
-        inlineEditorHyperlinks.setSpans(richTextSpans);
+        inlineEditorSpans.setSpans(richTextSpans);
       }
 
       inlineEditorMonaco.triggerSuggestion();
@@ -374,6 +374,80 @@ class InlineEditorHandler {
     this.sendMultiplayerUpdate();
   };
 
+  /**
+   * Check if the inline editor is open, not editing a formula, and has a text selection.
+   */
+  hasTextSelection(): boolean {
+    return this.open && !this.formula && inlineEditorMonaco.hasSelection();
+  }
+
+  /**
+   * Toggle bold formatting for the current selection if there is one.
+   * Returns true if span formatting was applied, false otherwise.
+   */
+  toggleBoldForSelection = (): boolean => {
+    if (!this.hasTextSelection()) {
+      return false;
+    }
+    return inlineEditorSpans.toggleFormattingForSelection('bold');
+  };
+
+  /**
+   * Toggle italic formatting for the current selection if there is one.
+   * Returns true if span formatting was applied, false otherwise.
+   */
+  toggleItalicForSelection = (): boolean => {
+    if (!this.hasTextSelection()) {
+      return false;
+    }
+    return inlineEditorSpans.toggleFormattingForSelection('italic');
+  };
+
+  /**
+   * Toggle underline formatting for the current selection if there is one.
+   * Returns true if span formatting was applied, false otherwise.
+   */
+  toggleUnderlineForSelection = (): boolean => {
+    if (!this.hasTextSelection()) {
+      return false;
+    }
+    return inlineEditorSpans.toggleFormattingForSelection('underline');
+  };
+
+  /**
+   * Toggle strikethrough formatting for the current selection if there is one.
+   * Returns true if span formatting was applied, false otherwise.
+   */
+  toggleStrikeThroughForSelection = (): boolean => {
+    if (!this.hasTextSelection()) {
+      return false;
+    }
+    return inlineEditorSpans.toggleFormattingForSelection('strikeThrough');
+  };
+
+  /**
+   * Set text color for the current selection if there is one.
+   * Returns true if span formatting was applied, false otherwise.
+   */
+  setTextColorForSelection = (color: string | undefined): boolean => {
+    if (!this.hasTextSelection()) {
+      return false;
+    }
+    return inlineEditorSpans.applyFormattingToSelection({ textColor: color });
+  };
+
+  /**
+   * Clear all span formatting when the inline editor is open (not editing a formula).
+   * Returns true if formatting was cleared, false otherwise.
+   */
+  clearSpanFormatting = (): boolean => {
+    if (!this.open || this.formula) {
+      return false;
+    }
+    inlineEditorSpans.clearAllFormatting();
+    return true;
+  };
+
   private updateFont = () => {
     let fontFamily = 'OpenSans';
     if (!this.formula) {
@@ -449,7 +523,7 @@ class InlineEditorHandler {
       return;
     }
 
-    const hyperlinkSpan = inlineEditorHyperlinks.getHyperlinkAtPosition(position);
+    const hyperlinkSpan = inlineEditorSpans.getHyperlinkAtPosition(position);
     if (hyperlinkSpan?.link) {
       // Get the cell offsets to position the popup
       const sheet = sheets.sheet;
@@ -626,10 +700,10 @@ class InlineEditorHandler {
         } else {
           const trimmedValue = value.trim();
           // Check if we have formatted spans (e.g., hyperlinks) that require RichText
-          if (inlineEditorHyperlinks.isActive() && inlineEditorHyperlinks.hasFormattedSpans()) {
+          if (inlineEditorSpans.isActive() && inlineEditorSpans.hasFormattedSpans()) {
             // Calculate leading whitespace offset to adjust span positions
             const leadingWhitespace = value.length - value.trimStart().length;
-            const spans = inlineEditorHyperlinks.buildTextSpans(trimmedValue, leadingWhitespace);
+            const spans = inlineEditorSpans.buildTextSpans(trimmedValue, leadingWhitespace);
             quadraticCore.setCellRichText(location.sheetId, location.x, location.y, spans);
           } else {
             quadraticCore.setCellValue(location.sheetId, location.x, location.y, trimmedValue, false);

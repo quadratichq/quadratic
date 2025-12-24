@@ -104,7 +104,11 @@ language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellV
 /**
  * Hyperlink spans for RichText cells with hyperlinks (character ranges + URLs).
  */
-linkSpans: Array<JsRenderCellLinkSpan>, };
+linkSpans: Array<JsRenderCellLinkSpan>, 
+/**
+ * Formatting spans for RichText cells with inline formatting overrides.
+ */
+formatSpans: Array<JsRenderCellFormatSpan>, };
 export type JsRenderCellLinkSpan = { 
 /**
  * Start character index (inclusive).
