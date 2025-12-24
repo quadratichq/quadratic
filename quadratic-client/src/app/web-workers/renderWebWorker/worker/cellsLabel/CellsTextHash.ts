@@ -256,6 +256,10 @@ export class CellsTextHash {
     const columnsMax = new Map<number, number>();
     const rowsMax = new Map<number, number>();
     this.labels.forEach((label) => {
+      // Only count visible labels for sizing (invisible labels haven't had
+      // their text processed, so their heights are not accurate)
+      if (!label.visible) return;
+
       let column = label.location.x;
       let row = label.location.y;
 

@@ -125,7 +125,7 @@ export function useHyperlinkPopup() {
           const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
           const isFormula = codeCell?.language === 'Formula';
 
-          setLinkData({ x, y, url: linkSpan.link, rect, source: 'cursor', isFormula });
+          setLinkData({ x, y, url: linkSpan.link, rect, source: 'cursor', isFormula, linkText: linkSpan.text });
           setMode('view');
           setEditUrl(linkSpan.link);
         }
@@ -338,12 +338,19 @@ export function useHyperlinkPopup() {
     };
   }, []); // No dependencies - use visibilityRef
 
-  // Hide when inline editor opens
+  // Hide when inline editor opens or closes (for inline-sourced popups)
   useEffect(() => {
     const handleChangeInput = (input: boolean) => {
       if (input) {
+        // Inline editor opened - hide any existing popup
         setLinkData(undefined);
         setMode('view');
+      } else {
+        // Inline editor closed - hide popup if it was from inline source
+        if (linkDataRef.current?.source === 'inline') {
+          setLinkData(undefined);
+          setMode('view');
+        }
       }
     };
 
@@ -403,7 +410,9 @@ export function useHyperlinkPopup() {
       return;
     }
 
-    const displayValue = await quadraticCore.getDisplayCell(sheets.current, linkData.x, linkData.y);
+    // Use linkText if available (for partial hyperlinks), otherwise fall back to full cell display
+    const displayValue =
+      linkData.linkText ?? (await quadraticCore.getDisplayCell(sheets.current, linkData.x, linkData.y));
     setEditText(displayValue && displayValue !== linkData.url ? displayValue : '');
     setEditUrl(linkData.url);
     setMode('edit');

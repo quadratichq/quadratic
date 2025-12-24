@@ -77,6 +77,7 @@ class InlineEditorHandler {
     this.initialValue = '';
     inlineEditorMonaco.set('');
     inlineEditorEvents.emit('status', false);
+    inlineEditorEvents.emit('selectionFormatting', undefined);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
@@ -382,6 +383,25 @@ class InlineEditorHandler {
   }
 
   /**
+   * Emit the selection formatting event based on the current selection state.
+   * Called when the selection changes in the Monaco editor.
+   */
+  updateSelectionFormatting = () => {
+    if (!this.open || this.formula) {
+      inlineEditorEvents.emit('selectionFormatting', undefined);
+      return;
+    }
+
+    if (!inlineEditorMonaco.hasSelection()) {
+      inlineEditorEvents.emit('selectionFormatting', undefined);
+      return;
+    }
+
+    const formatting = inlineEditorSpans.getSelectionFormattingSummary();
+    inlineEditorEvents.emit('selectionFormatting', formatting);
+  };
+
+  /**
    * Toggle bold formatting for the current selection if there is one.
    * Returns true if span formatting was applied, false otherwise.
    */
@@ -547,7 +567,7 @@ class InlineEditorHandler {
     const cellContentWidth = width - cellOutlineOffset * 2;
     const cellContentHeight = height - cellOutlineOffset * 2;
     const align = this.formatSummary?.align ?? 'left';
-    const verticalAlign = this.formatSummary?.verticalAlign ?? 'top';
+    const verticalAlign = this.formatSummary?.verticalAlign ?? 'bottom';
     const wrap = this.formatSummary?.wrap ?? (this.codeCell ? 'clip' : 'overflow');
     const underline = this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
     const strikeThrough = this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;

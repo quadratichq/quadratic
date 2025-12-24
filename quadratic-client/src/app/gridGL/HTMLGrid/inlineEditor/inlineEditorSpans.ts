@@ -588,6 +588,100 @@ class InlineEditorSpans {
   }
 
   /**
+   * Check if the entire range has a specific formatting property set.
+   * Returns true only if every character in the range has the formatting.
+   */
+  isEntireRangeFormatted(startOffset: number, endOffset: number, property: keyof SpanFormatting): boolean {
+    if (startOffset >= endOffset) return false;
+
+    // Build a coverage map to check if every position in the range is formatted
+    let pos = startOffset;
+    while (pos < endOffset) {
+      let foundFormatted = false;
+      for (const span of this.spans) {
+        // Check if this span covers the current position and has the formatting
+        if (span.start <= pos && span.end > pos && span[property]) {
+          foundFormatted = true;
+          // Advance to the end of this span or the end of the range
+          pos = Math.min(span.end, endOffset);
+          break;
+        }
+      }
+      if (!foundFormatted) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Get formatting summary for the current selection.
+   * Returns an object with boolean values indicating if the ENTIRE selection has each formatting.
+   * Returns undefined if there's no selection or the inline editor is not active.
+   */
+  getSelectionFormattingSummary(): SpanFormatting | undefined {
+    const selection = inlineEditorMonaco.getSelection();
+    if (!selection) {
+      return undefined;
+    }
+
+    const offsets = this.rangeToOffsets(selection.range);
+    if (!offsets || offsets.start === offsets.end) {
+      return undefined;
+    }
+
+    return {
+      bold: this.isEntireRangeFormatted(offsets.start, offsets.end, 'bold'),
+      italic: this.isEntireRangeFormatted(offsets.start, offsets.end, 'italic'),
+      underline: this.isEntireRangeFormatted(offsets.start, offsets.end, 'underline'),
+      strikeThrough: this.isEntireRangeFormatted(offsets.start, offsets.end, 'strikeThrough'),
+      textColor: this.getTextColorForRange(offsets.start, offsets.end),
+    };
+  }
+
+  /**
+   * Get the text color for a range if the entire range has the same color.
+   * Returns undefined if the range has no color or mixed colors.
+   */
+  private getTextColorForRange(startOffset: number, endOffset: number): string | undefined {
+    if (startOffset >= endOffset) return undefined;
+
+    let commonColor: string | undefined | null = null; // null means we haven't found any color yet
+
+    let pos = startOffset;
+    while (pos < endOffset) {
+      let foundSpan = false;
+      for (const span of this.spans) {
+        if (span.start <= pos && span.end > pos) {
+          foundSpan = true;
+          const spanColor = span.textColor;
+
+          if (commonColor === null) {
+            commonColor = spanColor;
+          } else if (commonColor !== spanColor) {
+            // Mixed colors - return undefined
+            return undefined;
+          }
+
+          pos = Math.min(span.end, endOffset);
+          break;
+        }
+      }
+      if (!foundSpan) {
+        // Gap in spans - treat as no color
+        if (commonColor === null) {
+          commonColor = undefined;
+        } else if (commonColor !== undefined) {
+          return undefined; // Mixed: some have color, gap has none
+        }
+        pos++;
+      }
+    }
+
+    return commonColor === null ? undefined : commonColor;
+  }
+
+  /**
    * Add or update a formatting span for a given character range.
    * Merges formatting with existing spans in the range.
    */

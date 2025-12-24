@@ -621,6 +621,9 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
+    this.editor.onDidChangeCursorSelection(() => {
+      inlineEditorHandler.updateSelectionFormatting();
+    });
     this.editor.onMouseDown(() => {
       inlineEditorKeyboard.resetKeyboardPosition();
       pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
