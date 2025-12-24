@@ -24,18 +24,6 @@ export const HyperlinkPopupEdit = ({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="link-text">Text</Label>
-        <Input
-          id="link-text"
-          value={editText}
-          onChange={(e) => onTextChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Link text"
-          className="h-8"
-          autoFocus
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
         <Label htmlFor="link-url">URL</Label>
         <Input
           id="link-url"
@@ -43,6 +31,18 @@ export const HyperlinkPopupEdit = ({
           onChange={(e) => onUrlChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="https://example.com"
+          className="h-8"
+          autoFocus
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="link-text">Text</Label>
+        <Input
+          id="link-text"
+          value={editText}
+          onChange={(e) => onTextChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Link text (optional)"
           className="h-8"
         />
       </div>

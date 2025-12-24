@@ -433,7 +433,8 @@ class InlineEditorHandler {
       verticalAlign,
       wrap,
       underline,
-      strikeThrough
+      strikeThrough,
+      this.formula ?? false
     );
 
     this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);

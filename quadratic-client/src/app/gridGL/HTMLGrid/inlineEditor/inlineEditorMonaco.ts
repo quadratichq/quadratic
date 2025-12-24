@@ -141,7 +141,8 @@ class InlineEditorMonaco {
     verticalAlign: CellVerticalAlign,
     textWrap: CellWrap,
     underline: boolean,
-    strikeThrough: boolean
+    strikeThrough: boolean,
+    formula: boolean
   ): { width: number; height: number } => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
@@ -208,21 +209,24 @@ class InlineEditorMonaco {
       const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
 
-      width = textWrap !== 'overflow' ? width : Math.max(width, measuredWidth + scaledPadding);
+      // For formulas, always expand width with content (ignoring textWrap setting)
+      const shouldExpandWidth = formula || textWrap === 'overflow';
+      width = shouldExpandWidth ? Math.max(width, measuredWidth + scaledPadding) : width;
     } else {
       // Fallback to scrollWidth if canvas is not available
       const scrollWidth = textarea.scrollWidth;
       const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
-      width = textWrap !== 'overflow' ? width : Math.max(width, scrollWidth + scaledPadding);
+      const shouldExpandWidth = formula || textWrap === 'overflow';
+      width = shouldExpandWidth ? Math.max(width, scrollWidth + scaledPadding) : width;
     }
     height = Math.max(contentHeight, height);
 
     const viewportRectangle = pixiApp.getViewportRectangle();
     const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
     if (width > maxWidthDueToViewport) {
-      // For 'clip' mode, keep it clipped; for others, force wrap if needed
-      if (textWrap === 'clip') {
+      // For formulas or 'clip' mode, clamp to viewport edge without wrapping
+      if (formula || textWrap === 'clip') {
         width = Math.min(width, maxWidthDueToViewport);
       } else {
         textWrap = 'wrap';

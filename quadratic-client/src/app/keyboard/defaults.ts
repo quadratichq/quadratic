@@ -405,4 +405,8 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Shift, Keys.End]],
     windows: [[WindowsModifiers.Shift, Keys.End]],
   },
+  [Action.InsertHyperlink]: {
+    mac: [[MacModifiers.Ctrl, Keys.K]],
+    windows: [[WindowsModifiers.Alt, Keys.K]],
+  },
 };
