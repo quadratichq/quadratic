@@ -129,7 +129,7 @@ export class CellLabel {
   /** Link spans with character ranges and URLs (for RichText hyperlinks). */
   linkSpans: Array<{ start: number; end: number; url: string }>;
   /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
-  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number }>;
+  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number; linkText: string }>;
   private underline: boolean;
   private strikeThrough: boolean;
 
@@ -1094,10 +1094,13 @@ export class CellLabel {
         // Calculate underline y position using the same formula as addLine
         const underlineY =
           this.position.y + this.lineHeight * spanLine + this.underlineOffset * scale + OPEN_SANS_FIX.y;
+        // Get the link text from the original text
+        const linkText = this.originalText.slice(span.start, span.end);
         this.linkRectangles.push({
           rect: new Rectangle(minX, minY, maxX - minX, maxY - minY),
           url: span.url,
           underlineY,
+          linkText,
         });
       }
     }

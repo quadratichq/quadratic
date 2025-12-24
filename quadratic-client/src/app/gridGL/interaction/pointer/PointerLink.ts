@@ -30,7 +30,7 @@ export class PointerLink {
           link.textRectangle.width,
           link.textRectangle.height
         );
-        events.emit('hoverLink', { x: link.pos.x, y: link.pos.y, url: link.url, rect });
+        events.emit('hoverLink', { x: link.pos.x, y: link.pos.y, url: link.url, rect, linkText: link.linkText });
       } else if (link?.pos) {
         // For naked URLs, fetch the URL from cell value
         quadraticCore.getDisplayCell(content.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {

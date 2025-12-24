@@ -5,20 +5,20 @@ import { getDomainFromUrl } from './useLinkMetadata';
 
 interface HyperlinkPopupViewProps {
   url: string;
-  pageTitle: string | undefined;
+  linkTitle: string | undefined;
   onOpen: () => void;
   onCopy: () => void;
   onEdit: () => void;
   onRemove: () => void;
 }
 
-export const HyperlinkPopupView = ({ url, pageTitle, onOpen, onCopy, onEdit, onRemove }: HyperlinkPopupViewProps) => {
+export const HyperlinkPopupView = ({ url, linkTitle, onOpen, onCopy, onEdit, onRemove }: HyperlinkPopupViewProps) => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         {url && <Favicon domain={url} size={16} alt="" className="h-4 w-4 shrink-0" />}
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium">{pageTitle || getDomainFromUrl(url)}</span>
+          <span className="truncate text-sm font-medium">{linkTitle || getDomainFromUrl(url)}</span>
           <a
             href={url}
             target="_blank"

@@ -455,7 +455,11 @@ class InlineEditorHandler {
       const sheet = sheets.sheet;
       const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
       const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
-      events.emit('inlineEditorCursorOnHyperlink', { url: hyperlinkSpan.link, rect });
+      // Get the link text from the editor content
+      const model = editor.getModel();
+      const fullText = model?.getValue() ?? '';
+      const linkText = fullText.slice(hyperlinkSpan.start, hyperlinkSpan.end);
+      events.emit('inlineEditorCursorOnHyperlink', { url: hyperlinkSpan.link, rect, linkText });
     } else {
       events.emit('inlineEditorCursorOnHyperlink', undefined);
     }

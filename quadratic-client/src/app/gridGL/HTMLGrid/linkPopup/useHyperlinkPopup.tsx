@@ -26,6 +26,8 @@ export interface LinkData {
   isFormula: boolean;
   // For inline editor: whether there was a text selection
   hasSelection?: boolean;
+  // For partial hyperlinks: the text of the link span
+  linkText?: string;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -193,7 +195,9 @@ export function useHyperlinkPopup() {
 
   // Handle cursor position on hyperlinks in inline editor (show popup when cursor is on link)
   useEffect(() => {
-    const handleInlineEditorCursorOnHyperlink = (data?: { url: string; rect: Rectangle }) => {
+    const handleInlineEditorCursorOnHyperlink = (
+      data?: { url: string; rect: Rectangle; linkText: string } | undefined
+    ) => {
       const v = visibilityRef.current;
       // Don't interfere with edit mode
       if (v.isEditMode()) return;
@@ -214,6 +218,7 @@ export function useHyperlinkPopup() {
           rect: data.rect,
           source: 'inline',
           isFormula: false,
+          linkText: data.linkText,
         });
         setMode('view');
         setEditUrl(data.url);
@@ -240,7 +245,7 @@ export function useHyperlinkPopup() {
   // 3. Leaving link without going to popup → popup fades out (hoverLink undefined)
   // 4. Leaving popup → popup fades out (handleMouseLeave sets timeout, hoverLink doesn't interfere)
   useEffect(() => {
-    const handleHoverLink = (link?: { x: number; y: number; url: string; rect: Rectangle }) => {
+    const handleHoverLink = (link?: { x: number; y: number; url: string; rect: Rectangle; linkText?: string }) => {
       const v = visibilityRef.current;
       if (v.isEditMode()) return;
       if (v.isJustClosed()) return;
@@ -260,7 +265,15 @@ export function useHyperlinkPopup() {
           const codeCell = await quadraticCore.getCodeCell(sheet.id, link.x, link.y);
           const isFormula = codeCell?.language === 'Formula';
 
-          setLinkData({ x: link.x, y: link.y, url: link.url, rect: cellRect, source: 'hover', isFormula });
+          setLinkData({
+            x: link.x,
+            y: link.y,
+            url: link.url,
+            rect: cellRect,
+            source: 'hover',
+            isFormula,
+            linkText: link.linkText,
+          });
           setMode('view');
           setEditUrl(link.url);
         }, HOVER_DELAY);

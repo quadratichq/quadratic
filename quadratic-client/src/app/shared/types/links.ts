@@ -6,6 +6,8 @@ export interface Link {
   textRectangle: Rectangle;
   /** The hyperlink URL for RichText hyperlinks. If undefined, the cell's display value is the URL. */
   url?: string;
+  /** The text of the hyperlink span. */
+  linkText?: string;
 }
 
 /** A hyperlink span within a cell, with character range and URL. */

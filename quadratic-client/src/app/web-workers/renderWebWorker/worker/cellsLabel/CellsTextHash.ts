@@ -307,7 +307,12 @@ export class CellsTextHash {
       // Push link rectangles for both full links and partial hyperlinks
       if (cellLabel.linkRectangles.length > 0) {
         for (const linkRect of cellLabel.linkRectangles) {
-          this.links.push({ pos: cellLabel.location, textRectangle: linkRect.rect, url: linkRect.url });
+          this.links.push({
+            pos: cellLabel.location,
+            textRectangle: linkRect.rect,
+            url: linkRect.url,
+            linkText: linkRect.linkText,
+          });
         }
       }
       this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
