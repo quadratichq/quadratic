@@ -1,5 +1,8 @@
+use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::values::{CellValue, TextSpan};
 use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
@@ -68,6 +71,19 @@ impl GridController {
     pub fn delete_cells(&mut self, selection: &A1Selection, cursor: Option<String>, is_ai: bool) {
         let ops = self.delete_cells_operations(selection, true);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, is_ai);
+    }
+
+    /// Starts a transaction to set a RichText value in a cell from a vector of TextSpans.
+    pub fn set_cell_rich_text(
+        &mut self,
+        sheet_pos: SheetPos,
+        spans: Vec<TextSpan>,
+        cursor: Option<String>,
+    ) {
+        let cell_value = CellValue::RichText(spans);
+        let values = CellValues::from(cell_value);
+        let ops = vec![Operation::SetCellValues { sheet_pos, values }];
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, false);
     }
 
     /// Starts a transaction to clear formatting in a given rect.

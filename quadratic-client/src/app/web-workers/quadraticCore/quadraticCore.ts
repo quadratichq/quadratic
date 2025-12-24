@@ -496,6 +496,21 @@ class QuadraticCore {
     });
   }
 
+  /**
+   * Sets a cell to a RichText value with the given spans.
+   * Each span can have: text, link, bold, italic, underline, strikeThrough, textColor, fontSize
+   */
+  setCellRichText(sheetId: string, x: number, y: number, spans: Array<Record<string, unknown>>) {
+    this.send({
+      type: 'clientCoreSetCellRichText',
+      sheetId,
+      x,
+      y,
+      spansJson: JSON.stringify(spans),
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
   setCellValues(sheetId: string, x: number, y: number, values: string[][], isAi: boolean) {
     const id = this.id++;
     return new Promise((resolve) => {

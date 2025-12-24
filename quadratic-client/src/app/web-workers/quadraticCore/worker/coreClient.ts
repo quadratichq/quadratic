@@ -146,6 +146,10 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreSetCellRichText':
+        core.setCellRichText(e.data.sheetId, e.data.x, e.data.y, e.data.spansJson, e.data.cursor);
+        return;
+
       case 'clientCoreGetEditCell':
         this.send({
           type: 'coreClientGetEditCell',

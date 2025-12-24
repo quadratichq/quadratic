@@ -217,6 +217,15 @@ class Core {
     }
   }
 
+  setCellRichText(sheetId: string, x: number, y: number, spansJson: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.setCellRichText(sheetId, x, y, spansJson, cursor);
+    } catch (e) {
+      this.handleCoreError('setCellRichText', e);
+    }
+  }
+
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
