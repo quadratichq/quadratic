@@ -961,4 +961,48 @@ mod test {
         );
         assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
     }
+
+    #[test]
+    fn test_set_cell_rich_text() {
+        use crate::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+
+        // Set rich text with hyperlink
+        let spans = vec![
+            TextSpan::plain("Visit "),
+            TextSpan::link("Example", "https://example.com"),
+            TextSpan::plain(" for more info."),
+        ];
+        gc.set_cell_rich_text(sheet_pos, spans.clone(), None);
+
+        // Verify the cell value is RichText
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
+
+        if let Some(CellValue::RichText(stored_spans)) = cell_value {
+            assert_eq!(stored_spans.len(), 3);
+            assert_eq!(stored_spans[0].text, "Visit ");
+            assert!(stored_spans[0].link.is_none());
+            assert_eq!(stored_spans[1].text, "Example");
+            assert_eq!(stored_spans[1].link, Some("https://example.com".to_string()));
+            assert_eq!(stored_spans[2].text, " for more info.");
+        }
+
+        // Test undo
+        gc.undo(1, None, false);
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert_eq!(cell_value, None);
+
+        // Test redo
+        gc.redo(1, None, false);
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
+    }
 }

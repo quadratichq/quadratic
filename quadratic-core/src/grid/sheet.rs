@@ -959,6 +959,30 @@ mod test {
     }
 
     #[test]
+    fn js_cell_value_rich_text() {
+        use crate::TextSpan;
+
+        let mut sheet = Sheet::test();
+        let rich_text_spans = vec![
+            TextSpan::plain("Hello "),
+            TextSpan::link("world", "https://example.com"),
+        ];
+        sheet.set_value(
+            Pos { x: 0, y: 0 },
+            CellValue::RichText(rich_text_spans.clone()),
+        );
+        let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
+        assert_eq!(
+            js_cell_value,
+            Some(JsCellValue {
+                value: "Hello world".to_string(),
+                kind: JsCellValueKind::RichText,
+                spans: Some(rich_text_spans),
+            })
+        );
+    }
+
+    #[test]
     fn js_cell_value_pos() {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
