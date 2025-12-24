@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 const FADE_OUT_DELAY = 400;
 const CLOSE_COOLDOWN = 300;
@@ -18,11 +18,11 @@ export function usePopupVisibility(options: UsePopupVisibilityOptions = {}) {
 
   const hoveringRef = useRef(false);
   const modeRef = useRef<PopupMode>('view');
-  const fadeOutTimeoutRef = useRef<number | undefined>();
-  const hoverTimeoutRef = useRef<number | undefined>();
+  const fadeOutTimeoutRef = useRef<number | undefined>(undefined);
+  const hoverTimeoutRef = useRef<number | undefined>(undefined);
   const justClosedRef = useRef(false);
-  const justClosedTimeoutRef = useRef<number | undefined>();
-  const afterCooldownRef = useRef<(() => void) | undefined>();
+  const justClosedTimeoutRef = useRef<number | undefined>(undefined);
+  const afterCooldownRef = useRef<(() => void) | undefined>(undefined);
 
   // Update mode ref (called by parent hook)
   const setModeRef = useCallback((mode: PopupMode) => {
@@ -113,20 +113,43 @@ export function usePopupVisibility(options: UsePopupVisibilityOptions = {}) {
     fadeOutTimeoutRef.current = window.setTimeout(callback, delay);
   }, []);
 
+  // Memoize ONLY the callbacks - these are stable and won't cause useEffect re-runs
+  // hovering and skipFade are added directly (not memoized) so they update reactively
+  // but changing them won't affect useEffect dependencies that only use the callbacks
+  const stableCallbacks = useMemo(
+    () => ({
+      setModeRef,
+      isJustClosed,
+      isEditMode,
+      isHovering,
+      setAfterCooldown,
+      triggerClose,
+      handleMouseEnter,
+      handleMouseMove,
+      handleMouseLeave,
+      clearTimeouts,
+      setHoverTimeout,
+      setFadeOutTimeout,
+    }),
+    [
+      setModeRef,
+      isJustClosed,
+      isEditMode,
+      isHovering,
+      setAfterCooldown,
+      triggerClose,
+      handleMouseEnter,
+      handleMouseMove,
+      handleMouseLeave,
+      clearTimeouts,
+      setHoverTimeout,
+      setFadeOutTimeout,
+    ]
+  );
+
   return {
+    ...stableCallbacks,
     hovering,
     skipFade,
-    setModeRef,
-    isJustClosed,
-    isEditMode,
-    isHovering,
-    setAfterCooldown,
-    triggerClose,
-    handleMouseEnter,
-    handleMouseMove,
-    handleMouseLeave,
-    clearTimeouts,
-    setHoverTimeout,
-    setFadeOutTimeout,
   };
 }

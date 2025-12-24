@@ -49,7 +49,7 @@ export function getDomainFromUrl(url: string): string {
  */
 export function useLinkMetadata(url: string | undefined) {
   const [pageTitle, setPageTitle] = useState<string | undefined>();
-  const urlRef = useRef<string | undefined>();
+  const urlRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!url) {

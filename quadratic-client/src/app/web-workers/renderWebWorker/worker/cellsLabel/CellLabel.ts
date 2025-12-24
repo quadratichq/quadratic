@@ -129,7 +129,7 @@ export class CellLabel {
   /** Link spans with character ranges and URLs (for RichText hyperlinks). */
   linkSpans: Array<{ start: number; end: number; url: string }>;
   /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
-  linkRectangles: Array<{ rect: Rectangle; url: string }>;
+  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number }>;
   private underline: boolean;
   private strikeThrough: boolean;
 
@@ -292,7 +292,11 @@ export class CellLabel {
     const linkSpans = (cell as any).linkSpans as Array<{ start: number; end: number; url: string }> | undefined;
     if (linkSpans && linkSpans.length > 0) {
       this.linkSpans = linkSpans;
-      return true;
+      // Only return true (style entire cell as link) if the link spans cover the entire text
+      // For partial hyperlinks, return false so only the span portions get link styling
+      const coversEntireText =
+        linkSpans.length === 1 && linkSpans[0].start === 0 && linkSpans[0].end >= cell.value.length;
+      return coversEntireText;
     }
     // Check for naked URL in cell value
     if (cell.number !== undefined || cell.special !== undefined) return false;
@@ -483,8 +487,9 @@ export class CellLabel {
           const needsSeparateMesh = this.chars[0].charData.textureUid !== dotCharData.textureUid;
           if (needsSeparateMesh) {
             // Add one dot mesh entry per character so we have enough buffers
+            const needsColor = !!this.tint || (!this.link && this.linkSpans.length > 0);
             for (let i = 0; i < this.chars.length; i++) {
-              labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, !!this.tint);
+              labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, needsColor);
             }
           }
         }
@@ -594,7 +599,9 @@ export class CellLabel {
         }
       }
 
-      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
+      // Need color support if we have a tint OR if we have partial hyperlinks (which use linkColor)
+      const needsColor = !!this.tint || (!this.link && this.linkSpans.length > 0);
+      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, needsColor);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
@@ -813,7 +820,13 @@ export class CellLabel {
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
 
     const scale = this.fontSize / data.size;
-    const color = this.tint ? convertTintToArray(this.tint) : undefined;
+    const hasPartialLinks = !this.link && this.linkSpans.length > 0;
+    // For partial hyperlinks, we need a default color for non-link text
+    // because the buffer is created with color support
+    const defaultTextColor = hasPartialLinks ? convertTintToArray(colors.cellFontColor) : undefined;
+    const color = this.tint ? convertTintToArray(this.tint) : defaultTextColor;
+    // Pre-calculate link color for partial hyperlinks
+    const linkColor = hasPartialLinks ? convertTintToArray(convertColorStringToTint(colors.link)) : undefined;
 
     // Clear emojis array to prevent accumulation on re-renders
     this.emojis = [];
@@ -920,7 +933,13 @@ export class CellLabel {
           originalBuffer.reduceSize(6);
 
           // Use the separate dot mesh
-          const dotLabelMeshId = labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, !!this.tint);
+          const needsColorForDot = !!this.tint || (!this.link && this.linkSpans.length > 0);
+          const dotLabelMeshId = labelMeshes.add(
+            this.fontName,
+            this.fontSize,
+            dotCharData.textureUid,
+            needsColorForDot
+          );
           labelMesh = labelMeshes.get(dotLabelMeshId);
           buffer = labelMesh.getBuffer();
         } else {
@@ -953,7 +972,13 @@ export class CellLabel {
         // This line is NOT clipped - render normally
         // If we have dot data and need separate mesh, clean up unused dot buffer
         if (dotCharData && char.charData.textureUid !== dotCharData.textureUid) {
-          const dotLabelMeshId = labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, !!this.tint);
+          const needsColorForCleanup = !!this.tint || (!this.link && this.linkSpans.length > 0);
+          const dotLabelMeshId = labelMeshes.add(
+            this.fontName,
+            this.fontSize,
+            dotCharData.textureUid,
+            needsColorForCleanup
+          );
           const dotLabelMesh = labelMeshes.get(dotLabelMeshId);
           try {
             const buffer = dotLabelMesh.getBuffer();
@@ -1005,7 +1030,9 @@ export class CellLabel {
           textRight = Math.max(textRight, charRight);
           textTop = Math.min(textTop, charTop);
           textBottom = Math.max(textBottom, charBottom);
-          this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
+          // Use link color for characters within link spans (partial hyperlinks)
+          const charColor = linkColor && this.isCharInLinkSpan(i) ? linkColor : color;
+          this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color: charColor });
         }
       }
     }
@@ -1041,11 +1068,13 @@ export class CellLabel {
       let maxX = -Infinity;
       let minY = Infinity;
       let maxY = -Infinity;
+      let spanLine = 0; // Track which line this span is on (for underline positioning)
 
       // Find characters within this span's range
       for (let i = 0; i < this.chars.length; i++) {
         if (i >= span.start && i < span.end) {
           const char = this.chars[i];
+          spanLine = char.line; // Use the line of the last character in the span
           const horizontalOffset =
             char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
           const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
@@ -1062,12 +1091,26 @@ export class CellLabel {
 
       // If we found characters for this span, create a rectangle
       if (minX < Infinity) {
+        // Calculate underline y position using the same formula as addLine
+        const underlineY =
+          this.position.y + this.lineHeight * spanLine + this.underlineOffset * scale + OPEN_SANS_FIX.y;
         this.linkRectangles.push({
           rect: new Rectangle(minX, minY, maxX - minX, maxY - minY),
           url: span.url,
+          underlineY,
         });
       }
     }
+  };
+
+  /** Check if a character index is within any link span. */
+  private isCharInLinkSpan = (charIndex: number): boolean => {
+    for (const span of this.linkSpans) {
+      if (charIndex >= span.start && charIndex < span.end) {
+        return true;
+      }
+    }
+    return false;
   };
 
   private insertBuffers = (options: {

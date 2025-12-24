@@ -58,6 +58,7 @@ interface EventTypes {
     selectionRange?: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number };
   }) => void;
   showInlineHyperlinkInput: (data: { selectedText: string }) => void;
+  inlineEditorCursorOnHyperlink: (data?: { url: string; rect: Rectangle }) => void;
   hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;

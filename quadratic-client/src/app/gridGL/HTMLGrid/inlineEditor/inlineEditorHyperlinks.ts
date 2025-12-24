@@ -12,6 +12,9 @@ import * as monaco from 'monaco-editor';
 const HYPERLINK_STYLE_ID = 'inline-editor-hyperlink-styles';
 const HYPERLINK_CLASS = 'inline-hyperlink';
 
+// Regex to match URLs (http:// or https://)
+const URL_REGEX = /^https?:\/\/[^\s<>"']+$/i;
+
 interface TrackedSpan {
   start: number;
   end: number;
@@ -45,6 +48,7 @@ class InlineEditorHyperlinks {
 
   private handleContentChanged = (changes: monaco.editor.IModelContentChange[]) => {
     this.onContentChange(changes);
+    this.checkAutoLinkOnSpace(changes);
   };
 
   private handleInsertLinkInline = (data: {
@@ -326,6 +330,47 @@ class InlineEditorHyperlinks {
   }
 
   /**
+   * Check if a space was typed after a URL and auto-convert it to a hyperlink.
+   */
+  private checkAutoLinkOnSpace(changes: monaco.editor.IModelContentChange[]) {
+    // Only check if a single space or newline was typed
+    for (const change of changes) {
+      if (change.text !== ' ' && change.text !== '\n') continue;
+      if (change.rangeLength !== 0) continue; // Skip if replacing text
+
+      const spaceOffset = change.rangeOffset;
+
+      // Get the full text from the editor
+      const editor = inlineEditorMonaco.editor;
+      if (!editor) continue;
+
+      const model = editor.getModel();
+      if (!model) continue;
+
+      const fullText = model.getValue();
+
+      // Find the start of the word before the space
+      // Look backwards from spaceOffset to find word boundary
+      let wordStart = spaceOffset;
+      while (wordStart > 0 && !/\s/.test(fullText[wordStart - 1])) {
+        wordStart--;
+      }
+
+      const word = fullText.slice(wordStart, spaceOffset);
+
+      // Check if the word is a URL
+      if (URL_REGEX.test(word)) {
+        // Check if this range is already a hyperlink
+        const existingSpan = this.spans.find((span) => span.link && span.start <= wordStart && span.end >= spaceOffset);
+        if (existingSpan) continue;
+
+        // Add the hyperlink span
+        this.addHyperlinkSpan(wordStart, spaceOffset, word);
+      }
+    }
+  }
+
+  /**
    * Get the hyperlink span at a given cursor position, if any.
    */
   getHyperlinkAtPosition(position: monaco.Position): TrackedSpan | null {
@@ -435,8 +480,10 @@ class InlineEditorHyperlinks {
   /**
    * Build TextSpan array from current text and tracked spans.
    * Used when saving the cell.
+   * @param text The text to build spans for (typically trimmed)
+   * @param trimOffset Offset to subtract from span positions (for leading whitespace that was trimmed)
    */
-  buildTextSpans(text: string): TextSpan[] {
+  buildTextSpans(text: string, trimOffset: number = 0): TextSpan[] {
     if (!this.active || this.spans.length === 0) {
       // Return single plain text span if no spans tracked
       return [this.createTextSpan(text)];
@@ -445,10 +492,20 @@ class InlineEditorHyperlinks {
     const result: TextSpan[] = [];
     let lastEnd = 0;
 
-    // Sort spans by start position
-    const sortedSpans = [...this.spans].sort((a, b) => a.start - b.start);
+    // Sort spans by start position and adjust for trim offset
+    const sortedSpans = [...this.spans]
+      .map((span) => ({
+        ...span,
+        start: Math.max(0, span.start - trimOffset),
+        end: Math.max(0, span.end - trimOffset),
+      }))
+      .filter((span) => span.end > span.start && span.start < text.length)
+      .sort((a, b) => a.start - b.start);
 
     for (const span of sortedSpans) {
+      // Clamp span end to text length
+      const clampedEnd = Math.min(span.end, text.length);
+
       // Add gap text as plain span
       if (span.start > lastEnd) {
         const gapText = text.slice(lastEnd, span.start);
@@ -458,7 +515,7 @@ class InlineEditorHyperlinks {
       }
 
       // Add the formatted span
-      const spanText = text.slice(span.start, span.end);
+      const spanText = text.slice(span.start, clampedEnd);
       if (spanText) {
         result.push(
           this.createTextSpan(spanText, {
@@ -472,7 +529,7 @@ class InlineEditorHyperlinks {
         );
       }
 
-      lastEnd = span.end;
+      lastEnd = clampedEnd;
     }
 
     // Add remaining text as plain span

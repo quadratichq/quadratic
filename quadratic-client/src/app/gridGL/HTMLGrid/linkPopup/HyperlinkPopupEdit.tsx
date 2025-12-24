@@ -9,6 +9,7 @@ interface HyperlinkPopupEditProps {
   onTextChange: (text: string) => void;
   onUrlChange: (url: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
+  onKeyUp?: (e: React.KeyboardEvent) => void;
   onSave: () => void;
   onCancel: () => void;
 }
@@ -20,6 +21,7 @@ export const HyperlinkPopupEdit = ({
   onTextChange,
   onUrlChange,
   onKeyDown,
+  onKeyUp,
   onSave,
   onCancel,
 }: HyperlinkPopupEditProps) => {
@@ -32,6 +34,7 @@ export const HyperlinkPopupEdit = ({
           value={editUrl}
           onChange={(e) => onUrlChange(e.target.value)}
           onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
           placeholder="https://example.com"
           className="h-8"
           autoFocus
@@ -45,6 +48,7 @@ export const HyperlinkPopupEdit = ({
             value={editText}
             onChange={(e) => onTextChange(e.target.value)}
             onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
             placeholder="Link text (optional)"
             className="h-8"
           />

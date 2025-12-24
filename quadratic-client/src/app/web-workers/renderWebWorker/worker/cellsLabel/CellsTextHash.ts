@@ -12,9 +12,11 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
 import type { Link } from '@/app/shared/types/links';
 import type { DrawRects } from '@/app/shared/types/size';
+import { colors } from '@/app/theme/colors';
 import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { CellsTextHashSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -302,13 +304,21 @@ export class CellsTextHash {
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
       }
-      if (cellLabel.link && cellLabel.linkRectangles.length > 0) {
-        // Push individual link rectangles for each hyperlink span
+      // Push link rectangles for both full links and partial hyperlinks
+      if (cellLabel.linkRectangles.length > 0) {
         for (const linkRect of cellLabel.linkRectangles) {
           this.links.push({ pos: cellLabel.location, textRectangle: linkRect.rect, url: linkRect.url });
         }
       }
       this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
+      // Add link underlines with link color (for partial hyperlinks)
+      // Use the pre-calculated underlineY position from linkRectangles
+      if (!cellLabel.link && cellLabel.linkRectangles.length > 0) {
+        const linkUnderlines = cellLabel.linkRectangles.map(
+          (lr) => new Rectangle(lr.rect.x, lr.underlineY, lr.rect.width, 1)
+        );
+        this.drawRects.push({ rects: linkUnderlines, tint: convertColorStringToTint(colors.link) });
+      }
       this.special.addEmojis(cellLabel.emojis);
 
       // Re-add checkboxes and dropdowns that were cleared above

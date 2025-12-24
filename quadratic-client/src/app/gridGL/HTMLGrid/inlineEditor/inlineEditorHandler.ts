@@ -15,7 +15,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { CellFormatSummary, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { CellFormatSummary, JsRenderCodeCell, TextSpan } from '@/app/quadratic-core-types';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -211,6 +211,7 @@ class InlineEditorHandler {
 
       let value: string;
       let changeToFormula = false;
+      let richTextSpans: TextSpan[] | null = null;
       if (initialValue) {
         changeToFormula = initialValue[0] === '=';
 
@@ -238,9 +239,9 @@ class InlineEditorHandler {
               } catch (e) {}
             }
 
-            // Initialize hyperlink tracking for RichText cells
+            // Store RichText spans to initialize hyperlink tracking after Monaco is ready
             if (jsCellValue.kind === 'RichText' && jsCellValue.spans) {
-              inlineEditorHyperlinks.setSpans(jsCellValue.spans);
+              richTextSpans = jsCellValue.spans;
             }
 
             // open the calendar pick if the cell is a date
@@ -281,6 +282,12 @@ class InlineEditorHandler {
       this.temporaryUnderline = this.formatSummary?.underline || undefined;
       this.temporaryStrikeThrough = this.formatSummary?.strikeThrough || undefined;
       inlineEditorMonaco.set(value);
+
+      // Initialize hyperlink tracking after Monaco has the content
+      if (richTextSpans) {
+        inlineEditorHyperlinks.setSpans(richTextSpans);
+      }
+
       inlineEditorMonaco.triggerSuggestion();
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
@@ -418,7 +425,40 @@ class InlineEditorHandler {
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
     }
+
+    // Check if cursor is over a hyperlink and emit event for popup
+    this.checkCursorOnHyperlink();
+
     this.sendMultiplayerUpdate();
+  };
+
+  // Check if the cursor is over a hyperlink and emit event to show/hide popup
+  private checkCursorOnHyperlink = () => {
+    // Don't show hyperlink popup when editing formulas
+    if (this.formula) {
+      events.emit('inlineEditorCursorOnHyperlink', undefined);
+      return;
+    }
+
+    const editor = inlineEditorMonaco.editor;
+    if (!editor || !this.location) return;
+
+    const position = editor.getPosition();
+    if (!position) {
+      events.emit('inlineEditorCursorOnHyperlink', undefined);
+      return;
+    }
+
+    const hyperlinkSpan = inlineEditorHyperlinks.getHyperlinkAtPosition(position);
+    if (hyperlinkSpan?.link) {
+      // Get the cell offsets to position the popup
+      const sheet = sheets.sheet;
+      const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
+      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      events.emit('inlineEditorCursorOnHyperlink', { url: hyperlinkSpan.link, rect });
+    } else {
+      events.emit('inlineEditorCursorOnHyperlink', undefined);
+    }
   };
 
   updateMonacoCellLayout = () => {
@@ -583,7 +623,9 @@ class InlineEditorHandler {
           const trimmedValue = value.trim();
           // Check if we have formatted spans (e.g., hyperlinks) that require RichText
           if (inlineEditorHyperlinks.isActive() && inlineEditorHyperlinks.hasFormattedSpans()) {
-            const spans = inlineEditorHyperlinks.buildTextSpans(trimmedValue);
+            // Calculate leading whitespace offset to adjust span positions
+            const leadingWhitespace = value.length - value.trimStart().length;
+            const spans = inlineEditorHyperlinks.buildTextSpans(trimmedValue, leadingWhitespace);
             quadraticCore.setCellRichText(location.sheetId, location.x, location.y, spans);
           } else {
             quadraticCore.setCellValue(location.sheetId, location.x, location.y, trimmedValue, false);
