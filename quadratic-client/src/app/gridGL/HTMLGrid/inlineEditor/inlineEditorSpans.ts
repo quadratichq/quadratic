@@ -155,25 +155,28 @@ class InlineEditorSpans {
         color: #0066cc !important;
         text-decoration: underline !important;
         cursor: pointer;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
       }
       .${BOLD_CLASS} {
-        font-family: 'OpenSans-Bold', sans-serif !important;
         font-weight: bold !important;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
       }
       .${ITALIC_CLASS} {
-        font-family: 'OpenSans-Italic', sans-serif !important;
         font-style: italic !important;
-      }
-      .${BOLD_CLASS}.${ITALIC_CLASS} {
-        font-family: 'OpenSans-BoldItalic', sans-serif !important;
-        font-weight: bold !important;
-        font-style: italic !important;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
       }
       .${UNDERLINE_CLASS} {
         text-decoration: underline !important;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
       }
       .${STRIKE_THROUGH_CLASS} {
         text-decoration: line-through !important;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
       }
       .${UNDERLINE_CLASS}.${STRIKE_THROUGH_CLASS} {
         text-decoration: underline line-through !important;
@@ -276,7 +279,6 @@ class InlineEditorSpans {
         range: new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
         options: {
           inlineClassName: classes.length > 0 ? classes.join(' ') : undefined,
-          inlineClassNameAffectsLetterSpacing: true,
           stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
           hoverMessage: span.link ? { value: span.link } : undefined,
         },
