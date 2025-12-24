@@ -18,7 +18,7 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use quadratic_rust_shared::{
     ErrorLevel,
-    auth::jwt::{get_jwks, tests::TOKEN},
+    auth::jwt::{get_jwks, merge_jwks, parse_jwks, tests::TOKEN},
     multiplayer::message::{
         request::MessageRequest,
         response::{MessageResponse, ResponseError},
@@ -89,9 +89,13 @@ pub(crate) async fn serve() -> Result<()> {
 
     let config = config()?;
 
-    // TODO(ddimaria): we do this check for every WS connection.  Does this
-    // data change ofter or can it be cached?
-    let jwks = get_jwks(&config.jwks_uri).await?;
+    // Fetch JWKS from the remote URI (e.g., WorkOS)
+    let mut jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Merge the local JWKS with the remote JWKS
+    let local_jwks = parse_jwks(&config.quadratic_jwks)?;
+    jwks = merge_jwks(jwks, local_jwks);
+
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
 
