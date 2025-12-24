@@ -238,8 +238,9 @@ export function useHyperlinkPopup() {
     if (!linkData) return;
 
     if (linkData.isFormula) {
+      // Close popup immediately before any async operations
+      closePopup(true);
       sheets.sheet.cursor.moveTo(linkData.x, linkData.y);
-      closePopup();
       const codeCell = await quadraticCore.getCodeCell(sheets.current, linkData.x, linkData.y);
       if (codeCell?.code_string) {
         pixiAppSettings.changeInput(true, '=' + codeCell.code_string);
