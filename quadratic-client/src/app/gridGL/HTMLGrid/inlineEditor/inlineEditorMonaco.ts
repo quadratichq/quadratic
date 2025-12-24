@@ -384,6 +384,13 @@ class InlineEditorMonaco {
     return column;
   }
 
+  // Inserts text at a specific position.
+  insertTextAtPosition(position: monaco.Position, text: string) {
+    const model = this.getModel();
+    const range = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+    model.applyEdits([{ range, text }]);
+  }
+
   getLastColumn(): number {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getLastColumn');
@@ -618,12 +625,14 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.resetKeyboardPosition();
       pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
     });
-    this.editor.onDidChangeModelContent(() => {
+    this.editor.onDidChangeModelContent((e) => {
       this.convertEmojis();
       // Don't emit valueChanged if we're in the middle of emoji conversion
       // as the conversion will trigger another model change that will emit
       if (!this.processingEmojiConversion) {
         inlineEditorEvents.emit('valueChanged', this.get());
+        // Update hyperlink span positions based on content changes
+        inlineEditorEvents.emit('contentChanged', e.changes);
       }
     });
   }

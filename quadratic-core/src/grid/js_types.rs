@@ -99,6 +99,8 @@ impl From<CellValue> for JsCellValueKind {
 pub struct JsCellValue {
     pub value: String,
     pub kind: JsCellValueKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spans: Option<Vec<crate::values::TextSpan>>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]

@@ -1,6 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorHyperlinks } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHyperlinks';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
@@ -20,8 +22,10 @@ export interface LinkData {
   y: number;
   url: string;
   rect: Rectangle;
-  source: 'hover' | 'cursor';
+  source: 'hover' | 'cursor' | 'inline';
   isFormula: boolean;
+  // For inline editor: whether there was a text selection
+  hasSelection?: boolean;
 }
 
 export function useHyperlinkPopup() {
@@ -131,6 +135,37 @@ export function useHyperlinkPopup() {
     };
   }, []);
 
+  // Handle inline hyperlink input (Ctrl+K in inline editor)
+  useEffect(() => {
+    const handleShowInlineHyperlinkInput = (data: { selectedText: string }) => {
+      // Get the inline editor's position to use for the popup
+      const location = inlineEditorHandler.location;
+      if (!location) return;
+
+      const sheet = sheets.sheet;
+      const offsets = sheet.getCellOffsets(location.x, location.y);
+      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+
+      setLinkData({
+        x: location.x,
+        y: location.y,
+        url: '',
+        rect,
+        source: 'inline',
+        isFormula: false,
+        hasSelection: !!data.selectedText,
+      });
+      setMode('edit');
+      setEditUrl('');
+      setEditText(data.selectedText);
+    };
+
+    events.on('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
+    return () => {
+      events.off('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
+    };
+  }, []);
+
   // Handle hover link events
   useEffect(() => {
     const handleHoverLink = (link?: { x: number; y: number; url: string; rect: Rectangle }) => {
@@ -156,10 +191,12 @@ export function useHyperlinkPopup() {
           setEditUrl(link.url);
         }, HOVER_DELAY);
       } else {
-        if (linkDataRef.current?.source === 'cursor') return;
+        const source = linkDataRef.current?.source;
+        if (source === 'cursor' || source === 'inline') return;
 
         visibility.setFadeOutTimeout(() => {
-          if (!visibility.isHovering() && linkDataRef.current?.source !== 'cursor') {
+          const currentSource = linkDataRef.current?.source;
+          if (!visibility.isHovering() && currentSource !== 'cursor' && currentSource !== 'inline') {
             setLinkData(undefined);
             setMode('view');
           }
@@ -210,7 +247,9 @@ export function useHyperlinkPopup() {
   const handleMouseMove = visibility.handleMouseMove;
   const handleMouseLeave = useCallback(() => {
     visibility.handleMouseLeave(() => {
-      if (linkDataRef.current?.source !== 'cursor') {
+      const source = linkDataRef.current?.source;
+      // Don't auto-hide for cursor or inline sources
+      if (source !== 'cursor' && source !== 'inline') {
         setLinkData(undefined);
         setMode('view');
       }
@@ -271,13 +310,36 @@ export function useHyperlinkPopup() {
 
     const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
     const text = editText.trim() || normalizedUrl;
-    quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [{ text, link: normalizedUrl }]);
+
+    if (linkData.source === 'inline') {
+      // Save to inline editor's hyperlink tracking
+      inlineEditorHyperlinks.completePendingHyperlink(normalizedUrl, text);
+      inlineEditorMonaco.focus();
+    } else {
+      // Save directly to cell
+      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+        {
+          text,
+          link: normalizedUrl,
+          bold: null,
+          italic: null,
+          underline: null,
+          strike_through: null,
+          text_color: null,
+          font_size: null,
+        },
+      ]);
+    }
     closePopup(true);
   }, [linkData, editUrl, editText, closePopup]);
 
   const handleCancelEdit = useCallback(() => {
+    if (linkData?.source === 'inline') {
+      inlineEditorHyperlinks.cancelPendingHyperlink();
+      inlineEditorMonaco.focus();
+    }
     closePopup(true);
-  }, [closePopup]);
+  }, [linkData, closePopup]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -292,6 +354,9 @@ export function useHyperlinkPopup() {
     [handleSaveEdit, handleCancelEdit]
   );
 
+  // When editing in inline mode with a text selection, hide the text field
+  const hideTextField = linkData?.source === 'inline' && linkData?.hasSelection;
+
   return {
     linkData,
     mode,
@@ -300,6 +365,7 @@ export function useHyperlinkPopup() {
     pageTitle,
     isVisible: linkData !== undefined,
     skipFade: visibility.skipFade,
+    hideTextField,
     setEditUrl,
     setEditText,
     handleMouseEnter,

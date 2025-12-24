@@ -5,6 +5,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 interface HyperlinkPopupEditProps {
   editText: string;
   editUrl: string;
+  hideTextField?: boolean;
   onTextChange: (text: string) => void;
   onUrlChange: (url: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -15,6 +16,7 @@ interface HyperlinkPopupEditProps {
 export const HyperlinkPopupEdit = ({
   editText,
   editUrl,
+  hideTextField,
   onTextChange,
   onUrlChange,
   onKeyDown,
@@ -35,17 +37,19 @@ export const HyperlinkPopupEdit = ({
           autoFocus
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="link-text">Text</Label>
-        <Input
-          id="link-text"
-          value={editText}
-          onChange={(e) => onTextChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Link text (optional)"
-          className="h-8"
-        />
-      </div>
+      {!hideTextField && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="link-text">Text</Label>
+          <Input
+            id="link-text"
+            value={editText}
+            onChange={(e) => onTextChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Link text (optional)"
+            className="h-8"
+          />
+        </div>
+      )}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel} className="h-7">
           Cancel

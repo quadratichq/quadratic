@@ -6,6 +6,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
+import { inlineEditorHyperlinks } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHyperlinks';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -89,6 +90,7 @@ class InlineEditorHandler {
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
+    inlineEditorHyperlinks.clear();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
     this.hideDiv();
@@ -234,6 +236,11 @@ class InlineEditorHandler {
                 const number = new BigNumber(value).multipliedBy(100).toString();
                 value = number + '%';
               } catch (e) {}
+            }
+
+            // Initialize hyperlink tracking for RichText cells
+            if (jsCellValue.kind === 'RichText' && jsCellValue.spans) {
+              inlineEditorHyperlinks.setSpans(jsCellValue.spans);
             }
 
             // open the calendar pick if the cell is a date
@@ -573,7 +580,14 @@ class InlineEditorHandler {
           }
           return false;
         } else {
-          quadraticCore.setCellValue(location.sheetId, location.x, location.y, value.trim(), false);
+          const trimmedValue = value.trim();
+          // Check if we have formatted spans (e.g., hyperlinks) that require RichText
+          if (inlineEditorHyperlinks.isActive() && inlineEditorHyperlinks.hasFormattedSpans()) {
+            const spans = inlineEditorHyperlinks.buildTextSpans(trimmedValue);
+            quadraticCore.setCellRichText(location.sheetId, location.x, location.y, spans);
+          } else {
+            quadraticCore.setCellValue(location.sheetId, location.x, location.y, trimmedValue, false);
+          }
           if (!skipChangeSheet) {
             events.emit('hoverCell');
           }

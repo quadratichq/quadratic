@@ -442,6 +442,15 @@ class InlineEditorKeyboard {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       inlineEditorMonaco.insertTextAtCursor(formattedTime);
+    } else if (matchShortcut(Action.InsertHyperlink, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      // Get selection info and emit event to open hyperlink editor
+      const selection = inlineEditorMonaco.getSelection();
+      events.emit('insertLinkInline', {
+        selectedText: selection?.text ?? '',
+        selectionRange: selection?.range,
+      });
     }
 
     // Fallback for all other keys (used to end cursorIsMoving and return

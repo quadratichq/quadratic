@@ -199,9 +199,16 @@ impl Sheet {
 
     /// Returns the JsCellValue at a position
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
-        self.display_value(pos).map(|value| JsCellValue {
-            value: value.to_string(),
-            kind: value.into(),
+        self.display_value(pos).map(|value| {
+            let spans = match &value {
+                CellValue::RichText(spans) => Some(spans.clone()),
+                _ => None,
+            };
+            JsCellValue {
+                value: value.to_string(),
+                kind: value.into(),
+                spans,
+            }
         })
     }
 

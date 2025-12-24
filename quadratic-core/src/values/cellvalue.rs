@@ -5,6 +5,7 @@ use anyhow::Result;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::currency;
 use super::number::decimal_from_str;
@@ -42,7 +43,7 @@ impl Import {
 
 /// A span of text with optional inline formatting overrides.
 /// When rendered, span formatting overrides the cell-level format.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, TS)]
 pub struct TextSpan {
     pub text: String,
 

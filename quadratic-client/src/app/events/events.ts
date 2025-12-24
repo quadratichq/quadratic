@@ -53,6 +53,11 @@ interface EventTypes {
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
   hoverLink: (link?: { x: number; y: number; url: string; rect: Rectangle }) => void;
   insertLink: () => void;
+  insertLinkInline: (data: {
+    selectedText: string;
+    selectionRange?: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number };
+  }) => void;
+  showInlineHyperlinkInput: (data: { selectedText: string }) => void;
   hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;

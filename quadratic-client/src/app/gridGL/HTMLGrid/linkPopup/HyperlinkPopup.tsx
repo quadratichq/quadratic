@@ -16,6 +16,7 @@ export const HyperlinkPopup = () => {
     editText,
     pageTitle,
     isVisible,
+    hideTextField,
     setEditUrl,
     setEditText,
     handleMouseEnter,
@@ -77,6 +78,7 @@ export const HyperlinkPopup = () => {
           <HyperlinkPopupEdit
             editText={editText}
             editUrl={editUrl}
+            hideTextField={hideTextField}
             onTextChange={setEditText}
             onUrlChange={setEditUrl}
             onKeyDown={handleKeyDown}
