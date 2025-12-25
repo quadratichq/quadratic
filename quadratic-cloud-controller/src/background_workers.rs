@@ -69,14 +69,15 @@ async fn scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
     loop {
-        info!("Fetching scheduled tasks from API");
+        trace!("Fetching scheduled tasks from API");
 
         // Fetch scheduled tasks from API
         let scheduled_tasks = log_error_only(scheduled_tasks(&state).await)?;
         let len = scheduled_tasks.len();
-        info!("Got {len} scheduled tasks from API");
 
         if len > 0 {
+            info!("Got {len} scheduled tasks from API");
+
             let ids = scheduled_tasks
                 .iter()
                 .map(|task| (task.run_id, task.task_id))
@@ -111,10 +112,12 @@ async fn pubsub_watcher(state: Arc<State>) -> Result<()> {
     loop {
         let file_ids = state.get_file_ids_to_process().await?;
 
-        info!("Got {} file ids to process from pubsub", file_ids.len());
+        if !file_ids.is_empty() {
+            info!("Got {} file ids to process from pubsub", file_ids.len());
 
-        // Spawn Docker/K8s workers
-        controller.create_workers(file_ids).await?;
+            // Spawn Docker/K8s workers
+            controller.create_workers(file_ids).await?;
+        }
 
         interval.tick().await;
     }

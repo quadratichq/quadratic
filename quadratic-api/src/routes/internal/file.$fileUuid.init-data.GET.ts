@@ -5,6 +5,7 @@ import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getFileUrl } from '../../storage/storage';
 import type { Request } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 
@@ -28,6 +29,11 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
     },
     select: {
       timezone: true,
+      creator: {
+        select: {
+          email: true,
+        },
+      },
       ownerTeam: {
         select: {
           uuid: true,
@@ -42,13 +48,20 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
     },
   });
 
-  const { s3Key, sequenceNumber } = result.FileCheckpoint[0];
+  if (!result.creator) {
+    throw new ApiError(400, `File ${fileUuid} does not have a creator user.`);
+  }
 
+  const { s3Key, sequenceNumber } = result.FileCheckpoint[0];
   const presignedUrl = await getFileUrl(s3Key);
 
-  return res
-    .status(200)
-    .json({ teamId: result.ownerTeam.uuid, sequenceNumber, presignedUrl, timezone: result.timezone });
+  return res.status(200).json({
+    teamId: result.ownerTeam.uuid,
+    email: result.creator.email,
+    sequenceNumber,
+    presignedUrl,
+    timezone: result.timezone,
+  });
 });
 
 export default router;
