@@ -114,10 +114,10 @@ impl Sheet {
         self.delete_row_offset(transaction, row);
 
         // todo: this can be optimized by adding a fn that checks if there are
-        // any fills beyond the deleted column
+        // any fills beyond the deleted row
 
         if self.formats.has_fills() {
-            transaction.add_fill_cells(self.id);
+            transaction.add_fill_cells_from_rows(self, row);
         }
 
         // remove the row's formats from the sheet

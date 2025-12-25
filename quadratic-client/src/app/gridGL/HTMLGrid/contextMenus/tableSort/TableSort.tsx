@@ -13,7 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useRecoilState } from 'recoil';
 
 export const TableSort = () => {
-  const divRef = useRef<HTMLDivElement>(null);
+  const divRef = useRef<HTMLDivElement | null>(null);
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const handleClose = useCallback(() => {
