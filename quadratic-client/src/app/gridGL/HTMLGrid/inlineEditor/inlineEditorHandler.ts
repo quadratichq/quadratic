@@ -6,9 +6,9 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
-import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -677,6 +677,7 @@ class InlineEditorHandler {
     const wrap = this.formatSummary?.wrap ?? (this.codeCell ? 'clip' : 'overflow');
     const underline = this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
     const strikeThrough = this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;
+
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
       cellContentWidth,
       cellContentHeight,

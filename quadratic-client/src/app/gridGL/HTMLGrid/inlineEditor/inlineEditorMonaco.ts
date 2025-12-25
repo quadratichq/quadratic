@@ -3,6 +3,7 @@
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { emojiMap } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -191,8 +192,7 @@ class InlineEditorMonaco {
       scrollBeyondLastColumn: textWrap === 'clip' ? 5 : 0,
     });
 
-    // Calculate padding that scales with font size
-    // Get the actual font size being used
+    // Get the actual font size and family being used
     const fontSize = this.editor.getOption(monaco.editor.EditorOption.fontSize);
     const fontFamily = this.editor.getOption(monaco.editor.EditorOption.fontFamily);
 
@@ -201,9 +201,8 @@ class InlineEditorMonaco {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (context) {
-      context.font = `${fontSize}px ${fontFamily}`;
-      const metrics = context.measureText(text);
-      const measuredWidth = metrics.width;
+      // Measure width accounting for span formatting (bold text is wider)
+      const measuredWidth = this.measureTextWithSpans(context, text, fontSize, fontFamily);
 
       // Add padding that scales linearly with font size
       const fontScale = fontSize / DEFAULT_FONT_SIZE;
@@ -250,6 +249,82 @@ class InlineEditorMonaco {
     }
 
     return { width, height };
+  };
+
+  /**
+   * Measure text width accounting for span formatting.
+   * Bold text is wider than regular text, so we need to measure each span separately.
+   * Uses Monaco's font family as the base for gaps between spans.
+   */
+  private measureTextWithSpans = (
+    context: CanvasRenderingContext2D,
+    text: string,
+    fontSize: number,
+    defaultFontFamily: string
+  ): number => {
+    const spans = inlineEditorSpans.getSpans();
+
+    // If no spans or spans are inactive, measure with default font
+    if (!inlineEditorSpans.isActive() || spans.length === 0) {
+      context.font = `${fontSize}px ${defaultFontFamily}`;
+      return context.measureText(text).width;
+    }
+
+    // Get the cell's default bold/italic state from the Monaco font family
+    const defaultBold = defaultFontFamily.includes('Bold');
+    const defaultItalic = defaultFontFamily.includes('Italic');
+
+    let totalWidth = 0;
+    let lastEnd = 0;
+
+    // Sort spans by start position
+    const sortedSpans = [...spans].sort((a, b) => a.start - b.start);
+
+    for (const span of sortedSpans) {
+      // Measure any gap before this span with default font
+      if (span.start > lastEnd) {
+        const gapText = text.slice(lastEnd, span.start);
+        context.font = `${fontSize}px ${defaultFontFamily}`;
+        totalWidth += context.measureText(gapText).width;
+      }
+
+      // Measure the span with its appropriate font
+      // Span formatting overrides cell defaults, undefined means use cell default
+      const clampedEnd = Math.min(span.end, text.length);
+      const spanText = text.slice(span.start, clampedEnd);
+      if (spanText) {
+        const spanBold = span.bold !== undefined ? span.bold : defaultBold;
+        const spanItalic = span.italic !== undefined ? span.italic : defaultItalic;
+        const fontFamily = this.getFontFamilyForSpan(spanBold, spanItalic);
+        context.font = `${fontSize}px ${fontFamily}`;
+        totalWidth += context.measureText(spanText).width;
+      }
+
+      lastEnd = Math.max(lastEnd, clampedEnd);
+    }
+
+    // Measure any remaining text after the last span
+    if (lastEnd < text.length) {
+      const remainingText = text.slice(lastEnd);
+      context.font = `${fontSize}px ${defaultFontFamily}`;
+      totalWidth += context.measureText(remainingText).width;
+    }
+
+    return totalWidth;
+  };
+
+  /**
+   * Get the font family name based on bold and italic formatting.
+   */
+  private getFontFamilyForSpan = (bold: boolean, italic: boolean): string => {
+    if (bold && italic) {
+      return 'OpenSans-BoldItalic';
+    } else if (bold) {
+      return 'OpenSans-Bold';
+    } else if (italic) {
+      return 'OpenSans-Italic';
+    }
+    return 'OpenSans';
   };
 
   removeSelection() {
