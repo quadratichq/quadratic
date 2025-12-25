@@ -139,6 +139,11 @@ export function useAIRequestToAPI() {
                 aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                 return true;
               } catch (error) {
+                console.error('[AI Tool Filter] Filtering out invalid tool call:', {
+                  name: toolCall.name,
+                  arguments: toolCall.arguments,
+                  error,
+                });
                 return false;
               }
             }),

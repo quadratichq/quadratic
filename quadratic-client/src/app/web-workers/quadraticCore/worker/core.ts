@@ -417,7 +417,7 @@ class Core {
       return { contents, version };
     } catch (error: unknown) {
       this.sendAnalyticsError('upgradeGridFile', error);
-      return { error: error as string };
+      return { error: error instanceof Error ? error.message : String(error) };
     }
   }
 
@@ -455,7 +455,7 @@ class Core {
         return { contents, version };
       } catch (error: unknown) {
         this.sendAnalyticsError('importFile.Dashboard', error);
-        return { error: error as string };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
     } else {
       try {
@@ -1493,6 +1493,26 @@ class Core {
       return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
     } catch (e) {
       this.handleCoreError('setFormula', e);
+    }
+  }
+
+  // Sets multiple formulas in a single transaction (batched)
+  setFormulas(
+    sheetId: string,
+    formulas: Array<[string, string]>,
+    cursor: string
+  ): string | { error: string } | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      // Check if any formula intersects with a data table
+      for (const [selection] of formulas) {
+        if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
+          return { error: `Error in set formulas: Cannot add formula to a data table (selection: ${selection})` };
+        }
+      }
+      return this.gridController.setFormulas(sheetId, formulas, cursor);
+    } catch (e) {
+      this.handleCoreError('setFormulas', e);
     }
   }
 }

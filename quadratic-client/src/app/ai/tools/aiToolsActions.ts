@@ -483,32 +483,40 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetFormulaCellValue]: async (args) => {
     try {
-      let { sheet_name, code_cell_position, formula_string } = args;
+      const { sheet_name, formulas } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
 
-      // Move AI cursor to the formula cells
-      try {
-        const jsSelection = sheets.stringToSelection(code_cell_position, sheetId);
-        const selectionString = jsSelection.save();
-        aiUser.updateSelection(selectionString, sheetId);
-      } catch (e) {
-        console.warn('Failed to update AI user selection:', e);
+      // Move AI cursor to the first formula cell position
+      if (formulas.length > 0) {
+        try {
+          const jsSelection = sheets.stringToSelection(formulas[0].code_cell_position, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
       }
 
-      const transactionId = await quadraticCore.setFormula({
+      // Use batched setFormulas call (single transaction)
+      const transactionId = await quadraticCore.setFormulas({
         sheetId,
-        selection: code_cell_position,
-        codeString: formula_string,
+        formulas: formulas.map(({ code_cell_position, formula_string }) => ({
+          selection: code_cell_position,
+          codeString: formula_string,
+        })),
       });
+
+      const positions = formulas.map((f) => f.code_cell_position).join(', ');
+
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
         return [
           createTextContent(
-            `Successfully set formula cells in ${code_cell_position}. The results of the formula cells are contained with the context above.`
+            `Successfully set formula cells in ${positions}. The results of the formula cells are contained with the context above.`
           ),
         ];
       } else {
-        return [createTextContent('Error executing set formula cell value tool')];
+        return [createTextContent(`Error executing set formula cell value tool for ${positions}`)];
       }
     } catch (e) {
       return [createTextContent(`Error executing set formula cell value tool: ${e}`)];

@@ -207,6 +207,17 @@ impl CellValue {
         }
     }
 
+    /// Returns the value as an f64 if it represents a number.
+    pub fn to_number(&self) -> Option<f64> {
+        use rust_decimal::prelude::ToPrimitive;
+        match self {
+            CellValue::Number(n) => n.to_f64(),
+            CellValue::Logical(true) => Some(1.0),
+            CellValue::Logical(false) => Some(0.0),
+            _ => None,
+        }
+    }
+
     pub fn to_number_display(
         &self,
         numeric_format: Option<NumericFormat>,

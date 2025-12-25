@@ -15,10 +15,11 @@ impl TableRef {
     /// Returns the table name and the remaining string.
     fn parse_table_name(s: &str) -> Result<(String, &str), A1Error> {
         if let Some(captures) = TABLE_NAME_PATTERN.captures(s)
-            && let Some(name) = captures.get(1) {
-                let remaining = captures.get(2).map_or("", |m| m.as_str()).trim();
-                return Ok((name.as_str().to_string(), remaining));
-            }
+            && let Some(name) = captures.get(1)
+        {
+            let remaining = captures.get(2).map_or("", |m| m.as_str()).trim();
+            return Ok((name.as_str().to_string(), remaining));
+        }
         Err(A1Error::InvalidTableRef("Invalid table name".into()))
     }
 

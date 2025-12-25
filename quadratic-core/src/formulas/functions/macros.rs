@@ -309,6 +309,11 @@ macro_rules! formula_fn_arg {
     (@zip($ctx:ident, $args:ident, $args_to_zip_map:ident); $arg_name:ident: $($arg_type:tt)*) => {
         formula_fn_arg!(@assign($ctx, $args); $arg_name: $($arg_type)*)
     };
+    // Span argument (in zip-mapped function)
+    (@unzip($ctx:ident, $zipped_args:ident); $arg_name:ident: Span) => {
+        let $arg_name = &$arg_name;
+        let _ = &$arg_name; // suppress unused variable warning
+    };
     (@unzip($ctx:ident, $zipped_args:ident); $arg_name:ident: $($arg_type:tt)*) => {
         // Only a reference should be accessible, because this code may be
         // executed many times.
@@ -505,11 +510,12 @@ macro_rules! params_list {
     // Entry points (at the bottom so that the other rules take priority)
     () => { vec![] };
     ($($arg_name:tt: $arg_type:tt),+ $(,)?) => {{
-        let mut result = vec![];
+        let mut result: Vec<Param> = vec![];
 
         $(
             params_list!(@append(result, $arg_name, $arg_type));
         )*
+        let _ = &mut result; // Silence unused_mut warning for Ctx-only functions
         result
     }};
 }

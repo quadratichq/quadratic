@@ -7,6 +7,7 @@ pub mod functions;
 #[macro_use]
 pub mod jsexpr;
 
+mod lambda;
 pub mod legacy_cell_ref;
 mod lexer;
 pub mod lsp;
@@ -25,6 +26,7 @@ pub use ast::Formula;
 pub use criteria::Criterion;
 pub use ctx::Ctx;
 use functions::FormulaFnArgs;
+pub use lambda::LambdaValue;
 use params::{Param, ParamKind};
 pub use parser::*;
 use wildcards::wildcard_pattern_to_regex;

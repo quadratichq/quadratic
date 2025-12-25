@@ -124,6 +124,40 @@ impl GridController {
         })
     }
 
+    /// Sets multiple formulas in a single transaction (batched)
+    #[wasm_bindgen(js_name = "setFormulas")]
+    pub fn js_set_formulas(
+        &mut self,
+        sheet_id: String,
+        formulas: JsValue,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+
+            // Parse the formulas array from JS
+            let formulas_data: Vec<(String, String)> = serde_wasm_bindgen::from_value(formulas)
+                .map_err(|e| format!("Invalid formulas array: {e}"))?;
+
+            // Convert to A1Selection and code_string pairs
+            let formulas: Vec<(A1Selection, String)> = formulas_data
+                .into_iter()
+                .map(|(selection_str, code_string)| {
+                    let selection =
+                        A1Selection::parse_a1(&selection_str, sheet_id, self.a1_context())
+                            .map_err(|e| format!("Invalid selection '{selection_str}': {e}"))?;
+                    Ok((selection, code_string))
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+
+            let transaction_id = self.set_formulas(formulas, cursor);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
+    }
+
     /// Reruns all code cells in grid.
     #[wasm_bindgen(js_name = "rerunAllCodeCells")]
     pub fn js_rerun_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> JsValue {

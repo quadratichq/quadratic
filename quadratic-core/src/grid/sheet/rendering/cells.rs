@@ -42,6 +42,11 @@ impl Sheet {
                 } else {
                     JsRenderCellSpecial::RunError
                 }),
+                error_text: if spill_error {
+                    None
+                } else {
+                    Some(format!("{}", error.msg))
+                },
                 ..Default::default()
             };
         } else if let CellValue::Image(_) = value {
@@ -90,6 +95,7 @@ impl Sheet {
             text_color: format.text_color,
             vertical_align: format.vertical_align,
             special,
+            error_text: None,
             number,
             underline: format.underline,
             strike_through: format.strike_through,
@@ -478,6 +484,7 @@ mod tests {
                 x: 3,
                 y: 3,
                 special: Some(JsRenderCellSpecial::RunError),
+                error_text: Some("Array is too big".to_string()),
                 ..Default::default()
             },
         );
