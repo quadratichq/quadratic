@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quadratic Rust Renderer Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1rem;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #e94560;
+    }
+
+    .stats {
+      display: flex;
+      gap: 2rem;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.875rem;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .stat-label {
+      color: #888;
+    }
+
+    .stat-value {
+      color: #4ade80;
+      font-weight: 600;
+      min-width: 60px;
+    }
+
+    .stat-value.fps-green { color: #4ade80; }
+    .stat-value.fps-yellow { color: #fbbf24; }
+    .stat-value.fps-red { color: #f87171; }
+
+    #status {
+      font-size: 0.875rem;
+      color: #888;
+    }
+
+    #status.ready { color: #4ade80; }
+    #status.error { color: #f87171; }
+    #status.loading { color: #fbbf24; }
+
+    main {
+      flex: 1;
+      position: relative;
+      background: #0f0f23;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .help {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      font-size: 0.75rem;
+      color: #666;
+      background: rgba(22, 33, 62, 0.9);
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>🦀 Quadratic Rust Renderer</h1>
+      <div id="status" class="loading">Initializing…</div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">FPS:</span>
+        <span class="stat-value" id="fps">--</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Frame:</span>
+        <span class="stat-value" id="frametime">-- ms</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Labels:</span>
+        <span class="stat-value" id="labels">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Hashes:</span>
+        <span class="stat-value" id="hashes">0</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="canvas"></canvas>
+    <div class="help">
+      Drag or scroll to pan • Pinch to zoom • Explore the infinite grid (data is lazy-loaded)
+    </div>
+  </main>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

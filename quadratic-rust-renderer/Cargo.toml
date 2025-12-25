@@ -1,0 +1,106 @@
+[package]
+name = "quadratic-rust-renderer"
+version = "0.1.0"
+authors = ["Quadratic Team"]
+edition = "2024"
+description = "Rust renderer for Quadratic - supports both WASM (browser worker) and native (cloud) targets"
+repository = "https://github.com/quadratichq/quadratic"
+license-file = "LICENSE"
+
+# Standalone project - not part of the main workspace (POC)
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "quadratic-renderer"
+path = "src/bin/render.rs"
+required-features = ["native"]
+
+[features]
+default = ["wasm"]
+
+# WASM/browser target - uses raw WebGL2 (runs in a worker)
+wasm = [
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+    "js-sys",
+    "web-sys",
+    "console_error_panic_hook",
+]
+
+# Native target - software rendering for cloud/headless
+native = [
+    "tiny-skia",
+    "env_logger",
+    "image",
+]
+
+[dependencies]
+# WASM-only dependencies
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+js-sys = { version = "0.3", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+# Web APIs (WASM only) - WebGL2 for rendering
+web-sys = { version = "0.3", optional = true, features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "HtmlImageElement",
+    "OffscreenCanvas",
+    "OffscreenCanvasRenderingContext2d",
+    # WebGL2 features
+    "WebGl2RenderingContext",
+    "WebGlBuffer",
+    "WebGlProgram",
+    "WebGlShader",
+    "WebGlTexture",
+    "WebGlUniformLocation",
+    "WebGlVertexArrayObject",
+    "WebGlContextAttributes",
+] }
+
+# Native-only dependencies (software rendering)
+tiny-skia = { version = "0.11", optional = true }
+env_logger = { version = "0.11", optional = true }
+image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Utilities
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+
+# Math
+glam = "0.30"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+opt-level = "z"
+lto = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-Os', '-g']
+
+[package.metadata.wasm-pack.profile.release.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = false
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.dev.wasm-bindgen]
+debug-js-glue = true
+demangle-name-section = true
+dwarf-debug-info = false

@@ -1,0 +1,389 @@
+/**
+ * ViewportControls - Handles viewport interaction (drag, zoom, deceleration)
+ *
+ * This module manages user input for viewport manipulation and communicates
+ * with the Rust renderer via message passing.
+ *
+ * Designed to be portable back to the main quadratic-client app.
+ */
+
+// ============================================================================
+// Constants (matching client's Wheel.ts and Drag.ts)
+// ============================================================================
+
+/** Zoom sensitivity for wheel events with ctrl/meta key */
+export const WHEEL_ZOOM_PERCENT = 1.5;
+
+/** Line height multiplier for non-pixel deltaMode scroll events */
+export const LINE_HEIGHT = 20;
+
+/** Divisor for wheel zoom step calculation */
+export const WHEEL_ZOOM_DIVISOR = 500;
+
+/** Divisor for pinch zoom step calculation (more sensitive) */
+export const PINCH_ZOOM_DIVISOR = 200;
+
+/** Debounce time for viewport updates (ms) */
+export const VIEWPORT_UPDATE_DEBOUNCE = 100;
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/** Message types sent to the renderer worker */
+export type ViewportMessage =
+  | { type: 'dragStart' }
+  | { type: 'dragEnd'; time: number }
+  | { type: 'pan'; dx: number; dy: number; time: number }
+  | { type: 'zoom'; factor: number; centerX: number; centerY: number }
+  | { type: 'resize'; width: number; height: number };
+
+/** Callback for sending messages to the renderer */
+export type MessageSender = (message: ViewportMessage) => void;
+
+/** Callback when viewport has changed (for lazy loading, etc.) */
+export type ViewportChangeCallback = () => void;
+
+/** Options for ViewportControls */
+export interface ViewportControlsOptions {
+  /** Callback to send messages to the renderer worker */
+  sendMessage: MessageSender;
+
+  /** Called when viewport changes (debounced) */
+  onViewportChange?: ViewportChangeCallback;
+
+  /** Called immediately when viewport changes (not debounced) */
+  onViewportChangeImmediate?: ViewportChangeCallback;
+
+  /** Debounce time for viewport updates (default: 100ms) */
+  debounceMs?: number;
+
+  /** Whether to handle resize events (default: true) */
+  handleResize?: boolean;
+}
+
+// ============================================================================
+// ViewportControls Class
+// ============================================================================
+
+/**
+ * Manages viewport interaction for the Rust renderer.
+ *
+ * Handles:
+ * - Drag to pan (with pointer capture)
+ * - Wheel to pan (scroll)
+ * - Pinch to zoom (ctrl+wheel / trackpad pinch)
+ * - Deceleration (momentum scrolling)
+ * - Debounced viewport change notifications
+ *
+ * @example
+ * ```typescript
+ * const controls = new ViewportControls(canvas, {
+ *   sendMessage: (msg) => worker.postMessage(msg),
+ *   onViewportChange: () => updateVisibleHashes(),
+ * });
+ *
+ * // Later, when done:
+ * controls.destroy();
+ * ```
+ */
+export class ViewportControls {
+  private canvas: HTMLCanvasElement;
+  private options: Required<ViewportControlsOptions>;
+
+  // Drag state
+  private isDragging = false;
+  private lastX = 0;
+  private lastY = 0;
+
+  // Canvas dimensions (in device pixels)
+  private canvasWidth = 0;
+  private canvasHeight = 0;
+
+  // Debounce state
+  private viewportDirty = false;
+  private updateTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Bound event handlers (for cleanup)
+  private boundPointerDown: (e: PointerEvent) => void;
+  private boundPointerMove: (e: PointerEvent) => void;
+  private boundPointerUp: (e: PointerEvent) => void;
+  private boundPointerCancel: (e: PointerEvent) => void;
+  private boundWheel: (e: WheelEvent) => void;
+  private boundResize: () => void;
+
+  constructor(canvas: HTMLCanvasElement, options: ViewportControlsOptions) {
+    this.canvas = canvas;
+    this.options = {
+      sendMessage: options.sendMessage,
+      onViewportChange: options.onViewportChange ?? (() => {}),
+      onViewportChangeImmediate: options.onViewportChangeImmediate ?? (() => {}),
+      debounceMs: options.debounceMs ?? VIEWPORT_UPDATE_DEBOUNCE,
+      handleResize: options.handleResize ?? true,
+    };
+
+    // Initialize canvas dimensions
+    this.updateCanvasDimensions();
+
+    // Bind event handlers
+    this.boundPointerDown = this.handlePointerDown.bind(this);
+    this.boundPointerMove = this.handlePointerMove.bind(this);
+    this.boundPointerUp = this.handlePointerUp.bind(this);
+    this.boundPointerCancel = this.handlePointerCancel.bind(this);
+    this.boundWheel = this.handleWheel.bind(this);
+    this.boundResize = this.handleResize.bind(this);
+
+    // Attach event listeners
+    this.canvas.addEventListener('pointerdown', this.boundPointerDown);
+    this.canvas.addEventListener('pointermove', this.boundPointerMove);
+    this.canvas.addEventListener('pointerup', this.boundPointerUp);
+    this.canvas.addEventListener('pointercancel', this.boundPointerCancel);
+    this.canvas.addEventListener('wheel', this.boundWheel, { passive: false });
+
+    if (this.options.handleResize) {
+      window.addEventListener('resize', this.boundResize);
+    }
+  }
+
+  /**
+   * Clean up event listeners.
+   * Call this when the viewport controls are no longer needed.
+   */
+  destroy(): void {
+    this.canvas.removeEventListener('pointerdown', this.boundPointerDown);
+    this.canvas.removeEventListener('pointermove', this.boundPointerMove);
+    this.canvas.removeEventListener('pointerup', this.boundPointerUp);
+    this.canvas.removeEventListener('pointercancel', this.boundPointerCancel);
+    this.canvas.removeEventListener('wheel', this.boundWheel);
+
+    if (this.options.handleResize) {
+      window.removeEventListener('resize', this.boundResize);
+    }
+
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+      this.updateTimeout = null;
+    }
+  }
+
+  /**
+   * Update stored canvas dimensions.
+   * Call this after the canvas is resized externally.
+   */
+  updateCanvasDimensions(): void {
+    const dpr = window.devicePixelRatio || 1;
+    const container = this.canvas.parentElement;
+    if (container) {
+      this.canvasWidth = container.clientWidth * dpr;
+      this.canvasHeight = container.clientHeight * dpr;
+    } else {
+      this.canvasWidth = this.canvas.width;
+      this.canvasHeight = this.canvas.height;
+    }
+  }
+
+  /**
+   * Get current canvas dimensions in device pixels.
+   */
+  getCanvasDimensions(): { width: number; height: number } {
+    return { width: this.canvasWidth, height: this.canvasHeight };
+  }
+
+  /**
+   * Notify that the viewport has moved (e.g., from deceleration).
+   * This schedules a debounced viewport change callback.
+   */
+  notifyViewportMoved(): void {
+    this.scheduleViewportUpdate();
+  }
+
+  /**
+   * Manually trigger a resize.
+   * Use this after external canvas resizing or during initialization.
+   */
+  triggerResize(): void {
+    this.handleResize();
+  }
+
+  // ==========================================================================
+  // Private: Event Handlers
+  // ==========================================================================
+
+  private handlePointerDown(e: PointerEvent): void {
+    this.isDragging = true;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+    this.canvas.setPointerCapture(e.pointerId);
+
+    // Notify renderer to stop any active deceleration and start recording
+    this.options.sendMessage({ type: 'dragStart' });
+  }
+
+  private handlePointerMove(e: PointerEvent): void {
+    if (!this.isDragging) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const dx = (e.clientX - this.lastX) * dpr;
+    const dy = (e.clientY - this.lastY) * dpr;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+
+    // Pass timestamp for velocity calculation
+    this.options.sendMessage({
+      type: 'pan',
+      dx,
+      dy,
+      time: performance.now(),
+    });
+
+    this.scheduleViewportUpdate();
+  }
+
+  private handlePointerUp(e: PointerEvent): void {
+    if (!this.isDragging) return;
+
+    this.isDragging = false;
+    this.canvas.releasePointerCapture(e.pointerId);
+
+    // Notify renderer to calculate velocity and start deceleration
+    this.options.sendMessage({
+      type: 'dragEnd',
+      time: performance.now(),
+    });
+
+    // Immediate update on release
+    this.options.onViewportChangeImmediate();
+    this.options.onViewportChange();
+  }
+
+  private handlePointerCancel(_e: PointerEvent): void {
+    if (!this.isDragging) return;
+
+    this.isDragging = false;
+
+    // On cancel, just stop without deceleration
+    this.options.sendMessage({ type: 'dragStart' }); // This resets deceleration
+  }
+
+  private handleWheel(e: WheelEvent): void {
+    e.preventDefault();
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // deltaMode: 0 = pixels, 1 = lines, 2 = pages
+    const deltaX = e.deltaX * (e.deltaMode ? LINE_HEIGHT : 1);
+    const deltaY = e.deltaY * (e.deltaMode ? LINE_HEIGHT : 1);
+
+    // Check if this is a pinch gesture (ctrl key on trackpad)
+    const isPinch = e.ctrlKey;
+
+    if (isPinch) {
+      // Pinch to zoom
+      const step = -deltaY / PINCH_ZOOM_DIVISOR;
+      const factor = Math.pow(2, (1 + WHEEL_ZOOM_PERCENT) * step);
+
+      // Calculate zoom center in device pixels
+      const rect = this.canvas.getBoundingClientRect();
+      const centerX = (e.clientX - rect.left) * (this.canvasWidth / rect.width);
+      const centerY = (e.clientY - rect.top) * (this.canvasHeight / rect.height);
+
+      this.options.sendMessage({
+        type: 'zoom',
+        factor,
+        centerX,
+        centerY,
+      });
+    } else {
+      // Wheel to pan (inverted to match natural scrolling)
+      const dx = -deltaX * dpr;
+      const dy = -deltaY * dpr;
+
+      this.options.sendMessage({
+        type: 'pan',
+        dx,
+        dy,
+        time: performance.now(),
+      });
+    }
+
+    this.scheduleViewportUpdate();
+  }
+
+  private handleResize(): void {
+    this.updateCanvasDimensions();
+
+    this.options.sendMessage({
+      type: 'resize',
+      width: this.canvasWidth,
+      height: this.canvasHeight,
+    });
+
+    // Check if we need new content after resize
+    this.options.onViewportChange();
+  }
+
+  // ==========================================================================
+  // Private: Debounced Updates
+  // ==========================================================================
+
+  private scheduleViewportUpdate(): void {
+    this.viewportDirty = true;
+
+    if (!this.updateTimeout) {
+      this.updateTimeout = setTimeout(() => {
+        this.updateTimeout = null;
+        if (this.viewportDirty) {
+          this.viewportDirty = false;
+          this.options.onViewportChange();
+        }
+      }, this.options.debounceMs);
+    }
+  }
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Calculate zoom factor from wheel event delta.
+ *
+ * @param deltaY - The wheel event deltaY value
+ * @param deltaMode - The wheel event deltaMode (0=pixels, 1=lines, 2=pages)
+ * @param isPinch - Whether this is a pinch gesture (ctrl key held)
+ * @returns The zoom factor to apply
+ */
+export function calculateZoomFactor(
+  deltaY: number,
+  deltaMode: number,
+  isPinch: boolean
+): number {
+  const adjustedDelta = deltaY * (deltaMode ? LINE_HEIGHT : 1);
+  const divisor = isPinch ? PINCH_ZOOM_DIVISOR : WHEEL_ZOOM_DIVISOR;
+  const step = -adjustedDelta / divisor;
+  return Math.pow(2, (1 + WHEEL_ZOOM_PERCENT) * step);
+}
+
+/**
+ * Convert client coordinates to canvas device pixel coordinates.
+ *
+ * @param clientX - Client X coordinate (from mouse/touch event)
+ * @param clientY - Client Y coordinate
+ * @param canvas - The canvas element
+ * @param canvasWidth - Canvas width in device pixels
+ * @param canvasHeight - Canvas height in device pixels
+ * @returns Coordinates in device pixels
+ */
+export function clientToCanvasPixels(
+  clientX: number,
+  clientY: number,
+  canvas: HTMLCanvasElement,
+  canvasWidth: number,
+  canvasHeight: number
+): { x: number; y: number } {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) * (canvasWidth / rect.width),
+    y: (clientY - rect.top) * (canvasHeight / rect.height),
+  };
+}

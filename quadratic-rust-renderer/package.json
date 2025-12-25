@@ -1,0 +1,30 @@
+{
+  "name": "quadratic-rust-renderer",
+  "description": "Rust renderer for Quadratic - supports both WASM (browser) and native (cloud) targets",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "vite",
+    "dev": "npm run start & npm run serve",
+    "dev:perf": "npm run start:perf & npm run serve",
+    "start": "cargo watch -s 'wasm-pack build --dev --target web --out-dir pkg -- --features wasm'",
+    "start:perf": "cargo watch -s 'wasm-pack build --target web --out-dir pkg -- --features wasm'",
+    "build": "wasm-pack build --target web --out-dir pkg -- --features wasm",
+    "build:dev": "wasm-pack build --dev --target web --out-dir pkg -- --features wasm",
+    "build:native": "cargo build --release --features native",
+    "build:native:dev": "cargo build --features native",
+    "build:examples": "vite build",
+    "preview": "vite preview",
+    "run:native": "cargo run --release --features native --",
+    "test": "cargo test --features native",
+    "test:wasm": "wasm-pack test --headless --chrome --features wasm",
+    "lint": "cargo clippy --all-targets --features native -- -D warnings",
+    "lint:wasm": "cargo clippy --target wasm32-unknown-unknown --features wasm -- -D warnings",
+    "typecheck": "tsc --noEmit",
+    "clean": "cargo clean && rm -rf pkg dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}
