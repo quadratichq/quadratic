@@ -1,5 +1,6 @@
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use reqwest::{Response, StatusCode};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -8,6 +9,7 @@ use crate::error::Result;
 use crate::quadratic_api::{Task, TaskRun};
 
 pub const WORKER_GET_WORKER_INIT_DATA_ROUTE: &str = "/worker/get-worker-init-data";
+pub const WORKER_GET_TOKEN_ROUTE: &str = "/worker/get-token";
 pub const WORKER_GET_TASKS_ROUTE: &str = "/worker/get-tasks";
 pub const WORKER_ACK_TASKS_ROUTE: &str = "/worker/ack-tasks";
 pub const WORKER_SHUTDOWN_ROUTE: &str = "/worker/shutdown";
@@ -36,49 +38,107 @@ fn handle_response(response: &Response) -> Result<()> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetWorkerInitDataResponse {
-    pub team_id: Uuid,
-    pub sequence_number: u32,
-    pub presigned_url: String,
-    pub timezone: Option<String>,
-}
-/// Get a worker init data
-pub async fn get_worker_init_data(
+/// Make a GET request to the controller
+pub async fn worker_get_request<T: DeserializeOwned>(
     base_url: &str,
+    route: &str,
     file_id: Uuid,
-) -> Result<GetWorkerInitDataResponse> {
-    let url = format!("{base_url}{WORKER_GET_WORKER_INIT_DATA_ROUTE}");
+    jwt: Option<&str>,
+) -> Result<T> {
+    let url = format!("{base_url}{route}");
 
-    let response = reqwest::Client::new()
+    let mut request = reqwest::Client::new()
         .get(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
-        .send()
-        .await?;
+        .header(FILE_ID_HEADER, file_id.to_string());
+
+    if let Some(token) = jwt {
+        request = request.header(WORKER_EPHEMERAL_TOKEN_HEADER, token);
+    }
+
+    let response = request.send().await?;
 
     handle_response(&response)?;
 
-    let worker_init_data = response.json::<GetWorkerInitDataResponse>().await?;
+    let worker_init_data = response.json::<T>().await?;
 
     Ok(worker_init_data)
 }
 
+/// Make a POST request to the controller
+pub async fn worker_post_request<T: Serialize, R: DeserializeOwned>(
+    base_url: &str,
+    route: &str,
+    request: T,
+    jwt: Option<&str>,
+) -> Result<R> {
+    let url = format!("{base_url}{route}");
+
+    let mut req = reqwest::Client::new().post(url).json(&request);
+
+    if let Some(token) = jwt {
+        req = req.header(WORKER_EPHEMERAL_TOKEN_HEADER, token);
+    }
+
+    let response = req.send().await?;
+
+    handle_response(&response)?;
+
+    let response = response.json::<R>().await?;
+
+    Ok(response)
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetWorkerInitDataResponse {
+    pub team_id: Uuid,
+    pub email: String,
+    pub sequence_number: u32,
+    pub presigned_url: String,
+    pub timezone: Option<String>,
+}
+/// Get a worker init data (no JWT required - called before worker has a token)
+pub async fn get_worker_init_data(
+    base_url: &str,
+    file_id: Uuid,
+) -> Result<GetWorkerInitDataResponse> {
+    worker_get_request::<GetWorkerInitDataResponse>(
+        base_url,
+        WORKER_GET_WORKER_INIT_DATA_ROUTE,
+        file_id,
+        None,
+    )
+    .await
+}
+
 pub type GetTasksResponse = Vec<(String, TaskRun)>;
 /// Get the next scheduled tasks for a worker
-pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse> {
-    let url = format!("{base_url}{WORKER_GET_TASKS_ROUTE}");
+pub async fn get_tasks(base_url: &str, file_id: Uuid, jwt: &str) -> Result<GetTasksResponse> {
+    worker_get_request::<GetTasksResponse>(base_url, WORKER_GET_TASKS_ROUTE, file_id, Some(jwt))
+        .await
+}
+
+pub type GetTokenResponse = String;
+/// Get a new JWT token for the worker.
+/// The worker must provide its current JWT so the controller can validate
+/// and consume the JTI before issuing a new token.
+pub async fn get_token(
+    base_url: &str,
+    file_id: Uuid,
+    current_jwt: &str,
+) -> Result<GetTokenResponse> {
+    let url = format!("{base_url}{WORKER_GET_TOKEN_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
+        .header(WORKER_EPHEMERAL_TOKEN_HEADER, current_jwt)
         .send()
         .await?;
 
     handle_response(&response)?;
 
-    let scheduled_tasks_response = response.json::<GetTasksResponse>().await?;
+    let token = response.json::<GetTokenResponse>().await?;
 
-    Ok(scheduled_tasks_response)
+    Ok(token)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -105,26 +165,20 @@ pub async fn ack_tasks(
     successful_tasks: Vec<(String, Uuid, Uuid)>,
     // (key, run_id, task_id, error)
     failed_tasks: Vec<(String, Uuid, Uuid, String)>,
+    jwt: &str,
 ) -> Result<AckTasksResponse> {
-    let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
-
-    let request = AckTasksRequest {
-        container_id,
-        file_id,
-        successful_tasks,
-        failed_tasks,
-    };
-
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&request)
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let ack_response = response.json::<AckTasksResponse>().await?;
-    Ok(ack_response)
+    worker_post_request::<AckTasksRequest, AckTasksResponse>(
+        base_url,
+        WORKER_ACK_TASKS_ROUTE,
+        AckTasksRequest {
+            container_id,
+            file_id,
+            successful_tasks,
+            failed_tasks,
+        },
+        Some(jwt),
+    )
+    .await
 }
 
 #[derive(Serialize, Deserialize)]
@@ -142,24 +196,20 @@ pub async fn worker_shutdown(
     base_url: &str,
     container_id: Uuid,
     file_id: Uuid,
+    jwt: &str,
 ) -> Result<ShutdownResponse> {
-    let url = format!("{base_url}{WORKER_SHUTDOWN_ROUTE}");
-
     let request = ShutdownRequest {
         container_id,
         file_id,
     };
 
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&request)
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let shutdown_response = response.json::<ShutdownResponse>().await?;
-    Ok(shutdown_response)
+    worker_post_request::<ShutdownRequest, ShutdownResponse>(
+        base_url,
+        WORKER_SHUTDOWN_ROUTE,
+        request,
+        Some(jwt),
+    )
+    .await
 }
 
 pub fn compress_and_encode_tasks(tasks: Vec<(String, TaskRun)>) -> Result<String> {

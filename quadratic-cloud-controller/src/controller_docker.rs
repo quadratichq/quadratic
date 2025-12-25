@@ -67,7 +67,7 @@ impl Controller {
         let files_waiting = total_file_count - files_to_process.len();
 
         info!(
-            "Creating {} workers (max: {}, active: {}, waiting: {})",
+            "Attempting to create {} workers (max: {}, active: {}, waiting: {})",
             files_to_process.len(),
             MAX_CONCURRENT_WORKERS,
             active_worker_count,
@@ -151,6 +151,7 @@ impl Controller {
 
         let worker_init_data = GetWorkerInitDataResponse {
             team_id: file_init_data.team_id,
+            email: file_init_data.email,
             sequence_number: file_init_data.sequence_number,
             presigned_url: file_init_data.presigned_url,
             timezone: file_init_data.timezone,
@@ -205,7 +206,12 @@ impl Controller {
         let (tasks, ids) = self.binary_tasks_for_file(&file_id).await?;
 
         if ids.is_empty() {
-            info!("No tasks to create worker for file {file_id}");
+            info!(
+                "No tasks to create worker for file {file_id}, something failed, ack the active channel and exit"
+            );
+
+            self.state.remove_active_channel_if_empty(file_id).await?;
+
             return Ok(());
         }
 
@@ -214,12 +220,35 @@ impl Controller {
         let controller_url = self.state.settings.controller_url();
         let multiplayer_url = self.state.settings.multiplayer_url();
         let connection_url = self.state.settings.connection_url();
-        let m2m_auth_token = self.state.settings.m2m_auth_token.to_owned();
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
-        let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
 
+        // Generate initial JTI and JWT for this worker
+        // Note: We don't register the JTI until the container is successfully started
+        // to avoid orphaned JTI entries if container creation fails
+        let initial_jti = Uuid::new_v4().to_string();
+
+        // Generate JWT with the initial JTI
+        let worker_jwt = self.state.settings.generate_worker_jwt_with_jti(
+            &worker_init_data.email,
+            file_id,
+            worker_init_data.team_id,
+            &initial_jti,
+        )?;
+
+        let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
+        let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
         let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
 
+        // Security Note: Env vars are visible via `docker inspect` or `/proc/<pid>/environ`.
+        // The JWT passed here is safe because:
+        // 1. The worker rotates to a new JWT (via get_token) immediately on startup, before
+        //    connecting to multiplayer or running any user code
+        // 2. The initial JWT's JTI is consumed/invalidated on first use
+        // 3. By the time untrusted code (Python/JS) executes, this JWT is already invalid
+        //
+        // Threat model assumption: Container isolation prevents untrusted code from reading
+        // another container's /proc filesystem. If a container escape vulnerability exists,
+        // an attacker could read the initial JWT during the brief window before rotation.
         let env_vars = vec![
             format!("RUST_LOG={}", "info"), // change this to info for seeing all logs
             format!("CONTAINER_ID={container_id}"),
@@ -227,13 +256,10 @@ impl Controller {
             format!("MULTIPLAYER_URL={multiplayer_url}"),
             format!("CONNECTION_URL={connection_url}"),
             format!("FILE_ID={file_id}"),
-            format!("M2M_AUTH_TOKEN={m2m_auth_token}"),
+            format!("JWT={worker_jwt}"), // One-time use token, rotated before user code runs
             format!("TASKS={}", encoded_tasks),
             format!("WORKER_INIT_DATA={}", worker_init_data_json),
-            format!(
-                "TZ={}",
-                worker_init_data.timezone.unwrap_or("UTC".to_string())
-            ),
+            format!("TZ={}", timezone),
         ];
 
         // Mount volume to persist Python packages between container runs
@@ -277,6 +303,16 @@ impl Controller {
             .await
             .map_err(|e| Self::error("create_worker", e))?;
 
+        // Register the JTI only after the container is successfully started
+        // This avoids orphaned JTI entries if container creation fails
+        // (email and team_id are cached to avoid API calls during token rotation)
+        self.state.worker_jtis.register(
+            file_id,
+            initial_jti,
+            worker_init_data.email.clone(),
+            worker_init_data.team_id,
+        );
+
         info!("Successfully added and started worker for file {file_id}");
 
         insert_running_log(&self.state, ids).await?;
@@ -290,6 +326,10 @@ impl Controller {
         file_id: &Uuid,
     ) -> Result<()> {
         tracing::trace!("Shutting down worker");
+
+        // Remove the worker's JTI from the store
+        state.worker_jtis.remove(file_id);
+
         let mut client = state.client.lock().await;
         client
             .remove_container(container_id)

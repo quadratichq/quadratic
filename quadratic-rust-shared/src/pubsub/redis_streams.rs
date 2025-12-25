@@ -16,6 +16,7 @@ use std::{
 };
 
 use crate::pubsub::Config;
+use crate::pubsub::PubSub as PubSubTrait;
 use crate::{SharedError, error::Result};
 
 /// Redis Streams configuration
@@ -314,10 +315,8 @@ impl super::PubSub for RedisConnection {
 
         // remove the channel from the active channels set ONLY if there are no pending messages
         if let Some(active_channel) = active_channel {
-            let has_pending = self.has_pending_messages(channel, group).await?;
-            if !has_pending {
-                self.remove_active_channel(active_channel, channel).await?
-            }
+            self.remove_active_channel_if_empty(active_channel, channel, group)
+                .await?
         }
 
         Ok(())
@@ -605,6 +604,22 @@ impl RedisConnection {
             }
             _ => Ok(false),
         }
+    }
+
+    /// Remove an a key within an active channel
+    pub async fn remove_active_channel_if_empty(
+        &mut self,
+        set_key: &str,
+        channel: &str,
+        group: &str,
+    ) -> Result<()> {
+        let has_pending = self.has_pending_messages(channel, group).await?;
+
+        if !has_pending {
+            self.remove_active_channel(set_key, channel).await?
+        }
+
+        Ok(())
     }
 }
 

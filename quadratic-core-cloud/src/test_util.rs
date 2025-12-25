@@ -29,7 +29,7 @@ pub(crate) fn new_storage() -> StorageContainer {
 //         sequence_num: 0,
 //         session_id: Uuid::new_v4(),
 //         file: Arc::new(Mutex::new(GridController::test())),
-//         m2m_auth_token: "M2M_AUTH_TOKEN".to_string(),
+//         jwt: "M2M_AUTH_TOKEN".to_string(),
 //         transaction_id: Arc::new(Mutex::new(None)),
 //         websocket_sender: None,
 //         websocket_receiver: None,
