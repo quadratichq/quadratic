@@ -134,13 +134,16 @@ export class CellLabel {
   unwrappedTextWidth = CELL_WIDTH;
 
   // Tracks actual glyph height which may exceed textHeight for descenders (g, p, y, etc.)
-  private glyphHeight = CELL_HEIGHT;
+  // Initialize to LINE_HEIGHT (not CELL_HEIGHT) so that if updateText is never called,
+  // textHeightWithDescenders will equal CELL_HEIGHT (LINE_HEIGHT + CELL_VERTICAL_PADDING * 2)
+  private glyphHeight = LINE_HEIGHT;
 
   // Returns the height needed for row sizing to ensure text isn't clipped.
   // Uses actual glyph height (including descenders) plus vertical padding.
   get textHeightWithDescenders(): number {
-    // Include constant vertical padding (top and bottom) - not scaled with font size
-    return this.glyphHeight + CELL_VERTICAL_PADDING * 2;
+    // Include constant vertical padding (top and bottom) - not scaled with font size.
+    // Round to avoid floating point precision issues in height comparisons.
+    return Math.round(this.glyphHeight + CELL_VERTICAL_PADDING * 2);
   }
 
   // overflow values
@@ -644,28 +647,32 @@ export class CellLabel {
     }
 
     // Use lineHeight for text height (ensures consistent alignment across cells)
-    let calculatedTextHeight = this.lineHeight * (line + 1);
+    const calculatedTextHeight = this.lineHeight * (line + 1);
 
     // Calculate actual glyph height separately (for row sizing to prevent clipping)
-    // This accounts for descenders (g, p, y) that extend below the baseline
+    // This accounts for descenders (g, p, y) that extend below the baseline.
+    // We only count the portion that extends beyond the font's native line height
+    // as a "descender" - characters that fit within the font's line height should
+    // not cause row resizing.
     let calculatedGlyphHeight = calculatedTextHeight;
     if (chars.length > 0) {
-      let maxCharBottom = 0;
+      let maxDescenderExtension = 0;
+      const fontLineHeight = baseData.lineHeight; // Font's native line height
       for (const char of chars) {
         const charBottom = char.position.y + char.charData.frame.height;
-        maxCharBottom = Math.max(maxCharBottom, charBottom);
+        // For multi-line text, compare against the expected bottom for this line
+        const expectedLineBottom = (char.line + 1) * fontLineHeight;
+        const descenderExtension = Math.max(0, charBottom - expectedLineBottom);
+        maxDescenderExtension = Math.max(maxDescenderExtension, descenderExtension);
       }
-      const glyphBasedHeight = maxCharBottom * scale;
-      calculatedGlyphHeight = Math.max(calculatedGlyphHeight, glyphBasedHeight);
+      // Add scaled descender extension to our calculated text height
+      calculatedGlyphHeight = calculatedTextHeight + maxDescenderExtension * scale;
     }
 
-    // Add space for underlines if present (underlines extend below the text baseline)
-    // Note: underlineOffset is in bitmap font coordinates and needs to be scaled
-    if (this.underline) {
-      const underlineHeight = this.lineHeight * line + this.underlineOffset * scale + HORIZONTAL_LINE_THICKNESS;
-      calculatedTextHeight = Math.max(calculatedTextHeight, underlineHeight);
-      calculatedGlyphHeight = Math.max(calculatedGlyphHeight, underlineHeight);
-    }
+    // Note: Underlines are purely decorative and should NOT affect text height or
+    // glyph height. This matches Excel/Google Sheets behavior where adding underline
+    // doesn't change cell height or text positioning. The underline is drawn at a
+    // fixed offset below the text baseline within the existing cell bounds.
 
     return {
       chars,
@@ -783,7 +790,7 @@ export class CellLabel {
     const charCode = extractCharCode('#');
     const charData = data.chars[charCode];
     const charWidth = Math.max(charData.xAdvance, charData.frame.width) * scale + this.letterSpacing;
-    const count = Math.floor((this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3) / charWidth);
+    const count = Math.max(0, Math.floor((this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3) / charWidth));
     const text = '#'.repeat(count);
     return text;
   };
@@ -1086,7 +1093,6 @@ export class CellLabel {
     clipBottom: number,
     scale: number
   ) => {
-    let maxHeight = 0;
     this.lineWidths.forEach((lineWidth, line) => {
       const height = this.lineHeight * line + yOffset * scale;
       const yPos = this.position.y + height + OPEN_SANS_FIX.y;
@@ -1099,9 +1105,9 @@ export class CellLabel {
 
       const rect = new Rectangle(xPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
       this.horizontalLines.push(rect);
-      maxHeight = Math.max(maxHeight, height + HORIZONTAL_LINE_THICKNESS);
     });
-    this.textHeight = Math.max(this.textHeight, maxHeight);
+    // Note: We intentionally don't update textHeight here. Underlines/strikethroughs
+    // are decorative and shouldn't affect text height for layout purposes.
   };
 
   // these are used to adjust column/row sizes without regenerating glyphs
