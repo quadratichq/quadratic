@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-const FADE_OUT_DELAY = 400;
+export const FADE_OUT_DELAY = 200;
 const CLOSE_COOLDOWN = 300;
 
 export type PopupMode = 'view' | 'edit';

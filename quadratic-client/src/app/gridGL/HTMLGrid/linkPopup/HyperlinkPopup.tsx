@@ -22,6 +22,7 @@ export const HyperlinkPopup = () => {
     handleMouseEnter,
     handleMouseMove,
     handleMouseLeave,
+    handleWheel,
     handleOpenLink,
     handleCopyLink,
     handleEditMode,
@@ -71,6 +72,7 @@ export const HyperlinkPopup = () => {
       onMouseEnter={handleMouseEnter}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onWheel={handleWheel}
       onKeyDown={handleCardKeyDown}
       onKeyUp={handleCardKeyUp}
     >

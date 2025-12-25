@@ -12,8 +12,7 @@ import { CopyIcon } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLinkMetadata } from './useLinkMetadata';
-import type { PopupMode } from './usePopupVisibility';
-import { usePopupVisibility } from './usePopupVisibility';
+import { FADE_OUT_DELAY, type PopupMode, usePopupVisibility } from './usePopupVisibility';
 
 const HOVER_DELAY = 300;
 
@@ -117,17 +116,20 @@ export function useHyperlinkPopup() {
       const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
 
       if (cellValue?.kind === 'RichText' && cellValue.spans) {
-        // Find the first span with a link
-        const linkSpan = cellValue.spans.find((span) => span.link);
-        if (linkSpan?.link) {
+        // Only show popup from cursor if the entire cell is a single hyperlink span.
+        // For partial hyperlinks (multiple spans with only some having links),
+        // rely on hover detection which knows the exact mouse position.
+        const linkSpan = cellValue.spans.length === 1 ? cellValue.spans[0] : undefined;
+        const linkUrl = linkSpan?.link;
+        if (linkSpan && linkUrl) {
           const offsets = sheet.getCellOffsets(x, y);
           const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
           const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
           const isFormula = codeCell?.language === 'Formula';
 
-          setLinkData({ x, y, url: linkSpan.link, rect, source: 'cursor', isFormula, linkText: linkSpan.text });
+          setLinkData({ x, y, url: linkUrl, rect, source: 'cursor', isFormula, linkText: linkSpan.text });
           setMode('view');
-          setEditUrl(linkSpan.link);
+          setEditUrl(linkUrl);
         }
       }
     };
@@ -299,7 +301,7 @@ export function useHyperlinkPopup() {
               setLinkData(undefined);
               setMode('view');
             }
-          }, 400);
+          }, FADE_OUT_DELAY);
           return;
         }
 
@@ -311,7 +313,7 @@ export function useHyperlinkPopup() {
             setLinkData(undefined);
             setMode('view');
           }
-        }, 400);
+        }, FADE_OUT_DELAY);
       }
     };
 
@@ -378,6 +380,12 @@ export function useHyperlinkPopup() {
       }
     });
   }, []); // No dependencies - use visibilityRef
+
+  // Close popup on wheel scroll (user likely wants to zoom/scroll the viewport)
+  const handleWheel = useCallback(() => {
+    if (visibilityRef.current.isEditMode()) return;
+    closePopup(true);
+  }, [closePopup]);
 
   // Action handlers
   const handleOpenLink = useCallback(() => {
@@ -505,6 +513,7 @@ export function useHyperlinkPopup() {
     handleMouseEnter,
     handleMouseMove,
     handleMouseLeave,
+    handleWheel,
     handleOpenLink,
     handleCopyLink,
     handleEditMode,
