@@ -316,6 +316,9 @@ class InlineEditorHandler {
       // this needs to be at the end to avoid a race condition where the cursor
       // draws at 0,0 when editing in a data table
       this.open = true;
+
+      // Emit initial formatting state so toolbar reflects the current state
+      this.updateSelectionFormatting();
     } else {
       this.close({});
     }
@@ -383,8 +386,15 @@ class InlineEditorHandler {
   }
 
   /**
-   * Emit the selection formatting event based on the current selection state.
-   * Called when the selection changes in the Monaco editor.
+   * Check if the inline editor is open and not editing a formula.
+   */
+  isOpenForText(): boolean {
+    return this.open && !this.formula;
+  }
+
+  /**
+   * Emit the selection formatting event based on the current selection or cursor position.
+   * Called when the selection changes in the Monaco editor or when temporary formatting changes.
    */
   updateSelectionFormatting = () => {
     if (!this.open || this.formula) {
@@ -392,68 +402,161 @@ class InlineEditorHandler {
       return;
     }
 
-    if (!inlineEditorMonaco.hasSelection()) {
-      inlineEditorEvents.emit('selectionFormatting', undefined);
-      return;
+    if (inlineEditorMonaco.hasSelection()) {
+      // If there's a selection, get the formatting from the spans
+      const formatting = inlineEditorSpans.getSelectionFormattingSummary();
+      inlineEditorEvents.emit('selectionFormatting', formatting);
+    } else {
+      // If no selection, check formatting at the cursor position first
+      const cursorFormatting = inlineEditorSpans.getFormattingAtCursor();
+      if (cursorFormatting) {
+        // Use the span formatting at cursor position
+        inlineEditorEvents.emit('selectionFormatting', cursorFormatting);
+      } else {
+        // Fall back to temporary formatting state (for when typing new text)
+        const formatting = {
+          bold: this.temporaryBold ?? this.formatSummary?.bold ?? false,
+          italic: this.temporaryItalic ?? this.formatSummary?.italic ?? false,
+          underline: this.temporaryUnderline ?? this.formatSummary?.underline ?? false,
+          strikeThrough: this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false,
+          textColor: this.formatSummary?.textColor ?? undefined,
+        };
+        inlineEditorEvents.emit('selectionFormatting', formatting);
+      }
     }
-
-    const formatting = inlineEditorSpans.getSelectionFormattingSummary();
-    inlineEditorEvents.emit('selectionFormatting', formatting);
   };
 
   /**
-   * Toggle bold formatting for the current selection if there is one.
-   * Returns true if span formatting was applied, false otherwise.
+   * Get the current displayed state for a formatting property.
+   * This checks span formatting at cursor first, then falls back to temporary formatting.
+   */
+  private getCurrentFormattingState(property: 'bold' | 'italic' | 'underline' | 'strikeThrough'): boolean {
+    const cursorFormatting = inlineEditorSpans.getFormattingAtCursor();
+    if (cursorFormatting) {
+      return cursorFormatting[property] ?? false;
+    }
+    // Fall back to temporary formatting
+    switch (property) {
+      case 'bold':
+        return this.temporaryBold ?? this.formatSummary?.bold ?? false;
+      case 'italic':
+        return this.temporaryItalic ?? this.formatSummary?.italic ?? false;
+      case 'underline':
+        return this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
+      case 'strikeThrough':
+        return this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;
+    }
+  }
+
+  /**
+   * Toggle bold formatting for the current selection or set temporary formatting.
+   * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleBoldForSelection = (): boolean => {
-    if (!this.hasTextSelection()) {
+    if (!this.isOpenForText()) {
       return false;
     }
-    return inlineEditorSpans.toggleFormattingForSelection('bold');
+    // If there's a selection, apply span formatting
+    if (inlineEditorMonaco.hasSelection()) {
+      inlineEditorSpans.toggleFormattingForSelection('bold');
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // Otherwise, toggle temporary formatting based on current displayed state
+    const currentState = this.getCurrentFormattingState('bold');
+    this.temporaryBold = !currentState;
+    this.updateFont();
+    this.sendMultiplayerUpdate();
+    this.updateSelectionFormatting();
+    return true;
   };
 
   /**
-   * Toggle italic formatting for the current selection if there is one.
-   * Returns true if span formatting was applied, false otherwise.
+   * Toggle italic formatting for the current selection or set temporary formatting.
+   * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleItalicForSelection = (): boolean => {
-    if (!this.hasTextSelection()) {
+    if (!this.isOpenForText()) {
       return false;
     }
-    return inlineEditorSpans.toggleFormattingForSelection('italic');
+    // If there's a selection, apply span formatting
+    if (inlineEditorMonaco.hasSelection()) {
+      inlineEditorSpans.toggleFormattingForSelection('italic');
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // Otherwise, toggle temporary formatting based on current displayed state
+    const currentState = this.getCurrentFormattingState('italic');
+    this.temporaryItalic = !currentState;
+    this.updateFont();
+    this.sendMultiplayerUpdate();
+    this.updateSelectionFormatting();
+    return true;
   };
 
   /**
-   * Toggle underline formatting for the current selection if there is one.
-   * Returns true if span formatting was applied, false otherwise.
+   * Toggle underline formatting for the current selection or set temporary formatting.
+   * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleUnderlineForSelection = (): boolean => {
-    if (!this.hasTextSelection()) {
+    if (!this.isOpenForText()) {
       return false;
     }
-    return inlineEditorSpans.toggleFormattingForSelection('underline');
+    // If there's a selection, apply span formatting
+    if (inlineEditorMonaco.hasSelection()) {
+      inlineEditorSpans.toggleFormattingForSelection('underline');
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // Otherwise, toggle temporary formatting based on current displayed state
+    const currentState = this.getCurrentFormattingState('underline');
+    this.temporaryUnderline = !currentState;
+    inlineEditorMonaco.setUnderline(this.temporaryUnderline);
+    this.sendMultiplayerUpdate();
+    this.updateSelectionFormatting();
+    return true;
   };
 
   /**
-   * Toggle strikethrough formatting for the current selection if there is one.
-   * Returns true if span formatting was applied, false otherwise.
+   * Toggle strikethrough formatting for the current selection or set temporary formatting.
+   * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleStrikeThroughForSelection = (): boolean => {
-    if (!this.hasTextSelection()) {
+    if (!this.isOpenForText()) {
       return false;
     }
-    return inlineEditorSpans.toggleFormattingForSelection('strikeThrough');
+    // If there's a selection, apply span formatting
+    if (inlineEditorMonaco.hasSelection()) {
+      inlineEditorSpans.toggleFormattingForSelection('strikeThrough');
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // Otherwise, toggle temporary formatting based on current displayed state
+    const currentState = this.getCurrentFormattingState('strikeThrough');
+    this.temporaryStrikeThrough = !currentState;
+    inlineEditorMonaco.setStrikeThrough(this.temporaryStrikeThrough);
+    this.sendMultiplayerUpdate();
+    this.updateSelectionFormatting();
+    return true;
   };
 
   /**
-   * Set text color for the current selection if there is one.
-   * Returns true if span formatting was applied, false otherwise.
+   * Set text color for the current selection or set temporary formatting.
+   * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   setTextColorForSelection = (color: string | undefined): boolean => {
-    if (!this.hasTextSelection()) {
+    if (!this.isOpenForText()) {
       return false;
     }
-    return inlineEditorSpans.applyFormattingToSelection({ textColor: color });
+    // If there's a selection, apply span formatting
+    if (inlineEditorMonaco.hasSelection()) {
+      inlineEditorSpans.applyFormattingToSelection({ textColor: color });
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // TODO: For now, text color without selection is not supported
+    // We would need to add temporaryTextColor to support this
+    return false;
   };
 
   /**
@@ -522,6 +625,9 @@ class InlineEditorHandler {
 
     // Check if cursor is over a hyperlink and emit event for popup
     this.checkCursorOnHyperlink();
+
+    // Update formatting buttons to reflect the span at the cursor position
+    this.updateSelectionFormatting();
 
     this.sendMultiplayerUpdate();
   };

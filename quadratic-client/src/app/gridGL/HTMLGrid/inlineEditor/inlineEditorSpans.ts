@@ -640,6 +640,47 @@ class InlineEditorSpans {
   }
 
   /**
+   * Get formatting at the current cursor position.
+   * Returns the formatting of the span the cursor is inside, or undefined if no span.
+   */
+  getFormattingAtCursor(): SpanFormatting | undefined {
+    if (!this.active) return undefined;
+
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return undefined;
+
+    // Find the span that contains the cursor position
+    for (const span of this.spans) {
+      if (offset >= span.start && offset < span.end) {
+        return {
+          bold: span.bold ?? false,
+          italic: span.italic ?? false,
+          underline: span.underline ?? false,
+          strikeThrough: span.strikeThrough ?? false,
+          textColor: span.textColor,
+        };
+      }
+    }
+
+    // Also check if cursor is at the end of a span (e.g., right after typing)
+    // This allows formatting to "stick" when cursor is at span boundary
+    for (const span of this.spans) {
+      if (offset === span.end) {
+        return {
+          bold: span.bold ?? false,
+          italic: span.italic ?? false,
+          underline: span.underline ?? false,
+          strikeThrough: span.strikeThrough ?? false,
+          textColor: span.textColor,
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Get the text color for a range if the entire range has the same color.
    * Returns undefined if the range has no color or mixed colors.
    */
