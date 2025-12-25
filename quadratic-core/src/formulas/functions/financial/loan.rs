@@ -241,7 +241,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let mut balance = pv;
                 let mut cum_interest = 0.0;
 
-                if !end_period.is_finite() || end_period as i64 > i64::MAX {
+                if !end_period.is_finite() || end_period > i64::MAX as f64 {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
 
@@ -289,7 +289,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let mut balance = pv;
                 let mut cum_principal = 0.0;
 
-                if !end_period.is_finite() || end_period as i64 > i64::MAX {
+                if !end_period.is_finite() || end_period > i64::MAX as f64 {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
 
