@@ -151,6 +151,7 @@ export class PixiApp {
   viewportChanged = (): void => {
     this.viewport.dirty = true;
     events.emit('setDirty', { gridLines: true, headings: true, cursor: true, cellHighlights: true });
+    events.emit('viewportChanged');
     content.cellsSheets.cull(this.viewport.getVisibleBounds());
 
     // we only set the viewport if update has completed firstRenderComplete

@@ -38,12 +38,16 @@ export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   // Map of hash key (e.g., "0,0") to fills in that hash
   private fillsByHash: Map<string, JsRenderFill[]> = new Map();
+
   // Track which hashes we've requested fills for
   private loadedHashes: Set<string> = new Set();
+
   // Track dirty fill hashes that are outside viewport (need to request when visible)
   private dirtyFillHashes: Set<string> = new Set();
+
   // Track the last viewport hash bounds to detect changes
   private lastViewportHashBounds?: { minX: number; maxX: number; minY: number; maxY: number };
+
   private sheetFills?: JsSheetFill[];
   private metaFillsLoaded = false;
   private alternatingColorsGraphics: Graphics;
@@ -74,8 +78,10 @@ export class CellsFills extends Container {
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingColumn', this.drawSheetCells);
+    events.on('resizeHeadingColumn', this.drawSheetMeta);
     events.on('resizeHeadingRow', this.drawCells);
     events.on('resizeHeadingRow', this.drawSheetCells);
+    events.on('resizeHeadingRow', this.drawSheetMeta);
     events.on('viewportChanged', this.handleViewportChanged);
   }
 
@@ -87,8 +93,10 @@ export class CellsFills extends Container {
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
     events.off('resizeHeadingColumn', this.drawSheetCells);
+    events.off('resizeHeadingColumn', this.drawSheetMeta);
     events.off('resizeHeadingRow', this.drawCells);
     events.off('resizeHeadingRow', this.drawSheetCells);
+    events.off('resizeHeadingRow', this.drawSheetMeta);
     events.off('viewportChanged', this.handleViewportChanged);
     super.destroy();
   }
@@ -225,6 +233,12 @@ export class CellsFills extends Container {
   private drawSheetCells = (sheetId: string) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.drawCells();
+    }
+  };
+
+  private drawSheetMeta = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.drawMeta();
     }
   };
 

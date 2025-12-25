@@ -173,10 +173,25 @@ impl Sheet {
             &mut rows_to_resize,
         );
 
-        let fill_bounds = formats
+        // Get finite bounds from new fills
+        let new_fill_bounds = formats
             .fill_color
             .as_ref()
             .and_then(|fc| fc.finite_bounds());
+
+        // Get finite bounds from old fills that were replaced (from reverse_formats)
+        // This ensures finite fill hashes are marked dirty when meta fills overwrite them
+        let old_fill_bounds = reverse_formats
+            .fill_color
+            .as_ref()
+            .and_then(|fc| fc.finite_bounds());
+
+        // Combine both bounds - we need to update both old and new fill locations
+        let fill_bounds = match (new_fill_bounds, old_fill_bounds) {
+            (Some(new_bounds), Some(old_bounds)) => Some(new_bounds.union(&old_bounds)),
+            (Some(bounds), None) | (None, Some(bounds)) => Some(bounds),
+            (None, None) => None,
+        };
 
         // Check if any fill has infinite bounds (meta fills: row/column/sheet fills)
         let has_meta_fills = formats
