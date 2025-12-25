@@ -18,11 +18,41 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Error thrown when the schema configuration is missing or invalid.
+ * This indicates a programming error (e.g., missing schema in ApiSchemas),
+ * not a runtime API failure.
+ */
+export class SchemaConfigurationError extends TypeError {
+  path: string;
+  method?: string;
+
+  constructor(message: string, path: string, method?: string) {
+    super(message);
+    this.name = 'SchemaConfigurationError';
+    this.path = path;
+    this.method = method;
+  }
+}
+
 export async function fetchFromApi<T>(
   path: string,
   init: RequestInit,
   schema: z.Schema<T>
 ): Promise<z.infer<typeof schema>> {
+  // Validate that schema is defined and has safeParse method before proceeding
+  if (!schema || typeof schema.safeParse !== 'function') {
+    const schemaType = schema === undefined ? 'undefined' : schema === null ? 'null' : typeof schema;
+    const errorMessage =
+      `Schema configuration error for API call: ${init.method} ${path}. ` +
+      `Expected a Zod schema but received ${schemaType}. ` +
+      `This likely indicates a missing or incorrect schema definition in ApiSchemas.`;
+    console.error(errorMessage, { path, method: init.method, schemaType });
+    const error = new SchemaConfigurationError(errorMessage, path, init.method);
+    captureException(error);
+    throw error;
+  }
+
   const debugTime = `API ${init.method} ${path}`;
   if (debugFlag('debugShowAPITimes')) console.time(debugTime);
 
