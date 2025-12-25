@@ -1,6 +1,6 @@
 {
   "name": "quadratic-api",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "docker:down": "docker compose down",
     "docker:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- ts-node-dev --watch src --project ./tsconfig.json -- ./src/server.ts && npm run docker:down",
     "docker:test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles && npm run docker:down",
+    "docker:test:scheduled-tasks": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles --testPathPattern=scheduled[-_]task.*test && npm run docker:down",
     "docker:test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- jest --runInBand && npm run docker:down",
     "key:generate": "openssl rand -hex 32",
     "clean": "npx rimraf node_modules dist build target"
@@ -42,7 +43,7 @@
     "@google/genai": "1.5.1",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@ory/kratos-client": "^1.2.1",
-    "@prisma/client": "^6.16.2",
+    "@prisma/client": "^6.17.0",
     "@sendgrid/mail": "^8.1.0",
     "@sentry/node": "^10.10.0",
     "@types/geoip-lite": "^1.4.4",
@@ -50,6 +51,7 @@
     "axios": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "cron-parser": "^5.4.0",
     "express": "^4.20.0",
     "express-async-errors": "^3.1.1",
     "express-jwt": "^8.4.1",
@@ -89,7 +91,7 @@
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
     "dotenv-cli": "^7.1.0",
-    "prisma": "^6.16.2",
+    "prisma": "^6.17.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"

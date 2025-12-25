@@ -35,7 +35,7 @@ pub enum ConnectionError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
-    #[error("Internal token: {0}")]
+    #[error("Invalid token: {0}")]
     InvalidToken(String),
 
     #[error("Network error: {0}")]
