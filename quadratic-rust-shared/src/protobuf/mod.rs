@@ -1,5 +1,7 @@
 // include!(concat!(env!("OUT_DIR"), "protobuf.rs"));
 
+pub mod utils;
+
 pub mod quadratic {
     pub mod transaction {
         include!(concat!(env!("OUT_DIR"), "/quadratic.rs"));
