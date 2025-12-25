@@ -46,9 +46,9 @@ use quadratic_core::grid::js_types::JsSummaryContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsClipboard, JsCodeCell,
-    JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
-    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
-    JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
+    JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellLinkSpan,
+    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo,
+    JsRowHeight, JsSheetFill, JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::BorderSelection;
 use quadratic_core::grid::sheet::borders::BorderSide;
@@ -87,6 +87,7 @@ use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
+use quadratic_core::values::TextSpan;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::{
     ArraySize, Axis, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
@@ -168,6 +169,7 @@ fn main() {
         JsNumber,
         JsOffset,
         JsRenderCell,
+        JsRenderCellLinkSpan,
         JsRenderCellSpecial,
         JsRenderCodeCell,
         JsRenderCodeCellState,
@@ -206,6 +208,7 @@ fn main() {
         TableRef,
         TextCase,
         TextMatch,
+        TextSpan,
         TrackedOperation,
         TrackedTransaction,
         TransactionName,

@@ -10,6 +10,7 @@ import { EmojiDropdown } from '@/app/gridGL/HTMLGrid/EmojiDropdown';
 import { GridFileInput } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
+import { HyperlinkPopup } from '@/app/gridGL/HTMLGrid/linkPopup/HyperlinkPopup';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MultiplayerCursors';
@@ -103,6 +104,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <CodeRunning />
               <HoverCell />
               <HoverTooltip />
+              <HyperlinkPopup />
               <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
               <HtmlValidations />
               <Annotations />

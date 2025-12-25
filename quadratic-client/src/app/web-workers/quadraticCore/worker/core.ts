@@ -217,6 +217,15 @@ class Core {
     }
   }
 
+  setCellRichText(sheetId: string, x: number, y: number, spansJson: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.setCellRichText(sheetId, x, y, spansJson, cursor);
+    } catch (e) {
+      this.handleCoreError('setCellRichText', e);
+    }
+  }
+
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1382,6 +1391,24 @@ class Core {
       return this.gridController.setFormats(sheetId, selection, JSON.stringify(formats), cursor, isAi);
     } catch (e) {
       this.handleCoreError('setFormats', e);
+    }
+  }
+
+  setFormatsA1(
+    formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[],
+    cursor: string,
+    isAi: boolean
+  ): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const entries = formatEntries.map((entry) => ({
+        sheet_id: entry.sheetId,
+        selection: entry.selection,
+        ...entry.formats,
+      }));
+      return this.gridController.setFormatsA1(JSON.stringify(entries), cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('setFormatsA1', e);
     }
   }
 

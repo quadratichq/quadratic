@@ -4,6 +4,8 @@
 import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
+import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import {
   AlignmentFormatting,
@@ -17,7 +19,7 @@ import {
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { memo, useEffect, useRef, useState, type RefObject } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useRecoilValue } from 'recoil';
 
@@ -135,6 +137,37 @@ export const FormattingBar = memo(() => {
     };
   }, [transactionsInfo.length]);
 
+  // Track selection formatting from inline editor
+  const [selectionFormatting, setSelectionFormatting] = useState<SpanFormatting | undefined>(undefined);
+  useEffect(() => {
+    const handleSelectionFormatting = (formatting: SpanFormatting | undefined) => {
+      setSelectionFormatting(formatting);
+    };
+
+    inlineEditorEvents.on('selectionFormatting', handleSelectionFormatting);
+    return () => {
+      inlineEditorEvents.off('selectionFormatting', handleSelectionFormatting);
+    };
+  }, []);
+
+  // Compute the effective format summary, overriding with selection formatting when there's a selection
+  const effectiveFormatSummary = useMemo((): CellFormatSummary | undefined => {
+    if (!formatSummary) return undefined;
+
+    // If there's no selection formatting, use the cell's format summary
+    if (!selectionFormatting) return formatSummary;
+
+    // Override text formatting properties with selection formatting
+    return {
+      ...formatSummary,
+      bold: selectionFormatting.bold ?? false,
+      italic: selectionFormatting.italic ?? false,
+      underline: selectionFormatting.underline ?? false,
+      strikeThrough: selectionFormatting.strikeThrough ?? false,
+      textColor: selectionFormatting.textColor ?? null,
+    };
+  }, [formatSummary, selectionFormatting]);
+
   return (
     <>
       {createPortal(
@@ -161,7 +194,7 @@ export const FormattingBar = memo(() => {
             )}
             {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
             {!hiddenItems.includes('TextFormatting') && (
-              <TextFormatting key="main-text-formatting" formatSummary={formatSummary} />
+              <TextFormatting key="main-text-formatting" formatSummary={effectiveFormatSummary} />
             )}
             {!hiddenItems.includes('FontSizeFormatting') && (
               <FontSizeFormatting key="main-font-size-formatting" formatSummary={formatSummary} />
@@ -189,7 +222,7 @@ export const FormattingBar = memo(() => {
                   )}
                   {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
                   {hiddenItems.includes('TextFormatting') && (
-                    <TextFormatting key="hidden-text-formatting" formatSummary={formatSummary} />
+                    <TextFormatting key="hidden-text-formatting" formatSummary={effectiveFormatSummary} />
                   )}
                   {hiddenItems.includes('FontSizeFormatting') && (
                     <FontSizeFormatting key="hidden-font-size-formatting" formatSummary={formatSummary} />

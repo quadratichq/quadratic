@@ -470,6 +470,21 @@ fn get_functions() -> Vec<FormulaFunction> {
                 s1 == s2
             }
         ),
+        // Hyperlink
+        formula_fn!(
+            /// Creates a clickable hyperlink.
+            ///
+            /// If `link_label` is omitted, the URL is displayed as the link text.
+            #[examples(
+                "HYPERLINK(\"https://example.com\")",
+                "HYPERLINK(\"https://example.com\", \"Click here\")"
+            )]
+            #[zip_map]
+            fn HYPERLINK([url]: String, [link_label]: (Option<String>)) {
+                let display_text = link_label.unwrap_or_else(|| url.clone());
+                CellValue::RichText(vec![TextSpan::link(display_text, url)])
+            }
+        ),
     ]
 }
 
@@ -901,5 +916,38 @@ mod tests {
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"Abc\", \"abc\")"));
         assert_eq!("TRUE", eval_to_string(&g, "EXACT(\"abc\", \"abc\")"));
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"abc\", \"def\")"));
+    }
+
+    #[test]
+    fn test_formula_hyperlink() {
+        use crate::{CellValue, TextSpan, Value};
+
+        let g = GridController::new();
+
+        // Test with both URL and label
+        let result = eval(&g, "HYPERLINK(\"https://example.com\", \"Click here\")");
+        let expected = Value::Single(CellValue::RichText(vec![TextSpan::link(
+            "Click here",
+            "https://example.com",
+        )]));
+        assert_eq!(result, expected);
+
+        // Test with only URL (label defaults to URL)
+        let result = eval(&g, "HYPERLINK(\"https://example.com\")");
+        let expected = Value::Single(CellValue::RichText(vec![TextSpan::link(
+            "https://example.com",
+            "https://example.com",
+        )]));
+        assert_eq!(result, expected);
+
+        // Test display string (concatenated text)
+        assert_eq!(
+            "Click here",
+            eval_to_string(&g, "HYPERLINK(\"https://example.com\", \"Click here\")")
+        );
+        assert_eq!(
+            "https://example.com",
+            eval_to_string(&g, "HYPERLINK(\"https://example.com\")")
+        );
     }
 }

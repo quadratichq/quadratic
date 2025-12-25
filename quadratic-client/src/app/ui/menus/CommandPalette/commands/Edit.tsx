@@ -20,6 +20,7 @@ const data: CommandGroup = {
     Action.FindInAllSheets,
     Action.InsertToday,
     Action.InsertTodayTime,
+    Action.InsertHyperlink,
     {
       label: 'Copy selection as PNG',
       isAvailable: () => fullClipboardSupport(),

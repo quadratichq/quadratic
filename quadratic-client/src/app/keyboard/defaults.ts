@@ -346,8 +346,12 @@ export const defaultShortcuts: ActionShortcut = {
     windows: [[Keys.Escape]],
   },
   [Action.SaveInlineEditor]: {
-    mac: [[Keys.Enter], [MacModifiers.Cmd, Keys.Enter]],
-    windows: [[Keys.Enter], [WindowsModifiers.Ctrl, Keys.Enter]],
+    mac: [[Keys.Enter]],
+    windows: [[Keys.Enter]],
+  },
+  [Action.InsertNewLine]: {
+    mac: [[MacModifiers.Cmd, Keys.Enter]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Enter]],
   },
   [Action.SaveInlineEditorMoveUp]: {
     mac: [[MacModifiers.Shift, Keys.Enter]],
@@ -400,5 +404,9 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.SelectGotoRowEnd]: {
     mac: [[MacModifiers.Shift, Keys.End]],
     windows: [[WindowsModifiers.Shift, Keys.End]],
+  },
+  [Action.InsertHyperlink]: {
+    mac: [[MacModifiers.Ctrl, Keys.K]],
+    windows: [[WindowsModifiers.Alt, Keys.K]],
   },
 };

@@ -110,6 +110,7 @@ impl Criterion {
             CellValue::Error(_) => false,
             CellValue::Html(_) => false,
             CellValue::Image(_) => false,
+            CellValue::RichText(_) => false,
         }
     }
 

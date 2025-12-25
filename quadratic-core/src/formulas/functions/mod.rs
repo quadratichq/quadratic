@@ -22,7 +22,7 @@ mod trigonometry;
 use super::{Criterion, Ctx, Param, ParamKind, util};
 use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, Duration, IsBlank, RunError, RunErrorMsg, Span,
-    Spanned, SpannedIterExt, Value,
+    Spanned, SpannedIterExt, TextSpan, Value,
 };
 
 pub use lookup::IndexFunctionArgs;

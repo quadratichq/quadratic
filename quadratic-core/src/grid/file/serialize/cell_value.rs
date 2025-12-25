@@ -1,6 +1,6 @@
 use super::current;
 use crate::{
-    CellValue, Duration,
+    CellValue, Duration, TextSpan,
     cellvalue::Import,
     grid::{CodeCellLanguage, ConnectionKind},
     number::decimal_from_str,
@@ -32,6 +32,32 @@ pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCel
     }
 }
 
+fn export_text_span(span: TextSpan) -> current::TextSpanSchema {
+    current::TextSpanSchema {
+        text: span.text,
+        link: span.link,
+        bold: span.bold,
+        italic: span.italic,
+        underline: span.underline,
+        strike_through: span.strike_through,
+        text_color: span.text_color,
+        font_size: span.font_size,
+    }
+}
+
+fn import_text_span(span: current::TextSpanSchema) -> TextSpan {
+    TextSpan {
+        text: span.text,
+        link: span.link,
+        bold: span.bold,
+        italic: span.italic,
+        underline: span.underline,
+        strike_through: span.strike_through,
+        text_color: span.text_color,
+        font_size: span.font_size,
+    }
+}
+
 pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
     match cell_value {
         CellValue::Blank => current::CellValueSchema::Blank,
@@ -48,6 +74,9 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
             current::CellValueSchema::Error(current::RunErrorSchema::from_grid_run_error(*error))
         }
         CellValue::Image(image) => current::CellValueSchema::Image(image),
+        CellValue::RichText(spans) => {
+            current::CellValueSchema::RichText(spans.into_iter().map(export_text_span).collect())
+        }
     }
 }
 
@@ -105,11 +134,15 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::DateTime(dt) => CellValue::DateTime(dt),
         current::CellValueSchema::Error(error) => CellValue::Error(Box::new(error.into())),
         current::CellValueSchema::Image(text) => CellValue::Image(text),
+        current::CellValueSchema::RichText(spans) => {
+            CellValue::RichText(spans.into_iter().map(import_text_span).collect())
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{a1::A1Selection, controller::GridController, grid::file};
 
     #[test]
@@ -127,5 +160,79 @@ mod tests {
         let exported = file::export(grid).unwrap();
         let imported = file::import(exported).unwrap();
         assert_eq!(imported, *gc.grid());
+    }
+
+    #[test]
+    fn test_export_text_span() {
+        let span = TextSpan {
+            text: "Hello".to_string(),
+            link: Some("https://example.com".to_string()),
+            bold: Some(true),
+            italic: None,
+            underline: None,
+            strike_through: None,
+            text_color: Some("#ff0000".to_string()),
+            font_size: Some(14),
+        };
+
+        let exported = export_text_span(span.clone());
+        assert_eq!(exported.text, "Hello");
+        assert_eq!(exported.link, Some("https://example.com".to_string()));
+        assert_eq!(exported.bold, Some(true));
+        assert_eq!(exported.italic, None);
+        assert_eq!(exported.text_color, Some("#ff0000".to_string()));
+        assert_eq!(exported.font_size, Some(14));
+
+        let imported = import_text_span(exported);
+        assert_eq!(imported, span);
+    }
+
+    #[test]
+    fn test_export_rich_text_cell_value() {
+        let rich = CellValue::RichText(vec![
+            TextSpan::plain("Normal "),
+            TextSpan::link("link", "https://example.com"),
+        ]);
+
+        let exported = export_cell_value(rich.clone());
+        match exported {
+            current::CellValueSchema::RichText(spans) => {
+                assert_eq!(spans.len(), 2);
+                assert_eq!(spans[0].text, "Normal ");
+                assert!(spans[0].link.is_none());
+                assert_eq!(spans[1].text, "link");
+                assert_eq!(spans[1].link, Some("https://example.com".to_string()));
+            }
+            _ => panic!("Expected RichText variant"),
+        }
+
+        // Round-trip test
+        let exported_schema = export_cell_value(rich.clone());
+        let imported = import_cell_value(exported_schema);
+        assert_eq!(imported, rich);
+    }
+
+    #[test]
+    fn test_import_rich_text_cell_value() {
+        let schema = current::CellValueSchema::RichText(vec![current::TextSpanSchema {
+            text: "Bold text".to_string(),
+            bold: Some(true),
+            link: None,
+            italic: None,
+            underline: None,
+            strike_through: None,
+            text_color: None,
+            font_size: None,
+        }]);
+
+        let imported = import_cell_value(schema);
+        match imported {
+            CellValue::RichText(spans) => {
+                assert_eq!(spans.len(), 1);
+                assert_eq!(spans[0].text, "Bold text");
+                assert_eq!(spans[0].bold, Some(true));
+            }
+            _ => panic!("Expected RichText variant"),
+        }
     }
 }
