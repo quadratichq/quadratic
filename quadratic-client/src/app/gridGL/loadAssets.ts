@@ -63,10 +63,8 @@ export async function loadAssets() {
     openSansItalicPromise,
     openSansBoldItalicPromise,
     Assets.loadBundle('fontBundle'),
+    Assets.loadBundle('iconBundle'),
   ]);
-
-  // we don't need to wait for the icon bundle to load to start the renderWorker
-  Assets.loadBundle('iconBundle');
 
   assetsLoaded = true;
 

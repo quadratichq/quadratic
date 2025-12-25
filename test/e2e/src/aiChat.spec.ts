@@ -369,7 +369,7 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
     .click({ timeout: 60 * 1000 });
 
   // Assert new chat is present
-  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `What would you like to do?` })).toBeVisible({ timeout: 60 * 1000 });
   await expect(page.getByRole(`button`, { name: `Give me sample data` })).toBeVisible({ timeout: 60 * 1000 });
   await expect(page.getByRole(`button`, { name: `Generate code` })).toBeVisible({ timeout: 60 * 1000 });
   await expect(page.getByRole(`button`, { name: `Build a chart` })).toBeVisible({ timeout: 60 * 1000 });

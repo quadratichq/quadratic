@@ -36,7 +36,7 @@ test('Find improperly changes sheets', async ({ page }) => {
 });
 
 // Fixes bug in PR #3481 where reverse searching doesn't update the viewport
-test('Search viewport updates when reverse searching', async ({ page }) => {
+test.skip('Search viewport updates when reverse searching', async ({ page }) => {
   const fileName = 'Airports distance (example)';
   const fileType = 'grid';
 

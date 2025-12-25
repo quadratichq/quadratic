@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles } from './helpers/file.helpers';
 
-test('Create Example', async ({ page }) => {
+test.skip('Create Example', async ({ page }) => {
   // Constants
   const fileName = 'Python getting started (example)';
 

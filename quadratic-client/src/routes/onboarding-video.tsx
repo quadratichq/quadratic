@@ -12,8 +12,8 @@ const ONBOARDING_VIDEO_MANIFEST_URL =
 export const Component = () => {
   const [startedPlaying, setStartedPlaying] = useState(false);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   useEffect(() => {
     if (!videoRef.current) return;
     if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
