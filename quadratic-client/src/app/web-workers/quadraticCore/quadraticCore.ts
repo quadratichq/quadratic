@@ -581,10 +581,10 @@ class QuadraticCore {
     const id = this.id++;
     return new Promise((resolve, reject) => {
       this.waitingForResponse[id] = (message: CoreClientSetFormulas) => {
-        resolve(message.transactionId);
         if (message.error) {
           reject(new Error(message.error));
         }
+        resolve(message.transactionId);
       };
       // Convert to tuple format expected by Rust: [selection, code_string]
       const formulas: Array<[string, string]> = options.formulas.map((f) => [f.selection, f.codeString]);

@@ -86,11 +86,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                 if values.is_empty() {
                     return Err(RunErrorMsg::NoMatch.with_span(span));
                 }
-                if let Some(value) = values.into_iter().next() {
-                    value
-                } else {
-                    return Err(RunErrorMsg::NoMatch.with_span(span));
+                if values.len() > 1 {
+                    return Err(RunErrorMsg::Num.with_span(span));
                 }
+                values.into_iter().next().unwrap()
             }
         ),
         formula_fn!(
@@ -695,5 +694,53 @@ mod tests {
 
         assert_eq!("50", eval_to_string(&g, "DMAX(A1:B4, \"Value\", D1:D2)"));
         assert_eq!("10", eval_to_string(&g, "DMIN(A1:B4, \"Value\", D1:D2)"));
+    }
+
+    #[test]
+    fn test_dget() {
+        use crate::RunErrorMsg;
+
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+
+        // Set up database
+        g.set_cell_value(pos![sheet_id!A1], "Type".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B1], "Value".to_string(), None, false);
+
+        g.set_cell_value(pos![sheet_id!A2], "A".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B2], "10".to_string(), None, false);
+
+        g.set_cell_value(pos![sheet_id!A3], "B".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B3], "20".to_string(), None, false);
+
+        g.set_cell_value(pos![sheet_id!A4], "A".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B4], "30".to_string(), None, false);
+
+        // Criteria for single match (Type = "B")
+        g.set_cell_value(pos![sheet_id!D1], "Type".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!D2], "B".to_string(), None, false);
+
+        // Single match should return the value
+        assert_eq!("20", eval_to_string(&g, "DGET(A1:B4, \"Value\", D1:D2)"));
+
+        // Criteria for multiple matches (Type = "A")
+        g.set_cell_value(pos![sheet_id!E1], "Type".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!E2], "A".to_string(), None, false);
+
+        // Multiple matches should return #NUM! error
+        assert_eq!(
+            RunErrorMsg::Num,
+            eval_to_err(&g, "DGET(A1:B4, \"Value\", E1:E2)").msg
+        );
+
+        // Criteria for no match (Type = "C")
+        g.set_cell_value(pos![sheet_id!F1], "Type".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!F2], "C".to_string(), None, false);
+
+        // No match should return NoMatch error
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "DGET(A1:B4, \"Value\", F1:F2)").msg
+        );
     }
 }
