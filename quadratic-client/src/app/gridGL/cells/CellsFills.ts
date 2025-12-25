@@ -42,9 +42,6 @@ export class CellsFills extends Container {
   // Track which hashes we've requested fills for
   private loadedHashes: Set<string> = new Set();
 
-  // Track dirty fill hashes that are outside viewport (need to request when visible)
-  private dirtyFillHashes: Set<string> = new Set();
-
   // Track the last viewport hash bounds to detect changes
   private lastViewportHashBounds?: { minX: number; maxX: number; minY: number; maxY: number };
 
@@ -59,7 +56,6 @@ export class CellsFills extends Container {
 
   private dirty = false;
   private dirtyTables = false;
-  private dirtyViewport = true;
 
   constructor(cellsSheet: CellsSheet) {
     super();
@@ -82,7 +78,6 @@ export class CellsFills extends Container {
     events.on('resizeHeadingRow', this.drawCells);
     events.on('resizeHeadingRow', this.drawSheetCells);
     events.on('resizeHeadingRow', this.drawSheetMeta);
-    events.on('viewportChanged', this.handleViewportChanged);
   }
 
   destroy() {
@@ -97,14 +92,8 @@ export class CellsFills extends Container {
     events.off('resizeHeadingRow', this.drawCells);
     events.off('resizeHeadingRow', this.drawSheetCells);
     events.off('resizeHeadingRow', this.drawSheetMeta);
-    events.off('viewportChanged', this.handleViewportChanged);
     super.destroy();
   }
-
-  private handleViewportChanged = () => {
-    this.setDirty();
-    this.dirtyViewport = true;
-  };
 
   private handleHashRenderFills = (hashRenderFillsData: Uint8Array) => {
     const hashRenderFillsArray = fromUint8Array<JsHashRenderFills[]>(hashRenderFillsData);
@@ -129,8 +118,6 @@ export class CellsFills extends Container {
             );
           }
         }
-        // Clear from dirty set since we now have the data
-        this.dirtyFillHashes.delete(key);
         needsRedraw = true;
       }
     }
@@ -149,7 +136,6 @@ export class CellsFills extends Container {
       if (sheet_id.id === this.cellsSheet.sheetId) {
         for (const hash of hashes) {
           const key = `${hash.x},${hash.y}`;
-          this.dirtyFillHashes.add(key);
           // Clear the loaded flag so we'll request it when it enters viewport
           this.loadedHashes.delete(key);
         }
@@ -242,7 +228,7 @@ export class CellsFills extends Container {
     }
   };
 
-  update = () => {
+  update = (dirtyViewport: boolean) => {
     // Load meta fills on first update
     if (!this.metaFillsLoaded) {
       this.metaFillsLoaded = true;
@@ -250,12 +236,11 @@ export class CellsFills extends Container {
     }
 
     // Handle viewport-based hash loading
-    if (this.dirtyViewport) {
-      this.dirtyViewport = false;
+    if (dirtyViewport) {
       this.updateViewportHashes();
     }
 
-    if (this.dirty) {
+    if (dirtyViewport || this.dirty) {
       this.dirty = false;
       this.drawMeta();
     }
