@@ -16,7 +16,7 @@ pub use bitmap_font::{
 pub use cell_label::CellLabel;
 pub use cells_text_hash::{
     get_hash_coords, hash_key, CellsTextHash, VisibleHashBounds, DEFAULT_CELL_HEIGHT,
-    DEFAULT_CELL_WIDTH, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH,
+    DEFAULT_CELL_WIDTH, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH, SPRITE_SCALE_THRESHOLD,
 };
 pub use label_mesh::{LabelMesh, TextVertex};
 pub use text_label::{TextAnchor, TextLabel, HEADING_FONT_SIZE};

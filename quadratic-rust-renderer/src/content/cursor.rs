@@ -3,12 +3,13 @@
 //! Equivalent to Cursor.ts from the Pixi.js implementation
 
 use crate::viewport::Viewport;
+use crate::webgl::{Color, Lines, Rects, WebGLContext};
 
 use super::grid_lines::{DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT};
 
 /// Cursor selection color (blue with transparency)
-pub const CURSOR_COLOR: [f32; 4] = [0.2, 0.4, 0.9, 1.0];
-pub const CURSOR_FILL_COLOR: [f32; 4] = [0.2, 0.4, 0.9, 0.1];
+pub const CURSOR_COLOR: Color = [0.2, 0.4, 0.9, 1.0];
+pub const CURSOR_FILL_COLOR: Color = [0.2, 0.4, 0.9, 0.1];
 
 /// Represents a rectangular selection
 #[derive(Debug, Clone, Copy)]
@@ -31,19 +32,22 @@ pub struct Cursor {
     pub rect: CursorRect,
 
     /// Border color
-    pub border_color: [f32; 4],
+    pub border_color: Color,
 
     /// Fill color
-    pub fill_color: [f32; 4],
-
-    /// Border width in pixels
-    pub border_width: f32,
+    pub fill_color: Color,
 
     /// Whether the cursor needs to be recalculated
     pub dirty: bool,
 
     /// Whether the cursor is visible
     pub visible: bool,
+
+    /// Batched rectangles for fill
+    rects: Rects,
+
+    /// Batched lines for border
+    lines: Lines,
 }
 
 impl Cursor {
@@ -60,9 +64,10 @@ impl Cursor {
             },
             border_color: CURSOR_COLOR,
             fill_color: CURSOR_FILL_COLOR,
-            border_width: 2.0,
             dirty: true,
             visible: true,
+            rects: Rects::new(),
+            lines: Lines::new(),
         }
     }
 
@@ -119,11 +124,48 @@ impl Cursor {
                 height: DEFAULT_ROW_HEIGHT,
             };
         }
+
+        // Rebuild geometry
+        self.rects.clear();
+        self.lines.clear();
+
+        // Cursor fill
+        self.rects.add(
+            self.rect.x,
+            self.rect.y,
+            self.rect.width,
+            self.rect.height,
+            self.fill_color,
+        );
+
+        // Cursor border (4 lines)
+        let x1 = self.rect.x;
+        let y1 = self.rect.y;
+        let x2 = self.rect.x + self.rect.width;
+        let y2 = self.rect.y + self.rect.height;
+
+        self.lines.add(x1, y1, x2, y1, self.border_color); // Top
+        self.lines.add(x2, y1, x2, y2, self.border_color); // Right
+        self.lines.add(x2, y2, x1, y2, self.border_color); // Bottom
+        self.lines.add(x1, y2, x1, y1, self.border_color); // Left
     }
 
     /// Mark as clean after rendering
     pub fn mark_clean(&mut self) {
         self.dirty = false;
+    }
+
+    /// Render cursor directly to WebGL
+    pub fn render(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
+        if !self.visible {
+            return;
+        }
+
+        // Draw fill first (triangles)
+        self.rects.render(gl, matrix);
+
+        // Draw border on top (lines)
+        self.lines.render(gl, matrix);
     }
 }
 
@@ -132,4 +174,3 @@ impl Default for Cursor {
         Self::new()
     }
 }
-

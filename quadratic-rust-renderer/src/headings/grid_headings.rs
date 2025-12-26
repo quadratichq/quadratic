@@ -7,7 +7,8 @@
 
 use std::collections::HashMap;
 
-use crate::text::{column_to_a1, row_to_a1, BitmapFonts, LabelMesh, TextAnchor, TextLabel};
+use crate::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel, column_to_a1, row_to_a1};
+use crate::webgl::{Lines, Rects, WebGLContext};
 
 /// Constants matching the TypeScript client
 pub const CELL_WIDTH: f32 = 100.0;
@@ -485,9 +486,8 @@ impl GridHeadings {
             // Center horizontally in row header, add offset
             let screen_x = self.heading_size.width / 2.0 + ROW_DIGIT_OFFSET_X * self.dpr;
             // Y position in screen space (consistent with content grid rendering), add offset
-            let screen_y = (world_y - viewport_y) * scale
-                + header_height
-                + ROW_DIGIT_OFFSET_Y * self.dpr;
+            let screen_y =
+                (world_y - viewport_y) * scale + header_height + ROW_DIGIT_OFFSET_Y * self.dpr;
 
             // Skip if outside visible area (accounting for column header height)
             if screen_y < header_height || screen_y > canvas_height {
@@ -719,6 +719,94 @@ impl GridHeadings {
         }
 
         all_meshes.into_values().collect()
+    }
+
+    /// Render headings directly to WebGL
+    ///
+    /// Renders in order: backgrounds, lines, text (for proper z-ordering)
+    pub fn render(
+        &self,
+        gl: &WebGLContext,
+        matrix: &[f32; 16],
+        fonts: &BitmapFonts,
+        font_scale: f32,
+        distance_range: f32,
+    ) {
+        // 1. Render backgrounds
+        let mut rects = Rects::with_capacity(8);
+        let (col_rect, row_rect, corner_rect) = self.get_background_rects();
+
+        rects.add(
+            col_rect[0],
+            col_rect[1],
+            col_rect[2],
+            col_rect[3],
+            self.colors.background,
+        );
+        rects.add(
+            row_rect[0],
+            row_rect[1],
+            row_rect[2],
+            row_rect[3],
+            self.colors.background,
+        );
+        rects.add(
+            corner_rect[0],
+            corner_rect[1],
+            corner_rect[2],
+            corner_rect[3],
+            self.colors.corner_background,
+        );
+
+        // Selection highlights
+        let selection_color = [
+            self.colors.selection[0],
+            self.colors.selection[1],
+            self.colors.selection[2],
+            self.colors.selection_alpha,
+        ];
+        for rect in self.get_selection_rects() {
+            rects.add(rect[0], rect[1], rect[2], rect[3], selection_color);
+        }
+
+        rects.render(gl, matrix);
+
+        // 2. Render grid lines
+        let grid_line_coords = self.get_grid_lines();
+        let mut lines = Lines::with_capacity(grid_line_coords.len() / 4);
+
+        for chunk in grid_line_coords.chunks(4) {
+            if chunk.len() == 4 {
+                lines.add(
+                    chunk[0],
+                    chunk[1],
+                    chunk[2],
+                    chunk[3],
+                    self.colors.grid_line,
+                );
+            }
+        }
+
+        lines.render(gl, matrix);
+
+        // 3. Render text
+        let meshes = self.get_meshes(fonts);
+        for mesh in meshes {
+            if mesh.is_empty() {
+                continue;
+            }
+            let vertices = mesh.get_vertex_data();
+            let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
+            gl.draw_text(
+                &vertices,
+                &indices,
+                mesh.texture_uid,
+                matrix,
+                1.0, // viewport_scale is 1.0 for screen-space headings
+                font_scale,
+                distance_range,
+            );
+        }
     }
 }
 

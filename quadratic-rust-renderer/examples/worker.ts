@@ -257,6 +257,7 @@ function renderLoop(): void {
           fps: currentFps,
           frameTime: avgFrameTime.toFixed(2),
           rendering: lastRenderStatus,
+          zoom: renderer.get_scale(),
         });
 
         frameCount = 0;
@@ -493,6 +494,8 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
           type: 'stats',
           hashCount: renderer.get_hash_count(),
           labelCount: renderer.get_label_count(),
+          spriteCount: renderer.get_sprite_count(),
+          spriteMemoryBytes: renderer.get_sprite_memory_bytes(),
         });
       }
       break;

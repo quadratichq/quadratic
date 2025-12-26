@@ -6,41 +6,56 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use web_sys::{
     HtmlImageElement, OffscreenCanvas, WebGl2RenderingContext, WebGlBuffer, WebGlContextAttributes,
-    WebGlProgram, WebGlShader, WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject,
+    WebGlProgram, WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject,
 };
 
+use super::primitives::texture::{TextureId, TextureManager};
 use super::shaders::{
     BASIC_FRAGMENT_SHADER, BASIC_VERTEX_SHADER, MSDF_FRAGMENT_SHADER, MSDF_VERTEX_SHADER,
+    SPRITE_FRAGMENT_SHADER, SPRITE_VERTEX_SHADER,
 };
 
 /// WebGL2 rendering context
 pub struct WebGLContext {
     canvas: OffscreenCanvas,
-    gl: WebGl2RenderingContext,
+    pub(crate) gl: WebGl2RenderingContext,
     width: u32,
     height: u32,
 
     // Shader program for basic rendering (lines, rectangles)
-    basic_program: WebGlProgram,
-    matrix_location: WebGlUniformLocation,
+    pub(crate) basic_program: WebGlProgram,
+    pub(crate) matrix_location: WebGlUniformLocation,
 
     // Shader program for MSDF text rendering
-    text_program: WebGlProgram,
-    text_matrix_location: WebGlUniformLocation,
-    text_texture_location: WebGlUniformLocation,
-    text_fwidth_location: WebGlUniformLocation,
-
-    // Vertex Array Object for basic geometry
-    vao: WebGlVertexArrayObject,
-    vertex_buffer: WebGlBuffer,
+    pub(crate) text_program: WebGlProgram,
+    pub(crate) text_matrix_location: WebGlUniformLocation,
+    pub(crate) text_texture_location: WebGlUniformLocation,
+    pub(crate) text_fwidth_location: WebGlUniformLocation,
 
     // VAO for text rendering
-    text_vao: WebGlVertexArrayObject,
-    text_vertex_buffer: WebGlBuffer,
-    text_index_buffer: WebGlBuffer,
+    pub(crate) text_vao: WebGlVertexArrayObject,
+    pub(crate) text_vertex_buffer: WebGlBuffer,
+    pub(crate) text_index_buffer: WebGlBuffer,
 
     // Font textures indexed by texture UID
-    font_textures: HashMap<u32, WebGlTexture>,
+    pub(crate) font_textures: HashMap<u32, WebGlTexture>,
+
+    // Vertex Array Object for basic geometry
+    pub(crate) vao: WebGlVertexArrayObject,
+    pub(crate) vertex_buffer: WebGlBuffer,
+
+    // Shader program for sprite rendering
+    pub(crate) sprite_program: WebGlProgram,
+    pub(crate) sprite_matrix_location: WebGlUniformLocation,
+    pub(crate) sprite_texture_location: WebGlUniformLocation,
+
+    // VAO and buffers for sprite rendering
+    pub(crate) sprite_vao: WebGlVertexArrayObject,
+    pub(crate) sprite_vertex_buffer: WebGlBuffer,
+    pub(crate) sprite_index_buffer: WebGlBuffer,
+
+    // Texture manager for sprites
+    pub(crate) texture_manager: TextureManager,
 }
 
 impl WebGLContext {
@@ -181,6 +196,81 @@ impl WebGLContext {
 
         gl.bind_vertex_array(None);
 
+        // Compile and link sprite shader program
+        let sprite_program =
+            Self::create_program(&gl, SPRITE_VERTEX_SHADER, SPRITE_FRAGMENT_SHADER)?;
+
+        // Get sprite program uniform locations
+        let sprite_matrix_location = gl
+            .get_uniform_location(&sprite_program, "u_matrix")
+            .ok_or("Failed to get sprite u_matrix location")?;
+        let sprite_texture_location = gl
+            .get_uniform_location(&sprite_program, "u_texture")
+            .ok_or("Failed to get sprite u_texture location")?;
+
+        // Create sprite VAO and buffers
+        let sprite_vao = gl
+            .create_vertex_array()
+            .ok_or("Failed to create sprite VAO")?;
+
+        let sprite_vertex_buffer = gl
+            .create_buffer()
+            .ok_or("Failed to create sprite vertex buffer")?;
+
+        let sprite_index_buffer = gl
+            .create_buffer()
+            .ok_or("Failed to create sprite index buffer")?;
+
+        // Setup sprite VAO
+        // Layout: [x, y, u, v, r, g, b, a] = 8 floats per vertex
+        gl.bind_vertex_array(Some(&sprite_vao));
+        gl.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&sprite_vertex_buffer),
+        );
+        gl.bind_buffer(
+            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&sprite_index_buffer),
+        );
+
+        // Position attribute: 2 floats
+        let sprite_pos_loc = gl.get_attrib_location(&sprite_program, "a_position") as u32;
+        gl.enable_vertex_attrib_array(sprite_pos_loc);
+        gl.vertex_attrib_pointer_with_i32(
+            sprite_pos_loc,
+            2, // 2 components (x, y)
+            WebGl2RenderingContext::FLOAT,
+            false,
+            8 * 4, // stride: 8 floats * 4 bytes
+            0,     // offset: 0
+        );
+
+        // Texcoord attribute: 2 floats
+        let sprite_texcoord_loc = gl.get_attrib_location(&sprite_program, "a_texcoord") as u32;
+        gl.enable_vertex_attrib_array(sprite_texcoord_loc);
+        gl.vertex_attrib_pointer_with_i32(
+            sprite_texcoord_loc,
+            2, // 2 components (u, v)
+            WebGl2RenderingContext::FLOAT,
+            false,
+            8 * 4, // stride: 8 floats * 4 bytes
+            2 * 4, // offset: 2 floats
+        );
+
+        // Color attribute: 4 floats
+        let sprite_color_loc = gl.get_attrib_location(&sprite_program, "a_color") as u32;
+        gl.enable_vertex_attrib_array(sprite_color_loc);
+        gl.vertex_attrib_pointer_with_i32(
+            sprite_color_loc,
+            4, // 4 components (r, g, b, a)
+            WebGl2RenderingContext::FLOAT,
+            false,
+            8 * 4, // stride: 8 floats * 4 bytes
+            4 * 4, // offset: 4 floats
+        );
+
+        gl.bind_vertex_array(None);
+
         // Enable blending for transparency
         gl.enable(WebGl2RenderingContext::BLEND);
         gl.blend_func(
@@ -207,73 +297,14 @@ impl WebGLContext {
             text_vertex_buffer,
             text_index_buffer,
             font_textures: HashMap::new(),
+            sprite_program,
+            sprite_matrix_location,
+            sprite_texture_location,
+            sprite_vao,
+            sprite_vertex_buffer,
+            sprite_index_buffer,
+            texture_manager: TextureManager::new(),
         })
-    }
-
-    /// Compile a shader
-    fn compile_shader(
-        gl: &WebGl2RenderingContext,
-        shader_type: u32,
-        source: &str,
-    ) -> Result<WebGlShader, JsValue> {
-        let shader = gl
-            .create_shader(shader_type)
-            .ok_or("Failed to create shader")?;
-
-        gl.shader_source(&shader, source);
-        gl.compile_shader(&shader);
-
-        if gl
-            .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
-            .as_bool()
-            .unwrap_or(false)
-        {
-            Ok(shader)
-        } else {
-            let log = gl.get_shader_info_log(&shader).unwrap_or_default();
-            gl.delete_shader(Some(&shader));
-            Err(JsValue::from_str(&format!(
-                "Shader compilation failed: {}",
-                log
-            )))
-        }
-    }
-
-    /// Create and link a shader program
-    fn create_program(
-        gl: &WebGl2RenderingContext,
-        vertex_source: &str,
-        fragment_source: &str,
-    ) -> Result<WebGlProgram, JsValue> {
-        let vertex_shader =
-            Self::compile_shader(gl, WebGl2RenderingContext::VERTEX_SHADER, vertex_source)?;
-        let fragment_shader =
-            Self::compile_shader(gl, WebGl2RenderingContext::FRAGMENT_SHADER, fragment_source)?;
-
-        let program = gl.create_program().ok_or("Failed to create program")?;
-
-        gl.attach_shader(&program, &vertex_shader);
-        gl.attach_shader(&program, &fragment_shader);
-        gl.link_program(&program);
-
-        // Clean up shaders (they're now part of the program)
-        gl.delete_shader(Some(&vertex_shader));
-        gl.delete_shader(Some(&fragment_shader));
-
-        if gl
-            .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
-            .as_bool()
-            .unwrap_or(false)
-        {
-            Ok(program)
-        } else {
-            let log = gl.get_program_info_log(&program).unwrap_or_default();
-            gl.delete_program(Some(&program));
-            Err(JsValue::from_str(&format!(
-                "Program linking failed: {}",
-                log
-            )))
-        }
     }
 
     /// Resize the rendering surface
@@ -315,89 +346,6 @@ impl WebGLContext {
     /// Disable scissor test
     pub fn disable_scissor(&self) {
         self.gl.disable(WebGl2RenderingContext::SCISSOR_TEST);
-    }
-
-    /// Clear the canvas with a color
-    pub fn clear(&self, r: f32, g: f32, b: f32, a: f32) {
-        self.gl.clear_color(r, g, b, a);
-        self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-    }
-
-    /// Render lines from vertex data
-    /// Each vertex is: [x, y, r, g, b, a] (6 floats)
-    /// Lines are rendered as pairs of vertices
-    pub fn draw_lines(&self, vertices: &[f32], matrix: &[f32; 16]) {
-        if vertices.is_empty() {
-            return;
-        }
-
-        self.gl.use_program(Some(&self.basic_program));
-        self.gl.bind_vertex_array(Some(&self.vao));
-
-        // Upload vertex data
-        self.gl.bind_buffer(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&self.vertex_buffer),
-        );
-
-        // SAFETY: We're passing a slice of f32s to WebGL
-        unsafe {
-            let array = js_sys::Float32Array::view(vertices);
-            self.gl.buffer_data_with_array_buffer_view(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                &array,
-                WebGl2RenderingContext::DYNAMIC_DRAW,
-            );
-        }
-
-        // Set matrix uniform
-        self.gl
-            .uniform_matrix4fv_with_f32_array(Some(&self.matrix_location), false, matrix);
-
-        // Draw lines
-        let vertex_count = (vertices.len() / 6) as i32;
-        self.gl
-            .draw_arrays(WebGl2RenderingContext::LINES, 0, vertex_count);
-
-        self.gl.bind_vertex_array(None);
-    }
-
-    /// Render triangles from vertex data (for filled rectangles)
-    /// Each vertex is: [x, y, r, g, b, a] (6 floats)
-    pub fn draw_triangles(&self, vertices: &[f32], matrix: &[f32; 16]) {
-        if vertices.is_empty() {
-            return;
-        }
-
-        self.gl.use_program(Some(&self.basic_program));
-        self.gl.bind_vertex_array(Some(&self.vao));
-
-        // Upload vertex data
-        self.gl.bind_buffer(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&self.vertex_buffer),
-        );
-
-        // SAFETY: We're passing a slice of f32s to WebGL
-        unsafe {
-            let array = js_sys::Float32Array::view(vertices);
-            self.gl.buffer_data_with_array_buffer_view(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                &array,
-                WebGl2RenderingContext::DYNAMIC_DRAW,
-            );
-        }
-
-        // Set matrix uniform
-        self.gl
-            .uniform_matrix4fv_with_f32_array(Some(&self.matrix_location), false, matrix);
-
-        // Draw triangles
-        let vertex_count = (vertices.len() / 6) as i32;
-        self.gl
-            .draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, vertex_count);
-
-        self.gl.bind_vertex_array(None);
     }
 
     /// Get current width
@@ -508,62 +456,35 @@ impl WebGLContext {
         self.font_textures.contains_key(&texture_uid)
     }
 
-    /// Render text mesh
-    /// vertices: [x, y, u, v, r, g, b, a] per vertex (8 floats)
-    /// indices: triangle indices (u32 to support large meshes)
-    /// Render text mesh with MSDF shader
-    ///
-    /// Parameters:
-    /// - `vertices`: Vertex data [x, y, u, v, r, g, b, a] per vertex
-    /// - `indices`: Triangle indices
-    /// - `texture_uid`: Font texture ID
-    /// - `matrix`: View-projection matrix
-    /// - `viewport_scale`: Current zoom level
-    /// - `font_scale`: render_font_size / atlas_font_size (e.g., 14/42 for OpenSans)
-    /// - `distance_range`: MSDF distance field range (typically 4)
-    pub fn draw_text(
-        &self,
-        vertices: &[f32],
-        indices: &[u32],
-        texture_uid: u32,
-        matrix: &[f32; 16],
-        viewport_scale: f32,
-        font_scale: f32,
-        distance_range: f32,
-    ) {
-        if vertices.is_empty() || indices.is_empty() {
+    /// Get the WebGL context reference (for advanced operations)
+    pub fn gl(&self) -> &WebGl2RenderingContext {
+        &self.gl
+    }
+
+    /// Clear the canvas with a color
+    pub fn clear(&self, r: f32, g: f32, b: f32, a: f32) {
+        self.gl.clear_color(r, g, b, a);
+        self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    }
+
+    /// Render lines from vertex data
+    /// Each vertex is: [x, y, r, g, b, a] (6 floats)
+    /// Lines are rendered as pairs of vertices
+    pub fn draw_lines(&self, vertices: &[f32], matrix: &[f32; 16]) {
+        if vertices.is_empty() {
             return;
         }
 
-        let texture = match self.font_textures.get(&texture_uid) {
-            Some(t) => t,
-            None => {
-                log::warn!("Font texture {} not found", texture_uid);
-                return;
-            }
-        };
-
-        self.gl.use_program(Some(&self.text_program));
-        self.gl.bind_vertex_array(Some(&self.text_vao));
-
-        // Bind texture
-        self.gl.active_texture(WebGl2RenderingContext::TEXTURE0);
-        self.gl
-            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
-        self.gl.uniform1i(Some(&self.text_texture_location), 0);
-
-        // Set fwidth uniform (for MSDF anti-aliasing)
-        // Formula: distance_range * font_scale * viewport_scale
-        // For OpenSans at 14px (atlas 42px): 4 * (14/42) * scale ≈ 1.33 * scale
-        let fwidth = distance_range * font_scale * viewport_scale;
-        self.gl.uniform1f(Some(&self.text_fwidth_location), fwidth);
+        self.gl.use_program(Some(&self.basic_program));
+        self.gl.bind_vertex_array(Some(&self.vao));
 
         // Upload vertex data
         self.gl.bind_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&self.text_vertex_buffer),
+            Some(&self.vertex_buffer),
         );
 
+        // SAFETY: We're passing a slice of f32s to WebGL
         unsafe {
             let array = js_sys::Float32Array::view(vertices);
             self.gl.buffer_data_with_array_buffer_view(
@@ -573,14 +494,177 @@ impl WebGLContext {
             );
         }
 
-        // Upload index data (u32 to support large meshes)
+        // Set matrix uniform
+        self.gl
+            .uniform_matrix4fv_with_f32_array(Some(&self.matrix_location), false, matrix);
+
+        // Draw lines
+        let vertex_count = (vertices.len() / 6) as i32;
+        self.gl
+            .draw_arrays(WebGl2RenderingContext::LINES, 0, vertex_count);
+
+        self.gl.bind_vertex_array(None);
+    }
+
+    /// Render triangles from vertex data (for filled rectangles)
+    /// Each vertex is: [x, y, r, g, b, a] (6 floats)
+    pub fn draw_triangles(&self, vertices: &[f32], matrix: &[f32; 16]) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        self.gl.use_program(Some(&self.basic_program));
+        self.gl.bind_vertex_array(Some(&self.vao));
+
+        // Upload vertex data
         self.gl.bind_buffer(
-            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(&self.text_index_buffer),
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.vertex_buffer),
         );
 
+        // SAFETY: We're passing a slice of f32s to WebGL
         unsafe {
-            let array = js_sys::Uint32Array::view(indices);
+            let array = js_sys::Float32Array::view(vertices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Set matrix uniform
+        self.gl
+            .uniform_matrix4fv_with_f32_array(Some(&self.matrix_location), false, matrix);
+
+        // Draw triangles
+        let vertex_count = (vertices.len() / 6) as i32;
+        self.gl
+            .draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, vertex_count);
+
+        self.gl.bind_vertex_array(None);
+    }
+
+    /// Get mutable access to the texture manager
+    pub fn texture_manager_mut(&mut self) -> &mut TextureManager {
+        &mut self.texture_manager
+    }
+
+    /// Get read access to the texture manager
+    pub fn texture_manager(&self) -> &TextureManager {
+        &self.texture_manager
+    }
+
+    /// Render sprites from vertex data (non-indexed)
+    /// Each vertex is: [x, y, u, v, r, g, b, a] (8 floats)
+    /// Sprites are rendered as 2 triangles (6 vertices) each
+    pub fn draw_sprites(&self, texture_id: TextureId, vertices: &[f32], matrix: &[f32; 16]) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        // Get texture from manager
+        let texture = match self.texture_manager.get(texture_id) {
+            Some(tex) => tex,
+            None => {
+                log::warn!("Texture {} not found for sprite rendering", texture_id);
+                return;
+            }
+        };
+
+        self.gl.use_program(Some(&self.sprite_program));
+        self.gl.bind_vertex_array(Some(&self.sprite_vao));
+
+        // Bind texture
+        self.gl.active_texture(WebGl2RenderingContext::TEXTURE0);
+        self.gl
+            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
+        self.gl.uniform1i(Some(&self.sprite_texture_location), 0);
+
+        // Upload vertex data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.sprite_vertex_buffer),
+        );
+
+        // SAFETY: We're passing a slice of f32s to WebGL
+        unsafe {
+            let array = js_sys::Float32Array::view(vertices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Set matrix uniform
+        self.gl
+            .uniform_matrix4fv_with_f32_array(Some(&self.sprite_matrix_location), false, matrix);
+
+        // Draw triangles
+        let vertex_count = (vertices.len() / 8) as i32;
+        self.gl
+            .draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, vertex_count);
+
+        self.gl.bind_vertex_array(None);
+    }
+
+    /// Render sprites from vertex and index data (indexed rendering)
+    /// Each vertex is: [x, y, u, v, r, g, b, a] (8 floats)
+    /// Uses indices for efficient quad rendering (4 vertices + 6 indices per sprite)
+    pub fn draw_sprites_indexed(
+        &self,
+        texture_id: TextureId,
+        vertices: &[f32],
+        indices: &[u16],
+        matrix: &[f32; 16],
+    ) {
+        if vertices.is_empty() || indices.is_empty() {
+            return;
+        }
+
+        // Get texture from manager
+        let texture = match self.texture_manager.get(texture_id) {
+            Some(tex) => tex,
+            None => {
+                log::warn!("Texture {} not found for sprite rendering", texture_id);
+                return;
+            }
+        };
+
+        self.gl.use_program(Some(&self.sprite_program));
+        self.gl.bind_vertex_array(Some(&self.sprite_vao));
+
+        // Bind texture
+        self.gl.active_texture(WebGl2RenderingContext::TEXTURE0);
+        self.gl
+            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
+        self.gl.uniform1i(Some(&self.sprite_texture_location), 0);
+
+        // Upload vertex data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.sprite_vertex_buffer),
+        );
+
+        // SAFETY: We're passing a slice of f32s to WebGL
+        unsafe {
+            let array = js_sys::Float32Array::view(vertices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Upload index data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&self.sprite_index_buffer),
+        );
+
+        // SAFETY: We're passing a slice of u16s to WebGL
+        unsafe {
+            let array = js_sys::Uint16Array::view(indices);
             self.gl.buffer_data_with_array_buffer_view(
                 WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
                 &array,
@@ -590,21 +674,125 @@ impl WebGLContext {
 
         // Set matrix uniform
         self.gl
-            .uniform_matrix4fv_with_f32_array(Some(&self.text_matrix_location), false, matrix);
+            .uniform_matrix4fv_with_f32_array(Some(&self.sprite_matrix_location), false, matrix);
 
-        // Draw indexed triangles (UNSIGNED_INT for u32 indices)
+        // Draw indexed triangles
         self.gl.draw_elements_with_i32(
             WebGl2RenderingContext::TRIANGLES,
             indices.len() as i32,
-            WebGl2RenderingContext::UNSIGNED_INT,
+            WebGl2RenderingContext::UNSIGNED_SHORT,
             0,
         );
 
         self.gl.bind_vertex_array(None);
     }
 
-    /// Get the WebGL context reference (for advanced operations)
-    pub fn gl(&self) -> &WebGl2RenderingContext {
-        &self.gl
+    /// Render a sprite using a raw WebGlTexture (for cached render targets)
+    /// Draws a single textured quad at the specified world position
+    pub fn draw_sprite_with_texture(
+        &self,
+        texture: &WebGlTexture,
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        matrix: &[f32; 16],
+    ) {
+        let x2 = x + width;
+        let y2 = y + height;
+
+        // Vertex data: [x, y, u, v, r, g, b, a] - white tint, full texture
+        // Note: V coordinates are flipped (1-v) because OpenGL framebuffer textures
+        // have origin at bottom-left, but we render with Y-down world coordinates
+        let vertices: [f32; 32] = [
+            // Top-left (UV: 0, 1 - flipped from 0, 0)
+            x, y, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            // Top-right (UV: 1, 1 - flipped from 1, 0)
+            x2, y, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            // Bottom-right (UV: 1, 0 - flipped from 1, 1)
+            x2, y2, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+            // Bottom-left (UV: 0, 0 - flipped from 0, 1)
+            x, y2, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+        ];
+
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+        // Use premultiplied alpha blending for render target textures.
+        // When we render text to a framebuffer with standard blending, the RGB
+        // values become premultiplied by alpha. Using (ONE, ONE_MINUS_SRC_ALPHA)
+        // prevents double-multiplying by alpha when drawing the sprite.
+        self.gl.blend_func(
+            WebGl2RenderingContext::ONE,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
+
+        self.gl.use_program(Some(&self.sprite_program));
+        self.gl.bind_vertex_array(Some(&self.sprite_vao));
+
+        // Bind the raw texture
+        self.gl.active_texture(WebGl2RenderingContext::TEXTURE0);
+        self.gl
+            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
+        self.gl.uniform1i(Some(&self.sprite_texture_location), 0);
+
+        // Upload vertex data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.sprite_vertex_buffer),
+        );
+
+        unsafe {
+            let array = js_sys::Float32Array::view(&vertices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Upload index data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&self.sprite_index_buffer),
+        );
+
+        unsafe {
+            let array = js_sys::Uint16Array::view(&indices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Set matrix uniform
+        self.gl
+            .uniform_matrix4fv_with_f32_array(Some(&self.sprite_matrix_location), false, matrix);
+
+        // Draw
+        self.gl.draw_elements_with_i32(
+            WebGl2RenderingContext::TRIANGLES,
+            6,
+            WebGl2RenderingContext::UNSIGNED_SHORT,
+            0,
+        );
+
+        self.gl.bind_vertex_array(None);
+
+        // Restore standard alpha blending
+        self.gl.blend_func(
+            WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
+    }
+
+    /// Get the canvas width
+    pub fn canvas_width(&self) -> u32 {
+        self.width
+    }
+
+    /// Get the canvas height
+    pub fn canvas_height(&self) -> u32 {
+        self.height
     }
 }

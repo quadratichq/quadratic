@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  clearScreen: false,
   root: 'examples',
   publicDir: false,
   server: {

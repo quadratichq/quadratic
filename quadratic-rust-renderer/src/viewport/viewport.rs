@@ -45,7 +45,7 @@ impl Viewport {
             size: Vec2::new(width, height),
             dirty: true,
             min_scale: 0.01,
-            max_scale: 10.0,
+            max_scale: f32::MAX,
             decelerate: Decelerate::new(DecelerateOptions::default()),
         }
     }
@@ -58,7 +58,7 @@ impl Viewport {
             size: Vec2::new(width, height),
             dirty: true,
             min_scale: 0.01,
-            max_scale: 10.0,
+            max_scale: f32::MAX,
             decelerate: Decelerate::new(options),
         }
     }

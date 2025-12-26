@@ -246,6 +246,7 @@
     "viewports",
     "VITE",
     "VLOOKUP",
+    "webgl",
     "websockets",
     "Westborough",
     "workos",
@@ -265,7 +266,8 @@
   // "rust-analyzer.checkOnSave.command": "clippy",
   "rust-analyzer.linkedProjects": [
     "Cargo.toml",
-    "dev-rust/Cargo.toml"
+    "dev-rust/Cargo.toml",
+    "quadratic-rust-renderer/Cargo.toml"
   ],
   "rust-analyzer.server.extraEnv": {
     "CARGO_TARGET_DIR": "target/rust-analyzer"

@@ -11,14 +11,11 @@ use web_sys::{HtmlImageElement, OffscreenCanvas};
 use crate::content::Content;
 use crate::headings::GridHeadings;
 use crate::text::{
-    get_hash_coords, hash_key, BitmapFont, BitmapFonts, CellLabel, CellsTextHash,
-    VisibleHashBounds, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
+    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
+    VisibleHashBounds, get_hash_coords, hash_key,
 };
 use crate::viewport::Viewport;
 use crate::webgl::WebGLContext;
-
-/// Maximum number of font texture pages we support
-const MAX_TEXTURE_PAGES: usize = 8;
 
 /// Worker-based renderer for browser
 ///
@@ -48,28 +45,11 @@ pub struct WorkerRenderer {
     /// Whether the renderer is running
     running: bool,
 
-    /// Reusable buffer for line vertices
-    line_vertices: Vec<f32>,
-
-    /// Reusable buffer for triangle vertices (filled rectangles)
-    triangle_vertices: Vec<f32>,
-
-    /// Reusable buffers for batched text rendering (one per texture page)
-    /// Pre-allocated to avoid HashMap allocations every frame
-    batched_text_vertices: [Vec<f32>; MAX_TEXTURE_PAGES],
-    batched_text_indices: [Vec<u32>; MAX_TEXTURE_PAGES],
-
-    /// Reusable buffer for visible hash keys
-    visible_hash_keys: Vec<u64>,
-
     /// Grid headings (column/row headers)
     headings: GridHeadings,
 
     /// Whether to render headings
     show_headings: bool,
-
-    /// Reusable buffer for heading vertices
-    heading_vertices: Vec<f32>,
 }
 
 #[wasm_bindgen]
@@ -93,15 +73,8 @@ impl WorkerRenderer {
             hashes: HashMap::new(),
             label_count: 0,
             running: false,
-            line_vertices: Vec::with_capacity(10000),
-            triangle_vertices: Vec::with_capacity(10000),
-            // Pre-allocate text batching buffers for each texture page
-            batched_text_vertices: std::array::from_fn(|_| Vec::with_capacity(50000)),
-            batched_text_indices: std::array::from_fn(|_| Vec::with_capacity(30000)),
-            visible_hash_keys: Vec::with_capacity(100),
             headings: GridHeadings::new(),
             show_headings: true,
-            heading_vertices: Vec::with_capacity(5000),
         })
     }
 
@@ -504,12 +477,17 @@ impl WorkerRenderer {
 
     /// Get visible hash bounds for the current viewport
     /// Returns: [min_hash_x, max_hash_x, min_hash_y, max_hash_y]
-    /// These bounds include HASH_PADDING for preloading
+    /// These bounds include dynamic padding based on viewport scale for preloading
     #[wasm_bindgen]
     pub fn get_visible_hash_bounds(&self) -> Box<[i32]> {
         let bounds = self.viewport.visible_bounds();
-        let hash_bounds =
-            VisibleHashBounds::from_viewport(bounds.left, bounds.top, bounds.width, bounds.height);
+        let hash_bounds = VisibleHashBounds::from_viewport(
+            bounds.left,
+            bounds.top,
+            bounds.width,
+            bounds.height,
+            self.viewport.scale(),
+        );
 
         Box::new([
             hash_bounds.min_hash_x as i32,
@@ -524,8 +502,13 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn get_needed_hashes(&self) -> Box<[i32]> {
         let bounds = self.viewport.visible_bounds();
-        let hash_bounds =
-            VisibleHashBounds::from_viewport(bounds.left, bounds.top, bounds.width, bounds.height);
+        let hash_bounds = VisibleHashBounds::from_viewport(
+            bounds.left,
+            bounds.top,
+            bounds.width,
+            bounds.height,
+            self.viewport.scale(),
+        );
 
         let mut needed: Vec<i32> = Vec::new();
 
@@ -546,8 +529,13 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn get_offscreen_hashes(&self) -> Box<[i32]> {
         let bounds = self.viewport.visible_bounds();
-        let hash_bounds =
-            VisibleHashBounds::from_viewport(bounds.left, bounds.top, bounds.width, bounds.height);
+        let hash_bounds = VisibleHashBounds::from_viewport(
+            bounds.left,
+            bounds.top,
+            bounds.width,
+            bounds.height,
+            self.viewport.scale(),
+        );
 
         let mut offscreen: Vec<i32> = Vec::new();
 
@@ -582,6 +570,24 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn get_hash_count(&self) -> usize {
         self.hashes.len()
+    }
+
+    /// Get total sprite cache memory usage in bytes
+    #[wasm_bindgen]
+    pub fn get_sprite_memory_bytes(&self) -> usize {
+        self.hashes
+            .values()
+            .map(|hash| hash.sprite_memory_bytes())
+            .sum()
+    }
+
+    /// Get number of active sprite caches
+    #[wasm_bindgen]
+    pub fn get_sprite_count(&self) -> usize {
+        self.hashes
+            .values()
+            .filter(|hash| hash.has_sprite_cache())
+            .count()
     }
 
     // =========================================================================
@@ -671,32 +677,19 @@ impl WorkerRenderer {
             content_height.max(0),
         );
 
-        // Draw white background for valid grid area (x >= 0, y >= 0)
-        self.build_valid_area_background();
-        if !self.triangle_vertices.is_empty() {
-            self.gl
-                .draw_triangles(&self.triangle_vertices, &matrix_array);
-        }
+        // Render content in z-order (back to front):
 
-        // Build and render grid lines (only if visible)
-        if self.content.grid_lines.visible {
-            self.build_line_vertices();
-            self.gl.draw_lines(&self.line_vertices, &matrix_array);
-        }
+        // 1. Background (white grid area)
+        self.render_background(&matrix_array);
 
-        // Render text labels
+        // 2. Grid lines
+        self.content.grid_lines.render(&self.gl, &matrix_array);
+
+        // 3. Cell text
         self.render_text(&matrix_array);
 
-        // Build and render cursor
-        if self.content.cursor.visible {
-            self.build_cursor_vertices();
-            self.gl
-                .draw_triangles(&self.triangle_vertices, &matrix_array);
-
-            // Draw cursor border (as lines)
-            self.build_cursor_border_vertices();
-            self.gl.draw_lines(&self.line_vertices, &matrix_array);
-        }
+        // 4. Cursor (on top of text)
+        self.content.cursor.render(&self.gl, &matrix_array);
 
         // Reset viewport and disable scissor for headings (they render over the full canvas)
         self.gl.reset_viewport();
@@ -704,7 +697,7 @@ impl WorkerRenderer {
 
         // Render headings (in screen space, on top of everything)
         if self.show_headings {
-            self.render_headings_labels_only();
+            self.render_headings();
         }
 
         // Mark everything as clean after rendering
@@ -745,11 +738,36 @@ impl WorkerRenderer {
         false
     }
 
-    /// Render all text labels using spatial hash culling
+    // =========================================================================
+    // Layer Building Methods
+    // =========================================================================
+
+    /// Render the background (white grid area)
+    fn render_background(&self, matrix: &[f32; 16]) {
+        use crate::webgl::Rects;
+
+        let bounds = self.viewport.visible_bounds();
+
+        // Only draw if some valid area is visible
+        if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
+            return;
+        }
+
+        // Clamp to valid area (x >= 0, y >= 0)
+        let x = bounds.left.max(0.0);
+        let y = bounds.top.max(0.0);
+        let width = bounds.right - x;
+        let height = bounds.bottom - y;
+
+        // White background color (matches client's gridBackground: 0xffffff)
+        let mut rects = Rects::new();
+        rects.add(x, y, width, height, [1.0, 1.0, 1.0, 1.0]);
+        rects.render(&self.gl, matrix);
+    }
+
+    /// Render cell text using spatial hash culling
     ///
-    /// Instead of checking visibility for each label (O(n) where n = millions),
-    /// we check visibility at the hash level (O(h) where h = hundreds),
-    /// then use cached mesh data from each visible hash.
+    /// Each visible hash renders its own cached text directly.
     fn render_text(&mut self, matrix: &[f32; 16]) {
         if self.hashes.is_empty() || !self.fonts_ready() {
             return;
@@ -770,122 +788,42 @@ impl WorkerRenderer {
         let min_y = vp_y - padding;
         let max_y = vp_y + vp_height + padding;
 
-        // Clear reusable buffers (keeps capacity)
-        self.visible_hash_keys.clear();
-        for i in 0..MAX_TEXTURE_PAGES {
-            self.batched_text_vertices[i].clear();
-            self.batched_text_indices[i].clear();
-        }
-
-        // Phase 1: Hash-level visibility culling (O(number of hashes) - hundreds, not millions!)
-        for (&key, hash) in &self.hashes {
-            if hash.intersects_viewport(min_x, max_x, min_y, max_y) {
-                self.visible_hash_keys.push(key);
-            }
-        }
-
-        // Phase 2: Rebuild dirty hashes (only when content changes, not every frame)
-        for &key in &self.visible_hash_keys {
-            if let Some(hash) = self.hashes.get_mut(&key) {
-                hash.rebuild_if_dirty(&self.fonts);
-            }
-        }
-
-        // Phase 3: Batch cached mesh data from visible hashes
-        // Use u32 for offsets to support millions of vertices
-        let mut vertex_offsets: [u32; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
-
-        for &key in &self.visible_hash_keys {
-            if let Some(hash) = self.hashes.get(&key) {
-                // Collect cached data for each texture page
-                for tex_id in 0..MAX_TEXTURE_PAGES {
-                    if !hash.has_cached_data(tex_id) {
-                        continue;
-                    }
-
-                    // Check if texture is loaded
-                    if !self.gl.has_font_texture(tex_id as u32) {
-                        continue;
-                    }
-
-                    let cached_vertices = hash.get_cached_vertices(tex_id);
-                    let cached_indices = hash.get_cached_indices(tex_id);
-                    let offset = vertex_offsets[tex_id];
-
-                    // Add vertices to batch
-                    self.batched_text_vertices[tex_id].extend_from_slice(cached_vertices);
-
-                    // Add indices with offset applied (convert u16 indices to u32)
-                    for &i in cached_indices {
-                        self.batched_text_indices[tex_id].push(i as u32 + offset);
-                    }
-
-                    // Update offset (each vertex has 8 floats)
-                    vertex_offsets[tex_id] += (cached_vertices.len() / 8) as u32;
-                }
-            }
-        }
-
-        // Get font metrics for fwidth calculation
-        // For now we assume OpenSans with default settings
-        // TODO: Support multiple fonts with different metrics per batch
+        // Get text rendering parameters
         let (font_scale, distance_range) = self
             .fonts
             .get("OpenSans")
             .map(|f| {
-                let render_size = 14.0; // Default render font size
-                let font_scale = render_size / f.size;
-                (font_scale, f.distance_range)
+                let render_size = 14.0;
+                (render_size / f.size, f.distance_range)
             })
-            .unwrap_or((14.0 / 42.0, 4.0)); // Fallback to OpenSans defaults
+            .unwrap_or((14.0 / 42.0, 4.0));
 
-        // Phase 4: Render one batch per texture page (1-5 draw calls total!)
-        for tex_id in 0..MAX_TEXTURE_PAGES {
-            let vertices = &self.batched_text_vertices[tex_id];
-            let indices = &self.batched_text_indices[tex_id];
-
-            if !vertices.is_empty() && !indices.is_empty() {
-                self.gl.draw_text(
-                    vertices,
-                    indices,
-                    tex_id as u32,
-                    matrix,
-                    scale,
-                    font_scale,
-                    distance_range,
-                );
+        // Render each visible hash
+        for hash in self.hashes.values_mut() {
+            if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
+                continue;
             }
+
+            // Rebuild mesh cache if dirty
+            hash.rebuild_if_dirty(&self.fonts);
+
+            // Rebuild sprite cache if zoomed out (for smooth text at small sizes)
+            if scale < crate::text::SPRITE_SCALE_THRESHOLD {
+                hash.rebuild_sprite_if_dirty(&self.gl, &self.fonts, font_scale, distance_range);
+            }
+
+            // Render this hash's text (switches between MSDF and sprite based on scale)
+            hash.render(&self.gl, matrix, scale, font_scale, distance_range);
         }
     }
 
-    /// Render grid headings (column and row headers) - full update and render
-    /// Headings are rendered in screen space with an identity-like projection
-    #[allow(dead_code)]
+    // =========================================================================
+    // Headings Rendering
+    // =========================================================================
+
+    /// Render grid headings (column and row headers)
+    /// Headings are rendered in screen-space
     fn render_headings(&mut self) {
-        if !self.fonts_ready() {
-            return;
-        }
-
-        let scale = self.viewport.scale();
-        let canvas_width = self.viewport.width();
-        let canvas_height = self.viewport.height();
-
-        // Update headings based on current viewport
-        self.headings.update(
-            self.viewport.x(),
-            self.viewport.y(),
-            scale,
-            canvas_width,
-            canvas_height,
-        );
-
-        // Render the headings
-        self.render_headings_labels_only();
-    }
-
-    /// Render grid headings (assumes update() was already called)
-    /// Use this when headings were updated earlier in the frame
-    fn render_headings_labels_only(&mut self) {
         if !self.fonts_ready() {
             return;
         }
@@ -896,114 +834,30 @@ impl WorkerRenderer {
         // Layout heading labels
         self.headings.layout(&self.fonts);
 
-        // Create screen-space orthographic projection matrix
-        // Maps screen pixels (0,0) to (width, height) to clip space (-1,-1) to (1,1)
+        // Create screen-space matrix
         let screen_matrix = self.create_screen_space_matrix(canvas_width, canvas_height);
 
-        // Render heading backgrounds
-        self.heading_vertices.clear();
-
-        let (col_rect, row_rect, corner_rect) = self.headings.get_background_rects();
-        let bg_color = self.headings.colors.background;
-        let corner_color = self.headings.colors.corner_background;
-
-        // Column header background
-        self.add_rect_triangles(&col_rect, bg_color);
-
-        // Row header background
-        self.add_rect_triangles(&row_rect, bg_color);
-
-        // Corner background
-        self.add_rect_triangles(&corner_rect, corner_color);
-
-        // Render selection highlights
-        let selection_color = [
-            self.headings.colors.selection[0],
-            self.headings.colors.selection[1],
-            self.headings.colors.selection[2],
-            self.headings.colors.selection_alpha,
-        ];
-        for rect in self.headings.get_selection_rects() {
-            self.add_rect_triangles(&rect, selection_color);
-        }
-
-        if !self.heading_vertices.is_empty() {
-            self.gl
-                .draw_triangles(&self.heading_vertices, &screen_matrix);
-        }
-
-        // Render heading grid lines
-        self.line_vertices.clear();
-        let grid_lines = self.headings.get_grid_lines();
-        let line_color = self.headings.colors.grid_line;
-
-        for chunk in grid_lines.chunks(4) {
-            if chunk.len() == 4 {
-                // Start vertex
-                self.line_vertices.extend_from_slice(&[
-                    chunk[0],
-                    chunk[1],
-                    line_color[0],
-                    line_color[1],
-                    line_color[2],
-                    line_color[3],
-                ]);
-                // End vertex
-                self.line_vertices.extend_from_slice(&[
-                    chunk[2],
-                    chunk[3],
-                    line_color[0],
-                    line_color[1],
-                    line_color[2],
-                    line_color[3],
-                ]);
-            }
-        }
-
-        if !self.line_vertices.is_empty() {
-            self.gl.draw_lines(&self.line_vertices, &screen_matrix);
-        }
-
-        // Render heading labels
-        let meshes = self.headings.get_meshes(&self.fonts);
-
-        // Get font metrics (assuming OpenSans)
-        // Use the heading's DPR-scaled font size
-        let heading_font_size = 10.0 * self.headings.dpr(); // BASE_HEADING_FONT_SIZE * dpr
+        // Get text params for headings
+        let heading_font_size = 10.0 * self.headings.dpr();
         let (font_scale, distance_range) = self
             .fonts
             .get("OpenSans")
-            .map(|f| {
-                let font_scale = heading_font_size / f.size;
-                (font_scale, f.distance_range)
-            })
+            .map(|f| (heading_font_size / f.size, f.distance_range))
             .unwrap_or((heading_font_size / 42.0, 4.0));
 
-        for mesh in meshes {
-            if mesh.is_empty() {
-                continue;
-            }
-
-            let vertices = mesh.get_vertex_data();
-            let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
-
-            self.gl.draw_text(
-                &vertices,
-                &indices,
-                mesh.texture_uid,
-                &screen_matrix,
-                1.0, // Screen space scale is always 1.0
-                font_scale,
-                distance_range,
-            );
-        }
+        // Render headings directly
+        self.headings.render(
+            &self.gl,
+            &screen_matrix,
+            &self.fonts,
+            font_scale,
+            distance_range,
+        );
     }
 
     /// Create a screen-space orthographic projection matrix
     /// Maps (0, 0) at top-left to (width, height) at bottom-right
     fn create_screen_space_matrix(&self, width: f32, height: f32) -> [f32; 16] {
-        // Orthographic projection: x in [0, width] -> [-1, 1], y in [0, height] -> [-1, 1]
-        // But Y is flipped (0 at top)
         let sx = 2.0 / width;
         let sy = -2.0 / height; // Negative to flip Y
         let tx = -1.0;
@@ -1012,157 +866,5 @@ impl WorkerRenderer {
         [
             sx, 0.0, 0.0, 0.0, 0.0, sy, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, tx, ty, 0.0, 1.0,
         ]
-    }
-
-    /// Add a rectangle as two triangles to the heading_vertices buffer
-    fn add_rect_triangles(&mut self, rect: &[f32; 4], color: [f32; 4]) {
-        let x1 = rect[0];
-        let y1 = rect[1];
-        let x2 = rect[0] + rect[2];
-        let y2 = rect[1] + rect[3];
-
-        // Triangle 1: top-left, top-right, bottom-left
-        self.heading_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
-            color[3], x1, y2, color[0], color[1], color[2], color[3],
-        ]);
-        // Triangle 2: top-right, bottom-right, bottom-left
-        self.heading_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
-            color[3], x1, y2, color[0], color[1], color[2], color[3],
-        ]);
-    }
-
-    /// Build triangle vertices for the valid grid area background (white)
-    /// This covers the area where x >= 0 and y >= 0
-    fn build_valid_area_background(&mut self) {
-        self.triangle_vertices.clear();
-
-        let bounds = self.viewport.visible_bounds();
-
-        // Only draw if some valid area is visible
-        if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
-            return;
-        }
-
-        // Clamp to valid area (x >= 0, y >= 0)
-        let x1 = bounds.left.max(0.0);
-        let y1 = bounds.top.max(0.0);
-        let x2 = bounds.right;
-        let y2 = bounds.bottom;
-
-        // White background color (matches client's gridBackground: 0xffffff)
-        let color: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
-
-        // Two triangles to make a rectangle
-        // Triangle 1: top-left, top-right, bottom-left
-        self.triangle_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
-            color[3], x1, y2, color[0], color[1], color[2], color[3],
-        ]);
-        // Triangle 2: top-right, bottom-right, bottom-left
-        self.triangle_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
-            color[3], x1, y2, color[0], color[1], color[2], color[3],
-        ]);
-    }
-
-    /// Build line vertices for grid lines
-    fn build_line_vertices(&mut self) {
-        self.line_vertices.clear();
-
-        let color = self.content.grid_lines.color;
-
-        // Add vertical lines
-        for line in &self.content.grid_lines.vertical_lines {
-            // Start vertex: [x, y, r, g, b, a]
-            self.line_vertices.extend_from_slice(&[
-                line.start_x,
-                line.start_y,
-                color[0],
-                color[1],
-                color[2],
-                color[3],
-            ]);
-            // End vertex
-            self.line_vertices.extend_from_slice(&[
-                line.end_x, line.end_y, color[0], color[1], color[2], color[3],
-            ]);
-        }
-
-        // Add horizontal lines
-        for line in &self.content.grid_lines.horizontal_lines {
-            self.line_vertices.extend_from_slice(&[
-                line.start_x,
-                line.start_y,
-                color[0],
-                color[1],
-                color[2],
-                color[3],
-            ]);
-            self.line_vertices.extend_from_slice(&[
-                line.end_x, line.end_y, color[0], color[1], color[2], color[3],
-            ]);
-        }
-    }
-
-    /// Build triangle vertices for cursor fill
-    fn build_cursor_vertices(&mut self) {
-        self.triangle_vertices.clear();
-
-        let rect = &self.content.cursor.rect;
-        let color = self.content.cursor.fill_color;
-
-        let x1 = rect.x;
-        let y1 = rect.y;
-        let x2 = rect.x + rect.width;
-        let y2 = rect.y + rect.height;
-
-        // Two triangles to make a rectangle
-        // Triangle 1: top-left, top-right, bottom-left
-        self.triangle_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
-            color[3], x1, y2, color[0], color[1], color[2], color[3],
-        ]);
-        // Triangle 2: top-right, bottom-right, bottom-left
-        self.triangle_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
-            color[3], x1, y2, color[0], color[1], color[2], color[3],
-        ]);
-    }
-
-    /// Build line vertices for cursor border
-    fn build_cursor_border_vertices(&mut self) {
-        self.line_vertices.clear();
-
-        let rect = &self.content.cursor.rect;
-        let color = self.content.cursor.border_color;
-
-        let x1 = rect.x;
-        let y1 = rect.y;
-        let x2 = rect.x + rect.width;
-        let y2 = rect.y + rect.height;
-
-        // Four lines for the border
-        // Top edge
-        self.line_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
-            color[3],
-        ]);
-        // Right edge
-        self.line_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
-            color[3],
-        ]);
-        // Bottom edge
-        self.line_vertices.extend_from_slice(&[
-            x2, y2, color[0], color[1], color[2], color[3], x1, y2, color[0], color[1], color[2],
-            color[3],
-        ]);
-        // Left edge
-        self.line_vertices.extend_from_slice(&[
-            x1, y2, color[0], color[1], color[2], color[3], x1, y1, color[0], color[1], color[2],
-            color[3],
-        ]);
     }
 }

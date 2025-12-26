@@ -13,9 +13,11 @@ import RenderWorker from './worker?worker';
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const statusEl = document.getElementById('status') as HTMLElement;
 const fpsEl = document.getElementById('fps') as HTMLElement;
+const zoomEl = document.getElementById('zoom') as HTMLElement;
 const frametimeEl = document.getElementById('frametime') as HTMLElement;
 const labelsEl = document.getElementById('labels') as HTMLElement;
 const hashesEl = document.getElementById('hashes') as HTMLElement;
+const spriteMemEl = document.getElementById('sprite-mem') as HTMLElement;
 const renderIndicatorEl = document.getElementById('render-indicator') as HTMLElement;
 
 let worker: Worker | null = null;
@@ -229,6 +231,7 @@ interface FpsMessage {
   fps: number;
   frameTime: string;
   rendering?: boolean;
+  zoom?: number;
 }
 
 interface RenderStatusMessage {
@@ -250,6 +253,8 @@ interface StatsMessage {
   type: 'stats';
   hashCount: number;
   labelCount: number;
+  spriteCount: number;
+  spriteMemoryBytes: number;
 }
 
 interface ReadyMessage {
@@ -344,6 +349,10 @@ async function init(): Promise<void> {
           fpsEl.className =
             'stat-value ' +
             (data.fps >= 55 ? 'fps-green' : data.fps >= 30 ? 'fps-yellow' : 'fps-red');
+          // Update zoom level
+          if (data.zoom !== undefined) {
+            zoomEl.textContent = Math.round(data.zoom * 100) + '%';
+          }
           // Also update render indicator if included
           if (data.rendering !== undefined) {
             updateRenderIndicator(data.rendering);
@@ -380,6 +389,16 @@ async function init(): Promise<void> {
           // Update UI with counts from Rust (source of truth)
           labelsEl.textContent = data.labelCount.toLocaleString();
           hashesEl.textContent = data.hashCount.toLocaleString();
+          // Format sprite memory as human-readable (KB or MB)
+          if (data.spriteMemoryBytes > 0) {
+            const kb = data.spriteMemoryBytes / 1024;
+            const mb = kb / 1024;
+            spriteMemEl.textContent = mb >= 1
+              ? `${mb.toFixed(1)} MB (${data.spriteCount})`
+              : `${Math.round(kb)} KB (${data.spriteCount})`;
+          } else {
+            spriteMemEl.textContent = '0';
+          }
           break;
 
         case 'viewportMoved':

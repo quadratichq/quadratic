@@ -5,6 +5,7 @@
 //! rendering thousands of tiny lines.
 
 use crate::viewport::Viewport;
+use crate::webgl::{Lines, WebGLContext};
 
 /// Default column width in pixels
 pub const DEFAULT_COLUMN_WIDTH: f32 = 100.0;
@@ -38,42 +39,28 @@ pub fn calculate_grid_alpha(scale: f32) -> f32 {
     }
 }
 
-/// Represents a line segment to be rendered
-#[derive(Debug, Clone, Copy)]
-pub struct Line {
-    pub start_x: f32,
-    pub start_y: f32,
-    pub end_x: f32,
-    pub end_y: f32,
-}
-
 /// Grid lines renderer
+///
+/// Uses the Lines primitive for efficient batched rendering.
 pub struct GridLines {
-    /// Vertical grid lines to render
-    pub vertical_lines: Vec<Line>,
-
-    /// Horizontal grid lines to render
-    pub horizontal_lines: Vec<Line>,
+    /// Batched lines for rendering
+    lines: Lines,
 
     /// Whether the grid lines need to be recalculated
     pub dirty: bool,
 
     /// Grid line color with current alpha
-    pub color: [f32; 4],
+    color: [f32; 4],
 
     /// Whether grid lines are visible (false when zoomed out too far)
     pub visible: bool,
-
-    /// Line width in pixels
-    pub line_width: f32,
 }
 
 impl GridLines {
     /// Create a new grid lines renderer
     pub fn new() -> Self {
         Self {
-            vertical_lines: Vec::new(),
-            horizontal_lines: Vec::new(),
+            lines: Lines::new(),
             dirty: true,
             color: [
                 GRID_LINE_COLOR[0],
@@ -82,20 +69,18 @@ impl GridLines {
                 1.0,
             ],
             visible: true,
-            line_width: 1.0,
         }
     }
 
     /// Update grid lines based on the visible viewport
     /// Only regenerates lines if viewport has changed
     pub fn update(&mut self, viewport: &Viewport) {
-        // Only update if viewport changed - the viewport's dirty flag indicates changes
+        // Only update if viewport changed
         if !viewport.dirty {
             self.dirty = false;
             return;
         }
 
-        // Viewport changed, so we need to regenerate lines
         self.dirty = true;
 
         let scale = viewport.scale();
@@ -105,17 +90,19 @@ impl GridLines {
         self.visible = alpha > 0.0;
         self.color[3] = alpha * 0.2; // Base alpha is 0.2, like client
 
-        // Don't generate lines if not visible
+        // Clear existing geometry but keep capacity for reuse
+        self.lines.clear();
+
         if !self.visible {
-            self.vertical_lines.clear();
-            self.horizontal_lines.clear();
             return;
         }
 
-        self.vertical_lines.clear();
-        self.horizontal_lines.clear();
-
         let bounds = viewport.visible_bounds();
+
+        // Only generate lines if we're in the valid grid area
+        if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
+            return;
+        }
 
         // Calculate visible column range (clamp to >= 0 for valid grid area)
         let first_col = (bounds.left / DEFAULT_COLUMN_WIDTH).floor().max(0.0) as i32;
@@ -129,42 +116,34 @@ impl GridLines {
         let line_top = bounds.top.max(0.0);
         let line_left = bounds.left.max(0.0);
 
-        // Only generate lines if we're in the valid grid area
-        if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
-            return;
-        }
+        // Pre-allocate for expected number of lines
+        let num_cols = (last_col - first_col + 1) as usize;
+        let num_rows = (last_row - first_row + 1) as usize;
+        self.lines.reserve(num_cols + num_rows);
 
         // Generate vertical lines (column separators)
         for col in first_col..=last_col {
             let x = col as f32 * DEFAULT_COLUMN_WIDTH;
-            self.vertical_lines.push(Line {
-                start_x: x,
-                start_y: line_top,
-                end_x: x,
-                end_y: bounds.bottom,
-            });
+            self.lines.add(x, line_top, x, bounds.bottom, self.color);
         }
 
         // Generate horizontal lines (row separators)
         for row in first_row..=last_row {
             let y = row as f32 * DEFAULT_ROW_HEIGHT;
-            self.horizontal_lines.push(Line {
-                start_x: line_left,
-                start_y: y,
-                end_x: bounds.right,
-                end_y: y,
-            });
+            self.lines.add(line_left, y, bounds.right, y, self.color);
         }
-    }
-
-    /// Get total number of lines
-    pub fn line_count(&self) -> usize {
-        self.vertical_lines.len() + self.horizontal_lines.len()
     }
 
     /// Mark as clean after rendering
     pub fn mark_clean(&mut self) {
         self.dirty = false;
+    }
+
+    /// Render grid lines directly to WebGL
+    pub fn render(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
+        if self.visible {
+            self.lines.render(gl, matrix);
+        }
     }
 }
 
