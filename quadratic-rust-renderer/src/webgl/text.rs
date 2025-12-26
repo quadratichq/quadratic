@@ -30,7 +30,7 @@ impl WebGLContext {
             return;
         }
 
-        let texture = match self.font_textures.get(&texture_uid) {
+        let texture = match self.font_texture_manager.get(texture_uid) {
             Some(t) => t,
             None => {
                 log::warn!("Font texture {} not found", texture_uid);

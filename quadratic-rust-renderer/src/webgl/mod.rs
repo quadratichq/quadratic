@@ -3,20 +3,20 @@
 //! This module provides WebGL2 rendering for the browser worker.
 
 mod context;
+mod font_manager;
 mod framebuffer;
-pub mod primitives;
 mod programs;
-mod render_context_impl;
 mod shaders;
 mod text;
+mod texture_manager;
 
 pub use context::WebGLContext;
-pub use framebuffer::{RenderTarget, ortho_matrix};
+pub use font_manager::FontManager;
+pub use framebuffer::{ortho_matrix, RenderTarget};
+pub use texture_manager::TextureManager;
 
 // Re-export shared primitives
 pub use crate::primitives::{
-    Color, Line, Lines, NativeLine, NativeLines, Rect, Rects, Sprite, Sprites, UVRect,
+    Color, FontTextureId, FontTextureInfo, Line, Lines, NativeLine, NativeLines, Rect, Rects,
+    Sprite, Sprites, TextureId, TextureInfo, UVRect,
 };
-
-// Re-export backend-specific texture management
-pub use primitives::{TextureId, TextureInfo, TextureManager};

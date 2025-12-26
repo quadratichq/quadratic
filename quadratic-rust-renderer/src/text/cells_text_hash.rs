@@ -11,9 +11,10 @@ use std::collections::HashMap;
 
 use wasm_bindgen::JsCast;
 
+use crate::render_context::RenderContext;
 use crate::text::{BitmapFonts, CellLabel};
 use crate::webgl::{RenderTarget, WebGLContext, ortho_matrix};
-use crate::webgpu::WebGPUContext;
+use crate::webgpu::{self, WebGPUContext};
 
 /// Hash dimensions (matches client: CellsTypes.ts)
 pub const HASH_WIDTH: i64 = 15; // columns per hash
@@ -70,12 +71,19 @@ pub struct CellsTextHash {
     pub world_width: f32,
     pub world_height: f32,
 
-    // === Sprite cache for zoomed-out rendering ===
+    // === Sprite cache for zoomed-out rendering (WebGL) ===
     /// Cached sprite render target (pre-rendered text as texture)
     sprite_cache: Option<RenderTarget>,
 
     /// Whether the sprite cache needs to be regenerated
     sprite_dirty: bool,
+
+    // === Sprite cache for zoomed-out rendering (WebGPU) ===
+    /// Cached sprite render target for WebGPU
+    sprite_cache_webgpu: Option<webgpu::RenderTarget>,
+
+    /// Whether the WebGPU sprite cache needs to be regenerated
+    sprite_dirty_webgpu: bool,
 }
 
 impl CellsTextHash {
@@ -100,6 +108,8 @@ impl CellsTextHash {
             world_height,
             sprite_cache: None,
             sprite_dirty: true,
+            sprite_cache_webgpu: None,
+            sprite_dirty_webgpu: true,
         }
     }
 
@@ -108,6 +118,7 @@ impl CellsTextHash {
         self.labels.insert((col, row), label);
         self.dirty = true;
         self.sprite_dirty = true;
+        self.sprite_dirty_webgpu = true;
     }
 
     /// Remove a label at the given cell position
@@ -116,6 +127,7 @@ impl CellsTextHash {
         if result.is_some() {
             self.dirty = true;
             self.sprite_dirty = true;
+            self.sprite_dirty_webgpu = true;
         }
         result
     }
@@ -144,6 +156,7 @@ impl CellsTextHash {
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
         self.sprite_dirty = true;
+        self.sprite_dirty_webgpu = true;
     }
 
     /// Check if this hash is dirty
@@ -213,6 +226,7 @@ impl CellsTextHash {
         self.dirty = false;
         // Mesh changed, so sprite cache is now invalid
         self.sprite_dirty = true;
+        self.sprite_dirty_webgpu = true;
     }
 
     /// Get cached vertices for a texture page
@@ -461,7 +475,8 @@ impl CellsTextHash {
 
     /// Render text using WebGPU
     ///
-    /// For WebGPU, we always use MSDF text rendering (no sprite caching yet).
+    /// Uses MSDF text rendering when zoomed in (scale >= SPRITE_SCALE_THRESHOLD)
+    /// and pre-rendered sprite when zoomed out (scale < SPRITE_SCALE_THRESHOLD).
     pub fn render_webgpu(
         &self,
         gpu: &mut WebGPUContext,
@@ -475,8 +490,38 @@ impl CellsTextHash {
             return;
         }
 
-        // For now, always use MSDF text rendering
-        // TODO: Add sprite caching for WebGPU when zoomed out
+        if viewport_scale >= SPRITE_SCALE_THRESHOLD {
+            // Zoomed in: use MSDF text rendering for sharp glyphs
+            self.render_text_webgpu(gpu, pass, matrix, viewport_scale, font_scale, distance_range);
+        } else {
+            // Zoomed out: use pre-rendered sprite for smooth appearance
+            if let Some(ref sprite_cache) = self.sprite_cache_webgpu {
+                gpu.draw_sprite_texture(
+                    pass,
+                    &sprite_cache.view,
+                    self.world_x,
+                    self.world_y,
+                    self.world_width,
+                    self.world_height,
+                    matrix,
+                );
+            } else {
+                // Fallback to MSDF if sprite cache not ready
+                self.render_text_webgpu(gpu, pass, matrix, viewport_scale, font_scale, distance_range);
+            }
+        }
+    }
+
+    /// Render text glyphs using MSDF (WebGPU)
+    fn render_text_webgpu(
+        &self,
+        gpu: &mut WebGPUContext,
+        pass: &mut wgpu::RenderPass<'_>,
+        matrix: &[f32; 16],
+        viewport_scale: f32,
+        font_scale: f32,
+        distance_range: f32,
+    ) {
         for tex_id in 0..MAX_TEXTURE_PAGES {
             if self.cached_vertices[tex_id].is_empty() {
                 continue;
@@ -502,6 +547,107 @@ impl CellsTextHash {
                 distance_range,
             );
         }
+    }
+
+    /// Rebuild sprite cache for WebGPU if dirty
+    ///
+    /// This pre-renders all text in this hash to a texture that can be
+    /// displayed as a single sprite when zoomed out.
+    pub fn rebuild_sprite_if_dirty_webgpu(
+        &mut self,
+        gpu: &mut WebGPUContext,
+        fonts: &BitmapFonts,
+        font_scale: f32,
+        distance_range: f32,
+    ) {
+        if !self.sprite_dirty_webgpu {
+            return;
+        }
+
+        // Don't generate sprite for empty hashes
+        if self.labels.is_empty() {
+            self.sprite_cache_webgpu = None;
+            self.sprite_dirty_webgpu = false;
+            return;
+        }
+
+        // Ensure mesh cache is up to date before rendering to sprite
+        self.rebuild_if_dirty(fonts);
+
+        // Calculate sprite dimensions based on aspect ratio
+        let aspect_ratio = self.world_height / self.world_width;
+        let tex_width = SPRITE_TARGET_WIDTH;
+        let tex_height =
+            ((SPRITE_TARGET_WIDTH as f32 * aspect_ratio) as u32).max(MIN_SPRITE_DIMENSION);
+
+        // Create or recreate render target if needed
+        let needs_new_target = match &self.sprite_cache_webgpu {
+            Some(cache) => cache.width != tex_width || cache.height != tex_height,
+            None => true,
+        };
+
+        if needs_new_target {
+            // Use mipmapped render target for smooth scaling at small sizes
+            self.sprite_cache_webgpu = Some(webgpu::RenderTarget::new_with_mipmaps(
+                gpu.device(),
+                tex_width,
+                tex_height,
+            ));
+        }
+
+        let sprite_cache = self.sprite_cache_webgpu.as_ref().unwrap();
+
+        // Create orthographic projection for the sprite (world coords -> sprite texture coords)
+        let sprite_scale = tex_width as f32 / self.world_width;
+        let ortho = ortho_matrix(
+            self.world_x,
+            self.world_x + self.world_width,
+            self.world_y + self.world_height,
+            self.world_y,
+        );
+
+        // Create a command encoder for rendering to the sprite texture
+        let mut encoder = gpu.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Sprite Cache Encoder"),
+        });
+
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Sprite Cache Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &sprite_cache.render_view, // Use render_view (single mip level) for rendering
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            // Set viewport to match sprite texture dimensions
+            render_pass.set_viewport(0.0, 0.0, tex_width as f32, tex_height as f32, 0.0, 1.0);
+
+            // Render text to the sprite texture
+            self.render_text_webgpu(
+                gpu,
+                &mut render_pass,
+                &ortho,
+                sprite_scale,
+                font_scale,
+                distance_range,
+            );
+        }
+
+        // Submit the render commands
+        gpu.queue().submit(std::iter::once(encoder.finish()));
+
+        // Generate mipmaps for smooth scaling at small sizes
+        gpu.generate_mipmaps(sprite_cache);
+
+        self.sprite_dirty_webgpu = false;
     }
 
     /// Check if this hash has a valid sprite cache

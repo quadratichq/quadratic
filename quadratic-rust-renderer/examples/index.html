@@ -43,6 +43,11 @@
       font-size: 1.25rem;
       font-weight: 500;
       color: #e94560;
+      white-space: nowrap;
+    }
+
+    .title-section {
+      flex-shrink: 0;
     }
 
     .stats {
@@ -96,16 +101,6 @@
     .backend-toggle:hover {
       background: rgba(255, 255, 255, 0.12);
     }
-    .backend-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 0.25rem;
-      vertical-align: middle;
-    }
-    .backend-indicator.webgpu { background: linear-gradient(135deg, #a855f7, #6366f1); }
-    .backend-indicator.webgl { background: linear-gradient(135deg, #22c55e, #16a34a); }
 
     #status {
       font-size: 0.875rem;
@@ -165,7 +160,7 @@
 </head>
 <body>
   <header>
-    <div>
+    <div class="title-section">
       <h1>🦀 Quadratic Rust Renderer</h1>
       <div id="status" class="loading">Initializing…</div>
     </div>
@@ -196,7 +191,6 @@
         <span class="stat-value" id="sprite-mem">0</span>
       </div>
       <div class="stat backend-toggle" id="backend-toggle" title="Click to toggle rendering backend">
-        <span class="backend-indicator" id="backend-indicator"></span>
         <span class="stat-value" id="backend-name">--</span>
       </div>
     </div>

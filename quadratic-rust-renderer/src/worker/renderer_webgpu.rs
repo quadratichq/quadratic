@@ -10,6 +10,7 @@ use web_sys::OffscreenCanvas;
 
 use crate::content::Content;
 use crate::headings::GridHeadings;
+use crate::render_context::RenderContext;
 use crate::text::{
     BitmapFont, BitmapFonts, CellLabel, CellsTextHash, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
     VisibleHashBounds, get_hash_coords, hash_key,
@@ -620,6 +621,28 @@ impl WorkerRendererGPU {
 
         if !needs_render {
             return false;
+        }
+
+        // Rebuild sprite caches if zoomed out (must happen before main render pass)
+        let scale = self.viewport.scale();
+        if scale < crate::text::SPRITE_SCALE_THRESHOLD {
+            let (font_scale, distance_range) = self
+                .fonts
+                .get("OpenSans")
+                .map(|f| {
+                    let render_size = 14.0;
+                    (render_size / f.size, f.distance_range)
+                })
+                .unwrap_or((14.0 / 42.0, 4.0));
+
+            for hash in self.hashes.values_mut() {
+                hash.rebuild_sprite_if_dirty_webgpu(
+                    &mut self.gpu,
+                    &self.fonts,
+                    font_scale,
+                    distance_range,
+                );
+            }
         }
 
         // Get surface texture

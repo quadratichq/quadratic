@@ -1,4 +1,4 @@
-//! RenderContext implementation for WebGPU
+//! RenderContext trait implementation for WebGPU
 //!
 //! Uses a buffered command model where draw calls are recorded
 //! and executed at end_frame() in a single render pass.
@@ -89,8 +89,12 @@ impl RenderContext for WebGPUContext {
     }
 
     fn set_viewport(&mut self, x: i32, y: i32, width: i32, height: i32) {
-        self.command_buffer
-            .push(DrawCommand::SetViewport { x, y, width, height });
+        self.command_buffer.push(DrawCommand::SetViewport {
+            x,
+            y,
+            width,
+            height,
+        });
     }
 
     fn reset_viewport(&mut self) {
@@ -98,8 +102,12 @@ impl RenderContext for WebGPUContext {
     }
 
     fn set_scissor(&mut self, x: i32, y: i32, width: i32, height: i32) {
-        self.command_buffer
-            .push(DrawCommand::SetScissor { x, y, width, height });
+        self.command_buffer.push(DrawCommand::SetScissor {
+            x,
+            y,
+            width,
+            height,
+        });
     }
 
     fn disable_scissor(&mut self) {
@@ -169,7 +177,7 @@ impl RenderContext for WebGPUContext {
     }
 
     fn has_font_texture(&self, texture_uid: u32) -> bool {
-        self.font_textures.contains_key(&texture_uid)
+        self.font_texture_manager.has_texture(texture_uid)
     }
 
     fn upload_font_texture(
@@ -179,73 +187,19 @@ impl RenderContext for WebGPUContext {
         height: u32,
         data: &[u8],
     ) -> Result<(), RenderError> {
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Font Texture"),
-            size: wgpu::Extent3d {
+        self.font_texture_manager
+            .upload_rgba_with_bind_group(
+                &self.device,
+                &self.queue,
+                texture_uid,
                 width,
                 height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        self.queue.write_texture(
-            wgpu::ImageCopyTexture {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            data,
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(width * 4),
-                rows_per_image: Some(height),
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Font Bind Group"),
-            layout: &self.text_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: self.text_uniform_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&self.linear_sampler),
-                },
-            ],
-        });
-
-        self.font_textures.insert(texture_uid, texture);
-        self.font_texture_views.insert(texture_uid, texture_view);
-        self.font_bind_groups.insert(texture_uid, bind_group);
-
-        log::info!(
-            "Uploaded font texture UID {} ({}x{})",
-            texture_uid,
-            width,
-            height
-        );
-        Ok(())
+                data,
+                &self.text_bind_group_layout,
+                &self.text_uniform_buffer,
+                &self.linear_sampler,
+            )
+            .map_err(|e| RenderError(format!("Failed to upload font texture: {:?}", e)))
     }
 
     fn has_sprite_texture(&self, texture_id: TextureId) -> bool {
@@ -355,7 +309,12 @@ impl WebGPUContext {
                 self.execute_clear(pass, *r, *g, *b, *a);
             }
 
-            DrawCommand::SetViewport { x, y, width, height } => {
+            DrawCommand::SetViewport {
+                x,
+                y,
+                width,
+                height,
+            } => {
                 pass.set_viewport(
                     *x as f32,
                     *y as f32,
@@ -370,7 +329,12 @@ impl WebGPUContext {
                 pass.set_viewport(0.0, 0.0, self.width as f32, self.height as f32, 0.0, 1.0);
             }
 
-            DrawCommand::SetScissor { x, y, width, height } => {
+            DrawCommand::SetScissor {
+                x,
+                y,
+                width,
+                height,
+            } => {
                 pass.set_scissor_rect(*x as u32, *y as u32, *width as u32, *height as u32);
             }
 
@@ -418,26 +382,26 @@ impl WebGPUContext {
         }
     }
 
-    fn execute_clear<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, r: f32, g: f32, b: f32, a: f32) {
+    fn execute_clear<'a>(
+        &'a self,
+        pass: &mut wgpu::RenderPass<'a>,
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+    ) {
         // Draw a fullscreen quad with the clear color
         // This is a simple approach - in production, you'd use LoadOp::Clear
         let vertices: [f32; 36] = [
             // Triangle 1
-            -1.0, -1.0, r, g, b, a,
-            1.0, -1.0, r, g, b, a,
-            -1.0, 1.0, r, g, b, a,
+            -1.0, -1.0, r, g, b, a, 1.0, -1.0, r, g, b, a, -1.0, 1.0, r, g, b, a,
             // Triangle 2
-            1.0, -1.0, r, g, b, a,
-            1.0, 1.0, r, g, b, a,
-            -1.0, 1.0, r, g, b, a,
+            1.0, -1.0, r, g, b, a, 1.0, 1.0, r, g, b, a, -1.0, 1.0, r, g, b, a,
         ];
 
         // Identity matrix (NDC passthrough)
         let matrix: [f32; 16] = [
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         ];
 
         self.execute_draw_triangles(pass, &vertices, &matrix);
@@ -542,10 +506,13 @@ impl WebGPUContext {
         font_scale: f32,
         distance_range: f32,
     ) {
-        if !self.font_bind_groups.contains_key(&texture_uid) {
-            log::warn!("Font texture {} not found", texture_uid);
-            return;
-        }
+        let font_texture_view = match self.font_texture_manager.get_view(texture_uid) {
+            Some(v) => v,
+            None => {
+                log::warn!("Font texture {} not found", texture_uid);
+                return;
+            }
+        };
 
         let vertex_bytes: &[u8] = bytemuck::cast_slice(vertices);
         let vertex_buffer = self
@@ -578,7 +545,6 @@ impl WebGPUContext {
                 usage: wgpu::BufferUsages::UNIFORM,
             });
 
-        let font_texture_view = self.font_texture_views.get(&texture_uid).unwrap();
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Text Bind Group"),
             layout: &self.text_bind_group_layout,

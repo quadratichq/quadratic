@@ -20,7 +20,6 @@ const hashesEl = document.getElementById('hashes') as HTMLElement;
 const spriteMemEl = document.getElementById('sprite-mem') as HTMLElement;
 const renderIndicatorEl = document.getElementById('render-indicator') as HTMLElement;
 const backendToggleEl = document.getElementById('backend-toggle') as HTMLElement;
-const backendIndicatorEl = document.getElementById('backend-indicator') as HTMLElement;
 const backendNameEl = document.getElementById('backend-name') as HTMLElement;
 
 // LocalStorage key for backend preference
@@ -51,7 +50,6 @@ function updateBackendIndicator(backend: 'webgpu' | 'webgl', available: boolean)
   currentBackend = backend;
   webgpuAvailable = available;
 
-  backendIndicatorEl.className = 'backend-indicator ' + backend;
   backendNameEl.textContent = backend === 'webgpu' ? 'WebGPU' : 'WebGL';
 
   // Update tooltip based on availability

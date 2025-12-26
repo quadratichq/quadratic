@@ -10,6 +10,7 @@ use web_sys::{HtmlImageElement, OffscreenCanvas};
 
 use crate::content::Content;
 use crate::headings::GridHeadings;
+use crate::render_context::RenderContext;
 use crate::text::{
     BitmapFont, BitmapFonts, CellLabel, CellsTextHash, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
     VisibleHashBounds, get_hash_coords, hash_key,
@@ -641,6 +642,9 @@ impl WorkerRenderer {
             return false;
         }
 
+        // Begin frame (clears command buffer)
+        self.gl.begin_frame();
+
         // Clear with out-of-bounds background color (0xfdfdfd = very light gray)
         // This matches the client's gridBackgroundOutOfBounds color
         let oob_gray = 253.0 / 255.0; // 0xfdfdfd
@@ -702,6 +706,9 @@ impl WorkerRenderer {
         if self.show_headings {
             self.render_headings();
         }
+
+        // Execute all buffered draw commands
+        self.gl.end_frame();
 
         // Mark everything as clean after rendering
         self.viewport.mark_clean();

@@ -35,6 +35,7 @@
 //! ```
 
 mod color;
+mod font;
 mod line;
 mod native_lines;
 mod rect;
@@ -42,6 +43,10 @@ mod sprite;
 mod texture;
 
 pub use color::{colors, Color};
+pub use font::{
+    extract_char_code, split_text_to_characters, BitmapChar, BitmapFont, CharFrame, FontManager,
+    FontTextureId, FontTextureInfo,
+};
 pub use line::{Line, LineScaling, Lines};
 pub use native_lines::{NativeLine, NativeLines};
 pub use rect::{Rect, Rects};

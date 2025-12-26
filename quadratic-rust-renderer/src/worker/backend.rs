@@ -6,6 +6,7 @@
 use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
 
+use crate::render_context::RenderContext;
 use crate::webgl::WebGLContext;
 use crate::webgpu::WebGPUContext;
 
