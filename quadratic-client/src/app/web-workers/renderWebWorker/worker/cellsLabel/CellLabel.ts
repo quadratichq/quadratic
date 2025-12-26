@@ -141,8 +141,8 @@ export class CellLabel {
   // Returns the height needed for row sizing to ensure text isn't clipped.
   // Uses actual glyph height (including descenders) plus vertical padding.
   get textHeightWithDescenders(): number {
-    // Include constant vertical padding (top and bottom) - not scaled with font size.
-    // Round to avoid floating point precision issues in height comparisons.
+    // Include constant vertical padding (top and bottom) - not scaled with font size
+    // Round to avoid floating point precision issues when comparing heights
     return Math.round(this.glyphHeight + CELL_VERTICAL_PADDING * 2);
   }
 
@@ -383,7 +383,10 @@ export class CellLabel {
     }
 
     // Calculate available space for vertical positioning
-    const availableSpace = this.AABB.height - this.textHeight;
+    // Use glyphHeight when it's larger than textHeight (e.g., for emojis with baseline offset)
+    // to ensure the content fits within the cell
+    const effectiveTextHeight = Math.max(this.textHeight, this.glyphHeight);
+    const availableSpace = this.AABB.height - effectiveTextHeight;
 
     // The default extra space in a cell (constant regardless of font size).
     // When cells auto-grow with font size, they maintain this same extra space.
@@ -398,7 +401,7 @@ export class CellLabel {
     } else {
       // Apply vertical alignment with constant padding from edges
       if (this.verticalAlign === 'bottom') {
-        const actualTop = this.AABB.bottom - this.textHeight - CELL_VERTICAL_PADDING;
+        const actualTop = this.AABB.bottom - effectiveTextHeight - CELL_VERTICAL_PADDING;
         this.position.y = actualTop;
         this.actualTop = actualTop;
       } else if (this.verticalAlign === 'middle') {
@@ -412,7 +415,7 @@ export class CellLabel {
         this.actualTop = actualTop;
       }
     }
-    this.actualBottom = Math.min(this.AABB.bottom, this.position.y + this.textHeight);
+    this.actualBottom = Math.min(this.AABB.bottom, this.position.y + effectiveTextHeight);
   };
 
   updateText = (labelMeshes: LabelMeshes): void => {
@@ -553,9 +556,9 @@ export class CellLabel {
 
         if (isEmoji) {
           const emojiSize = this.lineHeight / scale;
-          // Approximate baseline offset: for most fonts, baseline is ~80% down from top
-          // This aligns emoji bottom roughly with text baseline
-          const baselineOffset = data.lineHeight * 0.2;
+          // Small offset to align emoji with text. We use 10% (not 20%) to balance
+          // alignment with avoiding clipping issues from the AABB timing problem.
+          const baselineOffset = data.lineHeight * 0.15;
           charData = {
             specialEmoji: emojiToRender,
             textureUid: 0,
@@ -647,32 +650,28 @@ export class CellLabel {
     }
 
     // Use lineHeight for text height (ensures consistent alignment across cells)
-    const calculatedTextHeight = this.lineHeight * (line + 1);
+    let calculatedTextHeight = this.lineHeight * (line + 1);
 
     // Calculate actual glyph height separately (for row sizing to prevent clipping)
-    // This accounts for descenders (g, p, y) that extend below the baseline.
-    // We only count the portion that extends beyond the font's native line height
-    // as a "descender" - characters that fit within the font's line height should
-    // not cause row resizing.
+    // This accounts for descenders (g, p, y) that extend below the baseline
     let calculatedGlyphHeight = calculatedTextHeight;
     if (chars.length > 0) {
-      let maxDescenderExtension = 0;
-      const fontLineHeight = baseData.lineHeight; // Font's native line height
+      let maxCharBottom = 0;
       for (const char of chars) {
         const charBottom = char.position.y + char.charData.frame.height;
-        // For multi-line text, compare against the expected bottom for this line
-        const expectedLineBottom = (char.line + 1) * fontLineHeight;
-        const descenderExtension = Math.max(0, charBottom - expectedLineBottom);
-        maxDescenderExtension = Math.max(maxDescenderExtension, descenderExtension);
+        maxCharBottom = Math.max(maxCharBottom, charBottom);
       }
-      // Add scaled descender extension to our calculated text height
-      calculatedGlyphHeight = calculatedTextHeight + maxDescenderExtension * scale;
+      const glyphBasedHeight = maxCharBottom * scale;
+      calculatedGlyphHeight = Math.max(calculatedGlyphHeight, glyphBasedHeight);
     }
 
-    // Note: Underlines are purely decorative and should NOT affect text height or
-    // glyph height. This matches Excel/Google Sheets behavior where adding underline
-    // doesn't change cell height or text positioning. The underline is drawn at a
-    // fixed offset below the text baseline within the existing cell bounds.
+    // Add space for underlines if present (underlines extend below the text baseline)
+    // Note: underlineOffset is in bitmap font coordinates and needs to be scaled
+    if (this.underline) {
+      const underlineHeight = this.lineHeight * line + this.underlineOffset * scale + HORIZONTAL_LINE_THICKNESS;
+      calculatedTextHeight = Math.max(calculatedTextHeight, underlineHeight);
+      calculatedGlyphHeight = Math.max(calculatedGlyphHeight, underlineHeight);
+    }
 
     return {
       chars,
@@ -976,7 +975,14 @@ export class CellLabel {
         // floating point issues that could cause emojis to oscillate between visible and clipped
         const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + CLIP_EPSILON;
         const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
-        if (horizontallyClipped || verticallyClipped) {
+
+        // Don't clip emojis vertically. The row will resize based on textHeightWithDescenders,
+        // but AABB is set before that calculation completes. Skipping vertical clipping for
+        // emojis prevents them from flickering between visible and clipped during resize.
+        const isEmoji = char.charData.specialEmoji !== undefined;
+        const shouldClip = isEmoji ? horizontallyClipped : horizontallyClipped || verticallyClipped;
+
+        if (shouldClip) {
           // this removes extra characters from the mesh after a clip
           buffer.reduceSize(6);
 
@@ -1093,6 +1099,7 @@ export class CellLabel {
     clipBottom: number,
     scale: number
   ) => {
+    let maxHeight = 0;
     this.lineWidths.forEach((lineWidth, line) => {
       const height = this.lineHeight * line + yOffset * scale;
       const yPos = this.position.y + height + OPEN_SANS_FIX.y;
@@ -1105,9 +1112,9 @@ export class CellLabel {
 
       const rect = new Rectangle(xPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
       this.horizontalLines.push(rect);
+      maxHeight = Math.max(maxHeight, height + HORIZONTAL_LINE_THICKNESS);
     });
-    // Note: We intentionally don't update textHeight here. Underlines/strikethroughs
-    // are decorative and shouldn't affect text height for layout purposes.
+    this.textHeight = Math.max(this.textHeight, maxHeight);
   };
 
   // these are used to adjust column/row sizes without regenerating glyphs

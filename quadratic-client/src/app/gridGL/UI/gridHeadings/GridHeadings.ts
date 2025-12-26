@@ -393,7 +393,7 @@ export class GridHeadings extends Container {
             scale >= 0.2 &&
             content.gridLines.alpha >= colors.headerSelectedRowColumnBackgroundColorAlpha)
         ) {
-          row++;
+          y += currentHeight;
           continue;
         }
 
