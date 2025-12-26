@@ -3,7 +3,7 @@
 //! Unlike CellLabel which handles cell-specific logic (wrapping, alignment within cells),
 //! TextLabel is a simpler primitive for rendering text at a specific position.
 
-use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
+use super::bitmap_font::{BitmapFonts, extract_char_code, split_text_to_characters};
 use super::label_mesh::LabelMesh;
 
 /// Default font size for headings
@@ -85,6 +85,10 @@ pub struct TextLabel {
     text_width: f32,
     text_height: f32,
 
+    /// Vertical center offset for proper centering
+    /// This is the Y position of the text's visual center relative to origin
+    vertical_center: f32,
+
     /// Glyph data
     glyphs: Vec<GlyphData>,
 
@@ -106,6 +110,7 @@ impl TextLabel {
             anchor: TextAnchor::Center,
             text_width: 0.0,
             text_height: 0.0,
+            vertical_center: 0.0,
             glyphs: Vec::new(),
             font_name: String::new(),
         }
@@ -158,6 +163,7 @@ impl TextLabel {
         if self.text.is_empty() {
             self.text_width = 0.0;
             self.text_height = 0.0;
+            self.vertical_center = 0.0;
             return;
         }
 
@@ -174,7 +180,10 @@ impl TextLabel {
 
         let mut pos_x = 0.0f32;
         let mut prev_char_code: Option<u32> = None;
-        let mut max_height = 0.0f32;
+
+        // Track actual bounding box (min/max Y of all glyphs)
+        let mut min_y = f32::MAX;
+        let mut max_y = f32::MIN;
 
         for c in &characters {
             let char_code = extract_char_code(*c);
@@ -196,22 +205,37 @@ impl TextLabel {
                 }
             }
 
+            let glyph_top = char_data.y_offset;
+            let glyph_bottom = glyph_top + char_data.frame.height;
+
             self.glyphs.push(GlyphData {
                 x: pos_x + char_data.x_offset,
-                y: char_data.y_offset,
+                y: glyph_top,
                 width: char_data.frame.width,
                 height: char_data.frame.height,
                 uvs: char_data.uvs,
                 texture_uid: char_data.texture_uid,
             });
 
+            // Track bounding box
+            min_y = min_y.min(glyph_top);
+            max_y = max_y.max(glyph_bottom);
+
             pos_x += char_data.x_advance;
-            max_height = max_height.max(char_data.frame.height);
             prev_char_code = Some(char_code);
         }
 
+        // Handle case where no glyphs were added
+        if min_y == f32::MAX {
+            min_y = 0.0;
+            max_y = 0.0;
+        }
+
         self.text_width = pos_x * scale;
-        self.text_height = max_height * scale;
+        self.text_height = (max_y - min_y) * scale;
+        // Calculate the vertical center position (scaled)
+        // This is the Y position of the visual center relative to the text origin
+        self.vertical_center = (min_y + max_y) / 2.0 * scale;
     }
 
     /// Build the mesh for rendering
@@ -230,7 +254,29 @@ impl TextLabel {
         // Calculate anchor offset
         let (anchor_x, anchor_y) = self.anchor.offset_multipliers();
         let offset_x = -self.text_width * anchor_x;
-        let offset_y = -self.text_height * anchor_y;
+
+        // For vertical centering:
+        // - vertical_center is the Y position of the text's visual center
+        // - For Center anchor (anchor_y = 0.5), we want to offset so the center is at self.y
+        // - offset = -vertical_center for Center anchor
+        // - More generally: offset = -vertical_center * 2 * anchor_y (to handle Top/Bottom too)
+        // But for simplicity, just use: offset = vertical_center * (1 - 2 * anchor_y) - vertical_center
+        // Actually simpler: we want the center at self.y, so offset = -vertical_center
+        // For top anchor (anchor_y = 0): offset = 0 (text starts at self.y)
+        // For center anchor (anchor_y = 0.5): offset = -vertical_center
+        // For bottom anchor (anchor_y = 1.0): offset = -2 * vertical_center
+        // General formula: offset = -vertical_center * 2 * anchor_y for center-relative positioning
+        // But we also need to account for the text_height for proper anchor behavior
+        //
+        // Let's use a cleaner approach:
+        // - The text bounding box spans from (some_min) to (some_min + text_height)
+        // - The center is at vertical_center
+        // - For anchor 0.0 (top), we want text_top at self.y: offset = -(vertical_center - text_height/2)
+        // - For anchor 0.5 (center), we want text_center at self.y: offset = -vertical_center
+        // - For anchor 1.0 (bottom), we want text_bottom at self.y: offset = -(vertical_center + text_height/2)
+        // General: offset = -(vertical_center - text_height/2 + text_height * anchor_y)
+        //                 = -(vertical_center + text_height * (anchor_y - 0.5))
+        let offset_y = -(self.vertical_center + self.text_height * (anchor_y - 0.5));
 
         // Group glyphs by texture
         let mut meshes: std::collections::HashMap<u32, LabelMesh> =

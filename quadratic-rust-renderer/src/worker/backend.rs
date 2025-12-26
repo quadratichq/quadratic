@@ -36,6 +36,7 @@ impl RenderBackend {
     }
 
     /// Create a WebGPU backend (async)
+    #[cfg(target_arch = "wasm32")]
     pub async fn create_webgpu(canvas: OffscreenCanvas) -> Result<Self, JsValue> {
         let ctx = WebGPUContext::from_offscreen_canvas(canvas).await?;
         Ok(RenderBackend::WebGPU(ctx))

@@ -25,6 +25,8 @@ mod render_context;
 mod textures;
 mod viewport;
 
+pub use create::WebGPUError;
+
 /// Texture ID type (matches WebGL version)
 pub type TextureId = u32;
 

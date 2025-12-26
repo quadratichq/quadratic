@@ -10,7 +10,7 @@ mod render_target;
 pub(crate) mod shaders;
 mod texture_manager;
 
-pub use context::WebGPUContext;
+pub use context::{WebGPUContext, WebGPUError};
 pub use font_manager::FontManager;
 pub use mipmap::MipmapGenerator;
 pub use render_target::RenderTarget;

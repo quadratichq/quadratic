@@ -6,15 +6,19 @@
 use std::collections::HashMap;
 
 use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use web_sys::OffscreenCanvas;
 
 use crate::content::Content;
 use crate::headings::GridHeadings;
+#[cfg(target_arch = "wasm32")]
 use crate::render_context::RenderContext;
+#[cfg(target_arch = "wasm32")]
 use crate::text::{
-    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
-    VisibleHashBounds, get_hash_coords, hash_key,
+    BitmapFont, CellLabel, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH, VisibleHashBounds,
+    get_hash_coords, hash_key,
 };
+use crate::text::{BitmapFonts, CellsTextHash};
 use crate::viewport::Viewport;
 use crate::webgpu::WebGPUContext;
 
@@ -52,6 +56,7 @@ pub struct WorkerRendererGPU {
     show_headings: bool,
 }
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl WorkerRendererGPU {
     /// Check if WebGPU is available in this browser

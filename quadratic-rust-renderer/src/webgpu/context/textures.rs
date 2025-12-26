@@ -6,7 +6,6 @@
 use wasm_bindgen::JsValue;
 
 use super::WebGPUContext;
-use crate::webgpu::font_manager::FontManager;
 
 impl WebGPUContext {
     /// Upload a font texture from raw RGBA pixel data (JsValue return for WASM)
@@ -28,16 +27,6 @@ impl WebGPUContext {
             &self.text_uniform_buffer,
             &self.linear_sampler,
         )
-    }
-
-    /// Get the font texture manager
-    pub fn font_texture_manager(&self) -> &FontManager {
-        &self.font_texture_manager
-    }
-
-    /// Get mutable access to the font texture manager
-    pub fn font_texture_manager_mut(&mut self) -> &mut FontManager {
-        &mut self.font_texture_manager
     }
 
     /// Generate mipmaps for a render target texture

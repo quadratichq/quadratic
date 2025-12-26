@@ -16,7 +16,6 @@ mod create;
 mod draw;
 mod render_context;
 mod textures;
-mod viewport;
 
 /// WebGL2 rendering context
 pub struct WebGLContext {

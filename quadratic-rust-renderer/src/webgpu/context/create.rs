@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use web_sys::OffscreenCanvas;
 
 use super::WebGPUContext;
@@ -7,8 +9,28 @@ use crate::render_context::CommandBuffer;
 use crate::webgpu::font_manager::FontManager;
 use crate::webgpu::shaders::{BASIC_SHADER, MSDF_SHADER, SPRITE_SHADER};
 
+/// Error type for WebGPU context creation
+#[derive(Debug)]
+pub struct WebGPUError(pub String);
+
+impl std::fmt::Display for WebGPUError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for WebGPUError {}
+
+#[cfg(target_arch = "wasm32")]
+impl From<WebGPUError> for JsValue {
+    fn from(err: WebGPUError) -> Self {
+        JsValue::from_str(&err.0)
+    }
+}
+
 impl WebGPUContext {
-    /// Check if WebGPU is available in this browser/worker
+    /// Check if WebGPU is available
+    #[cfg(target_arch = "wasm32")]
     pub fn is_available() -> bool {
         // Check via navigator.gpu using js_sys
         // Works in both main thread (window) and web workers (self)
@@ -37,10 +59,17 @@ impl WebGPUContext {
         available
     }
 
-    /// Create a new WebGPU context from an OffscreenCanvas (async)
+    /// Check if WebGPU is available (native - always returns true as wgpu handles fallback)
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn is_available() -> bool {
+        true
+    }
+
+    /// Create a new WebGPU context from an OffscreenCanvas (async, WASM only)
     ///
     /// Note: wgpu's web support with OffscreenCanvas requires the canvas
     /// to be transferred to the worker. This function handles the setup.
+    #[cfg(target_arch = "wasm32")]
     pub async fn from_offscreen_canvas(canvas: OffscreenCanvas) -> Result<Self, JsValue> {
         let width = canvas.width();
         let height = canvas.height();
@@ -54,11 +83,47 @@ impl WebGPUContext {
         });
 
         // Create surface from OffscreenCanvas
-        // wgpu handles this through its internal web handling
         let surface = instance
             .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas))
             .map_err(|e| JsValue::from_str(&format!("Failed to create surface: {:?}", e)))?;
 
+        Self::from_surface(instance, surface, width, height)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Create a new WebGPU context from a window (async, native only)
+    ///
+    /// The window must implement the raw-window-handle traits required by wgpu.
+    /// The window must have a `'static` lifetime as wgpu's surface holds a reference to it.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn from_window<W>(window: W, width: u32, height: u32) -> Result<Self, WebGPUError>
+    where
+        W: wgpu::WindowHandle + 'static,
+    {
+        log::info!("Creating WebGPU context via wgpu ({}x{})", width, height);
+
+        // Create wgpu instance - use all available backends on native
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+
+        // Create surface from window
+        let surface = instance
+            .create_surface(window)
+            .map_err(|e| WebGPUError(format!("Failed to create surface: {:?}", e)))?;
+
+        Self::from_surface(instance, surface, width, height).await
+    }
+
+    /// Common initialization from a surface (shared by both native and WASM)
+    async fn from_surface(
+        instance: wgpu::Instance,
+        surface: wgpu::Surface<'static>,
+        width: u32,
+        height: u32,
+    ) -> Result<Self, WebGPUError> {
         // Request adapter
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -67,7 +132,7 @@ impl WebGPUContext {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or_else(|| JsValue::from_str("No suitable GPU adapter found"))?;
+            .ok_or_else(|| WebGPUError("No suitable GPU adapter found".to_string()))?;
 
         log::info!("WebGPU adapter: {:?}", adapter.get_info());
 
@@ -83,7 +148,7 @@ impl WebGPUContext {
                 None,
             )
             .await
-            .map_err(|e| JsValue::from_str(&format!("Failed to create device: {:?}", e)))?;
+            .map_err(|e| WebGPUError(format!("Failed to create device: {:?}", e)))?;
 
         // Configure surface
         let surface_caps = surface.get_capabilities(&adapter);
@@ -94,13 +159,23 @@ impl WebGPUContext {
             .copied()
             .unwrap_or(surface_caps.formats[0]);
 
+        // Choose appropriate alpha mode
+        let alpha_mode = if surface_caps
+            .alpha_modes
+            .contains(&wgpu::CompositeAlphaMode::PreMultiplied)
+        {
+            wgpu::CompositeAlphaMode::PreMultiplied
+        } else {
+            surface_caps.alpha_modes[0]
+        };
+
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width,
             height,
             present_mode: wgpu::PresentMode::Fifo,
-            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+            alpha_mode,
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };

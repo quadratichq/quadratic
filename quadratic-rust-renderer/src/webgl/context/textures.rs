@@ -1,7 +1,7 @@
 use wasm_bindgen::JsValue;
 use web_sys::HtmlImageElement;
 
-use crate::webgl::{FontManager, FontTextureId, TextureManager, WebGLContext};
+use crate::webgl::{FontTextureId, WebGLContext};
 
 impl WebGLContext {
     /// Upload a font texture from an HtmlImageElement
@@ -29,25 +29,5 @@ impl WebGLContext {
     /// Check if a font texture is loaded
     pub fn has_font_texture(&self, texture_uid: FontTextureId) -> bool {
         self.font_texture_manager.has_texture(texture_uid)
-    }
-
-    /// Get the font texture manager
-    pub fn font_texture_manager(&self) -> &FontManager {
-        &self.font_texture_manager
-    }
-
-    /// Get mutable access to the font texture manager
-    pub fn font_texture_manager_mut(&mut self) -> &mut FontManager {
-        &mut self.font_texture_manager
-    }
-
-    /// Get mutable access to the texture manager
-    pub fn texture_manager_mut(&mut self) -> &mut TextureManager {
-        &mut self.texture_manager
-    }
-
-    /// Get read access to the texture manager
-    pub fn texture_manager(&self) -> &TextureManager {
-        &self.texture_manager
     }
 }

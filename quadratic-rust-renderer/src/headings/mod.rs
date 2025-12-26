@@ -6,6 +6,10 @@
 //! Unlike the main grid content, headings are rendered in screen space
 //! (fixed position) rather than world space.
 
+mod column_headings;
 mod grid_headings;
+mod row_headings;
+mod types;
 
-pub use grid_headings::{GridHeadings, HeadingColors, HeadingSize};
+pub use grid_headings::GridHeadings;
+pub use types::{HeadingColors, HeadingSize};
