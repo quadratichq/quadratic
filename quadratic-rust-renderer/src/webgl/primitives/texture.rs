@@ -1,24 +1,15 @@
-//! Texture management for sprites
+//! WebGL texture storage
 //!
-//! Provides a texture manager for loading and accessing WebGL textures.
+//! Backend-specific storage for WebGL texture handles.
 
 use std::collections::HashMap;
 use wasm_bindgen::JsValue;
 use web_sys::{HtmlImageElement, WebGl2RenderingContext, WebGlTexture};
 
-/// Unique identifier for a texture
-pub type TextureId = u32;
-
-/// Texture metadata
-#[derive(Debug, Clone, Copy)]
-pub struct TextureInfo {
-    /// Width in pixels
-    pub width: u32,
-    /// Height in pixels
-    pub height: u32,
-}
+pub use crate::primitives::{TextureId, TextureInfo};
 
 /// Manages WebGL textures for sprite rendering
+#[derive(Debug, Default)]
 pub struct TextureManager {
     /// Stored textures indexed by TextureId
     textures: HashMap<TextureId, WebGlTexture>,
@@ -190,11 +181,5 @@ impl TextureManager {
         self.textures.clear();
         self.texture_info.clear();
         log::info!("Cleared all textures");
-    }
-}
-
-impl Default for TextureManager {
-    fn default() -> Self {
-        Self::new()
     }
 }

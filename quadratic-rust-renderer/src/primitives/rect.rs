@@ -1,9 +1,10 @@
-//! Rectangle primitive
+//! Rectangle primitive. These are fill only. Use Lines or NativeLines for
+//! outlines.
 
 use super::Color;
-use crate::webgl::WebGLContext;
+use crate::RenderContext;
 
-/// A filled rectangle (data only, use Rects for rendering)
+/// A filled rectangle (data only)
 #[derive(Debug, Clone, Copy)]
 pub struct Rect {
     pub x: f32,
@@ -28,7 +29,8 @@ impl Rect {
 
 /// A batch of rectangles for efficient rendering
 ///
-/// Collects rectangle vertices and renders them all in one draw call.
+/// Collects rectangle vertices for batched rendering.
+/// Use with RenderContext::draw_triangles() to render.
 pub struct Rects {
     /// Vertex data: [x, y, r, g, b, a, ...] (6 floats per vertex, 6 vertices per rect)
     vertices: Vec<f32>,
@@ -93,10 +95,16 @@ impl Rects {
         self.vertices.reserve(additional * 36);
     }
 
-    /// Render all rectangles to WebGL in one draw call
-    pub fn render(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
-        if !self.vertices.is_empty() {
-            gl.draw_triangles(&self.vertices, matrix);
+    /// Get raw vertex data for rendering
+    /// Format: [x, y, r, g, b, a, ...] (6 floats per vertex, 6 vertices per rect)
+    pub fn vertices(&self) -> &[f32] {
+        &self.vertices
+    }
+
+    /// Render all rectangles using the provided context
+    pub fn render(&self, ctx: &mut impl RenderContext, matrix: &[f32; 16]) {
+        if !self.is_empty() {
+            ctx.draw_triangles(&self.vertices, matrix);
         }
     }
 }

@@ -1,6 +1,6 @@
 //! Quadratic Rust Renderer
 //!
-//! A WebGL-based renderer for the Quadratic spreadsheet application.
+//! A GPU-accelerated renderer for the Quadratic spreadsheet application.
 //! Designed to run in a Web Worker for browser rendering.
 //!
 //! ## Architecture
@@ -8,13 +8,23 @@
 //! - `content`: Platform-agnostic rendering content (grid lines, cursor, cells)
 //! - `viewport`: Camera/viewport state and math
 //! - `webgl`: WebGL2 rendering backend (browser only)
+//! - `webgpu`: WebGPU rendering backend (browser only, preferred when available)
 //! - `worker`: Web Worker entry point (browser only)
 //!
 //! ## Usage (Browser)
 //!
 //! 1. Transfer an OffscreenCanvas to the worker
-//! 2. Create a WorkerRenderer with the canvas
-//! 3. Call frame() on each animation frame
+//! 2. Check WebGPU availability with `WorkerRendererGPU.is_available()`
+//! 3. Create `WorkerRendererGPU` (async) if available, otherwise `WorkerRenderer` (sync)
+//! 4. Call frame() on each animation frame
+//!
+//! ```javascript
+//! if (WorkerRendererGPU.is_available()) {
+//!     const renderer = await WorkerRendererGPU.new(canvas);
+//! } else {
+//!     const renderer = new WorkerRenderer(canvas);
+//! }
+//! ```
 
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
 #![allow(dead_code)] // POC - many things are scaffolded but not yet used
@@ -23,13 +33,20 @@
 pub mod cells;
 pub mod content;
 pub mod headings;
+pub mod primitives;
+pub mod render_context;
 pub mod text;
 pub mod utils;
 pub mod viewport;
 
-// Browser-only modules (WebGL + Worker)
+// Re-export the render context types
+pub use render_context::{CommandBuffer, DrawCommand, RenderContext, RenderError};
+
+// Browser-only modules (WebGL + WebGPU + Worker)
 #[cfg(feature = "wasm")]
 pub mod webgl;
+#[cfg(feature = "wasm")]
+pub mod webgpu;
 #[cfg(feature = "wasm")]
 pub mod worker;
 
@@ -38,7 +55,7 @@ pub use content::Content;
 pub use viewport::Viewport;
 
 #[cfg(feature = "wasm")]
-pub use worker::WorkerRenderer;
+pub use worker::{WorkerRenderer, WorkerRendererGPU};
 
 /// Initialize the renderer (WASM entry point)
 #[cfg(feature = "wasm")]

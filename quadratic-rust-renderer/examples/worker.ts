@@ -4,14 +4,26 @@
  * This script runs in a Web Worker and handles all rendering.
  * It receives an OffscreenCanvas from the main thread and uses
  * the Rust/WASM renderer to draw to it.
+ *
+ * Supports both WebGPU (preferred) and WebGL2 (fallback) backends.
  */
 
-import init, { WorkerRenderer } from '../pkg/quadratic_rust_renderer.js';
+import init, { WorkerRenderer, WorkerRendererGPU } from '../pkg/quadratic_rust_renderer.js';
 
 // Message types from main thread
 interface InitMessage {
   type: 'init';
   canvas: OffscreenCanvas;
+  preferWebGPU: boolean;
+}
+
+interface SetBackendMessage {
+  type: 'setBackend';
+  backend: 'webgpu' | 'webgl';
+}
+
+interface GetBackendMessage {
+  type: 'getBackend';
 }
 
 interface ResizeMessage {
@@ -173,6 +185,8 @@ interface SetHeadingsDprMessage {
 
 type WorkerMessage =
   | InitMessage
+  | SetBackendMessage
+  | GetBackendMessage
   | ResizeMessage
   | PanMessage
   | ZoomMessage
@@ -201,8 +215,10 @@ type WorkerMessage =
   | GetHeadingSizeMessage
   | SetHeadingsDprMessage;
 
-let renderer: WorkerRenderer | null = null;
+let renderer: WorkerRenderer | WorkerRendererGPU | null = null;
 let animationFrameId: number | null = null;
+let currentBackend: 'webgpu' | 'webgl' = 'webgl';
+let storedCanvas: OffscreenCanvas | null = null;
 
 // FPS tracking
 let fpsEnabled = false;
@@ -281,17 +297,44 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
         // Initialize WASM module
         await init();
 
-        // Create renderer with the transferred OffscreenCanvas
-        renderer = new WorkerRenderer(data.canvas);
+        // Store canvas reference for potential backend switching
+        storedCanvas = data.canvas;
+
+        // Check WebGPU availability and user preference
+        const webgpuAvailable = WorkerRendererGPU.is_available();
+        const useWebGPU = data.preferWebGPU && webgpuAvailable;
+
+        if (useWebGPU) {
+          // Create WebGPU renderer (async)
+          renderer = await WorkerRendererGPU.new(data.canvas);
+          currentBackend = 'webgpu';
+        } else {
+          // Create WebGL renderer (sync)
+          renderer = new WorkerRenderer(data.canvas);
+          currentBackend = 'webgl';
+        }
+
         renderer.start();
 
         // Start render loop
         renderLoop();
 
-        self.postMessage({ type: 'ready' });
+        self.postMessage({
+          type: 'ready',
+          backend: currentBackend,
+          webgpuAvailable,
+        });
       } catch (error) {
         self.postMessage({ type: 'error', message: String(error) });
       }
+      break;
+
+    case 'getBackend':
+      self.postMessage({
+        type: 'backendInfo',
+        backend: currentBackend,
+        webgpuAvailable: WorkerRendererGPU.is_available(),
+      });
       break;
 
     case 'resize':

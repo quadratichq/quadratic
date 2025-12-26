@@ -9,6 +9,7 @@ use web_sys::{
     WebGlProgram, WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject,
 };
 
+use crate::render_context::CommandBuffer;
 use super::primitives::texture::{TextureId, TextureManager};
 use super::shaders::{
     BASIC_FRAGMENT_SHADER, BASIC_VERTEX_SHADER, MSDF_FRAGMENT_SHADER, MSDF_VERTEX_SHADER,
@@ -17,10 +18,13 @@ use super::shaders::{
 
 /// WebGL2 rendering context
 pub struct WebGLContext {
-    canvas: OffscreenCanvas,
+    pub(crate) canvas: OffscreenCanvas,
     pub(crate) gl: WebGl2RenderingContext,
-    width: u32,
-    height: u32,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+
+    // Command buffer for deferred rendering
+    pub(crate) command_buffer: CommandBuffer,
 
     // Shader program for basic rendering (lines, rectangles)
     pub(crate) basic_program: WebGlProgram,
@@ -285,6 +289,7 @@ impl WebGLContext {
             gl,
             width,
             height,
+            command_buffer: CommandBuffer::new(),
             basic_program,
             matrix_location,
             text_program,

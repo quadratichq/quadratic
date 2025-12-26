@@ -2,9 +2,9 @@
 //!
 //! Textured rectangles for rendering images and sprite sheets.
 
-use super::Color;
 use super::texture::TextureId;
-use crate::webgl::WebGLContext;
+use super::Color;
+use crate::RenderContext;
 
 /// UV coordinates for texture sampling
 #[derive(Debug, Clone, Copy)]
@@ -57,7 +57,7 @@ impl Default for UVRect {
     }
 }
 
-/// A textured sprite (data only, use Sprites for rendering)
+/// A textured sprite (data only)
 #[derive(Debug, Clone, Copy)]
 pub struct Sprite {
     /// X position
@@ -134,16 +134,14 @@ impl Sprite {
 /// A batch of sprites for efficient rendering
 ///
 /// All sprites in a batch must use the same texture.
-/// Collects sprite vertices and renders them all in one draw call.
+/// Collects sprite vertices for batched rendering.
 pub struct Sprites {
     /// The texture ID for this batch
     texture_id: TextureId,
-    /// Vertex data: [x, y, u, v, r, g, b, a, ...] (8 floats per vertex, 6 vertices per sprite)
+    /// Vertex data: [x, y, u, v, r, g, b, a, ...] (8 floats per vertex, 4 vertices per sprite)
     vertices: Vec<f32>,
-    /// Index data for indexed rendering (optional, for better performance)
-    indices: Vec<u16>,
-    /// Whether to use indexed rendering
-    use_indices: bool,
+    /// Index data for indexed rendering (u32 for WebGPU compatibility)
+    indices: Vec<u32>,
 }
 
 impl Sprites {
@@ -153,7 +151,6 @@ impl Sprites {
             texture_id,
             vertices: Vec::new(),
             indices: Vec::new(),
-            use_indices: true,
         }
     }
 
@@ -161,11 +158,10 @@ impl Sprites {
     pub fn with_capacity(texture_id: TextureId, sprite_count: usize) -> Self {
         Self {
             texture_id,
-            // 8 floats per vertex, 4 vertices per sprite (with indices)
+            // 8 floats per vertex, 4 vertices per sprite
             vertices: Vec::with_capacity(sprite_count * 32),
             // 6 indices per sprite (2 triangles)
             indices: Vec::with_capacity(sprite_count * 6),
-            use_indices: true,
         }
     }
 
@@ -198,44 +194,58 @@ impl Sprites {
         let x2 = x + width;
         let y2 = y + height;
 
-        if self.use_indices {
-            // Indexed rendering: 4 vertices per sprite
-            let base_index = (self.vertices.len() / 8) as u16;
+        // Indexed rendering: 4 vertices per sprite
+        let base_index = (self.vertices.len() / 8) as u32;
 
-            // Vertices: top-left, top-right, bottom-right, bottom-left
-            self.vertices.extend_from_slice(&[
-                // Top-left
-                x, y, uv.u1, uv.v1, color[0], color[1], color[2], color[3], // Top-right
-                x2, y, uv.u2, uv.v1, color[0], color[1], color[2], color[3],
-                // Bottom-right
-                x2, y2, uv.u2, uv.v2, color[0], color[1], color[2], color[3], // Bottom-left
-                x, y2, uv.u1, uv.v2, color[0], color[1], color[2], color[3],
-            ]);
+        // Vertices: top-left, top-right, bottom-right, bottom-left
+        self.vertices.extend_from_slice(&[
+            // Top-left
+            x,
+            y,
+            uv.u1,
+            uv.v1,
+            color[0],
+            color[1],
+            color[2],
+            color[3],
+            // Top-right
+            x2,
+            y,
+            uv.u2,
+            uv.v1,
+            color[0],
+            color[1],
+            color[2],
+            color[3],
+            // Bottom-right
+            x2,
+            y2,
+            uv.u2,
+            uv.v2,
+            color[0],
+            color[1],
+            color[2],
+            color[3],
+            // Bottom-left
+            x,
+            y2,
+            uv.u1,
+            uv.v2,
+            color[0],
+            color[1],
+            color[2],
+            color[3],
+        ]);
 
-            // Indices for two triangles
-            self.indices.extend_from_slice(&[
-                base_index,
-                base_index + 1,
-                base_index + 2,
-                base_index,
-                base_index + 2,
-                base_index + 3,
-            ]);
-        } else {
-            // Non-indexed: 6 vertices per sprite (2 triangles)
-            // Triangle 1: top-left, top-right, bottom-left
-            self.vertices.extend_from_slice(&[
-                x, y, uv.u1, uv.v1, color[0], color[1], color[2], color[3], x2, y, uv.u2, uv.v1,
-                color[0], color[1], color[2], color[3], x, y2, uv.u1, uv.v2, color[0], color[1],
-                color[2], color[3],
-            ]);
-            // Triangle 2: top-right, bottom-right, bottom-left
-            self.vertices.extend_from_slice(&[
-                x2, y, uv.u2, uv.v1, color[0], color[1], color[2], color[3], x2, y2, uv.u2, uv.v2,
-                color[0], color[1], color[2], color[3], x, y2, uv.u1, uv.v2, color[0], color[1],
-                color[2], color[3],
-            ]);
-        }
+        // Indices for two triangles
+        self.indices.extend_from_slice(&[
+            base_index,
+            base_index + 1,
+            base_index + 2,
+            base_index,
+            base_index + 2,
+            base_index + 3,
+        ]);
     }
 
     /// Add a Sprite struct
@@ -264,46 +274,39 @@ impl Sprites {
 
     /// Get number of sprites
     pub fn len(&self) -> usize {
-        if self.use_indices {
-            self.vertices.len() / 32
-        } else {
-            self.vertices.len() / 48
-        }
+        self.vertices.len() / 32
     }
 
     /// Reserve capacity for additional sprites
     pub fn reserve(&mut self, additional: usize) {
-        if self.use_indices {
-            self.vertices.reserve(additional * 32);
-            self.indices.reserve(additional * 6);
-        } else {
-            self.vertices.reserve(additional * 48);
-        }
+        self.vertices.reserve(additional * 32);
+        self.indices.reserve(additional * 6);
     }
 
     /// Get the vertex data
+    /// Format: [x, y, u, v, r, g, b, a, ...] (8 floats per vertex, 4 vertices per sprite)
     pub fn vertices(&self) -> &[f32] {
         &self.vertices
     }
 
-    /// Get the index data (if using indexed rendering)
-    pub fn indices(&self) -> &[u16] {
+    /// Get the index data (u32 for WebGPU compatibility)
+    pub fn indices(&self) -> &[u32] {
         &self.indices
     }
 
-    /// Check if using indexed rendering
-    pub fn uses_indices(&self) -> bool {
-        self.use_indices
+    /// Get the index data as u16 (for WebGL compatibility)
+    /// Returns None if any index exceeds u16::MAX
+    pub fn indices_u16(&self) -> Option<Vec<u16>> {
+        self.indices
+            .iter()
+            .map(|&i| u16::try_from(i).ok())
+            .collect()
     }
 
-    /// Render all sprites to WebGL in one draw call
-    pub fn render(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
-        if !self.vertices.is_empty() {
-            if self.use_indices {
-                gl.draw_sprites_indexed(self.texture_id, &self.vertices, &self.indices, matrix);
-            } else {
-                gl.draw_sprites(self.texture_id, &self.vertices, matrix);
-            }
+    /// Render all sprites using the provided context
+    pub fn render(&self, ctx: &mut impl RenderContext, matrix: &[f32; 16]) {
+        if !self.is_empty() {
+            ctx.draw_sprites(self.texture_id, &self.vertices, &self.indices, matrix);
         }
     }
 }

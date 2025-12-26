@@ -12,6 +12,10 @@ pub const SNAP_BACK_VELOCITY: f32 = 1.5;
 /// Maximum negative distance allowed before snap-back becomes stronger
 pub const SNAP_BACK_MAX_DISTANCE: f32 = 200.0;
 
+/// Delay before snap-back starts after zooming (ms)
+/// This allows continuous zooming without snap-back interruption
+pub const SNAP_BACK_DELAY: f32 = 300.0;
+
 /// Represents the visible region of the infinite grid
 pub struct Viewport {
     /// Position of the viewport in world coordinates
@@ -34,6 +38,10 @@ pub struct Viewport {
 
     /// Deceleration plugin for smooth momentum scrolling
     decelerate: Decelerate,
+
+    /// Remaining delay before snap-back starts (ms)
+    /// When > 0, snap-back is delayed to allow continuous zooming
+    snap_back_delay_remaining: f32,
 }
 
 impl Viewport {
@@ -47,6 +55,7 @@ impl Viewport {
             min_scale: 0.01,
             max_scale: f32::MAX,
             decelerate: Decelerate::new(DecelerateOptions::default()),
+            snap_back_delay_remaining: 0.0,
         }
     }
 
@@ -60,6 +69,7 @@ impl Viewport {
             min_scale: 0.01,
             max_scale: f32::MAX,
             decelerate: Decelerate::new(options),
+            snap_back_delay_remaining: 0.0,
         }
     }
 
@@ -110,6 +120,12 @@ impl Viewport {
             let dy = (center_y - new_screen.y) / self.scale;
             self.position.x -= dx;
             self.position.y -= dy;
+
+            // Reset snap-back delay when zooming into negative space
+            // This allows continuous zooming without snap-back interruption
+            if self.position.x < 0.0 || self.position.y < 0.0 {
+                self.snap_back_delay_remaining = SNAP_BACK_DELAY;
+            }
 
             self.dirty = true;
         }
@@ -289,8 +305,13 @@ impl Viewport {
             moved = true;
         }
 
-        // Check for snap-back when not actively decelerating (after zoom into negative space)
-        if !self.decelerate.is_active() {
+        // Update snap-back delay countdown
+        if self.snap_back_delay_remaining > 0.0 {
+            self.snap_back_delay_remaining = (self.snap_back_delay_remaining - elapsed).max(0.0);
+        }
+
+        // Check for snap-back when not actively decelerating and delay has expired
+        if !self.decelerate.is_active() && self.snap_back_delay_remaining <= 0.0 {
             moved |= self.apply_snap_back(elapsed);
         }
 

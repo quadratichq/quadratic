@@ -86,6 +86,27 @@
     .render-indicator.rendering { background-color: #f87171; }
     .render-indicator.idle { background-color: #4ade80; }
 
+    .backend-toggle {
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      transition: background 0.15s ease;
+    }
+    .backend-toggle:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .backend-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.25rem;
+      vertical-align: middle;
+    }
+    .backend-indicator.webgpu { background: linear-gradient(135deg, #a855f7, #6366f1); }
+    .backend-indicator.webgl { background: linear-gradient(135deg, #22c55e, #16a34a); }
+
     #status {
       font-size: 0.875rem;
       color: #888;
@@ -173,6 +194,10 @@
       <div class="stat">
         <span class="stat-label">Sprites:</span>
         <span class="stat-value" id="sprite-mem">0</span>
+      </div>
+      <div class="stat backend-toggle" id="backend-toggle" title="Click to toggle rendering backend">
+        <span class="backend-indicator" id="backend-indicator"></span>
+        <span class="stat-value" id="backend-name">--</span>
       </div>
     </div>
   </header>

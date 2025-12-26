@@ -13,6 +13,7 @@ use wasm_bindgen::JsCast;
 
 use crate::text::{BitmapFonts, CellLabel};
 use crate::webgl::{RenderTarget, WebGLContext, ortho_matrix};
+use crate::webgpu::WebGPUContext;
 
 /// Hash dimensions (matches client: CellsTypes.ts)
 pub const HASH_WIDTH: i64 = 15; // columns per hash
@@ -24,10 +25,10 @@ pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
 
 /// Base number of hashes to load beyond the visible viewport (for preloading)
 /// This is scaled inversely with viewport_scale - when zoomed out, we load more hashes
-pub const HASH_PADDING: i64 = 2;
+pub const HASH_PADDING: i64 = 5;
 
 /// Maximum hash padding to prevent excessive memory usage when very zoomed out
-const MAX_HASH_PADDING: i64 = 10;
+const MAX_HASH_PADDING: i64 = 30;
 
 /// Maximum texture pages we support
 const MAX_TEXTURE_PAGES: usize = 8;
@@ -455,6 +456,51 @@ impl CellsTextHash {
         } else {
             // Zoomed out: use pre-rendered sprite for smooth appearance
             self.render_sprite(gl, matrix);
+        }
+    }
+
+    /// Render text using WebGPU
+    ///
+    /// For WebGPU, we always use MSDF text rendering (no sprite caching yet).
+    pub fn render_webgpu(
+        &self,
+        gpu: &mut WebGPUContext,
+        pass: &mut wgpu::RenderPass<'_>,
+        matrix: &[f32; 16],
+        viewport_scale: f32,
+        font_scale: f32,
+        distance_range: f32,
+    ) {
+        if self.labels.is_empty() {
+            return;
+        }
+
+        // For now, always use MSDF text rendering
+        // TODO: Add sprite caching for WebGPU when zoomed out
+        for tex_id in 0..MAX_TEXTURE_PAGES {
+            if self.cached_vertices[tex_id].is_empty() {
+                continue;
+            }
+            if !gpu.has_font_texture(tex_id as u32) {
+                continue;
+            }
+
+            // Convert u16 indices to u32 for WebGPU
+            let indices: Vec<u32> = self.cached_indices[tex_id]
+                .iter()
+                .map(|&i| i as u32)
+                .collect();
+
+            gpu.draw_text(
+                pass,
+                &self.cached_vertices[tex_id],
+                &indices,
+                tex_id as u32,
+                matrix,
+                viewport_scale,
+                font_scale,
+                distance_range,
+            );
         }
     }
 

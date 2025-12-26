@@ -6,4 +6,4 @@ mod decelerate;
 mod viewport;
 
 pub use decelerate::{Decelerate, DecelerateOptions};
-pub use viewport::{Viewport, SNAP_BACK_MAX_DISTANCE, SNAP_BACK_VELOCITY};
+pub use viewport::{SNAP_BACK_DELAY, SNAP_BACK_MAX_DISTANCE, SNAP_BACK_VELOCITY, Viewport};

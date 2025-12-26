@@ -4,8 +4,9 @@
 //! Grid lines fade out and disappear at low zoom levels to avoid
 //! rendering thousands of tiny lines.
 
+use crate::RenderContext;
+use crate::primitives::NativeLines;
 use crate::viewport::Viewport;
-use crate::webgl::{Lines, WebGLContext};
 
 /// Default column width in pixels
 pub const DEFAULT_COLUMN_WIDTH: f32 = 100.0;
@@ -41,10 +42,10 @@ pub fn calculate_grid_alpha(scale: f32) -> f32 {
 
 /// Grid lines renderer
 ///
-/// Uses the Lines primitive for efficient batched rendering.
+/// Uses NativeLines primitive for efficient 1px line rendering.
 pub struct GridLines {
-    /// Batched lines for rendering
-    lines: Lines,
+    /// Batched native lines for rendering (always 1px)
+    lines: NativeLines,
 
     /// Whether the grid lines need to be recalculated
     pub dirty: bool,
@@ -60,7 +61,7 @@ impl GridLines {
     /// Create a new grid lines renderer
     pub fn new() -> Self {
         Self {
-            lines: Lines::new(),
+            lines: NativeLines::new(),
             dirty: true,
             color: [
                 GRID_LINE_COLOR[0],
@@ -139,10 +140,20 @@ impl GridLines {
         self.dirty = false;
     }
 
-    /// Render grid lines directly to WebGL
-    pub fn render(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
+    /// Get raw vertex data for backend-agnostic rendering
+    /// Returns None if grid lines are not visible
+    pub fn get_vertices(&mut self) -> Option<&[f32]> {
+        if self.visible && !self.lines.is_empty() {
+            Some(self.lines.get_vertices())
+        } else {
+            None
+        }
+    }
+
+    /// Render grid lines using RenderContext
+    pub fn render(&mut self, ctx: &mut impl RenderContext, matrix: &[f32; 16]) {
         if self.visible {
-            self.lines.render(gl, matrix);
+            self.lines.render(ctx, matrix);
         }
     }
 }

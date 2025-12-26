@@ -1,0 +1,1262 @@
+//! WebGPU rendering context using wgpu
+//!
+//! Manages WebGPU state, pipelines, and rendering for the browser worker.
+//! Uses the wgpu crate for a stable, cross-platform WebGPU abstraction.
+//!
+//! ## WebGPU-specific Optimizations
+//!
+//! This implementation leverages WebGPU features not available in WebGL:
+//!
+//! - **Render Bundles**: Pre-recorded command sequences for static content
+//!   (grid lines, cached text). Replay with near-zero CPU overhead.
+//! - **Instanced Rendering**: Single draw call for many similar objects.
+//! - **Persistent Bind Groups**: Pre-created and cached, avoiding per-frame allocation.
+//! - **Compute Shaders**: GPU-parallel culling and text layout (future).
+
+use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
+use web_sys::OffscreenCanvas;
+use wgpu::util::DeviceExt;
+
+use super::shaders::{BASIC_SHADER, MSDF_SHADER, SPRITE_SHADER};
+use crate::render_context::CommandBuffer;
+
+/// Texture ID type (matches WebGL version)
+pub type TextureId = u32;
+
+/// WebGPU rendering context using wgpu
+pub struct WebGPUContext {
+    pub(crate) device: wgpu::Device,
+    pub(crate) queue: wgpu::Queue,
+    pub(crate) surface: wgpu::Surface<'static>,
+    pub(crate) surface_config: wgpu::SurfaceConfiguration,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+
+    // Command buffer for deferred rendering
+    pub(crate) command_buffer: CommandBuffer,
+
+    // Basic pipeline (triangles/rectangles)
+    pub(crate) basic_pipeline: wgpu::RenderPipeline,
+    pub(crate) basic_bind_group_layout: wgpu::BindGroupLayout,
+
+    // Line pipeline (native GPU line rasterization)
+    pub(crate) line_pipeline: wgpu::RenderPipeline,
+
+    // Text pipeline (MSDF)
+    pub(crate) text_pipeline: wgpu::RenderPipeline,
+    pub(crate) text_bind_group_layout: wgpu::BindGroupLayout,
+
+    // Sprite pipeline
+    pub(crate) sprite_pipeline: wgpu::RenderPipeline,
+    pub(crate) sprite_bind_group_layout: wgpu::BindGroupLayout,
+
+    // Sprite textures indexed by texture ID
+    pub(crate) sprite_textures: HashMap<u32, wgpu::Texture>,
+    pub(crate) sprite_texture_views: HashMap<u32, wgpu::TextureView>,
+    pub(crate) sprite_bind_groups: HashMap<u32, wgpu::BindGroup>,
+
+    // Shared sampler for textures
+    pub(crate) linear_sampler: wgpu::Sampler,
+
+    // Font textures indexed by texture UID
+    pub(crate) font_textures: HashMap<u32, wgpu::Texture>,
+    pub(crate) font_texture_views: HashMap<u32, wgpu::TextureView>,
+    pub(crate) font_bind_groups: HashMap<u32, wgpu::BindGroup>,
+
+    // Reusable uniform buffer for matrices
+    pub(crate) uniform_buffer: wgpu::Buffer,
+    pub(crate) text_uniform_buffer: wgpu::Buffer,
+
+    // Reusable vertex/index buffers
+    pub(crate) vertex_buffer: wgpu::Buffer,
+    pub(crate) vertex_buffer_size: u64,
+    pub(crate) index_buffer: wgpu::Buffer,
+    pub(crate) index_buffer_size: u64,
+
+    // Surface format (needed for render bundles)
+    pub(crate) surface_format: wgpu::TextureFormat,
+
+    // Cached basic bind group (reused when matrix hasn't changed)
+    pub(crate) basic_bind_group: wgpu::BindGroup,
+}
+
+impl WebGPUContext {
+    /// Check if WebGPU is available in this browser/worker
+    pub fn is_available() -> bool {
+        // Check via navigator.gpu using js_sys
+        // Works in both main thread (window) and web workers (self)
+        // Use global() to get the global object which works in both contexts
+        let global = js_sys::global();
+
+        // Get navigator from global object
+        let navigator =
+            js_sys::Reflect::get(&global, &wasm_bindgen::JsValue::from_str("navigator"))
+                .unwrap_or(wasm_bindgen::JsValue::UNDEFINED);
+
+        if navigator.is_undefined() || navigator.is_null() {
+            log::info!("WebGPU availability check: navigator not found");
+            return false;
+        }
+
+        // Check if navigator.gpu exists
+        let gpu = js_sys::Reflect::get(&navigator, &wasm_bindgen::JsValue::from_str("gpu"))
+            .unwrap_or(wasm_bindgen::JsValue::UNDEFINED);
+
+        let available = !gpu.is_undefined() && !gpu.is_null();
+        log::info!(
+            "WebGPU availability check: navigator.gpu exists = {}",
+            available
+        );
+        available
+    }
+
+    /// Create a new WebGPU context from an OffscreenCanvas (async)
+    ///
+    /// Note: wgpu's web support with OffscreenCanvas requires the canvas
+    /// to be transferred to the worker. This function handles the setup.
+    pub async fn from_offscreen_canvas(canvas: OffscreenCanvas) -> Result<Self, JsValue> {
+        let width = canvas.width();
+        let height = canvas.height();
+
+        log::info!("Creating WebGPU context via wgpu ({}x{})", width, height);
+
+        // Create wgpu instance for WebGPU backend
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::BROWSER_WEBGPU,
+            ..Default::default()
+        });
+
+        // Create surface from OffscreenCanvas
+        // wgpu handles this through its internal web handling
+        let surface = instance
+            .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas))
+            .map_err(|e| JsValue::from_str(&format!("Failed to create surface: {:?}", e)))?;
+
+        // Request adapter
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            })
+            .await
+            .ok_or_else(|| JsValue::from_str("No suitable GPU adapter found"))?;
+
+        log::info!("WebGPU adapter: {:?}", adapter.get_info());
+
+        // Request device
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("Quadratic Renderer"),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    memory_hints: wgpu::MemoryHints::Performance,
+                },
+                None,
+            )
+            .await
+            .map_err(|e| JsValue::from_str(&format!("Failed to create device: {:?}", e)))?;
+
+        // Configure surface
+        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_format = surface_caps
+            .formats
+            .iter()
+            .find(|f| f.is_srgb())
+            .copied()
+            .unwrap_or(surface_caps.formats[0]);
+
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width,
+            height,
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+        surface.configure(&device, &surface_config);
+
+        // Create shader modules
+        let basic_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Basic Shader"),
+            source: wgpu::ShaderSource::Wgsl(BASIC_SHADER.into()),
+        });
+
+        let msdf_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("MSDF Shader"),
+            source: wgpu::ShaderSource::Wgsl(MSDF_SHADER.into()),
+        });
+
+        let _sprite_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Sprite Shader"),
+            source: wgpu::ShaderSource::Wgsl(SPRITE_SHADER.into()),
+        });
+
+        // Create bind group layouts
+        let basic_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Basic Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let text_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Text Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
+        // Create pipeline layouts
+        let basic_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Basic Pipeline Layout"),
+                bind_group_layouts: &[&basic_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        let text_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Text Pipeline Layout"),
+            bind_group_layouts: &[&text_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        // Sprite bind group layout (same as text but for sprites)
+        let sprite_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Sprite Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
+        let sprite_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Sprite Pipeline Layout"),
+                bind_group_layouts: &[&sprite_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        // Blend state for transparency
+        let blend_state = wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::SrcAlpha,
+                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                operation: wgpu::BlendOperation::Add,
+            },
+        };
+
+        // Create basic pipeline
+        let basic_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Basic Pipeline"),
+            layout: Some(&basic_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &basic_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: 24,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 8,
+                            shader_location: 1,
+                        },
+                    ],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &basic_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(blend_state),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
+        // Create line pipeline (same as basic but with LineList topology)
+        let line_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Line Pipeline"),
+            layout: Some(&basic_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &basic_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: 24, // x, y, r, g, b, a (6 floats)
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 8,
+                            shader_location: 1,
+                        },
+                    ],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &basic_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(blend_state),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::LineList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
+        // Create text pipeline
+        let text_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Text Pipeline"),
+            layout: Some(&text_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &msdf_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: 32,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 8,
+                            shader_location: 1,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 16,
+                            shader_location: 2,
+                        },
+                    ],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &msdf_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(blend_state),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
+        // Create sprite pipeline
+        let sprite_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Sprite Pipeline"),
+            layout: Some(&sprite_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &_sprite_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: 32, // 2 pos + 2 uv + 4 color = 8 floats * 4 bytes
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0, // position
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 8,
+                            shader_location: 1, // texcoord
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 16,
+                            shader_location: 2, // color
+                        },
+                    ],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &_sprite_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(blend_state),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
+        // Create sampler
+        let linear_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Linear Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+
+        // Create buffers
+        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Uniform Buffer"),
+            size: 64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let text_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Text Uniform Buffer"),
+            size: 96, // 16-byte aligned: mat4x4 (64) + vec4 (16 for fwidth + padding)
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let initial_vertex_size = 1024 * 1024;
+        let initial_index_size = 256 * 1024;
+
+        let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Vertex Buffer"),
+            size: initial_vertex_size,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Index Buffer"),
+            size: initial_index_size,
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        // Create the cached basic bind group (reused when only vertices change)
+        let basic_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Basic Bind Group"),
+            layout: &basic_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        log::info!("WebGPU context created successfully via wgpu");
+
+        Ok(Self {
+            device,
+            queue,
+            surface,
+            surface_config,
+            width,
+            height,
+            command_buffer: CommandBuffer::new(),
+            basic_pipeline,
+            basic_bind_group_layout,
+            line_pipeline,
+            text_pipeline,
+            text_bind_group_layout,
+            sprite_pipeline,
+            sprite_bind_group_layout,
+            sprite_textures: HashMap::new(),
+            sprite_texture_views: HashMap::new(),
+            sprite_bind_groups: HashMap::new(),
+            linear_sampler,
+            font_textures: HashMap::new(),
+            font_texture_views: HashMap::new(),
+            font_bind_groups: HashMap::new(),
+            uniform_buffer,
+            text_uniform_buffer,
+            vertex_buffer,
+            vertex_buffer_size: initial_vertex_size,
+            index_buffer,
+            index_buffer_size: initial_index_size,
+            surface_format,
+            basic_bind_group,
+        })
+    }
+
+    /// Resize the rendering surface
+    pub fn resize(&mut self, width: u32, height: u32) {
+        if width > 0 && height > 0 {
+            self.width = width;
+            self.height = height;
+            self.surface_config.width = width;
+            self.surface_config.height = height;
+            self.surface.configure(&self.device, &self.surface_config);
+        }
+    }
+
+    /// Get current width
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Get current height
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Check if a font texture is loaded
+    pub fn has_font_texture(&self, texture_uid: u32) -> bool {
+        self.font_textures.contains_key(&texture_uid)
+    }
+
+    /// Upload a font texture from raw RGBA pixel data
+    pub fn upload_font_texture_from_data(
+        &mut self,
+        texture_uid: u32,
+        width: u32,
+        height: u32,
+        data: &[u8],
+    ) -> Result<(), JsValue> {
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Font Texture"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        self.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            data,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(width * 4),
+                rows_per_image: Some(height),
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Font Bind Group"),
+            layout: &self.text_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.text_uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&self.linear_sampler),
+                },
+            ],
+        });
+
+        self.font_textures.insert(texture_uid, texture);
+        self.font_texture_views.insert(texture_uid, texture_view);
+        self.font_bind_groups.insert(texture_uid, bind_group);
+
+        log::info!(
+            "Uploaded font texture UID {} ({}x{})",
+            texture_uid,
+            width,
+            height
+        );
+        Ok(())
+    }
+
+    /// Get surface texture for rendering
+    pub fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError> {
+        self.surface.get_current_texture()
+    }
+
+    /// Get the device
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
+    /// Get the queue
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    /// Ensure vertex buffer is large enough
+    fn ensure_vertex_buffer(&mut self, size: u64) {
+        if size > self.vertex_buffer_size {
+            let new_size = (size * 2).max(1024 * 1024);
+            self.vertex_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Vertex Buffer"),
+                size: new_size,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            self.vertex_buffer_size = new_size;
+        }
+    }
+
+    /// Ensure index buffer is large enough
+    fn ensure_index_buffer(&mut self, size: u64) {
+        if size > self.index_buffer_size {
+            let new_size = (size * 2).max(256 * 1024);
+            self.index_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Index Buffer"),
+                size: new_size,
+                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            self.index_buffer_size = new_size;
+        }
+    }
+
+    /// Create a basic bind group
+    fn create_basic_bind_group(&self) -> wgpu::BindGroup {
+        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Basic Bind Group"),
+            layout: &self.basic_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: self.uniform_buffer.as_entire_binding(),
+            }],
+        })
+    }
+
+    /// Get the basic pipeline
+    pub fn basic_pipeline(&self) -> &wgpu::RenderPipeline {
+        &self.basic_pipeline
+    }
+
+    /// Get the vertex buffer
+    pub fn vertex_buffer(&self) -> &wgpu::Buffer {
+        &self.vertex_buffer
+    }
+
+    /// Draw triangles using cached bind group (WebGPU optimization)
+    ///
+    /// Unlike WebGL which requires setting uniforms each draw call,
+    /// WebGPU uses a cached bind group, reducing per-frame overhead.
+    pub fn draw_triangles(
+        &mut self,
+        pass: &mut wgpu::RenderPass<'_>,
+        vertices: &[f32],
+        matrix: &[f32; 16],
+    ) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        // Create a temporary vertex buffer for this draw call
+        // This is necessary because queue.write_buffer writes immediately,
+        // but the GPU executes draws later. Multiple draws would see the last write.
+        let vertex_bytes: &[u8] = bytemuck::cast_slice(vertices);
+        let vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Temp Vertex Buffer"),
+                contents: vertex_bytes,
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        // Create a temporary uniform buffer with the matrix
+        let uniform_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Temp Uniform Buffer"),
+                contents: bytemuck::cast_slice(matrix),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+
+        // Create a bind group for this draw
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Temp Bind Group"),
+            layout: &self.basic_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        pass.set_pipeline(&self.basic_pipeline);
+        pass.set_bind_group(0, &bind_group, &[]);
+        pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+
+        let vertex_count = (vertices.len() / 6) as u32;
+        pass.draw(0..vertex_count, 0..1);
+    }
+
+    /// Draw lines using native GPU line rasterization
+    ///
+    /// Each line is defined by 2 vertices, each with 6 floats: [x, y, r, g, b, a]
+    /// So each line is 12 floats total.
+    ///
+    /// This uses WebGPU's native LineList topology which renders 1-pixel-wide lines
+    /// consistently, matching WebGL's GL_LINES behavior.
+    pub fn draw_lines(
+        &mut self,
+        pass: &mut wgpu::RenderPass<'_>,
+        vertices: &[f32],
+        matrix: &[f32; 16],
+    ) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        // Create a temporary vertex buffer for this draw call
+        let vertex_bytes: &[u8] = bytemuck::cast_slice(vertices);
+        let vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Line Vertex Buffer"),
+                contents: vertex_bytes,
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        // Create a temporary uniform buffer with the matrix
+        let uniform_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Line Uniform Buffer"),
+                contents: bytemuck::cast_slice(matrix),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+
+        // Create a bind group for this draw
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Line Bind Group"),
+            layout: &self.basic_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        pass.set_pipeline(&self.line_pipeline);
+        pass.set_bind_group(0, &bind_group, &[]);
+        pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+
+        // Each vertex is 6 floats
+        let vertex_count = (vertices.len() / 6) as u32;
+        pass.draw(0..vertex_count, 0..1);
+    }
+
+    /// Draw lines as thin triangles (fallback for thick lines)
+    ///
+    /// Input vertices are in format: [x1, y1, r1, g1, b1, a1, x2, y2, r2, g2, b2, a2] per line (12 floats)
+    /// This matches the WebGL Lines primitive format.
+    /// Each line is converted to a thin rectangle (2 triangles = 6 vertices)
+    pub fn draw_lines_as_triangles(
+        &mut self,
+        pass: &mut wgpu::RenderPass<'_>,
+        line_vertices: &[f32],
+        matrix: &[f32; 16],
+        line_width: f32,
+    ) {
+        if line_vertices.is_empty() {
+            return;
+        }
+
+        // Each line has 12 floats: x1, y1, r1, g1, b1, a1, x2, y2, r2, g2, b2, a2
+        let line_count = line_vertices.len() / 12;
+
+        // Each line becomes 6 triangle vertices (2 triangles), each with 6 floats
+        let mut triangle_vertices = Vec::with_capacity(line_count * 36);
+
+        let half_width = line_width / 2.0;
+
+        for i in 0..line_count {
+            let base = i * 12;
+            let x1 = line_vertices[base];
+            let y1 = line_vertices[base + 1];
+            let r1 = line_vertices[base + 2];
+            let g1 = line_vertices[base + 3];
+            let b1 = line_vertices[base + 4];
+            let a1 = line_vertices[base + 5];
+            let x2 = line_vertices[base + 6];
+            let y2 = line_vertices[base + 7];
+            let r2 = line_vertices[base + 8];
+            let g2 = line_vertices[base + 9];
+            let b2 = line_vertices[base + 10];
+            let a2 = line_vertices[base + 11];
+
+            // Calculate perpendicular offset for line thickness
+            let dx = x2 - x1;
+            let dy = y2 - y1;
+            let len = (dx * dx + dy * dy).sqrt();
+
+            if len < 0.0001 {
+                continue; // Skip degenerate lines
+            }
+
+            // Perpendicular unit vector
+            let px = -dy / len * half_width;
+            let py = dx / len * half_width;
+
+            // Four corners of the line rectangle
+            // v1, v2 use color from point 1; v3, v4 use color from point 2
+            let v1 = [x1 + px, y1 + py, r1, g1, b1, a1];
+            let v2 = [x1 - px, y1 - py, r1, g1, b1, a1];
+            let v3 = [x2 + px, y2 + py, r2, g2, b2, a2];
+            let v4 = [x2 - px, y2 - py, r2, g2, b2, a2];
+
+            // Triangle 1: v1, v2, v3
+            triangle_vertices.extend_from_slice(&v1);
+            triangle_vertices.extend_from_slice(&v2);
+            triangle_vertices.extend_from_slice(&v3);
+
+            // Triangle 2: v2, v4, v3
+            triangle_vertices.extend_from_slice(&v2);
+            triangle_vertices.extend_from_slice(&v4);
+            triangle_vertices.extend_from_slice(&v3);
+        }
+
+        if !triangle_vertices.is_empty() {
+            self.draw_triangles(pass, &triangle_vertices, matrix);
+        }
+    }
+
+    // =========================================================================
+    // Render Bundles (WebGPU-specific optimization)
+    // =========================================================================
+
+    /// Create a render bundle for static geometry
+    ///
+    /// Render bundles are pre-recorded command sequences that can be replayed
+    /// with near-zero CPU overhead. Ideal for:
+    /// - Grid lines (only change on zoom)
+    /// - Cached text regions
+    /// - Static UI elements
+    ///
+    /// Returns the bundle and the vertex buffer it uses (caller must keep alive).
+    pub fn create_render_bundle(
+        &self,
+        vertices: &[f32],
+        matrix: &[f32; 16],
+    ) -> Option<(wgpu::RenderBundle, wgpu::Buffer, wgpu::Buffer)> {
+        if vertices.is_empty() {
+            return None;
+        }
+
+        // Create dedicated buffers for this bundle (must outlive the bundle)
+        let vertex_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Bundle Vertex Buffer"),
+            size: (vertices.len() * 4) as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let uniform_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Bundle Uniform Buffer"),
+            size: 64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        // Upload data
+        self.queue
+            .write_buffer(&vertex_buffer, 0, bytemuck::cast_slice(vertices));
+        self.queue
+            .write_buffer(&uniform_buffer, 0, bytemuck::cast_slice(matrix));
+
+        // Create bind group for this bundle
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Bundle Bind Group"),
+            layout: &self.basic_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        // Record the bundle
+        let mut encoder =
+            self.device
+                .create_render_bundle_encoder(&wgpu::RenderBundleEncoderDescriptor {
+                    label: Some("Static Geometry Bundle"),
+                    color_formats: &[Some(self.surface_format)],
+                    depth_stencil: None,
+                    sample_count: 1,
+                    multiview: None,
+                });
+
+        encoder.set_pipeline(&self.basic_pipeline);
+        encoder.set_bind_group(0, &bind_group, &[]);
+        encoder.set_vertex_buffer(0, vertex_buffer.slice(..));
+
+        let vertex_count = (vertices.len() / 6) as u32;
+        encoder.draw(0..vertex_count, 0..1);
+
+        let bundle = encoder.finish(&wgpu::RenderBundleDescriptor {
+            label: Some("Static Geometry Bundle"),
+        });
+
+        Some((bundle, vertex_buffer, uniform_buffer))
+    }
+
+    /// Execute a pre-recorded render bundle
+    ///
+    /// This is extremely fast compared to re-recording commands each frame.
+    /// The bundle must have been created with compatible surface format.
+    pub fn execute_bundle(&self, pass: &mut wgpu::RenderPass<'_>, bundle: &wgpu::RenderBundle) {
+        pass.execute_bundles(std::iter::once(bundle));
+    }
+
+    /// Get the surface format (needed for render bundle creation)
+    pub fn surface_format(&self) -> wgpu::TextureFormat {
+        self.surface_format
+    }
+
+    /// Draw text with MSDF shader
+    pub fn draw_text(
+        &mut self,
+        pass: &mut wgpu::RenderPass<'_>,
+        vertices: &[f32],
+        indices: &[u32],
+        texture_uid: u32,
+        matrix: &[f32; 16],
+        viewport_scale: f32,
+        font_scale: f32,
+        distance_range: f32,
+    ) {
+        if vertices.is_empty() || indices.is_empty() {
+            return;
+        }
+
+        // Check if font bind group exists (has texture, sampler, etc.)
+        if !self.font_bind_groups.contains_key(&texture_uid) {
+            log::warn!("Font texture {} not found", texture_uid);
+            return;
+        }
+
+        // Create temporary buffers for this draw call
+        // This prevents buffer overwrites when multiple draw calls happen per frame
+        let vertex_bytes: &[u8] = bytemuck::cast_slice(vertices);
+        let vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Text Vertex Buffer"),
+                contents: vertex_bytes,
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        let index_bytes: &[u8] = bytemuck::cast_slice(indices);
+        let index_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Text Index Buffer"),
+                contents: index_bytes,
+                usage: wgpu::BufferUsages::INDEX,
+            });
+
+        // Calculate fwidth for MSDF anti-aliasing
+        // Uniform struct in shader: mat4x4 (64 bytes) + vec4 (16 bytes for fwidth + padding)
+        let fwidth = distance_range * font_scale * viewport_scale;
+        let mut uniform_data = [0f32; 24]; // 96 bytes = 24 floats
+        uniform_data[..16].copy_from_slice(matrix);
+        uniform_data[16] = fwidth;
+        // uniform_data[17..24] are padding (zeros)
+
+        let uniform_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Text Uniform Buffer"),
+                contents: bytemuck::cast_slice(&uniform_data),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+
+        // Create a new bind group with the temporary uniform buffer and the font texture
+        let font_texture_view = self.font_texture_views.get(&texture_uid).unwrap();
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Text Bind Group"),
+            layout: &self.text_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(font_texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&self.linear_sampler),
+                },
+            ],
+        });
+
+        // Draw
+        pass.set_pipeline(&self.text_pipeline);
+        pass.set_bind_group(0, &bind_group, &[]);
+        pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        pass.draw_indexed(0..indices.len() as u32, 0, 0..1);
+    }
+
+    // =========================================================================
+    // Sprite Rendering
+    // =========================================================================
+
+    /// Check if a sprite texture is loaded
+    pub fn has_sprite_texture(&self, texture_id: u32) -> bool {
+        self.sprite_textures.contains_key(&texture_id)
+    }
+
+    /// Upload a sprite texture from raw RGBA pixel data
+    pub fn upload_sprite_texture(
+        &mut self,
+        texture_id: u32,
+        width: u32,
+        height: u32,
+        data: &[u8],
+    ) -> Result<(), wasm_bindgen::JsValue> {
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Sprite Texture"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        self.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            data,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(width * 4),
+                rows_per_image: Some(height),
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Sprite Bind Group"),
+            layout: &self.sprite_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&self.linear_sampler),
+                },
+            ],
+        });
+
+        self.sprite_textures.insert(texture_id, texture);
+        self.sprite_texture_views.insert(texture_id, texture_view);
+        self.sprite_bind_groups.insert(texture_id, bind_group);
+
+        log::info!(
+            "Uploaded sprite texture {} ({}x{})",
+            texture_id,
+            width,
+            height
+        );
+        Ok(())
+    }
+
+    /// Draw sprites with indexed rendering
+    pub fn draw_sprites(
+        &mut self,
+        pass: &mut wgpu::RenderPass<'_>,
+        texture_id: u32,
+        vertices: &[f32],
+        indices: &[u32],
+        matrix: &[f32; 16],
+    ) {
+        if vertices.is_empty() || indices.is_empty() {
+            return;
+        }
+
+        // Check if bind group exists
+        if !self.sprite_bind_groups.contains_key(&texture_id) {
+            log::warn!("Sprite texture {} not found", texture_id);
+            return;
+        }
+
+        // Upload matrix to uniform buffer
+        self.queue
+            .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(matrix));
+
+        // Upload vertex data
+        let vertex_bytes: &[u8] = bytemuck::cast_slice(vertices);
+        let vertex_size = vertex_bytes.len() as u64;
+        self.ensure_vertex_buffer(vertex_size);
+        self.queue
+            .write_buffer(&self.vertex_buffer, 0, vertex_bytes);
+
+        // Upload index data
+        let index_bytes: &[u8] = bytemuck::cast_slice(indices);
+        let index_size = index_bytes.len() as u64;
+        self.ensure_index_buffer(index_size);
+        self.queue.write_buffer(&self.index_buffer, 0, index_bytes);
+
+        // Get bind group
+        let bind_group = self.sprite_bind_groups.get(&texture_id).unwrap();
+
+        // Draw
+        pass.set_pipeline(&self.sprite_pipeline);
+        pass.set_bind_group(0, bind_group, &[]);
+        pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        pass.draw_indexed(0..indices.len() as u32, 0, 0..1);
+    }
+
+    /// Remove a sprite texture
+    pub fn remove_sprite_texture(&mut self, texture_id: u32) {
+        self.sprite_textures.remove(&texture_id);
+        self.sprite_texture_views.remove(&texture_id);
+        self.sprite_bind_groups.remove(&texture_id);
+    }
+}

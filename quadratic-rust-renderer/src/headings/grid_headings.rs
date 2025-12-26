@@ -7,8 +7,9 @@
 
 use std::collections::HashMap;
 
+use crate::primitives::{NativeLines, Rects};
 use crate::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel, column_to_a1, row_to_a1};
-use crate::webgl::{Lines, Rects, WebGLContext};
+use crate::RenderContext;
 
 /// Constants matching the TypeScript client
 pub const CELL_WIDTH: f32 = 100.0;
@@ -726,7 +727,7 @@ impl GridHeadings {
     /// Renders in order: backgrounds, lines, text (for proper z-ordering)
     pub fn render(
         &self,
-        gl: &WebGLContext,
+        ctx: &mut impl RenderContext,
         matrix: &[f32; 16],
         fonts: &BitmapFonts,
         font_scale: f32,
@@ -769,11 +770,11 @@ impl GridHeadings {
             rects.add(rect[0], rect[1], rect[2], rect[3], selection_color);
         }
 
-        rects.render(gl, matrix);
+        rects.render(ctx, matrix);
 
-        // 2. Render grid lines
+        // 2. Render grid lines (1px native lines)
         let grid_line_coords = self.get_grid_lines();
-        let mut lines = Lines::with_capacity(grid_line_coords.len() / 4);
+        let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
 
         for chunk in grid_line_coords.chunks(4) {
             if chunk.len() == 4 {
@@ -787,7 +788,7 @@ impl GridHeadings {
             }
         }
 
-        lines.render(gl, matrix);
+        lines.render(ctx, matrix);
 
         // 3. Render text
         let meshes = self.get_meshes(fonts);
@@ -797,7 +798,7 @@ impl GridHeadings {
             }
             let vertices = mesh.get_vertex_data();
             let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
-            gl.draw_text(
+            ctx.draw_text(
                 &vertices,
                 &indices,
                 mesh.texture_uid,

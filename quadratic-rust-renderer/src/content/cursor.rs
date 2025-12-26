@@ -2,8 +2,9 @@
 //!
 //! Equivalent to Cursor.ts from the Pixi.js implementation
 
+use crate::primitives::{Color, LineScaling, Lines, Rects};
 use crate::viewport::Viewport;
-use crate::webgl::{Color, Lines, Rects, WebGLContext};
+use crate::RenderContext;
 
 use super::grid_lines::{DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT};
 
@@ -46,7 +47,7 @@ pub struct Cursor {
     /// Batched rectangles for fill
     rects: Rects,
 
-    /// Batched lines for border
+    /// Batched lines for border (2px, pixel-scaled)
     lines: Lines,
 }
 
@@ -67,7 +68,7 @@ impl Cursor {
             dirty: true,
             visible: true,
             rects: Rects::new(),
-            lines: Lines::new(),
+            lines: Lines::with_thickness(2.0, LineScaling::Pixel),
         }
     }
 
@@ -155,17 +156,40 @@ impl Cursor {
         self.dirty = false;
     }
 
-    /// Render cursor directly to WebGL
-    pub fn render(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
+    /// Get fill rect vertices
+    pub fn get_fill_vertices(&self) -> Option<&[f32]> {
+        if self.visible && !self.rects.is_empty() {
+            Some(self.rects.vertices())
+        } else {
+            None
+        }
+    }
+
+    /// Get border line vertices (must specify viewport_scale for pixel-scaled lines)
+    pub fn get_border_vertices(&mut self, viewport_scale: f32) -> Option<&[f32]> {
+        if self.visible && !self.lines.is_empty() {
+            Some(self.lines.get_vertices(viewport_scale))
+        } else {
+            None
+        }
+    }
+
+    /// Render cursor using RenderContext
+    pub fn render(
+        &mut self,
+        ctx: &mut impl RenderContext,
+        matrix: &[f32; 16],
+        viewport_scale: f32,
+    ) {
         if !self.visible {
             return;
         }
 
         // Draw fill first (triangles)
-        self.rects.render(gl, matrix);
+        self.rects.render(ctx, matrix);
 
-        // Draw border on top (lines)
-        self.lines.render(gl, matrix);
+        // Draw border on top (lines rendered as triangles with pixel scaling)
+        self.lines.render(ctx, matrix, viewport_scale);
     }
 }
 

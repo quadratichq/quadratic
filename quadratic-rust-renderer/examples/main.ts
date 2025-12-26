@@ -19,10 +19,49 @@ const labelsEl = document.getElementById('labels') as HTMLElement;
 const hashesEl = document.getElementById('hashes') as HTMLElement;
 const spriteMemEl = document.getElementById('sprite-mem') as HTMLElement;
 const renderIndicatorEl = document.getElementById('render-indicator') as HTMLElement;
+const backendToggleEl = document.getElementById('backend-toggle') as HTMLElement;
+const backendIndicatorEl = document.getElementById('backend-indicator') as HTMLElement;
+const backendNameEl = document.getElementById('backend-name') as HTMLElement;
+
+// LocalStorage key for backend preference
+const BACKEND_STORAGE_KEY = 'quadratic-renderer-backend';
 
 let worker: Worker | null = null;
 let viewportControls: ViewportControls | null = null;
 let fontsReady = false;
+let currentBackend: 'webgpu' | 'webgl' = 'webgl';
+let webgpuAvailable = false;
+
+// Helper to get stored backend preference
+function getStoredBackendPreference(): 'webgpu' | 'webgl' | null {
+  const stored = localStorage.getItem(BACKEND_STORAGE_KEY);
+  if (stored === 'webgpu' || stored === 'webgl') {
+    return stored;
+  }
+  return null;
+}
+
+// Helper to save backend preference
+function saveBackendPreference(backend: 'webgpu' | 'webgl'): void {
+  localStorage.setItem(BACKEND_STORAGE_KEY, backend);
+}
+
+// Update the backend indicator UI
+function updateBackendIndicator(backend: 'webgpu' | 'webgl', available: boolean): void {
+  currentBackend = backend;
+  webgpuAvailable = available;
+
+  backendIndicatorEl.className = 'backend-indicator ' + backend;
+  backendNameEl.textContent = backend === 'webgpu' ? 'WebGPU' : 'WebGL';
+
+  // Update tooltip based on availability
+  if (available) {
+    backendToggleEl.title = 'Click to switch to ' + (backend === 'webgpu' ? 'WebGL' : 'WebGPU');
+  } else {
+    backendToggleEl.title = 'WebGPU not available in this browser';
+    backendToggleEl.style.cursor = 'default';
+  }
+}
 
 // Helper to update render indicator
 function updateRenderIndicator(rendering: boolean): void {
@@ -259,6 +298,14 @@ interface StatsMessage {
 
 interface ReadyMessage {
   type: 'ready';
+  backend?: 'webgpu' | 'webgl';
+  webgpuAvailable?: boolean;
+}
+
+interface BackendInfoMessage {
+  type: 'backendInfo';
+  backend: 'webgpu' | 'webgl';
+  webgpuAvailable: boolean;
 }
 
 interface ViewportMovedMessage {
@@ -277,6 +324,7 @@ type WorkerResponse =
   | OffscreenHashesMessage
   | StatsMessage
   | ReadyMessage
+  | BackendInfoMessage
   | ViewportMovedMessage
   | ErrorMessage;
 
@@ -304,6 +352,13 @@ async function init(): Promise<void> {
         case 'ready':
           statusEl.textContent = 'Loading fonts…';
           statusEl.className = 'loading';
+
+          // Update backend indicator
+          if (data.backend && data.webgpuAvailable !== undefined) {
+            updateBackendIndicator(data.backend, data.webgpuAvailable);
+            // Save the actual backend being used (in case WebGPU wasn't available)
+            saveBackendPreference(data.backend);
+          }
 
           // Trigger initial resize
           viewportControls?.triggerResize();
@@ -406,6 +461,10 @@ async function init(): Promise<void> {
           viewportControls?.notifyViewportMoved();
           break;
 
+        case 'backendInfo':
+          updateBackendIndicator(data.backend, data.webgpuAvailable);
+          break;
+
         case 'error':
           statusEl.textContent = 'Error: ' + data.message;
           statusEl.className = 'error';
@@ -413,7 +472,27 @@ async function init(): Promise<void> {
       }
     };
 
-    worker.postMessage({ type: 'init', canvas: offscreen }, [offscreen]);
+    // Set up backend toggle click handler
+    backendToggleEl.addEventListener('click', () => {
+      if (!webgpuAvailable) {
+        // Can't toggle if WebGPU isn't available
+        return;
+      }
+
+      // Toggle to the other backend
+      const newBackend = currentBackend === 'webgpu' ? 'webgl' : 'webgpu';
+      saveBackendPreference(newBackend);
+
+      // Reload the page to apply the new backend
+      // (Worker can't recreate the renderer without a new canvas transfer)
+      window.location.reload();
+    });
+
+    // Get stored backend preference - default to WebGPU if available
+    const storedPref = getStoredBackendPreference();
+    const preferWebGPU = storedPref === null ? true : storedPref === 'webgpu';
+
+    worker.postMessage({ type: 'init', canvas: offscreen, preferWebGPU }, [offscreen]);
   } catch (error) {
     statusEl.textContent = 'Error: ' + (error as Error).message;
     statusEl.className = 'error';

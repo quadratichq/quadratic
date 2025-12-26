@@ -1,17 +1,14 @@
-//! WebGL2 rendering backend
+//! WebGPU rendering backend
 //!
-//! This module provides WebGL2 rendering for the browser worker.
+//! This module provides WebGPU rendering for the browser worker.
+//! WebGPU is the preferred backend when available, with WebGL2 as fallback.
 
 mod context;
-mod framebuffer;
 pub mod primitives;
-mod programs;
 mod render_context_impl;
 mod shaders;
-mod text;
 
-pub use context::WebGLContext;
-pub use framebuffer::{RenderTarget, ortho_matrix};
+pub use context::WebGPUContext;
 
 // Re-export shared primitives
 pub use crate::primitives::{
