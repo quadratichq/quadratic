@@ -346,8 +346,12 @@ export const defaultShortcuts: ActionShortcut = {
     windows: [[Keys.Escape]],
   },
   [Action.SaveInlineEditor]: {
-    mac: [[Keys.Enter], [MacModifiers.Cmd, Keys.Enter]],
-    windows: [[Keys.Enter], [WindowsModifiers.Ctrl, Keys.Enter]],
+    mac: [[Keys.Enter]],
+    windows: [[Keys.Enter]],
+  },
+  [Action.InsertNewLine]: {
+    mac: [[MacModifiers.Cmd, Keys.Enter]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Enter]],
   },
   [Action.SaveInlineEditorMoveUp]: {
     mac: [[MacModifiers.Shift, Keys.Enter]],

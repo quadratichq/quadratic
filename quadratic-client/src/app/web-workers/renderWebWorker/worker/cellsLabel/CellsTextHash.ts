@@ -254,6 +254,10 @@ export class CellsTextHash {
     const columnsMax = new Map<number, number>();
     const rowsMax = new Map<number, number>();
     this.labels.forEach((label) => {
+      // Only count visible labels for sizing (invisible labels haven't had
+      // their text processed, so their heights are not accurate)
+      if (!label.visible) return;
+
       let column = label.location.x;
       let row = label.location.y;
 
@@ -261,7 +265,9 @@ export class CellsTextHash {
       let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
       columnsMax.set(column, maxWidth);
 
-      let height = label.textHeight;
+      // Use textHeightWithDescenders for row sizing to ensure characters
+      // with descenders (g, y, p, q, j) aren't clipped
+      let height = label.textHeightWithDescenders;
       let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
       rowsMax.set(row, maxHeight);
     });
@@ -511,7 +517,10 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.columnsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
+    // Update the hash if it's dirty (needs cell fetch), has dirty cells (array),
+    // or just needs text recalculation. This ensures correct width measurement
+    // for auto-resize.
+    if (visibleOrNeighbor && (this.dirty || this.dirtyText)) {
       await this.update(true);
     }
     return this.columnsMaxCache ?? new Map();
@@ -526,7 +535,10 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.rowsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
+    // Update the hash if it's dirty (needs cell fetch), has dirty cells (array),
+    // or just needs text recalculation. This ensures correct height measurement
+    // for auto-resize, including cells with newlines.
+    if (visibleOrNeighbor && (this.dirty || this.dirtyText)) {
       await this.update(true);
     }
     return this.rowsMaxCache ?? new Map();

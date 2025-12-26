@@ -198,6 +198,22 @@ class InlineEditorKeyboard {
       }
     }
 
+    // Cmd/Ctrl+Enter key - insert new line for non-formulas
+    else if (matchShortcut(Action.InsertNewLine, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      // For formulas, Cmd/Ctrl+Enter saves the editor (same as Enter)
+      if (inlineEditorHandler.isEditingFormula()) {
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close({ deltaY: 1 });
+        }
+      } else {
+        // For non-formulas, insert a new line
+        inlineEditorMonaco.insertTextAtCursor('\n');
+        inlineEditorHandler.sendMultiplayerUpdate();
+      }
+    }
+
     // toggle arrow mode
     else if (matchShortcut(Action.ToggleArrowMode, e)) {
       e.stopPropagation();
