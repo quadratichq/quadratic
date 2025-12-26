@@ -79,6 +79,14 @@ impl BitmapFont {
     pub fn scale_for_size(&self, target_size: f32) -> f32 {
         target_size / self.size
     }
+
+    /// Get all unique texture UIDs used by this font
+    pub fn get_required_texture_uids(&self) -> Vec<u32> {
+        let mut uids: Vec<u32> = self.chars.values().map(|c| c.texture_uid).collect();
+        uids.sort();
+        uids.dedup();
+        uids
+    }
 }
 
 /// Collection of bitmap fonts indexed by name
@@ -108,6 +116,18 @@ impl BitmapFonts {
     /// Check if the collection is empty
     pub fn is_empty(&self) -> bool {
         self.fonts.is_empty()
+    }
+
+    /// Get all unique texture UIDs required by all fonts
+    pub fn get_required_texture_uids(&self) -> Vec<u32> {
+        let mut uids: Vec<u32> = self
+            .fonts
+            .values()
+            .flat_map(|f| f.get_required_texture_uids())
+            .collect();
+        uids.sort();
+        uids.dedup();
+        uids
     }
 
     /// Get the font name for a given style

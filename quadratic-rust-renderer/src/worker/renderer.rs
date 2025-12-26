@@ -81,7 +81,6 @@ impl WorkerRenderer {
         let height = canvas.height();
 
         log::info!("Creating WorkerRenderer ({}x{})", width, height);
-
         let gl = WebGLContext::from_offscreen_canvas(canvas)?;
         let viewport = Viewport::new(width as f32, height as f32);
         let content = Content::new();
@@ -296,6 +295,43 @@ impl WorkerRenderer {
         self.viewport.reset_decelerate();
     }
 
+    // =========================================================================
+    // Dirty Flags
+    // =========================================================================
+
+    /// Mark the viewport as dirty (forces a render next frame)
+    #[wasm_bindgen]
+    pub fn set_viewport_dirty(&mut self) {
+        self.viewport.dirty = true;
+    }
+
+    /// Mark grid lines as dirty
+    #[wasm_bindgen]
+    pub fn set_grid_lines_dirty(&mut self) {
+        self.content.grid_lines.dirty = true;
+    }
+
+    /// Mark cursor as dirty
+    #[wasm_bindgen]
+    pub fn set_cursor_dirty(&mut self) {
+        self.content.cursor.dirty = true;
+    }
+
+    /// Mark headings as dirty
+    #[wasm_bindgen]
+    pub fn set_headings_dirty(&mut self) {
+        self.headings.set_dirty();
+    }
+
+    /// Check if any component is dirty and needs rendering
+    #[wasm_bindgen]
+    pub fn is_dirty(&self) -> bool {
+        self.viewport.dirty
+            || self.content.is_dirty()
+            || self.headings.is_dirty()
+            || self.any_visible_hash_dirty()
+    }
+
     /// Set cursor position
     #[wasm_bindgen]
     pub fn set_cursor(&mut self, col: i64, row: i64) {
@@ -304,13 +340,25 @@ impl WorkerRenderer {
 
     /// Set cursor selection range
     #[wasm_bindgen]
-    pub fn set_cursor_selection(&mut self, start_col: i64, start_row: i64, end_col: i64, end_row: i64) {
-        self.content.cursor.set_selection(start_col, start_row, end_col, end_row);
+    pub fn set_cursor_selection(
+        &mut self,
+        start_col: i64,
+        start_row: i64,
+        end_col: i64,
+        end_row: i64,
+    ) {
+        self.content
+            .cursor
+            .set_selection(start_col, start_row, end_col, end_row);
     }
 
     /// Upload a font texture from an HtmlImageElement
     #[wasm_bindgen]
-    pub fn upload_font_texture(&mut self, texture_uid: u32, image: &HtmlImageElement) -> Result<(), JsValue> {
+    pub fn upload_font_texture(
+        &mut self,
+        texture_uid: u32,
+        image: &HtmlImageElement,
+    ) -> Result<(), JsValue> {
         self.gl.upload_font_texture(texture_uid, image)
     }
 
@@ -323,7 +371,8 @@ impl WorkerRenderer {
         height: u32,
         data: &[u8],
     ) -> Result<(), JsValue> {
-        self.gl.upload_font_texture_from_data(texture_uid, width, height, data)
+        self.gl
+            .upload_font_texture_from_data(texture_uid, width, height, data)
     }
 
     /// Add a font from JSON data
@@ -342,6 +391,20 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn has_fonts(&self) -> bool {
         !self.fonts.is_empty()
+    }
+
+    /// Check if fonts are fully ready (metadata loaded AND all textures uploaded)
+    fn fonts_ready(&self) -> bool {
+        if self.fonts.is_empty() {
+            return false;
+        }
+        // Check that all required texture pages have been uploaded
+        for uid in self.fonts.get_required_texture_uids() {
+            if !self.gl.has_font_texture(uid) {
+                return false;
+            }
+        }
+        true
     }
 
     /// Add a cell label (text content)
@@ -414,7 +477,10 @@ impl WorkerRenderer {
         let (hash_x, hash_y) = get_hash_coords(col, row);
         let key = hash_key(hash_x, hash_y);
 
-        let hash = self.hashes.entry(key).or_insert_with(|| CellsTextHash::new(hash_x, hash_y));
+        let hash = self
+            .hashes
+            .entry(key)
+            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y));
         hash.add_label(col, row, label);
         self.label_count += 1;
     }
@@ -442,12 +508,8 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn get_visible_hash_bounds(&self) -> Box<[i32]> {
         let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-        );
+        let hash_bounds =
+            VisibleHashBounds::from_viewport(bounds.left, bounds.top, bounds.width, bounds.height);
 
         Box::new([
             hash_bounds.min_hash_x as i32,
@@ -462,12 +524,8 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn get_needed_hashes(&self) -> Box<[i32]> {
         let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-        );
+        let hash_bounds =
+            VisibleHashBounds::from_viewport(bounds.left, bounds.top, bounds.width, bounds.height);
 
         let mut needed: Vec<i32> = Vec::new();
 
@@ -488,12 +546,8 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn get_offscreen_hashes(&self) -> Box<[i32]> {
         let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-        );
+        let hash_bounds =
+            VisibleHashBounds::from_viewport(bounds.left, bounds.top, bounds.width, bounds.height);
 
         let mut offscreen: Vec<i32> = Vec::new();
 
@@ -536,31 +590,92 @@ impl WorkerRenderer {
 
     /// Render a single frame
     /// elapsed: Time since last frame in milliseconds (for deceleration)
+    /// Returns true if a render actually occurred, false if nothing was dirty
     #[wasm_bindgen]
-    pub fn frame(&mut self, elapsed: f32) {
+    pub fn frame(&mut self, elapsed: f32) -> bool {
         if !self.running {
-            return;
+            return false;
         }
 
-        // Update deceleration (momentum scrolling)
+        // Update deceleration (momentum scrolling) - this may dirty the viewport
         self.viewport.update_decelerate(elapsed);
 
         // Update content based on viewport
         self.content.update(&self.viewport);
 
-        // Get the view-projection matrix
-        let matrix = self.viewport.view_projection_matrix();
-        let matrix_array: [f32; 16] = matrix.to_cols_array();
+        // Update headings first to get their size
+        let (heading_width, heading_height) = if self.show_headings {
+            let scale = self.viewport.scale();
+            let canvas_width = self.viewport.width();
+            let canvas_height = self.viewport.height();
+
+            self.headings.update(
+                self.viewport.x(),
+                self.viewport.y(),
+                scale,
+                canvas_width,
+                canvas_height,
+            );
+
+            let size = self.headings.heading_size();
+            (size.width, size.height)
+        } else {
+            (0.0, 0.0)
+        };
+
+        // Check if anything is dirty and needs rendering
+        let viewport_dirty = self.viewport.dirty;
+        let content_dirty = self.content.is_dirty();
+        let headings_dirty = self.headings_dirty();
+        let hashes_dirty = self.any_visible_hash_dirty();
+
+        let needs_render = viewport_dirty || content_dirty || headings_dirty || hashes_dirty;
+
+        if !needs_render {
+            return false;
+        }
 
         // Clear with out-of-bounds background color (0xfdfdfd = very light gray)
         // This matches the client's gridBackgroundOutOfBounds color
         let oob_gray = 253.0 / 255.0; // 0xfdfdfd
         self.gl.clear(oob_gray, oob_gray, oob_gray, 1.0);
 
+        // Get the view-projection matrix with heading offset
+        let matrix = self
+            .viewport
+            .view_projection_matrix_with_offset(heading_width, heading_height);
+        let matrix_array: [f32; 16] = matrix.to_cols_array();
+
+        // Set viewport to content area (after headings)
+        // This makes NDC coordinates map to the content area on screen
+        let canvas_width = self.viewport.width() as i32;
+        let canvas_height = self.viewport.height() as i32;
+        let content_x = heading_width as i32;
+        let content_y = heading_height as i32;
+        let content_width = canvas_width - heading_width as i32;
+        let content_height = canvas_height - heading_height as i32;
+
+        // Set viewport to content area (this is the key fix for proper alignment)
+        self.gl.set_viewport(
+            content_x,
+            content_y,
+            content_width.max(0),
+            content_height.max(0),
+        );
+
+        // Also enable scissor test for content area (for clipping at edges)
+        self.gl.set_scissor(
+            content_x,
+            content_y,
+            content_width.max(0),
+            content_height.max(0),
+        );
+
         // Draw white background for valid grid area (x >= 0, y >= 0)
         self.build_valid_area_background();
         if !self.triangle_vertices.is_empty() {
-            self.gl.draw_triangles(&self.triangle_vertices, &matrix_array);
+            self.gl
+                .draw_triangles(&self.triangle_vertices, &matrix_array);
         }
 
         // Build and render grid lines (only if visible)
@@ -575,20 +690,59 @@ impl WorkerRenderer {
         // Build and render cursor
         if self.content.cursor.visible {
             self.build_cursor_vertices();
-            self.gl.draw_triangles(&self.triangle_vertices, &matrix_array);
+            self.gl
+                .draw_triangles(&self.triangle_vertices, &matrix_array);
 
             // Draw cursor border (as lines)
             self.build_cursor_border_vertices();
             self.gl.draw_lines(&self.line_vertices, &matrix_array);
         }
 
+        // Reset viewport and disable scissor for headings (they render over the full canvas)
+        self.gl.reset_viewport();
+        self.gl.disable_scissor();
+
         // Render headings (in screen space, on top of everything)
         if self.show_headings {
-            self.render_headings();
+            self.render_headings_labels_only();
         }
 
-        // Mark viewport as clean
+        // Mark everything as clean after rendering
         self.viewport.mark_clean();
+        self.content.mark_clean();
+        self.headings.mark_clean();
+
+        true
+    }
+
+    /// Check if headings need re-rendering
+    fn headings_dirty(&self) -> bool {
+        self.headings.is_dirty()
+    }
+
+    /// Check if any visible hash needs re-rendering
+    fn any_visible_hash_dirty(&self) -> bool {
+        if self.hashes.is_empty() {
+            return false;
+        }
+
+        let bounds = self.viewport.visible_bounds();
+        let scale = self.viewport.scale();
+        let vp_width = self.viewport.width() / scale;
+        let vp_height = self.viewport.height() / scale;
+
+        let padding = 100.0;
+        let min_x = bounds.left - padding;
+        let max_x = bounds.left + vp_width + padding;
+        let min_y = bounds.top - padding;
+        let max_y = bounds.top + vp_height + padding;
+
+        for hash in self.hashes.values() {
+            if hash.intersects_viewport(min_x, max_x, min_y, max_y) && hash.is_dirty() {
+                return true;
+            }
+        }
+        false
     }
 
     /// Render all text labels using spatial hash culling
@@ -597,7 +751,7 @@ impl WorkerRenderer {
     /// we check visibility at the hash level (O(h) where h = hundreds),
     /// then use cached mesh data from each visible hash.
     fn render_text(&mut self, matrix: &[f32; 16]) {
-        if self.hashes.is_empty() || self.fonts.is_empty() {
+        if self.hashes.is_empty() || !self.fonts_ready() {
             return;
         }
 
@@ -675,7 +829,8 @@ impl WorkerRenderer {
         // Get font metrics for fwidth calculation
         // For now we assume OpenSans with default settings
         // TODO: Support multiple fonts with different metrics per batch
-        let (font_scale, distance_range) = self.fonts
+        let (font_scale, distance_range) = self
+            .fonts
             .get("OpenSans")
             .map(|f| {
                 let render_size = 14.0; // Default render font size
@@ -703,10 +858,11 @@ impl WorkerRenderer {
         }
     }
 
-    /// Render grid headings (column and row headers)
+    /// Render grid headings (column and row headers) - full update and render
     /// Headings are rendered in screen space with an identity-like projection
+    #[allow(dead_code)]
     fn render_headings(&mut self) {
-        if self.fonts.is_empty() {
+        if !self.fonts_ready() {
             return;
         }
 
@@ -722,6 +878,20 @@ impl WorkerRenderer {
             canvas_width,
             canvas_height,
         );
+
+        // Render the headings
+        self.render_headings_labels_only();
+    }
+
+    /// Render grid headings (assumes update() was already called)
+    /// Use this when headings were updated earlier in the frame
+    fn render_headings_labels_only(&mut self) {
+        if !self.fonts_ready() {
+            return;
+        }
+
+        let canvas_width = self.viewport.width();
+        let canvas_height = self.viewport.height();
 
         // Layout heading labels
         self.headings.layout(&self.fonts);
@@ -758,7 +928,8 @@ impl WorkerRenderer {
         }
 
         if !self.heading_vertices.is_empty() {
-            self.gl.draw_triangles(&self.heading_vertices, &screen_matrix);
+            self.gl
+                .draw_triangles(&self.heading_vertices, &screen_matrix);
         }
 
         // Render heading grid lines
@@ -770,13 +941,21 @@ impl WorkerRenderer {
             if chunk.len() == 4 {
                 // Start vertex
                 self.line_vertices.extend_from_slice(&[
-                    chunk[0], chunk[1],
-                    line_color[0], line_color[1], line_color[2], line_color[3],
+                    chunk[0],
+                    chunk[1],
+                    line_color[0],
+                    line_color[1],
+                    line_color[2],
+                    line_color[3],
                 ]);
                 // End vertex
                 self.line_vertices.extend_from_slice(&[
-                    chunk[2], chunk[3],
-                    line_color[0], line_color[1], line_color[2], line_color[3],
+                    chunk[2],
+                    chunk[3],
+                    line_color[0],
+                    line_color[1],
+                    line_color[2],
+                    line_color[3],
                 ]);
             }
         }
@@ -791,7 +970,8 @@ impl WorkerRenderer {
         // Get font metrics (assuming OpenSans)
         // Use the heading's DPR-scaled font size
         let heading_font_size = 10.0 * self.headings.dpr(); // BASE_HEADING_FONT_SIZE * dpr
-        let (font_scale, distance_range) = self.fonts
+        let (font_scale, distance_range) = self
+            .fonts
             .get("OpenSans")
             .map(|f| {
                 let font_scale = heading_font_size / f.size;
@@ -830,10 +1010,7 @@ impl WorkerRenderer {
         let ty = 1.0;
 
         [
-            sx,   0.0,  0.0, 0.0,
-            0.0,  sy,   0.0, 0.0,
-            0.0,  0.0,  1.0, 0.0,
-            tx,   ty,   0.0, 1.0,
+            sx, 0.0, 0.0, 0.0, 0.0, sy, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, tx, ty, 0.0, 1.0,
         ]
     }
 
@@ -846,15 +1023,13 @@ impl WorkerRenderer {
 
         // Triangle 1: top-left, top-right, bottom-left
         self.heading_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3],
-            x2, y1, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
+            color[3], x1, y2, color[0], color[1], color[2], color[3],
         ]);
         // Triangle 2: top-right, bottom-right, bottom-left
         self.heading_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3],
-            x2, y2, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
+            color[3], x1, y2, color[0], color[1], color[2], color[3],
         ]);
     }
 
@@ -882,15 +1057,13 @@ impl WorkerRenderer {
         // Two triangles to make a rectangle
         // Triangle 1: top-left, top-right, bottom-left
         self.triangle_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3],
-            x2, y1, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
+            color[3], x1, y2, color[0], color[1], color[2], color[3],
         ]);
         // Triangle 2: top-right, bottom-right, bottom-left
         self.triangle_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3],
-            x2, y2, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
+            color[3], x1, y2, color[0], color[1], color[2], color[3],
         ]);
     }
 
@@ -904,25 +1077,31 @@ impl WorkerRenderer {
         for line in &self.content.grid_lines.vertical_lines {
             // Start vertex: [x, y, r, g, b, a]
             self.line_vertices.extend_from_slice(&[
-                line.start_x, line.start_y,
-                color[0], color[1], color[2], color[3],
+                line.start_x,
+                line.start_y,
+                color[0],
+                color[1],
+                color[2],
+                color[3],
             ]);
             // End vertex
             self.line_vertices.extend_from_slice(&[
-                line.end_x, line.end_y,
-                color[0], color[1], color[2], color[3],
+                line.end_x, line.end_y, color[0], color[1], color[2], color[3],
             ]);
         }
 
         // Add horizontal lines
         for line in &self.content.grid_lines.horizontal_lines {
             self.line_vertices.extend_from_slice(&[
-                line.start_x, line.start_y,
-                color[0], color[1], color[2], color[3],
+                line.start_x,
+                line.start_y,
+                color[0],
+                color[1],
+                color[2],
+                color[3],
             ]);
             self.line_vertices.extend_from_slice(&[
-                line.end_x, line.end_y,
-                color[0], color[1], color[2], color[3],
+                line.end_x, line.end_y, color[0], color[1], color[2], color[3],
             ]);
         }
     }
@@ -942,15 +1121,13 @@ impl WorkerRenderer {
         // Two triangles to make a rectangle
         // Triangle 1: top-left, top-right, bottom-left
         self.triangle_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3],
-            x2, y1, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
+            color[3], x1, y2, color[0], color[1], color[2], color[3],
         ]);
         // Triangle 2: top-right, bottom-right, bottom-left
         self.triangle_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3],
-            x2, y2, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
+            color[3], x1, y2, color[0], color[1], color[2], color[3],
         ]);
     }
 
@@ -969,23 +1146,23 @@ impl WorkerRenderer {
         // Four lines for the border
         // Top edge
         self.line_vertices.extend_from_slice(&[
-            x1, y1, color[0], color[1], color[2], color[3],
-            x2, y1, color[0], color[1], color[2], color[3],
+            x1, y1, color[0], color[1], color[2], color[3], x2, y1, color[0], color[1], color[2],
+            color[3],
         ]);
         // Right edge
         self.line_vertices.extend_from_slice(&[
-            x2, y1, color[0], color[1], color[2], color[3],
-            x2, y2, color[0], color[1], color[2], color[3],
+            x2, y1, color[0], color[1], color[2], color[3], x2, y2, color[0], color[1], color[2],
+            color[3],
         ]);
         // Bottom edge
         self.line_vertices.extend_from_slice(&[
-            x2, y2, color[0], color[1], color[2], color[3],
-            x1, y2, color[0], color[1], color[2], color[3],
+            x2, y2, color[0], color[1], color[2], color[3], x1, y2, color[0], color[1], color[2],
+            color[3],
         ]);
         // Left edge
         self.line_vertices.extend_from_slice(&[
-            x1, y2, color[0], color[1], color[2], color[3],
-            x1, y1, color[0], color[1], color[2], color[3],
+            x1, y2, color[0], color[1], color[2], color[3], x1, y1, color[0], color[1], color[2],
+            color[3],
         ]);
     }
 }

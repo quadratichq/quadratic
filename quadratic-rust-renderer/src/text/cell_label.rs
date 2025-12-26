@@ -125,13 +125,7 @@ pub struct CellLabel {
 
 impl CellLabel {
     /// Create a new cell label
-    pub fn new(
-        text: String,
-        cell_x: f32,
-        cell_y: f32,
-        cell_width: f32,
-        cell_height: f32,
-    ) -> Self {
+    pub fn new(text: String, cell_x: f32, cell_y: f32, cell_width: f32, cell_height: f32) -> Self {
         Self {
             text,
             cell_x,
@@ -296,7 +290,8 @@ impl CellLabel {
                     } else {
                         last_line_width
                     });
-                    max_line_width = max_line_width.max(self.line_widths.last().copied().unwrap_or(0.0));
+                    max_line_width =
+                        max_line_width.max(self.line_widths.last().copied().unwrap_or(0.0));
 
                     line += 1;
                     pos_x = 0.0;
@@ -396,10 +391,12 @@ impl CellLabel {
         let scale = font.scale_for_size(self.font_size);
 
         // Group glyphs by texture
-        let mut meshes: std::collections::HashMap<u32, LabelMesh> = std::collections::HashMap::new();
+        let mut meshes: std::collections::HashMap<u32, LabelMesh> =
+            std::collections::HashMap::new();
 
         for char_data in &self.chars {
-            let align_offset = self.horizontal_align_offsets
+            let align_offset = self
+                .horizontal_align_offsets
                 .get(char_data.line)
                 .copied()
                 .unwrap_or(0.0);
@@ -455,10 +452,12 @@ impl CellLabel {
         let scale = font.scale_for_size(self.font_size);
 
         // Group glyphs by texture
-        let mut meshes: std::collections::HashMap<u32, LabelMesh> = std::collections::HashMap::new();
+        let mut meshes: std::collections::HashMap<u32, LabelMesh> =
+            std::collections::HashMap::new();
 
         for char_data in &self.chars {
-            let align_offset = self.horizontal_align_offsets
+            let align_offset = self
+                .horizontal_align_offsets
                 .get(char_data.line)
                 .copied()
                 .unwrap_or(0.0);

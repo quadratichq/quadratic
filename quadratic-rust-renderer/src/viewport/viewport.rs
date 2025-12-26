@@ -133,14 +133,34 @@ impl Viewport {
 
     /// Get the view-projection matrix for rendering
     pub fn view_projection_matrix(&self) -> Mat4 {
+        self.view_projection_matrix_with_offset(0.0, 0.0)
+    }
+
+    /// Get the view-projection matrix with an offset for headings
+    /// offset_x: horizontal offset in screen pixels (e.g., row header width)
+    /// offset_y: vertical offset in screen pixels (e.g., column header height)
+    ///
+    /// Note: The caller should use glViewport to set the rendering area to the content
+    /// area (x=offset_x, y=offset_y, width=canvas_width-offset_x, height=canvas_height-offset_y).
+    /// This matrix maps world coordinates to that viewport.
+    pub fn view_projection_matrix_with_offset(&self, offset_x: f32, offset_y: f32) -> Mat4 {
+        // Calculate the content area dimensions
+        let content_width = self.size.x - offset_x;
+        let content_height = self.size.y - offset_y;
+
         // Orthographic projection for 2D
-        let projection = Mat4::orthographic_rh(0.0, self.size.x, self.size.y, 0.0, -1.0, 1.0);
+        // Maps world coordinates to the content area
+        let projection = Mat4::orthographic_rh(0.0, content_width, content_height, 0.0, -1.0, 1.0);
 
         // View matrix (camera transform)
         let view = Mat4::from_scale_rotation_translation(
             glam::Vec3::new(self.scale, self.scale, 1.0),
             glam::Quat::IDENTITY,
-            glam::Vec3::new(-self.position.x * self.scale, -self.position.y * self.scale, 0.0),
+            glam::Vec3::new(
+                -self.position.x * self.scale,
+                -self.position.y * self.scale,
+                0.0,
+            ),
         );
 
         projection * view

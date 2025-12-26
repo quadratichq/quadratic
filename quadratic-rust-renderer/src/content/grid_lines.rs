@@ -75,17 +75,28 @@ impl GridLines {
             vertical_lines: Vec::new(),
             horizontal_lines: Vec::new(),
             dirty: true,
-            color: [GRID_LINE_COLOR[0], GRID_LINE_COLOR[1], GRID_LINE_COLOR[2], 1.0],
+            color: [
+                GRID_LINE_COLOR[0],
+                GRID_LINE_COLOR[1],
+                GRID_LINE_COLOR[2],
+                1.0,
+            ],
             visible: true,
             line_width: 1.0,
         }
     }
 
     /// Update grid lines based on the visible viewport
+    /// Only regenerates lines if viewport has changed
     pub fn update(&mut self, viewport: &Viewport) {
-        if !viewport.dirty && !self.dirty {
+        // Only update if viewport changed - the viewport's dirty flag indicates changes
+        if !viewport.dirty {
+            self.dirty = false;
             return;
         }
+
+        // Viewport changed, so we need to regenerate lines
+        self.dirty = true;
 
         let scale = viewport.scale();
         let alpha = calculate_grid_alpha(scale);
@@ -98,7 +109,6 @@ impl GridLines {
         if !self.visible {
             self.vertical_lines.clear();
             self.horizontal_lines.clear();
-            self.dirty = false;
             return;
         }
 
@@ -121,7 +131,6 @@ impl GridLines {
 
         // Only generate lines if we're in the valid grid area
         if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
-            self.dirty = false;
             return;
         }
 
@@ -146,8 +155,6 @@ impl GridLines {
                 end_y: y,
             });
         }
-
-        self.dirty = true; // Mark as needing GPU update
     }
 
     /// Get total number of lines

@@ -17,8 +17,12 @@ pub const CELL_HEIGHT: f32 = 21.0;
 const LABEL_MAXIMUM_WIDTH_PERCENT: f32 = 0.9;
 const LABEL_MAXIMUM_HEIGHT_PERCENT: f32 = 0.5;
 
-/// Padding for row labels
+/// Padding for row labels (in CSS pixels)
 const LABEL_PADDING_ROWS: f32 = 2.0;
+
+/// Row digit offset (matches TypeScript ROW_DIGIT_OFFSET)
+const ROW_DIGIT_OFFSET_X: f32 = 0.0;
+const ROW_DIGIT_OFFSET_Y: f32 = -1.0;
 
 /// Number of digits to use when calculating column label skip
 const LABEL_DIGITS_TO_CALCULATE_SKIP: usize = 3;
@@ -43,11 +47,11 @@ pub struct HeadingColors {
 impl Default for HeadingColors {
     fn default() -> Self {
         Self {
-            background: [0.96, 0.96, 0.96, 1.0],      // Light gray
+            background: [0.96, 0.96, 0.96, 1.0],        // Light gray
             corner_background: [0.94, 0.94, 0.94, 1.0], // Slightly darker
-            label: [0.4, 0.4, 0.4, 1.0],              // Dark gray text
-            grid_line: [0.8, 0.8, 0.8, 1.0],          // Grid line gray
-            selection: [0.2, 0.4, 0.8, 1.0],          // Blue selection
+            label: [0.137, 0.192, 0.263, 1.0], // #233143 (matches gridHeadingLabel in colors.ts)
+            grid_line: [0.8, 0.8, 0.8, 1.0],   // Grid line gray
+            selection: [0.2, 0.4, 0.8, 1.0],   // Blue selection
             selection_alpha: 0.3,
         }
     }
@@ -93,6 +97,9 @@ pub struct GridHeadings {
     /// Whether labels need rebuild
     dirty: bool,
 
+    /// Whether the last update() call did actual work (for render decision)
+    updated_this_frame: bool,
+
     /// Last viewport state for dirty checking
     last_viewport_x: f32,
     last_viewport_y: f32,
@@ -105,6 +112,12 @@ pub struct GridHeadings {
 
     /// Selected rows (start, end pairs)
     selected_rows: Vec<(i64, i64)>,
+
+    /// Column skip interval (0 = show all, 2 = every other, etc.)
+    col_mod: i64,
+
+    /// Row skip interval (0 = show all, 2 = every other, etc.)
+    row_mod: i64,
 }
 
 impl GridHeadings {
@@ -125,6 +138,7 @@ impl GridHeadings {
             column_labels: Vec::new(),
             row_labels: Vec::new(),
             dirty: true,
+            updated_this_frame: false,
             last_viewport_x: f32::NAN,
             last_viewport_y: f32::NAN,
             last_scale: f32::NAN,
@@ -132,6 +146,8 @@ impl GridHeadings {
             last_canvas_height: 0.0,
             selected_columns: Vec::new(),
             selected_rows: Vec::new(),
+            col_mod: 0,
+            row_mod: 0,
         }
     }
 
@@ -171,6 +187,21 @@ impl GridHeadings {
         }
     }
 
+    /// Check if headings were updated this frame and need re-rendering
+    pub fn is_dirty(&self) -> bool {
+        self.updated_this_frame
+    }
+
+    /// Mark headings as clean after rendering
+    pub fn mark_clean(&mut self) {
+        self.updated_this_frame = false;
+    }
+
+    /// Mark headings as needing rebuild
+    pub fn set_dirty(&mut self) {
+        self.dirty = true;
+    }
+
     /// Get the current heading size
     pub fn heading_size(&self) -> HeadingSize {
         self.heading_size
@@ -194,33 +225,59 @@ impl GridHeadings {
 
     /// Find interval for column label skipping when zoomed out
     fn find_column_interval(&self, skip_count: i64) -> i64 {
-        if skip_count > 100 { return 52; }
-        if skip_count > 20 { return 26; }
-        if skip_count > 10 { return 13; }
-        if skip_count > 5 { return 6; }
+        if skip_count > 100 {
+            return 52;
+        }
+        if skip_count > 20 {
+            return 26;
+        }
+        if skip_count > 10 {
+            return 13;
+        }
+        if skip_count > 5 {
+            return 6;
+        }
         2
     }
 
     /// Find interval for row label skipping when zoomed out
     fn find_row_interval(&self, skip_count: i64) -> i64 {
-        if skip_count > 250 { return 250; }
-        if skip_count > 100 { return 100; }
-        if skip_count > 50 { return 50; }
-        if skip_count > 25 { return 25; }
-        if skip_count > 10 { return 10; }
-        if skip_count > 3 { return 5; }
-        if skip_count > 2 { return 2; }
+        if skip_count > 250 {
+            return 250;
+        }
+        if skip_count > 100 {
+            return 100;
+        }
+        if skip_count > 50 {
+            return 50;
+        }
+        if skip_count > 25 {
+            return 25;
+        }
+        if skip_count > 10 {
+            return 10;
+        }
+        if skip_count > 3 {
+            return 5;
+        }
+        if skip_count > 2 {
+            return 2;
+        }
         1
     }
 
     /// Check if a column is selected
     fn is_column_selected(&self, col: i64) -> bool {
-        self.selected_columns.iter().any(|(start, end)| col >= *start && col <= *end)
+        self.selected_columns
+            .iter()
+            .any(|(start, end)| col >= *start && col <= *end)
     }
 
     /// Check if a row is selected
     fn is_row_selected(&self, row: i64) -> bool {
-        self.selected_rows.iter().any(|(start, end)| row >= *start && row <= *end)
+        self.selected_rows
+            .iter()
+            .any(|(start, end)| row >= *start && row <= *end)
     }
 
     /// Update headings based on viewport state
@@ -240,16 +297,19 @@ impl GridHeadings {
         canvas_height: f32,
     ) {
         // Check if we need to rebuild
-        let viewport_changed =
-            (self.last_viewport_x - viewport_x).abs() > 0.1 ||
-            (self.last_viewport_y - viewport_y).abs() > 0.1 ||
-            (self.last_scale - scale).abs() > 0.001 ||
-            (self.last_canvas_width - canvas_width).abs() > 0.1 ||
-            (self.last_canvas_height - canvas_height).abs() > 0.1;
+        let viewport_changed = (self.last_viewport_x - viewport_x).abs() > 0.1
+            || (self.last_viewport_y - viewport_y).abs() > 0.1
+            || (self.last_scale - scale).abs() > 0.001
+            || (self.last_canvas_width - canvas_width).abs() > 0.1
+            || (self.last_canvas_height - canvas_height).abs() > 0.1;
 
         if !self.dirty && !viewport_changed {
+            self.updated_this_frame = false;
             return;
         }
+
+        // Mark that we're doing work this frame (for render decision)
+        self.updated_this_frame = true;
 
         self.last_viewport_x = viewport_x;
         self.last_viewport_y = viewport_y;
@@ -262,9 +322,29 @@ impl GridHeadings {
         self.column_labels.clear();
         self.row_labels.clear();
 
-        // Calculate visible world bounds
-        let world_width = canvas_width / scale;
-        let world_height = canvas_height / scale;
+        // Column header height is fixed
+        let header_height = self.header_height();
+        let col_height = header_height / scale;
+
+        // Calculate visible world bounds, accounting for heading space
+        // Content area is canvas minus headings - we need to iterate since
+        // row_width depends on visible rows which depends on row_width
+
+        // First pass: estimate row width using previous value or a reasonable default
+        let estimated_row_width = if self.heading_size.width > 0.0 {
+            self.heading_size.width
+        } else {
+            // Default: assume 2-digit row numbers
+            self.calculate_row_width(99, scale) * scale
+        };
+
+        // Calculate content area (in physical pixels)
+        let content_width = canvas_width - estimated_row_width;
+        let content_height = canvas_height - header_height;
+
+        // Convert to world space (divide by scale only - world units match content rendering)
+        let world_width = content_width / scale;
+        let world_height = content_height / scale;
 
         // Calculate visible column/row range (1-indexed for A1 notation)
         let first_col = ((viewport_x / CELL_WIDTH).floor() as i64).max(0) + 1;
@@ -272,10 +352,8 @@ impl GridHeadings {
         let first_row = ((viewport_y / CELL_HEIGHT).floor() as i64).max(0) + 1;
         let last_row = (((viewport_y + world_height) / CELL_HEIGHT).ceil() as i64).max(0) + 1;
 
-        // Calculate row header width based on max visible row
+        // Calculate actual row header width based on max visible row
         let row_width = self.calculate_row_width(last_row, scale);
-        let header_height = self.header_height();
-        let col_height = header_height / scale;
 
         // Update heading size (all values in screen pixels, scaled by DPR)
         self.heading_size = HeadingSize {
@@ -286,21 +364,23 @@ impl GridHeadings {
         };
 
         // Calculate label skip intervals for zoomed out views
-        // All values in physical pixels (DPR-scaled)
+        // Label sizes are DPR-scaled (char_width, char_height), but label POSITIONS
+        // are spaced CELL_WIDTH/HEIGHT * scale apart (matching content grid)
+        // So we compare DPR-scaled label size to non-DPR cell spacing
         let label_width = LABEL_DIGITS_TO_CALCULATE_SKIP as f32 * self.char_width;
-        let cell_width_screen = CELL_WIDTH * scale * self.dpr;
-        let col_mod = if label_width > cell_width_screen * LABEL_MAXIMUM_WIDTH_PERCENT {
-            let cell_width = cell_width_screen;
-            let skip_numbers = ((cell_width * (1.0 - LABEL_MAXIMUM_WIDTH_PERCENT)) / label_width).ceil() as i64;
+        let cell_width_screen = CELL_WIDTH * scale;
+        self.col_mod = if label_width > cell_width_screen * LABEL_MAXIMUM_WIDTH_PERCENT {
+            // Calculate how many cells one label spans
+            let skip_numbers = (label_width / cell_width_screen).ceil() as i64;
             self.find_column_interval(skip_numbers)
         } else {
             0
         };
 
-        let cell_height_screen = CELL_HEIGHT * scale * self.dpr;
-        let row_mod = if self.char_height > cell_height_screen * LABEL_MAXIMUM_HEIGHT_PERCENT {
-            let cell_height = cell_height_screen;
-            let skip_numbers = ((cell_height * (1.0 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / self.char_height).ceil() as i64;
+        let cell_height_screen = CELL_HEIGHT * scale;
+        self.row_mod = if self.char_height > cell_height_screen * LABEL_MAXIMUM_HEIGHT_PERCENT {
+            // Calculate how many cells one label spans
+            let skip_numbers = (self.char_height / cell_height_screen).ceil() as i64;
             self.find_row_interval(skip_numbers)
         } else {
             0
@@ -309,14 +389,18 @@ impl GridHeadings {
         // Generate column labels
         // Labels are positioned in SCREEN SPACE (pixels from top-left of canvas)
         // The caller is responsible for rendering with an identity matrix
+
+        // Track last label to prevent overlapping
+        let mut last_col_label: Option<(f32, f32, bool)> = None; // (left, right, selected)
+
         for col in first_col..=last_col {
-            // Check if we should skip this label
+            // Check if we should skip this label based on modulus
             let selected = self.is_column_selected(col);
-            let show_label = selected ||
-                col_mod == 0 ||
-                (col_mod == 2 && col % 2 == 1) ||
-                (col_mod != 2 && col % col_mod == 0) ||
-                col == first_col;
+            let show_label = selected
+                || self.col_mod == 0
+                || (self.col_mod == 2 && col % 2 == 1)
+                || (self.col_mod != 2 && col % self.col_mod == 0)
+                || col == first_col;
 
             if !show_label {
                 continue;
@@ -325,32 +409,72 @@ impl GridHeadings {
             // Calculate screen position
             // Column position in world space, then convert to screen space
             let world_x = (col - 1) as f32 * CELL_WIDTH + CELL_WIDTH / 2.0;
-            let screen_x = (world_x - viewport_x) * scale + row_width * scale;
-            let screen_y = col_height * scale / 2.0;
+            // Transform to screen space (consistent with content grid rendering)
+            let screen_x = (world_x - viewport_x) * scale + self.heading_size.width;
+            // Use 2.25 divisor to match TypeScript (slightly above center for visual balance)
+            let screen_y = header_height / 2.25;
 
             // Skip if outside visible area (accounting for row header width)
-            if screen_x < row_width * scale || screen_x > canvas_width {
+            if screen_x < self.heading_size.width || screen_x > canvas_width {
                 continue;
             }
 
             let text = column_to_a1(col);
-            let label = TextLabel::new(text, screen_x, screen_y)
-                .with_font_size(self.font_size())
-                .with_anchor(TextAnchor::Center)
-                .with_color(self.colors.label);
+            let char_count = text.len() as f32;
 
-            self.column_labels.push(label);
+            // The col_mod calculation already handles spacing when labels don't fit
+            // We just need overlap detection for fine-tuning
+
+            // For overlap detection, use physical pixel values
+            let label_width = char_count * self.char_width;
+
+            // Calculate label bounds for overlap detection
+            let half_width = label_width / 2.0;
+            let left = screen_x - half_width;
+            let right = screen_x + half_width;
+
+            // Check for intersection with last label
+            let mut intersects_last = false;
+            if let Some((last_left, last_right, last_selected)) = last_col_label {
+                intersects_last = left < last_right && right > last_left;
+
+                // If intersecting and current is selected but adjacent cells indicate
+                // this is an edge of a selection, remove the last label instead
+                if intersects_last && selected && !last_selected {
+                    // Remove the last label (it overlaps with a selected one)
+                    self.column_labels.pop();
+                    intersects_last = false;
+                }
+            }
+
+            // Only add label if not intersecting with last
+            if !intersects_last && col > 0 {
+                let label = TextLabel::new(text, screen_x, screen_y)
+                    .with_font_size(self.font_size())
+                    .with_anchor(TextAnchor::Center)
+                    .with_color(self.colors.label);
+
+                self.column_labels.push(label);
+                last_col_label = Some((left, right, selected));
+            }
         }
 
         // Generate row labels
+        // Track last label to prevent overlapping
+        let mut last_row_label: Option<(f32, f32, bool)> = None; // (top, bottom, selected)
+
+        // The row_mod calculation already determines spacing when labels don't fit
+        // We just need to check overlap with the previous label for fine-tuning
+
         for row in first_row..=last_row {
-            // Check if we should skip this label
+            // Check if we should skip this label based on modulus
+            // The mod calculation handles spacing when labels are too dense
             let selected = self.is_row_selected(row);
-            let show_label = selected ||
-                row_mod == 0 ||
-                (row_mod == 2 && row % 2 == 1) ||
-                (row_mod != 2 && row % row_mod == 0) ||
-                row == first_row;
+            let show_label = selected
+                || self.row_mod == 0
+                || (self.row_mod == 2 && row % 2 == 1)
+                || (self.row_mod != 2 && row % self.row_mod == 0)
+                || row == first_row;
 
             if !show_label {
                 continue;
@@ -358,21 +482,50 @@ impl GridHeadings {
 
             // Calculate screen position
             let world_y = (row - 1) as f32 * CELL_HEIGHT + CELL_HEIGHT / 2.0;
-            let screen_x = row_width * scale / 2.0;
-            let screen_y = (world_y - viewport_y) * scale + col_height * scale;
+            // Center horizontally in row header, add offset
+            let screen_x = self.heading_size.width / 2.0 + ROW_DIGIT_OFFSET_X * self.dpr;
+            // Y position in screen space (consistent with content grid rendering), add offset
+            let screen_y = (world_y - viewport_y) * scale
+                + header_height
+                + ROW_DIGIT_OFFSET_Y * self.dpr;
 
             // Skip if outside visible area (accounting for column header height)
-            if screen_y < col_height * scale || screen_y > canvas_height {
+            if screen_y < header_height || screen_y > canvas_height {
                 continue;
             }
 
             let text = row_to_a1(row);
-            let label = TextLabel::new(text, screen_x, screen_y)
-                .with_font_size(self.font_size())
-                .with_anchor(TextAnchor::Center)
-                .with_color(self.colors.label);
 
-            self.row_labels.push(label);
+            // For overlap detection, use physical pixel values
+            let label_height = self.char_height;
+            let half_height = label_height / 2.0;
+            let top = screen_y - half_height;
+            let bottom = screen_y + half_height;
+
+            // Check for intersection with last label
+            let mut intersects_last = false;
+            if let Some((last_top, last_bottom, last_selected)) = last_row_label {
+                intersects_last = top < last_bottom && bottom > last_top;
+
+                // If intersecting and current is selected but last was not,
+                // remove the last label instead
+                if intersects_last && selected && !last_selected {
+                    // Remove the last label (it overlaps with a selected one)
+                    self.row_labels.pop();
+                    intersects_last = false;
+                }
+            }
+
+            // Only add label if not intersecting with last
+            if !intersects_last && row > 0 {
+                let label = TextLabel::new(text, screen_x, screen_y)
+                    .with_font_size(self.font_size())
+                    .with_anchor(TextAnchor::Center)
+                    .with_color(self.colors.label);
+
+                self.row_labels.push(label);
+                last_row_label = Some((top, bottom, selected));
+            }
         }
     }
 
@@ -403,9 +556,9 @@ impl GridHeadings {
 
         // Row header background (left bar, excluding corner)
         let row_rect = [
-            0.0,                                 // x: left of canvas
-            col_height,                          // y: starts below column header
-            row_width,                           // width: row header width
+            0.0,                                  // x: left of canvas
+            col_height,                           // y: starts below column header
+            row_width,                            // width: row header width
             self.last_canvas_height - col_height, // height: rest of canvas
         ];
 
@@ -472,23 +625,29 @@ impl GridHeadings {
         let col_height = self.heading_size.height;
 
         // Vertical line at right edge of row header
-        lines.extend_from_slice(&[
-            row_width, 0.0,
-            row_width, self.last_canvas_height,
-        ]);
+        lines.extend_from_slice(&[row_width, 0.0, row_width, self.last_canvas_height]);
 
         // Horizontal line at bottom edge of column header
-        lines.extend_from_slice(&[
-            0.0, col_height,
-            self.last_canvas_width, col_height,
-        ]);
+        lines.extend_from_slice(&[0.0, col_height, self.last_canvas_width, col_height]);
 
         // Column separators in column header
+        // Use same skip logic as labels to avoid lines through text
         let world_width = self.last_canvas_width / scale;
         let first_col = ((self.last_viewport_x / CELL_WIDTH).floor() as i64).max(0) + 1;
-        let last_col = (((self.last_viewport_x + world_width) / CELL_WIDTH).ceil() as i64).max(0) + 1;
+        let last_col =
+            (((self.last_viewport_x + world_width) / CELL_WIDTH).ceil() as i64).max(0) + 1;
 
         for col in first_col..=last_col {
+            // Skip grid lines at same intervals as labels when zoomed out
+            let show_line = self.col_mod == 0
+                || (self.col_mod == 2 && col % 2 == 1)
+                || (self.col_mod != 2 && col % self.col_mod == 0)
+                || col == first_col;
+
+            if !show_line {
+                continue;
+            }
+
             let world_x = (col - 1) as f32 * CELL_WIDTH;
             let screen_x = (world_x - self.last_viewport_x) * scale + row_width;
             if screen_x > row_width && screen_x < self.last_canvas_width {
@@ -497,11 +656,23 @@ impl GridHeadings {
         }
 
         // Row separators in row header
+        // Use same skip logic as labels to avoid lines through text
         let world_height = self.last_canvas_height / scale;
         let first_row = ((self.last_viewport_y / CELL_HEIGHT).floor() as i64).max(0) + 1;
-        let last_row = (((self.last_viewport_y + world_height) / CELL_HEIGHT).ceil() as i64).max(0) + 1;
+        let last_row =
+            (((self.last_viewport_y + world_height) / CELL_HEIGHT).ceil() as i64).max(0) + 1;
 
         for row in first_row..=last_row {
+            // Skip grid lines at same intervals as labels when zoomed out
+            let show_line = self.row_mod == 0
+                || (self.row_mod == 2 && row % 2 == 1)
+                || (self.row_mod != 2 && row % self.row_mod == 0)
+                || row == first_row;
+
+            if !show_line {
+                continue;
+            }
+
             let world_y = (row - 1) as f32 * CELL_HEIGHT;
             let screen_y = (world_y - self.last_viewport_y) * scale + col_height;
             if screen_y > col_height && screen_y < self.last_canvas_height {

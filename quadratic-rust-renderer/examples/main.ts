@@ -5,7 +5,7 @@
  * Handles initialization, font loading, and lazy-loading of cell data.
  */
 
-import { parseBMFont, loadFontTextures } from './font-loader';
+import { loadFontTextures, parseBMFont } from './font-loader';
 import { ViewportControls } from './ViewportControls';
 import RenderWorker from './worker?worker';
 
@@ -16,10 +16,16 @@ const fpsEl = document.getElementById('fps') as HTMLElement;
 const frametimeEl = document.getElementById('frametime') as HTMLElement;
 const labelsEl = document.getElementById('labels') as HTMLElement;
 const hashesEl = document.getElementById('hashes') as HTMLElement;
+const renderIndicatorEl = document.getElementById('render-indicator') as HTMLElement;
 
 let worker: Worker | null = null;
 let viewportControls: ViewportControls | null = null;
 let fontsReady = false;
+
+// Helper to update render indicator
+function updateRenderIndicator(rendering: boolean): void {
+  renderIndicatorEl.className = 'render-indicator ' + (rendering ? 'rendering' : 'idle');
+}
 
 // =========================================================================
 // Simulated Data Source (in real app, this would be core/backend)
@@ -101,8 +107,6 @@ function generateHashLabels(hashX: number, hashY: number): Label[] {
 
   for (let row = startRow; row < endRow; row++) {
     for (let col = startCol; col < endCol; col++) {
-      // Only generate for positive coordinates (simulating finite data)
-      // But we could also generate for negative to simulate infinite data
       if (col >= 0 && row >= 0 && col < COLS) {
         const seed = ((col * 31337 + row * 7919) >>> 0);
         const label: Label = {
@@ -208,14 +212,12 @@ if (!('transferControlToOffscreen' in canvas)) {
 }
 
 function initCanvasSize(): void {
-  const container = canvas.parentElement;
-  if (!container) return;
-
+  // Canvas sizing is handled by CSS (width: 100%, height: 100%)
+  // We just need to set the canvas buffer size based on CSS size * DPR
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = container.clientWidth * dpr;
-  canvas.height = container.clientHeight * dpr;
-  canvas.style.width = container.clientWidth + 'px';
-  canvas.style.height = container.clientHeight + 'px';
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
 }
 
 // =========================================================================
@@ -226,6 +228,12 @@ interface FpsMessage {
   type: 'fps';
   fps: number;
   frameTime: string;
+  rendering?: boolean;
+}
+
+interface RenderStatusMessage {
+  type: 'renderStatus';
+  rendering: boolean;
 }
 
 interface NeededHashesMessage {
@@ -259,6 +267,7 @@ interface ErrorMessage {
 
 type WorkerResponse =
   | FpsMessage
+  | RenderStatusMessage
   | NeededHashesMessage
   | OffscreenHashesMessage
   | StatsMessage
@@ -319,6 +328,9 @@ async function init(): Promise<void> {
 
             // Load initial visible hashes
             updateVisibleHashes();
+
+            // Show canvas now that everything is ready
+            canvas.classList.add('ready');
           } catch (error) {
             console.error('Font loading error:', error);
             statusEl.textContent = 'Error loading fonts: ' + (error as Error).message;
@@ -332,6 +344,14 @@ async function init(): Promise<void> {
           fpsEl.className =
             'stat-value ' +
             (data.fps >= 55 ? 'fps-green' : data.fps >= 30 ? 'fps-yellow' : 'fps-red');
+          // Also update render indicator if included
+          if (data.rendering !== undefined) {
+            updateRenderIndicator(data.rendering);
+          }
+          break;
+
+        case 'renderStatus':
+          updateRenderIndicator(data.rendering);
           break;
 
         case 'neededHashes': {
@@ -410,6 +430,13 @@ document.addEventListener('keydown', (e: KeyboardEvent): void => {
   worker?.postMessage({ type: 'setCursor', col: cursorCol, row: cursorRow });
 });
 
-// Start
-initCanvasSize();
-init();
+// Start after DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initCanvasSize();
+    init();
+  });
+} else {
+  initCanvasSize();
+  init();
+}

@@ -214,6 +214,9 @@ let lastFrameTime = performance.now();
 // Frame timing for deceleration
 let lastRenderTime = performance.now();
 
+// Render status tracking
+let lastRenderStatus = false;
+
 /**
  * Main render loop
  */
@@ -223,8 +226,14 @@ function renderLoop(): void {
     const elapsed = now - lastRenderTime;
     lastRenderTime = now;
 
-    // Pass elapsed time for deceleration
-    renderer.frame(elapsed);
+    // Pass elapsed time for deceleration - frame() now returns whether it rendered
+    const didRender = renderer.frame(elapsed);
+
+    // Send render status update if it changed
+    if (didRender !== lastRenderStatus) {
+      lastRenderStatus = didRender;
+      self.postMessage({ type: 'renderStatus', rendering: didRender });
+    }
 
     // Notify main thread if viewport moved due to deceleration
     if (renderer.is_decelerating()) {
@@ -247,6 +256,7 @@ function renderLoop(): void {
           type: 'fps',
           fps: currentFps,
           frameTime: avgFrameTime.toFixed(2),
+          rendering: lastRenderStatus,
         });
 
         frameCount = 0;
@@ -286,6 +296,8 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
     case 'resize':
       if (renderer) {
         renderer.resize(data.width, data.height);
+        // Render immediately after resize to prevent black flash
+        renderer.frame(0);
       }
       break;
 

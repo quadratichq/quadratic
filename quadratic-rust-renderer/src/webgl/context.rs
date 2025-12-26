@@ -15,6 +15,7 @@ use super::shaders::{
 
 /// WebGL2 rendering context
 pub struct WebGLContext {
+    canvas: OffscreenCanvas,
     gl: WebGl2RenderingContext,
     width: u32,
     height: u32,
@@ -190,6 +191,7 @@ impl WebGLContext {
         log::info!("WebGL2 context created ({}x{})", width, height);
 
         Ok(Self {
+            canvas,
             gl,
             width,
             height,
@@ -276,9 +278,43 @@ impl WebGLContext {
 
     /// Resize the rendering surface
     pub fn resize(&mut self, width: u32, height: u32) {
+        // Resize the canvas buffer
+        self.canvas.set_width(width);
+        self.canvas.set_height(height);
+
+        // Update internal dimensions and viewport
         self.width = width;
         self.height = height;
         self.gl.viewport(0, 0, width as i32, height as i32);
+    }
+
+    /// Set the viewport to a specific area
+    /// This controls where NDC coordinates map to on the screen
+    /// Note: WebGL Y=0 is at bottom, so we flip the y coordinate
+    pub fn set_viewport(&self, x: i32, y: i32, width: i32, height: i32) {
+        // Flip Y coordinate for WebGL (Y=0 at bottom)
+        let flipped_y = self.height as i32 - y - height;
+        self.gl.viewport(x, flipped_y, width, height);
+    }
+
+    /// Reset viewport to full canvas
+    pub fn reset_viewport(&self) {
+        self.gl
+            .viewport(0, 0, self.width as i32, self.height as i32);
+    }
+
+    /// Set scissor rect for clipping
+    /// Note: WebGL Y=0 is at bottom, so we flip the y coordinate
+    pub fn set_scissor(&self, x: i32, y: i32, width: i32, height: i32) {
+        self.gl.enable(WebGl2RenderingContext::SCISSOR_TEST);
+        // Flip Y coordinate for WebGL (Y=0 at bottom)
+        let flipped_y = self.height as i32 - y - height;
+        self.gl.scissor(x, flipped_y, width, height);
+    }
+
+    /// Disable scissor test
+    pub fn disable_scissor(&self) {
+        self.gl.disable(WebGl2RenderingContext::SCISSOR_TEST);
     }
 
     /// Clear the canvas with a color

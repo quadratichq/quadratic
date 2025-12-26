@@ -11,13 +11,20 @@
       box-sizing: border-box;
     }
 
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #1a1a2e;
       color: #eee;
-      height: 100vh;
       display: flex;
       flex-direction: column;
+      height: 100%;
     }
 
     header {
@@ -27,6 +34,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
+      min-width: 0;
+      overflow: hidden;
     }
 
     h1 {
@@ -37,9 +47,12 @@
 
     .stats {
       display: flex;
-      gap: 2rem;
+      gap: 1rem;
       font-family: 'SF Mono', Monaco, monospace;
       font-size: 0.875rem;
+      flex-wrap: wrap;
+      min-width: 0;
+      flex-shrink: 1;
     }
 
     .stat {
@@ -62,6 +75,17 @@
     .stat-value.fps-yellow { color: #fbbf24; }
     .stat-value.fps-red { color: #f87171; }
 
+    .render-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #888;
+      display: inline-block;
+      transition: background-color 0.1s ease;
+    }
+    .render-indicator.rendering { background-color: #f87171; }
+    .render-indicator.idle { background-color: #4ade80; }
+
     #status {
       font-size: 0.875rem;
       color: #888;
@@ -73,14 +97,25 @@
 
     main {
       flex: 1;
+      min-height: 0;
+      min-width: 0;
       position: relative;
       background: #0f0f23;
+      overflow: hidden;
     }
 
     #canvas {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       display: block;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    #canvas.ready {
+      opacity: 1;
     }
 
     .help {
@@ -93,6 +128,18 @@
       padding: 0.75rem 1rem;
       border-radius: 4px;
     }
+
+    @media (max-width: 600px) {
+      .stats {
+        gap: 0.5rem;
+      }
+      .stat-label {
+        display: none;
+      }
+      h1 {
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -103,6 +150,7 @@
     </div>
     <div class="stats">
       <div class="stat">
+        <span class="render-indicator" id="render-indicator" title="Red = rendering, Green = idle"></span>
         <span class="stat-label">FPS:</span>
         <span class="stat-value" id="fps">--</span>
       </div>

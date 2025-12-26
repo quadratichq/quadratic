@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use crate::text::{BitmapFonts, CellLabel};
 
 /// Hash dimensions (matches client: CellsTypes.ts)
-pub const HASH_WIDTH: i64 = 15;  // columns per hash
+pub const HASH_WIDTH: i64 = 15; // columns per hash
 pub const HASH_HEIGHT: i64 = 30; // rows per hash
 
 /// Cell dimensions in pixels (default)
@@ -198,10 +198,7 @@ impl CellsTextHash {
 
 /// Get hash coordinates for a cell position
 pub fn get_hash_coords(col: i64, row: i64) -> (i64, i64) {
-    (
-        col.div_euclid(HASH_WIDTH),
-        row.div_euclid(HASH_HEIGHT),
-    )
+    (col.div_euclid(HASH_WIDTH), row.div_euclid(HASH_HEIGHT))
 }
 
 /// Get hash key from hash coordinates
@@ -225,12 +222,7 @@ pub struct VisibleHashBounds {
 impl VisibleHashBounds {
     /// Create bounds from viewport world coordinates
     /// Includes HASH_PADDING extra hashes on each side for preloading
-    pub fn from_viewport(
-        vp_x: f32,
-        vp_y: f32,
-        vp_width: f32,
-        vp_height: f32,
-    ) -> Self {
+    pub fn from_viewport(vp_x: f32, vp_y: f32, vp_width: f32, vp_height: f32) -> Self {
         // Convert world coordinates to cell coordinates
         let min_col = (vp_x / DEFAULT_CELL_WIDTH).floor() as i64;
         let max_col = ((vp_x + vp_width) / DEFAULT_CELL_WIDTH).ceil() as i64;
