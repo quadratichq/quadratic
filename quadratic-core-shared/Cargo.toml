@@ -9,6 +9,7 @@ license-file.workspace = true
 
 [dependencies]
 anyhow = "1.0"
+bincode = { version = "2.0.0", features = ["serde"] }
 indexmap = { version = "2.8.0", features = ["serde"] }
 itertools = "0.14.0"
 lazy_static = "1.4.0"

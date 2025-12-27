@@ -5,8 +5,14 @@
 
 use std::collections::HashMap;
 
+use quadratic_core_shared::{
+    CellAlign, CellVerticalAlign, CellWrap, RenderCell, RenderCellSpecial, RenderFill,
+    RenderNumber, NumericFormat, NumericFormatKind, SheetFill,
+};
+
 use crate::cells::CellsSheet;
 use crate::content::Content;
+use crate::fills::CellsFills;
 use crate::headings::GridHeadings;
 use crate::text::cell_label::{TextAlign, VerticalAlign};
 use crate::text::{
@@ -27,6 +33,9 @@ pub struct RendererState {
 
     /// Renderable content (grid lines, cursor)
     pub content: Content,
+
+    /// Cell fills (background colors)
+    pub fills: CellsFills,
 
     /// Bitmap fonts for text rendering
     pub fonts: BitmapFonts,
@@ -51,10 +60,12 @@ pub struct RendererState {
 impl RendererState {
     /// Create a new renderer state
     pub fn new(width: f32, height: f32) -> Self {
+        let sheet_id = "test".to_string();
         Self {
             viewport: Viewport::new(width, height),
-            cells_sheet: CellsSheet::new("test".to_string()),
+            cells_sheet: CellsSheet::new(sheet_id.clone()),
             content: Content::new(),
+            fills: CellsFills::new(sheet_id),
             fonts: BitmapFonts::new(),
             hashes: HashMap::new(),
             label_count: 0,
@@ -185,6 +196,387 @@ impl RendererState {
     }
 
     // =========================================================================
+    // Fills (cell backgrounds)
+    // =========================================================================
+
+    /// Check if meta fills have been loaded
+    pub fn fills_meta_loaded(&self) -> bool {
+        self.fills.meta_fills_loaded()
+    }
+
+    /// Set fills for a specific hash
+    /// fills: Vec of RenderFill structs
+    pub fn set_fills_for_hash(&mut self, hash_x: i64, hash_y: i64, fills: Vec<RenderFill>) {
+        self.fills
+            .set_hash_fills(hash_x, hash_y, fills, &self.cells_sheet.sheet_offsets);
+    }
+
+    /// Set meta fills (infinite row/column/sheet fills)
+    pub fn set_meta_fills(&mut self, fills: Vec<SheetFill>) {
+        self.fills.set_meta_fills(fills);
+    }
+
+    /// Mark a fills hash as dirty (needs reload when visible)
+    pub fn mark_fills_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
+        self.fills.mark_hash_dirty(hash_x, hash_y);
+    }
+
+    /// Get fill hashes that need to be loaded (visible but not yet loaded)
+    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    pub fn get_needed_fill_hashes(&self) -> Vec<i32> {
+        self.fills
+            .get_needed_hashes(&self.viewport, &self.cells_sheet.sheet_offsets)
+    }
+
+    /// Get fill hashes that can be unloaded (outside viewport)
+    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    pub fn get_offscreen_fill_hashes(&self) -> Vec<i32> {
+        self.fills
+            .get_offscreen_hashes(&self.viewport, &self.cells_sheet.sheet_offsets)
+    }
+
+    /// Unload a fill hash to free memory
+    pub fn unload_fill_hash(&mut self, hash_x: i64, hash_y: i64) {
+        self.fills.unload_hash(hash_x, hash_y);
+    }
+
+    /// Check if a fill hash is loaded
+    pub fn has_fill_hash(&self, hash_x: i64, hash_y: i64) -> bool {
+        self.fills.has_hash(hash_x, hash_y)
+    }
+
+    /// Get number of loaded fill hashes
+    pub fn get_fill_hash_count(&self) -> usize {
+        self.fills.hash_count()
+    }
+
+    /// Get total fill count
+    pub fn get_fill_count(&self) -> usize {
+        self.fills.fill_count()
+    }
+
+    /// Mark fills as dirty when viewport changes
+    pub fn set_fills_dirty(&mut self) {
+        self.fills.mark_meta_dirty();
+    }
+
+    /// Add test fills for development/debugging
+    /// This creates various fills to verify rendering works correctly
+    pub fn add_test_fills(&mut self) {
+        // Cell-based fills in hash (0, 0) - various colors
+        let hash_0_0_fills = vec![
+            // Red fill at A1 (1x1)
+            RenderFill {
+                x: 1,
+                y: 1,
+                w: 1,
+                h: 1,
+                color: "#ff0000".to_string(),
+            },
+            // Green fill at B2:C3 (2x2)
+            RenderFill {
+                x: 2,
+                y: 2,
+                w: 2,
+                h: 2,
+                color: "#00ff00".to_string(),
+            },
+            // Blue fill at E5:G7 (3x3)
+            RenderFill {
+                x: 5,
+                y: 5,
+                w: 3,
+                h: 3,
+                color: "#0000ff".to_string(),
+            },
+            // Semi-transparent yellow at A10:D12
+            RenderFill {
+                x: 1,
+                y: 10,
+                w: 4,
+                h: 3,
+                color: "rgba(255, 255, 0, 0.5)".to_string(),
+            },
+            // Orange fill at J1:K2
+            RenderFill {
+                x: 10,
+                y: 1,
+                w: 2,
+                h: 2,
+                color: "#ff8800".to_string(),
+            },
+        ];
+        self.set_fills_for_hash(0, 0, hash_0_0_fills);
+
+        // Cell-based fills in hash (1, 0) - more fills
+        let hash_1_0_fills = vec![
+            // Purple fill at P5:R8 (in hash 1,0)
+            RenderFill {
+                x: 16,
+                y: 5,
+                w: 3,
+                h: 4,
+                color: "#800080".to_string(),
+            },
+            // Cyan fill at T10:V15
+            RenderFill {
+                x: 20,
+                y: 10,
+                w: 3,
+                h: 6,
+                color: "#00ffff".to_string(),
+            },
+        ];
+        self.set_fills_for_hash(1, 0, hash_1_0_fills);
+
+        // Meta fills (infinite)
+        let meta_fills = vec![
+            // Light pink infinite column starting at column 30 (width 2)
+            SheetFill {
+                x: 30,
+                y: 1,
+                w: Some(2),
+                h: None, // Infinite height
+                color: "#ffcccc".to_string(),
+            },
+            // Light blue infinite row at row 25 (height 1)
+            SheetFill {
+                x: 1,
+                y: 25,
+                w: None, // Infinite width
+                h: Some(1),
+                color: "#ccccff".to_string(),
+            },
+        ];
+        self.set_meta_fills(meta_fills);
+
+        log::info!(
+            "Added test fills: {} hashes, {} total fills",
+            self.fills.hash_count(),
+            self.fills.fill_count()
+        );
+    }
+
+    /// Add test labels for development/debugging
+    /// This creates various cell labels to verify text rendering works correctly
+    pub fn add_test_labels(&mut self) {
+        // Labels in hash (0, 0) - basic text with various styles
+        let hash_0_0_labels = vec![
+            // Simple text at A1
+            RenderCell {
+                x: 1,
+                y: 1,
+                value: "Hello World".to_string(),
+                ..Default::default()
+            },
+            // Bold text at B2
+            RenderCell {
+                x: 2,
+                y: 2,
+                value: "Bold Text".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            // Italic text at C3
+            RenderCell {
+                x: 3,
+                y: 3,
+                value: "Italic Text".to_string(),
+                italic: Some(true),
+                ..Default::default()
+            },
+            // Bold + Italic at D4
+            RenderCell {
+                x: 4,
+                y: 4,
+                value: "Bold & Italic".to_string(),
+                bold: Some(true),
+                italic: Some(true),
+                ..Default::default()
+            },
+            // Colored text at E5
+            RenderCell {
+                x: 5,
+                y: 5,
+                value: "Red Text".to_string(),
+                text_color: Some("#ff0000".to_string()),
+                ..Default::default()
+            },
+            // Center aligned at F6
+            RenderCell {
+                x: 6,
+                y: 6,
+                value: "Centered".to_string(),
+                align: Some(CellAlign::Center),
+                ..Default::default()
+            },
+            // Right aligned at G7
+            RenderCell {
+                x: 7,
+                y: 7,
+                value: "Right".to_string(),
+                align: Some(CellAlign::Right),
+                ..Default::default()
+            },
+            // Larger font at H8
+            RenderCell {
+                x: 8,
+                y: 8,
+                value: "Large Font".to_string(),
+                font_size: Some(20),
+                ..Default::default()
+            },
+            // Number at I9
+            RenderCell {
+                x: 9,
+                y: 9,
+                value: "12345.67".to_string(),
+                align: Some(CellAlign::Right),
+                number: Some(RenderNumber {
+                    decimals: Some(2),
+                    commas: Some(true),
+                    format: Some(NumericFormat {
+                        kind: NumericFormatKind::Number,
+                        symbol: None,
+                    }),
+                }),
+                ..Default::default()
+            },
+            // Currency at J10
+            RenderCell {
+                x: 10,
+                y: 10,
+                value: "$1,234.56".to_string(),
+                align: Some(CellAlign::Right),
+                text_color: Some("#006600".to_string()),
+                number: Some(RenderNumber {
+                    decimals: Some(2),
+                    commas: Some(true),
+                    format: Some(NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: Some("$".to_string()),
+                    }),
+                }),
+                ..Default::default()
+            },
+            // Wrapped text at A15 (wider cell would show wrap)
+            RenderCell {
+                x: 1,
+                y: 15,
+                value: "This is a long text that should wrap".to_string(),
+                wrap: Some(CellWrap::Wrap),
+                ..Default::default()
+            },
+            // Clipped text at B15
+            RenderCell {
+                x: 2,
+                y: 15,
+                value: "Clipped text overflow".to_string(),
+                wrap: Some(CellWrap::Clip),
+                ..Default::default()
+            },
+            // Top aligned at A20
+            RenderCell {
+                x: 1,
+                y: 20,
+                value: "Top".to_string(),
+                vertical_align: Some(CellVerticalAlign::Top),
+                ..Default::default()
+            },
+            // Middle aligned at B20
+            RenderCell {
+                x: 2,
+                y: 20,
+                value: "Middle".to_string(),
+                vertical_align: Some(CellVerticalAlign::Middle),
+                ..Default::default()
+            },
+            // Bottom aligned at C20
+            RenderCell {
+                x: 3,
+                y: 20,
+                value: "Bottom".to_string(),
+                vertical_align: Some(CellVerticalAlign::Bottom),
+                ..Default::default()
+            },
+            // Spill error at D20
+            RenderCell {
+                x: 4,
+                y: 20,
+                value: String::new(),
+                special: Some(RenderCellSpecial::SpillError),
+                text_color: Some("#cc0000".to_string()),
+                ..Default::default()
+            },
+            // Run error at E20
+            RenderCell {
+                x: 5,
+                y: 20,
+                value: String::new(),
+                special: Some(RenderCellSpecial::RunError),
+                text_color: Some("#cc0000".to_string()),
+                ..Default::default()
+            },
+        ];
+        self.set_labels_for_hash(0, 0, hash_0_0_labels);
+
+        // Labels in hash (1, 0) - more examples
+        let hash_1_0_labels = vec![
+            // Blue text
+            RenderCell {
+                x: 16,
+                y: 5,
+                value: "Blue Text".to_string(),
+                text_color: Some("#0000ff".to_string()),
+                bold: Some(true),
+                ..Default::default()
+            },
+            // Purple italic
+            RenderCell {
+                x: 17,
+                y: 6,
+                value: "Purple Italic".to_string(),
+                text_color: Some("#800080".to_string()),
+                italic: Some(true),
+                ..Default::default()
+            },
+            // Table name style
+            RenderCell {
+                x: 18,
+                y: 1,
+                value: "TableName".to_string(),
+                bold: Some(true),
+                table_name: Some(true),
+                ..Default::default()
+            },
+            // Column header style
+            RenderCell {
+                x: 18,
+                y: 2,
+                value: "Column A".to_string(),
+                bold: Some(true),
+                column_header: Some(true),
+                ..Default::default()
+            },
+            RenderCell {
+                x: 19,
+                y: 2,
+                value: "Column B".to_string(),
+                bold: Some(true),
+                column_header: Some(true),
+                ..Default::default()
+            },
+        ];
+        self.set_labels_for_hash(1, 0, hash_1_0_labels);
+
+        log::info!(
+            "Added test labels: {} hashes, {} total labels",
+            self.get_label_hash_count(),
+            self.get_label_count()
+        );
+    }
+
+    // =========================================================================
     // Deceleration (momentum scrolling)
     // =========================================================================
 
@@ -263,6 +655,7 @@ impl RendererState {
             || self.content.is_dirty()
             || self.headings.is_dirty()
             || self.any_visible_hash_dirty()
+            || self.fills.is_dirty(&self.viewport)
     }
 
     // =========================================================================
@@ -380,6 +773,86 @@ impl RendererState {
     /// Get total label count
     pub fn get_label_count(&self) -> usize {
         self.label_count
+    }
+
+    // =========================================================================
+    // Label Hash Management (bincode-based loading)
+    // =========================================================================
+
+    /// Set labels for a specific hash from bincode-decoded RenderCell data
+    ///
+    /// This is the main entry point for loading cell labels from core.
+    /// It converts each RenderCell to an internal CellLabel, computes bounds,
+    /// and performs layout.
+    pub fn set_labels_for_hash(&mut self, hash_x: i64, hash_y: i64, cells: Vec<RenderCell>) {
+        let key = hash_key(hash_x, hash_y);
+
+        // Remove existing hash if present
+        if let Some(old_hash) = self.hashes.remove(&key) {
+            self.label_count = self.label_count.saturating_sub(old_hash.label_count());
+        }
+
+        // Create new hash
+        let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
+
+        // Convert each RenderCell to CellLabel and add to hash
+        for cell in cells {
+            // Skip empty values (no text to render)
+            if cell.value.is_empty() && cell.special.is_none() {
+                continue;
+            }
+
+            let mut label = CellLabel::from_render_cell(&cell);
+            label.update_bounds(&self.cells_sheet.sheet_offsets);
+            label.layout(&self.fonts);
+
+            hash.add_label(cell.x, cell.y, label);
+            self.label_count += 1;
+        }
+
+        // Only insert if hash has labels
+        if !hash.is_empty() {
+            self.hashes.insert(key, hash);
+        }
+    }
+
+    /// Mark a labels hash as dirty (needs reload when visible)
+    pub fn mark_labels_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
+        let key = hash_key(hash_x, hash_y);
+        if let Some(hash) = self.hashes.get_mut(&key) {
+            hash.mark_dirty();
+        } else {
+            // Hash doesn't exist yet - it will be loaded when visible
+            // We could track dirty hashes that aren't loaded yet, but
+            // for now we just let the normal loading flow handle it
+        }
+    }
+
+    /// Get label hashes that need to be loaded (visible but not yet loaded)
+    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    pub fn get_needed_label_hashes(&self) -> Vec<i32> {
+        self.get_needed_hashes()
+    }
+
+    /// Get label hashes that can be unloaded (outside viewport)
+    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    pub fn get_offscreen_label_hashes(&self) -> Vec<i32> {
+        self.get_offscreen_hashes()
+    }
+
+    /// Unload a label hash to free memory
+    pub fn unload_label_hash(&mut self, hash_x: i64, hash_y: i64) {
+        self.remove_hash(hash_x as i32, hash_y as i32);
+    }
+
+    /// Check if a label hash is loaded
+    pub fn has_label_hash(&self, hash_x: i64, hash_y: i64) -> bool {
+        self.has_hash(hash_x as i32, hash_y as i32)
+    }
+
+    /// Get number of loaded label hashes
+    pub fn get_label_hash_count(&self) -> usize {
+        self.get_hash_count()
     }
 
     // =========================================================================
@@ -501,6 +974,10 @@ impl RendererState {
     pub fn update_content(&mut self) {
         self.content
             .update(&self.viewport, &self.cells_sheet.sheet_offsets);
+        // Pass viewport.dirty so fills know to rebuild meta fills when viewport moves
+        // (meta fills are clipped to viewport bounds)
+        self.fills
+            .update(&self.viewport, &self.cells_sheet.sheet_offsets, self.viewport.dirty);
     }
 
     /// Update headings and return (width, height) if shown

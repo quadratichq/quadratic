@@ -180,6 +180,14 @@ interface SetHeadingsDprMessage {
   dpr: number;
 }
 
+interface AddTestFillsMessage {
+  type: 'addTestFills';
+}
+
+interface AddTestLabelsMessage {
+  type: 'addTestLabels';
+}
+
 type WorkerMessage =
   | InitMessage
   | SetBackendMessage
@@ -210,7 +218,9 @@ type WorkerMessage =
   | SetSelectedColumnsMessage
   | SetSelectedRowsMessage
   | GetHeadingSizeMessage
-  | SetHeadingsDprMessage;
+  | SetHeadingsDprMessage
+  | AddTestFillsMessage
+  | AddTestLabelsMessage;
 
 let renderer: WorkerRenderer | WorkerRendererGPU | null = null;
 let animationFrameId: number | null = null;
@@ -607,6 +617,24 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
     case 'setHeadingsDpr':
       if (renderer) {
         renderer.set_headings_dpr(data.dpr);
+      }
+      break;
+
+    // =========================================================================
+    // Test / Debug
+    // =========================================================================
+
+    case 'addTestFills':
+      if (renderer) {
+        renderer.add_test_fills();
+        console.log('[RenderWorker] Added test fills');
+      }
+      break;
+
+    case 'addTestLabels':
+      if (renderer) {
+        renderer.add_test_labels();
+        console.log('[RenderWorker] Added test labels');
       }
       break;
 

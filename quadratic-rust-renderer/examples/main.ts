@@ -375,6 +375,12 @@ async function init(): Promise<void> {
             statusEl.textContent = 'Ready – scroll to explore';
             statusEl.className = 'ready';
 
+            // Add test fills for development/debugging
+            worker?.postMessage({ type: 'addTestFills' });
+
+            // Add test labels for development/debugging
+            worker?.postMessage({ type: 'addTestLabels' });
+
             // Load initial visible hashes
             updateVisibleHashes();
 

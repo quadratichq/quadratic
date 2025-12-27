@@ -417,6 +417,162 @@ impl WorkerRenderer {
     }
 
     // =========================================================================
+    // Fills (cell backgrounds)
+    // =========================================================================
+
+    /// Check if meta fills have been loaded
+    #[wasm_bindgen]
+    pub fn fills_meta_loaded(&self) -> bool {
+        self.state.fills_meta_loaded()
+    }
+
+    /// Set fills for a specific hash
+    /// fills_data: bincode-encoded Vec<RenderFill>
+    #[wasm_bindgen]
+    pub fn set_fills_for_hash(
+        &mut self,
+        hash_x: i32,
+        hash_y: i32,
+        fills_data: &[u8],
+    ) -> Result<(), JsValue> {
+        let (fills, _): (Vec<quadratic_core_shared::RenderFill>, _) =
+            bincode::decode_from_slice(fills_data, bincode::config::standard())
+                .map_err(|e| JsValue::from_str(&format!("Failed to decode fills: {}", e)))?;
+        self.state
+            .set_fills_for_hash(hash_x as i64, hash_y as i64, fills);
+        Ok(())
+    }
+
+    /// Set meta fills (infinite row/column/sheet fills)
+    /// fills_data: bincode-encoded Vec<SheetFill>
+    #[wasm_bindgen]
+    pub fn set_meta_fills(&mut self, fills_data: &[u8]) -> Result<(), JsValue> {
+        let (fills, _): (Vec<quadratic_core_shared::SheetFill>, _) =
+            bincode::decode_from_slice(fills_data, bincode::config::standard())
+                .map_err(|e| JsValue::from_str(&format!("Failed to decode meta fills: {}", e)))?;
+        self.state.set_meta_fills(fills);
+        Ok(())
+    }
+
+    /// Mark a fills hash as dirty (needs reload when visible)
+    #[wasm_bindgen]
+    pub fn mark_fills_hash_dirty(&mut self, hash_x: i32, hash_y: i32) {
+        self.state.mark_fills_hash_dirty(hash_x as i64, hash_y as i64);
+    }
+
+    /// Get fill hashes that need to be loaded (visible but not yet loaded)
+    /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    #[wasm_bindgen]
+    pub fn get_needed_fill_hashes(&self) -> Box<[i32]> {
+        self.state.get_needed_fill_hashes().into_boxed_slice()
+    }
+
+    /// Get fill hashes that can be unloaded (outside viewport)
+    /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    #[wasm_bindgen]
+    pub fn get_offscreen_fill_hashes(&self) -> Box<[i32]> {
+        self.state.get_offscreen_fill_hashes().into_boxed_slice()
+    }
+
+    /// Unload a fill hash to free memory
+    #[wasm_bindgen]
+    pub fn unload_fill_hash(&mut self, hash_x: i32, hash_y: i32) {
+        self.state.unload_fill_hash(hash_x as i64, hash_y as i64);
+    }
+
+    /// Check if a fill hash is loaded
+    #[wasm_bindgen]
+    pub fn has_fill_hash(&self, hash_x: i32, hash_y: i32) -> bool {
+        self.state.has_fill_hash(hash_x as i64, hash_y as i64)
+    }
+
+    /// Get number of loaded fill hashes
+    #[wasm_bindgen]
+    pub fn get_fill_hash_count(&self) -> usize {
+        self.state.get_fill_hash_count()
+    }
+
+    /// Get total fill count
+    #[wasm_bindgen]
+    pub fn get_fill_count(&self) -> usize {
+        self.state.get_fill_count()
+    }
+
+    /// Add test fills for development/debugging
+    /// Creates various cell-based and meta fills to verify rendering
+    #[wasm_bindgen]
+    pub fn add_test_fills(&mut self) {
+        self.state.add_test_fills();
+    }
+
+    // =========================================================================
+    // Cell Labels (text content)
+    // =========================================================================
+
+    /// Set cell labels for a specific hash
+    /// labels_data: bincode-encoded Vec<RenderCell>
+    #[wasm_bindgen]
+    pub fn set_labels_for_hash(
+        &mut self,
+        hash_x: i32,
+        hash_y: i32,
+        labels_data: &[u8],
+    ) -> Result<(), JsValue> {
+        let (cells, _): (Vec<quadratic_core_shared::RenderCell>, _) =
+            bincode::decode_from_slice(labels_data, bincode::config::standard())
+                .map_err(|e| JsValue::from_str(&format!("Failed to decode labels: {}", e)))?;
+        self.state
+            .set_labels_for_hash(hash_x as i64, hash_y as i64, cells);
+        Ok(())
+    }
+
+    /// Mark a labels hash as dirty (needs reload when visible)
+    #[wasm_bindgen]
+    pub fn mark_labels_hash_dirty(&mut self, hash_x: i32, hash_y: i32) {
+        self.state
+            .mark_labels_hash_dirty(hash_x as i64, hash_y as i64);
+    }
+
+    /// Get label hashes that need to be loaded (visible but not yet loaded)
+    /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    #[wasm_bindgen]
+    pub fn get_needed_label_hashes(&self) -> Box<[i32]> {
+        self.state.get_needed_label_hashes().into_boxed_slice()
+    }
+
+    /// Get label hashes that can be unloaded (outside viewport)
+    /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
+    #[wasm_bindgen]
+    pub fn get_offscreen_label_hashes(&self) -> Box<[i32]> {
+        self.state.get_offscreen_label_hashes().into_boxed_slice()
+    }
+
+    /// Unload a label hash to free memory
+    #[wasm_bindgen]
+    pub fn unload_label_hash(&mut self, hash_x: i32, hash_y: i32) {
+        self.state.unload_label_hash(hash_x as i64, hash_y as i64);
+    }
+
+    /// Check if a label hash is loaded
+    #[wasm_bindgen]
+    pub fn has_label_hash(&self, hash_x: i32, hash_y: i32) -> bool {
+        self.state.has_label_hash(hash_x as i64, hash_y as i64)
+    }
+
+    /// Get number of loaded label hashes
+    #[wasm_bindgen]
+    pub fn get_label_hash_count(&self) -> usize {
+        self.state.get_label_hash_count()
+    }
+
+    /// Add test labels for development/debugging
+    /// Creates various cell labels to verify text rendering
+    #[wasm_bindgen]
+    pub fn add_test_labels(&mut self) {
+        self.state.add_test_labels();
+    }
+
+    // =========================================================================
     // Frame Rendering
     // =========================================================================
 
@@ -486,16 +642,19 @@ impl WorkerRenderer {
         // 1. Background (white grid area)
         self.render_background(&matrix_array);
 
-        // 2. Grid lines
+        // 2. Cell fills (backgrounds) - after background, before grid lines
+        self.render_fills(&matrix_array);
+
+        // 3. Grid lines
         self.state
             .content
             .grid_lines
             .render(&mut self.gl, &matrix_array);
 
-        // 3. Cell text
+        // 4. Cell text
         self.render_text(&matrix_array);
 
-        // 4. Cursor (on top of text)
+        // 5. Cursor (on top of text)
         let viewport_scale = self.state.viewport.effective_scale();
         self.state
             .content
@@ -540,6 +699,16 @@ impl WorkerRenderer {
         let mut rects = crate::primitives::Rects::new();
         rects.add(x, y, width, height, [1.0, 1.0, 1.0, 1.0]);
         rects.render(&mut self.gl, matrix);
+    }
+
+    /// Render cell fills (background colors)
+    fn render_fills(&mut self, matrix: &[f32; 16]) {
+        self.state.fills.render(
+            &mut self.gl,
+            matrix,
+            &self.state.viewport,
+            &self.state.cells_sheet.sheet_offsets,
+        );
     }
 
     /// Render cell text using spatial hash culling

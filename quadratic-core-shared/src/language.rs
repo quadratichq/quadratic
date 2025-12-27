@@ -1,8 +1,9 @@
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, Encode, Decode)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     #[default]
@@ -49,7 +50,7 @@ impl CodeCellLanguage {
     }
 }
 
-#[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash, Encode, Decode)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ConnectionKind {

@@ -5,7 +5,9 @@ pub mod util;
 
 mod a1;
 mod array_size;
+mod cell_labels;
 mod copy_formats;
+mod fills;
 mod ids;
 mod language;
 mod pos;
@@ -18,7 +20,9 @@ mod test_util;
 
 pub use a1::*;
 pub use array_size::*;
+pub use cell_labels::*;
 pub use copy_formats::*;
+pub use fills::*;
 pub use ids::*;
 pub use language::*;
 pub use pos::*;

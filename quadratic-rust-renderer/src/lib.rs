@@ -32,6 +32,7 @@
 // Platform-agnostic modules
 pub mod cells;
 pub mod content;
+pub mod fills;
 pub mod headings;
 pub mod primitives;
 pub mod render_context;

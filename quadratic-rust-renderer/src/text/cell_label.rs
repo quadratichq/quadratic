@@ -3,7 +3,9 @@
 //! Simplified version of CellLabel from TypeScript.
 //! Handles basic text layout with alignment and wrapping.
 
-use quadratic_core_shared::SheetOffsets;
+use quadratic_core_shared::{RenderCell, SheetOffsets};
+
+use crate::fills::parse_color_string;
 
 use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
 use super::label_mesh::LabelMesh;
@@ -158,6 +160,66 @@ impl CellLabel {
             cached_meshes: Vec::new(),
             mesh_dirty: true,
         }
+    }
+
+    /// Create a CellLabel from a RenderCell (bincode-decoded data from core)
+    ///
+    /// This converts the core's RenderCell format into the renderer's internal
+    /// CellLabel format, applying all styling and formatting options.
+    pub fn from_render_cell(cell: &RenderCell) -> Self {
+        use quadratic_core_shared::{CellAlign, CellVerticalAlign, CellWrap};
+
+        // Skip special cell types that don't need text rendering
+        if let Some(ref special) = cell.special {
+            use quadratic_core_shared::RenderCellSpecial;
+            match special {
+                RenderCellSpecial::Chart | RenderCellSpecial::Checkbox => {
+                    // These don't render text, return empty label
+                    return Self::new(String::new(), cell.x, cell.y);
+                }
+                RenderCellSpecial::SpillError => {
+                    return Self::new(" #SPILL".to_string(), cell.x, cell.y);
+                }
+                RenderCellSpecial::RunError => {
+                    return Self::new(" #ERROR".to_string(), cell.x, cell.y);
+                }
+                _ => {}
+            }
+        }
+
+        let mut label = Self::new(cell.value.clone(), cell.x, cell.y);
+
+        // Apply text styling
+        label.bold = cell.bold.unwrap_or(false);
+        label.italic = cell.italic.unwrap_or(false);
+        label.font_size = cell.font_size.map(|s| s as f32).unwrap_or(DEFAULT_FONT_SIZE);
+
+        // Apply text color
+        if let Some(ref color_str) = cell.text_color {
+            label.color = parse_color_string(color_str);
+        }
+
+        // Apply alignment
+        label.align = match cell.align {
+            Some(CellAlign::Center) => TextAlign::Center,
+            Some(CellAlign::Right) => TextAlign::Right,
+            _ => TextAlign::Left,
+        };
+
+        label.vertical_align = match cell.vertical_align {
+            Some(CellVerticalAlign::Top) => VerticalAlign::Top,
+            Some(CellVerticalAlign::Middle) => VerticalAlign::Middle,
+            _ => VerticalAlign::Bottom,
+        };
+
+        // Apply wrap mode
+        label.wrap = match cell.wrap {
+            Some(CellWrap::Wrap) => TextWrap::Wrap,
+            Some(CellWrap::Clip) => TextWrap::Clip,
+            _ => TextWrap::Overflow,
+        };
+
+        label
     }
 
     /// Update cell bounds from sheet offsets
