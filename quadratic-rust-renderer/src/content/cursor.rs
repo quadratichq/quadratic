@@ -2,9 +2,9 @@
 //!
 //! Equivalent to Cursor.ts from the Pixi.js implementation
 
+use crate::RenderContext;
 use crate::primitives::{Color, LineScaling, Lines, Rects};
 use crate::viewport::Viewport;
-use crate::RenderContext;
 
 use super::grid_lines::{DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT};
 

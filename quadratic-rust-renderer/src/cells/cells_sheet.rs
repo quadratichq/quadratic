@@ -90,7 +90,10 @@ impl CellsSheet {
 
     /// Set a cell's content
     pub fn set_cell(&mut self, col: i64, row: i64, text: Option<String>) {
-        let cell = self.cells.entry((col, row)).or_insert_with(|| CellContent::new(col, row));
+        let cell = self
+            .cells
+            .entry((col, row))
+            .or_insert_with(|| CellContent::new(col, row));
         cell.text = text;
         cell.dirty = true;
         self.dirty = true;
@@ -98,7 +101,10 @@ impl CellsSheet {
 
     /// Set a cell's background color
     pub fn set_cell_background(&mut self, col: i64, row: i64, color: Option<[f32; 4]>) {
-        let cell = self.cells.entry((col, row)).or_insert_with(|| CellContent::new(col, row));
+        let cell = self
+            .cells
+            .entry((col, row))
+            .or_insert_with(|| CellContent::new(col, row));
         cell.background_color = color;
         cell.dirty = true;
         self.dirty = true;
@@ -137,7 +143,9 @@ impl CellsSheet {
 
     /// Get visible cells
     pub fn visible_cells(&self) -> impl Iterator<Item = &CellContent> {
-        self.visible_cells.iter().filter_map(|pos| self.cells.get(pos))
+        self.visible_cells
+            .iter()
+            .filter_map(|pos| self.cells.get(pos))
     }
 
     /// Get all cells with background colors (for rendering fills)
@@ -156,4 +164,3 @@ impl CellsSheet {
         self.dirty = false;
     }
 }
-

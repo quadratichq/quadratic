@@ -14,6 +14,7 @@ use super::row_headings::RowHeadings;
 use super::types::{CELL_HEIGHT, HeadingColors, HeadingSize, ViewportState};
 
 /// Grid headings renderer
+#[derive(Debug, Default)]
 pub struct GridHeadings {
     /// Heading colors
     pub colors: HeadingColors,
@@ -63,8 +64,8 @@ impl GridHeadings {
             colors: HeadingColors::default(),
             dpr,
             debug_label_bounds: false,
-            char_width: 6.67 * dpr,
-            char_height: 8.1 * dpr,
+            char_width: 6.67,
+            char_height: 8.1,
             heading_size: HeadingSize::default(),
             columns: ColumnHeadings::new(),
             rows: RowHeadings::new(),
@@ -82,8 +83,8 @@ impl GridHeadings {
     pub fn set_dpr(&mut self, dpr: f32) {
         if (self.dpr - dpr).abs() > 0.001 {
             self.dpr = dpr;
-            self.char_width = 6.67 * dpr;
-            self.char_height = 8.1 * dpr;
+            self.char_width = 6.67;
+            self.char_height = 8.1;
             self.dirty = true;
         }
     }
@@ -127,9 +128,9 @@ impl GridHeadings {
         self.heading_size
     }
 
-    /// Get the header height in screen pixels (scaled by DPR)
+    /// Get the header height in screen pixels
     fn header_height(&self) -> f32 {
-        CELL_HEIGHT * self.dpr
+        CELL_HEIGHT
     }
 
     /// Create a ViewportState from the current state
@@ -452,11 +453,5 @@ impl GridHeadings {
                 distance_range,
             );
         }
-    }
-}
-
-impl Default for GridHeadings {
-    fn default() -> Self {
-        Self::new()
     }
 }
