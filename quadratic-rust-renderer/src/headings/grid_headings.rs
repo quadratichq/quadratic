@@ -5,6 +5,8 @@
 //! This module is designed to render headings in screen space (outside the viewport transform)
 //! to avoid complex coordinate math. The headings stay fixed at the edges of the canvas.
 
+use quadratic_core_shared::SheetOffsets;
+
 use crate::RenderContext;
 use crate::primitives::{NativeLines, Rects};
 use crate::text::{BitmapFonts, LabelMesh};
@@ -154,7 +156,7 @@ impl GridHeadings {
         }
     }
 
-    /// Update headings based on viewport state
+    /// Update headings based on viewport state and sheet offsets
     ///
     /// # Arguments
     /// * `viewport_x` - World X position of viewport (left edge)
@@ -162,6 +164,7 @@ impl GridHeadings {
     /// * `scale` - Viewport scale (zoom level)
     /// * `canvas_width` - Canvas width in pixels
     /// * `canvas_height` - Canvas height in pixels
+    /// * `offsets` - Sheet offsets for column widths and row heights
     pub fn update(
         &mut self,
         viewport_x: f32,
@@ -169,6 +172,7 @@ impl GridHeadings {
         scale: f32,
         canvas_width: f32,
         canvas_height: f32,
+        offsets: &SheetOffsets,
     ) {
         // Check if we need to rebuild
         let viewport_changed = (self.last_viewport_x - viewport_x).abs() > 0.1
@@ -223,7 +227,7 @@ impl GridHeadings {
             self.create_viewport_state(viewport_x, viewport_y, scale, canvas_width, canvas_height);
 
         // Calculate actual row header width based on max visible row
-        let last_row = RowHeadings::calculate_last_row(&viewport_state, &temp_heading_size);
+        let last_row = RowHeadings::calculate_last_row(&viewport_state, &temp_heading_size, offsets);
         let row_width = RowHeadings::calculate_width(last_row, scale, &viewport_state);
 
         // Update heading size
@@ -234,11 +238,11 @@ impl GridHeadings {
             unscaled_height: col_height,
         };
 
-        // Update column and row headings
+        // Update column and row headings with offsets
         self.columns
-            .update(&viewport_state, &self.heading_size, &self.colors);
+            .update(&viewport_state, &self.heading_size, &self.colors, offsets);
         self.rows
-            .update(&viewport_state, &self.heading_size, &self.colors);
+            .update(&viewport_state, &self.heading_size, &self.colors, offsets);
     }
 
     /// Layout all labels (call after update, before get_meshes)
@@ -278,7 +282,7 @@ impl GridHeadings {
 
     /// Get selection highlight rectangles
     /// Returns list of [x, y, width, height] rects in screen pixels
-    pub fn get_selection_rects(&self) -> Vec<[f32; 4]> {
+    pub fn get_selection_rects(&self, offsets: &SheetOffsets) -> Vec<[f32; 4]> {
         let viewport = self.create_viewport_state(
             self.last_viewport_x,
             self.last_viewport_y,
@@ -289,14 +293,14 @@ impl GridHeadings {
 
         let mut rects = self
             .columns
-            .get_selection_rects(&viewport, &self.heading_size);
-        rects.extend(self.rows.get_selection_rects(&viewport, &self.heading_size));
+            .get_selection_rects(&viewport, &self.heading_size, offsets);
+        rects.extend(self.rows.get_selection_rects(&viewport, &self.heading_size, offsets));
         rects
     }
 
     /// Get grid line vertices for heading separators
     /// Returns vertices in format [x1, y1, x2, y2, ...] in screen pixels
-    pub fn get_grid_lines(&self) -> Vec<f32> {
+    pub fn get_grid_lines(&self, offsets: &SheetOffsets) -> Vec<f32> {
         let viewport = self.create_viewport_state(
             self.last_viewport_x,
             self.last_viewport_y,
@@ -317,8 +321,8 @@ impl GridHeadings {
         lines.extend_from_slice(&[0.0, col_height, self.last_canvas_width, col_height]);
 
         // Column and row separators
-        lines.extend(self.columns.get_grid_lines(&viewport, &self.heading_size));
-        lines.extend(self.rows.get_grid_lines(&viewport, &self.heading_size));
+        lines.extend(self.columns.get_grid_lines(&viewport, &self.heading_size, offsets));
+        lines.extend(self.rows.get_grid_lines(&viewport, &self.heading_size, offsets));
 
         lines
     }
@@ -362,6 +366,7 @@ impl GridHeadings {
         fonts: &BitmapFonts,
         font_scale: f32,
         distance_range: f32,
+        offsets: &SheetOffsets,
     ) {
         // 1. Render backgrounds
         let mut rects = Rects::with_capacity(8);
@@ -396,7 +401,7 @@ impl GridHeadings {
             self.colors.selection[2],
             self.colors.selection_alpha,
         ];
-        for rect in self.get_selection_rects() {
+        for rect in self.get_selection_rects(offsets) {
             rects.add(rect[0], rect[1], rect[2], rect[3], selection_color);
         }
 
@@ -418,7 +423,7 @@ impl GridHeadings {
         rects.render(ctx, matrix);
 
         // 2. Render grid lines
-        let grid_line_coords = self.get_grid_lines();
+        let grid_line_coords = self.get_grid_lines(offsets);
         let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
 
         for chunk in grid_line_coords.chunks(4) {

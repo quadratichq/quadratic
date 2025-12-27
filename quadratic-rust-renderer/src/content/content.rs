@@ -2,6 +2,8 @@
 //!
 //! Equivalent to Content.ts from the Pixi.js implementation
 
+use quadratic_core_shared::SheetOffsets;
+
 use crate::viewport::Viewport;
 
 use super::cursor::Cursor;
@@ -29,13 +31,13 @@ impl Content {
         }
     }
 
-    /// Update all content based on the current viewport
-    pub fn update(&mut self, viewport: &Viewport) {
-        // Update grid lines based on visible bounds
-        self.grid_lines.update(viewport);
+    /// Update all content based on the current viewport and sheet offsets
+    pub fn update(&mut self, viewport: &Viewport, offsets: &SheetOffsets) {
+        // Update grid lines based on visible bounds and offsets
+        self.grid_lines.update(viewport, offsets);
 
         // Update cursor
-        self.cursor.update(viewport);
+        self.cursor.update(viewport, offsets);
 
         // Check if anything is dirty
         self.dirty = self.grid_lines.dirty || self.cursor.dirty;
@@ -59,4 +61,3 @@ impl Default for Content {
         Self::new()
     }
 }
-

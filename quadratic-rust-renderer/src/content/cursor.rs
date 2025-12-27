@@ -2,11 +2,11 @@
 //!
 //! Equivalent to Cursor.ts from the Pixi.js implementation
 
+use quadratic_core_shared::{Pos, Rect, SheetOffsets};
+
 use crate::RenderContext;
 use crate::primitives::{Color, LineScaling, Lines, Rects};
 use crate::viewport::Viewport;
-
-use super::grid_lines::{DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT};
 
 /// Cursor selection color (blue with transparency)
 pub const CURSOR_COLOR: Color = [0.2, 0.4, 0.9, 1.0];
@@ -60,8 +60,8 @@ impl Cursor {
             rect: CursorRect {
                 x: 0.0,
                 y: 0.0,
-                width: DEFAULT_COLUMN_WIDTH,
-                height: DEFAULT_ROW_HEIGHT,
+                width: 100.0, // Will be updated with actual offsets
+                height: 21.0, // Will be updated with actual offsets
             },
             border_color: CURSOR_COLOR,
             fill_color: CURSOR_FILL_COLOR,
@@ -98,31 +98,45 @@ impl Cursor {
         }
     }
 
-    /// Update cursor based on current viewport
-    pub fn update(&mut self, _viewport: &Viewport) {
+    /// Update cursor based on current viewport and sheet offsets
+    pub fn update(&mut self, _viewport: &Viewport, offsets: &SheetOffsets) {
         if !self.dirty {
             return;
         }
 
-        // Calculate cursor rectangle
+        // Calculate cursor rectangle using sheet offsets for accurate positioning
         if let Some((start_col, start_row, end_col, end_row)) = self.selection {
             let min_col = start_col.min(end_col);
             let max_col = start_col.max(end_col);
             let min_row = start_row.min(end_row);
             let max_row = start_row.max(end_row);
 
+            // Use screen_rect_cell_offsets for range selection
+            let screen_rect = offsets.screen_rect_cell_offsets(Rect {
+                min: Pos {
+                    x: min_col,
+                    y: min_row,
+                },
+                max: Pos {
+                    x: max_col,
+                    y: max_row,
+                },
+            });
+
             self.rect = CursorRect {
-                x: min_col as f32 * DEFAULT_COLUMN_WIDTH,
-                y: min_row as f32 * DEFAULT_ROW_HEIGHT,
-                width: (max_col - min_col + 1) as f32 * DEFAULT_COLUMN_WIDTH,
-                height: (max_row - min_row + 1) as f32 * DEFAULT_ROW_HEIGHT,
+                x: screen_rect.x as f32,
+                y: screen_rect.y as f32,
+                width: screen_rect.w as f32,
+                height: screen_rect.h as f32,
             };
         } else {
+            // Use cell_offsets for single cell selection
+            let screen_rect = offsets.cell_offsets(self.selected_cell.0, self.selected_cell.1);
             self.rect = CursorRect {
-                x: self.selected_cell.0 as f32 * DEFAULT_COLUMN_WIDTH,
-                y: self.selected_cell.1 as f32 * DEFAULT_ROW_HEIGHT,
-                width: DEFAULT_COLUMN_WIDTH,
-                height: DEFAULT_ROW_HEIGHT,
+                x: screen_rect.x as f32,
+                y: screen_rect.y as f32,
+                width: screen_rect.w as f32,
+                height: screen_rect.h as f32,
             };
         }
 

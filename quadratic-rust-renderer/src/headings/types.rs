@@ -1,6 +1,6 @@
 //! Shared types and constants for grid headings
 
-/// Constants matching the TypeScript client
+/// Constants matching the TypeScript client (defaults, used when offsets not available)
 pub const CELL_WIDTH: f32 = 100.0;
 pub const CELL_HEIGHT: f32 = 21.0;
 

@@ -1,17 +1,18 @@
 //! Grid lines renderer
 //!
-//! Equivalent to GridLines.ts from the Pixi.js implementation.
 //! Grid lines fade out and disappear at low zoom levels to avoid
 //! rendering thousands of tiny lines.
 
+use quadratic_core_shared::SheetOffsets;
+
 use crate::RenderContext;
 use crate::primitives::NativeLines;
-use crate::viewport::Viewport;
+use crate::viewport::{Viewport, VisibleBounds};
 
-/// Default column width in pixels
+/// Default column width in pixels (used as fallback)
 pub const DEFAULT_COLUMN_WIDTH: f32 = 100.0;
 
-/// Default row height in pixels
+/// Default row height in pixels (used as fallback)
 pub const DEFAULT_ROW_HEIGHT: f32 = 21.0;
 
 /// Grid line base color (dark blue-gray, matches client's 0x233143)
@@ -73,9 +74,9 @@ impl GridLines {
         }
     }
 
-    /// Update grid lines based on the visible viewport
+    /// Update grid lines based on the visible viewport and sheet offsets
     /// Only regenerates lines if viewport has changed
-    pub fn update(&mut self, viewport: &Viewport) {
+    pub fn update(&mut self, viewport: &Viewport, offsets: &SheetOffsets) {
         // Only update if viewport changed
         if !viewport.dirty {
             self.dirty = false;
@@ -105,33 +106,86 @@ impl GridLines {
             return;
         }
 
-        // Calculate visible column range (clamp to >= 0 for valid grid area)
-        let first_col = (bounds.left / DEFAULT_COLUMN_WIDTH).floor().max(0.0) as i32;
-        let last_col = (bounds.right / DEFAULT_COLUMN_WIDTH).ceil() as i32;
-
-        // Calculate visible row range (clamp to >= 0 for valid grid area)
-        let first_row = (bounds.top / DEFAULT_ROW_HEIGHT).floor().max(0.0) as i32;
-        let last_row = (bounds.bottom / DEFAULT_ROW_HEIGHT).ceil() as i32;
-
         // Clamp line endpoints to valid grid area (x >= 0, y >= 0)
         let line_top = bounds.top.max(0.0);
         let line_left = bounds.left.max(0.0);
 
-        // Pre-allocate for expected number of lines
-        let num_cols = (last_col - first_col + 1) as usize;
-        let num_rows = (last_row - first_row + 1) as usize;
-        self.lines.reserve(num_cols + num_rows);
+        // Draw horizontal lines and get the row range
+        let row_range = self.draw_horizontal_lines(&bounds, offsets, line_left);
 
-        // Generate vertical lines (column separators)
-        for col in first_col..=last_col {
-            let x = col as f32 * DEFAULT_COLUMN_WIDTH;
-            self.lines.add(x, line_top, x, bounds.bottom, self.color);
+        // Draw vertical lines
+        self.draw_vertical_lines(&bounds, offsets, line_top, row_range);
+    }
+
+    /// Draw horizontal grid lines (row separators)
+    /// Returns the range of visible rows [first_row, last_row]
+    fn draw_horizontal_lines(
+        &mut self,
+        bounds: &VisibleBounds,
+        offsets: &SheetOffsets,
+        left: f32,
+    ) -> (i64, i64) {
+        // Get the starting row from the top of the viewport
+        let (first_row, first_row_pos) = offsets.row_from_y(bounds.top.max(0.0) as f64);
+
+        // Draw the 0-line if it's visible
+        if bounds.top <= 0.0 {
+            self.lines.add(left, 0.0, bounds.right, 0.0, self.color);
         }
 
-        // Generate horizontal lines (row separators)
-        for row in first_row..=last_row {
-            let y = row as f32 * DEFAULT_ROW_HEIGHT;
-            self.lines.add(line_left, y, bounds.right, y, self.color);
+        let mut row = first_row;
+        let mut y = first_row_pos as f32;
+
+        // Iterate through visible rows
+        while y <= bounds.bottom {
+            let row_height = offsets.row_height(row) as f32;
+
+            // Draw line at the bottom of the current row (top of next row)
+            let line_y = y + row_height;
+            if line_y >= bounds.top && line_y <= bounds.bottom {
+                self.lines
+                    .add(left, line_y, bounds.right, line_y, self.color);
+            }
+
+            y += row_height;
+            row += 1;
+        }
+
+        (first_row, row - 1)
+    }
+
+    /// Draw vertical grid lines (column separators)
+    fn draw_vertical_lines(
+        &mut self,
+        bounds: &VisibleBounds,
+        offsets: &SheetOffsets,
+        top: f32,
+        _row_range: (i64, i64),
+    ) {
+        // Get the starting column from the left of the viewport
+        let (first_col, first_col_pos) = offsets.column_from_x(bounds.left.max(0.0) as f64);
+
+        // Draw the 0-line if it's visible
+        if bounds.left <= 0.0 {
+            self.lines.add(0.0, top, 0.0, bounds.bottom, self.color);
+        }
+
+        let mut col = first_col;
+        let mut x = first_col_pos as f32;
+
+        // Iterate through visible columns
+        while x <= bounds.right {
+            let col_width = offsets.column_width(col) as f32;
+
+            // Draw line at the right of the current column (left of next column)
+            let line_x = x + col_width;
+            if line_x >= bounds.left && line_x <= bounds.right {
+                self.lines
+                    .add(line_x, top, line_x, bounds.bottom, self.color);
+            }
+
+            x += col_width;
+            col += 1;
         }
     }
 

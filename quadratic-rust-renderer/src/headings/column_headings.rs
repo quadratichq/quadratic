@@ -2,10 +2,12 @@
 
 use std::collections::HashMap;
 
+use quadratic_core_shared::SheetOffsets;
+
 use crate::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel, column_to_a1};
 
 use super::types::{
-    CELL_WIDTH, HeadingColors, HeadingSize, LABEL_DIGITS_TO_CALCULATE_SKIP,
+    HeadingColors, HeadingSize, LABEL_DIGITS_TO_CALCULATE_SKIP,
     LABEL_MAXIMUM_WIDTH_PERCENT, LABEL_PADDING_ROWS, ViewportState,
 };
 
@@ -71,33 +73,35 @@ impl ColumnHeadings {
         2
     }
 
-    /// Update column labels based on viewport state
+    /// Update column labels based on viewport state and sheet offsets
     pub fn update(
         &mut self,
         viewport: &ViewportState,
         heading_size: &HeadingSize,
         colors: &HeadingColors,
+        offsets: &SheetOffsets,
     ) {
         self.labels.clear();
 
         let scale = viewport.scale;
         let header_height = viewport.header_height();
 
+        // Get the starting column from the viewport position using offsets
+        let (first_col, first_col_pos) = offsets.column_from_x(viewport.viewport_x.max(0.0) as f64);
+        let first_col = first_col.max(1); // 1-indexed for A1 notation
+
         // Calculate visible world bounds
         let content_width = viewport.canvas_width - heading_size.width;
         let world_width = content_width / scale;
-
-        // Calculate visible column range (1-indexed for A1 notation)
-        let first_col = ((viewport.viewport_x / CELL_WIDTH).floor() as i64).max(0) + 1;
-        let last_col =
-            (((viewport.viewport_x + world_width) / CELL_WIDTH).ceil() as i64).max(0) + 1;
+        let right_edge = viewport.viewport_x + world_width;
 
         // Calculate label skip interval for zoomed out views
         let label_width = LABEL_DIGITS_TO_CALCULATE_SKIP as f32 * viewport.char_width;
-        let cell_width_screen = CELL_WIDTH * scale;
+        let default_cell_width = offsets.column_width(1) as f32;
+        let cell_width_screen = default_cell_width * scale;
 
         self.col_mod = if label_width > cell_width_screen * LABEL_MAXIMUM_WIDTH_PERCENT {
-            let cell_width_world = CELL_WIDTH / scale;
+            let cell_width_world = default_cell_width / scale;
             let skip_numbers = (cell_width_world * (1.0 - LABEL_MAXIMUM_WIDTH_PERCENT)
                 / label_width)
                 .ceil() as i64;
@@ -109,7 +113,13 @@ impl ColumnHeadings {
         // Track last label to prevent overlapping
         let mut last_label: Option<(f32, f32, bool)> = None; // (left, right, selected)
 
-        for col in first_col..=last_col {
+        // Iterate through visible columns using offsets
+        let mut col = first_col;
+        let mut world_x = first_col_pos as f32;
+
+        while world_x <= right_edge {
+            let col_width = offsets.column_width(col) as f32;
+
             // Check if we should skip this label based on modulus
             let selected = self.is_selected(col);
             let show_label = selected
@@ -118,51 +128,50 @@ impl ColumnHeadings {
                 || (self.col_mod != 2 && col % self.col_mod == 0)
                 || col == first_col;
 
-            if !show_label {
-                continue;
-            }
+            if show_label && col > 0 {
+                // Calculate screen position (center of column)
+                let col_center_x = world_x + col_width / 2.0;
+                let screen_x = (col_center_x - viewport.viewport_x) * scale + heading_size.width;
+                let screen_y = header_height / 2.25;
 
-            // Calculate screen position
-            let world_x = (col - 1) as f32 * CELL_WIDTH + CELL_WIDTH / 2.0;
-            let screen_x = (world_x - viewport.viewport_x) * scale + heading_size.width;
-            let screen_y = header_height / 2.25;
+                // Only add if inside visible area
+                if screen_x >= heading_size.width && screen_x <= viewport.canvas_width {
+                    let text = column_to_a1(col);
+                    let char_count = text.len() as f32;
 
-            // Skip if outside visible area
-            if screen_x < heading_size.width || screen_x > viewport.canvas_width {
-                continue;
-            }
+                    // For overlap detection
+                    let label_width = char_count * viewport.char_width;
+                    let padding = LABEL_PADDING_ROWS;
+                    let half_width = label_width / 2.0 + padding;
+                    let left = screen_x - half_width;
+                    let right = screen_x + half_width;
 
-            let text = column_to_a1(col);
-            let char_count = text.len() as f32;
+                    // Check for intersection with last label
+                    let mut intersects_last = false;
+                    if let Some((last_left, last_right, last_selected)) = last_label {
+                        intersects_last = left < last_right && right > last_left;
 
-            // For overlap detection
-            let label_width = char_count * viewport.char_width;
-            let padding = LABEL_PADDING_ROWS;
-            let half_width = label_width / 2.0 + padding;
-            let left = screen_x - half_width;
-            let right = screen_x + half_width;
+                        if intersects_last && selected && !last_selected {
+                            self.labels.pop();
+                            intersects_last = false;
+                        }
+                    }
 
-            // Check for intersection with last label
-            let mut intersects_last = false;
-            if let Some((last_left, last_right, last_selected)) = last_label {
-                intersects_last = left < last_right && right > last_left;
+                    // Only add label if not intersecting with last
+                    if !intersects_last {
+                        let label = TextLabel::new(text, screen_x, screen_y)
+                            .with_font_size(viewport.font_size())
+                            .with_anchor(TextAnchor::Center)
+                            .with_color(colors.label);
 
-                if intersects_last && selected && !last_selected {
-                    self.labels.pop();
-                    intersects_last = false;
+                        self.labels.push(label);
+                        last_label = Some((left, right, selected));
+                    }
                 }
             }
 
-            // Only add label if not intersecting with last
-            if !intersects_last && col > 0 {
-                let label = TextLabel::new(text, screen_x, screen_y)
-                    .with_font_size(viewport.font_size())
-                    .with_anchor(TextAnchor::Center)
-                    .with_color(colors.label);
-
-                self.labels.push(label);
-                last_label = Some((left, right, selected));
-            }
+            world_x += col_width;
+            col += 1;
         }
     }
 
@@ -178,13 +187,16 @@ impl ColumnHeadings {
         &self,
         viewport: &ViewportState,
         heading_size: &HeadingSize,
+        offsets: &SheetOffsets,
     ) -> Vec<[f32; 4]> {
         let mut rects = Vec::new();
         let scale = viewport.scale;
 
         for (start, end) in &self.selected {
-            let x1 = (*start - 1) as f32 * CELL_WIDTH;
-            let x2 = *end as f32 * CELL_WIDTH;
+            let (start_pos, _) = offsets.column_position_size(*start);
+            let (end_pos, end_size) = offsets.column_position_size(*end);
+            let x1 = start_pos as f32;
+            let x2 = (end_pos + end_size) as f32;
             let screen_x1 = (x1 - viewport.viewport_x) * scale + heading_size.width;
             let screen_x2 = (x2 - viewport.viewport_x) * scale + heading_size.width;
 
@@ -201,22 +213,38 @@ impl ColumnHeadings {
     }
 
     /// Get grid line vertices for column separators
-    pub fn get_grid_lines(&self, viewport: &ViewportState, heading_size: &HeadingSize) -> Vec<f32> {
+    pub fn get_grid_lines(
+        &self,
+        viewport: &ViewportState,
+        heading_size: &HeadingSize,
+        offsets: &SheetOffsets,
+    ) -> Vec<f32> {
         let mut lines = Vec::new();
         let scale = viewport.scale;
 
-        // Calculate visible column range
-        let world_width = viewport.canvas_width / scale;
-        let first_col = ((viewport.viewport_x / CELL_WIDTH).floor() as i64).max(0) + 1;
-        let last_col =
-            (((viewport.viewport_x + world_width) / CELL_WIDTH).ceil() as i64).max(0) + 1;
+        // Get the starting column from the viewport position
+        let (first_col, first_col_pos) = offsets.column_from_x(viewport.viewport_x.max(0.0) as f64);
+        let first_col = first_col.max(1);
 
-        for col in first_col..=last_col {
-            let world_x = (col - 1) as f32 * CELL_WIDTH;
-            let screen_x = (world_x - viewport.viewport_x) * scale + heading_size.width;
-            if screen_x > heading_size.width && screen_x < viewport.canvas_width {
-                lines.extend_from_slice(&[screen_x, 0.0, screen_x, heading_size.height]);
+        // Calculate visible world bounds
+        let world_width = viewport.canvas_width / scale;
+        let right_edge = viewport.viewport_x + world_width;
+
+        let mut col = first_col;
+        let mut world_x = first_col_pos as f32;
+
+        while world_x <= right_edge {
+            let col_width = offsets.column_width(col) as f32;
+
+            if col > 0 {
+                let screen_x = (world_x - viewport.viewport_x) * scale + heading_size.width;
+                if screen_x > heading_size.width && screen_x < viewport.canvas_width {
+                    lines.extend_from_slice(&[screen_x, 0.0, screen_x, heading_size.height]);
+                }
             }
+
+            world_x += col_width;
+            col += 1;
         }
 
         lines

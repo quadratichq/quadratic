@@ -9,13 +9,14 @@ use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use web_sys::OffscreenCanvas;
 
+use crate::cells::CellsSheet;
 use crate::content::Content;
 use crate::headings::GridHeadings;
 #[cfg(target_arch = "wasm32")]
 use crate::render_context::RenderContext;
 #[cfg(target_arch = "wasm32")]
 use crate::text::{
-    BitmapFont, CellLabel, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH, VisibleHashBounds,
+    BitmapFont, CellLabel, VisibleHashBounds,
     get_hash_coords, hash_key,
 };
 use crate::text::{BitmapFonts, CellsTextHash};
@@ -33,6 +34,9 @@ pub struct WorkerRendererGPU {
 
     /// Viewport (camera/zoom/pan state)
     viewport: Viewport,
+
+    /// Current sheet being rendered
+    cells_sheet: CellsSheet,
 
     /// Renderable content
     content: Content,
@@ -80,6 +84,7 @@ impl WorkerRendererGPU {
         Ok(Self {
             gpu,
             viewport,
+            cells_sheet: CellsSheet::new("test".to_string()),
             content,
             fonts: BitmapFonts::new(),
             hashes: HashMap::new(),
@@ -385,33 +390,24 @@ impl WorkerRendererGPU {
     }
 
     /// Add a cell label
+    /// col and row are 1-indexed cell coordinates
     #[wasm_bindgen]
-    pub fn add_label(
-        &mut self,
-        text: &str,
-        cell_x: f32,
-        cell_y: f32,
-        cell_width: f32,
-        cell_height: f32,
-    ) {
-        let col = (cell_x / DEFAULT_CELL_WIDTH) as i64;
-        let row = (cell_y / DEFAULT_CELL_HEIGHT) as i64;
-
-        let mut label = CellLabel::new(text.to_string(), cell_x, cell_y, cell_width, cell_height);
+    pub fn add_label(&mut self, text: &str, col: i64, row: i64) {
+        let mut label = CellLabel::new(text.to_string(), col, row);
+        label.update_bounds(&self.cells_sheet.sheet_offsets);
         label.layout(&self.fonts);
 
         self.insert_label(col, row, label);
     }
 
     /// Add a styled cell label
+    /// col and row are 1-indexed cell coordinates
     #[wasm_bindgen]
     pub fn add_styled_label(
         &mut self,
         text: &str,
-        cell_x: f32,
-        cell_y: f32,
-        cell_width: f32,
-        cell_height: f32,
+        col: i64,
+        row: i64,
         font_size: f32,
         bold: bool,
         italic: bool,
@@ -423,10 +419,8 @@ impl WorkerRendererGPU {
     ) {
         use crate::text::cell_label::{TextAlign, VerticalAlign};
 
-        let col = (cell_x / DEFAULT_CELL_WIDTH) as i64;
-        let row = (cell_y / DEFAULT_CELL_HEIGHT) as i64;
-
-        let mut label = CellLabel::new(text.to_string(), cell_x, cell_y, cell_width, cell_height);
+        let mut label = CellLabel::new(text.to_string(), col, row);
+        label.update_bounds(&self.cells_sheet.sheet_offsets);
         label.font_size = font_size;
         label.bold = bold;
         label.italic = italic;
@@ -453,7 +447,7 @@ impl WorkerRendererGPU {
         let hash = self
             .hashes
             .entry(key)
-            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y));
+            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets));
         hash.add_label(col, row, label);
         self.label_count += 1;
     }
@@ -485,6 +479,7 @@ impl WorkerRendererGPU {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
+            &self.cells_sheet.sheet_offsets,
         );
 
         Box::new([
@@ -505,6 +500,7 @@ impl WorkerRendererGPU {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
+            &self.cells_sheet.sheet_offsets,
         );
 
         let mut needed: Vec<i32> = Vec::new();
@@ -530,6 +526,7 @@ impl WorkerRendererGPU {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
+            &self.cells_sheet.sheet_offsets,
         );
 
         let mut offscreen: Vec<i32> = Vec::new();
@@ -598,8 +595,8 @@ impl WorkerRendererGPU {
         // Update deceleration
         self.viewport.update_decelerate(elapsed);
 
-        // Update content
-        self.content.update(&self.viewport);
+        // Update content based on viewport and sheet offsets
+        self.content.update(&self.viewport, &self.cells_sheet.sheet_offsets);
 
         // Update headings
         let (heading_width, heading_height) = if self.show_headings {
@@ -614,6 +611,7 @@ impl WorkerRendererGPU {
                 scale,
                 canvas_width,
                 canvas_height,
+                &self.cells_sheet.sheet_offsets,
             );
 
             let size = self.headings.heading_size();
@@ -978,7 +976,7 @@ impl WorkerRendererGPU {
             colors.selection[2],
             colors.selection_alpha,
         ];
-        for rect in self.headings.get_selection_rects() {
+        for rect in self.headings.get_selection_rects(&self.cells_sheet.sheet_offsets) {
             rects.add(rect[0], rect[1], rect[2], rect[3], selection_color);
         }
 
@@ -1004,7 +1002,7 @@ impl WorkerRendererGPU {
         }
 
         // 2. Render grid lines
-        let grid_line_coords = self.headings.get_grid_lines();
+        let grid_line_coords = self.headings.get_grid_lines(&self.cells_sheet.sheet_offsets);
         let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
 
         for chunk in grid_line_coords.chunks(4) {

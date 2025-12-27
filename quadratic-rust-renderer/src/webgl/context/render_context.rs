@@ -70,6 +70,15 @@ impl RenderContext for WebGLContext {
             return;
         }
 
+        // Ensure blending is enabled with proper state
+        self.gl.enable(WebGl2RenderingContext::BLEND);
+        self.gl.blend_func_separate(
+            WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
+
         self.gl.use_program(Some(&self.basic_program));
         self.gl.bind_vertex_array(Some(&self.vao));
 
@@ -101,6 +110,15 @@ impl RenderContext for WebGLContext {
         if vertices.is_empty() {
             return;
         }
+
+        // Ensure blending is enabled with proper state
+        self.gl.enable(WebGl2RenderingContext::BLEND);
+        self.gl.blend_func_separate(
+            WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
 
         self.gl.use_program(Some(&self.basic_program));
         self.gl.bind_vertex_array(Some(&self.vao));
@@ -194,10 +212,15 @@ impl RenderContext for WebGLContext {
         let fwidth = font_scale * distance_range * viewport_scale;
         self.gl.uniform1f(Some(&self.text_fwidth_location), fwidth);
 
-        // Enable blending for text
+        // Enable blending for text with separate RGB/Alpha blend functions
+        // RGB: (SrcAlpha, OneMinusSrcAlpha) - standard alpha blending
+        // Alpha: (One, OneMinusSrcAlpha) - preserves alpha without squaring
+        // This matches WebGPU behavior and prevents text from appearing lighter
         self.gl.enable(WebGl2RenderingContext::BLEND);
-        self.gl.blend_func(
+        self.gl.blend_func_separate(
             WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
             WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
         );
 
@@ -305,10 +328,12 @@ impl RenderContext for WebGLContext {
             .bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
         self.gl.uniform1i(Some(&self.sprite_texture_location), 0);
 
-        // Enable blending
+        // Enable blending with proper state
         self.gl.enable(WebGl2RenderingContext::BLEND);
-        self.gl.blend_func(
+        self.gl.blend_func_separate(
             WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
             WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
         );
 

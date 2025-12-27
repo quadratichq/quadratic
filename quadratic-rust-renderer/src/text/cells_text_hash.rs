@@ -9,6 +9,7 @@
 
 use std::collections::HashMap;
 
+use quadratic_core_shared::SheetOffsets;
 use wasm_bindgen::JsCast;
 
 use crate::render_context::RenderContext;
@@ -87,12 +88,23 @@ pub struct CellsTextHash {
 
 impl CellsTextHash {
     /// Create a new hash for the given hash coordinates
-    pub fn new(hash_x: i64, hash_y: i64) -> Self {
-        // Calculate world bounds
-        let world_x = (hash_x * HASH_WIDTH) as f32 * DEFAULT_CELL_WIDTH;
-        let world_y = (hash_y * HASH_HEIGHT) as f32 * DEFAULT_CELL_HEIGHT;
-        let world_width = HASH_WIDTH as f32 * DEFAULT_CELL_WIDTH;
-        let world_height = HASH_HEIGHT as f32 * DEFAULT_CELL_HEIGHT;
+    pub fn new(hash_x: i64, hash_y: i64, offsets: &SheetOffsets) -> Self {
+        // Calculate the cell range for this hash (1-indexed)
+        let start_col = hash_x * HASH_WIDTH + 1;
+        let end_col = start_col + HASH_WIDTH - 1;
+        let start_row = hash_y * HASH_HEIGHT + 1;
+        let end_row = start_row + HASH_HEIGHT - 1;
+
+        // Get world bounds from offsets
+        let (x_start, _) = offsets.column_position_size(start_col);
+        let (x_end, width_end) = offsets.column_position_size(end_col);
+        let (y_start, _) = offsets.row_position_size(start_row);
+        let (y_end, height_end) = offsets.row_position_size(end_row);
+
+        let world_x = x_start as f32;
+        let world_y = y_start as f32;
+        let world_width = (x_end + width_end - x_start) as f32;
+        let world_height = (y_end + height_end - y_start) as f32;
 
         Self {
             hash_x,
@@ -110,6 +122,28 @@ impl CellsTextHash {
             sprite_cache_webgpu: None,
             sprite_dirty_webgpu: true,
         }
+    }
+
+    /// Update world bounds from sheet offsets (call when offsets change)
+    pub fn update_bounds(&mut self, offsets: &SheetOffsets) {
+        let start_col = self.hash_x * HASH_WIDTH + 1;
+        let end_col = start_col + HASH_WIDTH - 1;
+        let start_row = self.hash_y * HASH_HEIGHT + 1;
+        let end_row = start_row + HASH_HEIGHT - 1;
+
+        let (x_start, _) = offsets.column_position_size(start_col);
+        let (x_end, width_end) = offsets.column_position_size(end_col);
+        let (y_start, _) = offsets.row_position_size(start_row);
+        let (y_end, height_end) = offsets.row_position_size(end_row);
+
+        self.world_x = x_start as f32;
+        self.world_y = y_start as f32;
+        self.world_width = (x_end + width_end - x_start) as f32;
+        self.world_height = (y_end + height_end - y_start) as f32;
+
+        // Mark sprite dirty since bounds changed
+        self.sprite_dirty = true;
+        self.sprite_dirty_webgpu = true;
     }
 
     /// Add or update a label at the given cell position
@@ -716,8 +750,10 @@ impl CellsTextHash {
 }
 
 /// Get hash coordinates for a cell position
+/// Get hash coordinates for a cell position (1-indexed columns/rows)
 pub fn get_hash_coords(col: i64, row: i64) -> (i64, i64) {
-    (col.div_euclid(HASH_WIDTH), row.div_euclid(HASH_HEIGHT))
+    // Adjust for 1-indexed: col 1-15 → hash 0, col 16-30 → hash 1, etc.
+    ((col - 1).div_euclid(HASH_WIDTH), (row - 1).div_euclid(HASH_HEIGHT))
 }
 
 /// Get hash key from hash coordinates
@@ -739,7 +775,7 @@ pub struct VisibleHashBounds {
 }
 
 impl VisibleHashBounds {
-    /// Create bounds from viewport world coordinates
+    /// Create bounds from viewport world coordinates using sheet offsets
     /// Includes dynamic padding based on viewport scale for preloading.
     /// When zoomed out (scale < 1), more hashes are included in the padding
     /// to ensure smooth scrolling at lower zoom levels.
@@ -749,12 +785,13 @@ impl VisibleHashBounds {
         vp_width: f32,
         vp_height: f32,
         viewport_scale: f32,
+        offsets: &SheetOffsets,
     ) -> Self {
-        // Convert world coordinates to cell coordinates
-        let min_col = (vp_x / DEFAULT_CELL_WIDTH).floor() as i64;
-        let max_col = ((vp_x + vp_width) / DEFAULT_CELL_WIDTH).ceil() as i64;
-        let min_row = (vp_y / DEFAULT_CELL_HEIGHT).floor() as i64;
-        let max_row = ((vp_y + vp_height) / DEFAULT_CELL_HEIGHT).ceil() as i64;
+        // Convert world coordinates to cell coordinates using offsets
+        let (min_col, _) = offsets.column_from_x(vp_x.max(0.0) as f64);
+        let (max_col, _) = offsets.column_from_x((vp_x + vp_width).max(0.0) as f64);
+        let (min_row, _) = offsets.row_from_y(vp_y.max(0.0) as f64);
+        let (max_row, _) = offsets.row_from_y((vp_y + vp_height).max(0.0) as f64);
 
         // Convert to hash coordinates and add padding
         let (min_hash_x, min_hash_y) = get_hash_coords(min_col, min_row);
@@ -805,21 +842,22 @@ mod tests {
 
     #[test]
     fn test_get_hash_coords() {
-        // Positive coordinates
-        assert_eq!(get_hash_coords(0, 0), (0, 0));
-        assert_eq!(get_hash_coords(14, 29), (0, 0));
-        assert_eq!(get_hash_coords(15, 30), (1, 1));
-        assert_eq!(get_hash_coords(30, 60), (2, 2));
+        // 1-indexed coordinates: cols 1-15 → hash 0, cols 16-30 → hash 1
+        assert_eq!(get_hash_coords(1, 1), (0, 0));
+        assert_eq!(get_hash_coords(15, 30), (0, 0));
+        assert_eq!(get_hash_coords(16, 31), (1, 1));
+        assert_eq!(get_hash_coords(31, 61), (2, 2));
 
-        // Negative coordinates
-        assert_eq!(get_hash_coords(-1, -1), (-1, -1));
-        assert_eq!(get_hash_coords(-15, -30), (-1, -1));
-        assert_eq!(get_hash_coords(-16, -31), (-2, -2));
+        // Edge cases for 1-indexed
+        assert_eq!(get_hash_coords(0, 0), (-1, -1)); // col 0 is before col 1
+        assert_eq!(get_hash_coords(-14, -29), (-1, -1));
+        assert_eq!(get_hash_coords(-15, -30), (-2, -2));
     }
 
     #[test]
     fn test_intersects_viewport() {
-        let hash = CellsTextHash::new(0, 0);
+        let offsets = SheetOffsets::default();
+        let hash = CellsTextHash::new(0, 0, &offsets);
 
         // Hash at (0,0) covers world coords (0,0) to (1500, 630)
         assert!(hash.intersects_viewport(0.0, 100.0, 0.0, 100.0));

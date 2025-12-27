@@ -3,15 +3,16 @@
 //! Simplified version of CellLabel from TypeScript.
 //! Handles basic text layout with alignment and wrapping.
 
+use quadratic_core_shared::SheetOffsets;
+
 use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
 use super::label_mesh::LabelMesh;
 
 /// Grid constants (matching TypeScript)
-pub const CELL_WIDTH: f32 = 100.0;
-pub const CELL_HEIGHT: f32 = 21.0;
 pub const CELL_TEXT_MARGIN_LEFT: f32 = 3.0;
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;
 pub const LINE_HEIGHT: f32 = 16.0;
+pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
 
 /// OpenSans rendering fix (magic numbers from TypeScript)
 pub const OPEN_SANS_FIX_X: f32 = 1.8;
@@ -76,13 +77,19 @@ pub struct CellLabel {
     /// Text content
     pub text: String,
 
-    /// Cell position in world coordinates
-    pub cell_x: f32,
-    pub cell_y: f32,
+    /// Cell column index (1-indexed for A1 notation)
+    pub col: i64,
 
-    /// Cell dimensions
-    pub cell_width: f32,
-    pub cell_height: f32,
+    /// Cell row index (1-indexed for A1 notation)
+    pub row: i64,
+
+    /// Cached cell position in world coordinates (computed from offsets)
+    cell_x: f32,
+    cell_y: f32,
+
+    /// Cached cell dimensions (computed from offsets)
+    cell_width: f32,
+    cell_height: f32,
 
     /// Font settings
     pub font_size: f32,
@@ -124,14 +131,16 @@ pub struct CellLabel {
 }
 
 impl CellLabel {
-    /// Create a new cell label
-    pub fn new(text: String, cell_x: f32, cell_y: f32, cell_width: f32, cell_height: f32) -> Self {
+    /// Create a new cell label with column/row indices
+    pub fn new(text: String, col: i64, row: i64) -> Self {
         Self {
             text,
-            cell_x,
-            cell_y,
-            cell_width,
-            cell_height,
+            col,
+            row,
+            cell_x: 0.0,
+            cell_y: 0.0,
+            cell_width: 0.0,
+            cell_height: 0.0,
             font_size: DEFAULT_FONT_SIZE,
             bold: false,
             italic: false,
@@ -139,8 +148,8 @@ impl CellLabel {
             align: TextAlign::Left,
             vertical_align: VerticalAlign::Bottom,
             wrap: TextWrap::Overflow,
-            text_x: cell_x,
-            text_y: cell_y,
+            text_x: 0.0,
+            text_y: 0.0,
             text_width: 0.0,
             text_height: 0.0,
             chars: Vec::new(),
@@ -149,6 +158,30 @@ impl CellLabel {
             cached_meshes: Vec::new(),
             mesh_dirty: true,
         }
+    }
+
+    /// Update cell bounds from sheet offsets
+    /// Call this before layout() when offsets may have changed
+    pub fn update_bounds(&mut self, offsets: &SheetOffsets) {
+        let (x, width) = offsets.column_position_size(self.col);
+        let (y, height) = offsets.row_position_size(self.row);
+        self.cell_x = x as f32;
+        self.cell_y = y as f32;
+        self.cell_width = width as f32;
+        self.cell_height = height as f32;
+        self.mesh_dirty = true;
+    }
+
+    /// Get column index
+    #[inline]
+    pub fn col(&self) -> i64 {
+        self.col
+    }
+
+    /// Get row index
+    #[inline]
+    pub fn row(&self) -> i64 {
+        self.row
     }
 
     /// Get X position (for viewport culling)
@@ -344,7 +377,7 @@ impl CellLabel {
 
         // Vertical positioning
         let available_space = self.cell_height - self.text_height;
-        let default_extra_space = CELL_HEIGHT - LINE_HEIGHT;
+        let default_extra_space = DEFAULT_CELL_HEIGHT - LINE_HEIGHT;
 
         if available_space <= default_extra_space {
             // Center for small cells

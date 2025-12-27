@@ -92,19 +92,15 @@ interface UploadFontTextureMessage {
 interface AddLabelMessage {
   type: 'addLabel';
   text: string;
-  cellX: number;
-  cellY: number;
-  cellWidth: number;
-  cellHeight: number;
+  col: number;
+  row: number;
 }
 
 interface AddStyledLabelMessage {
   type: 'addStyledLabel';
   text: string;
-  cellX: number;
-  cellY: number;
-  cellWidth: number;
-  cellHeight: number;
+  col: number;
+  row: number;
   fontSize?: number;
   bold?: boolean;
   italic?: boolean;
@@ -445,7 +441,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
 
     case 'addLabel':
       if (renderer) {
-        renderer.add_label(data.text, data.cellX, data.cellY, data.cellWidth, data.cellHeight);
+        renderer.add_label(data.text, BigInt(data.col), BigInt(data.row));
       }
       break;
 
@@ -453,10 +449,8 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
       if (renderer) {
         renderer.add_styled_label(
           data.text,
-          data.cellX,
-          data.cellY,
-          data.cellWidth,
-          data.cellHeight,
+          BigInt(data.col),
+          BigInt(data.row),
           data.fontSize ?? 14,
           data.bold ?? false,
           data.italic ?? false,

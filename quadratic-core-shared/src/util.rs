@@ -51,10 +51,10 @@ macro_rules! row {
 
 /// For debugging both in tests and in the JS console
 #[track_caller]
+#[allow(unused_variables)]
 pub fn dbgjs(_val: impl fmt::Debug) {
-    #[cfg(target_family = "wasm")]
-    crate::wasm_bindings::js::log(&(format!("{:?}", _val)));
-
+    // Note: WASM logging requires wasm-bindgen console bindings which are not
+    // available in this crate. Use dbg! for native debugging.
     #[cfg(not(target_family = "wasm"))]
     dbg!(_val);
 }

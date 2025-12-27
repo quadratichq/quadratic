@@ -4,7 +4,8 @@
 
 use std::collections::HashMap;
 
-use crate::content::grid_lines::{DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT};
+use quadratic_core_shared::SheetOffsets;
+
 use crate::viewport::Viewport;
 
 /// Represents a cell's visual content
@@ -42,13 +43,15 @@ impl CellContent {
         }
     }
 
-    /// Get the cell's world-space bounds
-    pub fn bounds(&self) -> CellBounds {
+    /// Get the cell's world-space bounds using sheet offsets
+    pub fn bounds(&self, offsets: &SheetOffsets) -> CellBounds {
+        let (x, width) = offsets.column_position_size(self.col);
+        let (y, height) = offsets.row_position_size(self.row);
         CellBounds {
-            x: self.col as f32 * DEFAULT_COLUMN_WIDTH,
-            y: self.row as f32 * DEFAULT_ROW_HEIGHT,
-            width: DEFAULT_COLUMN_WIDTH,
-            height: DEFAULT_ROW_HEIGHT,
+            x: x as f32,
+            y: y as f32,
+            width: width as f32,
+            height: height as f32,
         }
     }
 }
@@ -67,6 +70,9 @@ pub struct CellsSheet {
     /// Sheet ID
     pub sheet_id: String,
 
+    /// Sheet offsets for column widths and row heights
+    pub sheet_offsets: SheetOffsets,
+
     /// Cells indexed by (col, row)
     cells: HashMap<(i64, i64), CellContent>,
 
@@ -80,8 +86,13 @@ pub struct CellsSheet {
 impl CellsSheet {
     /// Create a new cells sheet
     pub fn new(sheet_id: String) -> Self {
+        // Test: set column 1 to 300px width to verify offsets work
+        let mut sheet_offsets = SheetOffsets::default();
+        sheet_offsets.set_column_width(3, 190.0);
+        sheet_offsets.set_row_height(10, 73.0);
         Self {
             sheet_id,
+            sheet_offsets,
             cells: HashMap::new(),
             visible_cells: Vec::new(),
             dirty: true,
@@ -115,6 +126,18 @@ impl CellsSheet {
         self.cells.get(&(col, row))
     }
 
+    /// Get the bounds for a cell position using sheet offsets
+    pub fn cell_bounds(&self, col: i64, row: i64) -> CellBounds {
+        let (x, width) = self.sheet_offsets.column_position_size(col);
+        let (y, height) = self.sheet_offsets.row_position_size(row);
+        CellBounds {
+            x: x as f32,
+            y: y as f32,
+            width: width as f32,
+            height: height as f32,
+        }
+    }
+
     /// Remove a cell
     pub fn remove_cell(&mut self, col: i64, row: i64) {
         self.cells.remove(&(col, row));
@@ -127,15 +150,19 @@ impl CellsSheet {
 
         let bounds = viewport.visible_bounds();
 
-        // Calculate visible cell range
-        let first_col = (bounds.left / DEFAULT_COLUMN_WIDTH).floor() as i64;
-        let last_col = (bounds.right / DEFAULT_COLUMN_WIDTH).ceil() as i64;
-        let first_row = (bounds.top / DEFAULT_ROW_HEIGHT).floor() as i64;
-        let last_row = (bounds.bottom / DEFAULT_ROW_HEIGHT).ceil() as i64;
+        // Calculate visible cell range using offsets
+        let (first_col, _) = self
+            .sheet_offsets
+            .column_from_x(bounds.left.max(0.0) as f64);
+        let (last_col, _) = self
+            .sheet_offsets
+            .column_from_x(bounds.right.max(0.0) as f64);
+        let (first_row, _) = self.sheet_offsets.row_from_y(bounds.top.max(0.0) as f64);
+        let (last_row, _) = self.sheet_offsets.row_from_y(bounds.bottom.max(0.0) as f64);
 
         // Find visible cells
         for (&(col, row), _cell) in &self.cells {
-            if col >= first_col && col <= last_col && row >= first_row && row <= last_row {
+            if col >= first_col && col <= last_col + 1 && row >= first_row && row <= last_row + 1 {
                 self.visible_cells.push((col, row));
             }
         }

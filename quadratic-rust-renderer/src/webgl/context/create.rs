@@ -221,10 +221,15 @@ impl WebGLContext {
 
         gl.bind_vertex_array(None);
 
-        // Enable blending for transparency
+        // Enable blending for transparency with proper state
+        // Use blend_func_separate to match WebGPU behavior:
+        // RGB: (SrcAlpha, OneMinusSrcAlpha) - standard alpha blending
+        // Alpha: (One, OneMinusSrcAlpha) - preserves alpha without squaring
         gl.enable(WebGl2RenderingContext::BLEND);
-        gl.blend_func(
+        gl.blend_func_separate(
             WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
             WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
         );
 

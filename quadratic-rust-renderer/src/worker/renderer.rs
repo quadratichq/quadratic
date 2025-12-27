@@ -8,11 +8,12 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlImageElement, OffscreenCanvas};
 
+use crate::cells::CellsSheet;
 use crate::content::Content;
 use crate::headings::GridHeadings;
 use crate::render_context::RenderContext;
 use crate::text::{
-    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
+    BitmapFont, BitmapFonts, CellLabel, CellsTextHash,
     VisibleHashBounds, get_hash_coords, hash_key,
 };
 use crate::viewport::Viewport;
@@ -29,6 +30,9 @@ pub struct WorkerRenderer {
 
     /// Viewport (camera/zoom/pan state)
     viewport: Viewport,
+
+    /// Current sheet being rendered
+    cells_sheet: CellsSheet,
 
     /// Renderable content
     content: Content,
@@ -69,6 +73,7 @@ impl WorkerRenderer {
         Ok(Self {
             gl,
             viewport,
+            cells_sheet: CellsSheet::new("test".to_string()),
             content,
             fonts: BitmapFonts::new(),
             hashes: HashMap::new(),
@@ -387,35 +392,24 @@ impl WorkerRenderer {
     }
 
     /// Add a cell label (text content)
-    /// cell_x and cell_y are world coordinates (pixels)
+    /// col and row are 1-indexed cell coordinates
     #[wasm_bindgen]
-    pub fn add_label(
-        &mut self,
-        text: &str,
-        cell_x: f32,
-        cell_y: f32,
-        cell_width: f32,
-        cell_height: f32,
-    ) {
-        // Convert world position to cell coordinates
-        let col = (cell_x / DEFAULT_CELL_WIDTH) as i64;
-        let row = (cell_y / DEFAULT_CELL_HEIGHT) as i64;
-
-        let mut label = CellLabel::new(text.to_string(), cell_x, cell_y, cell_width, cell_height);
+    pub fn add_label(&mut self, text: &str, col: i64, row: i64) {
+        let mut label = CellLabel::new(text.to_string(), col, row);
+        label.update_bounds(&self.cells_sheet.sheet_offsets);
         label.layout(&self.fonts);
 
         self.insert_label(col, row, label);
     }
 
     /// Add a styled cell label
+    /// col and row are 1-indexed cell coordinates
     #[wasm_bindgen]
     pub fn add_styled_label(
         &mut self,
         text: &str,
-        cell_x: f32,
-        cell_y: f32,
-        cell_width: f32,
-        cell_height: f32,
+        col: i64,
+        row: i64,
         font_size: f32,
         bold: bool,
         italic: bool,
@@ -427,11 +421,8 @@ impl WorkerRenderer {
     ) {
         use crate::text::cell_label::{TextAlign, VerticalAlign};
 
-        // Convert world position to cell coordinates
-        let col = (cell_x / DEFAULT_CELL_WIDTH) as i64;
-        let row = (cell_y / DEFAULT_CELL_HEIGHT) as i64;
-
-        let mut label = CellLabel::new(text.to_string(), cell_x, cell_y, cell_width, cell_height);
+        let mut label = CellLabel::new(text.to_string(), col, row);
+        label.update_bounds(&self.cells_sheet.sheet_offsets);
         label.font_size = font_size;
         label.bold = bold;
         label.italic = italic;
@@ -459,7 +450,7 @@ impl WorkerRenderer {
         let hash = self
             .hashes
             .entry(key)
-            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y));
+            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets));
         hash.add_label(col, row, label);
         self.label_count += 1;
     }
@@ -493,6 +484,7 @@ impl WorkerRenderer {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
+            &self.cells_sheet.sheet_offsets,
         );
 
         Box::new([
@@ -514,6 +506,7 @@ impl WorkerRenderer {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
+            &self.cells_sheet.sheet_offsets,
         );
 
         let mut needed: Vec<i32> = Vec::new();
@@ -541,6 +534,7 @@ impl WorkerRenderer {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
+            &self.cells_sheet.sheet_offsets,
         );
 
         let mut offscreen: Vec<i32> = Vec::new();
@@ -612,8 +606,8 @@ impl WorkerRenderer {
         // Update deceleration (momentum scrolling) - this may dirty the viewport
         self.viewport.update_decelerate(elapsed);
 
-        // Update content based on viewport
-        self.content.update(&self.viewport);
+        // Update content based on viewport and sheet offsets
+        self.content.update(&self.viewport, &self.cells_sheet.sheet_offsets);
 
         // Update headings first to get their size
         let (heading_width, heading_height) = if self.show_headings {
@@ -628,6 +622,7 @@ impl WorkerRenderer {
                 scale,
                 canvas_width,
                 canvas_height,
+                &self.cells_sheet.sheet_offsets,
             );
 
             let size = self.headings.heading_size();
@@ -882,6 +877,7 @@ impl WorkerRenderer {
             &self.fonts,
             font_scale,
             distance_range,
+            &self.cells_sheet.sheet_offsets,
         );
     }
 

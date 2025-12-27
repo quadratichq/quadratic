@@ -72,8 +72,6 @@ function updateRenderIndicator(rendering: boolean): void {
 
 // Config for our "virtual" infinite grid
 const COLS = 20; // More columns to make it feel like a real spreadsheet
-const CELL_WIDTH = 100;
-const CELL_HEIGHT = 21;
 const HASH_WIDTH = 15; // Cells per hash (must match Rust)
 const HASH_HEIGHT = 30;
 
@@ -117,10 +115,8 @@ function generateCellText(col: number, row: number): string {
 
 interface Label {
   text: string;
-  cellX: number;
-  cellY: number;
-  cellWidth: number;
-  cellHeight: number;
+  col: number;
+  row: number;
   color?: { r: number; g: number; b: number };
 }
 
@@ -148,12 +144,11 @@ function generateHashLabels(hashX: number, hashY: number): Label[] {
     for (let col = startCol; col < endCol; col++) {
       if (col >= 0 && row >= 0 && col < COLS) {
         const seed = ((col * 31337 + row * 7919) >>> 0);
+        // SheetOffsets uses 1-indexed columns/rows (A1 notation)
         const label: Label = {
           text: generateCellText(col, row),
-          cellX: col * CELL_WIDTH,
-          cellY: row * CELL_HEIGHT,
-          cellWidth: CELL_WIDTH,
-          cellHeight: CELL_HEIGHT,
+          col: col + 1,
+          row: row + 1,
         };
 
         // 10% of cells get a random color
@@ -192,10 +187,8 @@ async function loadHash(hashX: number, hashY: number): Promise<void> {
       worker?.postMessage({
         type: 'addStyledLabel',
         text: label.text,
-        cellX: label.cellX,
-        cellY: label.cellY,
-        cellWidth: label.cellWidth,
-        cellHeight: label.cellHeight,
+        col: label.col,
+        row: label.row,
         colorR: label.color.r,
         colorG: label.color.g,
         colorB: label.color.b,
@@ -205,10 +198,8 @@ async function loadHash(hashX: number, hashY: number): Promise<void> {
       worker?.postMessage({
         type: 'addLabel',
         text: label.text,
-        cellX: label.cellX,
-        cellY: label.cellY,
-        cellWidth: label.cellWidth,
-        cellHeight: label.cellHeight,
+        col: label.col,
+        row: label.row,
       });
     }
   }
