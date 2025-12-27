@@ -736,16 +736,16 @@ impl WorkerRenderer {
             return false;
         }
 
+        // Use visible_bounds() which correctly accounts for DPR
+        // This must match the bounds calculation in render_text() to avoid
+        // dirty hashes being detected but never cleaned (causing infinite rendering)
         let bounds = self.viewport.visible_bounds();
-        let scale = self.viewport.scale();
-        let vp_width = self.viewport.width() / scale;
-        let vp_height = self.viewport.height() / scale;
 
         let padding = 100.0;
         let min_x = bounds.left - padding;
-        let max_x = bounds.left + vp_width + padding;
+        let max_x = bounds.left + bounds.width + padding;
         let min_y = bounds.top - padding;
-        let max_y = bounds.top + vp_height + padding;
+        let max_y = bounds.top + bounds.height + padding;
 
         for hash in self.hashes.values() {
             if hash.intersects_viewport(min_x, max_x, min_y, max_y) && hash.is_dirty() {
