@@ -33,7 +33,9 @@ pub const HASH_PADDING: i64 = 5;
 const MAX_HASH_PADDING: i64 = 30;
 
 /// Maximum texture pages we support
-const MAX_TEXTURE_PAGES: usize = 8;
+/// With global texture ID scheme: fontIndex * 16 + localPageId
+/// Supporting 4 fonts with up to 16 pages each = 64 max
+const MAX_TEXTURE_PAGES: usize = 64;
 
 /// Scale threshold below which we switch from MSDF text to sprite rendering.
 /// When viewport_scale < SPRITE_SCALE_THRESHOLD, use the cached sprite.

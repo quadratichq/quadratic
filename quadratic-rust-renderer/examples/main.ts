@@ -5,8 +5,8 @@
  * Handles initialization, font loading, and lazy-loading of cell data.
  */
 
-import { loadFontTextures, parseBMFont } from './font-loader';
-import { ViewportControls } from './ViewportControls';
+import { FontManager, STANDARD_FONT_VARIANTS } from './font-manager';
+import { ViewportControls } from './viewport';
 import RenderWorker from './worker?worker';
 
 // DOM Elements
@@ -327,6 +327,7 @@ async function init(): Promise<void> {
     worker = new RenderWorker();
 
     // Set up viewport controls using the extracted module
+    // Viewport is managed by TypeScript and synced to Rust via SharedArrayBuffer
     viewportControls = new ViewportControls(canvas, {
       sendMessage: (msg) => worker?.postMessage(msg),
       onViewportChange: updateVisibleHashes,
@@ -349,6 +350,9 @@ async function init(): Promise<void> {
             saveBackendPreference(data.backend);
           }
 
+          // Send the viewport buffer to the worker now that renderer is ready
+          viewportControls?.sendBufferToWorker();
+
           // Trigger initial resize
           viewportControls?.triggerResize();
 
@@ -358,18 +362,18 @@ async function init(): Promise<void> {
 
           worker?.postMessage({ type: 'toggleFps', enabled: true });
 
-          // Load fonts
+          // Load fonts using FontManager (handles global texture ID assignment)
           try {
-            const fontData = await parseBMFont('./fonts/OpenSans.fnt');
-            worker?.postMessage({ type: 'addFont', fontJson: JSON.stringify(fontData) });
+            const fontManager = new FontManager('./fonts');
+            fontManager.setMessageSender(worker!);
 
-            const textures = await loadFontTextures(fontData, './fonts');
-            for (let i = 0; i < textures.length; i++) {
-              const img = textures[i];
-              if (!img) continue;
-              const bitmap = await createImageBitmap(img);
-              worker?.postMessage({ type: 'uploadFontTexture', textureUid: i, bitmap }, [bitmap]);
-            }
+            // Load all font variants with proper texture ID management
+            await fontManager.loadAndRegister(STANDARD_FONT_VARIANTS);
+
+            console.log(
+              `Loaded ${fontManager.fontCount} fonts with ${fontManager.textureCount} textures: ` +
+                fontManager.getLoadedFontNames().join(', ')
+            );
 
             fontsReady = true;
             statusEl.textContent = 'Ready – scroll to explore';

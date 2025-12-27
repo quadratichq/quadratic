@@ -3,11 +3,13 @@
 //! The main entry point for browser-based rendering in a web worker.
 //! Receives an OffscreenCanvas and handles all rendering.
 
+use js_sys::SharedArrayBuffer;
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlImageElement, OffscreenCanvas};
 
 use crate::render_context::RenderContext;
 use crate::text::BitmapFont;
+use crate::viewport::ViewportBuffer;
 use crate::webgl::WebGLContext;
 
 use super::state::RendererState;
@@ -23,6 +25,9 @@ pub struct WorkerRenderer {
 
     /// Shared renderer state
     state: RendererState,
+
+    /// Optional shared viewport buffer (when viewport is controlled by main thread)
+    shared_viewport: Option<ViewportBuffer>,
 }
 
 #[wasm_bindgen]
@@ -37,7 +42,28 @@ impl WorkerRenderer {
         let gl = WebGLContext::from_offscreen_canvas(canvas)?;
         let state = RendererState::new(width as f32, height as f32);
 
-        Ok(Self { gl, state })
+        Ok(Self {
+            gl,
+            state,
+            shared_viewport: None,
+        })
+    }
+
+    /// Set the viewport buffer (SharedArrayBuffer from main thread)
+    ///
+    /// When set, the renderer will read viewport state from this buffer
+    /// instead of using the local viewport. This allows the main thread
+    /// to control viewport position and zoom.
+    #[wasm_bindgen]
+    pub fn set_viewport_buffer(&mut self, buffer: SharedArrayBuffer) {
+        log::info!("Setting shared viewport buffer");
+        self.shared_viewport = Some(ViewportBuffer::from_buffer(buffer));
+    }
+
+    /// Check if using shared viewport
+    #[wasm_bindgen]
+    pub fn is_using_shared_viewport(&self) -> bool {
+        self.shared_viewport.is_some()
     }
 
     /// Start the renderer
@@ -71,24 +97,6 @@ impl WorkerRenderer {
         log::debug!("Resizing to {}x{} (DPR: {})", width, height, dpr);
         self.gl.resize(width, height);
         self.state.resize_viewport(width as f32, height as f32, dpr);
-    }
-
-    /// Pan the viewport
-    #[wasm_bindgen]
-    pub fn pan(&mut self, dx: f32, dy: f32) {
-        self.state.pan(dx, dy);
-    }
-
-    /// Zoom the viewport
-    #[wasm_bindgen]
-    pub fn zoom(&mut self, factor: f32, center_x: f32, center_y: f32) {
-        self.state.zoom(factor, center_x, center_y);
-    }
-
-    /// Set viewport position directly
-    #[wasm_bindgen]
-    pub fn set_viewport(&mut self, x: f32, y: f32, scale: f32) {
-        self.state.set_viewport(x, y, scale);
     }
 
     /// Get current scale
@@ -155,63 +163,6 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn set_headings_dpr(&mut self, dpr: f32) {
         self.state.set_headings_dpr(dpr);
-    }
-
-    // =========================================================================
-    // Deceleration (momentum scrolling)
-    // =========================================================================
-
-    /// Called when drag/pan starts - stops any active deceleration
-    #[wasm_bindgen]
-    pub fn on_drag_start(&mut self) {
-        self.state.on_drag_start();
-    }
-
-    /// Called during drag/pan - records position for velocity calculation
-    /// time: Current time in milliseconds (from performance.now())
-    #[wasm_bindgen]
-    pub fn on_drag_move(&mut self, time: f64) {
-        self.state.on_drag_move(time);
-    }
-
-    /// Called when drag/pan ends - calculates velocity and starts deceleration
-    /// time: Current time in milliseconds
-    #[wasm_bindgen]
-    pub fn on_drag_end(&mut self, time: f64) {
-        self.state.on_drag_end(time);
-    }
-
-    /// Called on wheel event - stops deceleration
-    #[wasm_bindgen]
-    pub fn on_wheel_event(&mut self) {
-        self.state.on_wheel_event();
-    }
-
-    /// Update deceleration and apply velocity to viewport
-    /// Call this each frame with elapsed time in milliseconds
-    /// Returns true if the viewport was moved
-    #[wasm_bindgen]
-    pub fn update_decelerate(&mut self, elapsed: f32) -> bool {
-        self.state.update_decelerate(elapsed)
-    }
-
-    /// Check if deceleration or snap-back is currently active
-    #[wasm_bindgen]
-    pub fn is_decelerating(&self) -> bool {
-        self.state.is_decelerating()
-    }
-
-    /// Manually activate deceleration with a specific velocity
-    /// vx, vy: velocity in px/ms
-    #[wasm_bindgen]
-    pub fn activate_decelerate(&mut self, vx: f32, vy: f32) {
-        self.state.activate_decelerate(vx, vy);
-    }
-
-    /// Reset/stop deceleration
-    #[wasm_bindgen]
-    pub fn reset_decelerate(&mut self) {
-        self.state.reset_decelerate();
     }
 
     // =========================================================================
@@ -580,13 +531,21 @@ impl WorkerRenderer {
     /// elapsed: Time since last frame in milliseconds (for deceleration)
     /// Returns true if a render actually occurred, false if nothing was dirty
     #[wasm_bindgen]
-    pub fn frame(&mut self, elapsed: f32) -> bool {
+    pub fn frame(&mut self, _elapsed: f32) -> bool {
         if !self.state.is_running() {
             return false;
         }
 
-        // Update deceleration (momentum scrolling) - this may dirty the viewport
-        self.state.update_decelerate(elapsed);
+        // Sync from shared viewport buffer
+        // Viewport is controlled by TypeScript and synced via SharedArrayBuffer
+        if let Some(ref mut shared) = self.shared_viewport {
+            let changed = shared.sync();
+            if changed {
+                // Update state viewport from shared buffer
+                self.state.set_viewport(shared.x(), shared.y(), shared.scale());
+                self.state.resize_viewport(shared.width(), shared.height(), shared.dpr());
+            }
+        }
 
         // Update content based on viewport and sheet offsets
         self.state.update_content();

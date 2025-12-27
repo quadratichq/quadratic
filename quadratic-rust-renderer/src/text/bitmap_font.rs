@@ -113,6 +113,11 @@ impl BitmapFonts {
         self.fonts.get(name)
     }
 
+    /// Get all loaded font names
+    pub fn font_names(&self) -> Vec<&str> {
+        self.fonts.keys().map(|s| s.as_str()).collect()
+    }
+
     /// Check if the collection is empty
     pub fn is_empty(&self) -> bool {
         self.fonts.is_empty()

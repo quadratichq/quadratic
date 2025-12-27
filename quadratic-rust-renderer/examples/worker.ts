@@ -33,34 +33,9 @@ interface ResizeMessage {
   dpr: number;
 }
 
-interface PanMessage {
-  type: 'pan';
-  dx: number;
-  dy: number;
-  time: number;
-}
-
-interface ZoomMessage {
-  type: 'zoom';
-  factor: number;
-  centerX: number;
-  centerY: number;
-}
-
-interface DragStartMessage {
-  type: 'dragStart';
-}
-
-interface DragEndMessage {
-  type: 'dragEnd';
-  time: number;
-}
-
-interface SetViewportMessage {
-  type: 'setViewport';
-  x: number;
-  y: number;
-  scale: number;
+interface SetViewportBufferMessage {
+  type: 'setViewportBuffer';
+  buffer: SharedArrayBuffer;
 }
 
 interface SetCursorMessage {
@@ -193,11 +168,7 @@ type WorkerMessage =
   | SetBackendMessage
   | GetBackendMessage
   | ResizeMessage
-  | PanMessage
-  | ZoomMessage
-  | DragStartMessage
-  | DragEndMessage
-  | SetViewportMessage
+  | SetViewportBufferMessage
   | SetCursorMessage
   | SetCursorSelectionMessage
   | AddFontMessage
@@ -256,11 +227,6 @@ function renderLoop(): void {
     if (didRender !== lastRenderStatus) {
       lastRenderStatus = didRender;
       self.postMessage({ type: 'renderStatus', rendering: didRender });
-    }
-
-    // Notify main thread if viewport moved due to deceleration
-    if (renderer.is_decelerating()) {
-      self.postMessage({ type: 'viewportMoved' });
     }
 
     // FPS tracking
@@ -352,37 +318,10 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
       }
       break;
 
-    case 'pan':
+    case 'setViewportBuffer':
       if (renderer) {
-        renderer.pan(data.dx, data.dy);
-        // Record position for deceleration velocity calculation
-        renderer.on_drag_move(data.time);
-      }
-      break;
-
-    case 'zoom':
-      if (renderer) {
-        renderer.zoom(data.factor, data.centerX, data.centerY);
-        // Wheel zoom should stop deceleration
-        renderer.on_wheel_event();
-      }
-      break;
-
-    case 'dragStart':
-      if (renderer) {
-        renderer.on_drag_start();
-      }
-      break;
-
-    case 'dragEnd':
-      if (renderer) {
-        renderer.on_drag_end(data.time);
-      }
-      break;
-
-    case 'setViewport':
-      if (renderer) {
-        renderer.set_viewport(data.x, data.y, data.scale);
+        renderer.set_viewport_buffer(data.buffer);
+        console.log('[Worker] Viewport buffer set');
       }
       break;
 

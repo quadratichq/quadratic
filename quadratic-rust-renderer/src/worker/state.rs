@@ -95,7 +95,7 @@ impl RendererState {
     }
 
     // =========================================================================
-    // Viewport
+    // Viewport (state is controlled by main thread via SharedArrayBuffer)
     // =========================================================================
 
     /// Resize the viewport
@@ -103,17 +103,7 @@ impl RendererState {
         self.viewport.resize(width, height, dpr);
     }
 
-    /// Pan the viewport
-    pub fn pan(&mut self, dx: f32, dy: f32) {
-        self.viewport.pan(dx, dy);
-    }
-
-    /// Zoom the viewport
-    pub fn zoom(&mut self, factor: f32, center_x: f32, center_y: f32) {
-        self.viewport.zoom(factor, center_x, center_y);
-    }
-
-    /// Set viewport position directly
+    /// Set viewport position and scale (from SharedArrayBuffer sync)
     pub fn set_viewport(&mut self, x: f32, y: f32, scale: f32) {
         self.viewport.set_position(x, y);
         self.viewport.set_scale(scale);
@@ -459,6 +449,33 @@ impl RendererState {
                 }),
                 ..Default::default()
             },
+            // Large italic at C5
+            RenderCell {
+                x: 3,
+                y: 5,
+                value: "Large Italic".to_string(),
+                italic: Some(true),
+                font_size: Some(18),
+                ..Default::default()
+            },
+            // Colored italic at G15
+            RenderCell {
+                x: 7,
+                y: 15,
+                value: "Blue Italic".to_string(),
+                italic: Some(true),
+                text_color: Some("#0066cc".to_string()),
+                ..Default::default()
+            },
+            // Center italic at J22
+            RenderCell {
+                x: 10,
+                y: 22,
+                value: "Centered Italic".to_string(),
+                italic: Some(true),
+                align: Some(CellAlign::Center),
+                ..Default::default()
+            },
             // Wrapped text at A15 (wider cell would show wrap)
             RenderCell {
                 x: 1,
@@ -574,55 +591,6 @@ impl RendererState {
             self.get_label_hash_count(),
             self.get_label_count()
         );
-    }
-
-    // =========================================================================
-    // Deceleration (momentum scrolling)
-    // =========================================================================
-
-    /// Called when drag/pan starts - stops any active deceleration
-    pub fn on_drag_start(&mut self) {
-        self.viewport.on_drag_start();
-    }
-
-    /// Called during drag/pan - records position for velocity calculation
-    /// time: Current time in milliseconds (from performance.now())
-    pub fn on_drag_move(&mut self, time: f64) {
-        self.viewport.on_drag_move(time);
-    }
-
-    /// Called when drag/pan ends - calculates velocity and starts deceleration
-    /// time: Current time in milliseconds
-    pub fn on_drag_end(&mut self, time: f64) {
-        self.viewport.on_drag_end(time);
-    }
-
-    /// Called on wheel event - stops deceleration
-    pub fn on_wheel_event(&mut self) {
-        self.viewport.on_wheel();
-    }
-
-    /// Update deceleration and apply velocity to viewport
-    /// Call this each frame with elapsed time in milliseconds
-    /// Returns true if the viewport was moved
-    pub fn update_decelerate(&mut self, elapsed: f32) -> bool {
-        self.viewport.update_decelerate(elapsed)
-    }
-
-    /// Check if deceleration or snap-back is currently active
-    pub fn is_decelerating(&self) -> bool {
-        self.viewport.is_decelerating() || self.viewport.is_snapping_back()
-    }
-
-    /// Manually activate deceleration with a specific velocity
-    /// vx, vy: velocity in px/ms
-    pub fn activate_decelerate(&mut self, vx: f32, vy: f32) {
-        self.viewport.activate_decelerate(vx, vy);
-    }
-
-    /// Reset/stop deceleration
-    pub fn reset_decelerate(&mut self) {
-        self.viewport.reset_decelerate();
     }
 
     // =========================================================================

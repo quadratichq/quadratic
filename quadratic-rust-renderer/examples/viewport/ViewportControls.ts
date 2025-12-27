@@ -1,11 +1,14 @@
 /**
  * ViewportControls - Handles viewport interaction (drag, zoom, deceleration)
  *
- * This module manages user input for viewport manipulation and communicates
- * with the Rust renderer via message passing.
+ * This module manages user input for viewport manipulation and controls
+ * a TypeScript Viewport that syncs to the Rust renderer via SharedArrayBuffer.
  *
  * Designed to be portable back to the main quadratic-client app.
  */
+
+import { Viewport } from './Viewport';
+import { createViewportBuffer } from './ViewportBuffer';
 
 // ============================================================================
 // Constants (matching client's Wheel.ts and Drag.ts)
@@ -32,10 +35,7 @@ export const VIEWPORT_UPDATE_DEBOUNCE = 100;
 
 /** Message types sent to the renderer worker */
 export type ViewportMessage =
-  | { type: 'dragStart' }
-  | { type: 'dragEnd'; time: number }
-  | { type: 'pan'; dx: number; dy: number; time: number }
-  | { type: 'zoom'; factor: number; centerX: number; centerY: number }
+  | { type: 'setViewportBuffer'; buffer: SharedArrayBuffer }
   | { type: 'resize'; width: number; height: number; dpr: number };
 
 /** Callback for sending messages to the renderer */
@@ -76,8 +76,13 @@ export interface ViewportControlsOptions {
  * - Deceleration (momentum scrolling)
  * - Debounced viewport change notifications
  *
+ * Viewport state lives in TypeScript and is synced to the Rust renderer
+ * via SharedArrayBuffer for efficient, lock-free communication.
+ *
  * @example
  * ```typescript
+ * import { ViewportControls } from './viewport';
+ *
  * const controls = new ViewportControls(canvas, {
  *   sendMessage: (msg) => worker.postMessage(msg),
  *   onViewportChange: () => updateVisibleHashes(),
@@ -91,6 +96,9 @@ export class ViewportControls {
   private canvas: HTMLCanvasElement;
   private options: Required<ViewportControlsOptions>;
 
+  // Viewport instance
+  private viewport: Viewport;
+
   // Drag state
   private isDragging = false;
   private lastX = 0;
@@ -103,6 +111,10 @@ export class ViewportControls {
   // Debounce state
   private viewportDirty = false;
   private updateTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Animation frame for deceleration
+  private animationFrameId: number | null = null;
+  private lastFrameTime = 0;
 
   // Bound event handlers (for cleanup)
   private boundPointerDown: (e: PointerEvent) => void;
@@ -125,6 +137,18 @@ export class ViewportControls {
     // Initialize canvas dimensions
     this.updateCanvasDimensions();
 
+    // Create SharedArrayBuffer and Viewport
+    // Note: The buffer is NOT sent to the worker here - call sendBufferToWorker()
+    // after the worker is initialized and ready to receive it.
+    const buffer = createViewportBuffer();
+    this.viewport = new Viewport(this.canvasWidth, this.canvasHeight);
+    this.viewport.setBuffer(buffer);
+    this.viewport.resize(
+      this.canvasWidth,
+      this.canvasHeight,
+      window.devicePixelRatio || 1
+    );
+
     // Bind event handlers
     this.boundPointerDown = this.handlePointerDown.bind(this);
     this.boundPointerMove = this.handlePointerMove.bind(this);
@@ -142,6 +166,60 @@ export class ViewportControls {
 
     if (this.options.handleResize) {
       window.addEventListener('resize', this.boundResize);
+    }
+
+    // Start deceleration loop
+    this.lastFrameTime = performance.now();
+    this.startDecelerationLoop();
+  }
+
+  /**
+   * Start the deceleration animation loop.
+   */
+  private startDecelerationLoop(): void {
+    const loop = () => {
+      const now = performance.now();
+      const elapsed = now - this.lastFrameTime;
+      this.lastFrameTime = now;
+
+      // Update deceleration
+      const moved = this.viewport.updateDecelerate(elapsed);
+      if (moved) {
+        this.scheduleViewportUpdate();
+      }
+
+      this.animationFrameId = requestAnimationFrame(loop);
+    };
+
+    this.animationFrameId = requestAnimationFrame(loop);
+  }
+
+  /**
+   * Get the Viewport instance.
+   */
+  getViewport(): Viewport {
+    return this.viewport;
+  }
+
+  /**
+   * Get the SharedArrayBuffer for the viewport.
+   * Use this to send the buffer to the worker after it's ready.
+   */
+  getBuffer(): SharedArrayBuffer {
+    return this.viewport.getBuffer()!;
+  }
+
+  /**
+   * Send the viewport buffer to the worker.
+   * Call this after the worker is initialized and ready.
+   */
+  sendBufferToWorker(): void {
+    const buffer = this.viewport.getBuffer();
+    if (buffer) {
+      this.options.sendMessage({
+        type: 'setViewportBuffer',
+        buffer,
+      });
     }
   }
 
@@ -163,6 +241,12 @@ export class ViewportControls {
     if (this.updateTimeout) {
       clearTimeout(this.updateTimeout);
       this.updateTimeout = null;
+    }
+
+    // Stop deceleration loop
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 
@@ -215,8 +299,7 @@ export class ViewportControls {
     this.lastY = e.clientY;
     this.canvas.setPointerCapture(e.pointerId);
 
-    // Notify renderer to stop any active deceleration and start recording
-    this.options.sendMessage({ type: 'dragStart' });
+    this.viewport.onDragStart();
   }
 
   private handlePointerMove(e: PointerEvent): void {
@@ -228,13 +311,10 @@ export class ViewportControls {
     this.lastX = e.clientX;
     this.lastY = e.clientY;
 
-    // Pass timestamp for velocity calculation
-    this.options.sendMessage({
-      type: 'pan',
-      dx,
-      dy,
-      time: performance.now(),
-    });
+    const time = performance.now();
+
+    this.viewport.pan(dx, dy);
+    this.viewport.onDragMove(time);
 
     this.scheduleViewportUpdate();
   }
@@ -245,11 +325,8 @@ export class ViewportControls {
     this.isDragging = false;
     this.canvas.releasePointerCapture(e.pointerId);
 
-    // Notify renderer to calculate velocity and start deceleration
-    this.options.sendMessage({
-      type: 'dragEnd',
-      time: performance.now(),
-    });
+    const time = performance.now();
+    this.viewport.onDragEnd(time);
 
     // Immediate update on release
     this.options.onViewportChangeImmediate();
@@ -260,9 +337,7 @@ export class ViewportControls {
     if (!this.isDragging) return;
 
     this.isDragging = false;
-
-    // On cancel, just stop without deceleration
-    this.options.sendMessage({ type: 'dragStart' }); // This resets deceleration
+    this.viewport.onDragStart(); // Reset deceleration
   }
 
   private handleWheel(e: WheelEvent): void {
@@ -287,23 +362,14 @@ export class ViewportControls {
       const centerX = (e.clientX - rect.left) * (this.canvasWidth / rect.width);
       const centerY = (e.clientY - rect.top) * (this.canvasHeight / rect.height);
 
-      this.options.sendMessage({
-        type: 'zoom',
-        factor,
-        centerX,
-        centerY,
-      });
+      this.viewport.zoom(factor, centerX, centerY);
     } else {
       // Wheel to pan (inverted to match natural scrolling)
       const dx = -deltaX * dpr;
       const dy = -deltaY * dpr;
 
-      this.options.sendMessage({
-        type: 'pan',
-        dx,
-        dy,
-        time: performance.now(),
-      });
+      this.viewport.onWheel();
+      this.viewport.pan(dx, dy);
     }
 
     this.scheduleViewportUpdate();
@@ -313,6 +379,9 @@ export class ViewportControls {
     this.updateCanvasDimensions();
 
     const dpr = window.devicePixelRatio || 1;
+    this.viewport.resize(this.canvasWidth, this.canvasHeight, dpr);
+
+    // Also send resize to worker for canvas resizing
     this.options.sendMessage({
       type: 'resize',
       width: this.canvasWidth,
