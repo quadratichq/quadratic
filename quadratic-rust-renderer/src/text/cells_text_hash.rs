@@ -650,9 +650,9 @@ impl CellsTextHash {
         self.sprite_dirty_webgpu = false;
     }
 
-    /// Check if this hash has a valid sprite cache
+    /// Check if this hash has a valid sprite cache (WebGL or WebGPU)
     pub fn has_sprite_cache(&self) -> bool {
-        self.sprite_cache.is_some()
+        self.sprite_cache.is_some() || self.sprite_cache_webgpu.is_some()
     }
 
     /// Delete the sprite cache to free GPU memory
@@ -665,8 +665,10 @@ impl CellsTextHash {
 
     /// Get the memory usage of the sprite cache in bytes
     /// Returns 0 if no sprite cache exists
+    /// Checks both WebGL and WebGPU sprite caches
     pub fn sprite_memory_bytes(&self) -> usize {
-        match &self.sprite_cache {
+        // WebGL sprite cache
+        let webgl_bytes = match &self.sprite_cache {
             Some(cache) => {
                 // RGBA texture: 4 bytes per pixel
                 // With mipmaps: roughly 1.33x the base size (1 + 1/4 + 1/16 + ...)
@@ -674,7 +676,20 @@ impl CellsTextHash {
                 (base_size as f32 * 1.33) as usize
             }
             None => 0,
-        }
+        };
+
+        // WebGPU sprite cache
+        let webgpu_bytes = match &self.sprite_cache_webgpu {
+            Some(cache) => {
+                // RGBA texture: 4 bytes per pixel
+                // With mipmaps: roughly 1.33x the base size
+                let base_size = (cache.width * cache.height * 4) as usize;
+                (base_size as f32 * 1.33) as usize
+            }
+            None => 0,
+        };
+
+        webgl_bytes + webgpu_bytes
     }
 }
 
