@@ -144,7 +144,7 @@ impl GridController {
                     .as_ref()
                     .is_some_and(|formats| formats.has_fills())
             }) {
-                transaction.add_fill_cells(sheet_pos.sheet_id);
+                transaction.add_fill_cells_from_sheet_rect(sheet_rect);
             }
 
             // update borders if needed old or new data table

@@ -24,12 +24,12 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeErrorContext,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
-  JsRenderFill,
   JsResponse,
   JsSheetFill,
   JsSheetNameToColor,
@@ -154,8 +154,11 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetsInfo') {
       events.emit('sheetsInfo', fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
       return;
-    } else if (e.data.type === 'coreClientSheetFills') {
-      events.emit('sheetFills', e.data.sheetId, fromUint8Array<JsRenderFill[]>(e.data.fills));
+    } else if (e.data.type === 'coreClientHashRenderFills') {
+      events.emit('hashRenderFills', e.data.hashRenderFills);
+      return;
+    } else if (e.data.type === 'coreClientHashesDirtyFills') {
+      events.emit('hashesDirtyFills', e.data.dirtyHashes);
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
@@ -690,6 +693,21 @@ class QuadraticCore {
       fillColor,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    this.send({
+      type: 'clientCoreGetRenderFillsForHashes',
+      sheetId,
+      hashes,
+    });
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    this.send({
+      type: 'clientCoreGetSheetMetaFills',
+      sheetId,
     });
   }
 

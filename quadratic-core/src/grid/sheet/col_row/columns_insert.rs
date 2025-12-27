@@ -41,7 +41,7 @@ impl Sheet {
 
         // update formatting (fn has maths to find column_inserted)
         self.formats.insert_column(column, copy_formats);
-        transaction.add_fill_cells(self.id);
+        transaction.add_fill_cells_from_columns(self, column);
 
         // update borders(fn has maths to find column_inserted)
         self.borders.insert_column(column, copy_formats);

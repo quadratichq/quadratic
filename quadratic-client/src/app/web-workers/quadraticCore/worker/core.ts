@@ -22,6 +22,7 @@ import type {
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsResponse,
@@ -393,6 +394,31 @@ class Core {
       this.gridController.setFillColor(selection, fillColor, cursor, isAi);
     } catch (e) {
       this.handleCoreError('setFillColor', e);
+    }
+  }
+
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const hashesJson = JSON.stringify(hashes);
+      const fills = this.gridController.getRenderFillsForHashes(sheetId, hashesJson);
+      if (fills && fills.length > 0) {
+        coreClient.sendHashRenderFills(fills);
+      }
+    } catch (e) {
+      this.handleCoreError('getRenderFillsForHashes', e);
+    }
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const fills = this.gridController.getSheetMetaFills(sheetId);
+      if (fills) {
+        coreClient.sendSheetMetaFills(sheetId, fills);
+      }
+    } catch (e) {
+      this.handleCoreError('getSheetMetaFills', e);
     }
   }
 

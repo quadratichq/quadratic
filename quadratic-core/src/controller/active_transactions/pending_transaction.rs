@@ -98,8 +98,11 @@ pub struct PendingTransaction {
     /// image cells to update
     pub(crate) image_cells: HashMap<SheetId, HashSet<Pos>>,
 
-    /// sheets w/updated fill cells
-    pub(crate) fill_cells: HashSet<SheetId>,
+    /// dirty fill hashes per sheet (hash positions)
+    pub(crate) fill_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    /// sheets with updated meta fills (row/column/sheet fills)
+    pub(crate) sheet_meta_fills: HashSet<SheetId>,
 
     /// sheets w/updated info
     pub(crate) sheet_info: HashSet<SheetId>,
@@ -145,7 +148,8 @@ impl Default for PendingTransaction {
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
-            fill_cells: HashSet::new(),
+            fill_cells: HashMap::new(),
+            sheet_meta_fills: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
@@ -311,7 +315,7 @@ impl PendingTransaction {
         for dirty_rect in dirty_rects {
             self.add_dirty_hashes_from_sheet_rect(dirty_rect.to_sheet_rect(sheet.id));
             if let Some(dt) = sheet.data_table_at(&dirty_rect.min) {
-                dt.add_dirty_fills_and_borders(self, sheet.id);
+                dt.add_dirty_fills_and_borders(self, sheet.id, dirty_rect.min);
                 self.add_from_code_run(sheet.id, dirty_rect.min, dt.is_image(), dt.is_html());
             } else {
                 self.add_code_cell(sheet.id, dirty_rect.min);
@@ -522,13 +526,144 @@ impl PendingTransaction {
         }
     }
 
-    /// Adds a sheet id to the fill cells set.
-    pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+    /// Adds dirty fill hashes from a sheet rect.
+    pub fn add_fill_cells_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
 
-        self.fill_cells.insert(sheet_id);
+        let hashes = sheet_rect.to_hashes();
+        self.fill_cells
+            .entry(sheet_rect.sheet_id)
+            .or_default()
+            .extend(hashes);
+    }
+
+    /// Adds dirty fill hashes from a rect.
+    pub fn add_fill_cells(&mut self, sheet_id: SheetId, rect: Rect) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let hashes = rect.to_sheet_rect(sheet_id).to_hashes();
+        self.fill_cells.entry(sheet_id).or_default().extend(hashes);
+    }
+
+    /// Marks all fills for a sheet as dirty (for operations like add sheet that affect entire sheet).
+    pub fn add_all_fill_cells(&mut self, sheet: &Sheet) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        // Use bounds(false) to include formatting since fills are part of formatting
+        let bounds = sheet.bounds(false);
+        if !bounds.is_empty() {
+            let min_hash_x = bounds
+                .first_column()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let max_hash_x = bounds
+                .last_column()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let min_hash_y = bounds
+                .first_row()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+            let max_hash_y = bounds
+                .last_row()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+
+            let dirty_hashes = self.fill_cells.entry(sheet.id).or_default();
+            for hash_x in min_hash_x..=max_hash_x {
+                for hash_y in min_hash_y..=max_hash_y {
+                    dirty_hashes.insert(Pos {
+                        x: hash_x,
+                        y: hash_y,
+                    });
+                }
+            }
+        }
+    }
+
+    /// Adds dirty fill hashes from a column range to end of sheet.
+    pub fn add_fill_cells_from_columns(&mut self, sheet: &Sheet, start_column: i64) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        // Use bounds(false) to include formatting since fills are part of formatting
+        let bounds = sheet.bounds(false);
+        if !bounds.is_empty() {
+            let min_hash_x = start_column.div_euclid(CELL_SHEET_WIDTH as i64);
+            let max_hash_x = bounds
+                .last_column()
+                .unwrap_or(start_column)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let min_hash_y = bounds
+                .first_row()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+            let max_hash_y = bounds
+                .last_row()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+
+            let dirty_hashes = self.fill_cells.entry(sheet.id).or_default();
+            for hash_x in min_hash_x..=max_hash_x {
+                for hash_y in min_hash_y..=max_hash_y {
+                    dirty_hashes.insert(Pos {
+                        x: hash_x,
+                        y: hash_y,
+                    });
+                }
+            }
+        }
+    }
+
+    /// Adds dirty fill hashes from a row range to end of sheet.
+    pub fn add_fill_cells_from_rows(&mut self, sheet: &Sheet, start_row: i64) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        // Use bounds(false) to include formatting since fills are part of formatting
+        let bounds = sheet.bounds(false);
+        if !bounds.is_empty() {
+            let min_hash_x = bounds
+                .first_column()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let max_hash_x = bounds
+                .last_column()
+                .unwrap_or(0)
+                .div_euclid(CELL_SHEET_WIDTH as i64);
+            let min_hash_y = start_row.div_euclid(CELL_SHEET_HEIGHT as i64);
+            let max_hash_y = bounds
+                .last_row()
+                .unwrap_or(start_row)
+                .div_euclid(CELL_SHEET_HEIGHT as i64);
+
+            let dirty_hashes = self.fill_cells.entry(sheet.id).or_default();
+            for hash_x in min_hash_x..=max_hash_x {
+                for hash_y in min_hash_y..=max_hash_y {
+                    dirty_hashes.insert(Pos {
+                        x: hash_x,
+                        y: hash_y,
+                    });
+                }
+            }
+        }
+    }
+
+    /// Marks meta fills (row/column/sheet fills) as needing update for a sheet.
+    pub fn add_sheet_meta_fills(&mut self, sheet_id: SheetId) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        self.sheet_meta_fills.insert(sheet_id);
     }
 
     /// Adds a sheet id to the borders set.
@@ -829,8 +964,10 @@ mod tests {
     fn test_add_fill_cells() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
-        transaction.add_fill_cells(sheet_id);
-        assert!(transaction.fill_cells.contains(&sheet_id));
+        let rect = Rect::from_numbers(0, 0, 10, 10);
+        transaction.add_fill_cells(sheet_id, rect);
+        assert!(transaction.fill_cells.contains_key(&sheet_id));
+        assert!(!transaction.fill_cells[&sheet_id].is_empty());
     }
 
     #[test]
