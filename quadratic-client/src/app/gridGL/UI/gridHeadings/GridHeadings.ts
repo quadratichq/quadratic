@@ -394,6 +394,7 @@ export class GridHeadings extends Container {
             content.gridLines.alpha >= colors.headerSelectedRowColumnBackgroundColorAlpha)
         ) {
           row++;
+          y += currentHeight;
           continue;
         }
 

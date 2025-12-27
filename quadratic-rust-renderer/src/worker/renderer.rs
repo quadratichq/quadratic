@@ -3,58 +3,26 @@
 //! The main entry point for browser-based rendering in a web worker.
 //! Receives an OffscreenCanvas and handles all rendering.
 
-use std::collections::HashMap;
-
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlImageElement, OffscreenCanvas};
 
-use crate::cells::CellsSheet;
-use crate::content::Content;
-use crate::headings::GridHeadings;
 use crate::render_context::RenderContext;
-use crate::text::{
-    BitmapFont, BitmapFonts, CellLabel, CellsTextHash,
-    VisibleHashBounds, get_hash_coords, hash_key,
-};
-use crate::viewport::Viewport;
+use crate::text::BitmapFont;
 use crate::webgl::WebGLContext;
+
+use super::state::RendererState;
 
 /// Worker-based renderer for browser
 ///
 /// This is the main entry point exposed to JavaScript.
-/// It owns the WebGL context and handles all rendering.
+/// It owns the context and handles all rendering.
 #[wasm_bindgen]
 pub struct WorkerRenderer {
     /// WebGL rendering context
     gl: WebGLContext,
 
-    /// Viewport (camera/zoom/pan state)
-    viewport: Viewport,
-
-    /// Current sheet being rendered
-    cells_sheet: CellsSheet,
-
-    /// Renderable content
-    content: Content,
-
-    /// Bitmap fonts for text rendering
-    fonts: BitmapFonts,
-
-    /// Spatial hashes containing cell labels (15×30 cell regions)
-    /// Key is computed from (hash_x, hash_y) coordinates
-    hashes: HashMap<u64, CellsTextHash>,
-
-    /// Total label count (cached for stats)
-    label_count: usize,
-
-    /// Whether the renderer is running
-    running: bool,
-
-    /// Grid headings (column/row headers)
-    headings: GridHeadings,
-
-    /// Whether to render headings
-    show_headings: bool,
+    /// Shared renderer state
+    state: RendererState,
 }
 
 #[wasm_bindgen]
@@ -67,41 +35,29 @@ impl WorkerRenderer {
 
         log::info!("Creating WorkerRenderer ({}x{})", width, height);
         let gl = WebGLContext::from_offscreen_canvas(canvas)?;
-        let viewport = Viewport::new(width as f32, height as f32);
-        let content = Content::new();
+        let state = RendererState::new(width as f32, height as f32);
 
-        Ok(Self {
-            gl,
-            viewport,
-            cells_sheet: CellsSheet::new("test".to_string()),
-            content,
-            fonts: BitmapFonts::new(),
-            hashes: HashMap::new(),
-            label_count: 0,
-            running: false,
-            headings: GridHeadings::new(),
-            show_headings: true,
-        })
+        Ok(Self { gl, state })
     }
 
     /// Start the renderer
     #[wasm_bindgen]
     pub fn start(&mut self) {
-        self.running = true;
+        self.state.start();
         log::info!("WorkerRenderer started");
     }
 
     /// Stop the renderer
     #[wasm_bindgen]
     pub fn stop(&mut self) {
-        self.running = false;
+        self.state.stop();
         log::info!("WorkerRenderer stopped");
     }
 
     /// Check if running
     #[wasm_bindgen]
     pub fn is_running(&self) -> bool {
-        self.running
+        self.state.is_running()
     }
 
     /// Resize the renderer
@@ -114,44 +70,43 @@ impl WorkerRenderer {
     pub fn resize(&mut self, width: u32, height: u32, dpr: f32) {
         log::debug!("Resizing to {}x{} (DPR: {})", width, height, dpr);
         self.gl.resize(width, height);
-        self.viewport.resize(width as f32, height as f32, dpr);
+        self.state.resize_viewport(width as f32, height as f32, dpr);
     }
 
     /// Pan the viewport
     #[wasm_bindgen]
     pub fn pan(&mut self, dx: f32, dy: f32) {
-        self.viewport.pan(dx, dy);
+        self.state.pan(dx, dy);
     }
 
     /// Zoom the viewport
     #[wasm_bindgen]
     pub fn zoom(&mut self, factor: f32, center_x: f32, center_y: f32) {
-        self.viewport.zoom(factor, center_x, center_y);
+        self.state.zoom(factor, center_x, center_y);
     }
 
     /// Set viewport position directly
     #[wasm_bindgen]
     pub fn set_viewport(&mut self, x: f32, y: f32, scale: f32) {
-        self.viewport.set_position(x, y);
-        self.viewport.set_scale(scale);
+        self.state.set_viewport(x, y, scale);
     }
 
     /// Get current scale
     #[wasm_bindgen]
     pub fn get_scale(&self) -> f32 {
-        self.viewport.scale()
+        self.state.get_scale()
     }
 
     /// Get viewport X
     #[wasm_bindgen]
     pub fn get_x(&self) -> f32 {
-        self.viewport.x()
+        self.state.get_x()
     }
 
     /// Get viewport Y
     #[wasm_bindgen]
     pub fn get_y(&self) -> f32 {
-        self.viewport.y()
+        self.state.get_y()
     }
 
     // =========================================================================
@@ -161,65 +116,45 @@ impl WorkerRenderer {
     /// Toggle headings visibility
     #[wasm_bindgen]
     pub fn set_show_headings(&mut self, show: bool) {
-        self.show_headings = show;
+        self.state.set_show_headings(show);
     }
 
     /// Get headings visibility
     #[wasm_bindgen]
     pub fn get_show_headings(&self) -> bool {
-        self.show_headings
+        self.state.get_show_headings()
     }
 
     /// Get heading size (row header width in pixels)
     #[wasm_bindgen]
     pub fn get_heading_width(&self) -> f32 {
-        self.headings.heading_size().width
+        self.state.get_heading_width()
     }
 
     /// Get heading size (column header height in pixels)
     #[wasm_bindgen]
     pub fn get_heading_height(&self) -> f32 {
-        self.headings.heading_size().height
+        self.state.get_heading_height()
     }
 
     /// Set selected columns for heading highlight
     /// Takes flat array of [start1, end1, start2, end2, ...] pairs (1-indexed)
     #[wasm_bindgen]
     pub fn set_selected_columns(&mut self, selections: &[i32]) {
-        let pairs: Vec<(i64, i64)> = selections
-            .chunks(2)
-            .filter_map(|chunk| {
-                if chunk.len() == 2 {
-                    Some((chunk[0] as i64, chunk[1] as i64))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        self.headings.set_selected_columns(pairs);
+        self.state.set_selected_columns(selections);
     }
 
     /// Set selected rows for heading highlight
     /// Takes flat array of [start1, end1, start2, end2, ...] pairs (1-indexed)
     #[wasm_bindgen]
     pub fn set_selected_rows(&mut self, selections: &[i32]) {
-        let pairs: Vec<(i64, i64)> = selections
-            .chunks(2)
-            .filter_map(|chunk| {
-                if chunk.len() == 2 {
-                    Some((chunk[0] as i64, chunk[1] as i64))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        self.headings.set_selected_rows(pairs);
+        self.state.set_selected_rows(selections);
     }
 
     /// Set device pixel ratio for headings (affects font size)
     #[wasm_bindgen]
     pub fn set_headings_dpr(&mut self, dpr: f32) {
-        self.headings.set_dpr(dpr);
+        self.state.set_headings_dpr(dpr);
     }
 
     // =========================================================================
@@ -229,27 +164,27 @@ impl WorkerRenderer {
     /// Called when drag/pan starts - stops any active deceleration
     #[wasm_bindgen]
     pub fn on_drag_start(&mut self) {
-        self.viewport.on_drag_start();
+        self.state.on_drag_start();
     }
 
     /// Called during drag/pan - records position for velocity calculation
     /// time: Current time in milliseconds (from performance.now())
     #[wasm_bindgen]
     pub fn on_drag_move(&mut self, time: f64) {
-        self.viewport.on_drag_move(time);
+        self.state.on_drag_move(time);
     }
 
     /// Called when drag/pan ends - calculates velocity and starts deceleration
     /// time: Current time in milliseconds
     #[wasm_bindgen]
     pub fn on_drag_end(&mut self, time: f64) {
-        self.viewport.on_drag_end(time);
+        self.state.on_drag_end(time);
     }
 
     /// Called on wheel event - stops deceleration
     #[wasm_bindgen]
     pub fn on_wheel_event(&mut self) {
-        self.viewport.on_wheel();
+        self.state.on_wheel_event();
     }
 
     /// Update deceleration and apply velocity to viewport
@@ -257,26 +192,26 @@ impl WorkerRenderer {
     /// Returns true if the viewport was moved
     #[wasm_bindgen]
     pub fn update_decelerate(&mut self, elapsed: f32) -> bool {
-        self.viewport.update_decelerate(elapsed)
+        self.state.update_decelerate(elapsed)
     }
 
     /// Check if deceleration or snap-back is currently active
     #[wasm_bindgen]
     pub fn is_decelerating(&self) -> bool {
-        self.viewport.is_decelerating() || self.viewport.is_snapping_back()
+        self.state.is_decelerating()
     }
 
     /// Manually activate deceleration with a specific velocity
     /// vx, vy: velocity in px/ms
     #[wasm_bindgen]
     pub fn activate_decelerate(&mut self, vx: f32, vy: f32) {
-        self.viewport.activate_decelerate(vx, vy);
+        self.state.activate_decelerate(vx, vy);
     }
 
     /// Reset/stop deceleration
     #[wasm_bindgen]
     pub fn reset_decelerate(&mut self) {
-        self.viewport.reset_decelerate();
+        self.state.reset_decelerate();
     }
 
     // =========================================================================
@@ -286,40 +221,37 @@ impl WorkerRenderer {
     /// Mark the viewport as dirty (forces a render next frame)
     #[wasm_bindgen]
     pub fn set_viewport_dirty(&mut self) {
-        self.viewport.dirty = true;
+        self.state.set_viewport_dirty();
     }
 
     /// Mark grid lines as dirty
     #[wasm_bindgen]
     pub fn set_grid_lines_dirty(&mut self) {
-        self.content.grid_lines.dirty = true;
+        self.state.set_grid_lines_dirty();
     }
 
     /// Mark cursor as dirty
     #[wasm_bindgen]
     pub fn set_cursor_dirty(&mut self) {
-        self.content.cursor.dirty = true;
+        self.state.set_cursor_dirty();
     }
 
     /// Mark headings as dirty
     #[wasm_bindgen]
     pub fn set_headings_dirty(&mut self) {
-        self.headings.set_dirty();
+        self.state.set_headings_dirty();
     }
 
     /// Check if any component is dirty and needs rendering
     #[wasm_bindgen]
     pub fn is_dirty(&self) -> bool {
-        self.viewport.dirty
-            || self.content.is_dirty()
-            || self.headings.is_dirty()
-            || self.any_visible_hash_dirty()
+        self.state.is_dirty()
     }
 
     /// Set cursor position
     #[wasm_bindgen]
     pub fn set_cursor(&mut self, col: i64, row: i64) {
-        self.content.cursor.set_selected_cell(col, row);
+        self.state.set_cursor(col, row);
     }
 
     /// Set cursor selection range
@@ -331,9 +263,8 @@ impl WorkerRenderer {
         end_col: i64,
         end_row: i64,
     ) {
-        self.content
-            .cursor
-            .set_selection(start_col, start_row, end_col, end_row);
+        self.state
+            .set_cursor_selection(start_col, start_row, end_col, end_row);
     }
 
     /// Upload a font texture from an HtmlImageElement
@@ -365,25 +296,22 @@ impl WorkerRenderer {
     pub fn add_font(&mut self, font_json: &str) -> Result<(), JsValue> {
         let font: BitmapFont = serde_json::from_str(font_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse font JSON: {}", e)))?;
-
-        log::info!("Added font: {} with {} chars", font.font, font.chars.len());
-        self.fonts.add(font);
+        self.state.add_font(font);
         Ok(())
     }
 
     /// Check if fonts are loaded
     #[wasm_bindgen]
     pub fn has_fonts(&self) -> bool {
-        !self.fonts.is_empty()
+        self.state.has_fonts()
     }
 
     /// Check if fonts are fully ready (metadata loaded AND all textures uploaded)
     fn fonts_ready(&self) -> bool {
-        if self.fonts.is_empty() {
+        if !self.state.has_fonts() {
             return false;
         }
-        // Check that all required texture pages have been uploaded
-        for uid in self.fonts.get_required_texture_uids() {
+        for uid in self.state.get_required_texture_uids() {
             if !self.gl.has_font_texture(uid) {
                 return false;
             }
@@ -395,11 +323,7 @@ impl WorkerRenderer {
     /// col and row are 1-indexed cell coordinates
     #[wasm_bindgen]
     pub fn add_label(&mut self, text: &str, col: i64, row: i64) {
-        let mut label = CellLabel::new(text.to_string(), col, row);
-        label.update_bounds(&self.cells_sheet.sheet_offsets);
-        label.layout(&self.fonts);
-
-        self.insert_label(col, row, label);
+        self.state.add_label(text, col, row);
     }
 
     /// Add a styled cell label
@@ -416,56 +340,24 @@ impl WorkerRenderer {
         color_r: f32,
         color_g: f32,
         color_b: f32,
-        align: u8,  // 0 = left, 1 = center, 2 = right
-        valign: u8, // 0 = top, 1 = middle, 2 = bottom
+        align: u8,
+        valign: u8,
     ) {
-        use crate::text::cell_label::{TextAlign, VerticalAlign};
-
-        let mut label = CellLabel::new(text.to_string(), col, row);
-        label.update_bounds(&self.cells_sheet.sheet_offsets);
-        label.font_size = font_size;
-        label.bold = bold;
-        label.italic = italic;
-        label.color = [color_r, color_g, color_b, 1.0];
-        label.align = match align {
-            1 => TextAlign::Center,
-            2 => TextAlign::Right,
-            _ => TextAlign::Left,
-        };
-        label.vertical_align = match valign {
-            0 => VerticalAlign::Top,
-            1 => VerticalAlign::Middle,
-            _ => VerticalAlign::Bottom,
-        };
-        label.layout(&self.fonts);
-
-        self.insert_label(col, row, label);
-    }
-
-    /// Insert a label into the correct spatial hash
-    fn insert_label(&mut self, col: i64, row: i64, label: CellLabel) {
-        let (hash_x, hash_y) = get_hash_coords(col, row);
-        let key = hash_key(hash_x, hash_y);
-
-        let hash = self
-            .hashes
-            .entry(key)
-            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets));
-        hash.add_label(col, row, label);
-        self.label_count += 1;
+        self.state.add_styled_label(
+            text, col, row, font_size, bold, italic, color_r, color_g, color_b, align, valign,
+        );
     }
 
     /// Clear all labels
     #[wasm_bindgen]
     pub fn clear_labels(&mut self) {
-        self.hashes.clear();
-        self.label_count = 0;
+        self.state.clear_labels();
     }
 
     /// Get total label count
     #[wasm_bindgen]
     pub fn get_label_count(&self) -> usize {
-        self.label_count
+        self.state.get_label_count()
     }
 
     // =========================================================================
@@ -474,52 +366,16 @@ impl WorkerRenderer {
 
     /// Get visible hash bounds for the current viewport
     /// Returns: [min_hash_x, max_hash_x, min_hash_y, max_hash_y]
-    /// These bounds include dynamic padding based on viewport scale for preloading
     #[wasm_bindgen]
     pub fn get_visible_hash_bounds(&self) -> Box<[i32]> {
-        let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-            self.viewport.scale(),
-            &self.cells_sheet.sheet_offsets,
-        );
-
-        Box::new([
-            hash_bounds.min_hash_x as i32,
-            hash_bounds.max_hash_x as i32,
-            hash_bounds.min_hash_y as i32,
-            hash_bounds.max_hash_y as i32,
-        ])
+        Box::new(self.state.get_visible_hash_bounds())
     }
 
     /// Get list of hashes that need to be loaded (visible but not yet loaded)
     /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
     #[wasm_bindgen]
     pub fn get_needed_hashes(&self) -> Box<[i32]> {
-        let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-            self.viewport.scale(),
-            &self.cells_sheet.sheet_offsets,
-        );
-
-        let mut needed: Vec<i32> = Vec::new();
-
-        for (hash_x, hash_y) in hash_bounds.iter() {
-            let key = hash_key(hash_x, hash_y);
-            if !self.hashes.contains_key(&key) {
-                needed.push(hash_x as i32);
-                needed.push(hash_y as i32);
-            }
-        }
-
-        needed.into_boxed_slice()
+        self.state.get_needed_hashes().into_boxed_slice()
     }
 
     /// Get list of loaded hashes that are outside the visible bounds
@@ -527,67 +383,37 @@ impl WorkerRenderer {
     /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
     #[wasm_bindgen]
     pub fn get_offscreen_hashes(&self) -> Box<[i32]> {
-        let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-            self.viewport.scale(),
-            &self.cells_sheet.sheet_offsets,
-        );
-
-        let mut offscreen: Vec<i32> = Vec::new();
-
-        for hash in self.hashes.values() {
-            if !hash_bounds.contains(hash.hash_x, hash.hash_y) {
-                offscreen.push(hash.hash_x as i32);
-                offscreen.push(hash.hash_y as i32);
-            }
-        }
-
-        offscreen.into_boxed_slice()
+        self.state.get_offscreen_hashes().into_boxed_slice()
     }
 
     /// Remove a hash (for memory management when hash goes offscreen)
     #[wasm_bindgen]
     pub fn remove_hash(&mut self, hash_x: i32, hash_y: i32) {
-        let key = hash_key(hash_x as i64, hash_y as i64);
-        if let Some(hash) = self.hashes.remove(&key) {
-            // Reduce label count by the number of labels in the removed hash
-            self.label_count = self.label_count.saturating_sub(hash.label_count());
-        }
+        self.state.remove_hash(hash_x, hash_y);
     }
 
     /// Check if a hash is loaded
     #[wasm_bindgen]
     pub fn has_hash(&self, hash_x: i32, hash_y: i32) -> bool {
-        let key = hash_key(hash_x as i64, hash_y as i64);
-        self.hashes.contains_key(&key)
+        self.state.has_hash(hash_x, hash_y)
     }
 
     /// Get number of loaded hashes
     #[wasm_bindgen]
     pub fn get_hash_count(&self) -> usize {
-        self.hashes.len()
+        self.state.get_hash_count()
     }
 
     /// Get total sprite cache memory usage in bytes
     #[wasm_bindgen]
     pub fn get_sprite_memory_bytes(&self) -> usize {
-        self.hashes
-            .values()
-            .map(|hash| hash.sprite_memory_bytes())
-            .sum()
+        self.state.get_sprite_memory_bytes()
     }
 
     /// Get number of active sprite caches
     #[wasm_bindgen]
     pub fn get_sprite_count(&self) -> usize {
-        self.hashes
-            .values()
-            .filter(|hash| hash.has_sprite_cache())
-            .count()
+        self.state.get_sprite_count()
     }
 
     // =========================================================================
@@ -599,45 +425,21 @@ impl WorkerRenderer {
     /// Returns true if a render actually occurred, false if nothing was dirty
     #[wasm_bindgen]
     pub fn frame(&mut self, elapsed: f32) -> bool {
-        if !self.running {
+        if !self.state.is_running() {
             return false;
         }
 
         // Update deceleration (momentum scrolling) - this may dirty the viewport
-        self.viewport.update_decelerate(elapsed);
+        self.state.update_decelerate(elapsed);
 
         // Update content based on viewport and sheet offsets
-        self.content.update(&self.viewport, &self.cells_sheet.sheet_offsets);
+        self.state.update_content();
 
         // Update headings first to get their size
-        let (heading_width, heading_height) = if self.show_headings {
-            // Use effective_scale because canvas dimensions are in device pixels
-            let scale = self.viewport.effective_scale();
-            let canvas_width = self.viewport.width();
-            let canvas_height = self.viewport.height();
-
-            self.headings.update(
-                self.viewport.x(),
-                self.viewport.y(),
-                scale,
-                canvas_width,
-                canvas_height,
-                &self.cells_sheet.sheet_offsets,
-            );
-
-            let size = self.headings.heading_size();
-            (size.width, size.height)
-        } else {
-            (0.0, 0.0)
-        };
+        let (heading_width, heading_height) = self.state.update_headings();
 
         // Check if anything is dirty and needs rendering
-        let viewport_dirty = self.viewport.dirty;
-        let content_dirty = self.content.is_dirty();
-        let headings_dirty = self.headings_dirty();
-        let hashes_dirty = self.any_visible_hash_dirty();
-
-        let needs_render = viewport_dirty || content_dirty || headings_dirty || hashes_dirty;
+        let needs_render = self.state.is_dirty();
 
         if !needs_render {
             return false;
@@ -647,26 +449,24 @@ impl WorkerRenderer {
         self.gl.begin_frame();
 
         // Clear with out-of-bounds background color (0xfdfdfd = very light gray)
-        // This matches the client's gridBackgroundOutOfBounds color
-        let oob_gray = 253.0 / 255.0; // 0xfdfdfd
+        let oob_gray = 253.0 / 255.0;
         self.gl.clear(oob_gray, oob_gray, oob_gray, 1.0);
 
         // Get the view-projection matrix with heading offset
         let matrix = self
+            .state
             .viewport
             .view_projection_matrix_with_offset(heading_width, heading_height);
         let matrix_array: [f32; 16] = matrix.to_cols_array();
 
         // Set viewport to content area (after headings)
-        // This makes NDC coordinates map to the content area on screen
-        let canvas_width = self.viewport.width() as i32;
-        let canvas_height = self.viewport.height() as i32;
+        let canvas_width = self.state.viewport.width() as i32;
+        let canvas_height = self.state.viewport.height() as i32;
         let content_x = heading_width as i32;
         let content_y = heading_height as i32;
         let content_width = canvas_width - heading_width as i32;
         let content_height = canvas_height - heading_height as i32;
 
-        // Set viewport to content area (this is the key fix for proper alignment)
         self.gl.set_viewport(
             content_x,
             content_y,
@@ -674,7 +474,6 @@ impl WorkerRenderer {
             content_height.max(0),
         );
 
-        // Also enable scissor test for content area (for clipping at edges)
         self.gl.set_scissor(
             content_x,
             content_y,
@@ -688,24 +487,27 @@ impl WorkerRenderer {
         self.render_background(&matrix_array);
 
         // 2. Grid lines
-        self.content.grid_lines.render(&mut self.gl, &matrix_array);
+        self.state
+            .content
+            .grid_lines
+            .render(&mut self.gl, &matrix_array);
 
         // 3. Cell text
         self.render_text(&matrix_array);
 
         // 4. Cursor (on top of text)
-        // Use effective_scale for pixel-scaled elements (cursor borders)
-        let viewport_scale = self.viewport.effective_scale();
-        self.content
+        let viewport_scale = self.state.viewport.effective_scale();
+        self.state
+            .content
             .cursor
             .render(&mut self.gl, &matrix_array, viewport_scale);
 
-        // Reset viewport and disable scissor for headings (they render over the full canvas)
+        // Reset viewport and disable scissor for headings
         self.gl.reset_viewport();
         self.gl.disable_scissor();
 
         // Render headings (in screen space, on top of everything)
-        if self.show_headings {
+        if self.state.show_headings {
             self.render_headings();
         }
 
@@ -713,41 +515,9 @@ impl WorkerRenderer {
         self.gl.end_frame();
 
         // Mark everything as clean after rendering
-        self.viewport.mark_clean();
-        self.content.mark_clean();
-        self.headings.mark_clean();
+        self.state.mark_clean();
 
         true
-    }
-
-    /// Check if headings need re-rendering
-    fn headings_dirty(&self) -> bool {
-        self.headings.is_dirty()
-    }
-
-    /// Check if any visible hash needs re-rendering
-    fn any_visible_hash_dirty(&self) -> bool {
-        if self.hashes.is_empty() {
-            return false;
-        }
-
-        // Use visible_bounds() which correctly accounts for DPR
-        // This must match the bounds calculation in render_text() to avoid
-        // dirty hashes being detected but never cleaned (causing infinite rendering)
-        let bounds = self.viewport.visible_bounds();
-
-        let padding = 100.0;
-        let min_x = bounds.left - padding;
-        let max_x = bounds.left + bounds.width + padding;
-        let min_y = bounds.top - padding;
-        let max_y = bounds.top + bounds.height + padding;
-
-        for hash in self.hashes.values() {
-            if hash.intersects_viewport(min_x, max_x, min_y, max_y) && hash.is_dirty() {
-                return true;
-            }
-        }
-        false
     }
 
     // =========================================================================
@@ -756,141 +526,95 @@ impl WorkerRenderer {
 
     /// Render the background (white grid area)
     fn render_background(&mut self, matrix: &[f32; 16]) {
-        use crate::primitives::Rects;
+        let bounds = self.state.viewport.visible_bounds();
 
-        let bounds = self.viewport.visible_bounds();
-
-        // Only draw if some valid area is visible
         if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
             return;
         }
 
-        // Clamp to valid area (x >= 0, y >= 0)
         let x = bounds.left.max(0.0);
         let y = bounds.top.max(0.0);
         let width = bounds.right - x;
         let height = bounds.bottom - y;
 
-        // White background color (matches client's gridBackground: 0xffffff)
-        let mut rects = Rects::new();
+        let mut rects = crate::primitives::Rects::new();
         rects.add(x, y, width, height, [1.0, 1.0, 1.0, 1.0]);
         rects.render(&mut self.gl, matrix);
     }
 
     /// Render cell text using spatial hash culling
-    ///
-    /// Each visible hash renders its own cached text directly.
     fn render_text(&mut self, matrix: &[f32; 16]) {
-        if self.hashes.is_empty() || !self.fonts_ready() {
+        if self.state.hashes.is_empty() || !self.fonts_ready() {
             return;
         }
 
-        // User-visible scale (for threshold comparisons)
-        let scale = self.viewport.scale();
-        // Effective scale (for rendering calculations)
-        let effective_scale = self.viewport.effective_scale();
+        let scale = self.state.viewport.scale();
+        let effective_scale = self.state.viewport.effective_scale();
 
-        // Get viewport bounds for culling (use visible_bounds which accounts for DPR)
-        let bounds = self.viewport.visible_bounds();
-        let vp_x = bounds.left;
-        let vp_y = bounds.top;
-        let vp_width = bounds.width;
-        let vp_height = bounds.height;
-
-        // Viewport bounds with some padding
+        let bounds = self.state.viewport.visible_bounds();
         let padding = 100.0;
-        let min_x = vp_x - padding;
-        let max_x = vp_x + vp_width + padding;
-        let min_y = vp_y - padding;
-        let max_y = vp_y + vp_height + padding;
+        let min_x = bounds.left - padding;
+        let max_x = bounds.left + bounds.width + padding;
+        let min_y = bounds.top - padding;
+        let max_y = bounds.top + bounds.height + padding;
 
-        // Get text rendering parameters
-        let (font_scale, distance_range) = self
-            .fonts
-            .get("OpenSans")
-            .map(|f| {
-                let render_size = 14.0;
-                (render_size / f.size, f.distance_range)
-            })
-            .unwrap_or((14.0 / 42.0, 4.0));
+        let (font_scale, distance_range) = self.state.get_text_params();
 
-        // Render each visible hash
-        for hash in self.hashes.values_mut() {
+        for hash in self.state.hashes.values_mut() {
             if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                 continue;
             }
 
-            // Rebuild mesh cache if dirty
-            hash.rebuild_if_dirty(&self.fonts);
+            hash.rebuild_if_dirty(&self.state.fonts);
 
-            // Rebuild sprite cache if zoomed out (for smooth text at small sizes)
-            // Use user-visible scale for threshold comparison
             if scale < crate::text::SPRITE_SCALE_THRESHOLD {
-                hash.rebuild_sprite_if_dirty(&self.gl, &self.fonts, font_scale, distance_range);
+                hash.rebuild_sprite_if_dirty(
+                    &self.gl,
+                    &self.state.fonts,
+                    font_scale,
+                    distance_range,
+                );
             }
 
-            // Render this hash's text (switches between MSDF and sprite based on user_scale)
-            // Pass user-visible scale for threshold, effective_scale for MSDF fwidth
             hash.render(
                 &self.gl,
                 matrix,
-                scale,           // user-visible scale for threshold comparison
-                effective_scale, // effective scale for MSDF rendering
+                scale,
+                effective_scale,
                 font_scale,
                 distance_range,
             );
         }
     }
 
-    // =========================================================================
-    // Headings Rendering
-    // =========================================================================
-
     /// Render grid headings (column and row headers)
-    /// Headings are rendered in screen-space
     fn render_headings(&mut self) {
         if !self.fonts_ready() {
             return;
         }
 
-        let canvas_width = self.viewport.width();
-        let canvas_height = self.viewport.height();
+        let canvas_width = self.state.viewport.width();
+        let canvas_height = self.state.viewport.height();
 
         // Layout heading labels
-        self.headings.layout(&self.fonts);
+        self.state.headings.layout(&self.state.fonts);
 
         // Create screen-space matrix
-        let screen_matrix = self.create_screen_space_matrix(canvas_width, canvas_height);
+        let screen_matrix = self
+            .state
+            .create_screen_space_matrix(canvas_width, canvas_height);
 
         // Get text params for headings
-        let heading_font_size = 10.0 * self.headings.dpr();
-        let (font_scale, distance_range) = self
-            .fonts
-            .get("OpenSans")
-            .map(|f| (heading_font_size / f.size, f.distance_range))
-            .unwrap_or((heading_font_size / 42.0, 4.0));
+        let (font_scale, distance_range) = self.state.get_heading_text_params();
 
         // Render headings directly
-        self.headings.render(
+        self.state.headings.render(
             &mut self.gl,
             &screen_matrix,
-            &self.fonts,
+            &self.state.fonts,
             font_scale,
             distance_range,
-            &self.cells_sheet.sheet_offsets,
+            &self.state.cells_sheet.sheet_offsets,
         );
-    }
-
-    /// Create a screen-space orthographic projection matrix
-    /// Maps (0, 0) at top-left to (width, height) at bottom-right
-    fn create_screen_space_matrix(&self, width: f32, height: f32) -> [f32; 16] {
-        let sx = 2.0 / width;
-        let sy = -2.0 / height; // Negative to flip Y
-        let tx = -1.0;
-        let ty = 1.0;
-
-        [
-            sx, 0.0, 0.0, 0.0, 0.0, sy, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, tx, ty, 0.0, 1.0,
-        ]
     }
 }

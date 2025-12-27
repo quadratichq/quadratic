@@ -18,7 +18,9 @@
 mod backend;
 mod renderer;
 mod renderer_webgpu;
+mod state;
 
 pub use backend::{BackendType, RenderBackend};
 pub use renderer::WorkerRenderer;
 pub use renderer_webgpu::WorkerRendererGPU;
+pub use state::RendererState;
