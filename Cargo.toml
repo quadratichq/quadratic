@@ -3,11 +3,13 @@ resolver = "2"
 members = [
   "quadratic-connection",
   "quadratic-core",
+  "quadratic-core-shared",
   "quadratic-cloud-controller",
   "quadratic-cloud-worker",
   "quadratic-core-cloud",
   "quadratic-files",
   "quadratic-multiplayer",
+  "quadratic-rust-renderer",
   "quadratic-rust-shared",
 ]
 exclude = ["poc/number_type", "dev-rust"]
@@ -26,9 +28,3 @@ version = "0.23.0"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
-
-
-
-
-
-

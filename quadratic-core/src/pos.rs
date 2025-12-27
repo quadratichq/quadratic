@@ -1,73 +1,44 @@
-use crate::{
-    RefAdjust,
-    a1::CellRefRangeEnd,
-    grid::SheetId,
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-};
-use anyhow::Result;
-use rstar::Point;
+// Re-export the base types from quadratic-core-shared
+pub use quadratic_core_shared::{Pos, SheetPos};
+
 use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
-use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-/// Cell position {x, y}.
-#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[derive(
-    Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
-)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-pub struct Pos {
-    /// Column
-    #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
-    pub x: i64,
+use crate::{RefAdjust, a1::CellRefRangeEnd};
 
-    /// Row
-    #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
-    pub y: i64,
-    //
-    // We use a small range for proptest because most tests want to see what
-    // happens when values are nearby.
+// Extension trait for Pos with core-specific A1 functionality
+pub trait PosA1Ext {
+    /// Returns an A1-style relative reference to the cell position.
+    fn a1_string(self) -> String;
+
+    fn try_a1_string(a1: &str) -> Option<Pos>;
+
+    /// Returns an A1-style debug string
+    fn a1_debug_string(self) -> String;
+
+    /// Translates the pos in place by the given delta, clamping the result to the given min.
+    fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64);
+
+    /// Returns a new Pos translated by the given delta, clamping the result to the given min.
+    fn translate_clamped(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Pos;
+
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns a new Pos.
+    fn saturating_translate(&self, dx: i64, dy: i64) -> Pos;
+
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds.
+    fn saturating_adjust(self, adjust: RefAdjust) -> Pos;
 }
 
-impl Pos {
-    // TODO: change this to 1,1
-    pub const ORIGIN: Self = Self { x: 1, y: 0 };
-
-    pub fn new(x: i64, y: i64) -> Self {
-        Self { x, y }
-    }
-
-    pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
-        SheetPos {
-            x: self.x,
-            y: self.y,
-            sheet_id,
-        }
-    }
-
-    /// Returns which quadrant the cell position is in.
-    pub fn quadrant(self) -> (i64, i64) {
-        (
-            self.x.div_euclid(CELL_SHEET_WIDTH as _),
-            self.y.div_euclid(CELL_SHEET_HEIGHT as _),
-        )
-    }
-
-    /// Converts from a Pos to a quadrant Pos.
-    pub fn to_quadrant(&mut self) {
-        self.x = self.x.div_euclid(CELL_SHEET_WIDTH as _);
-        self.y = self.y.div_euclid(CELL_SHEET_HEIGHT as _);
-    }
-
-    /// Returns an A1-style relative reference to the cell position.
-    pub fn a1_string(self) -> String {
+impl PosA1Ext for Pos {
+    fn a1_string(self) -> String {
         let col = crate::a1::column_name(self.x);
         let row = self.y;
         format!("{col}{row}")
     }
 
-    pub fn try_a1_string(a1: &str) -> Option<Self> {
+    fn try_a1_string(a1: &str) -> Option<Pos> {
         if let Ok(end) = CellRefRangeEnd::parse_end(a1, None) {
             if end.is_unbounded() {
                 return None;
@@ -80,135 +51,60 @@ impl Pos {
         None
     }
 
-    /// Translates the pos in place by the given delta, clamping the result to the given min.
-    pub fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
+    fn a1_debug_string(self) -> String {
+        format!("Pos ({}, {}) {}", self.x, self.y, self.a1_string())
+    }
+
+    fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
         self.x = (self.x + x).max(min_x);
         self.y = (self.y + y).max(min_y);
     }
 
-    /// Returns a new Pos translated by the given delta, clamping the result to the given min.
-    #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
+    fn translate_clamped(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Pos {
         let mut pos = *self;
         pos.translate_in_place(x, y, min_x, min_y);
         pos
     }
 
-    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
-    /// bounds. Returns a new Pos.
-    pub fn saturating_translate(&self, dx: i64, dy: i64) -> Self {
+    fn saturating_translate(&self, dx: i64, dy: i64) -> Pos {
         let adjust = RefAdjust::new_translate(dx, dy);
         self.saturating_adjust(adjust)
     }
 
-    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
-    /// bounds.
-    ///
-    /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by
-    /// this method.
-    #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
+    fn saturating_adjust(self, adjust: RefAdjust) -> Pos {
         let x_start = adjust.x_start;
         let dx = if self.x < x_start { 0 } else { adjust.dx };
 
         let y_start = adjust.y_start;
         let dy = if self.y < y_start { 0 } else { adjust.dy };
 
-        Self {
+        Pos {
             x: self.x.saturating_add(dx).max(1),
             y: self.y.saturating_add(dy).max(1),
         }
     }
-
-    /// Returns a new Pos with the minimum x and y values.
-    pub fn min(self, other: Self) -> Self {
-        Pos {
-            x: self.x.min(other.x),
-            y: self.y.min(other.y),
-        }
-    }
-
-    /// Returns a new Pos with the maximum x and y values.
-    pub fn max(self, other: Self) -> Self {
-        Pos {
-            x: self.x.max(other.x),
-            y: self.y.max(other.y),
-        }
-    }
 }
 
-impl From<(i64, i64)> for Pos {
-    fn from(pos: (i64, i64)) -> Self {
-        Pos { x: pos.0, y: pos.1 }
-    }
-}
-impl From<(i32, i32)> for Pos {
-    fn from(pos: (i32, i32)) -> Self {
-        Pos {
-            x: pos.0 as i64,
-            y: pos.1 as i64,
-        }
-    }
-}
-impl From<(u32, u32)> for Pos {
-    fn from(pos: (u32, u32)) -> Self {
-        Pos {
-            x: pos.0 as i64,
-            y: pos.1 as i64,
-        }
-    }
-}
-impl From<(usize, usize)> for Pos {
-    fn from(pos: (usize, usize)) -> Self {
-        Pos {
-            x: pos.0 as i64,
-            y: pos.1 as i64,
-        }
-    }
-}
-impl From<[i64; 2]> for Pos {
-    fn from(pos: [i64; 2]) -> Self {
-        Pos {
-            x: pos[0],
-            y: pos[1],
-        }
-    }
-}
-impl From<SheetPos> for Pos {
-    fn from(sheet_pos: SheetPos) -> Self {
-        Pos {
-            x: sheet_pos.x,
-            y: sheet_pos.y,
-        }
-    }
-}
-impl From<&str> for Pos {
-    fn from(s: &str) -> Self {
-        Self::try_a1_string(s).expect("invalid cell reference")
-    }
+// Extension trait for Rect with core-specific A1 functionality
+pub trait RectA1Ext {
+    fn a1_string(&self) -> String;
+
+    #[cfg(test)]
+    fn test_a1(s: &str) -> crate::Rect;
 }
 
-impl fmt::Display for Pos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ({}, {})", self.a1_string(), self.x, self.y)
-    }
-}
-
-impl Point for Pos {
-    type Scalar = i64;
-
-    const DIMENSIONS: usize = 2;
-
-    fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
-        Pos::new(generator(0), generator(1))
+impl RectA1Ext for crate::Rect {
+    fn a1_string(&self) -> String {
+        format!("{}:{}", self.min.a1_string(), self.max.a1_string())
     }
 
-    fn nth(&self, index: usize) -> Self::Scalar {
-        [self.x, self.y][index]
-    }
+    #[cfg(test)]
+    fn test_a1(s: &str) -> crate::Rect {
+        use crate::a1::A1Context;
 
-    fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
-        [&mut self.x, &mut self.y][index]
+        crate::a1::CellRefRange::test_a1(s)
+            .to_rect(&A1Context::default())
+            .unwrap()
     }
 }
 
@@ -221,80 +117,13 @@ pub struct ScreenRect {
     pub h: f64,
 }
 
-/// Used for referencing a pos during computation.
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct SheetPos {
-    pub x: i64,
-    pub y: i64,
-    pub sheet_id: SheetId,
-}
-
-impl SheetPos {
-    /// Replace the pos with a new pos
-    pub fn replace_pos(&mut self, pos: Pos) {
-        self.x = pos.x;
-        self.y = pos.y;
-    }
-
-    #[cfg(test)]
-    pub fn test() -> Self {
-        Self {
-            x: 1,
-            y: 1,
-            sheet_id: SheetId::TEST,
-        }
-    }
-}
-
-impl fmt::Display for SheetPos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
-    }
-}
-
-impl From<(i64, i64, SheetId)> for SheetPos {
-    fn from((x, y, sheet_id): (i64, i64, SheetId)) -> Self {
-        Self { x, y, sheet_id }
-    }
-}
-
-impl From<(Pos, SheetId)> for SheetPos {
-    fn from((pos, sheet_id): (Pos, SheetId)) -> Self {
-        Self {
-            x: pos.x,
-            y: pos.y,
-            sheet_id,
-        }
-    }
-}
-
-impl FromStr for SheetPos {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str::<SheetPos>(s).map_err(|e| e.to_string())
-    }
-}
-
-impl fmt::Debug for Pos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Pos ({}, {}) {}", self.x, self.y, self.a1_string())
-    }
-}
-
-impl SheetPos {
-    pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
-        Self { sheet_id, x, y }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use crate::{
         Pos, RefAdjust, SheetPos, SheetRect,
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+        pos::PosA1Ext,
     };
 
     #[test]
@@ -463,28 +292,28 @@ mod test {
     }
 
     #[test]
-    fn test_translate() {
+    fn test_translate_clamped() {
         // Basic positive translation
         let pos = Pos::new(5, 5);
-        let translated = pos.translate(2, 3, 0, 0);
+        let translated = pos.translate_clamped(2, 3, 0, 0);
         assert_eq!(translated, Pos::new(7, 8));
         assert_eq!(pos, Pos::new(5, 5)); // Original unchanged
 
         // Negative translation
         let pos = Pos::new(5, 5);
-        let translated = pos.translate(-2, -3, 0, 0);
+        let translated = pos.translate_clamped(-2, -3, 0, 0);
         assert_eq!(translated, Pos::new(3, 2));
         assert_eq!(pos, Pos::new(5, 5)); // Original unchanged
 
         // Translation with clamping
         let pos = Pos::new(5, 5);
-        let translated = pos.translate(-10, -10, 2, 3);
+        let translated = pos.translate_clamped(-10, -10, 2, 3);
         assert_eq!(translated, Pos::new(2, 3));
         assert_eq!(pos, Pos::new(5, 5)); // Original unchanged
 
         // Translation with no effect due to clamping
         let pos = Pos::new(2, 3);
-        let translated = pos.translate(-5, -5, 2, 3);
+        let translated = pos.translate_clamped(-5, -5, 2, 3);
         assert_eq!(translated, Pos::new(2, 3));
         assert_eq!(pos, Pos::new(2, 3)); // Original unchanged
     }

@@ -21,6 +21,7 @@ import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConne
 import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
 import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
 import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { coreRustRenderer } from '@/app/web-workers/quadraticCore/worker/coreRustRenderer';
 import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
@@ -118,6 +119,11 @@ class CoreClient {
       case 'clientCoreLoad':
         this.sendStartupTimer('offlineSync', { start: performance.now() });
         await offline.init(e.data.fileId);
+
+        // Initialize rust renderer if a second port was provided
+        if (e.ports[1]) {
+          coreRustRenderer.init(e.ports[1]);
+        }
 
         this.send({
           type: 'coreClientLoad',

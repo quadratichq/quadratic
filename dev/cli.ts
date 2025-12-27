@@ -5,6 +5,7 @@ export class CLI {
     client: boolean;
     api: boolean;
     core: boolean;
+    rustRenderer: boolean;
     multiplayer: boolean;
     files: boolean;
     connection: boolean;
@@ -18,6 +19,7 @@ export class CLI {
     hideReact: boolean;
     hideAPI: boolean;
     hideCore: boolean;
+    hideRustRenderer: boolean;
     hideTypes: boolean;
     hideMultiplayer: boolean;
     hideFiles: boolean;
@@ -41,6 +43,7 @@ export class CLI {
       .option("-a, --api", "Watch the quadratic-api directory")
       .option("-r, --react", "Do NOT watch quadratic-client (React)")
       .option("-c, --core", "Watch the quadratic-core directory")
+      .option("-e, --rustRenderer", "Watch the quadratic-rust-renderer directory")
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
       .option("-f, --files", "Watch the quadratic-files directory")
       .option("-n, --connection", "Watch the quadratic-connection directory")
@@ -64,14 +67,14 @@ export class CLI {
         "Run quadratic-core with function timer (log metrics to console)",
       )
       .option("-R, --hideReact", "Hide React output")
-      .option("-A, --hideAPI", "Hide React output")
-      .option("-C, --hideCore", "Hide React output")
+      .option("-A, --hideAPI", "Hide API output")
+      .option("-C, --hideCore", "Hide Core output")
+      .option("-E, --hideRustRenderer", "Hide RustRenderer output")
       .option("-T, --hideTypes", "Hide Types output")
       .option("-M, --hideMultiplayer", "Hide Multiplayer output")
       .option("-F, --hideFiles", "Hide Files output")
       .option("-N, --hideConnection", "Hide Connection output")
       .option("-Y, --hidePython", "Hide Python output")
-      .option("-E, --hideRustClient", "Hide RustClient")
       .option("-S, --hideShared", "Hide Shared output")
       .option("-O, --hideCloudController", "Hide CloudController output")
       .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
@@ -84,6 +87,7 @@ export class CLI {
     if (this.options.all) {
       this.options.api = true;
       this.options.core = true;
+      this.options.rustRenderer = true;
       this.options.multiplayer = true;
       this.options.files = true;
       this.options.connection = true;

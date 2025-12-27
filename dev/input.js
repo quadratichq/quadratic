@@ -34,6 +34,12 @@ export class Input {
             case "c": // toggle core
                 this.control.restartCore();
                 break;
+            case "e": // toggle rust-renderer
+                if (this.control.status.rustRenderer === "killed") {
+                    this.control.status.rustRenderer = false;
+                }
+                this.control.restartRustRenderer();
+                break;
             case "m": // toggle multiplayer
                 if (this.control.status.multiplayer === "killed") {
                     this.control.status.multiplayer = false;
@@ -85,6 +91,10 @@ export class Input {
                     this.cli.options.core = true;
                     this.control.restartCore();
                 }
+                if (this.cli.options.rustRenderer != true) {
+                    this.cli.options.rustRenderer = true;
+                    this.control.restartRustRenderer();
+                }
                 if (this.cli.options.multiplayer != true) {
                     this.cli.options.multiplayer = true;
                     this.control.restartMultiplayer();
@@ -111,6 +121,9 @@ export class Input {
                 break;
             case "C": // toggle showing Core
                 this.cli.options.hideCore = !this.cli.options.hideCore;
+                break;
+            case "E": // toggle showing RustRenderer
+                this.cli.options.hideRustRenderer = !this.cli.options.hideRustRenderer;
                 break;
             case "M": // toggle showing Multiplayer
                 this.cli.options.hideMultiplayer = !this.cli.options.hideMultiplayer;

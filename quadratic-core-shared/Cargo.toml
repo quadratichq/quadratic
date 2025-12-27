@@ -1,0 +1,52 @@
+[package]
+name = "quadratic-core-shared"
+version = "0.1.0"
+edition = "2021"
+description = "Shared types for quadratic-core and quadratic-rust-renderer communication"
+license = "MIT"
+
+# Minimal dependencies - WASM-compatible, fast compile
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+bincode = { version = "2.0.0", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# For WASM builds - uuid needs js feature for random generation
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uuid = { version = "1", features = ["v4", "serde", "js"] }
+
+[features]
+default = []
+# Enable ts-rs for TypeScript type generation (only needed by core for Js* compat)
+ts = ["ts-rs"]
+# Enable JSON serialization (for debugging/logging)
+json = ["serde_json"]
+# Enable wasm-bindgen support (for core)
+js = ["wasm-bindgen"]
+# Enable rstar support for spatial queries (for core)
+rstar = ["dep:rstar"]
+# Enable smallvec for efficient small vectors (for core)
+smallvec = ["dep:smallvec"]
+
+[dependencies.ts-rs]
+git = "https://github.com/quadratichq/ts-rs/"
+branch = "update-v10"
+optional = true
+features = ["uuid-impl", "smallvec-impl", "no-serde-warnings"]
+
+[dependencies.wasm-bindgen]
+version = "0.2.100"
+optional = true
+
+[dependencies.serde_json]
+version = "1"
+optional = true
+
+[dependencies.rstar]
+version = "0.12.2"
+optional = true
+
+[dependencies.smallvec]
+version = "1.11.0"
+optional = true
+features = ["serde"]

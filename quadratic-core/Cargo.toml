@@ -113,6 +113,7 @@ serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
+quadratic-core-shared = { path = "../quadratic-core-shared", features = ["ts", "js", "json", "rstar", "smallvec"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = false, features = [
   "protobuf",
 ] }

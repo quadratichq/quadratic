@@ -2,6 +2,12 @@ export const COMPONENTS = {
   client: { color: "magenta", dark: "cyan", name: "React", shortcut: "r" },
   api: { color: "blue", dark: "white", name: "API", shortcut: "a" },
   core: { color: "cyan", dark: "cyan", name: "Core", shortcut: "c" },
+  rustRenderer: {
+    color: "yellowBright",
+    dark: "yellowBright",
+    name: "RustRenderer",
+    shortcut: "e",
+  },
   multiplayer: {
     color: "green",
     dark: "green",

@@ -205,6 +205,7 @@ export class UI {
     // we don't need to show core since we're not compiling it
     if (!this.cli.options.noRust) {
       this.statusItem("core");
+      this.statusItem("rustRenderer");
     }
     this.statusItem("multiplayer");
     this.statusItem("files");

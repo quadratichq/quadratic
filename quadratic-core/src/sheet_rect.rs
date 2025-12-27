@@ -1,138 +1,36 @@
-use std::collections::HashSet;
+// Re-export the base type from quadratic-core-shared
+pub use quadratic_core_shared::SheetRect;
+
 use std::ops::Range;
-use std::{fmt, str::FromStr};
 
-use serde::{Deserialize, Serialize};
-use ts_rs::TS;
-
-use crate::Rect;
 use crate::a1::UNBOUNDED;
 use crate::{ArraySize, Pos, SheetPos, grid::SheetId};
 
-/// Used for referencing a range during computation.
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
-pub struct SheetRect {
-    /// Upper-left corner.
-    pub min: Pos,
-    /// Lower-right corner.
-    pub max: Pos,
-    /// The sheet that this region is on.
-    pub sheet_id: SheetId,
+// Core-specific extension for SheetRect
+pub trait SheetRectCoreExt {
+    fn x_range(self) -> Range<i64>;
+    fn y_range(self) -> Range<i64>;
+    fn size(&self) -> ArraySize;
+    fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> SheetRect;
 }
 
-impl SheetRect {
-    pub fn new(x0: i64, y0: i64, x1: i64, y1: i64, sheet_id: SheetId) -> Self {
-        SheetRect {
-            min: Pos { x: x0, y: y0 },
-            max: Pos { x: x1, y: y1 },
-            sheet_id,
-        }
-    }
-
-    pub fn single_sheet_pos(sheet_pos: SheetPos) -> SheetRect {
-        SheetRect {
-            min: sheet_pos.into(),
-            max: sheet_pos.into(),
-            sheet_id: sheet_pos.sheet_id,
-        }
-    }
-
-    pub fn single_pos(pos: Pos, sheet_id: SheetId) -> SheetRect {
-        SheetRect {
-            min: pos,
-            max: pos,
-            sheet_id,
-        }
-    }
-
-    pub fn new_from_rect(rect: Rect, sheet_id: SheetId) -> SheetRect {
-        SheetRect {
-            min: rect.min,
-            max: rect.max,
-            sheet_id,
-        }
-    }
-
-    /// Constructs a new SheetRect from two positions and a sheet id.
-    pub fn new_pos_span(pos1: Pos, pos2: Pos, sheet_id: SheetId) -> SheetRect {
-        use std::cmp::{max, min};
-        SheetRect {
-            min: Pos {
-                x: min(pos1.x, pos2.x),
-                y: min(pos1.y, pos2.y),
-            },
-            max: Pos {
-                x: max(pos1.x, pos2.x),
-                y: max(pos1.y, pos2.y),
-            },
-            sheet_id,
-        }
-    }
-
-    pub fn from_numbers(x: i64, y: i64, w: i64, h: i64, sheet_id: SheetId) -> SheetRect {
-        SheetRect {
-            min: Pos { x, y },
-            max: Pos {
-                x: x + w - 1,
-                y: y + h - 1,
-            },
-            sheet_id,
-        }
-    }
-
-    pub fn new_span(pos1: SheetPos, pos2: SheetPos) -> SheetRect {
-        SheetRect::new_pos_span(pos1.into(), pos2.into(), pos1.sheet_id)
-    }
-    /// Returns whether a position is contained within the rectangle.
-    pub fn contains(self, sheet_pos: SheetPos) -> bool {
-        self.sheet_id == sheet_pos.sheet_id
-            && self.x_range().contains(&sheet_pos.x)
-            && self.y_range().contains(&sheet_pos.y)
-    }
-    /// Returns whether a rectangle intersects with the rectangle.
-    pub fn intersects(self, other: SheetRect) -> bool {
-        // https://en.wikipedia.org/wiki/Hyperplane_separation_theorem#:~:text=the%20following%20form%3A-,Separating%20axis%20theorem,-%E2%80%94%C2%A0Two%20closed
-        self.sheet_id == other.sheet_id
-            && !(other.max.x < self.min.x
-                || other.min.x > self.max.x
-                || other.max.y < self.min.y
-                || other.min.y > self.max.y)
-    }
+impl SheetRectCoreExt for SheetRect {
     /// Returns the range of X values in the rectangle.
-    pub fn x_range(self) -> Range<i64> {
+    fn x_range(self) -> Range<i64> {
         self.min.x..i64::checked_add(self.max.x, 1).unwrap_or(UNBOUNDED)
     }
+
     /// Returns the range of Y values in the rectangle.
-    pub fn y_range(self) -> Range<i64> {
+    fn y_range(self) -> Range<i64> {
         self.min.y..i64::checked_add(self.max.y, 1).unwrap_or(UNBOUNDED)
     }
-    pub fn width(&self) -> usize {
-        (self.max.x - self.min.x + 1) as usize
-    }
-    pub fn height(&self) -> usize {
-        (self.max.y - self.min.y + 1) as usize
-    }
-    pub fn len(&self) -> usize {
-        self.width() * self.height()
-    }
-    pub fn is_empty(&self) -> bool {
-        self.width() == 0 || self.height() == 0
-    }
-    pub fn size(&self) -> ArraySize {
+
+    fn size(&self) -> ArraySize {
         ArraySize::new(self.width() as u32, self.height() as u32)
             .expect("empty rectangle has no size")
     }
-    pub fn iter(self) -> impl Iterator<Item = SheetPos> {
-        let SheetRect { min, max, .. } = self;
-        (min.y..=max.y).flat_map(move |y| {
-            (min.x..=max.x).map(move |x| SheetPos {
-                x,
-                y,
-                sheet_id: self.sheet_id,
-            })
-        })
-    }
-    pub fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> Self {
+
+    fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> SheetRect {
         SheetRect {
             min: top_left.into(),
             max: Pos {
@@ -141,120 +39,6 @@ impl SheetRect {
             },
             sheet_id: top_left.sheet_id,
         }
-    }
-    pub fn union(&self, other: &Self) -> Self {
-        assert!(
-            self.sheet_id == other.sheet_id,
-            "Cannot union different sheets"
-        );
-        let min_x = std::cmp::min(self.min.x, other.min.x);
-        let min_y = std::cmp::min(self.min.y, other.min.y);
-        let max_x = std::cmp::max(self.max.x, other.max.x);
-        let max_y = std::cmp::max(self.max.y, other.max.y);
-        SheetRect {
-            min: Pos { x: min_x, y: min_y },
-            max: Pos { x: max_x, y: max_y },
-            sheet_id: self.sheet_id,
-        }
-    }
-
-    pub fn top_left(&self) -> SheetPos {
-        SheetPos {
-            x: self.min.x,
-            y: self.min.y,
-            sheet_id: self.sheet_id,
-        }
-    }
-
-    /// Returns the position of the cell at the given offset (0-indexed) within
-    /// the rectangle, or `None` if the coordinates are outside the rectangle.
-    pub fn index_cell(&self, x: u32, y: u32) -> Option<SheetPos> {
-        if (x as usize) < self.width() && (y as usize) < self.height() {
-            Some(SheetPos {
-                x: self.min.x + x as i64,
-                y: self.min.y + y as i64,
-                sheet_id: self.sheet_id,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn to_hashes(&self) -> HashSet<Pos> {
-        let mut hashes = HashSet::new();
-        let min_hash = self.min.quadrant();
-        let max_hash = self.max.quadrant();
-        for x in min_hash.0..=max_hash.0 {
-            for y in min_hash.1..=max_hash.1 {
-                hashes.insert(Pos { x, y });
-            }
-        }
-        hashes
-    }
-
-    pub fn to_rect(&self) -> Rect {
-        Rect::new_span(self.min, self.max)
-    }
-
-    pub fn to_region(&self) -> (SheetId, Rect) {
-        (self.sheet_id.to_owned(), self.to_rect())
-    }
-}
-
-impl fmt::Display for SheetRect {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Sheet: {}, Min: {}, Max: {}",
-            self.sheet_id, self.min, self.max,
-        )
-    }
-}
-
-impl From<SheetPos> for SheetRect {
-    fn from(sheet_pos: SheetPos) -> Self {
-        SheetRect {
-            min: sheet_pos.into(),
-            max: sheet_pos.into(),
-            sheet_id: sheet_pos.sheet_id,
-        }
-    }
-}
-
-impl From<SheetRect> for Pos {
-    fn from(sheet_rect: SheetRect) -> Self {
-        sheet_rect.min
-    }
-}
-
-impl From<SheetRect> for SheetPos {
-    fn from(sheet_rect: SheetRect) -> Self {
-        SheetPos {
-            x: sheet_rect.min.x,
-            y: sheet_rect.min.y,
-            sheet_id: sheet_rect.sheet_id,
-        }
-    }
-}
-
-impl From<(i64, i64, i64, i64, SheetId)> for SheetRect {
-    fn from((x, y, w, h, sheet_id): (i64, i64, i64, i64, SheetId)) -> Self {
-        SheetRect {
-            min: Pos { x, y },
-            max: Pos {
-                x: x + w - 1,
-                y: y + h - 1,
-            },
-            sheet_id,
-        }
-    }
-}
-
-impl FromStr for SheetRect {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str::<SheetRect>(s).map_err(|e| e.to_string())
     }
 }
 
