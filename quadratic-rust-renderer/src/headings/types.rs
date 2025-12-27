@@ -78,18 +78,19 @@ pub struct ViewportState {
 }
 
 impl ViewportState {
-    /// Get the font size for headings
-    /// Note: We don't multiply by DPR here because the screen-space matrix
-    /// already maps to physical pixels. Font size 10 gives approximately
-    /// the same size as CSS 10px.
+    /// Get the font size for headings (scaled by DPR)
+    ///
+    /// The canvas is sized in device pixels, so we need to scale the
+    /// font size by DPR to appear at the correct CSS pixel size.
     pub fn font_size(&self) -> f32 {
-        BASE_HEADING_FONT_SIZE
+        BASE_HEADING_FONT_SIZE * self.dpr
     }
 
-    /// Get the header height in screen pixels
-    /// Note: We don't multiply by DPR - the screen-space coordinates
-    /// are already in CSS pixels which matches the TypeScript behavior.
+    /// Get the header height in device pixels
+    ///
+    /// The canvas is sized in device pixels, so we need to scale the
+    /// header height by DPR to appear at the correct CSS pixel size.
     pub fn header_height(&self) -> f32 {
-        CELL_HEIGHT
+        CELL_HEIGHT * self.dpr
     }
 }

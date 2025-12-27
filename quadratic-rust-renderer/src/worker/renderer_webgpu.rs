@@ -117,11 +117,16 @@ impl WorkerRendererGPU {
     }
 
     /// Resize the renderer
+    ///
+    /// # Arguments
+    /// * `width` - Width in device pixels
+    /// * `height` - Height in device pixels
+    /// * `dpr` - Device pixel ratio (e.g., 2.0 for Retina displays)
     #[wasm_bindgen]
-    pub fn resize(&mut self, width: u32, height: u32) {
-        log::debug!("Resizing to {}x{}", width, height);
+    pub fn resize(&mut self, width: u32, height: u32, dpr: f32) {
+        log::debug!("Resizing to {}x{} (DPR: {})", width, height, dpr);
         self.gpu.resize(width, height);
-        self.viewport.resize(width as f32, height as f32);
+        self.viewport.resize(width as f32, height as f32, dpr);
     }
 
     /// Pan the viewport
@@ -598,7 +603,8 @@ impl WorkerRendererGPU {
 
         // Update headings
         let (heading_width, heading_height) = if self.show_headings {
-            let scale = self.viewport.scale();
+            // Use effective_scale because canvas dimensions are in device pixels
+            let scale = self.viewport.effective_scale();
             let canvas_width = self.viewport.width();
             let canvas_height = self.viewport.height();
 
@@ -852,7 +858,8 @@ impl WorkerRendererGPU {
         // Get cursor border vertices
         // Note: Lines::get_vertices() already converts to triangle vertices,
         // so we use draw_triangles, not draw_lines_as_triangles
-        let scale = self.viewport.scale();
+        // Use effective_scale for pixel-scaled elements (cursor borders)
+        let scale = self.viewport.effective_scale();
         if let Some(triangle_vertices) = self.content.cursor.get_border_vertices(scale) {
             self.gpu.draw_triangles(pass, triangle_vertices, matrix);
         }
@@ -863,13 +870,17 @@ impl WorkerRendererGPU {
             return;
         }
 
+        // User-visible scale (for threshold comparisons)
         let scale = self.viewport.scale();
+        // Effective scale (for rendering calculations)
+        let effective_scale = self.viewport.effective_scale();
 
-        // Get viewport bounds for culling
-        let vp_x = self.viewport.x();
-        let vp_y = self.viewport.y();
-        let vp_width = self.viewport.width() / scale;
-        let vp_height = self.viewport.height() / scale;
+        // Get viewport bounds for culling (use visible_bounds which accounts for DPR)
+        let bounds = self.viewport.visible_bounds();
+        let vp_x = bounds.left;
+        let vp_y = bounds.top;
+        let vp_width = bounds.width;
+        let vp_height = bounds.height;
 
         // Viewport bounds with some padding
         let padding = 100.0;
@@ -898,11 +909,13 @@ impl WorkerRendererGPU {
             hash.rebuild_if_dirty(&self.fonts);
 
             // Render the hash's text
+            // Pass user-visible scale for threshold, effective_scale for MSDF fwidth
             hash.render_webgpu(
                 &mut self.gpu,
                 pass,
                 matrix,
-                scale,
+                scale,           // user-visible scale for threshold comparison
+                effective_scale, // effective scale for MSDF rendering
                 font_scale,
                 distance_range,
             );

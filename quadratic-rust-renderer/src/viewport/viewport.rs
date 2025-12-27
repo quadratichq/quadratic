@@ -24,7 +24,12 @@ pub struct Viewport {
     /// Scale factor (zoom level)
     scale: f32,
 
-    /// Size of the viewport in screen pixels
+    /// Device pixel ratio (for high-DPI displays)
+    /// The rendering scale is multiplied by this value to ensure
+    /// world units appear at the correct size on screen.
+    dpr: f32,
+
+    /// Size of the viewport in device pixels
     size: Vec2,
 
     /// Whether the viewport has changed and needs re-rendering
@@ -50,6 +55,7 @@ impl Viewport {
         Self {
             position: Vec2::ZERO,
             scale: 1.0,
+            dpr: 1.0,
             size: Vec2::new(width, height),
             dirty: true,
             min_scale: 0.01,
@@ -64,6 +70,7 @@ impl Viewport {
         Self {
             position: Vec2::ZERO,
             scale: 1.0,
+            dpr: 1.0,
             size: Vec2::new(width, height),
             dirty: true,
             min_scale: 0.01,
@@ -73,19 +80,41 @@ impl Viewport {
         }
     }
 
-    /// Resize the viewport
-    pub fn resize(&mut self, width: f32, height: f32) {
+    /// Resize the viewport with device pixel ratio
+    ///
+    /// # Arguments
+    /// * `width` - Width in device pixels
+    /// * `height` - Height in device pixels
+    /// * `dpr` - Device pixel ratio (e.g., 2.0 for Retina displays)
+    pub fn resize(&mut self, width: f32, height: f32, dpr: f32) {
         self.size = Vec2::new(width, height);
+        if (self.dpr - dpr).abs() > 0.001 {
+            self.dpr = dpr;
+        }
         self.dirty = true;
     }
 
-    /// Pan the viewport by a screen-space delta
+    /// Set the device pixel ratio
+    pub fn set_dpr(&mut self, dpr: f32) {
+        if (self.dpr - dpr).abs() > 0.001 {
+            self.dpr = dpr;
+            self.dirty = true;
+        }
+    }
+
+    /// Get the device pixel ratio
+    pub fn dpr(&self) -> f32 {
+        self.dpr
+    }
+
+    /// Pan the viewport by a screen-space delta (in device pixels)
     ///
     /// Clamps to prevent panning into negative space (x < 0, y < 0).
     pub fn pan(&mut self, dx: f32, dy: f32) {
-        // Convert screen delta to world delta
-        let world_dx = dx / self.scale;
-        let world_dy = dy / self.scale;
+        // Convert screen delta to world delta using effective scale
+        let effective_scale = self.scale * self.dpr;
+        let world_dx = dx / effective_scale;
+        let world_dy = dy / effective_scale;
 
         // Apply pan and clamp to prevent negative positions
         self.position.x = (self.position.x - world_dx).max(0.0);
@@ -100,6 +129,8 @@ impl Viewport {
     /// 2. Apply zoom
     /// 3. Get new screen position of that world point after zoom
     /// 4. Move viewport so cursor stays at same world position
+    ///
+    /// Note: center_x and center_y are in device pixels
     pub fn zoom(&mut self, factor: f32, center_x: f32, center_y: f32) {
         let old_scale = self.scale;
         let new_scale = (self.scale * factor).clamp(self.min_scale, self.max_scale);
@@ -116,8 +147,9 @@ impl Viewport {
 
             // Step 4: Move viewport so cursor stays at same world position
             // The difference in screen space needs to be converted to world space
-            let dx = (center_x - new_screen.x) / self.scale;
-            let dy = (center_y - new_screen.y) / self.scale;
+            let effective_scale = self.scale * self.dpr;
+            let dx = (center_x - new_screen.x) / effective_scale;
+            let dy = (center_y - new_screen.y) / effective_scale;
             self.position.x -= dx;
             self.position.y -= dy;
 
@@ -131,19 +163,21 @@ impl Viewport {
         }
     }
 
-    /// Convert screen coordinates to world coordinates
+    /// Convert screen coordinates (device pixels) to world coordinates
     pub fn screen_to_world(&self, screen_x: f32, screen_y: f32) -> Vec2 {
+        let effective_scale = self.scale * self.dpr;
         Vec2::new(
-            self.position.x + screen_x / self.scale,
-            self.position.y + screen_y / self.scale,
+            self.position.x + screen_x / effective_scale,
+            self.position.y + screen_y / effective_scale,
         )
     }
 
-    /// Convert world coordinates to screen coordinates
+    /// Convert world coordinates to screen coordinates (device pixels)
     pub fn world_to_screen(&self, world_x: f32, world_y: f32) -> Vec2 {
+        let effective_scale = self.scale * self.dpr;
         Vec2::new(
-            (world_x - self.position.x) * self.scale,
-            (world_y - self.position.y) * self.scale,
+            (world_x - self.position.x) * effective_scale,
+            (world_y - self.position.y) * effective_scale,
         )
     }
 
@@ -153,36 +187,41 @@ impl Viewport {
     }
 
     /// Get the view-projection matrix with an offset for headings
-    /// offset_x: horizontal offset in screen pixels (e.g., row header width)
-    /// offset_y: vertical offset in screen pixels (e.g., column header height)
+    /// offset_x: horizontal offset in device pixels (e.g., row header width)
+    /// offset_y: vertical offset in device pixels (e.g., column header height)
     ///
     /// Note: The caller should use glViewport to set the rendering area to the content
     /// area (x=offset_x, y=offset_y, width=canvas_width-offset_x, height=canvas_height-offset_y).
     /// This matrix maps world coordinates to that viewport.
     pub fn view_projection_matrix_with_offset(&self, offset_x: f32, offset_y: f32) -> Mat4 {
-        // Calculate the content area dimensions
+        // Calculate the content area dimensions in device pixels
         let content_width = self.size.x - offset_x;
         let content_height = self.size.y - offset_y;
 
-        // Add a small margin in screen pixels for cursor outlines at the grid edges.
+        // The effective scale combines the user's zoom level with the device pixel ratio.
+        // This ensures world units (e.g., a 100px wide cell) appear at the correct
+        // size on screen regardless of display DPR.
+        let effective_scale = self.scale * self.dpr;
+
+        // Add a small margin in device pixels for cursor outlines at the grid edges.
         // Cursor borders are 2px thick, so we need at least 1px margin on each side.
         // This margin is converted to world units and added to the visible area.
         let margin_pixels = 2.0;
-        let margin_world = margin_pixels / self.scale;
+        let margin_world = margin_pixels / effective_scale;
 
         // Orthographic projection for 2D
-        // Maps world coordinates to the content area
+        // Maps world coordinates to the content area in device pixels
         let projection = Mat4::orthographic_rh(0.0, content_width, content_height, 0.0, -1.0, 1.0);
 
         // View matrix (camera transform)
         // Add margin offset so that world coordinate (0, 0) is slightly inset from the edge,
         // leaving room for cursor outlines at cell A1.
         let view = Mat4::from_scale_rotation_translation(
-            glam::Vec3::new(self.scale, self.scale, 1.0),
+            glam::Vec3::new(effective_scale, effective_scale, 1.0),
             glam::Quat::IDENTITY,
             glam::Vec3::new(
-                (-self.position.x + margin_world) * self.scale,
-                (-self.position.y + margin_world) * self.scale,
+                (-self.position.x + margin_world) * effective_scale,
+                (-self.position.y + margin_world) * effective_scale,
                 0.0,
             ),
         );
@@ -211,9 +250,17 @@ impl Viewport {
         self.dirty = true;
     }
 
-    /// Get the current scale
+    /// Get the current user-visible scale (zoom level)
     pub fn scale(&self) -> f32 {
         self.scale
+    }
+
+    /// Get the effective rendering scale (scale * dpr)
+    ///
+    /// This is what should be used for pixel-scaled elements
+    /// (like cursor borders) to ensure they appear correctly on screen.
+    pub fn effective_scale(&self) -> f32 {
+        self.scale * self.dpr
     }
 
     /// Set the scale directly

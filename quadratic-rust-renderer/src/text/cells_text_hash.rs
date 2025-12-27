@@ -36,9 +36,8 @@ const MAX_TEXTURE_PAGES: usize = 8;
 
 /// Scale threshold below which we switch from MSDF text to sprite rendering.
 /// When viewport_scale < SPRITE_SCALE_THRESHOLD, use the cached sprite.
-/// 0.4 balances MSDF quality (which degrades below ~0.3) against texture
-/// memory usage (higher threshold = more sprite textures active).
-pub const SPRITE_SCALE_THRESHOLD: f32 = 0.35;
+/// 0.2 means sprite rendering activates when zoomed out to 20% or less.
+pub const SPRITE_SCALE_THRESHOLD: f32 = 0.2;
 
 /// Target width for sprite cache texture.
 /// We use a fixed medium resolution where MSDF still produces clean output,
@@ -452,11 +451,24 @@ impl CellsTextHash {
     ///
     /// Note: Call `rebuild_sprite_if_dirty` before this method if the scale is
     /// below SPRITE_SCALE_THRESHOLD to ensure the sprite cache is up to date.
+    /// Render text using WebGL
+    ///
+    /// Uses MSDF text rendering when zoomed in (user_scale >= SPRITE_SCALE_THRESHOLD)
+    /// and pre-rendered sprite when zoomed out (user_scale < SPRITE_SCALE_THRESHOLD).
+    ///
+    /// # Arguments
+    /// * `gl` - WebGL context
+    /// * `matrix` - View-projection matrix
+    /// * `user_scale` - User-visible zoom level (for threshold comparison)
+    /// * `effective_scale` - Rendering scale including DPR (for MSDF fwidth calculation)
+    /// * `font_scale` - Font scale factor
+    /// * `distance_range` - MSDF distance range
     pub fn render(
         &self,
         gl: &WebGLContext,
         matrix: &[f32; 16],
-        viewport_scale: f32,
+        user_scale: f32,
+        effective_scale: f32,
         font_scale: f32,
         distance_range: f32,
     ) {
@@ -464,9 +476,9 @@ impl CellsTextHash {
             return;
         }
 
-        if viewport_scale >= SPRITE_SCALE_THRESHOLD {
+        if user_scale >= SPRITE_SCALE_THRESHOLD {
             // Zoomed in: use MSDF text rendering for sharp glyphs
-            self.render_text(gl, matrix, viewport_scale, font_scale, distance_range);
+            self.render_text(gl, matrix, effective_scale, font_scale, distance_range);
         } else {
             // Zoomed out: use pre-rendered sprite for smooth appearance
             self.render_sprite(gl, matrix);
@@ -475,14 +487,24 @@ impl CellsTextHash {
 
     /// Render text using WebGPU
     ///
-    /// Uses MSDF text rendering when zoomed in (scale >= SPRITE_SCALE_THRESHOLD)
-    /// and pre-rendered sprite when zoomed out (scale < SPRITE_SCALE_THRESHOLD).
+    /// Uses MSDF text rendering when zoomed in (user_scale >= SPRITE_SCALE_THRESHOLD)
+    /// and pre-rendered sprite when zoomed out (user_scale < SPRITE_SCALE_THRESHOLD).
+    ///
+    /// # Arguments
+    /// * `gpu` - WebGPU context
+    /// * `pass` - Render pass
+    /// * `matrix` - View-projection matrix
+    /// * `user_scale` - User-visible zoom level (for threshold comparison)
+    /// * `effective_scale` - Rendering scale including DPR (for MSDF fwidth calculation)
+    /// * `font_scale` - Font scale factor
+    /// * `distance_range` - MSDF distance range
     pub fn render_webgpu(
         &self,
         gpu: &mut WebGPUContext,
         pass: &mut wgpu::RenderPass<'_>,
         matrix: &[f32; 16],
-        viewport_scale: f32,
+        user_scale: f32,
+        effective_scale: f32,
         font_scale: f32,
         distance_range: f32,
     ) {
@@ -490,9 +512,9 @@ impl CellsTextHash {
             return;
         }
 
-        if viewport_scale >= SPRITE_SCALE_THRESHOLD {
+        if user_scale >= SPRITE_SCALE_THRESHOLD {
             // Zoomed in: use MSDF text rendering for sharp glyphs
-            self.render_text_webgpu(gpu, pass, matrix, viewport_scale, font_scale, distance_range);
+            self.render_text_webgpu(gpu, pass, matrix, effective_scale, font_scale, distance_range);
         } else {
             // Zoomed out: use pre-rendered sprite for smooth appearance
             if let Some(ref sprite_cache) = self.sprite_cache_webgpu {
@@ -507,7 +529,7 @@ impl CellsTextHash {
                 );
             } else {
                 // Fallback to MSDF if sprite cache not ready
-                self.render_text_webgpu(gpu, pass, matrix, viewport_scale, font_scale, distance_range);
+                self.render_text_webgpu(gpu, pass, matrix, effective_scale, font_scale, distance_range);
             }
         }
     }

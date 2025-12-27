@@ -30,6 +30,7 @@ interface ResizeMessage {
   type: 'resize';
   width: number;
   height: number;
+  dpr: number;
 }
 
 interface PanMessage {
@@ -339,7 +340,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
 
     case 'resize':
       if (renderer) {
-        renderer.resize(data.width, data.height);
+        renderer.resize(data.width, data.height, data.dpr);
         // Render immediately after resize to prevent black flash
         renderer.frame(0);
       }

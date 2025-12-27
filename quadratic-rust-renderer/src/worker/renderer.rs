@@ -100,11 +100,16 @@ impl WorkerRenderer {
     }
 
     /// Resize the renderer
+    ///
+    /// # Arguments
+    /// * `width` - Width in device pixels
+    /// * `height` - Height in device pixels
+    /// * `dpr` - Device pixel ratio (e.g., 2.0 for Retina displays)
     #[wasm_bindgen]
-    pub fn resize(&mut self, width: u32, height: u32) {
-        log::debug!("Resizing to {}x{}", width, height);
+    pub fn resize(&mut self, width: u32, height: u32, dpr: f32) {
+        log::debug!("Resizing to {}x{} (DPR: {})", width, height, dpr);
         self.gl.resize(width, height);
-        self.viewport.resize(width as f32, height as f32);
+        self.viewport.resize(width as f32, height as f32, dpr);
     }
 
     /// Pan the viewport
@@ -612,7 +617,8 @@ impl WorkerRenderer {
 
         // Update headings first to get their size
         let (heading_width, heading_height) = if self.show_headings {
-            let scale = self.viewport.scale();
+            // Use effective_scale because canvas dimensions are in device pixels
+            let scale = self.viewport.effective_scale();
             let canvas_width = self.viewport.width();
             let canvas_height = self.viewport.height();
 
@@ -693,7 +699,8 @@ impl WorkerRenderer {
         self.render_text(&matrix_array);
 
         // 4. Cursor (on top of text)
-        let viewport_scale = self.viewport.scale();
+        // Use effective_scale for pixel-scaled elements (cursor borders)
+        let viewport_scale = self.viewport.effective_scale();
         self.content
             .cursor
             .render(&mut self.gl, &matrix_array, viewport_scale);
@@ -783,13 +790,17 @@ impl WorkerRenderer {
             return;
         }
 
+        // User-visible scale (for threshold comparisons)
         let scale = self.viewport.scale();
+        // Effective scale (for rendering calculations)
+        let effective_scale = self.viewport.effective_scale();
 
-        // Get viewport bounds for culling
-        let vp_x = self.viewport.x();
-        let vp_y = self.viewport.y();
-        let vp_width = self.viewport.width() / scale;
-        let vp_height = self.viewport.height() / scale;
+        // Get viewport bounds for culling (use visible_bounds which accounts for DPR)
+        let bounds = self.viewport.visible_bounds();
+        let vp_x = bounds.left;
+        let vp_y = bounds.top;
+        let vp_width = bounds.width;
+        let vp_height = bounds.height;
 
         // Viewport bounds with some padding
         let padding = 100.0;
@@ -818,12 +829,21 @@ impl WorkerRenderer {
             hash.rebuild_if_dirty(&self.fonts);
 
             // Rebuild sprite cache if zoomed out (for smooth text at small sizes)
+            // Use user-visible scale for threshold comparison
             if scale < crate::text::SPRITE_SCALE_THRESHOLD {
                 hash.rebuild_sprite_if_dirty(&self.gl, &self.fonts, font_scale, distance_range);
             }
 
-            // Render this hash's text (switches between MSDF and sprite based on scale)
-            hash.render(&self.gl, matrix, scale, font_scale, distance_range);
+            // Render this hash's text (switches between MSDF and sprite based on user_scale)
+            // Pass user-visible scale for threshold, effective_scale for MSDF fwidth
+            hash.render(
+                &self.gl,
+                matrix,
+                scale,           // user-visible scale for threshold comparison
+                effective_scale, // effective scale for MSDF rendering
+                font_scale,
+                distance_range,
+            );
         }
     }
 

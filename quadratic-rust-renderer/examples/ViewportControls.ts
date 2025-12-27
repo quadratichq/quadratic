@@ -36,7 +36,7 @@ export type ViewportMessage =
   | { type: 'dragEnd'; time: number }
   | { type: 'pan'; dx: number; dy: number; time: number }
   | { type: 'zoom'; factor: number; centerX: number; centerY: number }
-  | { type: 'resize'; width: number; height: number };
+  | { type: 'resize'; width: number; height: number; dpr: number };
 
 /** Callback for sending messages to the renderer */
 export type MessageSender = (message: ViewportMessage) => void;
@@ -312,10 +312,12 @@ export class ViewportControls {
   private handleResize(): void {
     this.updateCanvasDimensions();
 
+    const dpr = window.devicePixelRatio || 1;
     this.options.sendMessage({
       type: 'resize',
       width: this.canvasWidth,
       height: this.canvasHeight,
+      dpr,
     });
 
     // Check if we need new content after resize

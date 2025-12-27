@@ -128,9 +128,9 @@ impl GridHeadings {
         self.heading_size
     }
 
-    /// Get the header height in screen pixels
+    /// Get the header height in device pixels (scaled by DPR)
     fn header_height(&self) -> f32 {
-        CELL_HEIGHT
+        CELL_HEIGHT * self.dpr
     }
 
     /// Create a ViewportState from the current state

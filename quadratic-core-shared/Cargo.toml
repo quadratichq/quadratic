@@ -1,0 +1,10 @@
+[package]
+name = "quadratic-core-shared"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description.workspace = true
+repository.workspace = true
+license-file.workspace = true
+
+[dependencies]
