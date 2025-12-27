@@ -164,17 +164,25 @@ impl Viewport {
         let content_width = self.size.x - offset_x;
         let content_height = self.size.y - offset_y;
 
+        // Add a small margin in screen pixels for cursor outlines at the grid edges.
+        // Cursor borders are 2px thick, so we need at least 1px margin on each side.
+        // This margin is converted to world units and added to the visible area.
+        let margin_pixels = 2.0;
+        let margin_world = margin_pixels / self.scale;
+
         // Orthographic projection for 2D
         // Maps world coordinates to the content area
         let projection = Mat4::orthographic_rh(0.0, content_width, content_height, 0.0, -1.0, 1.0);
 
         // View matrix (camera transform)
+        // Add margin offset so that world coordinate (0, 0) is slightly inset from the edge,
+        // leaving room for cursor outlines at cell A1.
         let view = Mat4::from_scale_rotation_translation(
             glam::Vec3::new(self.scale, self.scale, 1.0),
             glam::Quat::IDENTITY,
             glam::Vec3::new(
-                -self.position.x * self.scale,
-                -self.position.y * self.scale,
+                (-self.position.x + margin_world) * self.scale,
+                (-self.position.y + margin_world) * self.scale,
                 0.0,
             ),
         );

@@ -700,6 +700,31 @@ impl WorkerRendererGPU {
                 .view_projection_matrix_with_offset(heading_width, heading_height);
             let matrix_array: [f32; 16] = matrix.to_cols_array();
 
+            // Set viewport to content area (after headings)
+            // This makes NDC coordinates map to the content area on screen
+            let canvas_width = self.viewport.width() as u32;
+            let canvas_height = self.viewport.height() as u32;
+            let content_x = heading_width as u32;
+            let content_y = heading_height as u32;
+            let content_width = canvas_width.saturating_sub(content_x);
+            let content_height = canvas_height.saturating_sub(content_y);
+
+            if content_width > 0 && content_height > 0 {
+                pass.set_viewport(
+                    content_x as f32,
+                    content_y as f32,
+                    content_width as f32,
+                    content_height as f32,
+                    0.0,
+                    1.0,
+                );
+
+                // Note: We intentionally don't set a scissor here so that cursor outlines
+                // at the edges (e.g., cell A1) can extend slightly into the heading area.
+                // The headings render on top in a later pass and will cover any grid
+                // content that bleeds over, but we want cursor outlines to be visible.
+            }
+
             // Render background
             self.render_background(&mut pass, &matrix_array);
 
@@ -713,11 +738,34 @@ impl WorkerRendererGPU {
             self.render_cursor(&mut pass, &matrix_array);
         }
 
-        // Reset for headings (need screen space rendering)
-        if self.show_headings {
-            // Headings render in a separate pass with screen-space matrix
-            // For now, skip headings in WebGPU (complex to implement)
-            // TODO: Implement headings rendering
+        // Render headings in a second pass (screen space)
+        if self.show_headings && self.fonts_ready() {
+            // Layout heading labels
+            self.headings.layout(&self.fonts);
+
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Headings Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load, // Preserve previous content
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            // Reset viewport and scissor to full canvas for headings
+            let canvas_width = self.viewport.width() as u32;
+            let canvas_height = self.viewport.height() as u32;
+            pass.set_viewport(0.0, 0.0, canvas_width as f32, canvas_height as f32, 0.0, 1.0);
+            pass.set_scissor_rect(0, 0, canvas_width, canvas_height);
+
+            // Render headings in screen space
+            self.render_headings(&mut pass);
         }
 
         // Submit
@@ -801,13 +849,12 @@ impl WorkerRendererGPU {
             self.gpu.draw_triangles(pass, vertices, matrix);
         }
 
-        // Get cursor border vertices (lines)
+        // Get cursor border vertices
+        // Note: Lines::get_vertices() already converts to triangle vertices,
+        // so we use draw_triangles, not draw_lines_as_triangles
         let scale = self.viewport.scale();
-        if let Some(line_vertices) = self.content.cursor.get_border_vertices(scale) {
-            // Render cursor border as 2px lines in screen space
-            let line_width = 2.0 / scale;
-            self.gpu
-                .draw_lines_as_triangles(pass, line_vertices, matrix, line_width);
+        if let Some(triangle_vertices) = self.content.cursor.get_border_vertices(scale) {
+            self.gpu.draw_triangles(pass, triangle_vertices, matrix);
         }
     }
 
@@ -863,7 +910,6 @@ impl WorkerRendererGPU {
     }
 
     /// Create screen-space matrix
-    #[allow(dead_code)]
     fn create_screen_space_matrix(&self, width: f32, height: f32) -> [f32; 16] {
         let sx = 2.0 / width;
         let sy = -2.0 / height;
@@ -873,5 +919,120 @@ impl WorkerRendererGPU {
         [
             sx, 0.0, 0.0, 0.0, 0.0, sy, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, tx, ty, 0.0, 1.0,
         ]
+    }
+
+    /// Render grid headings (column and row headers) in screen space
+    fn render_headings(&mut self, pass: &mut wgpu::RenderPass<'_>) {
+        use crate::primitives::{NativeLines, Rects};
+
+        let canvas_width = self.viewport.width();
+        let canvas_height = self.viewport.height();
+
+        // Create screen-space matrix
+        let screen_matrix = self.create_screen_space_matrix(canvas_width, canvas_height);
+
+        // 1. Render backgrounds
+        let mut rects = Rects::with_capacity(8);
+        let (col_rect, row_rect, corner_rect) = self.headings.get_background_rects();
+        let colors = &self.headings.colors;
+
+        rects.add(
+            col_rect[0],
+            col_rect[1],
+            col_rect[2],
+            col_rect[3],
+            colors.background,
+        );
+        rects.add(
+            row_rect[0],
+            row_rect[1],
+            row_rect[2],
+            row_rect[3],
+            colors.background,
+        );
+        rects.add(
+            corner_rect[0],
+            corner_rect[1],
+            corner_rect[2],
+            corner_rect[3],
+            colors.corner_background,
+        );
+
+        // Selection highlights
+        let selection_color = [
+            colors.selection[0],
+            colors.selection[1],
+            colors.selection[2],
+            colors.selection_alpha,
+        ];
+        for rect in self.headings.get_selection_rects() {
+            rects.add(rect[0], rect[1], rect[2], rect[3], selection_color);
+        }
+
+        // Debug rectangles if enabled
+        if self.headings.debug_label_bounds {
+            let (anchor_points, text_bounds) = self.headings.get_debug_label_rects();
+
+            let anchor_color = [1.0, 0.0, 0.0, 1.0];
+            for rect in anchor_points {
+                rects.add(rect[0], rect[1], rect[2], rect[3], anchor_color);
+            }
+
+            let bounds_color = [0.0, 0.0, 1.0, 0.3];
+            for rect in text_bounds {
+                rects.add(rect[0], rect[1], rect[2], rect[3], bounds_color);
+            }
+        }
+
+        // Render background rectangles
+        if !rects.is_empty() {
+            self.gpu
+                .draw_triangles(pass, rects.vertices(), &screen_matrix);
+        }
+
+        // 2. Render grid lines
+        let grid_line_coords = self.headings.get_grid_lines();
+        let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
+
+        for chunk in grid_line_coords.chunks(4) {
+            if chunk.len() == 4 {
+                lines.add(chunk[0], chunk[1], chunk[2], chunk[3], colors.grid_line);
+            }
+        }
+
+        if !lines.is_empty() {
+            let line_vertices = lines.get_vertices();
+            self.gpu.draw_lines(pass, line_vertices, &screen_matrix);
+        }
+
+        // 3. Render text
+        let meshes = self.headings.get_meshes(&self.fonts);
+
+        // Get text params for headings
+        let heading_font_size = 10.0 * self.headings.dpr();
+        let (font_scale, distance_range) = self
+            .fonts
+            .get("OpenSans")
+            .map(|f| (heading_font_size / f.size, f.distance_range))
+            .unwrap_or((heading_font_size / 42.0, 4.0));
+
+        for mesh in meshes {
+            if mesh.is_empty() {
+                continue;
+            }
+            let vertices = mesh.get_vertex_data();
+            let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
+
+            self.gpu.draw_text(
+                pass,
+                &vertices,
+                &indices,
+                mesh.texture_uid,
+                &screen_matrix,
+                1.0, // viewport_scale = 1.0 for screen space
+                font_scale,
+                distance_range,
+            );
+        }
     }
 }

@@ -201,18 +201,25 @@ impl WebGPUContext {
             let b2 = line_vertices[base + 10];
             let a2 = line_vertices[base + 11];
 
-            // Calculate perpendicular offset for line thickness
             let dx = x2 - x1;
             let dy = y2 - y1;
-            let len = (dx * dx + dy * dy).sqrt();
 
-            if len < 0.0001 {
-                continue; // Skip degenerate lines
-            }
-
-            // Perpendicular unit vector
-            let px = -dy / len * half_width;
-            let py = dx / len * half_width;
+            // For axis-aligned lines, use exact perpendicular offsets to avoid
+            // floating point precision issues that cause fuzzy/diagonal lines
+            let (px, py) = if dy.abs() < 0.0001 {
+                // Horizontal line: offset in Y direction only
+                (0.0, half_width)
+            } else if dx.abs() < 0.0001 {
+                // Vertical line: offset in X direction only
+                (half_width, 0.0)
+            } else {
+                // Diagonal line: calculate perpendicular offset
+                let len = (dx * dx + dy * dy).sqrt();
+                if len < 0.0001 {
+                    continue; // Skip degenerate lines
+                }
+                (-dy / len * half_width, dx / len * half_width)
+            };
 
             // Four corners of the line rectangle
             // v1, v2 use color from point 1; v3, v4 use color from point 2
