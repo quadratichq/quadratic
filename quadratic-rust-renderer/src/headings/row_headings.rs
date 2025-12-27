@@ -81,10 +81,10 @@ impl RowHeadings {
     }
 
     /// Calculate row header width based on visible row numbers
-    /// Returns width in screen pixels (already scaled by DPR)
+    /// Returns width in screen pixels
     pub fn calculate_width(max_row: i64, scale: f32, viewport: &ViewportState) -> f32 {
         let digit_count = row_to_a1(max_row).len();
-        let padding = LABEL_PADDING_ROWS * viewport.dpr;
+        let padding = LABEL_PADDING_ROWS;
         let width = (digit_count as f32 * viewport.char_width) / scale + (padding / scale) * 2.0;
         // Minimum width is the header height
         width.max(viewport.header_height() / scale)
@@ -119,13 +119,12 @@ impl RowHeadings {
             (((viewport.viewport_y + world_height) / CELL_HEIGHT).ceil() as i64).max(0) + 1;
 
         // Calculate label skip interval for zoomed out views
-        let base_char_height = viewport.char_height / viewport.dpr;
         let cell_height_screen = CELL_HEIGHT * scale;
 
-        self.row_mod = if base_char_height > cell_height_screen * LABEL_MAXIMUM_HEIGHT_PERCENT {
+        self.row_mod = if viewport.char_height > cell_height_screen * LABEL_MAXIMUM_HEIGHT_PERCENT {
             let cell_height_world = CELL_HEIGHT / scale;
             let skip_numbers = (cell_height_world * (1.0 - LABEL_MAXIMUM_HEIGHT_PERCENT)
-                / base_char_height)
+                / viewport.char_height)
                 .ceil() as i64;
             Self::find_interval(skip_numbers)
         } else {
@@ -160,9 +159,9 @@ impl RowHeadings {
 
             let text = row_to_a1(row);
 
-            // For overlap detection - use physical pixels (DPR-scaled) to match screen_y
-            let label_height = viewport.char_height; // Already in physical pixels
-            let padding = LABEL_PADDING_ROWS * viewport.dpr; // Scale to physical pixels
+            // For overlap detection
+            let label_height = viewport.char_height;
+            let padding = LABEL_PADDING_ROWS;
             let half_height = label_height / 2.0 + padding;
             let top = screen_y - half_height;
             let bottom = screen_y + half_height;

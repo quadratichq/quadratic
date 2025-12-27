@@ -93,8 +93,7 @@ impl ColumnHeadings {
             (((viewport.viewport_x + world_width) / CELL_WIDTH).ceil() as i64).max(0) + 1;
 
         // Calculate label skip interval for zoomed out views
-        let base_char_width = viewport.char_width / viewport.dpr;
-        let label_width = LABEL_DIGITS_TO_CALCULATE_SKIP as f32 * base_char_width;
+        let label_width = LABEL_DIGITS_TO_CALCULATE_SKIP as f32 * viewport.char_width;
         let cell_width_screen = CELL_WIDTH * scale;
 
         self.col_mod = if label_width > cell_width_screen * LABEL_MAXIMUM_WIDTH_PERCENT {
@@ -136,9 +135,9 @@ impl ColumnHeadings {
             let text = column_to_a1(col);
             let char_count = text.len() as f32;
 
-            // For overlap detection - use physical pixels (DPR-scaled) to match screen_x
-            let label_width = char_count * viewport.char_width; // Already in physical pixels
-            let padding = LABEL_PADDING_ROWS * viewport.dpr; // Scale to physical pixels
+            // For overlap detection
+            let label_width = char_count * viewport.char_width;
+            let padding = LABEL_PADDING_ROWS;
             let half_width = label_width / 2.0 + padding;
             let left = screen_x - half_width;
             let right = screen_x + half_width;

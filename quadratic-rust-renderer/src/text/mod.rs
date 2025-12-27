@@ -6,6 +6,8 @@ mod a1_notation;
 mod bitmap_font;
 pub mod cell_label;
 mod cells_text_hash;
+#[cfg(feature = "wasm")]
+pub mod font_loader;
 mod label_mesh;
 mod text_label;
 

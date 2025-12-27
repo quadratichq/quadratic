@@ -13,7 +13,7 @@ use crate::headings::GridHeadings;
 use crate::render_context::RenderContext;
 use crate::text::{
     BitmapFont, BitmapFonts, CellLabel, CellsTextHash, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH,
-    VisibleHashBounds, get_hash_coords, hash_key,
+    VisibleHashBounds, get_hash_coords, hash_key, font_loader,
 };
 use crate::viewport::Viewport;
 use crate::webgl::WebGLContext;
@@ -55,8 +55,10 @@ pub struct WorkerRenderer {
 
 #[wasm_bindgen]
 impl WorkerRenderer {
-    /// Create a new renderer from a transferred OffscreenCanvas
-    #[wasm_bindgen(constructor)]
+    /// Create a new renderer from a transferred OffscreenCanvas.
+    /// Fonts should be loaded separately using load_font_from_fnt() and upload_font_texture_from_data().
+    /// This allows font loading to happen in parallel with WASM initialization.
+    #[wasm_bindgen]
     pub fn new(canvas: OffscreenCanvas) -> Result<WorkerRenderer, JsValue> {
         let width = canvas.width();
         let height = canvas.height();
@@ -361,11 +363,38 @@ impl WorkerRenderer {
         Ok(())
     }
 
+    /// Load a font from pre-fetched BMFont XML data
+    /// This is called from TypeScript with font data that was loaded in parallel with WASM init.
+    /// Returns the number of texture pages expected for this font.
+    #[wasm_bindgen]
+    pub fn load_font_from_fnt(&mut self, font_name: &str, fnt_content: &str, texture_uid_base: u32) -> Result<u32, JsValue> {
+        // Parse the BMFont XML
+        let (font, num_pages) = font_loader::parse_bmfont_xml(fnt_content, font_name, texture_uid_base)
+            .map_err(|e| JsValue::from_str(&format!("Failed to parse font {}: {}", font_name, e)))?;
+
+        log::info!(
+            "Loaded font from data: {} with {} chars (textures {}-{})",
+            font_name,
+            font.chars.len(),
+            texture_uid_base,
+            texture_uid_base + num_pages - 1
+        );
+
+        self.fonts.add(font);
+
+        // Mark dirty to trigger re-render
+        self.headings.set_dirty();
+        self.viewport.dirty = true;
+
+        Ok(num_pages)
+    }
+
     /// Check if fonts are loaded
     #[wasm_bindgen]
     pub fn has_fonts(&self) -> bool {
         !self.fonts.is_empty()
     }
+
 
     /// Check if fonts are fully ready (metadata loaded AND all textures uploaded)
     fn fonts_ready(&self) -> bool {
@@ -848,7 +877,8 @@ impl WorkerRenderer {
         let screen_matrix = self.create_screen_space_matrix(canvas_width, canvas_height);
 
         // Get text params for headings
-        let heading_font_size = 10.0 * self.headings.dpr();
+        // Font size 10.0 matches the TypeScript GRID_HEADER_FONT_SIZE
+        let heading_font_size = 10.0;
         let (font_scale, distance_range) = self
             .fonts
             .get("OpenSans")

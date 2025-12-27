@@ -58,16 +58,19 @@ pub use viewport::Viewport;
 pub use worker::{WorkerRenderer, WorkerRendererGPU};
 
 /// Initialize the renderer (WASM entry point)
+/// Note: This is called automatically via #[wasm_bindgen(start)], so we use
+/// .ok() on set_logger to handle the case where it's already initialized.
 #[cfg(feature = "wasm")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn init_wasm() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    log::set_logger(&utils::console_logger::CONSOLE_LOGGER).unwrap();
-    log::set_max_level(log::LevelFilter::Debug);
-
-    log::info!("Quadratic Rust Renderer (WASM Worker) initialized");
+    // Use .ok() to ignore if logger is already set (idempotent)
+    if log::set_logger(&utils::console_logger::CONSOLE_LOGGER).is_ok() {
+        log::set_max_level(log::LevelFilter::Debug);
+        log::info!("Quadratic Rust Renderer (WASM Worker) initialized");
+    }
 }
 
 /// Initialize the renderer (native entry point)
