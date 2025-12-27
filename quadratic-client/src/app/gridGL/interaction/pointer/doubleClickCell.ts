@@ -7,14 +7,16 @@ import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditor
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import type { Point } from 'pixi.js';
 
 export async function doubleClickCell(options: {
   column: number;
   row: number;
   cell?: string;
   cursorMode?: CursorMode;
+  world?: Point;
 }) {
-  let { column, row, cell, cursorMode } = options;
+  let { column, row, cell, cursorMode, world } = options;
 
   if (inlineEditorHandler.isEditingFormula()) {
     return;
@@ -40,29 +42,46 @@ export async function doubleClickCell(options: {
     const file_import = language === 'Import';
 
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
-      pixiAppSettings.setCodeEditorState({
-        ...pixiAppSettings.codeEditorState,
-        aiAssistant: {
-          abortController: undefined,
-          loading: false,
-          id: '',
-          messages: [],
-          waitingOnMessageIndex: undefined,
-        },
-        escapePressed: false,
-        diffEditorContent: undefined,
-        waitingForEditorClose: {
-          codeCell: {
-            sheetId: sheets.current,
-            pos: { x: codeCell.x, y: codeCell.y },
-            language,
-            lastModified: Number(codeCell.last_modified),
+      // For code cells when editor is open, check if we're on the header (table name or column names) or data area
+      const isTableNameRow = codeCell.show_name && row === codeCell.y;
+      const isColumnHeaderRow = codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
+      const isHeaderRow = isTableNameRow || isColumnHeaderRow;
+
+      if (formula || isHeaderRow) {
+        // Formula cells or table name row: switch to this cell in the code editor
+        pixiAppSettings.setCodeEditorState({
+          ...pixiAppSettings.codeEditorState,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+            waitingOnMessageIndex: undefined,
           },
-          showCellTypeMenu: false,
-          initialCode: '',
-          inlineEditor: formula,
-        },
-      });
+          escapePressed: false,
+          diffEditorContent: undefined,
+          waitingForEditorClose: {
+            codeCell: {
+              sheetId: sheets.current,
+              pos: { x: codeCell.x, y: codeCell.y },
+              language,
+              lastModified: Number(codeCell.last_modified),
+            },
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: formula,
+          },
+        });
+      } else {
+        // Double-click on data area shows context menu with options
+        events.emit('contextMenu', {
+          type: ContextMenuType.CodeCellOutput,
+          world,
+          column: codeCell.x,
+          row: codeCell.y,
+          table: codeCell,
+        });
+      }
     } else {
       if (hasPermission && formula) {
         const cursor = sheets.sheet.cursor.position;
@@ -112,29 +131,47 @@ export async function doubleClickCell(options: {
           }
         }
       } else {
-        pixiAppSettings.setCodeEditorState({
-          ...pixiAppSettings.codeEditorState,
-          aiAssistant: {
-            abortController: undefined,
-            loading: false,
-            id: '',
-            messages: [],
-            waitingOnMessageIndex: undefined,
-          },
-          showCodeEditor: true,
-          escapePressed: false,
-          diffEditorContent: undefined,
-          waitingForEditorClose: {
-            codeCell: {
-              sheetId: sheets.current,
-              pos: { x: codeCell.x, y: codeCell.y },
-              language,
-              lastModified: Number(codeCell.last_modified),
+        // For code cells (Python, JavaScript, etc.), check if we're on the header (table name or column names)
+        // If on data rows, show a context menu instead of opening the code editor
+        const isTableNameRow = codeCell.show_name && row === codeCell.y;
+        const isColumnHeaderRow = codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
+        const isHeaderRow = isTableNameRow || isColumnHeaderRow;
+
+        if (isHeaderRow) {
+          // Double-click on table name row opens code editor (current behavior)
+          pixiAppSettings.setCodeEditorState({
+            ...pixiAppSettings.codeEditorState,
+            aiAssistant: {
+              abortController: undefined,
+              loading: false,
+              id: '',
+              messages: [],
+              waitingOnMessageIndex: undefined,
             },
-            initialCode: '',
-            showCellTypeMenu: false,
-          },
-        });
+            showCodeEditor: true,
+            escapePressed: false,
+            diffEditorContent: undefined,
+            waitingForEditorClose: {
+              codeCell: {
+                sheetId: sheets.current,
+                pos: { x: codeCell.x, y: codeCell.y },
+                language,
+                lastModified: Number(codeCell.last_modified),
+              },
+              initialCode: '',
+              showCellTypeMenu: false,
+            },
+          });
+        } else {
+          // Double-click on data area shows context menu with options
+          events.emit('contextMenu', {
+            type: ContextMenuType.CodeCellOutput,
+            world,
+            column: codeCell.x,
+            row: codeCell.y,
+            table: codeCell,
+          });
+        }
       }
     }
   }
