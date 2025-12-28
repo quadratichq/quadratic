@@ -845,4 +845,19 @@ impl WorkerRenderer {
             &self.state.cells_sheet.sheet_offsets,
         );
     }
+
+    // =========================================================================
+    // Core Message Handling
+    // =========================================================================
+
+    /// Handle a bincode-encoded message from core.
+    ///
+    /// This is the main entry point for receiving messages from the core worker.
+    /// Messages are encoded using bincode for efficiency.
+    #[wasm_bindgen]
+    pub fn handle_core_message(&mut self, data: &[u8]) {
+        if let Err(e) = super::message_handler::handle_core_message(&mut self.state, data) {
+            log::error!("[WorkerRenderer] Error handling core message: {}", e);
+        }
+    }
 }

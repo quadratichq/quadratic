@@ -8,6 +8,7 @@ use anyhow::Result;
 use rstar::Point;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.

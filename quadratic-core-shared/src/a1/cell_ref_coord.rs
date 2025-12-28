@@ -2,6 +2,7 @@ use std::{fmt, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::A1Error;

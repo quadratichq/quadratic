@@ -24,12 +24,12 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeErrorContext,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
-  JsRenderFill,
   JsResponse,
   JsSheetFill,
   JsSheetNameToColor,
@@ -155,8 +155,14 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetsInfo') {
       events.emit('sheetsInfo', fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
       return;
-    } else if (e.data.type === 'coreClientSheetFills') {
-      events.emit('sheetFills', e.data.sheetId, fromUint8Array<JsRenderFill[]>(e.data.fills));
+    } else if (e.data.type === 'coreClientHashRenderFills') {
+      events.emit('hashRenderFills', e.data.hashRenderFills);
+      return;
+    } else if (e.data.type === 'coreClientHashesDirtyFills') {
+      events.emit('hashesDirtyFills', e.data.dirtyHashes);
+      return;
+    } else if (e.data.type === 'coreClientSheetMetaFills') {
+      events.emit('sheetMetaFills', e.data.sheetId, fromUint8Array<JsSheetFill[]>(e.data.fills));
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
@@ -244,9 +250,6 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientImage') {
       events.emit('updateImage', e.data);
-      return;
-    } else if (e.data.type === 'coreClientSheetMetaFills') {
-      events.emit('sheetMetaFills', e.data.sheetId, fromUint8Array<JsSheetFill[]>(e.data.fills));
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       const sheetValidations = fromUint8Array<Validation[]>(e.data.sheetValidations);
@@ -412,6 +415,15 @@ class QuadraticCore {
    */
   isRustRendererEnabled(): boolean {
     return debugFlag('debugUseRustRenderer');
+  }
+
+  /**
+   * Send all sheet offsets to the rust renderer.
+   * This should be called after the rust renderer is initialized.
+   */
+  sendAllSheetOffsetsToRustRenderer(): void {
+    if (!this.isRustRendererEnabled()) return;
+    this.send({ type: 'clientCoreSendAllSheetOffsetsToRustRenderer' });
   }
 
   async export(): Promise<Uint8Array> {
@@ -739,6 +751,21 @@ class QuadraticCore {
       fillColor,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    this.send({
+      type: 'clientCoreGetRenderFillsForHashes',
+      sheetId,
+      hashes,
+    });
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    this.send({
+      type: 'clientCoreGetSheetMetaFills',
+      sheetId,
     });
   }
 

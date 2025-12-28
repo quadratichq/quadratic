@@ -332,6 +332,11 @@ export interface ClientCoreGetSheetMetaFills {
   sheetId: string;
 }
 
+// Rust renderer messages
+export interface ClientCoreSendAllSheetOffsetsToRustRenderer {
+  type: 'clientCoreSendAllSheetOffsetsToRustRenderer';
+}
+
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
@@ -1569,6 +1574,7 @@ export type ClientCoreMessage =
   | ClientCoreSetCellFillColor
   | ClientCoreGetRenderFillsForHashes
   | ClientCoreGetSheetMetaFills
+  | ClientCoreSendAllSheetOffsetsToRustRenderer
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
   | ClientCoreSetCellStrikeThrough

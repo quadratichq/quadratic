@@ -17,6 +17,7 @@ pub mod export;
 pub mod formatting;
 pub mod import;
 pub mod render;
+pub mod rust_renderer;
 pub mod search;
 pub mod sheet_info;
 pub mod sheet_offsets;

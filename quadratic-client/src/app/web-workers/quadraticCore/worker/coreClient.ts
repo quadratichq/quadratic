@@ -32,7 +32,8 @@ declare var self: WorkerGlobalScope &
     sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
     sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
-    sendSheetFills: (sheetId: string, fills: Uint8Array) => void;
+    sendHashRenderFills: (hashRenderFills: Uint8Array) => void;
+    sendHashesDirtyFills: (dirtyHashes: Uint8Array) => void;
     sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
     sendSetCursor: (cursor: string) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: Uint8Array) => void;
@@ -76,7 +77,8 @@ class CoreClient {
     self.sendAddSheetClient = coreClient.sendAddSheet;
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
     self.sendSheetsInfoClient = coreClient.sendSheetsInfoClient;
-    self.sendSheetFills = coreClient.sendSheetFills;
+    self.sendHashRenderFills = coreClient.sendHashRenderFills;
+    self.sendHashesDirtyFills = coreClient.sendHashesDirtyFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sendSheetInfoUpdateClient = coreClient.sendSheetInfoUpdate;
     self.sendA1Context = coreClient.sendA1Context;
@@ -214,6 +216,18 @@ class CoreClient {
 
       case 'clientCoreSetCellFillColor':
         core.setFillColor(e.data.selection, e.data.fillColor, e.data.cursor, e.data.isAi);
+        return;
+
+      case 'clientCoreGetRenderFillsForHashes':
+        core.getRenderFillsForHashes(e.data.sheetId, e.data.hashes);
+        return;
+
+      case 'clientCoreGetSheetMetaFills':
+        core.getSheetMetaFills(e.data.sheetId);
+        return;
+
+      case 'clientCoreSendAllSheetOffsetsToRustRenderer':
+        core.sendAllSheetOffsetsToRustRenderer();
         return;
 
       case 'clientCoreSetCommas':
@@ -905,8 +919,12 @@ class CoreClient {
     this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo }, sheetInfo.buffer);
   };
 
-  sendSheetFills = (sheetId: string, fills: Uint8Array) => {
-    this.send({ type: 'coreClientSheetFills', sheetId, fills }, fills.buffer);
+  sendHashRenderFills = (hashRenderFills: Uint8Array) => {
+    this.send({ type: 'coreClientHashRenderFills', hashRenderFills }, hashRenderFills.buffer);
+  };
+
+  sendHashesDirtyFills = (dirtyHashes: Uint8Array) => {
+    this.send({ type: 'coreClientHashesDirtyFills', dirtyHashes }, dirtyHashes.buffer);
   };
 
   sendSheetMetaFills = (sheetId: string, fills: Uint8Array) => {

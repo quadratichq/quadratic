@@ -16,6 +16,7 @@
 //! ```
 
 mod backend;
+pub mod message_handler;
 mod renderer;
 mod renderer_webgpu;
 mod state;

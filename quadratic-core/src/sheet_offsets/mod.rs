@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use crate::{CopyFormats, Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
@@ -10,7 +11,7 @@ pub mod resize_transient;
 pub mod sheet_offsets_wasm;
 mod wasm;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct SheetOffsets {
     column_widths: Offsets,
@@ -18,6 +19,7 @@ pub struct SheetOffsets {
 
     thumbnail: (i64, i64),
 
+    #[bincode(with_serde)]
     #[serde(skip_serializing, skip_deserializing)]
     transient_resize: Option<TransientResize>,
 }

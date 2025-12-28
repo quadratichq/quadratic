@@ -98,6 +98,42 @@ impl RendererState {
     }
 
     // =========================================================================
+    // Sheet Offsets (from Core)
+    // =========================================================================
+
+    /// Set the sheet offsets for the given sheet.
+    /// This is called when receiving SheetOffsets messages from core.
+    pub fn set_sheet_offsets(
+        &mut self,
+        sheet_id: String,
+        offsets: quadratic_core_shared::SheetOffsets,
+    ) {
+        let (default_col, default_row) = offsets.defaults();
+        log::info!(
+            "[RendererState] Setting offsets for sheet {}: default_col={}, default_row={}",
+            sheet_id,
+            default_col,
+            default_row
+        );
+        // For now, we only support a single sheet, so just set it on cells_sheet
+        // TODO: Support multiple sheets
+        if self.cells_sheet.sheet_id == sheet_id {
+            self.cells_sheet.sheet_offsets = offsets;
+        } else {
+            log::warn!(
+                "[RendererState] Sheet ID mismatch: expected {}, got {}",
+                self.cells_sheet.sheet_id,
+                sheet_id
+            );
+        }
+    }
+
+    /// Get the current sheet offsets
+    pub fn get_sheet_offsets(&self) -> &quadratic_core_shared::SheetOffsets {
+        &self.cells_sheet.sheet_offsets
+    }
+
+    // =========================================================================
     // Viewport (state is controlled by main thread via SharedArrayBuffer)
     // =========================================================================
 
@@ -1282,8 +1318,8 @@ impl RendererState {
     /// Returns the maximum text height (including descenders) of all cells in the given row.
     /// If no cells are found, returns the default cell height.
     pub fn get_row_max_height(&self, row: i64) -> f32 {
-        use crate::text::cell_label::DEFAULT_CELL_HEIGHT;
         use crate::text::HASH_HEIGHT;
+        use crate::text::cell_label::DEFAULT_CELL_HEIGHT;
 
         let hash_y = if row > 0 {
             (row - 1) / HASH_HEIGHT

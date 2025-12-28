@@ -3,7 +3,7 @@ use crate::{Rect, ScreenRect};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[wasm_bindgen]
 pub struct Placement {
     pub index: i32,
     pub position: f64,

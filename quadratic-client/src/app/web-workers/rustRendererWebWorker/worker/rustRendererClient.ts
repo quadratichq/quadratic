@@ -126,8 +126,7 @@ class RustRendererClient {
       const elapsed = this.lastFrameTime ? timestamp - this.lastFrameTime : 16;
       this.lastFrameTime = timestamp;
 
-      // Update deceleration and render a frame
-      rustRendererWasm.updateDecelerate(elapsed);
+      // Render a frame (viewport/deceleration is managed by the client)
       rustRendererWasm.frame(elapsed);
 
       this.animationFrameId = requestAnimationFrame(loop);

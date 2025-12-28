@@ -48,12 +48,12 @@ class RustRendererWasm {
         console.log('[rustRendererWasm] Using WebGPU backend');
       } catch (error) {
         console.warn('[rustRendererWasm] WebGPU initialization failed, falling back to WebGL:', error);
-        renderer = WorkerRenderer.new(canvas);
+        renderer = new WorkerRenderer(canvas);
         this.backend = 'webgl';
         console.log('[rustRendererWasm] Using WebGL backend');
       }
     } else {
-      renderer = WorkerRenderer.new(canvas);
+      renderer = new WorkerRenderer(canvas);
       this.backend = 'webgl';
       console.log('[rustRendererWasm] Using WebGL backend (WebGPU not available)');
     }
@@ -63,12 +63,13 @@ class RustRendererWasm {
     // Set up initial state
     renderer.set_headings_dpr(devicePixelRatio);
 
-    // Set initial size from canvas (which may have been resized by CSS)
-    const width = canvas.width / devicePixelRatio;
-    const height = canvas.height / devicePixelRatio;
-    if (width > 0 && height > 0) {
-      renderer.resize(width, height);
-      console.log(`[rustRendererWasm] Initial size: ${width}x${height}`);
+    // Set initial size from canvas (canvas dimensions are in device pixels)
+    const deviceWidth = canvas.width;
+    const deviceHeight = canvas.height;
+    if (deviceWidth > 0 && deviceHeight > 0) {
+      // Rust renderer expects device pixels
+      renderer.resize(deviceWidth, deviceHeight, devicePixelRatio);
+      console.log(`[rustRendererWasm] Initial size: ${deviceWidth}x${deviceHeight} (device pixels)`);
     }
 
     // Wait for fonts to finish loading and pass them to the renderer
@@ -86,12 +87,13 @@ class RustRendererWasm {
 
   /**
    * Load pre-fetched fonts into the renderer.
+   * Uses add_font() which takes JSON format.
    */
   private loadFontsIntoRenderer(renderer: Renderer, fontLoadResult: FontLoadResult): void {
     for (const font of fontLoadResult.fonts) {
-      // Parse the .fnt file and add font metadata to the renderer
+      // Add font using JSON format
       try {
-        renderer.load_font_from_fnt(font.fontName, font.fntContent, font.textureUidBase);
+        renderer.add_font(font.fntContent);
       } catch (error) {
         console.warn(`[rustRendererWasm] Failed to load font ${font.fontName}:`, error);
         continue;
@@ -118,9 +120,8 @@ class RustRendererWasm {
       return;
     }
 
-    // TODO: Implement handle_core_message in Rust
-    // this.renderer.handle_core_message(data);
-    console.log(`[rustRendererWasm] handleCoreMessage: ${data.length} bytes (not yet implemented)`);
+    // Forward the bincode message to the WASM renderer
+    this.renderer.handle_core_message(data);
   }
 
   /**
@@ -136,12 +137,16 @@ class RustRendererWasm {
 
   /**
    * Update the viewport (visible area and scale).
+   * Note: The renderer now manages viewport internally via SharedArrayBuffer.
    */
   updateViewport(sheetId: string, bounds: { x: number; y: number; width: number; height: number }, scale: number) {
     if (!this.initialized || !this.renderer) return;
 
-    this.renderer.set_viewport(bounds.x, bounds.y, scale);
-    this.renderer.resize(bounds.width, bounds.height);
+    // Resize expects device pixels
+    const deviceWidth = Math.round(bounds.width * this.devicePixelRatio);
+    const deviceHeight = Math.round(bounds.height * this.devicePixelRatio);
+    this.renderer.resize(deviceWidth, deviceHeight, this.devicePixelRatio);
+    this.renderer.set_viewport_dirty();
   }
 
   /**
@@ -156,6 +161,7 @@ class RustRendererWasm {
 
   /**
    * Handle a mouse event.
+   * Note: Drag/wheel handling is now managed via SharedArrayBuffer viewport control.
    */
   mouseEvent(
     eventType: 'move' | 'down' | 'up' | 'wheel',
@@ -170,25 +176,9 @@ class RustRendererWasm {
   ) {
     if (!this.initialized || !this.renderer) return;
 
-    switch (eventType) {
-      case 'down':
-        this.renderer.on_drag_start();
-        break;
-      case 'move':
-        this.renderer.on_drag_move(performance.now());
-        break;
-      case 'up':
-        this.renderer.on_drag_end(performance.now());
-        break;
-      case 'wheel':
-        this.renderer.on_wheel_event();
-        if (options?.deltaY !== undefined) {
-          // Handle zoom on wheel
-          const zoomFactor = options.deltaY > 0 ? 0.9 : 1.1;
-          this.renderer.zoom(zoomFactor, x, y);
-        }
-        break;
-    }
+    // Mouse events are now handled via the viewport buffer
+    // The main thread controls the viewport and the renderer reads from the shared buffer
+    this.renderer.set_viewport_dirty();
   }
 
   /**
@@ -208,15 +198,23 @@ class RustRendererWasm {
 
   /**
    * Resize the canvas.
+   * @param width - CSS width (logical pixels)
+   * @param height - CSS height (logical pixels)
+   * @param devicePixelRatio - Device pixel ratio
    */
   resize(width: number, height: number, devicePixelRatio: number) {
     if (!this.initialized || !this.canvas || !this.renderer) return;
 
     this.devicePixelRatio = devicePixelRatio;
-    this.canvas.width = width * devicePixelRatio;
-    this.canvas.height = height * devicePixelRatio;
 
-    this.renderer.resize(width, height);
+    // Canvas dimensions are in device pixels
+    const deviceWidth = Math.round(width * devicePixelRatio);
+    const deviceHeight = Math.round(height * devicePixelRatio);
+    this.canvas.width = deviceWidth;
+    this.canvas.height = deviceHeight;
+
+    // Rust renderer expects device pixels
+    this.renderer.resize(deviceWidth, deviceHeight, devicePixelRatio);
     this.renderer.set_headings_dpr(devicePixelRatio);
   }
 
@@ -250,22 +248,6 @@ class RustRendererWasm {
   }
 
   /**
-   * Pan the viewport.
-   */
-  pan(dx: number, dy: number) {
-    if (!this.initialized || !this.renderer) return;
-    this.renderer.pan(dx, dy);
-  }
-
-  /**
-   * Zoom the viewport.
-   */
-  zoom(factor: number, centerX: number, centerY: number) {
-    if (!this.initialized || !this.renderer) return;
-    this.renderer.zoom(factor, centerX, centerY);
-  }
-
-  /**
    * Set the cursor position.
    */
   setCursor(col: bigint, row: bigint) {
@@ -282,21 +264,35 @@ class RustRendererWasm {
   }
 
   /**
-   * Update deceleration (call each frame).
-   * @param elapsed Time since last frame in milliseconds
-   * @returns true if the viewport was moved
+   * Set the viewport buffer (SharedArrayBuffer) for main thread control.
    */
-  updateDecelerate(elapsed: number): boolean {
-    if (!this.initialized || !this.renderer) return false;
-    return this.renderer.update_decelerate(elapsed);
+  setViewportBuffer(buffer: SharedArrayBuffer) {
+    if (!this.initialized || !this.renderer) return;
+    this.renderer.set_viewport_buffer(buffer);
   }
 
   /**
-   * Check if deceleration is active.
+   * Check if the renderer is using the shared viewport buffer.
    */
-  isDecelerating(): boolean {
+  isUsingSharedViewport(): boolean {
     if (!this.initialized || !this.renderer) return false;
-    return this.renderer.is_decelerating();
+    return this.renderer.is_using_shared_viewport();
+  }
+
+  /**
+   * Mark the viewport as dirty (forces a render next frame).
+   */
+  setViewportDirty() {
+    if (!this.initialized || !this.renderer) return;
+    this.renderer.set_viewport_dirty();
+  }
+
+  /**
+   * Check if the renderer needs to render.
+   */
+  isDirty(): boolean {
+    if (!this.initialized || !this.renderer) return false;
+    return this.renderer.is_dirty();
   }
 
   get isInitialized(): boolean {

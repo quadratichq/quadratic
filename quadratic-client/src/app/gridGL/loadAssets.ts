@@ -57,6 +57,8 @@ export async function loadAssets() {
   const openSansBoldPromise = loadFont('OpenSans-Bold');
   const openSansItalicPromise = loadFont('OpenSans-Italic');
   const openSansBoldItalicPromise = loadFont('OpenSans-BoldItalic');
+
+  // Load all assets in parallel
   await Promise.all([
     openSansPromise,
     openSansBoldPromise,

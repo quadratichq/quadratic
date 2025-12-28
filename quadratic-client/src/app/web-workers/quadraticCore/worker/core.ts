@@ -422,6 +422,16 @@ class Core {
     }
   }
 
+  // Rust Renderer communication
+  sendAllSheetOffsetsToRustRenderer() {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.sendAllSheetOffsetsToRustRenderer();
+    } catch (e) {
+      this.handleCoreError('sendAllSheetOffsetsToRustRenderer', e);
+    }
+  }
+
   setCommas(selection: string, commas: boolean | undefined, cursor: string, isAi: boolean) {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

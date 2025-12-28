@@ -13,7 +13,7 @@ import { getRendererToCoreTypeName } from '@/app/web-workers/rustRendererWebWork
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    // Callbacks that will be called from Rust WASM
+    // Callbacks that will be called from Rust WASM (via rustCallbacks.ts)
     sendToRustRenderer?: (data: Uint8Array) => void;
     handleRustRendererMessage?: (data: Uint8Array) => void;
   };
@@ -27,7 +27,7 @@ class CoreRustRenderer {
     this.rustRendererPort.onmessage = this.handleMessage;
     this.initialized = true;
 
-    // Register the callback for Rust WASM to use
+    // Register the callback for Rust WASM to use (called via jsSendToRustRenderer in rustCallbacks.ts)
     self.sendToRustRenderer = this.sendToRustRenderer;
 
     if (await debugFlagWait('debugWebWorkers')) {

@@ -118,6 +118,10 @@ extern "C" {
     pub fn jsCodeRunningState(transaction_id: String, code_operations: String);
 
     pub fn jsTimestamp() -> u64;
+
+    /// Send a bincode-encoded message to the rust renderer worker.
+    /// This is only called when the rust renderer is enabled.
+    pub fn jsSendToRustRenderer(message: Vec<u8>);
 }
 
 #[cfg(test)]
@@ -565,4 +569,10 @@ pub fn jsCodeRunningState(_transaction_id: String, _code_operations: String) {
 pub fn jsTimestamp() -> u64 {
     // Return a fixed timestamp for deterministic tests
     1234567890000 // Jan 13, 2009 23:31:30 GMT
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendToRustRenderer(message: Vec<u8>) {
+    js_call("jsSendToRustRenderer", format!("{} bytes", message.len()));
 }

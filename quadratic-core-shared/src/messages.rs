@@ -36,10 +36,12 @@ pub enum CoreToRenderer {
     SheetInfo(SheetInfo),
 
     /// Column/row sizes have changed
+    /// The offsets are bincode-encoded SheetOffsets bytes that can be decoded
+    /// on the renderer side.
     SheetOffsets {
         sheet_id: SheetId,
-        column_widths: Vec<(i64, f64)>,
-        row_heights: Vec<(i64, f64)>,
+        /// Bincode-encoded SheetOffsets bytes
+        offsets_bytes: Vec<u8>,
     },
 
     /// Sheet was deleted

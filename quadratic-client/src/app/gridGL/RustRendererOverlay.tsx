@@ -41,6 +41,11 @@ export const RustRendererOverlay = memo(() => {
     try {
       console.log('[RustRendererOverlay] Initializing renderer...');
       await quadraticCore.initRustRenderer(canvasRef.current);
+
+      // Send sheet offsets to the rust renderer
+      console.log('[RustRendererOverlay] Sending sheet offsets to rust renderer...');
+      quadraticCore.sendAllSheetOffsetsToRustRenderer();
+
       setInitialized(true);
       setBackend('ready');
       console.log('[RustRendererOverlay] Renderer initialized successfully');

@@ -6,6 +6,7 @@
 //! offsets. As we move to larger sheets, we may have to bring that
 //! back, as this can get slow at very large indices.
 
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
@@ -20,7 +21,7 @@ use itertools::Itertools;
 
 /// Data structure that tracks column widths or row heights in pixel units,
 /// optimized for converting between column/row indices and pixel units.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Offsets {
     default: f64,

@@ -59,6 +59,8 @@ declare var self: WorkerGlobalScope &
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
+    // Send bincode-encoded message to rust renderer (via MessagePort)
+    sendToRustRenderer?: (message: Uint8Array) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -245,4 +247,15 @@ export const jsCodeRunningState = (transactionId: string, codeOperations: string
 
 export const jsTimestamp = (): bigint => {
   return BigInt(Date.now());
+};
+
+/**
+ * Send a bincode-encoded message to the rust renderer worker.
+ * This is called from Rust when the rust renderer is enabled.
+ * The message is forwarded via the MessagePort to the rust renderer worker.
+ */
+export const jsSendToRustRenderer = (message: Uint8Array) => {
+  if (self.sendToRustRenderer) {
+    self.sendToRustRenderer(message);
+  }
 };
