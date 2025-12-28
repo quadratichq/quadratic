@@ -1,7 +1,21 @@
 use serde::Serialize;
 
+/// Cell reference out-of-bounds error, similar to Excel.
+#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct RefError;
+
+impl std::fmt::Display for RefError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "#REF!")
+    }
+}
+
+impl std::error::Error for RefError {}
+
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", content = "error")]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum A1Error {
     InvalidCellReference(String),
     InvalidSheetId(String),
@@ -25,7 +39,7 @@ pub enum A1Error {
     MultipleRowDefinitions,
     UnexpectedRowNumber,
     InvalidRowRange(String),
-    // OutOfBounds(RefError),
+    OutOfBounds(RefError),
 }
 
 impl From<A1Error> for String {
@@ -68,7 +82,13 @@ impl std::fmt::Display for A1Error {
                 "Row numbers in tables must be defined with # (e.g., [#12,15-12])"
             ),
             A1Error::InvalidRowRange(msg) => write!(f, "Invalid row range: {msg}"),
-            // A1Error::OutOfBounds(RefError) => write!(f, "Out Of Bounds"),
+            A1Error::OutOfBounds(_) => write!(f, "Out Of Bounds"),
         }
+    }
+}
+
+impl From<RefError> for A1Error {
+    fn from(value: RefError) -> Self {
+        A1Error::OutOfBounds(value)
     }
 }

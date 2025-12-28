@@ -4,6 +4,8 @@ use bincode::{Decode, Encode};
 use rstar::{AABB, RTreeObject};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
 
 use crate::{ArraySize, Pos, SheetId, SheetRect};
 
@@ -11,6 +13,8 @@ use crate::{ArraySize, Pos, SheetId, SheetRect};
 #[derive(
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Encode, Decode,
 )]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,

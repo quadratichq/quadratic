@@ -5,9 +5,9 @@ use super::*;
 impl Sheet {
     /// Adds this sheet to the A1Context.
     pub fn add_sheet_to_a1_context(&self, context: &mut A1Context) {
-        context.sheet_map.insert(self);
+        context.sheet_map.insert(self.name.clone(), self.id);
         self.data_tables.expensive_iter().for_each(|(pos, table)| {
-            context.table_map.insert_table(self.id, *pos, table);
+            context.table_map.insert_table(self.id, table.to_table_info(*pos));
         });
     }
 

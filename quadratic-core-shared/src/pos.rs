@@ -14,6 +14,8 @@ use wasm_bindgen::prelude::*;
 /// Cell position {x, y}.
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, Encode, Decode)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
@@ -220,6 +222,7 @@ pub struct ScreenRect {
 
 /// Used for referencing a pos during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Encode, Decode)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetPos {
     pub x: i64,
     pub y: i64,

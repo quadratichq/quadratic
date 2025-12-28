@@ -1,7 +1,6 @@
 use std::{fmt, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
@@ -10,8 +9,9 @@ use crate::A1Error;
 /// Unbounded coordinate on lower or upper end.
 pub const UNBOUNDED: i64 = i64::MAX;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefCoord {
     #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_I64"))]

@@ -3,10 +3,10 @@
 #[macro_use]
 pub mod util;
 
-mod a1;
+pub mod a1;
 mod array_size;
 mod cell_labels;
-mod color;
+pub mod color;
 mod copy_formats;
 mod fills;
 mod ids;
@@ -17,7 +17,7 @@ mod rect;
 mod ref_adjust;
 mod renderer_constants;
 pub mod serialization;
-mod sheet_offsets;
+pub mod sheet_offsets;
 mod sheet_rect;
 mod test_util;
 

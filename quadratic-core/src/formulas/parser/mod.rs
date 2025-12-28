@@ -153,7 +153,8 @@ pub fn adjust_references(
     let source = convert_rc_to_a1(source, ctx, pos); // remove this if we ever remove RC support completely
     replace_cell_range_references(&source, ctx, pos, |range_ref| {
         Ok(range_ref
-            .adjust(adjust)?
+            .adjust(adjust)
+            .map_err(|_| RefError)?
             .to_a1_string(Some(new_default_sheet_id), ctx))
     })
 }

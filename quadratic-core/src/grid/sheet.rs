@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use validations::Validations;
 
 use super::bounds::GridBounds;
-use super::ids::SheetId;
+use super::SheetId;
 use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};

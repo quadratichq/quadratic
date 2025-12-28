@@ -1,9 +1,11 @@
 //! Color types for cell formatting.
 
 use bincode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
 /// RGBA color with 8-bit components.
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Encode, Decode, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Rgba {
     pub red: u8,
     pub green: u8,
@@ -78,6 +80,16 @@ impl Rgba {
         format!("#{:02x}{:02x}{:02x}", self.red, self.green, self.blue)
     }
 
+    /// Alias for `to_hex_rgb` - returns hex string like "#RRGGBB"
+    pub fn as_rgb_hex(&self) -> String {
+        self.to_hex_rgb()
+    }
+
+    /// Returns the color as a string in hex format
+    pub fn as_string(&self) -> String {
+        self.to_hex()
+    }
+
     /// Convert to a packed u32 (RGBA format)
     #[inline]
     pub const fn to_u32(&self) -> u32 {
@@ -96,6 +108,26 @@ impl Rgba {
             blue: ((rgba >> 8) & 0xFF) as u8,
             alpha: (rgba & 0xFF) as u8,
         }
+    }
+}
+
+/// Error parsing a color from a string.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseColorError;
+
+impl std::fmt::Display for ParseColorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "invalid color format")
+    }
+}
+
+impl std::error::Error for ParseColorError {}
+
+impl TryFrom<&str> for Rgba {
+    type Error = ParseColorError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::from_hex(value).ok_or(ParseColorError)
     }
 }
 

@@ -299,6 +299,12 @@ impl From<Array> for CellValues {
     }
 }
 
+impl From<&CellValues> for Rect {
+    fn from(values: &CellValues) -> Self {
+        Rect::from_numbers(0, 0, values.w as i64, values.h as i64)
+    }
+}
+
 #[cfg(test)]
 mod test {
 

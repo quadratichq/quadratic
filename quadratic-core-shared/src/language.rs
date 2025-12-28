@@ -1,6 +1,7 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
+#[cfg(feature = "js")]
 use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, Encode, Decode)]
@@ -66,12 +67,14 @@ pub enum ConnectionKind {
     Mixpanel,
 }
 
+#[cfg(feature = "js")]
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {
     fn describe() {
         JsValue::describe();
     }
 }
 
+#[cfg(feature = "js")]
 impl wasm_bindgen::convert::IntoWasmAbi for ConnectionKind {
     type Abi = <JsValue as IntoWasmAbi>::Abi;
 

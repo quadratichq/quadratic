@@ -11,6 +11,7 @@ pub struct Placement {
 }
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ColumnRow {
     pub column: i32,
     pub row: i32,

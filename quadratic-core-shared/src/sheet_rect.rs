@@ -10,6 +10,7 @@ use crate::{ArraySize, Pos, SheetId, SheetPos};
 
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetRect {
     /// Upper-left corner.
     pub min: Pos,

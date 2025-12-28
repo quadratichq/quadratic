@@ -161,7 +161,7 @@ impl GridController {
                     self.a1_context.table_map.remove_at(sheet_id, pos);
                 }
 
-                self.a1_context.table_map.insert_table(sheet_id, pos, table);
+                self.a1_context.table_map.insert_table(sheet_id, table.to_table_info(pos));
             }
         }
 

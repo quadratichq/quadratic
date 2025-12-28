@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use ts_rs::TS;
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord, UNBOUNDED};
@@ -11,8 +11,9 @@ use crate::{Pos, RefAdjust, a1::column_name};
 /// The maximum value for a column or row number.
 const OUT_OF_BOUNDS: i64 = 1_000_000_000;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefRangeEnd {
     pub col: CellRefCoord,

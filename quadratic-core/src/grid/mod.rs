@@ -8,7 +8,7 @@ pub use formatting::{
     Bold, CellAlign, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
     NumericDecimals, NumericFormat, NumericFormatKind, StrikeThrough, TextColor, Underline,
 };
-pub use ids::*;
+pub use quadratic_core_shared::SheetId;
 use indexmap::IndexMap;
 pub use region_map::RegionMap;
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,10 @@ pub use sheet_region_map::SheetRegionMap;
 use crate::{Array, Pos};
 
 mod a1_context;
+mod a1_selection_ext;
 pub mod ai;
+
+pub use a1_selection_ext::A1SelectionExt;
 mod block;
 mod bounds;
 mod cells_accessed;
@@ -31,7 +34,6 @@ pub mod data_table;
 pub mod file;
 pub mod formats;
 pub mod formatting;
-mod ids;
 pub mod js_types;
 mod region_map;
 pub mod resize;

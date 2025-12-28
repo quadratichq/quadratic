@@ -4,7 +4,6 @@
 //! named ranges.
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 mod sheet_map;
 mod table_map;
@@ -24,7 +23,8 @@ pub struct A1Context {
 }
 
 // Used by the client to get table information.
-#[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct JsTableInfo {
     pub name: String,
     pub sheet_id: String,

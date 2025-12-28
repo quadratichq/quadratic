@@ -6,88 +6,10 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::RefError;
-use crate::a1::UNBOUNDED;
-
-lazy_static! {
-    pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
-}
-
-pub(crate) fn is_false(value: &bool) -> bool {
-    !(*value)
-}
-
-pub(crate) mod btreemap_serde {
-    use std::collections::{BTreeMap, HashMap};
-
-    use serde::ser::SerializeMap;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &BTreeMap<K, V>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let mut m = s.serialize_map(Some(map.len()))?;
-        for (k, v) in map {
-            m.serialize_entry(&serde_json::to_string(k).unwrap(), v)?;
-        }
-        m.end()
-    }
-    pub fn deserialize<
-        'de,
-        D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Ord,
-        V: Deserialize<'de>,
-    >(
-        d: D,
-    ) -> Result<BTreeMap<K, V>, D::Error> {
-        Ok(HashMap::<String, V>::deserialize(d)?
-            .into_iter()
-            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
-            .collect())
-    }
-}
-
-pub(crate) mod indexmap_serde {
-    use std::collections::HashMap;
-    use std::hash::Hash;
-
-    use indexmap::IndexMap;
-    use serde::ser::SerializeMap;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &IndexMap<K, V>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let mut m = s.serialize_map(Some(map.len()))?;
-        for (k, v) in map {
-            if let Ok(key) = serde_json::to_string(k) {
-                m.serialize_entry(&key, v)?;
-            }
-        }
-        m.end()
-    }
-    pub fn deserialize<
-        'de,
-        D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Ord + Hash,
-        V: Deserialize<'de>,
-    >(
-        d: D,
-    ) -> Result<IndexMap<K, V>, D::Error> {
-        Ok(HashMap::<String, V>::deserialize(d)?
-            .into_iter()
-            .filter_map(|(k, v)| {
-                if let Ok(key) = serde_json::from_str(&k) {
-                    Some((key, v))
-                } else {
-                    None
-                }
-            })
-            .collect())
-    }
-}
+// Re-export shared utilities
+pub use quadratic_core_shared::util::{
+    btreemap_serde, case_fold, case_fold_ascii, case_fold_ascii_in_place, sort_bounds,
+};
 
 /// Converts a column name to a number.
 #[allow(unused)]
@@ -168,6 +90,55 @@ macro_rules! rect {
     ($corner1:ident : $corner2:ident) => {
         $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
     };
+}
+
+lazy_static! {
+    pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
+}
+
+pub(crate) fn is_false(value: &bool) -> bool {
+    !(*value)
+}
+
+pub(crate) mod indexmap_serde {
+    use std::collections::HashMap;
+    use std::hash::Hash;
+
+    use indexmap::IndexMap;
+    use serde::ser::SerializeMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
+        map: &IndexMap<K, V>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(Some(map.len()))?;
+        for (k, v) in map {
+            if let Ok(key) = serde_json::to_string(k) {
+                m.serialize_entry(&key, v)?;
+            }
+        }
+        m.end()
+    }
+    pub fn deserialize<
+        'de,
+        D: Deserializer<'de>,
+        K: for<'k> Deserialize<'k> + Ord + Hash,
+        V: Deserialize<'de>,
+    >(
+        d: D,
+    ) -> Result<IndexMap<K, V>, D::Error> {
+        Ok(HashMap::<String, V>::deserialize(d)?
+            .into_iter()
+            .filter_map(|(k, v)| {
+                if let Ok(key) = serde_json::from_str(&k) {
+                    Some((key, v))
+                } else {
+                    None
+                }
+            })
+            .collect())
+    }
 }
 
 /// Parses a cell reference range in A1 notation.
@@ -322,17 +293,6 @@ pub fn maybe_reverse<I: DoubleEndedIterator>(
     }
 }
 
-pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
-    if initial == UNBOUNDED {
-        Ok(UNBOUNDED)
-    } else {
-        match initial.saturating_add(delta) {
-            ..=0 => Err(RefError),
-            other => Ok(other),
-        }
-    }
-}
-
 /// For debugging both in tests and in the JS console
 #[track_caller]
 pub fn dbgjs(_val: impl fmt::Debug) {
@@ -378,21 +338,6 @@ pub fn round(number: f64, precision: i64) -> f64 {
     (number * y).round() / y
 }
 
-/// Returns a string suitable for case-insensitive comparison.
-pub fn case_fold(s: &str) -> String {
-    s.to_uppercase() // TODO: want proper Unicode case folding
-}
-
-/// Uppercase ascii-only string suitable for case-insensitive comparison.
-pub fn case_fold_ascii(s: &str) -> String {
-    s.to_ascii_uppercase()
-}
-
-/// Uppercase ascii-only string suitable for case-insensitive comparison.
-pub fn case_fold_ascii_in_place(s: &mut str) {
-    s.make_ascii_uppercase();
-}
-
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
@@ -402,14 +347,6 @@ pub fn set_panic_hook() {
     // https://github.com/rustwasm/console_error_panic_hook#readme
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
-}
-
-// normalizes the bounds so that the first is always less than the second
-pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
-    match b {
-        Some(b) if b < a => (b, Some(a)),
-        _ => (a, b),
-    }
 }
 
 // Returns the current UTC time.
@@ -450,24 +387,12 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
         "{message}: expected {expected} but got {actual}"
     );
 }
+
 #[cfg(test)]
 mod tests {
     use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds};
-    use crate::ref_range_bounds;
 
     use super::*;
-
-    #[test]
-    fn test_a1_notation_macros() {
-        assert_eq!(col![A], 1);
-        assert_eq!(col![C], 3);
-        assert_eq!(col![AA], 27);
-
-        assert_eq!(pos![A1], crate::Pos { x: 1, y: 1 });
-        assert_eq!(pos![A2], crate::Pos { x: 1, y: 2 });
-
-        assert_eq!(pos![C6], crate::Pos { x: 3, y: 6 });
-    }
 
     #[test]
     fn test_date_string() {

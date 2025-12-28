@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
 
 mod array;
-mod array_size;
 pub mod arrow;
 pub mod cell_values;
 pub mod cellvalue;
@@ -20,8 +19,8 @@ pub mod parquet;
 mod time;
 
 pub use array::Array;
-pub use array_size::{ArraySize, Axis};
 pub use cellvalue::{CellValue, CellValueHash, TextSpan};
+pub use quadratic_core_shared::{ArraySize, Axis};
 pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};

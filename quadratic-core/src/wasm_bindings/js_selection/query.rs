@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     a1::{CellRefRange, UNBOUNDED},
-    grid::sheet::data_tables::cache::SheetDataTablesCache,
+    grid::{A1SelectionExt, sheet::data_tables::cache::SheetDataTablesCache},
 };
 
 use super::*;

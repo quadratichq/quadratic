@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{A1Error, UNBOUNDED};
 
-pub(crate) mod btreemap_serde {
+pub mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
 
     use serde::ser::SerializeMap;

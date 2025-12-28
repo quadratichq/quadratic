@@ -56,14 +56,14 @@ mod tokenize;
 pub use range::*;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::ArraySize;
 
 use super::{A1Context, A1Error};
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct TableRef {
     pub table_name: String,
     pub data: bool,

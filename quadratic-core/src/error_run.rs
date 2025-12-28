@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ArraySize, Axis, Span, Spanned, Value, a1::A1Error};
+use crate::{ArraySize, Axis, Span, Spanned, Value};
 
 /// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
@@ -347,22 +347,23 @@ macro_rules! internal_error {
     };
 }
 
-/// Cell reference out-of-bounds error, similar to Excel.
-#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, TS)]
-pub struct RefError;
+// Re-export RefError from shared crate
+pub use quadratic_core_shared::RefError;
+
 impl From<RefError> for RunErrorMsg {
-    fn from(RefError: RefError) -> Self {
+    fn from(_: RefError) -> Self {
         RunErrorMsg::BadCellReference
     }
 }
-impl From<RefError> for A1Error {
-    fn from(value: RefError) -> Self {
-        A1Error::OutOfBounds(value)
+
+impl From<quadratic_core_shared::ArraySizeError> for RunError {
+    fn from(_: quadratic_core_shared::ArraySizeError) -> Self {
+        RunErrorMsg::ArrayTooBig.without_span()
     }
 }
-impl fmt::Display for RefError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "#REF!")
+
+impl From<quadratic_core_shared::ArraySizeError> for RunErrorMsg {
+    fn from(_: quadratic_core_shared::ArraySizeError) -> Self {
+        RunErrorMsg::IndexOutOfBounds
     }
 }
-impl std::error::Error for RefError {}

@@ -1,7 +1,6 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::{Pos, Rect};
 
@@ -17,8 +16,9 @@ mod mutate;
 mod query;
 mod to_table_ref;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum CellRefRange {
     Sheet { range: RefRangeBounds },

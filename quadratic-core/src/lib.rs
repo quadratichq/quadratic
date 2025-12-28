@@ -11,25 +11,21 @@ pub static FUNCTIONS: LazyLock<Mutex<Vec<(String, i64)>>> = LazyLock::new(|| Mut
 pub mod util;
 #[macro_use]
 mod error_run;
-pub mod a1;
+pub use quadratic_core_shared::a1;
 mod clear_option;
-pub mod color;
+pub use quadratic_core_shared::color;
 pub mod compression;
 pub mod constants;
 pub mod controller;
-mod copy_formats;
 pub mod date_time;
 pub mod error_core;
 pub mod ext;
 pub mod formulas;
 pub mod grid;
-mod pos;
-mod rect;
 pub mod renderer_constants;
 mod rle;
 pub mod selection;
-pub mod sheet_offsets;
-mod sheet_rect;
+pub use quadratic_core_shared::sheet_offsets;
 pub mod small_timestamp;
 mod span;
 #[macro_use]
@@ -43,15 +39,13 @@ pub mod wasm_bindings;
 
 pub use a1::TableRef;
 pub use clear_option::*;
-pub use copy_formats::CopyFormats;
+pub use quadratic_core_shared::CopyFormats;
 pub use error_run::*;
 pub use ext::*;
-pub use grid::RefAdjust;
-pub use pos::*;
-pub use rect::*;
+pub use quadratic_core_shared::RefAdjust;
+pub use quadratic_core_shared::{Pos, Rect, ScreenRect, SheetPos, SheetRect};
 pub use rle::RunLengthEncoding;
 pub use selection::OldSelection;
-pub use sheet_rect::*;
 pub use span::*;
 pub use test_util::*;
 pub use values::*;
@@ -68,6 +62,3 @@ pub mod limits {
 
 pub const DEFAULT_COLUMN_WIDTH: f64 = 100.0;
 pub const DEFAULT_ROW_HEIGHT: f64 = 21.0;
-
-const THUMBNAIL_WIDTH: f64 = 1280f64;
-const THUMBNAIL_HEIGHT: f64 = THUMBNAIL_WIDTH / (16f64 / 9f64);

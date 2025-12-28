@@ -162,6 +162,16 @@ pub enum DataTableKind {
     Import(Import),
 }
 
+impl DataTableKind {
+    /// Returns the language for this data table kind.
+    pub fn language(&self) -> CodeCellLanguage {
+        match self {
+            DataTableKind::CodeRun(code_run) => code_run.language.clone(),
+            DataTableKind::Import(_) => CodeCellLanguage::Import,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTable {
     pub kind: DataTableKind,
@@ -717,6 +727,40 @@ impl DataTable {
             matches!(value, CellValue::Html(_) | CellValue::Image(_))
         } else {
             false
+        }
+    }
+
+    /// Converts this DataTable to a TableInfo for use with TableMap.
+    pub fn to_table_info(&self, pos: Pos) -> quadratic_core_shared::TableInfo {
+        let visible_columns = self
+            .column_headers
+            .as_ref()
+            .map(|headers| {
+                headers
+                    .iter()
+                    .filter(|h| h.display)
+                    .map(|h| h.name.to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let all_columns = self
+            .column_headers
+            .as_ref()
+            .map(|headers| headers.iter().map(|h| h.name.to_string()).collect())
+            .unwrap_or_default();
+
+        quadratic_core_shared::TableInfo {
+            error: self.has_error(),
+            table_name: self.name().to_string(),
+            visible_columns,
+            all_columns,
+            bounds: self.output_rect(pos, false),
+            show_name: self.show_name.unwrap_or(true),
+            show_columns: self.show_columns.unwrap_or(true),
+            is_html_image: self.is_html_or_image(),
+            header_is_first_row: self.header_is_first_row,
+            language: self.kind.language(),
         }
     }
 

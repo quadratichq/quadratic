@@ -20,6 +20,7 @@ pub const MAX_COLUMNS: i64 = 5000000;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct A1Selection {
     /// Current sheet.
     ///
