@@ -169,7 +169,9 @@ export async function loadAllFonts(): Promise<FontLoadResult> {
   }
 
   const elapsed = performance.now() - startTime;
-  console.log(`[fontLoader] All fonts loaded in ${elapsed.toFixed(1)}ms (${fonts.length} fonts, ${textureUidBase} textures)`);
+  console.log(
+    `[fontLoader] All fonts loaded in ${elapsed.toFixed(1)}ms (${fonts.length} fonts, ${textureUidBase} textures)`
+  );
 
   return {
     fonts,
