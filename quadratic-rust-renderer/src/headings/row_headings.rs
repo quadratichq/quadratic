@@ -57,26 +57,27 @@ impl RowHeadings {
     }
 
     /// Find interval for row label skipping when zoomed out
+    /// Thresholds are set to leave comfortable vertical space between labels
     fn find_interval(skip_count: i64) -> i64 {
-        if skip_count > 250 {
+        if skip_count > 125 {
             return 250;
         }
-        if skip_count > 100 {
+        if skip_count > 50 {
             return 100;
         }
-        if skip_count > 50 {
+        if skip_count > 25 {
             return 50;
         }
-        if skip_count > 25 {
+        if skip_count > 12 {
             return 25;
         }
-        if skip_count > 10 {
+        if skip_count > 5 {
             return 10;
         }
-        if skip_count > 3 {
+        if skip_count > 2 {
             return 5;
         }
-        if skip_count > 2 {
+        if skip_count > 1 {
             return 2;
         }
         1

@@ -26,10 +26,12 @@ pub const DEFAULT_CELL_WIDTH: f32 = 100.0;
 pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
 
 /// Base number of hashes to load beyond the visible viewport (for preloading)
-/// This is scaled inversely with viewport_scale - when zoomed out, we load more hashes
-pub const HASH_PADDING: i64 = 5;
+pub const HASH_PADDING: i64 = 3;
 
-/// Maximum hash padding to prevent excessive memory usage when very zoomed out
+/// Minimum hash padding - ensures some preloading at all zoom levels
+const MIN_HASH_PADDING: i64 = 2;
+
+/// Maximum hash padding to prevent excessive memory usage
 const MAX_HASH_PADDING: i64 = 30;
 
 /// Maximum texture pages we support
@@ -197,6 +199,36 @@ impl CellsTextHash {
     /// Check if this hash is dirty
     pub fn is_dirty(&self) -> bool {
         self.dirty
+    }
+
+    /// Get hash X coordinate
+    pub fn hash_x(&self) -> i64 {
+        self.hash_x
+    }
+
+    /// Get hash Y coordinate
+    pub fn hash_y(&self) -> i64 {
+        self.hash_y
+    }
+
+    /// Get world X position
+    pub fn world_x(&self) -> f32 {
+        self.world_x
+    }
+
+    /// Get world Y position
+    pub fn world_y(&self) -> f32 {
+        self.world_y
+    }
+
+    /// Get world width
+    pub fn world_width(&self) -> f32 {
+        self.world_width
+    }
+
+    /// Get world height
+    pub fn world_height(&self) -> f32 {
+        self.world_height
     }
 
     /// Check if the sprite cache is dirty
@@ -544,7 +576,14 @@ impl CellsTextHash {
 
         if user_scale >= SPRITE_SCALE_THRESHOLD {
             // Zoomed in: use MSDF text rendering for sharp glyphs
-            self.render_text_webgpu(gpu, pass, matrix, effective_scale, font_scale, distance_range);
+            self.render_text_webgpu(
+                gpu,
+                pass,
+                matrix,
+                effective_scale,
+                font_scale,
+                distance_range,
+            );
         } else {
             // Zoomed out: use pre-rendered sprite for smooth appearance
             if let Some(ref sprite_cache) = self.sprite_cache_webgpu {
@@ -559,7 +598,14 @@ impl CellsTextHash {
                 );
             } else {
                 // Fallback to MSDF if sprite cache not ready
-                self.render_text_webgpu(gpu, pass, matrix, effective_scale, font_scale, distance_range);
+                self.render_text_webgpu(
+                    gpu,
+                    pass,
+                    matrix,
+                    effective_scale,
+                    font_scale,
+                    distance_range,
+                );
             }
         }
     }
@@ -653,9 +699,11 @@ impl CellsTextHash {
         );
 
         // Create a command encoder for rendering to the sprite texture
-        let mut encoder = gpu.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Sprite Cache Encoder"),
-        });
+        let mut encoder = gpu
+            .device()
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Sprite Cache Encoder"),
+            });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -743,7 +791,10 @@ impl CellsTextHash {
 /// Get hash coordinates for a cell position (1-indexed columns/rows)
 pub fn get_hash_coords(col: i64, row: i64) -> (i64, i64) {
     // Adjust for 1-indexed: col 1-15 → hash 0, col 16-30 → hash 1, etc.
-    ((col - 1).div_euclid(HASH_WIDTH), (row - 1).div_euclid(HASH_HEIGHT))
+    (
+        (col - 1).div_euclid(HASH_WIDTH),
+        (row - 1).div_euclid(HASH_HEIGHT),
+    )
 }
 
 /// Get hash key from hash coordinates
@@ -788,13 +839,21 @@ impl VisibleHashBounds {
         let (max_hash_x, max_hash_y) = get_hash_coords(max_col, max_row);
 
         // Calculate dynamic padding based on viewport scale.
-        // When zoomed out (scale < 1), we need more padding because:
-        // 1. Each hash covers less screen space, so more hashes are visible
-        // 2. Panning covers more world distance per pixel
-        // Formula: padding = base_padding / scale, clamped to max
-        let scale_clamped = viewport_scale.max(0.1); // Avoid division by very small numbers
-        let dynamic_padding =
-            ((HASH_PADDING as f32 / scale_clamped).ceil() as i64).min(MAX_HASH_PADDING);
+        //
+        // At HIGH zoom (scale > 1): Need more padding because you scroll through
+        // hashes quickly in world coordinates. Scale UP padding with zoom.
+        //
+        // At LOW zoom (scale < 1): Need more padding because more hashes are
+        // visible on screen. Scale UP padding inversely with zoom.
+        //
+        // Formula: max(base * scale, base / scale) - covers both cases
+        let scale_clamped = viewport_scale.clamp(0.1, 10.0);
+        let high_zoom_padding = (HASH_PADDING as f32 * scale_clamped).ceil() as i64;
+        let low_zoom_padding = (HASH_PADDING as f32 / scale_clamped).ceil() as i64;
+        let dynamic_padding = high_zoom_padding
+            .max(low_zoom_padding)
+            .max(MIN_HASH_PADDING)
+            .min(MAX_HASH_PADDING);
 
         Self {
             min_hash_x: min_hash_x - dynamic_padding,

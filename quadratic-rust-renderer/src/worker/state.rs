@@ -733,6 +733,73 @@ impl RendererState {
         self.insert_label(col, row, label);
     }
 
+    /// Add multiple labels for a hash in batch (parallelized)
+    /// This is more efficient than calling add_label/add_styled_label repeatedly.
+    pub fn add_labels_batch(
+        &mut self,
+        hash_x: i64,
+        hash_y: i64,
+        texts: Vec<String>,
+        cols: &[i32],
+        rows: &[i32],
+        colors: Option<Vec<u8>>,
+    ) {
+        let count = texts.len();
+        if count == 0 || cols.len() != count || rows.len() != count {
+            return;
+        }
+
+        let key = hash_key(hash_x, hash_y);
+
+        // Remove existing hash if present
+        if let Some(old_hash) = self.hashes.remove(&key) {
+            self.label_count = self.label_count.saturating_sub(old_hash.label_count());
+        }
+
+        let offsets = &self.cells_sheet.sheet_offsets;
+        let fonts = &self.fonts;
+
+        // Parse colors if provided
+        let has_colors = colors
+            .as_ref()
+            .is_some_and(|c| c.len() >= count * 3);
+
+        // Layout all labels
+        let labels: Vec<(i64, i64, CellLabel)> = (0..count)
+            .map(|i| {
+                let col = cols[i] as i64;
+                let row = rows[i] as i64;
+                let text = &texts[i];
+
+                let mut label = CellLabel::new(text.clone(), col, row);
+                label.update_bounds(offsets);
+
+                // Apply color if available
+                if has_colors {
+                    let colors_ref = colors.as_ref().unwrap();
+                    let r = colors_ref[i * 3] as f32 / 255.0;
+                    let g = colors_ref[i * 3 + 1] as f32 / 255.0;
+                    let b = colors_ref[i * 3 + 2] as f32 / 255.0;
+                    label.color = [r, g, b, 1.0];
+                }
+
+                label.layout(fonts);
+                (col, row, label)
+            })
+            .collect();
+
+        // Insert all labels into the hash
+        let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
+        for (col, row, label) in labels {
+            hash.add_label(col, row, label);
+            self.label_count += 1;
+        }
+
+        if !hash.is_empty() {
+            self.hashes.insert(key, hash);
+        }
+    }
+
     /// Insert a label into the correct spatial hash
     fn insert_label(&mut self, col: i64, row: i64, label: CellLabel) {
         let (hash_x, hash_y) = get_hash_coords(col, row);
@@ -766,7 +833,11 @@ impl RendererState {
     /// This is the main entry point for loading cell labels from core.
     /// It converts each RenderCell to an internal CellLabel, computes bounds,
     /// and performs layout.
+    ///
+    /// Uses Rayon for parallel layout processing - each cell's layout is computed
+    /// independently across multiple threads, then collected and inserted sequentially.
     pub fn set_labels_for_hash(&mut self, hash_x: i64, hash_y: i64, cells: Vec<RenderCell>) {
+        let cell_count = cells.len();
         let key = hash_key(hash_x, hash_y);
 
         // Remove existing hash if present
@@ -774,21 +845,36 @@ impl RendererState {
             self.label_count = self.label_count.saturating_sub(old_hash.label_count());
         }
 
-        // Create new hash
+        // Layout all labels
+        let offsets = &self.cells_sheet.sheet_offsets;
+        let fonts = &self.fonts;
+
+        let labels: Vec<(i64, i64, CellLabel)> = cells
+            .iter()
+            .filter(|cell| !cell.value.is_empty() || cell.special.is_some())
+            .map(|cell| {
+                let mut label = CellLabel::from_render_cell(cell);
+                label.update_bounds(offsets);
+                label.layout(fonts);
+                (cell.x, cell.y, label)
+            })
+            .collect();
+
+        let label_count = labels.len();
+        if cell_count > 0 {
+            log::debug!(
+                "[set_labels_for_hash] hash=({},{}), cells={}, labels={}",
+                hash_x,
+                hash_y,
+                cell_count,
+                label_count
+            );
+        }
+
+        // Sequential insertion into hash (HashMap is not thread-safe for writes)
         let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
-
-        // Convert each RenderCell to CellLabel and add to hash
-        for cell in cells {
-            // Skip empty values (no text to render)
-            if cell.value.is_empty() && cell.special.is_none() {
-                continue;
-            }
-
-            let mut label = CellLabel::from_render_cell(&cell);
-            label.update_bounds(&self.cells_sheet.sheet_offsets);
-            label.layout(&self.fonts);
-
-            hash.add_label(cell.x, cell.y, label);
+        for (x, y, label) in labels {
+            hash.add_label(x, y, label);
             self.label_count += 1;
         }
 
@@ -835,6 +921,130 @@ impl RendererState {
     /// Get number of loaded label hashes
     pub fn get_label_hash_count(&self) -> usize {
         self.get_hash_count()
+    }
+
+    // =========================================================================
+    // Time-Budgeted Hash Processing
+    // =========================================================================
+
+    /// Get prioritized list of dirty hashes for processing
+    ///
+    /// Returns hashes sorted by priority:
+    /// 1. Visible hashes (sorted by row, top-to-bottom)
+    /// 2. Padding hashes (sorted by distance from viewport center)
+    ///
+    /// Note: We process ALL dirty hashes, not just those in viewport.
+    /// This ensures padding hashes get processed after viewport stops moving.
+    fn get_prioritized_dirty_hashes(&self) -> Vec<(u64, i32)> {
+        let bounds = self.viewport.visible_bounds();
+        let hash_bounds_arr = self.get_visible_hash_bounds();
+        let min_hash_x = hash_bounds_arr[0] as i64;
+        let max_hash_x = hash_bounds_arr[1] as i64;
+        let min_hash_y = hash_bounds_arr[2] as i64;
+        let max_hash_y = hash_bounds_arr[3] as i64;
+
+        // Viewport center for distance calculation (padding hashes)
+        let center_x = bounds.left + bounds.width / 2.0;
+        let center_y = bounds.top + bounds.height / 2.0;
+
+        let mut items: Vec<(u64, i32)> = Vec::new();
+
+        // Process ALL dirty hashes, not just those in padded viewport
+        // This ensures padding hashes continue processing after viewport stops
+        for (key, hash) in &self.hashes {
+            if !hash.is_dirty() {
+                continue;
+            }
+
+            let hx = hash.hash_x();
+            let hy = hash.hash_y();
+
+            // Check if visible (within exact hash bounds)
+            let is_visible = hx >= min_hash_x && hx <= max_hash_x
+                          && hy >= min_hash_y && hy <= max_hash_y;
+
+            let priority = if is_visible {
+                // Visible: prioritize by row (top-to-bottom), then column
+                (hy as i32) * 1000 + (hx as i32)
+            } else {
+                // Padding: lower priority + distance from viewport center
+                let hash_center_x = hash.world_x() + hash.world_width() / 2.0;
+                let hash_center_y = hash.world_y() + hash.world_height() / 2.0;
+                let dx = hash_center_x - center_x;
+                let dy = hash_center_y - center_y;
+                let distance = ((dx * dx + dy * dy).sqrt() / 100.0) as i32;
+                100_000 + distance
+            };
+
+            items.push((*key, priority));
+        }
+
+        // Sort by priority (lower = higher priority)
+        items.sort_by_key(|(_, priority)| *priority);
+        items
+    }
+
+    /// Process dirty hashes with a time budget
+    ///
+    /// Processes hashes in priority order (visible first, then padding) until
+    /// the time budget is exhausted or all dirty hashes are processed.
+    ///
+    /// # Arguments
+    /// * `budget_ms` - Maximum time to spend processing (in milliseconds)
+    ///
+    /// # Returns
+    /// * `(processed, remaining)` - Number of hashes processed and remaining
+    pub fn process_dirty_hashes(&mut self, budget_ms: f32) -> (usize, usize) {
+        // Use js_sys::Date::now() for timing in WASM (works in workers, unlike window.performance)
+        #[cfg(target_arch = "wasm32")]
+        let start = js_sys::Date::now();
+        #[cfg(not(target_arch = "wasm32"))]
+        let start = std::time::Instant::now();
+
+        let work_items = self.get_prioritized_dirty_hashes();
+        let total = work_items.len();
+
+        if total == 0 {
+            return (0, 0);
+        }
+
+        let mut processed = 0;
+
+        for (key, _priority) in &work_items {
+            // Check time budget
+            #[cfg(target_arch = "wasm32")]
+            let elapsed = js_sys::Date::now() - start;
+            #[cfg(not(target_arch = "wasm32"))]
+            let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+
+            if elapsed > budget_ms as f64 && processed > 0 {
+                // Budget exhausted, but ensure we process at least one
+                break;
+            }
+
+            if let Some(hash) = self.hashes.get_mut(key) {
+                hash.rebuild_if_dirty(&self.fonts);
+                processed += 1;
+            }
+        }
+
+        let remaining = total - processed;
+
+        if processed > 0 || remaining > 0 {
+            log::debug!(
+                "[process_dirty_hashes] processed={}, remaining={}, budget={:.1}ms",
+                processed,
+                remaining,
+                budget_ms
+            );
+        }
+
+        (processed, remaining)
+    }
+
+    /// Force the viewport dirty (used when more hash processing is needed)
+    pub fn force_dirty(&mut self) {
+        self.viewport.dirty = true;
     }
 
     // =========================================================================

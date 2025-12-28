@@ -250,7 +250,10 @@ impl WorkerRenderer {
         data: &[u8],
     ) -> Result<(), JsValue> {
         self.gl
-            .upload_font_texture_from_data(texture_uid, width, height, data)
+            .upload_font_texture_from_data(texture_uid, width, height, data)?;
+        // Mark headings dirty so they render now that textures are available
+        self.state.set_headings_dirty();
+        Ok(())
     }
 
     /// Add a font from JSON data
@@ -472,6 +475,33 @@ impl WorkerRenderer {
     // Cell Labels (text content)
     // =========================================================================
 
+    /// Add multiple labels for a hash in batch (parallelized)
+    /// This is more efficient than calling add_label/add_styled_label repeatedly.
+    ///
+    /// texts: array of text strings
+    /// cols: flat array of column indices (1-indexed)
+    /// rows: flat array of row indices (1-indexed)
+    /// colors: optional flat array of [r, g, b, r, g, b, ...] for each label (values 0-255)
+    #[wasm_bindgen]
+    pub fn add_labels_batch(
+        &mut self,
+        hash_x: i32,
+        hash_y: i32,
+        texts: Vec<String>,
+        cols: &[i32],
+        rows: &[i32],
+        colors: Option<Vec<u8>>,
+    ) {
+        self.state.add_labels_batch(
+            hash_x as i64,
+            hash_y as i64,
+            texts,
+            cols,
+            rows,
+            colors,
+        );
+    }
+
     /// Set cell labels for a specific hash
     /// labels_data: bincode-encoded Vec<RenderCell>
     #[wasm_bindgen]
@@ -565,8 +595,12 @@ impl WorkerRenderer {
         // Update headings first to get their size
         let (heading_width, heading_height) = self.state.update_headings();
 
+        // Process dirty hashes with time budget (~8ms, half of 60fps frame)
+        // This does the expensive layout/mesh work incrementally
+        let (processed, remaining) = self.state.process_dirty_hashes(8.0);
+
         // Check if anything is dirty and needs rendering
-        let needs_render = self.state.is_dirty();
+        let needs_render = self.state.is_dirty() || processed > 0;
 
         if !needs_render {
             return false;
@@ -647,6 +681,16 @@ impl WorkerRenderer {
         // Mark everything as clean after rendering
         self.state.mark_clean();
 
+        // Also clear the shared viewport buffer dirty flag
+        if let Some(ref mut shared) = self.shared_viewport {
+            shared.mark_clean();
+        }
+
+        // If there are remaining dirty hashes, force another frame to continue processing
+        if remaining > 0 {
+            self.state.force_dirty();
+        }
+
         true
     }
 
@@ -700,21 +744,22 @@ impl WorkerRenderer {
 
         let (font_scale, distance_range) = self.state.get_text_params();
 
-        // Debug logging for performance analysis
-        let mut rebuilt_count = 0;
+        // Render only ready hashes (dirty hashes are processed separately with time budget)
         let mut visible_count = 0;
+        let mut skipped_dirty = 0;
 
         for hash in self.state.hashes.values_mut() {
             if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                 continue;
             }
 
-            visible_count += 1;
-            let was_dirty = hash.is_dirty();
-            hash.rebuild_if_dirty(&self.state.fonts);
-            if was_dirty {
-                rebuilt_count += 1;
+            // Skip dirty hashes - they'll be processed next frame
+            if hash.is_dirty() {
+                skipped_dirty += 1;
+                continue;
             }
+
+            visible_count += 1;
 
             if scale < crate::text::SPRITE_SCALE_THRESHOLD {
                 hash.rebuild_sprite_if_dirty(
@@ -735,11 +780,11 @@ impl WorkerRenderer {
             );
         }
 
-        if self.state.debug_show_text_updates {
+        if self.state.debug_show_text_updates && (visible_count > 0 || skipped_dirty > 0) {
             log::info!(
-                "[cells_text_hash] visible_hashes={}, rebuilt_hashes={}, scale={:.2}",
+                "[render_cells_text] rendered={}, skipped_dirty={}, scale={:.2}",
                 visible_count,
-                rebuilt_count,
+                skipped_dirty,
                 scale
             );
         }

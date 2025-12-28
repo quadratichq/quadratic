@@ -58,6 +58,7 @@ web-sys = { version = "0.3", optional = true, features = [
     "OffscreenCanvas",
     "OffscreenCanvasRenderingContext2d",
     "Navigator",
+    "Performance",
     # WebGL2 features
     "WebGl2RenderingContext",
     "WebGlBuffer",

@@ -10,6 +10,17 @@
 
 import init, { WorkerRenderer, WorkerRendererGPU } from '../pkg/quadratic_rust_renderer.js';
 
+// Type for batch labels message
+interface AddLabelsBatchMessage {
+  type: 'addLabelsBatch';
+  hashX: number;
+  hashY: number;
+  texts: string[];
+  cols: number[];
+  rows: number[];
+  colors?: number[]; // [r, g, b, r, g, b, ...] values 0-255
+}
+
 // Message types from main thread
 interface InitMessage {
   type: 'init';
@@ -175,6 +186,7 @@ type WorkerMessage =
   | UploadFontTextureMessage
   | AddLabelMessage
   | AddStyledLabelMessage
+  | AddLabelsBatchMessage
   | ClearLabelsMessage
   | GetNeededHashesMessage
   | GetOffscreenHashesMessage
@@ -408,6 +420,21 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
           data.colorB ?? 0,
           data.align ?? 0,
           data.valign ?? 2
+        );
+      }
+      break;
+
+    case 'addLabelsBatch':
+      // Batch add labels with parallel processing in Rust
+      if (renderer) {
+        const batchData = data as AddLabelsBatchMessage;
+        renderer.add_labels_batch(
+          batchData.hashX,
+          batchData.hashY,
+          batchData.texts,
+          new Int32Array(batchData.cols),
+          new Int32Array(batchData.rows),
+          batchData.colors ? new Uint8Array(batchData.colors) : undefined
         );
       }
       break;

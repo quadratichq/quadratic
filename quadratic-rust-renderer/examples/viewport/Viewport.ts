@@ -408,6 +408,9 @@ export class Viewport {
     // Apply regular deceleration with clamping
     const delta = this.decelerate.update(elapsed);
     if (delta) {
+      const prevX = this.positionX;
+      const prevY = this.positionY;
+
       this.positionX += delta.x;
       this.positionY += delta.y;
 
@@ -415,8 +418,26 @@ export class Viewport {
       this.positionX = Math.max(0, this.positionX);
       this.positionY = Math.max(0, this.positionY);
 
-      this.dirty = true;
-      moved = true;
+      // Check if we actually moved (not clamped)
+      const actuallyMovedX = Math.abs(this.positionX - prevX) > 0.01;
+      const actuallyMovedY = Math.abs(this.positionY - prevY) > 0.01;
+
+      // If clamped in a direction, stop deceleration in that direction
+      if (!actuallyMovedX && !actuallyMovedY) {
+        // Completely clamped - stop deceleration entirely
+        this.decelerate.reset();
+      } else if (!actuallyMovedX) {
+        // Clamped in X only - stop X velocity
+        this.decelerate.activateX(0);
+      } else if (!actuallyMovedY) {
+        // Clamped in Y only - stop Y velocity
+        this.decelerate.activateY(0);
+      }
+
+      if (actuallyMovedX || actuallyMovedY) {
+        this.dirty = true;
+        moved = true;
+      }
     }
 
     // Update snap-back delay countdown

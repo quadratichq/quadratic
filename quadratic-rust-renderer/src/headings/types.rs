@@ -9,7 +9,7 @@ pub const LABEL_MAXIMUM_WIDTH_PERCENT: f32 = 0.9;
 pub const LABEL_MAXIMUM_HEIGHT_PERCENT: f32 = 0.5;
 
 /// Padding for row labels (in CSS pixels)
-pub const LABEL_PADDING_ROWS: f32 = 2.0;
+pub const LABEL_PADDING_ROWS: f32 = 8.0;
 
 /// Row digit offset (matches TypeScript ROW_DIGIT_OFFSET)
 pub const ROW_DIGIT_OFFSET_X: f32 = 0.0;

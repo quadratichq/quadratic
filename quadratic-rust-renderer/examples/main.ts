@@ -180,29 +180,45 @@ async function loadHash(hashX: number, hashY: number): Promise<void> {
   // Generate labels for this hash (simulates fetching from backend)
   const labels = generateHashLabels(hashX, hashY);
 
-  // Send labels to Rust renderer
+  if (labels.length === 0) {
+    loadingHashes.delete(key);
+    return;
+  }
+
+  // Batch all labels into arrays for efficient transfer
+  const texts: string[] = [];
+  const cols: number[] = [];
+  const rows: number[] = [];
+  const colors: number[] = [];
+  let hasColors = false;
+
   for (const label of labels) {
+    texts.push(label.text);
+    cols.push(label.col);
+    rows.push(label.row);
+
     if (label.color) {
-      // Use styled label for colored text
-      worker?.postMessage({
-        type: 'addStyledLabel',
-        text: label.text,
-        col: label.col,
-        row: label.row,
-        colorR: label.color.r,
-        colorG: label.color.g,
-        colorB: label.color.b,
-      });
+      hasColors = true;
+      colors.push(
+        Math.round(label.color.r * 255),
+        Math.round(label.color.g * 255),
+        Math.round(label.color.b * 255)
+      );
     } else {
-      // Use simple label for default black text
-      worker?.postMessage({
-        type: 'addLabel',
-        text: label.text,
-        col: label.col,
-        row: label.row,
-      });
+      colors.push(0, 0, 0); // Default black
     }
   }
+
+  // Send all labels in one batch message (uses parallel processing in Rust)
+  worker?.postMessage({
+    type: 'addLabelsBatch',
+    hashX,
+    hashY,
+    texts,
+    cols,
+    rows,
+    colors: hasColors ? colors : undefined,
+  });
 
   loadingHashes.delete(key);
 

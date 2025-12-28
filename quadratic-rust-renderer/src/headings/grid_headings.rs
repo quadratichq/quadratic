@@ -27,9 +27,6 @@ pub struct GridHeadings {
     /// Debug mode: draw red rectangles around expected label positions
     pub debug_label_bounds: bool,
 
-    /// Debug mode: log when headings are rebuilt
-    pub debug_log: bool,
-
     /// Character size for label width calculations (approximate, scaled by DPR)
     char_width: f32,
     char_height: f32,
@@ -75,7 +72,6 @@ impl GridHeadings {
             colors: HeadingColors::default(),
             dpr,
             debug_label_bounds: false,
-            debug_log: true,
             char_width: 6.67,
             char_height: 8.1,
             heading_size: HeadingSize::default(),
@@ -200,15 +196,6 @@ impl GridHeadings {
 
         // Mark that we're doing work this frame
         self.updated_this_frame = true;
-
-        if self.debug_log {
-            log::info!(
-                "[headings] rebuilding: dirty={}, viewport_changed={}, scale={:.2}",
-                self.dirty,
-                viewport_changed,
-                scale
-            );
-        }
 
         self.last_viewport_x = viewport_x;
         self.last_viewport_y = viewport_y;
