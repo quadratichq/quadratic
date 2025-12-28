@@ -278,11 +278,11 @@ impl ColumnHeadings {
     }
 
     /// Build meshes for column labels
-    pub fn get_meshes(&self, fonts: &BitmapFonts) -> HashMap<u32, LabelMesh> {
+    pub fn get_meshes(&mut self, fonts: &BitmapFonts) -> HashMap<u32, LabelMesh> {
         let mut meshes: HashMap<u32, LabelMesh> = HashMap::new();
 
-        for label in &self.labels {
-            for mesh in label.build_mesh(fonts) {
+        for label in &mut self.labels {
+            for mesh in label.get_meshes(fonts) {
                 if let Some(existing) = meshes.get_mut(&mesh.texture_uid) {
                     let offset = (existing.vertices.len() / 4) as u16;
                     existing.vertices.extend(mesh.vertices.iter().cloned());
@@ -290,7 +290,7 @@ impl ColumnHeadings {
                         existing.indices.push(idx + offset * 4);
                     }
                 } else {
-                    meshes.insert(mesh.texture_uid, mesh);
+                    meshes.insert(mesh.texture_uid, mesh.clone());
                 }
             }
         }

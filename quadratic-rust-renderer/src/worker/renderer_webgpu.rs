@@ -215,6 +215,18 @@ impl WorkerRendererGPU {
         self.state.is_dirty()
     }
 
+    /// Set debug mode: show colored overlay on text hashes that were recalculated
+    #[wasm_bindgen]
+    pub fn set_debug_show_text_updates(&mut self, show: bool) {
+        self.state.set_debug_show_text_updates(show);
+    }
+
+    /// Get debug mode for text updates
+    #[wasm_bindgen]
+    pub fn get_debug_show_text_updates(&self) -> bool {
+        self.state.get_debug_show_text_updates()
+    }
+
     /// Set cursor position
     #[wasm_bindgen]
     pub fn set_cursor(&mut self, col: i64, row: i64) {
@@ -796,12 +808,21 @@ impl WorkerRendererGPU {
 
         let (font_scale, distance_range) = self.state.get_text_params();
 
+        // Debug logging for performance analysis
+        let mut rebuilt_count = 0;
+        let mut visible_count = 0;
+
         for hash in self.state.hashes.values_mut() {
             if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                 continue;
             }
 
+            visible_count += 1;
+            let was_dirty = hash.is_dirty();
             hash.rebuild_if_dirty(&self.state.fonts);
+            if was_dirty {
+                rebuilt_count += 1;
+            }
 
             hash.render_webgpu(
                 &mut self.gpu,
@@ -811,6 +832,15 @@ impl WorkerRendererGPU {
                 effective_scale,
                 font_scale,
                 distance_range,
+            );
+        }
+
+        if self.state.debug_show_text_updates {
+            log::info!(
+                "[cells_text_hash] visible_hashes={}, rebuilt_hashes={}, scale={:.2}",
+                visible_count,
+                rebuilt_count,
+                scale
             );
         }
     }
@@ -909,9 +939,9 @@ impl WorkerRendererGPU {
         }
 
         // 3. Render text
-        let meshes = self.state.headings.get_meshes(&self.state.fonts);
-
+        // Get params first to avoid borrow conflict with get_meshes
         let (font_scale, distance_range) = self.state.get_heading_text_params();
+        let meshes = self.state.headings.get_meshes(&self.state.fonts);
 
         for mesh in meshes {
             if mesh.is_empty() {

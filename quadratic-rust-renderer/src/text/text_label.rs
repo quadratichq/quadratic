@@ -94,6 +94,12 @@ pub struct TextLabel {
 
     /// Font name used
     font_name: String,
+
+    /// Cached mesh data (built once, reused until dirty)
+    cached_meshes: Vec<LabelMesh>,
+
+    /// Whether the mesh cache needs rebuild
+    mesh_dirty: bool,
 }
 
 impl TextLabel {
@@ -113,6 +119,8 @@ impl TextLabel {
             vertical_center: 0.0,
             glyphs: Vec::new(),
             font_name: String::new(),
+            cached_meshes: Vec::new(),
+            mesh_dirty: true,
         }
     }
 
@@ -159,11 +167,13 @@ impl TextLabel {
     pub fn layout(&mut self, fonts: &BitmapFonts) {
         self.glyphs.clear();
         self.font_name = self.get_font_name();
+        self.mesh_dirty = true; // Mark mesh as needing rebuild
 
         if self.text.is_empty() {
             self.text_width = 0.0;
             self.text_height = 0.0;
             self.vertical_center = 0.0;
+            self.cached_meshes.clear();
             return;
         }
 
@@ -238,7 +248,65 @@ impl TextLabel {
         self.vertical_center = (min_y + max_y) / 2.0 * scale;
     }
 
-    /// Build the mesh for rendering
+    /// Get cached meshes, rebuilding if dirty
+    /// This is the main method to call for rendering - uses caching
+    pub fn get_meshes(&mut self, fonts: &BitmapFonts) -> &[LabelMesh] {
+        if self.mesh_dirty {
+            self.rebuild_mesh_cache(fonts);
+            self.mesh_dirty = false;
+        }
+        &self.cached_meshes
+    }
+
+    /// Rebuild the mesh cache (internal)
+    fn rebuild_mesh_cache(&mut self, fonts: &BitmapFonts) {
+        self.cached_meshes.clear();
+
+        if self.glyphs.is_empty() {
+            return;
+        }
+
+        let font = match fonts.get(&self.font_name) {
+            Some(f) => f,
+            None => return,
+        };
+
+        let scale = font.scale_for_size(self.font_size);
+
+        // Calculate anchor offset
+        let (anchor_x, anchor_y) = self.anchor.offset_multipliers();
+        let offset_x = -self.text_width * anchor_x;
+
+        // For vertical centering:
+        // - vertical_center is the Y position of the text's visual center
+        // - For Center anchor (anchor_y = 0.5), we want to offset so the center is at self.y
+        // - offset = -vertical_center for Center anchor
+        // General: offset = -(vertical_center + text_height * (anchor_y - 0.5))
+        let offset_y = -(self.vertical_center + self.text_height * (anchor_y - 0.5));
+
+        // Group glyphs by texture
+        let mut meshes: std::collections::HashMap<u32, LabelMesh> =
+            std::collections::HashMap::new();
+
+        for glyph in &self.glyphs {
+            let x = self.x + glyph.x * scale + offset_x;
+            let y = self.y + glyph.y * scale + offset_y;
+            let width = glyph.width * scale;
+            let height = glyph.height * scale;
+
+            let mesh = meshes.entry(glyph.texture_uid).or_insert_with(|| {
+                LabelMesh::new(self.font_name.clone(), self.font_size, glyph.texture_uid)
+            });
+
+            mesh.add_glyph(x, y, width, height, &glyph.uvs, self.color);
+        }
+
+        self.cached_meshes = meshes.into_values().collect();
+    }
+
+    /// Build the mesh for rendering (legacy, non-cached)
+    /// Prefer using get_meshes() for better performance
+    #[allow(dead_code)]
     pub fn build_mesh(&self, fonts: &BitmapFonts) -> Vec<LabelMesh> {
         if self.glyphs.is_empty() {
             return Vec::new();
@@ -254,28 +322,6 @@ impl TextLabel {
         // Calculate anchor offset
         let (anchor_x, anchor_y) = self.anchor.offset_multipliers();
         let offset_x = -self.text_width * anchor_x;
-
-        // For vertical centering:
-        // - vertical_center is the Y position of the text's visual center
-        // - For Center anchor (anchor_y = 0.5), we want to offset so the center is at self.y
-        // - offset = -vertical_center for Center anchor
-        // - More generally: offset = -vertical_center * 2 * anchor_y (to handle Top/Bottom too)
-        // But for simplicity, just use: offset = vertical_center * (1 - 2 * anchor_y) - vertical_center
-        // Actually simpler: we want the center at self.y, so offset = -vertical_center
-        // For top anchor (anchor_y = 0): offset = 0 (text starts at self.y)
-        // For center anchor (anchor_y = 0.5): offset = -vertical_center
-        // For bottom anchor (anchor_y = 1.0): offset = -2 * vertical_center
-        // General formula: offset = -vertical_center * 2 * anchor_y for center-relative positioning
-        // But we also need to account for the text_height for proper anchor behavior
-        //
-        // Let's use a cleaner approach:
-        // - The text bounding box spans from (some_min) to (some_min + text_height)
-        // - The center is at vertical_center
-        // - For anchor 0.0 (top), we want text_top at self.y: offset = -(vertical_center - text_height/2)
-        // - For anchor 0.5 (center), we want text_center at self.y: offset = -vertical_center
-        // - For anchor 1.0 (bottom), we want text_bottom at self.y: offset = -(vertical_center + text_height/2)
-        // General: offset = -(vertical_center - text_height/2 + text_height * anchor_y)
-        //                 = -(vertical_center + text_height * (anchor_y - 0.5))
         let offset_y = -(self.vertical_center + self.text_height * (anchor_y - 0.5));
 
         // Group glyphs by texture

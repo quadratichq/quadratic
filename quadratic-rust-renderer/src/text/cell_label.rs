@@ -3,11 +3,11 @@
 //! Simplified version of CellLabel from TypeScript.
 //! Handles basic text layout with alignment and wrapping.
 
-use quadratic_core_shared::{RenderCell, SheetOffsets};
+use quadratic_core_shared::{CellAlign, CellVerticalAlign, CellWrap, RenderCell, SheetOffsets};
 
 use crate::fills::parse_color_string;
 
-use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
+use super::bitmap_font::{BitmapFonts, extract_char_code, split_text_to_characters};
 use super::label_mesh::LabelMesh;
 
 /// Grid constants (matching TypeScript)
@@ -20,39 +20,9 @@ pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
 pub const OPEN_SANS_FIX_X: f32 = 1.8;
 pub const OPEN_SANS_FIX_Y: f32 = -1.8;
 
-/// Text alignment
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum TextAlign {
-    #[default]
-    Left,
-    Center,
-    Right,
-}
-
-/// Vertical alignment
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum VerticalAlign {
-    Top,
-    Middle,
-    #[default]
-    Bottom,
-}
-
-/// Text wrapping mode
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum TextWrap {
-    #[default]
-    Overflow,
-    Wrap,
-    Clip,
-}
-
 /// Character render data (position and glyph info)
 #[derive(Debug, Clone)]
 struct CharRenderData {
-    /// Character code
-    char_code: u32,
-
     /// Position in unscaled coordinates
     position_x: f32,
     position_y: f32,
@@ -69,9 +39,6 @@ struct CharRenderData {
 
     /// Texture UID
     texture_uid: u32,
-
-    /// Font name for this character
-    font_name: String,
 }
 
 /// Cell label - handles text layout for a single cell
@@ -102,11 +69,11 @@ pub struct CellLabel {
     pub color: [f32; 4],
 
     /// Alignment
-    pub align: TextAlign,
-    pub vertical_align: VerticalAlign,
+    pub align: CellAlign,
+    pub vertical_align: CellVerticalAlign,
 
     /// Wrapping
-    pub wrap: TextWrap,
+    pub wrap: CellWrap,
 
     /// Computed text position
     text_x: f32,
@@ -147,9 +114,9 @@ impl CellLabel {
             bold: false,
             italic: false,
             color: [0.0, 0.0, 0.0, 1.0], // Black
-            align: TextAlign::Left,
-            vertical_align: VerticalAlign::Bottom,
-            wrap: TextWrap::Overflow,
+            align: CellAlign::Left,
+            vertical_align: CellVerticalAlign::Bottom,
+            wrap: CellWrap::Overflow,
             text_x: 0.0,
             text_y: 0.0,
             text_width: 0.0,
@@ -167,11 +134,10 @@ impl CellLabel {
     /// This converts the core's RenderCell format into the renderer's internal
     /// CellLabel format, applying all styling and formatting options.
     pub fn from_render_cell(cell: &RenderCell) -> Self {
-        use quadratic_core_shared::{CellAlign, CellVerticalAlign, CellWrap};
+        use quadratic_core_shared::RenderCellSpecial;
 
         // Skip special cell types that don't need text rendering
         if let Some(ref special) = cell.special {
-            use quadratic_core_shared::RenderCellSpecial;
             match special {
                 RenderCellSpecial::Chart | RenderCellSpecial::Checkbox => {
                     // These don't render text, return empty label
@@ -192,32 +158,20 @@ impl CellLabel {
         // Apply text styling
         label.bold = cell.bold.unwrap_or(false);
         label.italic = cell.italic.unwrap_or(false);
-        label.font_size = cell.font_size.map(|s| s as f32).unwrap_or(DEFAULT_FONT_SIZE);
+        label.font_size = cell
+            .font_size
+            .map(|s| s as f32)
+            .unwrap_or(DEFAULT_FONT_SIZE);
 
         // Apply text color
         if let Some(ref color_str) = cell.text_color {
             label.color = parse_color_string(color_str);
         }
 
-        // Apply alignment
-        label.align = match cell.align {
-            Some(CellAlign::Center) => TextAlign::Center,
-            Some(CellAlign::Right) => TextAlign::Right,
-            _ => TextAlign::Left,
-        };
-
-        label.vertical_align = match cell.vertical_align {
-            Some(CellVerticalAlign::Top) => VerticalAlign::Top,
-            Some(CellVerticalAlign::Middle) => VerticalAlign::Middle,
-            _ => VerticalAlign::Bottom,
-        };
-
-        // Apply wrap mode
-        label.wrap = match cell.wrap {
-            Some(CellWrap::Wrap) => TextWrap::Wrap,
-            Some(CellWrap::Clip) => TextWrap::Clip,
-            _ => TextWrap::Overflow,
-        };
+        // Apply alignment (use core-shared types directly)
+        label.align = cell.align.unwrap_or_default();
+        label.vertical_align = cell.vertical_align.unwrap_or_default();
+        label.wrap = cell.wrap.unwrap_or_default();
 
         label
     }
@@ -299,7 +253,7 @@ impl CellLabel {
 
         let scale = font.scale_for_size(self.font_size);
         let line_height = (self.font_size / DEFAULT_FONT_SIZE) * LINE_HEIGHT / scale;
-        let max_width = if self.wrap == TextWrap::Wrap {
+        let max_width = if self.wrap == CellWrap::Wrap {
             Some((self.cell_width - CELL_TEXT_MARGIN_LEFT * 3.0) / scale)
         } else {
             None
@@ -352,7 +306,6 @@ impl CellLabel {
 
             // Store character render data
             let char_render = CharRenderData {
-                char_code,
                 position_x: pos_x + char_data.x_offset,
                 position_y: pos_y + char_data.y_offset,
                 line,
@@ -360,7 +313,6 @@ impl CellLabel {
                 frame_height: char_data.frame.height,
                 uvs: char_data.uvs,
                 texture_uid: char_data.texture_uid,
-                font_name: font_name.clone(),
             };
 
             self.chars.push(char_render);
@@ -407,9 +359,9 @@ impl CellLabel {
         // Calculate alignment offsets
         for line_width in &self.line_widths {
             let offset = match self.align {
-                TextAlign::Left => 0.0,
-                TextAlign::Center => (max_line_width - line_width) / 2.0,
-                TextAlign::Right => max_line_width - line_width,
+                CellAlign::Left => 0.0,
+                CellAlign::Center => (max_line_width - line_width) / 2.0,
+                CellAlign::Right => max_line_width - line_width,
             };
             self.horizontal_align_offsets.push(offset);
         }
@@ -426,13 +378,13 @@ impl CellLabel {
     fn calculate_position(&mut self, _scale: f32) {
         // Horizontal positioning
         match self.align {
-            TextAlign::Left => {
+            CellAlign::Left => {
                 self.text_x = self.cell_x;
             }
-            TextAlign::Center => {
+            CellAlign::Center => {
                 self.text_x = self.cell_x + (self.cell_width - self.text_width) / 2.0;
             }
-            TextAlign::Right => {
+            CellAlign::Right => {
                 self.text_x = self.cell_x + self.cell_width - self.text_width;
             }
         }
@@ -446,13 +398,13 @@ impl CellLabel {
             self.text_y = self.cell_y + (available_space / 2.0).max(0.0);
         } else {
             match self.vertical_align {
-                VerticalAlign::Top => {
+                CellVerticalAlign::Top => {
                     self.text_y = self.cell_y + 2.5; // CELL_VERTICAL_PADDING
                 }
-                VerticalAlign::Middle => {
+                CellVerticalAlign::Middle => {
                     self.text_y = self.cell_y + available_space / 2.0;
                 }
-                VerticalAlign::Bottom => {
+                CellVerticalAlign::Bottom => {
                     self.text_y = self.cell_y + self.cell_height - self.text_height - 2.5;
                 }
             }
@@ -505,7 +457,7 @@ impl CellLabel {
             let cell_right = self.cell_x + self.cell_width;
             let cell_bottom = self.cell_y + self.cell_height;
 
-            if self.wrap == TextWrap::Clip {
+            if self.wrap == CellWrap::Clip {
                 if x + width < self.cell_x || x > cell_right {
                     continue; // Clipped horizontally
                 }
@@ -517,11 +469,7 @@ impl CellLabel {
 
             // Get or create mesh for this texture
             let mesh = meshes.entry(char_data.texture_uid).or_insert_with(|| {
-                LabelMesh::new(
-                    char_data.font_name.clone(),
-                    self.font_size,
-                    char_data.texture_uid,
-                )
+                LabelMesh::new(font_name.clone(), self.font_size, char_data.texture_uid)
             });
 
             mesh.add_glyph(x, y, width, height, &char_data.uvs, self.color);
@@ -566,7 +514,7 @@ impl CellLabel {
             let cell_right = self.cell_x + self.cell_width;
             let cell_bottom = self.cell_y + self.cell_height;
 
-            if self.wrap == TextWrap::Clip {
+            if self.wrap == CellWrap::Clip {
                 if x + width < self.cell_x || x > cell_right {
                     continue; // Clipped horizontally
                 }
@@ -578,11 +526,7 @@ impl CellLabel {
 
             // Get or create mesh for this texture
             let mesh = meshes.entry(char_data.texture_uid).or_insert_with(|| {
-                LabelMesh::new(
-                    char_data.font_name.clone(),
-                    self.font_size,
-                    char_data.texture_uid,
-                )
+                LabelMesh::new(font_name.clone(), self.font_size, char_data.texture_uid)
             });
 
             mesh.add_glyph(x, y, width, height, &char_data.uvs, self.color);

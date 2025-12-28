@@ -65,7 +65,7 @@ pub struct CellsTextHash {
 
     /// Cached batched vertex data per texture page
     cached_vertices: [Vec<f32>; MAX_TEXTURE_PAGES],
-    cached_indices: [Vec<u16>; MAX_TEXTURE_PAGES],
+    cached_indices: [Vec<u32>; MAX_TEXTURE_PAGES],
 
     /// Bounds in world coordinates (for visibility culling)
     pub world_x: f32,
@@ -225,7 +225,7 @@ impl CellsTextHash {
         }
 
         // Track vertex offsets per texture page
-        let mut vertex_offsets: [u16; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
+        let mut vertex_offsets: [u32; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
 
         // Collect meshes from all labels
         for label in self.labels.values_mut() {
@@ -248,13 +248,13 @@ impl CellsTextHash {
                 // Add vertices to cache
                 self.cached_vertices[tex_id].extend_from_slice(&mesh_vertices);
 
-                // Add indices with offset applied
+                // Add indices with offset applied (convert u16 mesh indices to u32)
                 for &i in mesh_indices {
-                    self.cached_indices[tex_id].push(i + offset);
+                    self.cached_indices[tex_id].push(i as u32 + offset);
                 }
 
                 // Update offset (each vertex has 8 floats: x,y,u,v,r,g,b,a)
-                vertex_offsets[tex_id] += (mesh_vertices.len() / 8) as u16;
+                vertex_offsets[tex_id] += (mesh_vertices.len() / 8) as u32;
             }
         }
 
@@ -274,7 +274,7 @@ impl CellsTextHash {
     }
 
     /// Get cached indices for a texture page
-    pub fn get_cached_indices(&self, texture_id: usize) -> &[u16] {
+    pub fn get_cached_indices(&self, texture_id: usize) -> &[u32] {
         if texture_id < MAX_TEXTURE_PAGES {
             &self.cached_indices[texture_id]
         } else {
@@ -306,15 +306,9 @@ impl CellsTextHash {
                 continue;
             }
 
-            // Convert u16 indices to u32 for WebGL
-            let indices: Vec<u32> = self.cached_indices[tex_id]
-                .iter()
-                .map(|&i| i as u32)
-                .collect();
-
             gl.draw_text(
                 &self.cached_vertices[tex_id],
-                &indices,
+                &self.cached_indices[tex_id],
                 tex_id as u32,
                 matrix,
                 viewport_scale,
@@ -588,16 +582,10 @@ impl CellsTextHash {
                 continue;
             }
 
-            // Convert u16 indices to u32 for WebGPU
-            let indices: Vec<u32> = self.cached_indices[tex_id]
-                .iter()
-                .map(|&i| i as u32)
-                .collect();
-
             gpu.draw_text(
                 pass,
                 &self.cached_vertices[tex_id],
-                &indices,
+                &self.cached_indices[tex_id],
                 tex_id as u32,
                 matrix,
                 viewport_scale,

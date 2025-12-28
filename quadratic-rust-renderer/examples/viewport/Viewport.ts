@@ -149,6 +149,8 @@ export class Viewport {
    * Pan the viewport by a screen-space delta (in device pixels)
    *
    * Clamps to prevent panning into negative space (x < 0, y < 0).
+   * When already in negative space (waiting to snap back), only allows
+   * panning that moves back toward the valid bounds.
    */
   pan(dx: number, dy: number): void {
     // Convert screen delta to world delta using effective scale
@@ -156,9 +158,41 @@ export class Viewport {
     const worldDx = dx / effectiveScale;
     const worldDy = dy / effectiveScale;
 
-    // Apply pan and clamp to prevent negative positions
-    this.positionX = Math.max(0, this.positionX - worldDx);
-    this.positionY = Math.max(0, this.positionY - worldDy);
+    // Check if we're in negative space or delay is active
+    const inGracePeriod =
+      this.positionX < 0 ||
+      this.positionY < 0 ||
+      this.snapBackDelayRemaining > 0;
+
+    // Reset snap-back delay during interaction (pauses the snap-back animation)
+    if (inGracePeriod) {
+      this.snapBackDelayRemaining = SNAP_BACK_DELAY;
+    }
+
+    // Calculate new positions
+    let newX = this.positionX - worldDx;
+    let newY = this.positionY - worldDy;
+
+    // Apply clamping based on current state
+    if (this.positionX < 0) {
+      // Already in negative X - don't allow going more negative, but allow moving toward 0
+      newX = Math.max(this.positionX, Math.min(0, newX));
+    } else {
+      // Currently positive/zero - don't allow going negative
+      newX = Math.max(0, newX);
+    }
+
+    if (this.positionY < 0) {
+      // Already in negative Y - don't allow going more negative, but allow moving toward 0
+      newY = Math.max(this.positionY, Math.min(0, newY));
+    } else {
+      // Currently positive/zero - don't allow going negative
+      newY = Math.max(0, newY);
+    }
+
+    this.positionX = newX;
+    this.positionY = newY;
+
     this.dirty = true;
     this.syncToBuffer();
   }
@@ -306,6 +340,16 @@ export class Viewport {
   /** Called when drag/pan starts - stops any active deceleration */
   onDragStart(): void {
     this.decelerate.onDown();
+
+    // Reset snap-back delay if we're in negative space or delay is active
+    // (keeps timeout paused during interaction)
+    if (
+      this.positionX < 0 ||
+      this.positionY < 0 ||
+      this.snapBackDelayRemaining > 0
+    ) {
+      this.snapBackDelayRemaining = SNAP_BACK_DELAY;
+    }
   }
 
   /**
@@ -314,6 +358,16 @@ export class Viewport {
    */
   onDragMove(time: number): void {
     this.decelerate.onMove(this.positionX, this.positionY, time);
+
+    // Reset snap-back delay if we're in negative space or delay is active
+    // (keeps timeout paused during interaction)
+    if (
+      this.positionX < 0 ||
+      this.positionY < 0 ||
+      this.snapBackDelayRemaining > 0
+    ) {
+      this.snapBackDelayRemaining = SNAP_BACK_DELAY;
+    }
   }
 
   /**
@@ -324,9 +378,19 @@ export class Viewport {
     this.decelerate.onUp(this.positionX, this.positionY, time);
   }
 
-  /** Called on wheel event - stops deceleration */
+  /** Called on wheel event - stops deceleration and resets snap-back delay */
   onWheel(): void {
     this.decelerate.onWheel();
+
+    // Reset snap-back delay if we're in negative space or delay is active
+    // (keeps timeout paused during interaction)
+    if (
+      this.positionX < 0 ||
+      this.positionY < 0 ||
+      this.snapBackDelayRemaining > 0
+    ) {
+      this.snapBackDelayRemaining = SNAP_BACK_DELAY;
+    }
   }
 
   /**

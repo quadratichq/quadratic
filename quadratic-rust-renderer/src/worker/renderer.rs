@@ -199,6 +199,18 @@ impl WorkerRenderer {
         self.state.is_dirty()
     }
 
+    /// Set debug mode: show colored overlay on text hashes that were recalculated
+    #[wasm_bindgen]
+    pub fn set_debug_show_text_updates(&mut self, show: bool) {
+        self.state.set_debug_show_text_updates(show);
+    }
+
+    /// Get debug mode for text updates
+    #[wasm_bindgen]
+    pub fn get_debug_show_text_updates(&self) -> bool {
+        self.state.get_debug_show_text_updates()
+    }
+
     /// Set cursor position
     #[wasm_bindgen]
     pub fn set_cursor(&mut self, col: i64, row: i64) {
@@ -688,12 +700,21 @@ impl WorkerRenderer {
 
         let (font_scale, distance_range) = self.state.get_text_params();
 
+        // Debug logging for performance analysis
+        let mut rebuilt_count = 0;
+        let mut visible_count = 0;
+
         for hash in self.state.hashes.values_mut() {
             if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                 continue;
             }
 
+            visible_count += 1;
+            let was_dirty = hash.is_dirty();
             hash.rebuild_if_dirty(&self.state.fonts);
+            if was_dirty {
+                rebuilt_count += 1;
+            }
 
             if scale < crate::text::SPRITE_SCALE_THRESHOLD {
                 hash.rebuild_sprite_if_dirty(
@@ -711,6 +732,15 @@ impl WorkerRenderer {
                 effective_scale,
                 font_scale,
                 distance_range,
+            );
+        }
+
+        if self.state.debug_show_text_updates {
+            log::info!(
+                "[cells_text_hash] visible_hashes={}, rebuilt_hashes={}, scale={:.2}",
+                visible_count,
+                rebuilt_count,
+                scale
             );
         }
     }

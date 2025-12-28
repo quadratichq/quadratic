@@ -6,15 +6,14 @@
 use std::collections::HashMap;
 
 use quadratic_core_shared::{
-    CellAlign, CellVerticalAlign, CellWrap, RenderCell, RenderCellSpecial, RenderFill,
-    RenderNumber, NumericFormat, NumericFormatKind, SheetFill,
+    CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind, RenderCell,
+    RenderCellSpecial, RenderFill, RenderNumber, SheetFill,
 };
 
 use crate::cells::CellsSheet;
 use crate::content::Content;
 use crate::fills::CellsFills;
 use crate::headings::GridHeadings;
-use crate::text::cell_label::{TextAlign, VerticalAlign};
 use crate::text::{
     BitmapFont, BitmapFonts, CellLabel, CellsTextHash, VisibleHashBounds, get_hash_coords, hash_key,
 };
@@ -55,6 +54,9 @@ pub struct RendererState {
 
     /// Whether to render headings
     pub show_headings: bool,
+
+    /// Debug: show colored overlay on text that was recalculated this frame
+    pub debug_show_text_updates: bool,
 }
 
 impl RendererState {
@@ -72,6 +74,7 @@ impl RendererState {
             running: false,
             headings: GridHeadings::new(),
             show_headings: true,
+            debug_show_text_updates: false,
         }
     }
 
@@ -136,6 +139,17 @@ impl RendererState {
     /// Get headings visibility
     pub fn get_show_headings(&self) -> bool {
         self.show_headings
+    }
+
+    /// Set debug mode for showing text updates (logs to console)
+    pub fn set_debug_show_text_updates(&mut self, show: bool) {
+        self.debug_show_text_updates = show;
+        log::info!("[debug] set_debug_show_text_updates({})", show);
+    }
+
+    /// Get debug mode for showing text updates
+    pub fn get_debug_show_text_updates(&self) -> bool {
+        self.debug_show_text_updates
     }
 
     /// Get heading size (row header width in pixels)
@@ -705,14 +719,14 @@ impl RendererState {
         label.italic = italic;
         label.color = [color_r, color_g, color_b, 1.0];
         label.align = match align {
-            1 => TextAlign::Center,
-            2 => TextAlign::Right,
-            _ => TextAlign::Left,
+            1 => CellAlign::Center,
+            2 => CellAlign::Right,
+            _ => CellAlign::Left,
         };
         label.vertical_align = match valign {
-            0 => VerticalAlign::Top,
-            1 => VerticalAlign::Middle,
-            _ => VerticalAlign::Bottom,
+            0 => CellVerticalAlign::Top,
+            1 => CellVerticalAlign::Middle,
+            _ => CellVerticalAlign::Bottom,
         };
         label.layout(&self.fonts);
 
@@ -944,8 +958,11 @@ impl RendererState {
             .update(&self.viewport, &self.cells_sheet.sheet_offsets);
         // Pass viewport.dirty so fills know to rebuild meta fills when viewport moves
         // (meta fills are clipped to viewport bounds)
-        self.fills
-            .update(&self.viewport, &self.cells_sheet.sheet_offsets, self.viewport.dirty);
+        self.fills.update(
+            &self.viewport,
+            &self.cells_sheet.sheet_offsets,
+            self.viewport.dirty,
+        );
     }
 
     /// Update headings and return (width, height) if shown

@@ -27,6 +27,9 @@ pub struct GridHeadings {
     /// Debug mode: draw red rectangles around expected label positions
     pub debug_label_bounds: bool,
 
+    /// Debug mode: log when headings are rebuilt
+    pub debug_log: bool,
+
     /// Character size for label width calculations (approximate, scaled by DPR)
     char_width: f32,
     char_height: f32,
@@ -52,6 +55,12 @@ pub struct GridHeadings {
     last_scale: f32,
     last_canvas_width: f32,
     last_canvas_height: f32,
+
+    /// Cached combined meshes from all headings
+    cached_meshes: Vec<LabelMesh>,
+
+    /// Whether the mesh cache needs rebuild
+    mesh_dirty: bool,
 }
 
 impl GridHeadings {
@@ -66,6 +75,7 @@ impl GridHeadings {
             colors: HeadingColors::default(),
             dpr,
             debug_label_bounds: false,
+            debug_log: true,
             char_width: 6.67,
             char_height: 8.1,
             heading_size: HeadingSize::default(),
@@ -78,6 +88,8 @@ impl GridHeadings {
             last_scale: f32::NAN,
             last_canvas_width: 0.0,
             last_canvas_height: 0.0,
+            cached_meshes: Vec::new(),
+            mesh_dirty: true,
         }
     }
 
@@ -189,6 +201,15 @@ impl GridHeadings {
         // Mark that we're doing work this frame
         self.updated_this_frame = true;
 
+        if self.debug_log {
+            log::info!(
+                "[headings] rebuilding: dirty={}, viewport_changed={}, scale={:.2}",
+                self.dirty,
+                viewport_changed,
+                scale
+            );
+        }
+
         self.last_viewport_x = viewport_x;
         self.last_viewport_y = viewport_y;
         self.last_scale = scale;
@@ -227,7 +248,8 @@ impl GridHeadings {
             self.create_viewport_state(viewport_x, viewport_y, scale, canvas_width, canvas_height);
 
         // Calculate actual row header width based on max visible row
-        let last_row = RowHeadings::calculate_last_row(&viewport_state, &temp_heading_size, offsets);
+        let last_row =
+            RowHeadings::calculate_last_row(&viewport_state, &temp_heading_size, offsets);
         let row_width = RowHeadings::calculate_width(last_row, scale, &viewport_state);
 
         // Update heading size
@@ -246,9 +268,14 @@ impl GridHeadings {
     }
 
     /// Layout all labels (call after update, before get_meshes)
+    /// Only does work if headings were updated this frame
     pub fn layout(&mut self, fonts: &BitmapFonts) {
+        if !self.updated_this_frame {
+            return;
+        }
         self.columns.layout(fonts);
         self.rows.layout(fonts);
+        self.mesh_dirty = true; // Mark mesh cache as needing rebuild
     }
 
     /// Get background rectangles for rendering
@@ -294,7 +321,10 @@ impl GridHeadings {
         let mut rects = self
             .columns
             .get_selection_rects(&viewport, &self.heading_size, offsets);
-        rects.extend(self.rows.get_selection_rects(&viewport, &self.heading_size, offsets));
+        rects.extend(
+            self.rows
+                .get_selection_rects(&viewport, &self.heading_size, offsets),
+        );
         rects
     }
 
@@ -321,8 +351,14 @@ impl GridHeadings {
         lines.extend_from_slice(&[0.0, col_height, self.last_canvas_width, col_height]);
 
         // Column and row separators
-        lines.extend(self.columns.get_grid_lines(&viewport, &self.heading_size, offsets));
-        lines.extend(self.rows.get_grid_lines(&viewport, &self.heading_size, offsets));
+        lines.extend(
+            self.columns
+                .get_grid_lines(&viewport, &self.heading_size, offsets),
+        );
+        lines.extend(
+            self.rows
+                .get_grid_lines(&viewport, &self.heading_size, offsets),
+        );
 
         lines
     }
@@ -336,8 +372,18 @@ impl GridHeadings {
         (anchor_points, text_bounds)
     }
 
-    /// Build meshes for all heading labels
-    pub fn get_meshes(&self, fonts: &BitmapFonts) -> Vec<LabelMesh> {
+    /// Get cached meshes, rebuilding if dirty
+    /// This is the main method to call for rendering - uses caching
+    pub fn get_meshes(&mut self, fonts: &BitmapFonts) -> &[LabelMesh] {
+        if self.mesh_dirty {
+            self.rebuild_mesh_cache(fonts);
+            self.mesh_dirty = false;
+        }
+        &self.cached_meshes
+    }
+
+    /// Rebuild the mesh cache (internal)
+    fn rebuild_mesh_cache(&mut self, fonts: &BitmapFonts) {
         let mut all_meshes = self.columns.get_meshes(fonts);
 
         // Merge row meshes into column meshes
@@ -353,14 +399,14 @@ impl GridHeadings {
             }
         }
 
-        all_meshes.into_values().collect()
+        self.cached_meshes = all_meshes.into_values().collect();
     }
 
     /// Render headings directly to WebGL
     ///
     /// Renders in order: backgrounds, lines, text (for proper z-ordering)
     pub fn render(
-        &self,
+        &mut self,
         ctx: &mut impl RenderContext,
         matrix: &[f32; 16],
         fonts: &BitmapFonts,
