@@ -751,7 +751,7 @@ impl RendererState {
 
         let key = hash_key(hash_x, hash_y);
 
-        // Remove existing hash if present
+        // Remove existing hash if present (replace, don't merge)
         if let Some(old_hash) = self.hashes.remove(&key) {
             self.label_count = self.label_count.saturating_sub(old_hash.label_count());
         }
@@ -760,9 +760,7 @@ impl RendererState {
         let fonts = &self.fonts;
 
         // Parse colors if provided
-        let has_colors = colors
-            .as_ref()
-            .is_some_and(|c| c.len() >= count * 3);
+        let has_colors = colors.as_ref().is_some_and(|c| c.len() >= count * 3);
 
         // Layout all labels
         let labels: Vec<(i64, i64, CellLabel)> = (0..count)
@@ -788,7 +786,7 @@ impl RendererState {
             })
             .collect();
 
-        // Insert all labels into the hash
+        // Insert all labels into a new hash
         let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
         for (col, row, label) in labels {
             hash.add_label(col, row, label);
@@ -840,7 +838,7 @@ impl RendererState {
         let cell_count = cells.len();
         let key = hash_key(hash_x, hash_y);
 
-        // Remove existing hash if present
+        // Remove existing hash if present (replace, don't merge)
         if let Some(old_hash) = self.hashes.remove(&key) {
             self.label_count = self.label_count.saturating_sub(old_hash.label_count());
         }
@@ -871,7 +869,7 @@ impl RendererState {
             );
         }
 
-        // Sequential insertion into hash (HashMap is not thread-safe for writes)
+        // Create new hash and add all labels
         let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
         for (x, y, label) in labels {
             hash.add_label(x, y, label);
@@ -960,8 +958,8 @@ impl RendererState {
             let hy = hash.hash_y();
 
             // Check if visible (within exact hash bounds)
-            let is_visible = hx >= min_hash_x && hx <= max_hash_x
-                          && hy >= min_hash_y && hy <= max_hash_y;
+            let is_visible =
+                hx >= min_hash_x && hx <= max_hash_x && hy >= min_hash_y && hy <= max_hash_y;
 
             let priority = if is_visible {
                 // Visible: prioritize by row (top-to-bottom), then column
@@ -1029,15 +1027,6 @@ impl RendererState {
         }
 
         let remaining = total - processed;
-
-        if processed > 0 || remaining > 0 {
-            log::debug!(
-                "[process_dirty_hashes] processed={}, remaining={}, budget={:.1}ms",
-                processed,
-                remaining,
-                budget_ms
-            );
-        }
 
         (processed, remaining)
     }

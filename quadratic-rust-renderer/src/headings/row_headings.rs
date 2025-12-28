@@ -157,8 +157,7 @@ impl RowHeadings {
             let show_label = selected
                 || self.row_mod == 0
                 || (self.row_mod == 2 && row % 2 == 1)
-                || (self.row_mod != 2 && self.row_mod != 0 && row % self.row_mod == 0)
-                || row == first_row;
+                || (self.row_mod != 2 && self.row_mod != 0 && row % self.row_mod == 0);
 
             if show_label && row > 0 {
                 // Calculate screen position (center of row)

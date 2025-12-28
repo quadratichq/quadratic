@@ -8,6 +8,7 @@
 use quadratic_core_shared::SheetOffsets;
 
 use crate::RenderContext;
+use crate::content::grid_lines::calculate_grid_alpha;
 use crate::primitives::{NativeLines, Rects};
 use crate::text::{BitmapFonts, LabelMesh};
 
@@ -455,9 +456,18 @@ impl GridHeadings {
 
         rects.render(ctx, matrix);
 
-        // 2. Render grid lines
+        // 2. Render grid lines (with fade matching main grid lines)
         let grid_line_coords = self.get_grid_lines(offsets);
         let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
+
+        // Apply same alpha fading as main grid lines based on zoom level
+        let alpha = calculate_grid_alpha(self.last_scale);
+        let grid_line_color = [
+            self.colors.grid_line[0],
+            self.colors.grid_line[1],
+            self.colors.grid_line[2],
+            self.colors.grid_line[3] * alpha,
+        ];
 
         for chunk in grid_line_coords.chunks(4) {
             if chunk.len() == 4 {
@@ -466,7 +476,7 @@ impl GridHeadings {
                     chunk[1],
                     chunk[2],
                     chunk[3],
-                    self.colors.grid_line,
+                    grid_line_color,
                 );
             }
         }

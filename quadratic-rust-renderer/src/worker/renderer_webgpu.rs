@@ -13,6 +13,8 @@ use web_sys::OffscreenCanvas;
 use crate::render_context::RenderContext;
 #[cfg(target_arch = "wasm32")]
 use crate::text::BitmapFont;
+#[cfg(target_arch = "wasm32")]
+use crate::content::grid_lines::calculate_grid_alpha;
 use crate::viewport::ViewportBuffer;
 use crate::webgpu::WebGPUContext;
 
@@ -959,16 +961,26 @@ impl WorkerRendererGPU {
                 .draw_triangles(pass, rects.vertices(), &screen_matrix);
         }
 
-        // 2. Render grid lines
+        // 2. Render grid lines (with fade matching main grid lines)
         let grid_line_coords = self
             .state
             .headings
             .get_grid_lines(&self.state.cells_sheet.sheet_offsets);
         let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
 
+        // Apply same alpha fading as main grid lines based on zoom level
+        let scale = self.state.viewport.scale();
+        let alpha = calculate_grid_alpha(scale);
+        let grid_line_color = [
+            colors.grid_line[0],
+            colors.grid_line[1],
+            colors.grid_line[2],
+            colors.grid_line[3] * alpha,
+        ];
+
         for chunk in grid_line_coords.chunks(4) {
             if chunk.len() == 4 {
-                lines.add(chunk[0], chunk[1], chunk[2], chunk[3], colors.grid_line);
+                lines.add(chunk[0], chunk[1], chunk[2], chunk[3], grid_line_color);
             }
         }
 
