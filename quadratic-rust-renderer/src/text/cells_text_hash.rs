@@ -88,6 +88,15 @@ pub struct CellsTextHash {
 
     /// Whether the WebGPU sprite cache needs to be regenerated
     sprite_dirty_webgpu: bool,
+
+    // === Auto-size caches ===
+    /// Max content width per column (for column auto-resize)
+    /// Key is column index, value is unwrapped text width
+    columns_max_cache: HashMap<i64, f32>,
+
+    /// Max content height per row (for row auto-resize)
+    /// Key is row index, value is text height with descenders
+    rows_max_cache: HashMap<i64, f32>,
 }
 
 impl CellsTextHash {
@@ -125,6 +134,8 @@ impl CellsTextHash {
             sprite_dirty: true,
             sprite_cache_webgpu: None,
             sprite_dirty_webgpu: true,
+            columns_max_cache: HashMap::new(),
+            rows_max_cache: HashMap::new(),
         }
     }
 
@@ -256,11 +267,33 @@ impl CellsTextHash {
             self.cached_indices[i].clear();
         }
 
+        // Clear auto-size caches
+        self.columns_max_cache.clear();
+        self.rows_max_cache.clear();
+
         // Track vertex offsets per texture page
         let mut vertex_offsets: [u32; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
 
-        // Collect meshes from all labels
+        // Collect meshes from all labels and update auto-size caches
         for label in self.labels.values_mut() {
+            // Update auto-size caches from label dimensions
+            let col = label.col();
+            let row = label.row();
+            let width = label.unwrapped_text_width();
+            let height = label.text_height_with_descenders();
+
+            // Update max width for this column
+            let current_max_width = self.columns_max_cache.entry(col).or_insert(0.0);
+            if width > *current_max_width {
+                *current_max_width = width;
+            }
+
+            // Update max height for this row
+            let current_max_height = self.rows_max_cache.entry(row).or_insert(0.0);
+            if height > *current_max_height {
+                *current_max_height = height;
+            }
+
             let meshes = label.get_meshes(fonts);
 
             for mesh in meshes {
@@ -317,6 +350,30 @@ impl CellsTextHash {
     /// Check if there's cached data for a texture page
     pub fn has_cached_data(&self, texture_id: usize) -> bool {
         texture_id < MAX_TEXTURE_PAGES && !self.cached_vertices[texture_id].is_empty()
+    }
+
+    // === Auto-size methods ===
+
+    /// Get max content width for a specific column in this hash
+    /// Returns 0.0 if no labels in that column or hash is dirty
+    pub fn get_column_max_width(&self, column: i64) -> f32 {
+        self.columns_max_cache.get(&column).copied().unwrap_or(0.0)
+    }
+
+    /// Get max content height for a specific row in this hash
+    /// Returns 0.0 if no labels in that row or hash is dirty
+    pub fn get_row_max_height(&self, row: i64) -> f32 {
+        self.rows_max_cache.get(&row).copied().unwrap_or(0.0)
+    }
+
+    /// Get all row max heights in this hash (for batch operations)
+    pub fn get_row_max_heights(&self) -> &HashMap<i64, f32> {
+        &self.rows_max_cache
+    }
+
+    /// Get all column max widths in this hash (for batch operations)
+    pub fn get_column_max_widths(&self) -> &HashMap<i64, f32> {
+        &self.columns_max_cache
     }
 
     /// Render all cached text for this hash using MSDF text rendering

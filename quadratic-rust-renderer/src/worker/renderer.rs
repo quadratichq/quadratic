@@ -566,6 +566,31 @@ impl WorkerRenderer {
     }
 
     // =========================================================================
+    // Auto-size (column width / row height)
+    // =========================================================================
+
+    /// Get max content width for a column (for auto-resize)
+    ///
+    /// Returns the unwrapped text width of the widest cell in this column.
+    /// Used when double-clicking column header border to auto-fit column width.
+    /// Returns 0.0 if no cells in the column.
+    #[wasm_bindgen]
+    pub fn get_column_max_width(&self, column: i64) -> f32 {
+        self.state.get_column_max_width(column)
+    }
+
+    /// Get max content height for a row (for auto-resize)
+    ///
+    /// Returns the height needed to display the tallest cell in this row,
+    /// including descenders (characters like g, y, p that extend below baseline).
+    /// Used when double-clicking row header border to auto-fit row height.
+    /// Returns the default cell height (21.0) if no cells in the row.
+    #[wasm_bindgen]
+    pub fn get_row_max_height(&self, row: i64) -> f32 {
+        self.state.get_row_max_height(row)
+    }
+
+    // =========================================================================
     // Frame Rendering
     // =========================================================================
 

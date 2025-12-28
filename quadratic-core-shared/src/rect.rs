@@ -1,5 +1,6 @@
 use std::{collections::HashSet, ops::RangeInclusive};
 
+use bincode::{Decode, Encode};
 use rstar::{AABB, RTreeObject};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
@@ -8,7 +9,7 @@ use crate::{ArraySize, Pos, SheetId, SheetRect};
 
 /// Rectangular region of cells.
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Encode, Decode,
 )]
 pub struct Rect {
     /// Upper-left corner.

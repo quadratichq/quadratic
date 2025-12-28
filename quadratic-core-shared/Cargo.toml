@@ -35,3 +35,7 @@ proptest-derive = "0.5.0"
 [features]
 default = ["js"]
 js = ["serde-wasm-bindgen", "ts-rs", "wasm-bindgen"]
+ts = ["ts-rs"]
+json = []
+rstar = []
+smallvec = []

@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use crate::{
     RefAdjust, SheetId,
     a1::CellRefRangeEnd,
@@ -10,7 +11,7 @@ use std::{fmt, str::FromStr};
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, Encode, Decode)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct Pos {
     /// Column
@@ -207,7 +208,7 @@ impl Point for Pos {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, Encode, Decode)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct ScreenRect {
     pub x: f64,
@@ -217,7 +218,7 @@ pub struct ScreenRect {
 }
 
 /// Used for referencing a pos during computation.
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Encode, Decode)]
 pub struct SheetPos {
     pub x: i64,
     pub y: i64,

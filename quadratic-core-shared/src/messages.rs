@@ -3,12 +3,12 @@
 //! These messages are serialized using bincode for efficient binary transfer
 //! between workers.
 
-use serde::{Deserialize, Serialize};
+use bincode::{Decode, Encode};
 
-use crate::{Pos, Rect, Rgba, SheetId};
+use crate::{CellAlign, CellVerticalAlign, CellWrap, Pos, Rect, Rgba, SheetId};
 
 /// Messages sent from quadratic-core to quadratic-rust-renderer.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub enum CoreToRenderer {
     /// Initial viewport data when a sheet is opened
     InitSheet {
@@ -50,7 +50,7 @@ pub enum CoreToRenderer {
 }
 
 /// Messages sent from quadratic-rust-renderer to quadratic-core.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub enum RendererToCore {
     /// Renderer's viewport has changed, requesting cell data
     ViewportChanged {
@@ -115,18 +115,18 @@ pub enum RendererToCore {
 }
 
 /// Cell data for a hash bucket.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct HashCells {
     pub sheet_id: SheetId,
     /// Hash position (quadrant coordinates)
     pub hash_pos: Pos,
     /// Cells in this hash
-    pub cells: Vec<RenderCell>,
+    pub cells: Vec<MessageRenderCell>,
 }
 
-/// A cell to be rendered.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RenderCell {
+/// A cell to be rendered (message version).
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct MessageRenderCell {
     /// Position within the sheet
     pub pos: Pos,
     /// Display value (formatted string)
@@ -136,7 +136,7 @@ pub struct RenderCell {
 }
 
 /// Text styling for a cell.
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct TextStyle {
     pub bold: bool,
     pub italic: bool,
@@ -144,13 +144,13 @@ pub struct TextStyle {
     pub strike_through: bool,
     pub text_color: Option<Rgba>,
     pub fill_color: Option<Rgba>,
-    pub align: Option<crate::CellAlign>,
-    pub vertical_align: Option<crate::CellVerticalAlign>,
-    pub wrap: Option<crate::CellWrap>,
+    pub align: Option<CellAlign>,
+    pub vertical_align: Option<CellVerticalAlign>,
+    pub wrap: Option<CellWrap>,
 }
 
 /// Current selection state.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Selection {
     pub sheet_id: SheetId,
     /// Primary cursor position
@@ -160,7 +160,7 @@ pub struct Selection {
 }
 
 /// Another user's cursor in multiplayer mode.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct MultiplayerCursor {
     pub user_id: String,
     pub user_name: String,
@@ -171,7 +171,7 @@ pub struct MultiplayerCursor {
 }
 
 /// Sheet metadata for rendering tabs.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct SheetInfo {
     pub sheet_id: SheetId,
     pub name: String,
@@ -180,7 +180,7 @@ pub struct SheetInfo {
 }
 
 /// Keyboard/mouse modifiers.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, Encode, Decode)]
 pub struct Modifiers {
     pub shift: bool,
     pub ctrl: bool,

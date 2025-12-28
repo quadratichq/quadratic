@@ -10,11 +10,11 @@ use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
 
 #[cfg(target_arch = "wasm32")]
+use crate::content::grid_lines::calculate_grid_alpha;
+#[cfg(target_arch = "wasm32")]
 use crate::render_context::RenderContext;
 #[cfg(target_arch = "wasm32")]
 use crate::text::BitmapFont;
-#[cfg(target_arch = "wasm32")]
-use crate::content::grid_lines::calculate_grid_alpha;
 use crate::viewport::ViewportBuffer;
 use crate::webgpu::WebGPUContext;
 
@@ -426,7 +426,8 @@ impl WorkerRendererGPU {
     /// Mark a fills hash as dirty (needs reload when visible)
     #[wasm_bindgen]
     pub fn mark_fills_hash_dirty(&mut self, hash_x: i32, hash_y: i32) {
-        self.state.mark_fills_hash_dirty(hash_x as i64, hash_y as i64);
+        self.state
+            .mark_fills_hash_dirty(hash_x as i64, hash_y as i64);
     }
 
     /// Get fill hashes that need to be loaded
@@ -493,14 +494,8 @@ impl WorkerRendererGPU {
         rows: &[i32],
         colors: Option<Vec<u8>>,
     ) {
-        self.state.add_labels_batch(
-            hash_x as i64,
-            hash_y as i64,
-            texts,
-            cols,
-            rows,
-            colors,
-        );
+        self.state
+            .add_labels_batch(hash_x as i64, hash_y as i64, texts, cols, rows, colors);
     }
 
     /// Set cell labels for a specific hash
@@ -567,6 +562,31 @@ impl WorkerRendererGPU {
     }
 
     // =========================================================================
+    // Auto-size (column width / row height)
+    // =========================================================================
+
+    /// Get max content width for a column (for auto-resize)
+    ///
+    /// Returns the unwrapped text width of the widest cell in this column.
+    /// Used when double-clicking column header border to auto-fit column width.
+    /// Returns 0.0 if no cells in the column.
+    #[wasm_bindgen]
+    pub fn get_column_max_width(&self, column: i64) -> f32 {
+        self.state.get_column_max_width(column)
+    }
+
+    /// Get max content height for a row (for auto-resize)
+    ///
+    /// Returns the height needed to display the tallest cell in this row,
+    /// including descenders (characters like g, y, p that extend below baseline).
+    /// Used when double-clicking row header border to auto-fit row height.
+    /// Returns the default cell height (21.0) if no cells in the row.
+    #[wasm_bindgen]
+    pub fn get_row_max_height(&self, row: i64) -> f32 {
+        self.state.get_row_max_height(row)
+    }
+
+    // =========================================================================
     // Frame Rendering
     // =========================================================================
 
@@ -583,8 +603,10 @@ impl WorkerRendererGPU {
             let changed = shared.sync();
             if changed {
                 // Update state viewport from shared buffer
-                self.state.set_viewport(shared.x(), shared.y(), shared.scale());
-                self.state.resize_viewport(shared.width(), shared.height(), shared.dpr());
+                self.state
+                    .set_viewport(shared.x(), shared.y(), shared.scale());
+                self.state
+                    .resize_viewport(shared.width(), shared.height(), shared.dpr());
             }
         }
 

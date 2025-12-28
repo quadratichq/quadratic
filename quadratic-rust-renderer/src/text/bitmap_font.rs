@@ -80,6 +80,11 @@ impl BitmapFont {
         target_size / self.size
     }
 
+    /// Get the line height for this font
+    pub fn line_height(&self) -> f32 {
+        self.line_height
+    }
+
     /// Get all unique texture UIDs used by this font
     pub fn get_required_texture_uids(&self) -> Vec<u32> {
         let mut uids: Vec<u32> = self.chars.values().map(|c| c.texture_uid).collect();

@@ -1248,4 +1248,57 @@ impl RendererState {
             .map(|f| (heading_font_size / f.size, f.distance_range))
             .unwrap_or((heading_font_size / 42.0, 4.0))
     }
+
+    // =========================================================================
+    // Auto-size (column width / row height calculation)
+    // =========================================================================
+
+    /// Get max content width for a column across all hashes
+    /// Used for auto-resize column width (double-click column header border)
+    ///
+    /// Returns the maximum unwrapped text width of all cells in the given column.
+    /// If no cells are found, returns 0.0.
+    pub fn get_column_max_width(&self, column: i64) -> f32 {
+        use crate::text::HASH_WIDTH;
+
+        let hash_x = if column > 0 {
+            (column - 1) / HASH_WIDTH
+        } else {
+            column / HASH_WIDTH - 1
+        };
+
+        let mut max = 0.0f32;
+        for hash in self.hashes.values() {
+            if hash.hash_x == hash_x {
+                max = max.max(hash.get_column_max_width(column));
+            }
+        }
+        max
+    }
+
+    /// Get max content height for a row across all hashes
+    /// Used for auto-resize row height (double-click row header border)
+    ///
+    /// Returns the maximum text height (including descenders) of all cells in the given row.
+    /// If no cells are found, returns the default cell height.
+    pub fn get_row_max_height(&self, row: i64) -> f32 {
+        use crate::text::cell_label::DEFAULT_CELL_HEIGHT;
+        use crate::text::HASH_HEIGHT;
+
+        let hash_y = if row > 0 {
+            (row - 1) / HASH_HEIGHT
+        } else {
+            row / HASH_HEIGHT - 1
+        };
+
+        let mut max = 0.0f32;
+        for hash in self.hashes.values() {
+            if hash.hash_y == hash_y {
+                max = max.max(hash.get_row_max_height(row));
+            }
+        }
+
+        // Return at least the default cell height
+        max.max(DEFAULT_CELL_HEIGHT)
+    }
 }

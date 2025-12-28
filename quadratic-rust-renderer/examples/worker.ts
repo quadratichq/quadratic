@@ -174,6 +174,18 @@ interface AddTestLabelsMessage {
   type: 'addTestLabels';
 }
 
+interface GetColumnMaxWidthMessage {
+  type: 'getColumnMaxWidth';
+  column: number;
+  id: number; // For async response correlation
+}
+
+interface GetRowMaxHeightMessage {
+  type: 'getRowMaxHeight';
+  row: number;
+  id: number; // For async response correlation
+}
+
 type WorkerMessage =
   | InitMessage
   | SetBackendMessage
@@ -203,7 +215,9 @@ type WorkerMessage =
   | GetHeadingSizeMessage
   | SetHeadingsDprMessage
   | AddTestFillsMessage
-  | AddTestLabelsMessage;
+  | AddTestLabelsMessage
+  | GetColumnMaxWidthMessage
+  | GetRowMaxHeightMessage;
 
 let renderer: WorkerRenderer | WorkerRendererGPU | null = null;
 let animationFrameId: number | null = null;
@@ -601,6 +615,34 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
       if (renderer) {
         renderer.add_test_labels();
         console.log('[RenderWorker] Added test labels');
+      }
+      break;
+
+    // =========================================================================
+    // Auto-size (column width / row height)
+    // =========================================================================
+
+    case 'getColumnMaxWidth':
+      // Get max content width for a column (for auto-resize)
+      if (renderer) {
+        const width = renderer.get_column_max_width(BigInt(data.column));
+        self.postMessage({
+          type: 'columnMaxWidth',
+          id: data.id,
+          maxWidth: width,
+        });
+      }
+      break;
+
+    case 'getRowMaxHeight':
+      // Get max content height for a row (for auto-resize)
+      if (renderer) {
+        const height = renderer.get_row_max_height(BigInt(data.row));
+        self.postMessage({
+          type: 'rowMaxHeight',
+          id: data.id,
+          maxHeight: height,
+        });
       }
       break;
 

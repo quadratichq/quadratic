@@ -4,7 +4,7 @@
 //! quadratic-core and quadratic-rust-renderer workers.
 
 use bincode::config::{Configuration, Fixint, LittleEndian, NoLimit};
-use serde::{de::DeserializeOwned, Serialize};
+use bincode::{Decode, Encode};
 
 /// Bincode configuration optimized for speed.
 /// - Little endian: most common architecture
@@ -62,45 +62,27 @@ impl From<bincode::error::DecodeError> for DeserializeError {
 /// Serialize a value to bytes using bincode.
 ///
 /// This is optimized for speed and produces compact binary output.
-///
-/// # Example
-/// ```
-/// use quadratic_core_shared::{Pos, serialize};
-///
-/// let pos = Pos::new(1, 2);
-/// let bytes = serialize(&pos).unwrap();
-/// ```
-pub fn serialize<T: Serialize>(value: &T) -> Result<Vec<u8>, SerializeError> {
-    Ok(bincode::serde::encode_to_vec(value, CONFIG)?)
+pub fn serialize<T: Encode>(value: &T) -> Result<Vec<u8>, SerializeError> {
+    Ok(bincode::encode_to_vec(value, CONFIG)?)
 }
 
 /// Serialize a value directly into a pre-allocated buffer.
 ///
 /// Returns the number of bytes written.
-pub fn serialize_into<T: Serialize>(value: &T, buffer: &mut [u8]) -> Result<usize, SerializeError> {
-    Ok(bincode::serde::encode_into_slice(value, buffer, CONFIG)?)
+pub fn serialize_into<T: Encode>(value: &T, buffer: &mut [u8]) -> Result<usize, SerializeError> {
+    Ok(bincode::encode_into_slice(value, buffer, CONFIG)?)
 }
 
 /// Deserialize a value from bytes using bincode.
-///
-/// # Example
-/// ```
-/// use quadratic_core_shared::{Pos, serialize, deserialize};
-///
-/// let pos = Pos::new(1, 2);
-/// let bytes = serialize(&pos).unwrap();
-/// let decoded: Pos = deserialize(&bytes).unwrap();
-/// assert_eq!(pos, decoded);
-/// ```
-pub fn deserialize<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, DeserializeError> {
-    let (value, _) = bincode::serde::decode_from_slice(bytes, CONFIG)?;
+pub fn deserialize<T: Decode<()>>(bytes: &[u8]) -> Result<T, DeserializeError> {
+    let (value, _) = bincode::decode_from_slice(bytes, CONFIG)?;
     Ok(value)
 }
 
 /// Estimate the serialized size of a value.
 ///
 /// This is useful for pre-allocating buffers.
-pub fn serialized_size<T: Serialize>(value: &T) -> Result<usize, SerializeError> {
+pub fn serialized_size<T: Encode>(value: &T) -> Result<usize, SerializeError> {
     // bincode 2.0 doesn't have a direct size function, so we serialize and check
     Ok(serialize(value)?.len())
 }

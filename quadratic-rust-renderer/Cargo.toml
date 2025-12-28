@@ -1,14 +1,11 @@
 [package]
 name = "quadratic-rust-renderer"
-version = "0.1.0"
-authors = ["Quadratic Team"]
-edition = "2024"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 description = "Rust renderer for Quadratic - supports both WASM (browser worker) and native (cloud) targets"
-repository = "https://github.com/quadratichq/quadratic"
-license-file = "LICENSE"
-
-# Standalone project - not part of the main workspace (POC)
-[workspace]
+repository.workspace = true
+license-file.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]

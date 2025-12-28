@@ -15,6 +15,7 @@ pub const CELL_TEXT_MARGIN_LEFT: f32 = 3.0;
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;
 pub const LINE_HEIGHT: f32 = 16.0;
 pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
+pub const CELL_VERTICAL_PADDING: f32 = 2.5;
 
 /// OpenSans rendering fix (magic numbers from TypeScript)
 pub const OPEN_SANS_FIX_X: f32 = 1.8;
@@ -83,6 +84,17 @@ pub struct CellLabel {
     text_width: f32,
     text_height: f32,
 
+    /// Unwrapped text width - natural width of text ignoring wrap
+    /// Used for column auto-resize. Includes text margins (3 * CELL_TEXT_MARGIN_LEFT)
+    unwrapped_text_width: f32,
+
+    /// Text height including descenders (g, y, p, q, j)
+    /// Used for row auto-resize. Equals glyph_height + 2 * CELL_VERTICAL_PADDING
+    text_height_with_descenders: f32,
+
+    /// Maximum glyph height including descenders
+    glyph_height: f32,
+
     /// Character render data
     chars: Vec<CharRenderData>,
 
@@ -121,6 +133,9 @@ impl CellLabel {
             text_y: 0.0,
             text_width: 0.0,
             text_height: 0.0,
+            unwrapped_text_width: 0.0,
+            text_height_with_descenders: DEFAULT_CELL_HEIGHT,
+            glyph_height: LINE_HEIGHT,
             chars: Vec::new(),
             line_widths: Vec::new(),
             horizontal_align_offsets: Vec::new(),
@@ -224,6 +239,20 @@ impl CellLabel {
         self.cell_height
     }
 
+    /// Get unwrapped text width (for column auto-resize)
+    /// This is the natural width of the text without wrapping, plus margins
+    #[inline]
+    pub fn unwrapped_text_width(&self) -> f32 {
+        self.unwrapped_text_width
+    }
+
+    /// Get text height with descenders (for row auto-resize)
+    /// This accounts for characters like g, y, p that extend below baseline
+    #[inline]
+    pub fn text_height_with_descenders(&self) -> f32 {
+        self.text_height_with_descenders
+    }
+
     /// Get the font name based on style
     fn font_name(&self) -> String {
         BitmapFonts::get_font_name(self.bold, self.italic)
@@ -239,6 +268,9 @@ impl CellLabel {
         if self.text.is_empty() {
             self.text_width = 0.0;
             self.text_height = LINE_HEIGHT;
+            self.unwrapped_text_width = 0.0;
+            self.glyph_height = LINE_HEIGHT;
+            self.text_height_with_descenders = LINE_HEIGHT + CELL_VERTICAL_PADDING * 2.0;
             return;
         }
 
@@ -269,6 +301,10 @@ impl CellLabel {
         let mut prev_char_code: Option<u32> = None;
         let mut last_break_pos: Option<usize> = None;
         let mut last_break_width = 0.0f32;
+
+        // Track maximum descender extension for glyph height calculation
+        let mut max_descender_extension = 0.0f32;
+        let font_line_height = font.line_height();
 
         for (i, c) in characters.iter().enumerate() {
             let char_code = extract_char_code(*c);
@@ -303,6 +339,12 @@ impl CellLabel {
                     pos_x += kern;
                 }
             }
+
+            // Track descender extension for glyph height
+            let char_bottom = pos_y + char_data.y_offset + char_data.frame.height;
+            let expected_line_bottom = (line + 1) as f32 * font_line_height;
+            let descender_extension = (char_bottom - expected_line_bottom).max(0.0);
+            max_descender_extension = max_descender_extension.max(descender_extension);
 
             // Store character render data
             let char_render = CharRenderData {
@@ -370,8 +412,72 @@ impl CellLabel {
         self.text_width = max_line_width * scale + OPEN_SANS_FIX_X * 2.0;
         self.text_height = (self.font_size / DEFAULT_FONT_SIZE) * LINE_HEIGHT * (line + 1) as f32;
 
+        // Calculate unwrapped text width (for column auto-resize)
+        self.unwrapped_text_width = self.calculate_unwrapped_text_width(fonts);
+
+        // Calculate glyph height including descenders (for row auto-resize)
+        let calculated_text_height = line_height * (line + 1) as f32;
+        self.glyph_height = (calculated_text_height + max_descender_extension) * scale;
+        // Round to avoid floating point precision issues when comparing heights
+        self.text_height_with_descenders =
+            (self.glyph_height + CELL_VERTICAL_PADDING * 2.0).round();
+
         // Calculate text position based on alignment
         self.calculate_position(scale);
+    }
+
+    /// Calculate the unwrapped text width (ignoring wrap settings)
+    /// Used for column auto-resize
+    fn calculate_unwrapped_text_width(&self, fonts: &BitmapFonts) -> f32 {
+        if self.text.is_empty() {
+            return 0.0;
+        }
+
+        let font_name = self.font_name();
+        let font = match fonts.get(&font_name) {
+            Some(f) => f,
+            None => return 0.0,
+        };
+
+        let scale = font.scale_for_size(self.font_size);
+        let characters = split_text_to_characters(&self.text);
+
+        let mut cur_unwrapped_width = 0.0f32;
+        let mut max_unwrapped_width = 0.0f32;
+        let mut prev_char_code: Option<u32> = None;
+
+        for c in characters.iter() {
+            // Handle newlines - they create new lines, so track max width
+            if *c == '\r' || *c == '\n' {
+                max_unwrapped_width = max_unwrapped_width.max(cur_unwrapped_width);
+                cur_unwrapped_width = 0.0;
+                prev_char_code = None;
+                continue;
+            }
+
+            let char_code = extract_char_code(*c);
+
+            // Get character data
+            let char_data = match font.get_char(char_code) {
+                Some(c) => c,
+                None => continue, // Skip unknown characters
+            };
+
+            // Apply kerning
+            if let Some(prev) = prev_char_code {
+                if let Some(kern) = char_data.kerning.get(&prev) {
+                    cur_unwrapped_width += kern;
+                }
+            }
+
+            // Use max of xAdvance and frame width (matching TS implementation)
+            cur_unwrapped_width += char_data.x_advance.max(char_data.frame.width);
+            max_unwrapped_width = max_unwrapped_width.max(cur_unwrapped_width);
+            prev_char_code = Some(char_code);
+        }
+
+        // Add margins (3 * CELL_TEXT_MARGIN_LEFT) and scale
+        (max_unwrapped_width + 3.0 * CELL_TEXT_MARGIN_LEFT) * scale
     }
 
     /// Calculate the final text position based on alignment
