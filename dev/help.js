@@ -5,6 +5,7 @@ export const helpCLI = "\n\nOptions:" +
     "\n" +
     "\n     -a, --api             Watch the quadratic-api directory" +
     "\n     -c, --core            Watch the quadratic-core directory" +
+    "\n     -e, --rustRenderer    Watch the quadratic-rust-renderer directory" +
     "\n     -m, --multiplayer     Watch the quadratic-multiplayer directory" +
     "\n     -f, --files           Watch the quadratic-files directory" +
     "\n     -n, --connection      Watch the quadratic-connection directory" +
@@ -17,6 +18,7 @@ export const helpCLI = "\n\nOptions:" +
     "\n     -R, --hideReact       Hide React output" +
     "\n     -A, --hideApi         Hide API output" +
     "\n     -C, --hideCore        Hide Core output" +
+    "\n     -E, --hideRustRenderer Hide RustRenderer output" +
     "\n     -P, --hideMultiplayer Hide Multiplayer output" +
     "\n     -F, --hideFiles       Hide Files output" +
     "\n     -N, --hideConnection  Hide Connection output" +

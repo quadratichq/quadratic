@@ -21,6 +21,7 @@ import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConne
 import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
 import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
 import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { coreRustRenderer } from '@/app/web-workers/quadraticCore/worker/coreRustRenderer';
 import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
@@ -31,8 +32,7 @@ declare var self: WorkerGlobalScope &
     sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
     sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
-    sendHashRenderFills: (hashRenderFills: Uint8Array) => void;
-    sendHashesDirtyFills: (dirtyHashes: Uint8Array) => void;
+    sendSheetFills: (sheetId: string, fills: Uint8Array) => void;
     sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
     sendSetCursor: (cursor: string) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: Uint8Array) => void;
@@ -76,8 +76,7 @@ class CoreClient {
     self.sendAddSheetClient = coreClient.sendAddSheet;
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
     self.sendSheetsInfoClient = coreClient.sendSheetsInfoClient;
-    self.sendHashRenderFills = coreClient.sendHashRenderFills;
-    self.sendHashesDirtyFills = coreClient.sendHashesDirtyFills;
+    self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sendSheetInfoUpdateClient = coreClient.sendSheetInfoUpdate;
     self.sendA1Context = coreClient.sendA1Context;
@@ -120,6 +119,11 @@ class CoreClient {
       case 'clientCoreLoad':
         this.sendStartupTimer('offlineSync', { start: performance.now() });
         await offline.init(e.data.fileId);
+
+        // Initialize rust renderer if a second port was provided
+        if (e.ports[1]) {
+          coreRustRenderer.init(e.ports[1]);
+        }
 
         this.send({
           type: 'coreClientLoad',
@@ -210,14 +214,6 @@ class CoreClient {
 
       case 'clientCoreSetCellFillColor':
         core.setFillColor(e.data.selection, e.data.fillColor, e.data.cursor, e.data.isAi);
-        return;
-
-      case 'clientCoreGetRenderFillsForHashes':
-        core.getRenderFillsForHashes(e.data.sheetId, e.data.hashes);
-        return;
-
-      case 'clientCoreGetSheetMetaFills':
-        core.getSheetMetaFills(e.data.sheetId);
         return;
 
       case 'clientCoreSetCommas':
@@ -909,12 +905,8 @@ class CoreClient {
     this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo }, sheetInfo.buffer);
   };
 
-  sendHashRenderFills = (hashRenderFills: Uint8Array) => {
-    this.send({ type: 'coreClientHashRenderFills', hashRenderFills }, hashRenderFills.buffer);
-  };
-
-  sendHashesDirtyFills = (dirtyHashes: Uint8Array) => {
-    this.send({ type: 'coreClientHashesDirtyFills', dirtyHashes }, dirtyHashes.buffer);
+  sendSheetFills = (sheetId: string, fills: Uint8Array) => {
+    this.send({ type: 'coreClientSheetFills', sheetId, fills }, fills.buffer);
   };
 
   sendSheetMetaFills = (sheetId: string, fills: Uint8Array) => {

@@ -4,7 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -24,12 +24,12 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeErrorContext,
-  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
+  JsRenderFill,
   JsResponse,
   JsSheetFill,
   JsSheetNameToColor,
@@ -123,6 +123,7 @@ import type {
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import { rustRendererWebWorker } from '@/app/web-workers/rustRendererWebWorker/rustRendererWebWorker';
 import { authClient } from '@/auth/auth';
 
 class QuadraticCore {
@@ -154,11 +155,8 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetsInfo') {
       events.emit('sheetsInfo', fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
       return;
-    } else if (e.data.type === 'coreClientHashRenderFills') {
-      events.emit('hashRenderFills', e.data.hashRenderFills);
-      return;
-    } else if (e.data.type === 'coreClientHashesDirtyFills') {
-      events.emit('hashesDirtyFills', e.data.dirtyHashes);
+    } else if (e.data.type === 'coreClientSheetFills') {
+      events.emit('sheetFills', e.data.sheetId, fromUint8Array<JsRenderFill[]>(e.data.fills));
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
@@ -340,6 +338,16 @@ class QuadraticCore {
     const port = new MessageChannel();
     renderWebWorker.init(port.port2);
 
+    // Optionally create a channel for the rust renderer (experimental)
+    // Wait for debug flags to be loaded from storage before checking
+    const useRustRenderer = await debugFlagWait('debugUseRustRenderer');
+    let rustRendererPort: MessageChannel | undefined;
+    if (useRustRenderer) {
+      rustRendererPort = new MessageChannel();
+      // Note: The rust renderer canvas will be set up later when the component mounts
+      console.log('[quadraticCore] Rust renderer enabled (experimental)');
+    }
+
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientLoad) => {
@@ -364,8 +372,46 @@ class QuadraticCore {
         teamUuid,
       };
       if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] loading file ${url}`);
-      this.send(message, port.port1);
+
+      // Send the message with render port (and optionally rust renderer port)
+      if (rustRendererPort) {
+        // Transfer both ports - port1 for render worker, rustRendererPort.port1 for core→rust-renderer
+        this.worker?.postMessage(message, [port.port1, rustRendererPort.port1]);
+        // Store port2 for later - we'll use it when the rust renderer canvas is ready
+        this.rustRendererCorePort = rustRendererPort.port2;
+      } else {
+        this.send(message, port.port1);
+      }
     });
+  }
+
+  // Port for rust renderer communication (stored for later canvas initialization)
+  private rustRendererCorePort?: MessagePort;
+
+  /**
+   * Initialize the rust renderer with a canvas element.
+   * Call this after the canvas is mounted in the DOM.
+   */
+  async initRustRenderer(canvas: HTMLCanvasElement): Promise<void> {
+    if (!this.rustRendererCorePort) {
+      throw new Error('Rust renderer port not available. Did the file load with debugUseRustRenderer enabled?');
+    }
+
+    console.log('[quadraticCore] Initializing rust renderer worker...');
+
+    // Initialize the rust renderer worker
+    rustRendererWebWorker.initWorker();
+    await rustRendererWebWorker.init(canvas, this.rustRendererCorePort);
+    this.rustRendererCorePort = undefined; // Port has been transferred
+
+    console.log('[quadraticCore] Rust renderer initialized');
+  }
+
+  /**
+   * Check if rust renderer is enabled
+   */
+  isRustRendererEnabled(): boolean {
+    return debugFlag('debugUseRustRenderer');
   }
 
   async export(): Promise<Uint8Array> {
@@ -693,21 +739,6 @@ class QuadraticCore {
       fillColor,
       cursor: sheets.getCursorPosition(),
       isAi,
-    });
-  }
-
-  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
-    this.send({
-      type: 'clientCoreGetRenderFillsForHashes',
-      sheetId,
-      hashes,
-    });
-  }
-
-  getSheetMetaFills(sheetId: string) {
-    this.send({
-      type: 'clientCoreGetSheetMetaFills',
-      sheetId,
     });
   }
 

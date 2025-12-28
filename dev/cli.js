@@ -10,6 +10,7 @@ export class CLI {
             .option("-a, --api", "Watch the quadratic-api directory")
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")
+            .option("-e, --rustRenderer", "Watch the quadratic-rust-renderer directory")
             .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
             .option("-f, --files", "Watch the quadratic-files directory")
             .option("-n, --connection", "Watch the quadratic-connection directory")
@@ -21,14 +22,14 @@ export class CLI {
             .option("-p, --perf", "Run quadratic-core in perf mode (slower to link but faster runtime)")
             .option("-ft, --function-timer", "Run quadratic-core with function timer (log metrics to console)")
             .option("-R, --hideReact", "Hide React output")
-            .option("-A, --hideAPI", "Hide React output")
-            .option("-C, --hideCore", "Hide React output")
+            .option("-A, --hideAPI", "Hide API output")
+            .option("-C, --hideCore", "Hide Core output")
+            .option("-E, --hideRustRenderer", "Hide RustRenderer output")
             .option("-T, --hideTypes", "Hide Types output")
             .option("-M, --hideMultiplayer", "Hide Multiplayer output")
             .option("-F, --hideFiles", "Hide Files output")
             .option("-N, --hideConnection", "Hide Connection output")
             .option("-Y, --hidePython", "Hide Python output")
-            .option("-E, --hideRustClient", "Hide RustClient")
             .option("-S, --hideShared", "Hide Shared output")
             .option("-O, --hideCloudController", "Hide CloudController output")
             .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
@@ -40,6 +41,7 @@ export class CLI {
         if (this.options.all) {
             this.options.api = true;
             this.options.core = true;
+            this.options.rustRenderer = true;
             this.options.multiplayer = true;
             this.options.files = true;
             this.options.connection = true;

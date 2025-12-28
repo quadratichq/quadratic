@@ -8,6 +8,7 @@ export class Control {
     api;
     types;
     core;
+    rustRenderer;
     client;
     multiplayer;
     files;
@@ -23,6 +24,7 @@ export class Control {
         client: false,
         api: false,
         core: false,
+        rustRenderer: false,
         multiplayer: false,
         files: false,
         connection: false,
@@ -47,6 +49,7 @@ export class Control {
             this.kill("api"),
             this.kill("types"),
             this.kill("core"),
+            this.kill("rustRenderer"),
             this.kill("client"),
             this.kill("multiplayer"),
             this.kill("files"),
@@ -256,6 +259,7 @@ export class Control {
         this.status.core = false;
         this.ui.print("core");
         await this.kill("core");
+        let firstRun = true;
         this.signals.core = new AbortController();
         this.core = spawn("npm", [
             "run",
@@ -269,7 +273,56 @@ export class Control {
             success: ["[Finished running. Exit status: 0", "ready to publish"],
             error: "error[",
             start: ["> quadratic", "[Running "],
+        }, () => {
+            // Start rust-renderer after core completes successfully (first time only)
+            if (firstRun && !restart) {
+                firstRun = false;
+                if (this.status.rustRenderer !== "killed" && !this.rustRenderer) {
+                    this.runRustRenderer();
+                }
+            }
         }));
+    }
+    async runRustRenderer(restart) {
+        if (this.cli.options.noRust)
+            return;
+        if (this.quitting)
+            return;
+        if (this.status.rustRenderer === "killed")
+            return;
+        this.status.rustRenderer = false;
+        this.ui.print("rustRenderer");
+        await this.kill("rustRenderer");
+        this.signals.rustRenderer = new AbortController();
+        this.rustRenderer = spawn("npm", [
+            "run",
+            this.cli.options.rustRenderer
+                ? "watch:wasm:rust-renderer"
+                : "build:wasm:rust-renderer",
+        ], { signal: this.signals.rustRenderer.signal });
+        this.ui.printOutput("rustRenderer", (data) => this.handleResponse("rustRenderer", data, {
+            success: ["[Finished running. Exit status: 0", "ready to publish"],
+            error: "error[",
+            start: ["> quadratic", "[Running "],
+        }));
+    }
+    async restartRustRenderer() {
+        this.cli.options.rustRenderer = !this.cli.options.rustRenderer;
+        this.runRustRenderer(true);
+    }
+    async killRustRenderer() {
+        if (this.status.rustRenderer === "killed") {
+            this.status.rustRenderer = false;
+            this.ui.print("rustRenderer", "restarting...");
+            this.runRustRenderer();
+        }
+        else {
+            if (this.rustRenderer) {
+                await this.kill("rustRenderer");
+                this.ui.print("rustRenderer", "killed", "red");
+            }
+            this.status.rustRenderer = "killed";
+        }
     }
     kill(name) {
         if (!this[name])

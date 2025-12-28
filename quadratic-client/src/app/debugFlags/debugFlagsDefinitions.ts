@@ -46,7 +46,8 @@ export type DebugFlagKeys =
   | 'debugShowTopLeftPosition'
   | 'debugShowCoordinates'
   | 'debugShowAPITimes'
-  | 'debugEnableSyncedConnections';
+  | 'debugEnableSyncedConnections'
+  | 'debugUseRustRenderer';
 
 export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> = {
   debug: {
@@ -258,6 +259,15 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     title: 'Show viewport coordinates in the bottom bar',
     description: 'Use coordinates to create E2E tests',
     group: 'Playwright',
+  },
+
+  // Rendering group - Rust Renderer
+  debugUseRustRenderer: {
+    initial: false,
+    title: 'Use Rust Renderer (experimental)',
+    description: 'Enable the experimental Rust/WebGPU renderer alongside Pixi.js',
+    group: 'Rendering',
+    restart: true,
   },
 };
 
