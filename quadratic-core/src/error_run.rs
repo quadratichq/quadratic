@@ -284,9 +284,9 @@ impl RunErrorMsg {
     }
 }
 
-impl<T: Into<RunErrorMsg>> From<T> for RunError {
-    fn from(msg: T) -> Self {
-        msg.into().without_span()
+impl From<RunErrorMsg> for RunError {
+    fn from(msg: RunErrorMsg) -> Self {
+        msg.without_span()
     }
 }
 
@@ -366,13 +366,3 @@ impl fmt::Display for RefError {
     }
 }
 impl std::error::Error for RefError {}
-
-impl From<crate::ArraySizeError> for RunErrorMsg {
-    fn from(err: crate::ArraySizeError) -> Self {
-        match err {
-            crate::ArraySizeError::TooLarge => RunErrorMsg::ArrayTooBig,
-            crate::ArraySizeError::Empty => RunErrorMsg::EmptyArray,
-            crate::ArraySizeError::IndexOutOfBounds => RunErrorMsg::IndexOutOfBounds,
-        }
-    }
-}
