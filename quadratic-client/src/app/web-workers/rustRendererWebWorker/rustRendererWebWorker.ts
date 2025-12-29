@@ -261,9 +261,6 @@ class RustRendererWebWorker {
         const diffY = Math.abs(bounds.y - this.lastLoggedViewport.y);
         const diffScale = Math.abs(scale - this.lastLoggedViewport.scale);
         if (diffX > 10 || diffY > 10 || diffScale > 0.1) {
-          console.log(
-            `[rustRendererWebWorker] viewport: x=${bounds.x.toFixed(1)}, y=${bounds.y.toFixed(1)}, scale=${scale.toFixed(2)}, canvas=${canvasWidth}x${canvasHeight}`
-          );
           this.lastLoggedViewport = { x: bounds.x, y: bounds.y, scale };
         }
       }

@@ -39,9 +39,9 @@ pub mod wasm_bindings;
 
 pub use a1::TableRef;
 pub use clear_option::*;
-pub use quadratic_core_shared::CopyFormats;
 pub use error_run::*;
 pub use ext::*;
+pub use quadratic_core_shared::CopyFormats;
 pub use quadratic_core_shared::RefAdjust;
 pub use quadratic_core_shared::{Pos, Rect, ScreenRect, SheetPos, SheetRect};
 pub use rle::RunLengthEncoding;

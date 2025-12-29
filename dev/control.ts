@@ -309,14 +309,12 @@ export class Control {
     this.restartCore();
   }
 
-  async runCore(restart?: boolean) {
+  async runCore() {
     if (this.cli.options.noRust) return;
     if (this.quitting) return;
     this.status.core = false;
     this.ui.print("core");
     await this.kill("core");
-
-    let firstRun = true;
 
     this.signals.core = new AbortController();
     this.core = spawn(
@@ -339,16 +337,7 @@ export class Control {
           success: ["[Finished running. Exit status: 0", "ready to publish"],
           error: "error[",
           start: ["> quadratic", "[Running "],
-        },
-        () => {
-          // Start rust-renderer after core completes successfully (first time only)
-          if (firstRun && !restart) {
-            firstRun = false;
-            if (this.status.rustRenderer !== "killed" && !this.rustRenderer) {
-              this.runRustRenderer();
-            }
-          }
-        },
+        }
       ),
     );
   }
@@ -433,7 +422,7 @@ export class Control {
 
   async restartCore() {
     this.cli.options.core = !this.cli.options.core;
-    this.runCore(true);
+    this.runCore();
   }
 
   async runMultiplayer(restart?: boolean) {
@@ -823,6 +812,7 @@ export class Control {
       }
       this.runTypes();
       this.runCore();
+      this.runRustRenderer();
     });
   }
 
