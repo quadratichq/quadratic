@@ -84,6 +84,12 @@ export interface ClientRustRendererPing {
   timestamp: number;
 }
 
+/** Send the viewport SharedArrayBuffer for zero-copy viewport sync */
+export interface ClientRustRendererViewportBuffer {
+  type: 'clientRustRendererViewportBuffer';
+  buffer: SharedArrayBuffer;
+}
+
 export type ClientRustRendererMessage =
   | ClientRustRendererInit
   | ClientRustRendererViewport
@@ -92,7 +98,8 @@ export type ClientRustRendererMessage =
   | ClientRustRendererKeyEvent
   | ClientRustRendererResize
   | ClientRustRendererScreenshot
-  | ClientRustRendererPing;
+  | ClientRustRendererPing
+  | ClientRustRendererViewportBuffer;
 
 // ============================================================================
 // Rust Renderer → Client Messages

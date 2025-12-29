@@ -79,6 +79,11 @@ class RustRendererClient {
         });
         return;
 
+      case 'clientRustRendererViewportBuffer':
+        console.log('[rustRendererClient] Received viewport buffer');
+        rustRendererWasm.setViewportBuffer(e.data.buffer);
+        return;
+
       default:
         // Ignore messages from react dev tools
         if (!(e.data as any)?.source) {
@@ -123,11 +128,15 @@ class RustRendererClient {
 
   private startRenderLoop() {
     const loop = (timestamp: number) => {
-      const elapsed = this.lastFrameTime ? timestamp - this.lastFrameTime : 16;
-      this.lastFrameTime = timestamp;
+      try {
+        const elapsed = this.lastFrameTime ? timestamp - this.lastFrameTime : 16;
+        this.lastFrameTime = timestamp;
 
-      // Render a frame (viewport/deceleration is managed by the client)
-      rustRendererWasm.frame(elapsed);
+        // Render a frame (viewport/deceleration is managed by the client)
+        rustRendererWasm.frame(elapsed);
+      } catch (error) {
+        console.error('[rustRendererClient] Error in render loop:', error);
+      }
 
       this.animationFrameId = requestAnimationFrame(loop);
     };

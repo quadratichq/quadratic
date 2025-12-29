@@ -71,7 +71,17 @@ impl WorkerRendererGPU {
     #[wasm_bindgen]
     pub fn set_viewport_buffer(&mut self, buffer: SharedArrayBuffer) {
         log::info!("Setting shared viewport buffer (WebGPU)");
-        self.shared_viewport = Some(ViewportBuffer::from_buffer(buffer));
+        let vb = ViewportBuffer::from_buffer(buffer);
+        log::info!(
+            "[WebGPU] Initial viewport buffer values: x={:.1}, y={:.1}, scale={:.2}, size={}x{}, dpr={}",
+            vb.x(),
+            vb.y(),
+            vb.scale(),
+            vb.width(),
+            vb.height(),
+            vb.dpr()
+        );
+        self.shared_viewport = Some(vb);
     }
 
     /// Check if using shared viewport
@@ -957,7 +967,7 @@ impl WorkerRendererGPU {
         for rect in self
             .state
             .headings
-            .get_selection_rects(&self.state.cells_sheet.sheet_offsets)
+            .get_selection_rects(self.state.get_sheet_offsets())
         {
             rects.add(rect[0], rect[1], rect[2], rect[3], selection_color);
         }
@@ -987,7 +997,7 @@ impl WorkerRendererGPU {
         let grid_line_coords = self
             .state
             .headings
-            .get_grid_lines(&self.state.cells_sheet.sheet_offsets);
+            .get_grid_lines(self.state.get_sheet_offsets());
         let mut lines = NativeLines::with_capacity(grid_line_coords.len() / 4);
 
         // Apply same alpha fading as main grid lines based on zoom level

@@ -21,10 +21,7 @@ pub enum CoreToRenderer {
     HashCells(Vec<HashCells>),
 
     /// Notification that specific hashes need to be re-rendered
-    DirtyHashes {
-        sheet_id: SheetId,
-        hashes: Vec<Pos>,
-    },
+    DirtyHashes { sheet_id: SheetId, hashes: Vec<Pos> },
 
     /// Selection has changed
     Selection(Selection),
@@ -71,10 +68,7 @@ pub enum RendererToCore {
     },
 
     /// User is hovering over a cell
-    CellHover {
-        sheet_id: SheetId,
-        pos: Option<Pos>,
-    },
+    CellHover { sheet_id: SheetId, pos: Option<Pos> },
 
     /// User started selecting cells
     SelectionStart {
@@ -84,19 +78,13 @@ pub enum RendererToCore {
     },
 
     /// User is dragging selection
-    SelectionDrag {
-        sheet_id: SheetId,
-        pos: Pos,
-    },
+    SelectionDrag { sheet_id: SheetId, pos: Pos },
 
     /// User finished selecting
     SelectionEnd,
 
     /// User double-clicked to edit a cell
-    CellEdit {
-        sheet_id: SheetId,
-        pos: Pos,
-    },
+    CellEdit { sheet_id: SheetId, pos: Pos },
 
     /// User is resizing a column
     ColumnResize {
@@ -172,13 +160,17 @@ pub struct MultiplayerCursor {
     pub selection: Option<Rect>,
 }
 
-/// Sheet metadata for rendering tabs.
+/// Sheet metadata and offsets for rendering.
+/// This is the primary message for initializing a sheet in the renderer.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct SheetInfo {
     pub sheet_id: SheetId,
     pub name: String,
-    pub order: i32,
+    pub order: String,
     pub color: Option<Rgba>,
+    /// Column widths and row heights for the sheet.
+    /// Uses bincode-encoded bytes since SheetOffsets has complex internal structure.
+    pub offsets_bytes: Vec<u8>,
 }
 
 /// Keyboard/mouse modifiers.
@@ -249,7 +241,11 @@ mod tests {
         let decoded: RendererToCore = serialization::deserialize(&bytes).unwrap();
 
         match decoded {
-            RendererToCore::CellClick { sheet_id, pos, modifiers } => {
+            RendererToCore::CellClick {
+                sheet_id,
+                pos,
+                modifiers,
+            } => {
                 assert_eq!(sheet_id, SheetId::test());
                 assert_eq!(pos, Pos::new(5, 10));
                 assert!(modifiers.shift);

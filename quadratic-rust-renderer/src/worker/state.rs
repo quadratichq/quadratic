@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use quadratic_core_shared::{
     CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind, RenderCell,
-    RenderCellSpecial, RenderFill, RenderNumber, SheetFill,
+    RenderCellSpecial, RenderFill, RenderNumber, Rgba, SheetFill, SheetOffsets,
 };
 
 use crate::cells::CellsSheet;
@@ -27,13 +27,16 @@ pub struct RendererState {
     /// Viewport (camera/zoom/pan state)
     pub viewport: Viewport,
 
-    /// Current sheet being rendered
-    pub cells_sheet: CellsSheet,
+    /// All sheets indexed by sheet ID
+    sheets: HashMap<String, CellsSheet>,
+
+    /// Currently active sheet ID
+    current_sheet_id: Option<String>,
 
     /// Renderable content (grid lines, cursor)
     pub content: Content,
 
-    /// Cell fills (background colors)
+    /// Cell fills (background colors) - per current sheet
     pub fills: CellsFills,
 
     /// Bitmap fonts for text rendering
@@ -41,6 +44,7 @@ pub struct RendererState {
 
     /// Spatial hashes containing cell labels (15×30 cell regions)
     /// Key is computed from (hash_x, hash_y) coordinates
+    /// Note: These are per current sheet - cleared on sheet switch
     pub hashes: HashMap<u64, CellsTextHash>,
 
     /// Total label count (cached for stats)
@@ -62,12 +66,12 @@ pub struct RendererState {
 impl RendererState {
     /// Create a new renderer state
     pub fn new(width: f32, height: f32) -> Self {
-        let sheet_id = "test".to_string();
         Self {
             viewport: Viewport::new(width, height),
-            cells_sheet: CellsSheet::new(sheet_id.clone()),
+            sheets: HashMap::new(),
+            current_sheet_id: None,
             content: Content::new(),
-            fills: CellsFills::new(sheet_id),
+            fills: CellsFills::new("".to_string()),
             fonts: BitmapFonts::new(),
             hashes: HashMap::new(),
             label_count: 0,
@@ -75,6 +79,117 @@ impl RendererState {
             headings: GridHeadings::new(),
             show_headings: true,
             debug_show_text_updates: false,
+        }
+    }
+
+    // =========================================================================
+    // Sheet Management
+    // =========================================================================
+
+    /// Add or update a sheet from SheetInfo data
+    pub fn set_sheet(
+        &mut self,
+        sheet_id: String,
+        name: String,
+        order: String,
+        color: Option<Rgba>,
+        offsets: SheetOffsets,
+    ) {
+        if let Some(existing) = self.sheets.get_mut(&sheet_id) {
+            // Update existing sheet
+            existing.update_from_sheet_info(name, order, color, offsets);
+            log::info!(
+                "[RendererState] Updated sheet '{}' ({})",
+                existing.name,
+                sheet_id
+            );
+        } else {
+            // Create new sheet
+            let sheet =
+                CellsSheet::from_sheet_info(sheet_id.clone(), name.clone(), order, color, offsets);
+            log::info!("[RendererState] Added new sheet '{}' ({})", name, sheet_id);
+            self.sheets.insert(sheet_id.clone(), sheet);
+        }
+
+        // If no current sheet, set this as current
+        if self.current_sheet_id.is_none() {
+            self.set_current_sheet(sheet_id);
+        }
+    }
+
+    /// Set the current active sheet
+    pub fn set_current_sheet(&mut self, sheet_id: String) {
+        if self.current_sheet_id.as_ref() == Some(&sheet_id) {
+            return;
+        }
+
+        if self.sheets.contains_key(&sheet_id) {
+            log::info!("[RendererState] Switching to sheet {}", sheet_id);
+            self.current_sheet_id = Some(sheet_id.clone());
+
+            // Clear current sheet's hashes and fills - they'll be reloaded
+            self.hashes.clear();
+            self.label_count = 0;
+            self.fills = CellsFills::new(sheet_id);
+
+            // Mark everything dirty to force re-render
+            self.viewport.dirty = true;
+            self.content.grid_lines.dirty = true;
+            self.headings.set_dirty();
+        } else {
+            log::warn!(
+                "[RendererState] Attempted to switch to unknown sheet {}",
+                sheet_id
+            );
+        }
+    }
+
+    /// Get the current sheet (if any)
+    pub fn current_sheet(&self) -> Option<&CellsSheet> {
+        self.current_sheet_id
+            .as_ref()
+            .and_then(|id| self.sheets.get(id))
+    }
+
+    /// Get the current sheet mutably (if any)
+    pub fn current_sheet_mut(&mut self) -> Option<&mut CellsSheet> {
+        if let Some(id) = &self.current_sheet_id {
+            self.sheets.get_mut(id)
+        } else {
+            None
+        }
+    }
+
+    /// Get current sheet offsets (returns default if no sheet)
+    pub fn current_sheet_offsets(&self) -> &SheetOffsets {
+        static DEFAULT_OFFSETS: std::sync::OnceLock<SheetOffsets> = std::sync::OnceLock::new();
+        self.current_sheet()
+            .map(|s| &s.sheet_offsets)
+            .unwrap_or_else(|| DEFAULT_OFFSETS.get_or_init(SheetOffsets::default))
+    }
+
+    /// Get current sheet ID
+    pub fn current_sheet_id(&self) -> Option<&str> {
+        self.current_sheet_id.as_deref()
+    }
+
+    /// Get sheet count
+    pub fn sheet_count(&self) -> usize {
+        self.sheets.len()
+    }
+
+    /// Remove a sheet
+    pub fn remove_sheet(&mut self, sheet_id: &str) {
+        self.sheets.remove(sheet_id);
+        if self.current_sheet_id.as_deref() == Some(sheet_id) {
+            // Switch to another sheet if available
+            self.current_sheet_id = self.sheets.keys().next().cloned();
+            if let Some(new_id) = &self.current_sheet_id {
+                log::info!("[RendererState] Sheet deleted, switching to {}", new_id);
+                self.hashes.clear();
+                self.label_count = 0;
+                self.fills = CellsFills::new(new_id.clone());
+            }
         }
     }
 
@@ -103,11 +218,7 @@ impl RendererState {
 
     /// Set the sheet offsets for the given sheet.
     /// This is called when receiving SheetOffsets messages from core.
-    pub fn set_sheet_offsets(
-        &mut self,
-        sheet_id: String,
-        offsets: quadratic_core_shared::SheetOffsets,
-    ) {
+    pub fn set_sheet_offsets(&mut self, sheet_id: String, offsets: SheetOffsets) {
         let (default_col, default_row) = offsets.defaults();
         log::info!(
             "[RendererState] Setting offsets for sheet {}: default_col={}, default_row={}",
@@ -115,22 +226,21 @@ impl RendererState {
             default_col,
             default_row
         );
-        // For now, we only support a single sheet, so just set it on cells_sheet
-        // TODO: Support multiple sheets
-        if self.cells_sheet.sheet_id == sheet_id {
-            self.cells_sheet.sheet_offsets = offsets;
+
+        if let Some(sheet) = self.sheets.get_mut(&sheet_id) {
+            sheet.sheet_offsets = offsets;
+            sheet.dirty = true;
         } else {
             log::warn!(
-                "[RendererState] Sheet ID mismatch: expected {}, got {}",
-                self.cells_sheet.sheet_id,
+                "[RendererState] Attempted to set offsets for unknown sheet {}",
                 sheet_id
             );
         }
     }
 
     /// Get the current sheet offsets
-    pub fn get_sheet_offsets(&self) -> &quadratic_core_shared::SheetOffsets {
-        &self.cells_sheet.sheet_offsets
+    pub fn get_sheet_offsets(&self) -> &SheetOffsets {
+        self.current_sheet_offsets()
     }
 
     // =========================================================================
@@ -247,8 +357,8 @@ impl RendererState {
     /// Set fills for a specific hash
     /// fills: Vec of RenderFill structs
     pub fn set_fills_for_hash(&mut self, hash_x: i64, hash_y: i64, fills: Vec<RenderFill>) {
-        self.fills
-            .set_hash_fills(hash_x, hash_y, fills, &self.cells_sheet.sheet_offsets);
+        let offsets = self.current_sheet_offsets().clone();
+        self.fills.set_hash_fills(hash_x, hash_y, fills, &offsets);
     }
 
     /// Set meta fills (infinite row/column/sheet fills)
@@ -265,14 +375,14 @@ impl RendererState {
     /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
     pub fn get_needed_fill_hashes(&self) -> Vec<i32> {
         self.fills
-            .get_needed_hashes(&self.viewport, &self.cells_sheet.sheet_offsets)
+            .get_needed_hashes(&self.viewport, self.current_sheet_offsets())
     }
 
     /// Get fill hashes that can be unloaded (outside viewport)
     /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
     pub fn get_offscreen_fill_hashes(&self) -> Vec<i32> {
         self.fills
-            .get_offscreen_hashes(&self.viewport, &self.cells_sheet.sheet_offsets)
+            .get_offscreen_hashes(&self.viewport, self.current_sheet_offsets())
     }
 
     /// Unload a fill hash to free memory
@@ -726,7 +836,7 @@ impl RendererState {
     /// col and row are 1-indexed cell coordinates
     pub fn add_label(&mut self, text: &str, col: i64, row: i64) {
         let mut label = CellLabel::new(text.to_string(), col, row);
-        label.update_bounds(&self.cells_sheet.sheet_offsets);
+        label.update_bounds(self.current_sheet_offsets());
         label.layout(&self.fonts);
 
         self.insert_label(col, row, label);
@@ -749,7 +859,7 @@ impl RendererState {
         valign: u8, // 0 = top, 1 = middle, 2 = bottom
     ) {
         let mut label = CellLabel::new(text.to_string(), col, row);
-        label.update_bounds(&self.cells_sheet.sheet_offsets);
+        label.update_bounds(self.current_sheet_offsets());
         label.font_size = font_size;
         label.bold = bold;
         label.italic = italic;
@@ -792,7 +902,7 @@ impl RendererState {
             self.label_count = self.label_count.saturating_sub(old_hash.label_count());
         }
 
-        let offsets = &self.cells_sheet.sheet_offsets;
+        let offsets = self.current_sheet_offsets();
         let fonts = &self.fonts;
 
         // Parse colors if provided
@@ -823,7 +933,7 @@ impl RendererState {
             .collect();
 
         // Insert all labels into a new hash
-        let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
+        let mut hash = CellsTextHash::new(hash_x, hash_y, self.current_sheet_offsets());
         for (col, row, label) in labels {
             hash.add_label(col, row, label);
             self.label_count += 1;
@@ -839,10 +949,12 @@ impl RendererState {
         let (hash_x, hash_y) = get_hash_coords(col, row);
         let key = hash_key(hash_x, hash_y);
 
+        // Clone offsets to avoid borrow issues with entry API
+        let offsets = self.current_sheet_offsets().clone();
         let hash = self
             .hashes
             .entry(key)
-            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets));
+            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &offsets));
         hash.add_label(col, row, label);
         self.label_count += 1;
     }
@@ -880,7 +992,7 @@ impl RendererState {
         }
 
         // Layout all labels
-        let offsets = &self.cells_sheet.sheet_offsets;
+        let offsets = self.current_sheet_offsets();
         let fonts = &self.fonts;
 
         let labels: Vec<(i64, i64, CellLabel)> = cells
@@ -906,7 +1018,7 @@ impl RendererState {
         }
 
         // Create new hash and add all labels
-        let mut hash = CellsTextHash::new(hash_x, hash_y, &self.cells_sheet.sheet_offsets);
+        let mut hash = CellsTextHash::new(hash_x, hash_y, self.current_sheet_offsets());
         for (x, y, label) in labels {
             hash.add_label(x, y, label);
             self.label_count += 1;
@@ -1086,7 +1198,7 @@ impl RendererState {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
-            &self.cells_sheet.sheet_offsets,
+            self.current_sheet_offsets(),
         );
 
         [
@@ -1107,7 +1219,7 @@ impl RendererState {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
-            &self.cells_sheet.sheet_offsets,
+            self.current_sheet_offsets(),
         );
 
         let mut needed: Vec<i32> = Vec::new();
@@ -1133,7 +1245,7 @@ impl RendererState {
             bounds.width,
             bounds.height,
             self.viewport.scale(),
-            &self.cells_sheet.sheet_offsets,
+            self.current_sheet_offsets(),
         );
 
         let mut offscreen: Vec<i32> = Vec::new();
@@ -1189,32 +1301,33 @@ impl RendererState {
 
     /// Update content based on viewport and sheet offsets
     pub fn update_content(&mut self) {
-        self.content
-            .update(&self.viewport, &self.cells_sheet.sheet_offsets);
+        let offsets = self.current_sheet_offsets().clone();
+        let viewport_dirty = self.viewport.dirty;
+
+        self.content.update(&self.viewport, &offsets);
         // Pass viewport.dirty so fills know to rebuild meta fills when viewport moves
         // (meta fills are clipped to viewport bounds)
-        self.fills.update(
-            &self.viewport,
-            &self.cells_sheet.sheet_offsets,
-            self.viewport.dirty,
-        );
+        self.fills.update(&self.viewport, &offsets, viewport_dirty);
     }
 
     /// Update headings and return (width, height) if shown
+    /// Returns sizes in device pixels
     pub fn update_headings(&mut self) -> (f32, f32) {
         if self.show_headings {
-            let scale = self.viewport.effective_scale();
+            // Sync DPR from viewport to headings to ensure consistency
+            let dpr = self.viewport.dpr();
+            self.headings.set_dpr(dpr);
+
+            // Pass effective_scale (scale * dpr) because headings work in device pixels
+            let effective_scale = self.viewport.effective_scale();
             let canvas_width = self.viewport.width();
             let canvas_height = self.viewport.height();
+            let x = self.viewport.x();
+            let y = self.viewport.y();
+            let offsets = self.current_sheet_offsets().clone();
 
-            self.headings.update(
-                self.viewport.x(),
-                self.viewport.y(),
-                scale,
-                canvas_width,
-                canvas_height,
-                &self.cells_sheet.sheet_offsets,
-            );
+            self.headings
+                .update(x, y, effective_scale, canvas_width, canvas_height, &offsets);
 
             let size = self.headings.heading_size();
             (size.width, size.height)

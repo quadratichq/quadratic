@@ -10,8 +10,15 @@ use super::state::RendererState;
 ///
 /// Returns true if the message was handled successfully.
 pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(), String> {
+    log::info!(
+        "[message_handler] Received message from core ({} bytes)",
+        data.len()
+    );
+
     let message: CoreToRenderer = serialization::deserialize(data)
         .map_err(|e| format!("Failed to deserialize message: {e}"))?;
+
+    log::info!("[message_handler] Decoded message: {:?}", message);
 
     match message {
         CoreToRenderer::SheetOffsets {
@@ -80,18 +87,36 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
         }
 
         CoreToRenderer::SheetInfo(info) => {
+            // Decode the SheetOffsets from the embedded bytes
+            let offsets: SheetOffsets = serialization::deserialize(&info.offsets_bytes)
+                .map_err(|e| format!("Failed to deserialize offsets in SheetInfo: {e}"))?;
+
+            let (default_col, default_row) = offsets.defaults();
             log::info!(
-                "[message_handler] Received SheetInfo for sheet {}: '{}'",
+                "[message_handler] Received SheetInfo for sheet {}: '{}', order={}, color={:?}, default_col={}, default_row={}",
                 info.sheet_id,
-                info.name
+                info.name,
+                info.order,
+                info.color,
+                default_col,
+                default_row
             );
-            // TODO: Implement sheet info handling
+
+            // Add or update the sheet in the renderer state
+            state.set_sheet(
+                info.sheet_id.to_string(),
+                info.name,
+                info.order,
+                info.color,
+                offsets,
+            );
+
             Ok(())
         }
 
         CoreToRenderer::SheetDeleted { sheet_id } => {
             log::info!("[message_handler] Received SheetDeleted for sheet {}", sheet_id);
-            // TODO: Implement sheet deletion handling
+            state.remove_sheet(&sheet_id.to_string());
             Ok(())
         }
 

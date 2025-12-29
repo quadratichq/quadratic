@@ -206,7 +206,6 @@ impl GridHeadings {
         self.dirty = false;
 
         let header_height = self.header_height();
-        let col_height = header_height / scale;
 
         // First pass: estimate row width using previous value or a reasonable default
         let estimated_row_width = if self.heading_size.width > 0.0 {
@@ -220,6 +219,7 @@ impl GridHeadings {
                 canvas_width,
                 canvas_height,
             );
+            // row_width is in CSS pixels, multiply by scale (effective_scale) to match PixiJS
             RowHeadings::calculate_width(99, scale, &temp_viewport) * scale
         };
 
@@ -228,7 +228,7 @@ impl GridHeadings {
             width: estimated_row_width,
             height: header_height,
             unscaled_width: estimated_row_width / scale,
-            unscaled_height: col_height,
+            unscaled_height: CELL_HEIGHT,
         };
 
         // Create viewport state
@@ -241,11 +241,14 @@ impl GridHeadings {
         let row_width = RowHeadings::calculate_width(last_row, scale, &viewport_state);
 
         // Update heading size
+        // width and height are in device pixels, scaled by effective_scale (scale * dpr)
+        // This matches PixiJS: width = rowWidth * scale (in CSS) = rowWidth * scale * dpr (in device)
+        // Since we pass effective_scale as 'scale' parameter, multiply directly by scale
         self.heading_size = HeadingSize {
             width: row_width * scale,
             height: header_height,
             unscaled_width: row_width,
-            unscaled_height: col_height,
+            unscaled_height: CELL_HEIGHT,
         };
 
         // Update column and row headings with offsets

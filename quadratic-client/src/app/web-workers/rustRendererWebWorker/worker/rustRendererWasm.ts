@@ -23,6 +23,9 @@ class RustRendererWasm {
   private backend?: 'webgpu' | 'webgl';
   private renderer?: Renderer;
 
+  // Buffer for messages received before initialization
+  private pendingMessages: Uint8Array[] = [];
+
   /**
    * Initialize the WASM renderer with an OffscreenCanvas.
    * Font loading happens in parallel with WASM initialization.
@@ -82,6 +85,16 @@ class RustRendererWasm {
 
     console.log(`[rustRendererWasm] Fonts loaded: ${renderer.has_fonts()}`);
 
+    // Set pending viewport buffer if one was received before initialization
+    if (this.pendingViewportBuffer) {
+      console.log('[rustRendererWasm] Setting pending viewport buffer');
+      this.renderer.set_viewport_buffer(this.pendingViewportBuffer);
+      this.pendingViewportBuffer = undefined;
+    }
+
+    // Replay any messages that arrived before initialization
+    this.replayPendingMessages();
+
     return this.backend;
   }
 
@@ -113,15 +126,36 @@ class RustRendererWasm {
   /**
    * Handle a bincode message from the core worker.
    * This is forwarded directly to the WASM renderer for decoding.
+   * Messages received before initialization are queued and replayed.
    */
   handleCoreMessage(data: Uint8Array) {
     if (!this.initialized || !this.renderer) {
-      console.warn('[rustRendererWasm] Received core message before initialization');
+      // Queue the message for later - make a copy since the buffer may be transferred
+      console.log(`[rustRendererWasm] Queueing core message (${data.length} bytes) - not yet initialized`);
+      this.pendingMessages.push(new Uint8Array(data));
       return;
     }
 
+    console.log(`[rustRendererWasm] Received core message (${data.length} bytes)`);
+
     // Forward the bincode message to the WASM renderer
     this.renderer.handle_core_message(data);
+  }
+
+  /**
+   * Replay any messages that were queued before initialization.
+   */
+  private replayPendingMessages() {
+    if (this.pendingMessages.length === 0) return;
+
+    console.log(`[rustRendererWasm] Replaying ${this.pendingMessages.length} queued message(s)`);
+
+    for (const data of this.pendingMessages) {
+      console.log(`[rustRendererWasm] Replaying queued message (${data.length} bytes)`);
+      this.renderer?.handle_core_message(data);
+    }
+
+    this.pendingMessages = [];
   }
 
   /**
@@ -138,14 +172,12 @@ class RustRendererWasm {
   /**
    * Update the viewport (visible area and scale).
    * Note: The renderer now manages viewport internally via SharedArrayBuffer.
+   * This message is for fallback/debugging - the SharedArrayBuffer is the primary sync mechanism.
    */
   updateViewport(sheetId: string, bounds: { x: number; y: number; width: number; height: number }, scale: number) {
     if (!this.initialized || !this.renderer) return;
 
-    // Resize expects device pixels
-    const deviceWidth = Math.round(bounds.width * this.devicePixelRatio);
-    const deviceHeight = Math.round(bounds.height * this.devicePixelRatio);
-    this.renderer.resize(deviceWidth, deviceHeight, this.devicePixelRatio);
+    // Just mark dirty - viewport state comes from SharedArrayBuffer
     this.renderer.set_viewport_dirty();
   }
 
@@ -237,6 +269,9 @@ class RustRendererWasm {
     };
   }
 
+  // Frame counter for periodic logging
+  private frameCount = 0;
+
   /**
    * Render a frame.
    * @param elapsed Time since last frame in milliseconds
@@ -244,6 +279,15 @@ class RustRendererWasm {
    */
   frame(elapsed: number): boolean {
     if (!this.initialized || !this.renderer) return false;
+
+    this.frameCount++;
+    // Log every 300 frames (~5 seconds at 60fps) to show it's running
+    if (this.frameCount % 300 === 1) {
+      console.log(
+        `[rustRendererWasm] frame #${this.frameCount}, using shared viewport: ${this.renderer.is_using_shared_viewport()}`
+      );
+    }
+
     return this.renderer.frame(elapsed);
   }
 
@@ -263,11 +307,20 @@ class RustRendererWasm {
     this.renderer.set_cursor_selection(startCol, startRow, endCol, endRow);
   }
 
+  // Pending viewport buffer to be set after initialization
+  private pendingViewportBuffer?: SharedArrayBuffer;
+
   /**
    * Set the viewport buffer (SharedArrayBuffer) for main thread control.
    */
   setViewportBuffer(buffer: SharedArrayBuffer) {
-    if (!this.initialized || !this.renderer) return;
+    if (!this.initialized || !this.renderer) {
+      // Buffer arrived before initialization, queue it
+      console.log('[rustRendererWasm] Queueing viewport buffer - not yet initialized');
+      this.pendingViewportBuffer = buffer;
+      return;
+    }
+    console.log('[rustRendererWasm] Setting viewport buffer');
     this.renderer.set_viewport_buffer(buffer);
   }
 

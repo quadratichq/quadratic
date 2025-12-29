@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use quadratic_core_shared::SheetOffsets;
+use quadratic_core_shared::{Rgba, SheetOffsets};
 
 use crate::viewport::Viewport;
 
@@ -70,6 +70,15 @@ pub struct CellsSheet {
     /// Sheet ID
     pub sheet_id: String,
 
+    /// Sheet name (for display in tabs)
+    pub name: String,
+
+    /// Sheet order (for sorting tabs)
+    pub order: String,
+
+    /// Sheet color (for tab background)
+    pub color: Option<Rgba>,
+
     /// Sheet offsets for column widths and row heights
     pub sheet_offsets: SheetOffsets,
 
@@ -84,19 +93,53 @@ pub struct CellsSheet {
 }
 
 impl CellsSheet {
-    /// Create a new cells sheet
+    /// Create a new cells sheet with default offsets (for testing/empty sheets)
     pub fn new(sheet_id: String) -> Self {
-        // Test: set column 1 to 300px width to verify offsets work
-        let mut sheet_offsets = SheetOffsets::default();
-        sheet_offsets.set_column_width(3, 190.0);
-        sheet_offsets.set_row_height(10, 73.0);
         Self {
             sheet_id,
-            sheet_offsets,
+            name: "Sheet".to_string(),
+            order: "a0".to_string(),
+            color: None,
+            sheet_offsets: SheetOffsets::default(),
             cells: HashMap::new(),
             visible_cells: Vec::new(),
             dirty: true,
         }
+    }
+
+    /// Create a cells sheet from SheetInfo data
+    pub fn from_sheet_info(
+        sheet_id: String,
+        name: String,
+        order: String,
+        color: Option<Rgba>,
+        offsets: SheetOffsets,
+    ) -> Self {
+        Self {
+            sheet_id,
+            name,
+            order,
+            color,
+            sheet_offsets: offsets,
+            cells: HashMap::new(),
+            visible_cells: Vec::new(),
+            dirty: true,
+        }
+    }
+
+    /// Update sheet metadata (name, order, color) and offsets
+    pub fn update_from_sheet_info(
+        &mut self,
+        name: String,
+        order: String,
+        color: Option<Rgba>,
+        offsets: SheetOffsets,
+    ) {
+        self.name = name;
+        self.order = order;
+        self.color = color;
+        self.sheet_offsets = offsets;
+        self.dirty = true;
     }
 
     /// Set a cell's content

@@ -743,11 +743,12 @@ impl WorkerRenderer {
 
     /// Render cell fills (background colors)
     fn render_fills(&mut self, matrix: &[f32; 16]) {
+        let offsets = self.state.get_sheet_offsets().clone();
         self.state.fills.render(
             &mut self.gl,
             matrix,
             &self.state.viewport,
-            &self.state.cells_sheet.sheet_offsets,
+            &offsets,
         );
     }
 
@@ -834,6 +835,7 @@ impl WorkerRenderer {
 
         // Get text params for headings
         let (font_scale, distance_range) = self.state.get_heading_text_params();
+        let offsets = self.state.get_sheet_offsets().clone();
 
         // Render headings directly
         self.state.headings.render(
@@ -842,7 +844,7 @@ impl WorkerRenderer {
             &self.state.fonts,
             font_scale,
             distance_range,
-            &self.state.cells_sheet.sheet_offsets,
+            &offsets,
         );
     }
 

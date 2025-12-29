@@ -8,6 +8,7 @@ import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { MouseEdges } from '@/app/gridGL/pixiApp/viewport/MouseEdges';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import { rustRendererWebWorker } from '@/app/web-workers/rustRendererWebWorker/rustRendererWebWorker';
 import { Viewport as PixiViewport, type IMouseEdgesOptions } from 'pixi-viewport';
 import type { Rectangle } from 'pixi.js';
 import { Point } from 'pixi.js';
@@ -177,6 +178,24 @@ export class Viewport extends PixiViewport {
     const bounds = this.getVisibleBounds();
     const scale = this.scale.x;
     renderWebWorker.updateViewport(sheets.current, bounds, scale);
+
+    // Also update rust renderer if available
+    // Note: PixiJS viewport is positioned at (headings.width, headings.height) on stage,
+    // which causes getVisibleBounds() to include that offset. The rust renderer handles
+    // headings separately with its own viewport offset, so we need to add back the
+    // heading offset to get the true world position.
+    try {
+      const headings = content.headings.headingSize;
+      const adjustedBounds = {
+        x: bounds.x + headings.width / scale,
+        y: bounds.y + headings.height / scale,
+        width: bounds.width,
+        height: bounds.height,
+      };
+      rustRendererWebWorker.updateViewport(sheets.current, adjustedBounds, scale);
+    } catch (e) {
+      console.error('[Viewport] Error updating rust renderer viewport:', e);
+    }
   }
 
   private startSnap = () => {

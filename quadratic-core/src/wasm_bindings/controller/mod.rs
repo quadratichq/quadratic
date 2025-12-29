@@ -90,6 +90,10 @@ impl GridController {
                         }
                     });
 
+                    // Send all sheet info to the rust renderer (if enabled)
+                    // This goes directly from core worker to renderer worker via MessagePort
+                    let _ = grid.send_all_sheet_info_to_rust_renderer();
+
                     if !html.is_empty()
                         && let Ok(html) = serde_json::to_vec(&html)
                     {
