@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::str::FromStr;
 
 use itertools::Itertools;
 
@@ -128,8 +129,8 @@ impl GridController {
         };
 
         let mut render_cells_in_hashes = Vec::new();
-
         let mut validation_warnings = Vec::new();
+        let mut rust_renderer_hash_cells = Vec::new();
 
         for hash in hashes.into_iter() {
             let rect = Rect::from_numbers(
@@ -146,6 +147,31 @@ impl GridController {
             });
 
             validation_warnings.extend(sheet.get_validation_warnings_in_rect(rect, true));
+
+            // Get fills for this hash for rust renderer
+            let fills = sheet.get_render_fills_in_rect(rect);
+            let shared_fills: Vec<quadratic_core_shared::RenderFill> = fills
+                .iter()
+                .map(|f| quadratic_core_shared::RenderFill {
+                    x: f.x,
+                    y: f.y,
+                    w: f.w,
+                    h: f.h,
+                    color: f.color.clone(),
+                })
+                .collect();
+
+            // Convert sheet_id for rust renderer
+            if let Ok(shared_sheet_id) =
+                quadratic_core_shared::SheetId::from_str(&sheet_id.to_string())
+            {
+                rust_renderer_hash_cells.push(quadratic_core_shared::HashCells {
+                    sheet_id: shared_sheet_id,
+                    hash_pos: quadratic_core_shared::Pos::new(hash.x, hash.y),
+                    cells: Vec::new(), // TODO: Convert cells to MessageRenderCell format
+                    fills: shared_fills,
+                });
+            }
         }
 
         if !render_cells_in_hashes.is_empty() {
@@ -159,6 +185,15 @@ impl GridController {
                         e
                     ));
                 }
+            }
+        }
+
+        // Send to rust renderer
+        if !rust_renderer_hash_cells.is_empty() {
+            let message =
+                quadratic_core_shared::CoreToRenderer::HashCells(rust_renderer_hash_cells);
+            if let Ok(bytes) = quadratic_core_shared::serialization::serialize(&message) {
+                crate::wasm_bindings::js::jsSendToRustRenderer(bytes);
             }
         }
 
@@ -557,7 +592,19 @@ impl GridController {
             };
 
             for hash in hashes.into_iter() {
-                // Check if this hash is in the viewport
+                // Use same coordinate system as text hashes (0-indexed)
+                let rect = Rect::from_numbers(
+                    hash.x * CELL_SHEET_WIDTH as i64,
+                    hash.y * CELL_SHEET_HEIGHT as i64,
+                    CELL_SHEET_WIDTH as i64,
+                    CELL_SHEET_HEIGHT as i64,
+                );
+
+                let fills = sheet.get_render_fills_in_rect(rect);
+
+                // Note: Fills for rust renderer are now sent along with text in send_render_cells_in_hashes
+
+                // Check if this hash is in the viewport for TypeScript client
                 let in_viewport = viewport_info
                     .as_ref()
                     .map(|(top_left, bottom_right, viewport_sheet_id)| {
@@ -567,17 +614,10 @@ impl GridController {
                     .unwrap_or(true); // If no viewport info, send all fills
 
                 if in_viewport {
-                    let rect = Rect::from_numbers(
-                        hash.x * CELL_SHEET_WIDTH as i64,
-                        hash.y * CELL_SHEET_HEIGHT as i64,
-                        CELL_SHEET_WIDTH as i64,
-                        CELL_SHEET_HEIGHT as i64,
-                    );
-
                     render_fills_in_hashes.push(JsHashRenderFills {
                         sheet_id,
                         hash,
-                        fills: sheet.get_render_fills_in_rect(rect),
+                        fills,
                     });
                 } else {
                     dirty_fills_outside_viewport
@@ -589,9 +629,11 @@ impl GridController {
 
             // Send sheet meta fills (infinite fills) for the sheet
             let sheet_fills = sheet.get_all_sheet_fills();
-            if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
-                crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+            if let Ok(sheet_fills_json) = serde_json::to_vec(&sheet_fills) {
+                crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills_json);
             }
+            // Also send meta fills to rust renderer
+            self.send_meta_fills_to_rust_renderer(sheet_id, &sheet_fills);
             meta_fills_sent.insert(sheet_id);
         }
 
@@ -603,9 +645,14 @@ impl GridController {
                 };
 
                 let sheet_fills = sheet.get_all_sheet_fills();
-                if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
-                    crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+                if let Ok(sheet_fills_json) = serde_json::to_vec(&sheet_fills) {
+                    crate::wasm_bindings::js::jsSheetMetaFills(
+                        sheet_id.to_string(),
+                        sheet_fills_json,
+                    );
                 }
+                // Also send meta fills to rust renderer
+                self.send_meta_fills_to_rust_renderer(sheet_id, &sheet_fills);
             }
         }
 
@@ -624,7 +671,8 @@ impl GridController {
             }
         }
 
-        // Send dirty fills outside viewport so client can request them later
+        // Send dirty fills outside viewport so TypeScript client can request them later
+        // Note: Rust renderer receives fills bundled with text in send_render_cells_in_hashes
         if !dirty_fills_outside_viewport.is_empty() {
             let dirty_hashes: Vec<JsHashesDirty> = dirty_fills_outside_viewport
                 .into_iter()
@@ -634,6 +682,49 @@ impl GridController {
             if let Ok(dirty_hashes) = serde_json::to_vec(&dirty_hashes) {
                 crate::wasm_bindings::js::jsHashesDirtyFills(dirty_hashes);
             }
+        }
+    }
+
+    /// Send meta fills (infinite row/column/sheet fills) to the rust renderer.
+    fn send_meta_fills_to_rust_renderer(
+        &self,
+        sheet_id: SheetId,
+        fills: &[crate::grid::js_types::JsSheetFill],
+    ) {
+        use std::str::FromStr;
+
+        // Convert to shared SheetId
+        let Ok(shared_sheet_id) = quadratic_core_shared::SheetId::from_str(&sheet_id.to_string())
+        else {
+            return;
+        };
+
+        // Convert fills to shared SheetFill type
+        let shared_fills: Vec<quadratic_core_shared::SheetFill> = fills
+            .iter()
+            .map(|f| quadratic_core_shared::SheetFill {
+                x: f.x,
+                y: f.y,
+                w: f.w,
+                h: f.h,
+                color: f.color.clone(),
+            })
+            .collect();
+
+        // Serialize the fills to bincode
+        let Ok(fills_bytes) = quadratic_core_shared::serialization::serialize(&shared_fills) else {
+            return;
+        };
+
+        // Create the message
+        let message = quadratic_core_shared::CoreToRenderer::SheetMetaFills {
+            sheet_id: shared_sheet_id,
+            fills_bytes,
+        };
+
+        // Serialize and send
+        if let Ok(bytes) = quadratic_core_shared::serialization::serialize(&message) {
+            crate::wasm_bindings::js::jsSendToRustRenderer(bytes);
         }
     }
 

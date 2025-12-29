@@ -432,6 +432,15 @@ class Core {
     }
   }
 
+  sendSheetMetaFillsToRustRenderer(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.sendSheetMetaFillsToRustRenderer(sheetId);
+    } catch (e) {
+      this.handleCoreError('sendSheetMetaFillsToRustRenderer', e);
+    }
+  }
+
   setCommas(selection: string, commas: boolean | undefined, cursor: string, isAi: boolean) {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

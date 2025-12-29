@@ -348,6 +348,31 @@ class RustRendererWasm {
     return this.renderer.is_dirty();
   }
 
+  /**
+   * Check if meta fills have been loaded.
+   */
+  fillsMetaLoaded(): boolean {
+    if (!this.initialized || !this.renderer) return false;
+    return this.renderer.fills_meta_loaded();
+  }
+
+  /**
+   * Get fill hashes that need to be loaded (visible but not loaded).
+   * Returns a flat Int32Array of [hash_x, hash_y, hash_x, hash_y, ...]
+   */
+  getNeededFillHashes(): Int32Array | null {
+    if (!this.initialized || !this.renderer) return null;
+    try {
+      const hashes = this.renderer.get_needed_fill_hashes();
+      if (hashes.length === 0) return null;
+      // Convert Box<[i32]> to Int32Array
+      return new Int32Array(hashes);
+    } catch (e) {
+      console.warn('[rustRendererWasm] Error getting needed fill hashes:', e);
+      return null;
+    }
+  }
+
   get isInitialized(): boolean {
     return this.initialized;
   }

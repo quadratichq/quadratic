@@ -34,10 +34,17 @@ class RustRendererClient {
         return;
 
       case 'clientRustRendererViewport':
+        // Capture sheet ID from viewport updates (first message may come before setSheet)
+        if (this.currentSheetId !== e.data.sheetId) {
+          this.currentSheetId = e.data.sheetId;
+          this.metaFillsRequested = false; // Reset so we request meta fills for new sheet
+        }
         rustRendererWasm.updateViewport(e.data.sheetId, e.data.bounds, e.data.scale);
         return;
 
       case 'clientRustRendererSetSheet':
+        this.currentSheetId = e.data.sheetId;
+        this.metaFillsRequested = false; // Reset so we request meta fills for new sheet
         rustRendererWasm.setSheet(e.data.sheetId);
         return;
 
@@ -94,6 +101,8 @@ class RustRendererClient {
 
   private lastFrameTime = 0;
   private animationFrameId?: number;
+  private currentSheetId: string = '';
+  private metaFillsRequested = false;
 
   private async init(canvas: OffscreenCanvas, corePort: MessagePort, devicePixelRatio: number) {
     this.canvas = canvas;
@@ -132,6 +141,9 @@ class RustRendererClient {
         const elapsed = this.lastFrameTime ? timestamp - this.lastFrameTime : 16;
         this.lastFrameTime = timestamp;
 
+        // Check for needed meta fills (only once per sheet)
+        this.checkNeededMetaFills();
+
         // Render a frame (viewport/deceleration is managed by the client)
         rustRendererWasm.frame(elapsed);
       } catch (error) {
@@ -142,6 +154,23 @@ class RustRendererClient {
     };
 
     this.animationFrameId = requestAnimationFrame(loop);
+  }
+
+  /**
+   * Check if the rust renderer needs meta fill data (infinite row/column/sheet fills).
+   * Hash-based fills are now bundled with text cells in HashCells messages.
+   */
+  private checkNeededMetaFills() {
+    if (!rustRendererWasm.isInitialized || !this.currentSheetId) return;
+
+    // Request meta fills once if not yet loaded
+    if (!this.metaFillsRequested && !rustRendererWasm.fillsMetaLoaded()) {
+      this.metaFillsRequested = true;
+      this.send({
+        type: 'rustRendererClientRequestMetaFills',
+        sheetId: this.currentSheetId,
+      });
+    }
   }
 
   send(message: RustRendererClientMessage, transferables?: Transferable[]) {

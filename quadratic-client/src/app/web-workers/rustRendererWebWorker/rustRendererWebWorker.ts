@@ -6,6 +6,7 @@
  */
 
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type {
   ClientRustRendererMessage,
   ClientRustRendererPing,
@@ -132,6 +133,11 @@ class RustRendererWebWorker {
           callback(e.data);
           delete this.waitingForResponse[e.data.id];
         }
+        return;
+
+      case 'rustRendererClientRequestMetaFills':
+        // Request meta fills from core and send them to rust renderer
+        quadraticCore.sendSheetMetaFillsToRustRenderer(e.data.sheetId);
         return;
     }
 

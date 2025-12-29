@@ -2,7 +2,7 @@
 //!
 //! Decodes CoreToRenderer messages and updates the renderer state.
 
-use quadratic_core_shared::{serialization, CoreToRenderer, SheetOffsets};
+use quadratic_core_shared::{serialization, CoreToRenderer, SheetFill, SheetOffsets};
 
 use super::state::RendererState;
 
@@ -50,9 +50,22 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
             Ok(())
         }
 
-        CoreToRenderer::HashCells(_) => {
-            log::debug!("[message_handler] Received HashCells");
-            // TODO: Implement cell data handling
+        CoreToRenderer::HashCells(hash_cells_vec) => {
+            for hash_cells in hash_cells_vec {
+                log::debug!(
+                    "[message_handler] Received HashCells for sheet {} hash ({}, {}): {} cells, {} fills",
+                    hash_cells.sheet_id,
+                    hash_cells.hash_pos.x,
+                    hash_cells.hash_pos.y,
+                    hash_cells.cells.len(),
+                    hash_cells.fills.len()
+                );
+
+                // Set fills for this hash in the renderer state
+                state.set_fills_for_hash(hash_cells.hash_pos.x, hash_cells.hash_pos.y, hash_cells.fills);
+
+                // TODO: Implement text cell data handling
+            }
             Ok(())
         }
 
@@ -123,6 +136,26 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
         CoreToRenderer::ClearSheet { sheet_id } => {
             log::info!("[message_handler] Received ClearSheet for sheet {}", sheet_id);
             // TODO: Implement sheet clear handling
+            Ok(())
+        }
+
+        CoreToRenderer::SheetMetaFills {
+            sheet_id,
+            fills_bytes,
+        } => {
+            // Decode the fills from the embedded bytes
+            let fills: Vec<SheetFill> = serialization::deserialize(&fills_bytes)
+                .map_err(|e| format!("Failed to deserialize meta fills: {e}"))?;
+
+            log::debug!(
+                "[message_handler] Received SheetMetaFills for sheet {}: {} fills",
+                sheet_id,
+                fills.len()
+            );
+
+            // Set meta fills in the renderer state
+            state.set_meta_fills(fills);
+
             Ok(())
         }
     }

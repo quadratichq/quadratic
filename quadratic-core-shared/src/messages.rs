@@ -46,6 +46,13 @@ pub enum CoreToRenderer {
 
     /// Request renderer to clear cache for a sheet
     ClearSheet { sheet_id: SheetId },
+
+    /// Sheet meta fills (infinite row/column/sheet background colors)
+    SheetMetaFills {
+        sheet_id: SheetId,
+        /// Bincode-encoded Vec<SheetFill>
+        fills_bytes: Vec<u8>,
+    },
 }
 
 /// Messages sent from quadratic-rust-renderer to quadratic-core.
@@ -112,6 +119,8 @@ pub struct HashCells {
     pub hash_pos: Pos,
     /// Cells in this hash
     pub cells: Vec<MessageRenderCell>,
+    /// Fills in this hash (cell background colors)
+    pub fills: Vec<crate::RenderFill>,
 }
 
 /// A cell to be rendered (message version).

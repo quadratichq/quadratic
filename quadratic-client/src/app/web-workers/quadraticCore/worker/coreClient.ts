@@ -230,6 +230,10 @@ class CoreClient {
         core.sendAllSheetOffsetsToRustRenderer();
         return;
 
+      case 'clientCoreSendSheetMetaFillsToRustRenderer':
+        core.sendSheetMetaFillsToRustRenderer(e.data.sheetId);
+        return;
+
       case 'clientCoreSetCommas':
         core.setCommas(e.data.selection, e.data.commas, e.data.cursor, e.data.isAi);
         return;

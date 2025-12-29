@@ -69,4 +69,49 @@ impl GridController {
         let fills = sheet.get_all_sheet_fills();
         serde_json::to_vec(&fills).unwrap_or_default()
     }
+
+    /// Send meta fills (row/column/sheet fills) to the rust renderer.
+    #[wasm_bindgen(js_name = "sendSheetMetaFillsToRustRenderer")]
+    pub fn send_sheet_meta_fills_to_rust_renderer(&self, sheet_id: String) {
+        use quadratic_core_shared::{CoreToRenderer, SheetFill, serialization};
+
+        let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
+            return;
+        };
+        let Ok(shared_sheet_id) =
+            quadratic_core_shared::SheetId::from_str(&sheet_id)
+        else {
+            return;
+        };
+
+        let fills = sheet.get_all_sheet_fills();
+
+        // Convert to shared types
+        let shared_fills: Vec<SheetFill> = fills
+            .iter()
+            .map(|f| SheetFill {
+                x: f.x,
+                y: f.y,
+                w: f.w,
+                h: f.h,
+                color: f.color.clone(),
+            })
+            .collect();
+
+        // Serialize the fills
+        let Ok(fills_bytes) = serialization::serialize(&shared_fills) else {
+            return;
+        };
+
+        // Create the message
+        let message = CoreToRenderer::SheetMetaFills {
+            sheet_id: shared_sheet_id,
+            fills_bytes,
+        };
+
+        // Serialize and send
+        if let Ok(bytes) = serialization::serialize(&message) {
+            crate::wasm_bindings::js::jsSendToRustRenderer(bytes);
+        }
+    }
 }

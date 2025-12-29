@@ -337,6 +337,11 @@ export interface ClientCoreSendAllSheetOffsetsToRustRenderer {
   type: 'clientCoreSendAllSheetOffsetsToRustRenderer';
 }
 
+export interface ClientCoreSendSheetMetaFillsToRustRenderer {
+  type: 'clientCoreSendSheetMetaFillsToRustRenderer';
+  sheetId: string;
+}
+
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
@@ -1575,6 +1580,7 @@ export type ClientCoreMessage =
   | ClientCoreGetRenderFillsForHashes
   | ClientCoreGetSheetMetaFills
   | ClientCoreSendAllSheetOffsetsToRustRenderer
+  | ClientCoreSendSheetMetaFillsToRustRenderer
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
   | ClientCoreSetCellStrikeThrough

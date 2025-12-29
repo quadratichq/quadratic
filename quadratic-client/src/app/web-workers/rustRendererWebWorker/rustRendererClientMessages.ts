@@ -173,6 +173,12 @@ export interface RustRendererClientPong {
   roundTripMs: number;
 }
 
+/** Request meta fills (row/column/sheet fills) from core */
+export interface RustRendererClientRequestMetaFills {
+  type: 'rustRendererClientRequestMetaFills';
+  sheetId: string;
+}
+
 export type RustRendererClientMessage =
   | RustRendererClientReady
   | RustRendererClientError
@@ -181,4 +187,5 @@ export type RustRendererClientMessage =
   | RustRendererClientCellHover
   | RustRendererClientCellEdit
   | RustRendererClientSelectionChanged
-  | RustRendererClientPong;
+  | RustRendererClientPong
+  | RustRendererClientRequestMetaFills;

@@ -117,13 +117,15 @@ impl CellsFills {
     }
 
     /// Mark a hash as dirty (needs reload when visible)
-    /// This is called when fills change outside the viewport
+    /// This is called when fills change outside the viewport.
+    /// We only remove from loaded_hashes (so it gets re-requested) but keep
+    /// the fills in fills_by_hash so they remain visible until the update arrives.
+    /// This gives better UX - stale data is better than no data.
     pub fn mark_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
         let key = fill_hash_key(hash_x, hash_y);
         // Remove from loaded set so it will be re-requested when visible
+        // But keep the cached fills so they remain visible until update arrives
         self.loaded_hashes.remove(&key);
-        // Remove cached data
-        self.fills_by_hash.remove(&key);
     }
 
     /// Get hashes that need to be loaded (visible but not yet loaded)

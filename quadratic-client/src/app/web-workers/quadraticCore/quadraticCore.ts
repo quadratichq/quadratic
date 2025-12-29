@@ -426,6 +426,14 @@ class QuadraticCore {
     this.send({ type: 'clientCoreSendAllSheetOffsetsToRustRenderer' });
   }
 
+  /**
+   * Send meta fills (row/column/sheet fills) to the rust renderer.
+   */
+  sendSheetMetaFillsToRustRenderer(sheetId: string): void {
+    if (!this.isRustRendererEnabled()) return;
+    this.send({ type: 'clientCoreSendSheetMetaFillsToRustRenderer', sheetId });
+  }
+
   async export(): Promise<Uint8Array> {
     const id = this.id++;
     return new Promise((resolve) => {
