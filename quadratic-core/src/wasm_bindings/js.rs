@@ -1,8 +1,5 @@
 use super::*;
 
-#[cfg(not(test))]
-use js_sys::SharedArrayBuffer;
-
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = JSON)]
@@ -105,8 +102,6 @@ extern "C" {
     pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
     pub fn jsMultiplayerSynced();
-
-    pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
     pub fn jsClientMessage(message: String, error: String);
 
@@ -523,12 +518,6 @@ pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> *
 #[allow(non_snake_case)]
 pub fn jsMultiplayerSynced() {
     js_call("jsMultiplayerSynced", "".into());
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
-    js_call("jsSendViewportBuffer", format!("{buffer:?}"));
 }
 
 #[cfg(test)]

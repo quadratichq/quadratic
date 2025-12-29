@@ -72,10 +72,6 @@ class RenderCore {
         renderText.setHashesDirty(e.data.dirtyHashes);
         break;
 
-      case 'coreRenderViewportBuffer':
-        renderText.receiveViewportBuffer(e.data.buffer);
-        break;
-
       case 'coreRenderTransactionStart':
         renderText.transactionStart(e.data.transactionId, e.data.transactionName);
         break;

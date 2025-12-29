@@ -1,12 +1,23 @@
-use crate::{
-    grid::js_types::JsHashRenderFills,
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-};
+use crate::grid::js_types::JsHashRenderFills;
+use quadratic_core_shared::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+
+#[cfg(target_family = "wasm")]
+use js_sys::SharedArrayBuffer;
+#[cfg(target_family = "wasm")]
+use quadratic_core_shared::ViewportBuffer;
 
 use super::*;
 
 #[wasm_bindgen]
 impl GridController {
+    /// Set the viewport buffer from TypeScript.
+    /// This SharedArrayBuffer is shared between the client and Rust for
+    /// communicating viewport state without message passing.
+    #[cfg(target_family = "wasm")]
+    #[wasm_bindgen(js_name = "setViewportBuffer")]
+    pub fn set_viewport_buffer_wasm(&mut self, buffer: SharedArrayBuffer) {
+        self.set_viewport_buffer(Some(ViewportBuffer::from_buffer(buffer)));
+    }
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
     ///
@@ -78,9 +89,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return;
         };
-        let Ok(shared_sheet_id) =
-            quadratic_core_shared::SheetId::from_str(&sheet_id)
-        else {
+        let Ok(shared_sheet_id) = quadratic_core_shared::SheetId::from_str(&sheet_id) else {
             return;
         };
 

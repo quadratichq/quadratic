@@ -26,7 +26,6 @@ declare var self: WorkerGlobalScope &
     sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
-    sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
   };
@@ -121,13 +120,6 @@ class CoreRender {
     core.receiveRowHeights(transactionId, sheetId, rowHeights);
   };
 
-  sendViewportBuffer = (buffer: SharedArrayBuffer) => {
-    this.send({
-      type: 'coreRenderViewportBuffer',
-      buffer,
-    });
-  };
-
   sendTransactionStart = (transactionId: string, transactionName: TransactionName) => {
     this.send({ type: 'coreRenderTransactionStart', transactionId, transactionName });
   };
@@ -149,6 +141,5 @@ self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
 self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
 self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
 self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
-self.sendViewportBuffer = coreRender.sendViewportBuffer;
 self.sendTransactionStartRender = coreRender.sendTransactionStart;
 self.sendTransactionEndRender = coreRender.sendTransactionEnd;

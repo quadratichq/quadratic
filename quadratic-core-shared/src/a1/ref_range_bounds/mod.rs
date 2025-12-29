@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 #[cfg(feature = "js")]
@@ -14,7 +15,7 @@ mod normalize;
 mod query;
 mod translate;
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, Encode, Decode)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "js", wasm_bindgen)]

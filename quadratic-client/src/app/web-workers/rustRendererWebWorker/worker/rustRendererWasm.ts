@@ -5,8 +5,9 @@
  * It manages the lifecycle of the WASM module and provides methods to interact
  * with the renderer.
  *
- * Font loading happens in parallel with WASM initialization to minimize startup time.
- * While WASM is compiling/initializing, fonts are being fetched from the server.
+ * Font loading starts in the constructor to minimize startup time.
+ * This means fonts begin loading as soon as the module is imported,
+ * running in parallel with WASM initialization.
  */
 
 import init, { WorkerRenderer, WorkerRendererGPU } from '@/app/quadratic-rust-renderer/quadratic_rust_renderer';
@@ -26,18 +27,23 @@ class RustRendererWasm {
   // Buffer for messages received before initialization
   private pendingMessages: Uint8Array[] = [];
 
+  // Font loading promise started in constructor for early loading
+  private fontLoadPromise: Promise<FontLoadResult>;
+
+  constructor() {
+    // Start font loading immediately in constructor
+    // This is a key optimization - fonts start loading as soon as the module is imported
+    this.fontLoadPromise = startFontLoading();
+  }
+
   /**
    * Initialize the WASM renderer with an OffscreenCanvas.
-   * Font loading happens in parallel with WASM initialization.
+   * Font loading started in constructor runs in parallel with WASM initialization.
    * Returns the backend type being used (webgpu or webgl).
    */
   async init(canvas: OffscreenCanvas, devicePixelRatio: number): Promise<'webgpu' | 'webgl'> {
     this.canvas = canvas;
     this.devicePixelRatio = devicePixelRatio;
-
-    // Start font loading in parallel with WASM initialization
-    // This is a key optimization - while WASM is compiling, fonts are being fetched
-    const fontLoadPromise = startFontLoading();
 
     // Initialize WASM module (init_wasm() is auto-called via #[wasm_bindgen(start)])
     await init();
@@ -63,9 +69,6 @@ class RustRendererWasm {
 
     this.renderer = renderer;
 
-    // Set up initial state
-    renderer.set_headings_dpr(devicePixelRatio);
-
     // Set initial size from canvas (canvas dimensions are in device pixels)
     const deviceWidth = canvas.width;
     const deviceHeight = canvas.height;
@@ -75,8 +78,8 @@ class RustRendererWasm {
       console.log(`[rustRendererWasm] Initial size: ${deviceWidth}x${deviceHeight} (device pixels)`);
     }
 
-    // Wait for fonts to finish loading and pass them to the renderer
-    const fontLoadResult = await fontLoadPromise;
+    // Wait for fonts to finish loading (started in constructor) and pass them to the renderer
+    const fontLoadResult = await this.fontLoadPromise;
     this.loadFontsIntoRenderer(renderer, fontLoadResult);
 
     renderer.start();
@@ -210,7 +213,6 @@ class RustRendererWasm {
 
     // Rust renderer expects device pixels
     this.renderer.resize(deviceWidth, deviceHeight, devicePixelRatio);
-    this.renderer.set_headings_dpr(devicePixelRatio);
   }
 
   /**
@@ -247,19 +249,14 @@ class RustRendererWasm {
   }
 
   /**
-   * Set the cursor position.
+   * Set the A1Selection from bincode-encoded bytes.
+   * This is kept in sync with the client's selection state.
+   * Use JsSelection.saveBincode() to get the bytes.
+   * @param data - Bincode-encoded A1Selection bytes
    */
-  setCursor(col: bigint, row: bigint) {
+  setA1Selection(data: Uint8Array) {
     if (!this.initialized || !this.renderer) return;
-    this.renderer.set_cursor(col, row);
-  }
-
-  /**
-   * Set the cursor selection range.
-   */
-  setCursorSelection(startCol: bigint, startRow: bigint, endCol: bigint, endRow: bigint) {
-    if (!this.initialized || !this.renderer) return;
-    this.renderer.set_cursor_selection(startCol, startRow, endCol, endRow);
+    this.renderer.set_a1_selection(data);
   }
 
   // Pending viewport buffer to be set after initialization

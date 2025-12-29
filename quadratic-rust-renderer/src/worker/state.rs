@@ -808,6 +808,12 @@ impl RendererState {
             .set_selection(start_col, start_row, end_col, end_row);
     }
 
+    /// Set the A1Selection from the client.
+    /// This updates the cursor to match the selection state.
+    pub fn set_a1_selection(&mut self, selection: quadratic_core_shared::A1Selection) {
+        self.content.cursor.set_a1_selection(selection);
+    }
+
     // =========================================================================
     // Fonts
     // =========================================================================

@@ -93,23 +93,17 @@ export function readViewportBuffer(buffer: SharedArrayBuffer): ViewportState {
  * @param buffer - The SharedArrayBuffer to write to
  * @param state - The viewport state to write
  */
-export function writeViewportBuffer(
-  buffer: SharedArrayBuffer,
-  state: Partial<ViewportState>
-): void {
+export function writeViewportBuffer(buffer: SharedArrayBuffer, state: Partial<ViewportState>): void {
   const view = new Float32Array(buffer);
 
-  if (state.positionX !== undefined)
-    view[ViewportBufferIndex.PositionX] = state.positionX;
-  if (state.positionY !== undefined)
-    view[ViewportBufferIndex.PositionY] = state.positionY;
+  if (state.positionX !== undefined) view[ViewportBufferIndex.PositionX] = state.positionX;
+  if (state.positionY !== undefined) view[ViewportBufferIndex.PositionY] = state.positionY;
   if (state.scale !== undefined) view[ViewportBufferIndex.Scale] = state.scale;
   if (state.dpr !== undefined) view[ViewportBufferIndex.Dpr] = state.dpr;
   if (state.width !== undefined) view[ViewportBufferIndex.Width] = state.width;
-  if (state.height !== undefined)
-    view[ViewportBufferIndex.Height] = state.height;
-  if (state.dirty !== undefined)
-    view[ViewportBufferIndex.Dirty] = state.dirty ? 1.0 : 0.0;
+  if (state.height !== undefined) view[ViewportBufferIndex.Height] = state.height;
+  if (state.dirty !== undefined) view[ViewportBufferIndex.Dirty] = state.dirty ? 1.0 : 0.0;
+  console.log('writeViewportBuffer', state);
 }
 
 /**

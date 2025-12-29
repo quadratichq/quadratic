@@ -7,6 +7,7 @@
  * to the Rust renderer via SharedArrayBuffer.
  */
 
+import { ViewportBuffer } from '@/app/quadratic-core/quadratic_core';
 import { Decelerate, type DecelerateOptions, DEFAULT_DECELERATE_OPTIONS } from './Decelerate';
 
 /** Velocity for snap-back animation (px/ms) */
@@ -35,6 +36,8 @@ export interface VisibleBounds {
  * via SharedArrayBuffer.
  */
 export class Viewport {
+  private buffer: ViewportBuffer;
+
   /** Position of the viewport in world coordinates */
   private positionX = 0;
   private positionY = 0;
@@ -68,6 +71,7 @@ export class Viewport {
   private buffer: SharedArrayBuffer | null = null;
 
   constructor(width = 0, height = 0, options?: DecelerateOptions) {
+    this.buffer = new ViewportBuffer();
     this.sizeWidth = width;
     this.sizeHeight = height;
     this.decelerate = new Decelerate(options ?? DEFAULT_DECELERATE_OPTIONS);

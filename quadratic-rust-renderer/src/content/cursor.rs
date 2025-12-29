@@ -2,7 +2,7 @@
 //!
 //! Equivalent to Cursor.ts from the Pixi.js implementation
 
-use quadratic_core_shared::{Pos, Rect, SheetOffsets};
+use quadratic_core_shared::{A1Selection, CellRefRange, Pos, Rect, SheetOffsets};
 
 use crate::RenderContext;
 use crate::primitives::{Color, LineScaling, Lines, Rects};
@@ -88,6 +88,44 @@ impl Cursor {
             self.selection = new_selection;
             self.dirty = true;
         }
+    }
+
+    /// Set from A1Selection (synced from client)
+    pub fn set_a1_selection(&mut self, selection: A1Selection) {
+        // Update cursor position
+        self.selected_cell = (selection.cursor.x, selection.cursor.y);
+
+        // Get the selection range from the first range (if any)
+        // For now, we only handle the first range; multi-range selections
+        // would require more complex rendering
+        if let Some(range) = selection.ranges.first() {
+            match range {
+                CellRefRange::Sheet { range } => {
+                    // Get the bounding rectangle of the range
+                    let start = range.start;
+                    let end = range.end;
+                    let start_col = start.col.coord;
+                    let start_row = start.row.coord;
+                    let end_col = end.col.coord;
+                    let end_row = end.row.coord;
+
+                    // Only set selection if it's more than a single cell
+                    if start_col != end_col || start_row != end_row {
+                        self.selection = Some((start_col, start_row, end_col, end_row));
+                    } else {
+                        self.selection = None;
+                    }
+                }
+                CellRefRange::Table { .. } => {
+                    // Table references need context to resolve; for now, just use cursor
+                    self.selection = None;
+                }
+            }
+        } else {
+            self.selection = None;
+        }
+
+        self.dirty = true;
     }
 
     /// Clear the selection (keep only single cell)

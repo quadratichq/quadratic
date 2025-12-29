@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 
+use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
 use crate::{
     Pos, Rect,
     compression::{SerializationFormat, serialize},
@@ -13,24 +14,11 @@ use crate::{
             JsHtmlOutput, JsOffset, JsUpdateCodeCell,
         },
     },
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
 };
-
-use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
+use quadratic_core_shared::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 
 impl GridController {
-    pub(crate) fn send_viewport_buffer(&mut self) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-
-        let viewport_buffer = ViewportBuffer::default();
-        crate::wasm_bindings::js::jsSendViewportBuffer(viewport_buffer.get_buffer());
-        self.viewport_buffer = Some(viewport_buffer);
-    }
-
     /// Sends all pending updates to the client and render worker
     pub(crate) fn send_client_render_updates(&mut self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {

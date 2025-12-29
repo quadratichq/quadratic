@@ -258,6 +258,18 @@ impl WorkerRendererGPU {
             .set_cursor_selection(start_col, start_row, end_col, end_row);
     }
 
+    /// Set the A1Selection from bincode-encoded bytes.
+    /// This is the primary way to sync selection state from the client.
+    #[wasm_bindgen]
+    pub fn set_a1_selection(&mut self, data: &[u8]) -> Result<(), JsValue> {
+        use quadratic_core_shared::A1Selection;
+        let (selection, _): (A1Selection, _) =
+            bincode::decode_from_slice(data, bincode::config::standard())
+                .map_err(|e| JsValue::from_str(&format!("Failed to decode A1Selection: {}", e)))?;
+        self.state.set_a1_selection(selection);
+        Ok(())
+    }
+
     /// Upload a font texture from raw RGBA pixel data
     #[wasm_bindgen]
     pub fn upload_font_texture_from_data(

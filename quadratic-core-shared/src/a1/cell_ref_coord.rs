@@ -1,5 +1,6 @@
 use std::{fmt, ops::RangeInclusive};
 
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
@@ -9,7 +10,7 @@ use crate::A1Error;
 /// Unbounded coordinate on lower or upper end.
 pub const UNBOUNDED: i64 = i64::MAX;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Encode, Decode)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "js", wasm_bindgen)]

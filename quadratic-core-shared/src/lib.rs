@@ -20,6 +20,7 @@ pub mod serialization;
 pub mod sheet_offsets;
 mod sheet_rect;
 mod test_util;
+mod viewport;
 
 pub use a1::*;
 pub use array_size::*;
@@ -37,3 +38,4 @@ pub use renderer_constants::*;
 pub use sheet_offsets::*;
 pub use sheet_rect::*;
 pub use test_util::*;
+pub use viewport::*;

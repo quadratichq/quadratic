@@ -9,8 +9,8 @@ use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_array;
-use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{Pos, RunError, RunErrorMsg, Value};
+use quadratic_core_shared::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made

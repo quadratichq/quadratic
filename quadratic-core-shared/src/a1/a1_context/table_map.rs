@@ -177,7 +177,6 @@ impl TableMap {
     /// Inserts a test table into the table map.
     ///
     /// if all_columns is None, then it uses visible_columns.
-    #[cfg(test)]
     pub fn test_insert(
         &mut self,
         table_name: &str,

@@ -40,6 +40,14 @@ impl JsSelection {
         serde_json::to_string(&self.selection).map_err(|e| e.to_string())
     }
 
+    /// Saves the selection to bincode bytes.
+    /// This is used for efficient transfer to the rust renderer.
+    #[wasm_bindgen(js_name = "saveBincode")]
+    pub fn save_bincode(&self) -> Result<Vec<u8>, String> {
+        bincode::encode_to_vec(&self.selection, bincode::config::standard())
+            .map_err(|e| e.to_string())
+    }
+
     /// Loads the selection from a JSON string.
     #[wasm_bindgen]
     pub fn load(&mut self, selection: String) {

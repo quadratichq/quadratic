@@ -22,7 +22,6 @@ pub mod error_core;
 pub mod ext;
 pub mod formulas;
 pub mod grid;
-pub mod renderer_constants;
 mod rle;
 pub mod selection;
 pub use quadratic_core_shared::sheet_offsets;
@@ -32,7 +31,6 @@ mod span;
 pub mod test_util;
 pub mod input;
 pub mod values;
-pub mod viewport;
 
 #[cfg(feature = "js")]
 pub mod wasm_bindings;

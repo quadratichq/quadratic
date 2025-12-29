@@ -7,8 +7,8 @@ use crate::{
         tracked_transaction::TrackedTransactions,
     },
     grid::{ConnectionKind, DataTable, Grid, RegionMap, SheetId},
-    viewport::ViewportBuffer,
 };
+use quadratic_core_shared::ViewportBuffer;
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
 pub mod callbacks;
@@ -161,7 +161,9 @@ impl GridController {
                     self.a1_context.table_map.remove_at(sheet_id, pos);
                 }
 
-                self.a1_context.table_map.insert_table(sheet_id, table.to_table_info(pos));
+                self.a1_context
+                    .table_map
+                    .insert_table(sheet_id, table.to_table_info(pos));
             }
         }
 
@@ -222,6 +224,10 @@ impl GridController {
         });
 
         self
+    }
+
+    pub fn set_viewport_buffer(&mut self, buffer: Option<ViewportBuffer>) {
+        self.viewport_buffer = buffer;
     }
 
     /// Returns the undo stack for testing purposes

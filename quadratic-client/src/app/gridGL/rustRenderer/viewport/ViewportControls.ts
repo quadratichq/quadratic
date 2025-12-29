@@ -101,6 +101,8 @@ export class ViewportControls {
     // Start deceleration loop
     this.lastFrameTime = performance.now();
     this.startDecelerationLoop();
+
+    console.log('*** here ***');
   }
 
   /**

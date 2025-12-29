@@ -11,7 +11,19 @@ use crate::{ArraySize, Pos, SheetId, SheetRect};
 
 /// Rectangular region of cells.
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Encode, Decode,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    Encode,
+    Decode,
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -334,7 +346,6 @@ impl Rect {
             .collect()
     }
 
-    #[cfg(test)]
     /// Creates a rectangle from a string like "A1:B2".
     pub fn test_a1(s: &str) -> Self {
         use crate::a1::A1Context;

@@ -80,11 +80,6 @@ export interface CoreRenderRequestRowHeights {
   rows: string;
 }
 
-export interface CoreRenderViewportBuffer {
-  type: 'coreRenderViewportBuffer';
-  buffer: SharedArrayBuffer;
-}
-
 export interface CoreRenderTransactionStart {
   type: 'coreRenderTransactionStart';
   transactionId: string;
@@ -108,7 +103,6 @@ export type CoreRenderMessage =
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
-  | CoreRenderViewportBuffer
   | CoreRenderTransactionStart
   | CoreRenderTransactionEnd;
 

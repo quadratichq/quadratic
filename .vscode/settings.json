@@ -270,6 +270,7 @@
     "Xlsb",
     "xlsxwriter",
     "xyxy",
+    "Zeroable",
     "zstd"
   ],
   "editor.codeActionsOnSave": {

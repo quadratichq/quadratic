@@ -18,8 +18,8 @@ use crate::{
         A1SelectionExt, CellsAccessed, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
+use quadratic_core_shared::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 
 use super::transaction_name::TransactionName;
 

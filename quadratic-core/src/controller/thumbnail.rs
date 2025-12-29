@@ -54,7 +54,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        Pos, Rect, SheetRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
+        Pos, Rect, SheetRect,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
@@ -64,6 +64,7 @@ mod test {
             sheet::borders::{BorderStyleCell, BorderStyleTimestamp, BordersUpdates},
         },
     };
+    use quadratic_core_shared::{THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 
     #[test]
     fn test_thumbnail_dirty_sheet_rect() {

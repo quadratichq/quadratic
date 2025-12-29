@@ -199,7 +199,6 @@ impl TableMapEntry {
         y_adjustment
     }
 
-    #[cfg(test)]
     pub fn test(
         table_name: &str,
         visible_columns: &[&str],

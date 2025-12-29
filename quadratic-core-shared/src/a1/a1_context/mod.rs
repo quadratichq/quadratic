@@ -105,7 +105,6 @@ impl A1Context {
     ///
     /// sheets: Vec<(sheet_name: &str, sheet_id: SheetId)>
     /// tables: Vec<(table_name: &str, column_names: Vec<&str>, bounds: Rect)>
-    #[cfg(test)]
     pub fn test(sheets: &[(&str, SheetId)], tables: &[(&str, &[&str], crate::Rect)]) -> Self {
         let mut sheet_map = SheetMap::default();
         for (name, id) in sheets {

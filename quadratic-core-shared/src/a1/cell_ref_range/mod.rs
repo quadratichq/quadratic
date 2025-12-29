@@ -1,5 +1,6 @@
 use std::fmt;
 
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::{Pos, Rect};
@@ -16,7 +17,7 @@ mod mutate;
 mod query;
 mod to_table_ref;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Encode, Decode)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(untagged)]
@@ -39,7 +40,6 @@ impl CellRefRange {
     }
 }
 impl CellRefRange {
-    #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
         Self::Sheet {
             range: RefRangeBounds::from_str(a1, None).unwrap(),

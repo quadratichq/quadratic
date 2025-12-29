@@ -7,11 +7,12 @@
 
 use std::fmt;
 
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::a1::TableMapEntry;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, Encode, Decode)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub enum ColRange {

@@ -1,10 +1,10 @@
-use bincode::{Decode, Encode};
 use crate::{
     RefAdjust, SheetId,
     a1::CellRefRangeEnd,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 use anyhow::Result;
+use bincode::{Decode, Encode};
 use rstar::Point;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
@@ -12,7 +12,20 @@ use std::{fmt, str::FromStr};
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, Encode, Decode)]
+#[derive(
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    Default,
+    Copy,
+    Clone,
+    Encode,
+    Decode,
+)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -236,7 +249,6 @@ impl SheetPos {
         self.y = pos.y;
     }
 
-    #[cfg(test)]
     pub fn test() -> Self {
         Self {
             x: 1,

@@ -39,12 +39,10 @@ impl GridController {
 
         let mut grid = match file::import(file).map_err(|e| e.to_string()) {
             Ok(file) => {
-                let mut grid = GridController::from_grid(file, last_sequence_num as u64);
+                let grid = GridController::from_grid(file, last_sequence_num as u64);
 
                 // populate data for client and text renderer
                 if initialize {
-                    grid.send_viewport_buffer();
-
                     // a1 context needs to be sent before SheetInfo
                     grid.send_a1_context();
 

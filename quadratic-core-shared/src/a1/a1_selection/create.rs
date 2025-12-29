@@ -207,18 +207,15 @@ impl A1Selection {
     }
 
     /// Returns a test selection from the A1-string with SheetId::TEST.
-    #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
         Self::parse(a1, SheetId::TEST, &A1Context::default(), None).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
-    #[cfg(test)]
     pub fn test_a1_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
         Self::parse(a1, sheet_id, &A1Context::default(), None).unwrap()
     }
 
-    #[cfg(test)]
     #[track_caller]
     pub fn test_a1_context(a1: &str, a1_context: &A1Context) -> Self {
         Self::parse(a1, SheetId::TEST, a1_context, None).unwrap()

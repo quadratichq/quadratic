@@ -54,7 +54,6 @@ declare var self: WorkerGlobalScope &
     sendMultiplayerSynced: () => void;
     sendHashRenderCellsRender: (hashRenderCells: Uint8Array) => void;
     sendHashesDirtyRender: (dirtyHashes: Uint8Array) => void;
-    sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
@@ -223,10 +222,6 @@ export const jsHashesDirty = (dirtyHashes: Uint8Array) => {
 
 export const jsClientMessage = (message: string, severity: JsSnackbarSeverity) => {
   self.sendClientMessage(message, severity);
-};
-
-export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
-  self.sendViewportBuffer(buffer);
 };
 
 export const jsA1Context = (context: Uint8Array) => {

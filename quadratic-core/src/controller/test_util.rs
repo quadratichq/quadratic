@@ -10,8 +10,9 @@ use crate::{
     grid::column_header::DataTableColumnHeader,
     grid::{CodeCellLanguage, CodeRun},
     grid::{DataTable, DataTableKind},
-    viewport::ViewportBuffer,
 };
+#[cfg(test)]
+use quadratic_core_shared::ViewportBuffer;
 
 #[cfg(test)]
 use super::{
