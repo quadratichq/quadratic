@@ -41,8 +41,8 @@ pub struct HeadingColors {
 impl Default for HeadingColors {
     fn default() -> Self {
         Self {
-            background: [0.96, 0.96, 0.96, 1.0],        // Light gray
-            corner_background: [0.94, 0.94, 0.94, 1.0], // Slightly darker
+            background: [1.0, 1.0, 1.0, 1.0], // White (matches headerBackgroundColor in colors.ts)
+            corner_background: [1.0, 1.0, 1.0, 1.0], // White (matches headerCornerBackgroundColor in colors.ts)
             label: [0.137, 0.192, 0.263, 1.0], // #233143 (matches gridHeadingLabel in colors.ts)
             grid_line: [0.8, 0.8, 0.8, 1.0],   // Grid line gray
             selection: [0.2, 0.4, 0.8, 1.0],   // Blue selection

@@ -6,28 +6,13 @@
  */
 
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
+import { createViewportBuffer, writeViewportBuffer } from '@/app/gridGL/rustRenderer/viewport/ViewportBuffer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type {
   ClientRustRendererMessage,
   ClientRustRendererPing,
   RustRendererClientMessage,
 } from './rustRendererClientMessages';
-
-// Viewport buffer size: 8 floats * 4 bytes = 32 bytes
-// Layout: [positionX, positionY, scale, dpr, width, height, dirty, reserved]
-const VIEWPORT_BUFFER_SIZE = 32;
-
-// Indices into the Float32Array
-const ViewportIndex = {
-  PositionX: 0,
-  PositionY: 1,
-  Scale: 2,
-  Dpr: 3,
-  Width: 4,
-  Height: 5,
-  Dirty: 6,
-  Reserved: 7,
-} as const;
 
 class RustRendererWebWorker {
   private worker?: Worker;
@@ -40,7 +25,6 @@ class RustRendererWebWorker {
 
   // SharedArrayBuffer for viewport state (main thread writes, renderer reads)
   private viewportBuffer?: SharedArrayBuffer;
-  private viewportView?: Float32Array;
 
   // Queue messages until the worker is ready
   private messageQueue: ClientRustRendererMessage[] = [];
@@ -174,23 +158,23 @@ class RustRendererWebWorker {
     }
 
     try {
-      // Create the SharedArrayBuffer
-      this.viewportBuffer = new SharedArrayBuffer(VIEWPORT_BUFFER_SIZE);
-      this.viewportView = new Float32Array(this.viewportBuffer);
+      // Create the SharedArrayBuffer using the shared utility
+      this.viewportBuffer = createViewportBuffer();
 
-      // Initialize with default values
+      // Initialize with canvas-specific values
       const dpr = window.devicePixelRatio || 1;
       const canvasWidth = this.canvas?.clientWidth ?? 800;
       const canvasHeight = this.canvas?.clientHeight ?? 600;
 
-      this.viewportView[ViewportIndex.PositionX] = 0;
-      this.viewportView[ViewportIndex.PositionY] = 0;
-      this.viewportView[ViewportIndex.Scale] = 1;
-      this.viewportView[ViewportIndex.Dpr] = dpr;
-      this.viewportView[ViewportIndex.Width] = canvasWidth * dpr;
-      this.viewportView[ViewportIndex.Height] = canvasHeight * dpr;
-      this.viewportView[ViewportIndex.Dirty] = 1; // Start dirty
-      this.viewportView[ViewportIndex.Reserved] = 0;
+      writeViewportBuffer(this.viewportBuffer, {
+        positionX: 0,
+        positionY: 0,
+        scale: 1,
+        dpr,
+        width: canvasWidth * dpr,
+        height: canvasHeight * dpr,
+        dirty: true,
+      });
 
       console.log(`[rustRendererWebWorker] Viewport buffer created: ${canvasWidth}x${canvasHeight}, dpr=${dpr}`);
 
@@ -217,16 +201,18 @@ class RustRendererWebWorker {
    * @param height - Canvas height in CSS pixels
    */
   writeViewport(x: number, y: number, scale: number, width: number, height: number) {
-    if (!this.viewportView) return;
+    if (!this.viewportBuffer) return;
 
     const dpr = window.devicePixelRatio || 1;
-    this.viewportView[ViewportIndex.PositionX] = x;
-    this.viewportView[ViewportIndex.PositionY] = y;
-    this.viewportView[ViewportIndex.Scale] = scale;
-    this.viewportView[ViewportIndex.Dpr] = dpr;
-    this.viewportView[ViewportIndex.Width] = width * dpr;
-    this.viewportView[ViewportIndex.Height] = height * dpr;
-    this.viewportView[ViewportIndex.Dirty] = 1; // Mark dirty
+    writeViewportBuffer(this.viewportBuffer, {
+      positionX: x,
+      positionY: y,
+      scale,
+      dpr,
+      width: width * dpr,
+      height: height * dpr,
+      dirty: true,
+    });
   }
 
   /**
@@ -293,50 +279,6 @@ class RustRendererWebWorker {
       width,
       height,
       devicePixelRatio: window.devicePixelRatio || 1,
-    });
-  }
-
-  /**
-   * Forward mouse event to renderer
-   */
-  mouseEvent(
-    eventType: 'move' | 'down' | 'up' | 'wheel',
-    x: number,
-    y: number,
-    options?: {
-      button?: number;
-      deltaX?: number;
-      deltaY?: number;
-      modifiers?: { shift: boolean; ctrl: boolean; alt: boolean; meta: boolean };
-    }
-  ) {
-    this.send({
-      type: 'clientRustRendererMouseEvent',
-      eventType,
-      x,
-      y,
-      button: options?.button,
-      deltaX: options?.deltaX,
-      deltaY: options?.deltaY,
-      modifiers: options?.modifiers ?? { shift: false, ctrl: false, alt: false, meta: false },
-    });
-  }
-
-  /**
-   * Forward keyboard event to renderer
-   */
-  keyEvent(
-    eventType: 'down' | 'up',
-    key: string,
-    code: string,
-    modifiers?: { shift: boolean; ctrl: boolean; alt: boolean; meta: boolean }
-  ) {
-    this.send({
-      type: 'clientRustRendererKeyEvent',
-      eventType,
-      key,
-      code,
-      modifiers: modifiers ?? { shift: false, ctrl: false, alt: false, meta: false },
     });
   }
 

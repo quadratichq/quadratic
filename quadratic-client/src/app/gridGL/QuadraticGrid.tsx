@@ -3,7 +3,7 @@ import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
 import { ScrollBars } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { RustRendererOverlay } from '@/app/gridGL/RustRendererOverlay';
+import { RustRenderer } from '@/app/gridGL/rustRenderer/RustRenderer';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import type { MouseEvent } from 'react';
@@ -71,7 +71,7 @@ export const QuadraticGrid = memo(() => {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <RustRendererOverlay />
+      <RustRenderer />
       <ScrollBars />
       <Search />
       <ImportProgress />

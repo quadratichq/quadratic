@@ -33,37 +33,6 @@ export interface ClientRustRendererSetSheet {
   sheetId: string;
 }
 
-/** Mouse event from the client */
-export interface ClientRustRendererMouseEvent {
-  type: 'clientRustRendererMouseEvent';
-  eventType: 'move' | 'down' | 'up' | 'wheel';
-  x: number;
-  y: number;
-  button?: number;
-  deltaX?: number;
-  deltaY?: number;
-  modifiers: {
-    shift: boolean;
-    ctrl: boolean;
-    alt: boolean;
-    meta: boolean;
-  };
-}
-
-/** Keyboard event from the client */
-export interface ClientRustRendererKeyEvent {
-  type: 'clientRustRendererKeyEvent';
-  eventType: 'down' | 'up';
-  key: string;
-  code: string;
-  modifiers: {
-    shift: boolean;
-    ctrl: boolean;
-    alt: boolean;
-    meta: boolean;
-  };
-}
-
 /** Resize the canvas */
 export interface ClientRustRendererResize {
   type: 'clientRustRendererResize';
@@ -94,8 +63,6 @@ export type ClientRustRendererMessage =
   | ClientRustRendererInit
   | ClientRustRendererViewport
   | ClientRustRendererSetSheet
-  | ClientRustRendererMouseEvent
-  | ClientRustRendererKeyEvent
   | ClientRustRendererResize
   | ClientRustRendererScreenshot
   | ClientRustRendererPing

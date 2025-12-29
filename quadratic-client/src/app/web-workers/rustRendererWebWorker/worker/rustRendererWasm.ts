@@ -192,43 +192,6 @@ class RustRendererWasm {
   }
 
   /**
-   * Handle a mouse event.
-   * Note: Drag/wheel handling is now managed via SharedArrayBuffer viewport control.
-   */
-  mouseEvent(
-    eventType: 'move' | 'down' | 'up' | 'wheel',
-    x: number,
-    y: number,
-    options?: {
-      button?: number;
-      deltaX?: number;
-      deltaY?: number;
-      modifiers?: { shift: boolean; ctrl: boolean; alt: boolean; meta: boolean };
-    }
-  ) {
-    if (!this.initialized || !this.renderer) return;
-
-    // Mouse events are now handled via the viewport buffer
-    // The main thread controls the viewport and the renderer reads from the shared buffer
-    this.renderer.set_viewport_dirty();
-  }
-
-  /**
-   * Handle a keyboard event.
-   */
-  keyEvent(
-    eventType: 'down' | 'up',
-    key: string,
-    code: string,
-    modifiers?: { shift: boolean; ctrl: boolean; alt: boolean; meta: boolean }
-  ) {
-    if (!this.initialized || !this.renderer) return;
-
-    // TODO: Implement keyboard handling in Rust
-    // this.renderer.key_event(eventType, key, code, modifiers);
-  }
-
-  /**
    * Resize the canvas.
    * @param width - CSS width (logical pixels)
    * @param height - CSS height (logical pixels)
@@ -279,15 +242,7 @@ class RustRendererWasm {
    */
   frame(elapsed: number): boolean {
     if (!this.initialized || !this.renderer) return false;
-
     this.frameCount++;
-    // Log every 300 frames (~5 seconds at 60fps) to show it's running
-    if (this.frameCount % 300 === 1) {
-      console.log(
-        `[rustRendererWasm] frame #${this.frameCount}, using shared viewport: ${this.renderer.is_using_shared_viewport()}`
-      );
-    }
-
     return this.renderer.frame(elapsed);
   }
 

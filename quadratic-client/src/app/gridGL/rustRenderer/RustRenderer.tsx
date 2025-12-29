@@ -1,23 +1,25 @@
 /**
- * RustRendererOverlay - Debug overlay that shows the Rust renderer on top of Pixi.js
+ * RustRenderer
  *
- * This component is only rendered when the `debugUseRustRenderer` debug flag is enabled.
  * It creates a canvas that is transferred to the rust renderer worker as an OffscreenCanvas.
  */
 
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { ViewportControls } from '@/app/gridGL/rustRenderer/viewport/ViewportControls';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rustRendererWebWorker } from '@/app/web-workers/rustRendererWebWorker/rustRendererWebWorker';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 type OpacityMode = 'half' | 'rust' | 'ts';
 
-export const RustRendererOverlay = memo(() => {
+export const RustRenderer = memo(() => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backend, setBackend] = useState<string | null>(null);
-  const [opacityMode, setOpacityMode] = useState<OpacityMode>('half');
+  const [opacityMode, setOpacityMode] = useLocalStorage<OpacityMode>('rustRendererOpacityMode', 'half');
+  const [, setViewportControls] = useState<ViewportControls | undefined>(undefined);
 
   const getOpacity = () => {
     switch (opacityMode) {
@@ -39,20 +41,21 @@ export const RustRendererOverlay = memo(() => {
     if (!canvasRef.current || initialized) return;
 
     try {
-      console.log('[RustRendererOverlay] Initializing renderer...');
+      console.log('[RustRenderer] Initializing rust renderer...');
       await quadraticCore.initRustRenderer(canvasRef.current);
 
+      setViewportControls(new ViewportControls(canvasRef.current));
+
       // Send sheet offsets to the rust renderer
-      console.log('[RustRendererOverlay] Sending sheet offsets to rust renderer...');
       quadraticCore.sendAllSheetOffsetsToRustRenderer();
 
       setInitialized(true);
       setBackend('ready');
-      console.log('[RustRendererOverlay] Renderer initialized successfully');
+      console.log('[RustRenderer] Renderer initialized successfully');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      console.error('[RustRendererOverlay] Failed to initialize:', err);
+      console.error('[RustRenderer] Failed to initialize:', err);
     }
   }, [initialized]);
 
@@ -73,7 +76,7 @@ export const RustRendererOverlay = memo(() => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         if (width > 0 && height > 0) {
-          console.log(`[RustRendererOverlay] resize: ${width}x${height}`);
+          console.log(`[RustRenderer] resize: ${width}x${height}`);
           rustRendererWebWorker.resize(width, height);
         }
       }
@@ -205,4 +208,4 @@ export const RustRendererOverlay = memo(() => {
   );
 });
 
-RustRendererOverlay.displayName = 'RustRendererOverlay';
+RustRenderer.displayName = 'RustRenderer';

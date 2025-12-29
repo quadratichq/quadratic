@@ -48,19 +48,6 @@ class RustRendererClient {
         rustRendererWasm.setSheet(e.data.sheetId);
         return;
 
-      case 'clientRustRendererMouseEvent':
-        rustRendererWasm.mouseEvent(e.data.eventType, e.data.x, e.data.y, {
-          button: e.data.button,
-          deltaX: e.data.deltaX,
-          deltaY: e.data.deltaY,
-          modifiers: e.data.modifiers,
-        });
-        return;
-
-      case 'clientRustRendererKeyEvent':
-        rustRendererWasm.keyEvent(e.data.eventType, e.data.key, e.data.code, e.data.modifiers);
-        return;
-
       case 'clientRustRendererResize':
         this.devicePixelRatio = e.data.devicePixelRatio;
         rustRendererWasm.resize(e.data.width, e.data.height, e.data.devicePixelRatio);
