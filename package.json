@@ -40,6 +40,8 @@
     "build:wasm:javascript:function-timer": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js,function-timer",
     "watch:wasm:rust-renderer": "cd quadratic-rust-renderer && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-renderer --weak-refs'",
     "build:wasm:rust-renderer": "cd quadratic-rust-renderer && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-renderer --weak-refs",
+    "watch:wasm:rust-client": "cd quadratic-rust-client && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'",
+    "build:wasm:rust-client": "cd quadratic-rust-client && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
     "build:python": "./quadratic-kernels/python-wasm/package.sh",
     "build:cloud-worker": "docker build -t quadratic-cloud-worker -f quadratic-cloud-worker/Dockerfile .",

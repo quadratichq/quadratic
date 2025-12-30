@@ -8,6 +8,12 @@ export const COMPONENTS = {
         name: "RustRenderer",
         shortcut: "e",
     },
+    rustClient: {
+        color: "cyanBright",
+        dark: "cyanBright",
+        name: "RustClient",
+        shortcut: "i",
+    },
     multiplayer: {
         color: "green",
         dark: "green",

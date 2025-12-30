@@ -173,6 +173,7 @@ export class UI {
         if (!this.cli.options.noRust) {
             this.statusItem("core");
             this.statusItem("rustRenderer");
+            this.statusItem("rustClient");
         }
         this.statusItem("multiplayer");
         this.statusItem("files");

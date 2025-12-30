@@ -44,7 +44,9 @@ export const RustRenderer = memo(() => {
       console.log('[RustRenderer] Initializing rust renderer...');
       await quadraticCore.initRustRenderer(canvasRef.current);
 
-      setViewportControls(new ViewportControls(canvasRef.current));
+      // Initialize ViewportControls with async factory (initializes WASM)
+      const controls = await ViewportControls.create(canvasRef.current);
+      setViewportControls(controls);
 
       // Send sheet offsets to the rust renderer
       quadraticCore.sendAllSheetOffsetsToRustRenderer();
@@ -115,6 +117,7 @@ export const RustRenderer = memo(() => {
           width: '100%',
           height: '100%',
           opacity: getOpacity(),
+          pointerEvents: 'auto', // Enable pointer events for ViewportControls
         }}
       />
       {/* Debug status indicator and opacity controls */}

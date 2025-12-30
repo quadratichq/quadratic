@@ -9,6 +9,7 @@ export class Control {
     types;
     core;
     rustRenderer;
+    rustClient;
     client;
     multiplayer;
     files;
@@ -25,6 +26,7 @@ export class Control {
         api: false,
         core: false,
         rustRenderer: false,
+        rustClient: false,
         multiplayer: false,
         files: false,
         connection: false,
@@ -50,6 +52,7 @@ export class Control {
             this.kill("types"),
             this.kill("core"),
             this.kill("rustRenderer"),
+            this.kill("rustClient"),
             this.kill("client"),
             this.kill("multiplayer"),
             this.kill("files"),
@@ -251,7 +254,7 @@ export class Control {
         this.cli.options.functionTimer = !this.cli.options.functionTimer;
         this.restartCore();
     }
-    async runCore(restart) {
+    async runCore() {
         if (this.cli.options.noRust)
             return;
         if (this.quitting)
@@ -259,7 +262,6 @@ export class Control {
         this.status.core = false;
         this.ui.print("core");
         await this.kill("core");
-        let firstRun = true;
         this.signals.core = new AbortController();
         this.core = spawn("npm", [
             "run",
@@ -273,14 +275,6 @@ export class Control {
             success: ["[Finished running. Exit status: 0", "ready to publish"],
             error: "error[",
             start: ["> quadratic", "[Running "],
-        }, () => {
-            // Start rust-renderer after core completes successfully (first time only)
-            if (firstRun && !restart) {
-                firstRun = false;
-                if (this.status.rustRenderer !== "killed" && !this.rustRenderer) {
-                    this.runRustRenderer();
-                }
-            }
         }));
     }
     async runRustRenderer(restart) {
@@ -324,6 +318,47 @@ export class Control {
             this.status.rustRenderer = "killed";
         }
     }
+    async runRustClient(restart) {
+        if (this.cli.options.noRust)
+            return;
+        if (this.quitting)
+            return;
+        if (this.status.rustClient === "killed")
+            return;
+        this.status.rustClient = false;
+        this.ui.print("rustClient");
+        await this.kill("rustClient");
+        this.signals.rustClient = new AbortController();
+        this.rustClient = spawn("npm", [
+            "run",
+            this.cli.options.rustClient
+                ? "watch:wasm:rust-client"
+                : "build:wasm:rust-client",
+        ], { signal: this.signals.rustClient.signal });
+        this.ui.printOutput("rustClient", (data) => this.handleResponse("rustClient", data, {
+            success: ["[Finished running. Exit status: 0", "ready to publish"],
+            error: "error[",
+            start: ["> quadratic", "[Running "],
+        }));
+    }
+    async restartRustClient() {
+        this.cli.options.rustClient = !this.cli.options.rustClient;
+        this.runRustClient(true);
+    }
+    async killRustClient() {
+        if (this.status.rustClient === "killed") {
+            this.status.rustClient = false;
+            this.ui.print("rustClient", "restarting...");
+            this.runRustClient();
+        }
+        else {
+            if (this.rustClient) {
+                await this.kill("rustClient");
+                this.ui.print("rustClient", "killed", "red");
+            }
+            this.status.rustClient = "killed";
+        }
+    }
     kill(name) {
         if (!this[name])
             return;
@@ -358,7 +393,7 @@ export class Control {
     }
     async restartCore() {
         this.cli.options.core = !this.cli.options.core;
-        this.runCore(true);
+        this.runCore();
     }
     async runMultiplayer(restart) {
         if (this.quitting)
@@ -706,6 +741,8 @@ export class Control {
             }
             this.runTypes();
             this.runCore();
+            this.runRustRenderer();
+            this.runRustClient();
         });
     }
     isRedisRunning() {

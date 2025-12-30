@@ -7,9 +7,19 @@
  * Designed to be portable back to the main quadratic-client app.
  */
 
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { rustRendererWebWorker } from '@/app/web-workers/rustRendererWebWorker/rustRendererWebWorker';
 import { Viewport } from './Viewport';
-import { createViewportBuffer } from './ViewportBuffer';
+
+/**
+ * Forward an event to the Pixi canvas.
+ * This allows both renderers to receive events during the transition period.
+ */
+function forwardEventToPixi(event: PointerEvent | WheelEvent): void {
+  // Create a new event with the same properties
+  const clonedEvent = new (event.constructor as typeof PointerEvent | typeof WheelEvent)(event.type, event);
+  pixiApp.canvas.dispatchEvent(clonedEvent);
+}
 
 /** Zoom sensitivity for wheel events with ctrl/meta key */
 export const WHEEL_ZOOM_PERCENT = 1.5;
@@ -36,6 +46,7 @@ export const VIEWPORT_UPDATE_DEBOUNCE_MS = 100;
  * - Deceleration (momentum scrolling)
  * - Debounced viewport change notifications
  *
+ * Use the static `create()` factory method to instantiate.
  */
 export class ViewportControls {
   private canvas: HTMLCanvasElement;
@@ -67,19 +78,24 @@ export class ViewportControls {
   private boundWheel: (e: WheelEvent) => void;
   private boundResize: () => void;
 
-  constructor(canvas: HTMLCanvasElement) {
+  /**
+   * Factory method to create a ViewportControls instance.
+   * Use this instead of the constructor because WASM initialization is async.
+   */
+  static async create(canvas: HTMLCanvasElement): Promise<ViewportControls> {
+    const controls = new ViewportControls(canvas);
+    await controls.initBuffer();
+    return controls;
+  }
+
+  private constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
 
     // Initialize canvas dimensions
     this.updateCanvasDimensions();
 
-    // Create SharedArrayBuffer and Viewport
-    // Note: The buffer is NOT sent to the worker here - call sendBufferToWorker()
-    // after the worker is initialized and ready to receive it.
-    const buffer = createViewportBuffer();
+    // Create Viewport (buffer is created asynchronously in initBuffer)
     this.viewport = new Viewport(this.canvasWidth, this.canvasHeight);
-    this.viewport.setBuffer(buffer);
-    this.viewport.resize(this.canvasWidth, this.canvasHeight);
 
     // Bind event handlers
     this.boundPointerDown = this.handlePointerDown.bind(this);
@@ -101,8 +117,20 @@ export class ViewportControls {
     // Start deceleration loop
     this.lastFrameTime = performance.now();
     this.startDecelerationLoop();
+  }
 
-    console.log('*** here ***');
+  /**
+   * Initialize the SharedArrayBuffer for viewport synchronization.
+   * This is async because it needs to initialize the WASM module.
+   */
+  private async initBuffer(): Promise<void> {
+    // Create the buffer (initializes WASM if needed)
+    const buffer = await this.viewport.createBuffer();
+    this.viewport.resize(this.canvasWidth, this.canvasHeight);
+
+    // Share the buffer with the Rust renderer worker
+    rustRendererWebWorker.setExternalViewportBuffer(buffer);
+    console.log('[ViewportControls] Viewport buffer initialized and shared with worker');
   }
 
   /**
@@ -142,7 +170,7 @@ export class ViewportControls {
   }
 
   /**
-   * Clean up event listeners.
+   * Clean up event listeners and WASM resources.
    * Call this when the viewport controls are no longer needed.
    */
   destroy(): void {
@@ -164,21 +192,27 @@ export class ViewportControls {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+
+    // Dispose viewport (frees WASM resources)
+    this.viewport.dispose();
   }
 
   /**
    * Update stored canvas dimensions.
    * Call this after the canvas is resized externally.
+   *
+   * NOTE: Dimensions are stored in CSS pixels, NOT device pixels.
+   * The Viewport sends these to the renderer which converts them.
    */
   updateCanvasDimensions(): void {
-    const dpr = window.devicePixelRatio || 1;
     const container = this.canvas.parentElement;
     if (container) {
-      this.canvasWidth = container.clientWidth * dpr;
-      this.canvasHeight = container.clientHeight * dpr;
+      this.canvasWidth = container.clientWidth;
+      this.canvasHeight = container.clientHeight;
     } else {
-      this.canvasWidth = this.canvas.width;
-      this.canvasHeight = this.canvas.height;
+      const dpr = window.devicePixelRatio || 1;
+      this.canvasWidth = this.canvas.width / dpr;
+      this.canvasHeight = this.canvas.height / dpr;
     }
   }
 
@@ -216,14 +250,20 @@ export class ViewportControls {
     this.canvas.setPointerCapture(e.pointerId);
 
     this.viewport.onDragStart();
+
+    // Forward to Pixi for dual-renderer support
+    forwardEventToPixi(e);
   }
 
   private handlePointerMove(e: PointerEvent): void {
+    // Forward to Pixi for dual-renderer support (even if not dragging)
+    forwardEventToPixi(e);
+
     if (!this.isDragging) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    const dx = (e.clientX - this.lastX) * dpr;
-    const dy = (e.clientY - this.lastY) * dpr;
+    // Delta is in CSS pixels (no DPR multiplication needed - Viewport handles DPR)
+    const dx = e.clientX - this.lastX;
+    const dy = e.clientY - this.lastY;
     this.lastX = e.clientX;
     this.lastY = e.clientY;
 
@@ -236,6 +276,9 @@ export class ViewportControls {
   }
 
   private handlePointerUp(e: PointerEvent): void {
+    // Forward to Pixi for dual-renderer support
+    forwardEventToPixi(e);
+
     if (!this.isDragging) return;
 
     this.isDragging = false;
@@ -245,7 +288,10 @@ export class ViewportControls {
     this.viewport.onDragEnd(time);
   }
 
-  private handlePointerCancel(_e: PointerEvent): void {
+  private handlePointerCancel(e: PointerEvent): void {
+    // Forward to Pixi for dual-renderer support
+    forwardEventToPixi(e);
+
     if (!this.isDragging) return;
 
     this.isDragging = false;
@@ -255,7 +301,8 @@ export class ViewportControls {
   private handleWheel(e: WheelEvent): void {
     e.preventDefault();
 
-    const dpr = window.devicePixelRatio || 1;
+    // Forward to Pixi for dual-renderer support
+    forwardEventToPixi(e);
 
     // deltaMode: 0 = pixels, 1 = lines, 2 = pages
     const deltaX = e.deltaX * (e.deltaMode ? LINE_HEIGHT : 1);
@@ -269,16 +316,17 @@ export class ViewportControls {
       const step = -deltaY / PINCH_ZOOM_DIVISOR;
       const factor = Math.pow(2, (1 + WHEEL_ZOOM_PERCENT) * step);
 
-      // Calculate zoom center in device pixels
+      // Calculate zoom center in CSS pixels (Viewport handles DPR)
       const rect = this.canvas.getBoundingClientRect();
-      const centerX = (e.clientX - rect.left) * (this.canvasWidth / rect.width);
-      const centerY = (e.clientY - rect.top) * (this.canvasHeight / rect.height);
+      const centerX = e.clientX - rect.left;
+      const centerY = e.clientY - rect.top;
 
       this.viewport.zoom(factor, centerX, centerY);
     } else {
       // Wheel to pan (inverted to match natural scrolling)
-      const dx = -deltaX * dpr;
-      const dy = -deltaY * dpr;
+      // Deltas are in CSS pixels (no DPR multiplication needed - Viewport handles DPR)
+      const dx = -deltaX;
+      const dy = -deltaY;
 
       this.viewport.onWheel();
       this.viewport.pan(dx, dy);

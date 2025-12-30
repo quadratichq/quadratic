@@ -16,6 +16,7 @@ export class Control {
   types?: ChildProcessWithoutNullStreams;
   core?: ChildProcessWithoutNullStreams;
   rustRenderer?: ChildProcessWithoutNullStreams;
+  rustClient?: ChildProcessWithoutNullStreams;
   client?: ChildProcessWithoutNullStreams;
   multiplayer?: ChildProcessWithoutNullStreams;
   files?: ChildProcessWithoutNullStreams;
@@ -34,6 +35,7 @@ export class Control {
     api: false,
     core: false,
     rustRenderer: false,
+    rustClient: false,
     multiplayer: false,
     files: false,
     connection: false,
@@ -60,6 +62,7 @@ export class Control {
       this.kill("types"),
       this.kill("core"),
       this.kill("rustRenderer"),
+      this.kill("rustClient"),
       this.kill("client"),
       this.kill("multiplayer"),
       this.kill("files"),
@@ -386,6 +389,53 @@ export class Control {
         this.ui.print("rustRenderer", "killed", "red");
       }
       this.status.rustRenderer = "killed";
+    }
+  }
+
+  async runRustClient(restart?: boolean) {
+    if (this.cli.options.noRust) return;
+    if (this.quitting) return;
+    if (this.status.rustClient === "killed") return;
+    this.status.rustClient = false;
+    this.ui.print("rustClient");
+    await this.kill("rustClient");
+
+    this.signals.rustClient = new AbortController();
+    this.rustClient = spawn(
+      "npm",
+      [
+        "run",
+        this.cli.options.rustClient
+          ? "watch:wasm:rust-client"
+          : "build:wasm:rust-client",
+      ],
+      { signal: this.signals.rustClient.signal },
+    );
+    this.ui.printOutput("rustClient", (data) =>
+      this.handleResponse("rustClient", data, {
+        success: ["[Finished running. Exit status: 0", "ready to publish"],
+        error: "error[",
+        start: ["> quadratic", "[Running "],
+      }),
+    );
+  }
+
+  async restartRustClient() {
+    this.cli.options.rustClient = !this.cli.options.rustClient;
+    this.runRustClient(true);
+  }
+
+  async killRustClient() {
+    if (this.status.rustClient === "killed") {
+      this.status.rustClient = false;
+      this.ui.print("rustClient", "restarting...");
+      this.runRustClient();
+    } else {
+      if (this.rustClient) {
+        await this.kill("rustClient");
+        this.ui.print("rustClient", "killed", "red");
+      }
+      this.status.rustClient = "killed";
     }
   }
 
@@ -813,6 +863,7 @@ export class Control {
       this.runTypes();
       this.runCore();
       this.runRustRenderer();
+      this.runRustClient();
     });
   }
 

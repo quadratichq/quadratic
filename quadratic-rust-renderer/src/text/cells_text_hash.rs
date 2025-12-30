@@ -10,11 +10,27 @@
 use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
+
+use crate::text::{BitmapFonts, CellLabel};
+
+// Shared math utilities (cross-platform)
+#[cfg(any(feature = "wasm", feature = "wgpu-wasm", feature = "wgpu-native"))]
+use crate::utils::math::ortho_matrix;
+
+// RenderContext trait for has_font_texture method
+#[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+use crate::render_context::RenderContext;
+
+// WASM-only imports (WebGL fallback, JS interop)
+#[cfg(feature = "wasm")]
 use wasm_bindgen::JsCast;
 
-use crate::render_context::RenderContext;
-use crate::text::{BitmapFonts, CellLabel};
-use crate::webgl::{RenderTarget, WebGLContext, ortho_matrix};
+// WebGL imports (WASM-only fallback)
+#[cfg(feature = "wasm")]
+use crate::webgl::{RenderTarget, WebGLContext};
+
+// WebGPU imports (cross-platform via wgpu)
+#[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
 use crate::webgpu::{self, WebGPUContext};
 
 /// Hash dimensions (matches client: CellsTypes.ts)
@@ -75,19 +91,18 @@ pub struct CellsTextHash {
     pub world_width: f32,
     pub world_height: f32,
 
-    // === Sprite cache for zoomed-out rendering (WebGL) ===
-    /// Cached sprite render target (pre-rendered text as texture)
-    sprite_cache: Option<RenderTarget>,
-
-    /// Whether the sprite cache needs to be regenerated
+    /// Whether the sprite cache needs to be regenerated (shared across all backends)
     sprite_dirty: bool,
 
-    // === Sprite cache for zoomed-out rendering (WebGPU) ===
-    /// Cached sprite render target for WebGPU
-    sprite_cache_webgpu: Option<webgpu::RenderTarget>,
+    // === Sprite cache for zoomed-out rendering (WebGL - WASM only) ===
+    /// Cached sprite render target (pre-rendered text as texture)
+    #[cfg(feature = "wasm")]
+    sprite_cache: Option<RenderTarget>,
 
-    /// Whether the WebGPU sprite cache needs to be regenerated
-    sprite_dirty_webgpu: bool,
+    // === Sprite cache for zoomed-out rendering (WebGPU - cross-platform) ===
+    /// Cached sprite render target for WebGPU
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+    sprite_cache_webgpu: Option<webgpu::RenderTarget>,
 
     // === Auto-size caches ===
     /// Max content width per column (for column auto-resize)
@@ -130,10 +145,11 @@ impl CellsTextHash {
             world_y,
             world_width,
             world_height,
-            sprite_cache: None,
             sprite_dirty: true,
+            #[cfg(feature = "wasm")]
+            sprite_cache: None,
+            #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
             sprite_cache_webgpu: None,
-            sprite_dirty_webgpu: true,
             columns_max_cache: HashMap::new(),
             rows_max_cache: HashMap::new(),
         }
@@ -158,7 +174,6 @@ impl CellsTextHash {
 
         // Mark sprite dirty since bounds changed
         self.sprite_dirty = true;
-        self.sprite_dirty_webgpu = true;
     }
 
     /// Add or update a label at the given cell position
@@ -166,7 +181,6 @@ impl CellsTextHash {
         self.labels.insert((col, row), label);
         self.dirty = true;
         self.sprite_dirty = true;
-        self.sprite_dirty_webgpu = true;
     }
 
     /// Remove a label at the given cell position
@@ -175,7 +189,6 @@ impl CellsTextHash {
         if result.is_some() {
             self.dirty = true;
             self.sprite_dirty = true;
-            self.sprite_dirty_webgpu = true;
         }
         result
     }
@@ -204,7 +217,6 @@ impl CellsTextHash {
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
         self.sprite_dirty = true;
-        self.sprite_dirty_webgpu = true;
     }
 
     /// Check if this hash is dirty
@@ -326,7 +338,6 @@ impl CellsTextHash {
         self.dirty = false;
         // Mesh changed, so sprite cache is now invalid
         self.sprite_dirty = true;
-        self.sprite_dirty_webgpu = true;
     }
 
     /// Get cached vertices for a texture page
@@ -376,9 +387,10 @@ impl CellsTextHash {
         &self.columns_max_cache
     }
 
-    /// Render all cached text for this hash using MSDF text rendering
+    /// Render all cached text for this hash using MSDF text rendering (WebGL)
     ///
     /// Renders each texture page's cached text in one draw call per page.
+    #[cfg(feature = "wasm")]
     fn render_text(
         &self,
         gl: &WebGLContext,
@@ -407,7 +419,8 @@ impl CellsTextHash {
         }
     }
 
-    /// Render the cached sprite (pre-rendered texture) for this hash
+    /// Render the cached sprite (pre-rendered texture) for this hash (WebGL)
+    #[cfg(feature = "wasm")]
     fn render_sprite(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
         if let Some(ref sprite_cache) = self.sprite_cache {
             gl.draw_sprite_with_texture(
@@ -421,11 +434,12 @@ impl CellsTextHash {
         }
     }
 
-    /// Generate the sprite cache by rendering text to a texture
+    /// Generate the sprite cache by rendering text to a texture (WebGL)
     ///
     /// This pre-renders all text in this hash to a texture that can be
     /// displayed as a single sprite when zoomed out. Based on the
     /// "War and Peace and WebGL" technique for smooth text at small sizes.
+    #[cfg(feature = "wasm")]
     pub fn rebuild_sprite_if_dirty(
         &mut self,
         gl: &WebGLContext,
@@ -563,17 +577,13 @@ impl CellsTextHash {
         self.sprite_dirty = false;
     }
 
-    /// Render this hash, choosing between text and sprite based on scale
-    ///
-    /// Uses MSDF text rendering when zoomed in (scale >= SPRITE_SCALE_THRESHOLD)
-    /// and pre-rendered sprite when zoomed out (scale < SPRITE_SCALE_THRESHOLD).
-    ///
-    /// Note: Call `rebuild_sprite_if_dirty` before this method if the scale is
-    /// below SPRITE_SCALE_THRESHOLD to ensure the sprite cache is up to date.
     /// Render text using WebGL
     ///
     /// Uses MSDF text rendering when zoomed in (user_scale >= SPRITE_SCALE_THRESHOLD)
     /// and pre-rendered sprite when zoomed out (user_scale < SPRITE_SCALE_THRESHOLD).
+    ///
+    /// Note: Call `rebuild_sprite_if_dirty` before this method if the scale is
+    /// below SPRITE_SCALE_THRESHOLD to ensure the sprite cache is up to date.
     ///
     /// # Arguments
     /// * `gl` - WebGL context
@@ -582,6 +592,7 @@ impl CellsTextHash {
     /// * `effective_scale` - Rendering scale including DPR (for MSDF fwidth calculation)
     /// * `font_scale` - Font scale factor
     /// * `distance_range` - MSDF distance range
+    #[cfg(feature = "wasm")]
     pub fn render(
         &self,
         gl: &WebGLContext,
@@ -604,7 +615,7 @@ impl CellsTextHash {
         }
     }
 
-    /// Render text using WebGPU
+    /// Render text using WebGPU (cross-platform via wgpu)
     ///
     /// Uses MSDF text rendering when zoomed in (user_scale >= SPRITE_SCALE_THRESHOLD)
     /// and pre-rendered sprite when zoomed out (user_scale < SPRITE_SCALE_THRESHOLD).
@@ -617,6 +628,7 @@ impl CellsTextHash {
     /// * `effective_scale` - Rendering scale including DPR (for MSDF fwidth calculation)
     /// * `font_scale` - Font scale factor
     /// * `distance_range` - MSDF distance range
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
     pub fn render_webgpu(
         &self,
         gpu: &mut WebGPUContext,
@@ -667,7 +679,8 @@ impl CellsTextHash {
         }
     }
 
-    /// Render text glyphs using MSDF (WebGPU)
+    /// Render text glyphs using MSDF (WebGPU - cross-platform via wgpu)
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
     fn render_text_webgpu(
         &self,
         gpu: &mut WebGPUContext,
@@ -698,10 +711,11 @@ impl CellsTextHash {
         }
     }
 
-    /// Rebuild sprite cache for WebGPU if dirty
+    /// Rebuild sprite cache for WebGPU if dirty (cross-platform via wgpu)
     ///
     /// This pre-renders all text in this hash to a texture that can be
     /// displayed as a single sprite when zoomed out.
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
     pub fn rebuild_sprite_if_dirty_webgpu(
         &mut self,
         gpu: &mut WebGPUContext,
@@ -709,14 +723,14 @@ impl CellsTextHash {
         font_scale: f32,
         distance_range: f32,
     ) {
-        if !self.sprite_dirty_webgpu {
+        if !self.sprite_dirty {
             return;
         }
 
         // Don't generate sprite for empty hashes
         if self.labels.is_empty() {
             self.sprite_cache_webgpu = None;
-            self.sprite_dirty_webgpu = false;
+            self.sprite_dirty = false;
             return;
         }
 
@@ -798,15 +812,26 @@ impl CellsTextHash {
         // Generate mipmaps for smooth scaling at small sizes
         gpu.generate_mipmaps(sprite_cache);
 
-        self.sprite_dirty_webgpu = false;
+        self.sprite_dirty = false;
     }
 
     /// Check if this hash has a valid sprite cache (WebGL or WebGPU)
     pub fn has_sprite_cache(&self) -> bool {
-        self.sprite_cache.is_some() || self.sprite_cache_webgpu.is_some()
+        #[cfg(feature = "wasm")]
+        let has_webgl = self.sprite_cache.is_some();
+        #[cfg(not(feature = "wasm"))]
+        let has_webgl = false;
+
+        #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+        let has_webgpu = self.sprite_cache_webgpu.is_some();
+        #[cfg(not(any(feature = "wgpu-wasm", feature = "wgpu-native")))]
+        let has_webgpu = false;
+
+        has_webgl || has_webgpu
     }
 
-    /// Delete the sprite cache to free GPU memory
+    /// Delete the sprite cache to free GPU memory (WebGL)
+    #[cfg(feature = "wasm")]
     pub fn delete_sprite_cache(&mut self, gl: &WebGLContext) {
         if let Some(cache) = self.sprite_cache.take() {
             cache.delete(gl.gl());
@@ -819,6 +844,7 @@ impl CellsTextHash {
     /// Checks both WebGL and WebGPU sprite caches
     pub fn sprite_memory_bytes(&self) -> usize {
         // WebGL sprite cache
+        #[cfg(feature = "wasm")]
         let webgl_bytes = match &self.sprite_cache {
             Some(cache) => {
                 // RGBA texture: 4 bytes per pixel
@@ -828,8 +854,11 @@ impl CellsTextHash {
             }
             None => 0,
         };
+        #[cfg(not(feature = "wasm"))]
+        let webgl_bytes = 0;
 
         // WebGPU sprite cache
+        #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
         let webgpu_bytes = match &self.sprite_cache_webgpu {
             Some(cache) => {
                 // RGBA texture: 4 bytes per pixel
@@ -839,6 +868,8 @@ impl CellsTextHash {
             }
             None => 0,
         };
+        #[cfg(not(any(feature = "wgpu-wasm", feature = "wgpu-native")))]
+        let webgpu_bytes = 0;
 
         webgl_bytes + webgpu_bytes
     }

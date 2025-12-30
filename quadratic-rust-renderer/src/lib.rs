@@ -43,11 +43,15 @@ pub mod viewport;
 // Re-export the render context types
 pub use render_context::{CommandBuffer, DrawCommand, RenderContext, RenderError};
 
-// Browser-only modules (WebGL + WebGPU + Worker)
+// WebGL module (browser-only fallback)
 #[cfg(feature = "wasm")]
 pub mod webgl;
-#[cfg(feature = "wasm")]
+
+// WebGPU module (cross-platform via wgpu)
+#[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
 pub mod webgpu;
+
+// Worker module (browser-only entry point)
 #[cfg(feature = "wasm")]
 pub mod worker;
 

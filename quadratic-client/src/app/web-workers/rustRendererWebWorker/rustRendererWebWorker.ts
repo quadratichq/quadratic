@@ -6,13 +6,33 @@
  */
 
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
-import { createViewportBuffer, writeViewportBuffer } from '@/app/gridGL/rustRenderer/viewport/ViewportBuffer';
+import initRustClient, {
+  createViewportBuffer,
+  ViewportBufferWriter,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type {
   ClientRustRendererMessage,
   ClientRustRendererPing,
   RustRendererClientMessage,
 } from './rustRendererClientMessages';
+
+// Track WASM initialization
+let rustClientInitialized = false;
+let rustClientInitPromise: Promise<void> | null = null;
+
+async function ensureRustClientInitialized(): Promise<void> {
+  if (rustClientInitialized) return;
+  if (rustClientInitPromise) return rustClientInitPromise;
+
+  rustClientInitPromise = (async () => {
+    await initRustClient();
+    rustClientInitialized = true;
+    console.log('[rustRendererWebWorker] quadratic-rust-client WASM initialized');
+  })();
+
+  return rustClientInitPromise;
+}
 
 class RustRendererWebWorker {
   private worker?: Worker;
@@ -23,8 +43,11 @@ class RustRendererWebWorker {
   private isReady = false;
   private backend?: 'webgpu' | 'webgl';
 
-  // SharedArrayBuffer for viewport state (main thread writes, renderer reads)
-  private viewportBuffer?: SharedArrayBuffer;
+  // WASM ViewportBufferWriter for viewport state (main thread writes, renderer reads)
+  // Note: This can be set externally via setViewportBuffer() from ViewportControls
+  private viewportBuffer?: ViewportBufferWriter;
+  private viewportSharedBuffer?: SharedArrayBuffer;
+  private externalViewportBuffer = false;
 
   // Queue messages until the worker is ready
   private messageQueue: ClientRustRendererMessage[] = [];
@@ -149,8 +172,21 @@ class RustRendererWebWorker {
   /**
    * Initialize and send the viewport SharedArrayBuffer to the worker.
    * This enables zero-copy viewport sync between main thread and renderer.
+   *
+   * If an external buffer was set via setViewportBuffer(), that will be used instead.
    */
-  private initViewportBuffer() {
+  private async initViewportBuffer() {
+    // If external buffer was already set, just send it to the worker
+    if (this.externalViewportBuffer && this.viewportSharedBuffer) {
+      console.log('[rustRendererWebWorker] Using external viewport buffer');
+      this.send({
+        type: 'clientRustRendererViewportBuffer',
+        buffer: this.viewportSharedBuffer,
+      });
+      console.log('[rustRendererWebWorker] External viewport buffer sent to worker');
+      return;
+    }
+
     // Check if SharedArrayBuffer is available
     if (typeof SharedArrayBuffer === 'undefined') {
       console.warn('[rustRendererWebWorker] SharedArrayBuffer not available (missing COOP/COEP headers)');
@@ -158,30 +194,35 @@ class RustRendererWebWorker {
     }
 
     try {
-      // Create the SharedArrayBuffer using the shared utility
-      this.viewportBuffer = createViewportBuffer();
+      // Ensure WASM is initialized before using its functions
+      await ensureRustClientInitialized();
+
+      // Create the SharedArrayBuffer using WASM helper
+      this.viewportSharedBuffer = createViewportBuffer();
+      this.viewportBuffer = new ViewportBufferWriter(this.viewportSharedBuffer);
 
       // Initialize with canvas-specific values
       const dpr = window.devicePixelRatio || 1;
       const canvasWidth = this.canvas?.clientWidth ?? 800;
       const canvasHeight = this.canvas?.clientHeight ?? 600;
 
-      writeViewportBuffer(this.viewportBuffer, {
-        positionX: 0,
-        positionY: 0,
-        scale: 1,
+      this.viewportBuffer.writeAll(
+        0, // positionX
+        0, // positionY
+        1, // scale
         dpr,
-        width: canvasWidth * dpr,
-        height: canvasHeight * dpr,
-        dirty: true,
-      });
+        canvasWidth * dpr, // width in device pixels
+        canvasHeight * dpr, // height in device pixels
+        true, // dirty
+        '' // sheetId (will be set when sheet is selected)
+      );
 
       console.log(`[rustRendererWebWorker] Viewport buffer created: ${canvasWidth}x${canvasHeight}, dpr=${dpr}`);
 
       // Send to worker
       this.send({
         type: 'clientRustRendererViewportBuffer',
-        buffer: this.viewportBuffer,
+        buffer: this.viewportSharedBuffer,
       });
 
       console.log('[rustRendererWebWorker] Viewport buffer sent to worker');
@@ -192,27 +233,48 @@ class RustRendererWebWorker {
   }
 
   /**
-   * Write viewport state to the SharedArrayBuffer.
+   * Set an external viewport buffer (from ViewportControls).
+   * This allows ViewportControls to manage the buffer and share it with the worker.
+   * Call this before the worker is ready, or it will be sent immediately.
+   */
+  setExternalViewportBuffer(buffer: SharedArrayBuffer) {
+    this.viewportSharedBuffer = buffer;
+    this.externalViewportBuffer = true;
+
+    // If worker is already ready, send it immediately
+    if (this.isReady) {
+      console.log('[rustRendererWebWorker] Sending external viewport buffer to worker');
+      this.send({
+        type: 'clientRustRendererViewportBuffer',
+        buffer: this.viewportSharedBuffer,
+      });
+    }
+  }
+
+  /**
+   * Write viewport state to the SharedArrayBuffer using WASM ping-pong buffering.
    * Call this whenever the viewport changes.
    * @param x - World X coordinate of the top-left corner
    * @param y - World Y coordinate of the top-left corner
    * @param scale - Zoom scale (1.0 = 100%)
    * @param width - Canvas width in CSS pixels
    * @param height - Canvas height in CSS pixels
+   * @param sheetId - Current sheet ID (36-character UUID string)
    */
-  writeViewport(x: number, y: number, scale: number, width: number, height: number) {
+  writeViewport(x: number, y: number, scale: number, width: number, height: number, sheetId: string) {
     if (!this.viewportBuffer) return;
 
     const dpr = window.devicePixelRatio || 1;
-    writeViewportBuffer(this.viewportBuffer, {
-      positionX: x,
-      positionY: y,
+    this.viewportBuffer.writeAll(
+      x,
+      y,
       scale,
       dpr,
-      width: width * dpr,
-      height: height * dpr,
-      dirty: true,
-    });
+      width * dpr,
+      height * dpr,
+      true, // dirty
+      sheetId
+    );
   }
 
   /**
@@ -251,7 +313,7 @@ class RustRendererWebWorker {
         }
       }
 
-      this.writeViewport(bounds.x, bounds.y, scale, canvasWidth, canvasHeight);
+      this.writeViewport(bounds.x, bounds.y, scale, canvasWidth, canvasHeight, sheetId);
     }
 
     // Also send message for fallback
@@ -318,6 +380,17 @@ class RustRendererWebWorker {
    */
   get renderBackend(): 'webgpu' | 'webgl' | undefined {
     return this.backend;
+  }
+
+  /**
+   * Clean up WASM resources
+   */
+  dispose() {
+    if (this.viewportBuffer) {
+      this.viewportBuffer.free();
+      this.viewportBuffer = undefined;
+    }
+    this.viewportSharedBuffer = undefined;
   }
 }
 

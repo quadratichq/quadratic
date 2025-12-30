@@ -8,6 +8,7 @@
  */
 
 import { Decelerate, type DecelerateOptions, DEFAULT_DECELERATE_OPTIONS } from './Decelerate';
+import { ViewportBuffer } from './ViewportBuffer';
 
 /** Velocity for snap-back animation (px/ms) */
 export const SNAP_BACK_VELOCITY = 1.5;
@@ -49,6 +50,9 @@ export class Viewport {
   private sizeWidth = 0;
   private sizeHeight = 0;
 
+  /** Current sheet ID (36-character UUID string) */
+  private sheetIdValue = '';
+
   /** Whether the viewport has changed and needs re-rendering */
   dirty = true;
 
@@ -64,8 +68,8 @@ export class Viewport {
   /** Remaining delay before snap-back starts (ms) */
   private snapBackDelayRemaining = 0;
 
-  /** SharedArrayBuffer for syncing viewport to renderer */
-  private buffer: SharedArrayBuffer | null = null;
+  /** ViewportBuffer for ping-pong syncing to renderer */
+  private viewportBuffer: ViewportBuffer | null = null;
 
   constructor(width = 0, height = 0, options?: DecelerateOptions) {
     this.sizeWidth = width;
@@ -82,7 +86,7 @@ export class Viewport {
    * Call this after creating the buffer and before starting rendering.
    */
   setBuffer(buffer: SharedArrayBuffer): void {
-    this.buffer = buffer;
+    this.viewportBuffer = new ViewportBuffer(buffer);
     this.syncToBuffer();
   }
 
@@ -90,24 +94,45 @@ export class Viewport {
    * Get the SharedArrayBuffer (for passing to the worker).
    */
   getBuffer(): SharedArrayBuffer | null {
-    return this.buffer;
+    return this.viewportBuffer?.getBuffer() ?? null;
   }
 
   /**
-   * Sync viewport state to the SharedArrayBuffer.
+   * Sync viewport state to the SharedArrayBuffer using ping-pong buffering.
    * Called automatically when viewport changes.
    */
   syncToBuffer(): void {
-    if (!this.buffer) return;
+    if (!this.viewportBuffer) return;
 
-    const view = new Float32Array(this.buffer);
-    view[0] = this.positionX;
-    view[1] = this.positionY;
-    view[2] = this.scaleValue;
-    view[3] = this.dprValue;
-    view[4] = this.sizeWidth;
-    view[5] = this.sizeHeight;
-    view[6] = this.dirty ? 1 : 0;
+    this.viewportBuffer.writeAll(
+      this.positionX,
+      this.positionY,
+      this.scaleValue,
+      this.dprValue,
+      this.sizeWidth,
+      this.sizeHeight,
+      this.dirty,
+      this.sheetIdValue
+    );
+  }
+
+  /**
+   * Set the current sheet ID.
+   * @param sheetId - 36-character UUID string
+   */
+  setSheetId(sheetId: string): void {
+    if (this.sheetIdValue !== sheetId) {
+      this.sheetIdValue = sheetId;
+      this.dirty = true;
+      this.syncToBuffer();
+    }
+  }
+
+  /**
+   * Get the current sheet ID.
+   */
+  get sheetId(): string {
+    return this.sheetIdValue;
   }
 
   // =========================================================================

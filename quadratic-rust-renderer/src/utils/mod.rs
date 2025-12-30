@@ -1,5 +1,7 @@
 //! Utility modules
 
 pub mod color;
-pub mod console_logger;
+pub mod math;
 
+#[cfg(feature = "wasm")]
+pub mod console_logger;

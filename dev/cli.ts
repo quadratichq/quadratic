@@ -6,6 +6,7 @@ export class CLI {
     api: boolean;
     core: boolean;
     rustRenderer: boolean;
+    rustClient: boolean;
     multiplayer: boolean;
     files: boolean;
     connection: boolean;
@@ -20,6 +21,7 @@ export class CLI {
     hideAPI: boolean;
     hideCore: boolean;
     hideRustRenderer: boolean;
+    hideRustClient: boolean;
     hideTypes: boolean;
     hideMultiplayer: boolean;
     hideFiles: boolean;
@@ -44,6 +46,7 @@ export class CLI {
       .option("-r, --react", "Do NOT watch quadratic-client (React)")
       .option("-c, --core", "Watch the quadratic-core directory")
       .option("-e, --rustRenderer", "Watch the quadratic-rust-renderer directory")
+      .option("-i, --rustClient", "Watch the quadratic-rust-client directory")
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
       .option("-f, --files", "Watch the quadratic-files directory")
       .option("-n, --connection", "Watch the quadratic-connection directory")
@@ -70,6 +73,7 @@ export class CLI {
       .option("-A, --hideAPI", "Hide API output")
       .option("-C, --hideCore", "Hide Core output")
       .option("-E, --hideRustRenderer", "Hide RustRenderer output")
+      .option("-U, --hideRustClient", "Hide RustClient output")
       .option("-T, --hideTypes", "Hide Types output")
       .option("-M, --hideMultiplayer", "Hide Multiplayer output")
       .option("-F, --hideFiles", "Hide Files output")
@@ -88,6 +92,7 @@ export class CLI {
       this.options.api = true;
       this.options.core = true;
       this.options.rustRenderer = true;
+      this.options.rustClient = true;
       this.options.multiplayer = true;
       this.options.files = true;
       this.options.connection = true;

@@ -3,19 +3,26 @@
 //! Additional texture methods not covered by RenderContext trait.
 //! The main texture methods are in render_context.rs.
 
+#[cfg(feature = "wasm")]
 use wasm_bindgen::JsValue;
 
 use super::WebGPUContext;
 
+/// Error type for texture operations (cross-platform)
+#[cfg(not(feature = "wasm"))]
+pub type TextureError = String;
+#[cfg(feature = "wasm")]
+pub type TextureError = JsValue;
+
 impl WebGPUContext {
-    /// Upload a font texture from raw RGBA pixel data (JsValue return for WASM)
+    /// Upload a font texture from raw RGBA pixel data
     pub fn upload_font_texture_from_data(
         &mut self,
         texture_uid: u32,
         width: u32,
         height: u32,
         data: &[u8],
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), TextureError> {
         self.font_texture_manager.upload_rgba_with_bind_group(
             &self.device,
             &self.queue,

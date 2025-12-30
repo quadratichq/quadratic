@@ -4,11 +4,31 @@
  * Ported from Rust: quadratic-rust-renderer/src/viewport/viewport.rs
  *
  * This class manages the viewport state on the main thread and syncs it
- * to the Rust renderer via SharedArrayBuffer.
+ * to the Rust renderer via SharedArrayBuffer using the WASM ViewportBufferWriter.
  */
 
-import { ViewportBuffer } from '@/app/quadratic-core/quadratic_core';
+import initRustClient, {
+  createViewportBuffer,
+  ViewportBufferWriter,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Decelerate, type DecelerateOptions, DEFAULT_DECELERATE_OPTIONS } from './Decelerate';
+
+// Track WASM initialization
+let rustClientInitialized = false;
+let rustClientInitPromise: Promise<void> | null = null;
+
+async function ensureRustClientInitialized(): Promise<void> {
+  if (rustClientInitialized) return;
+  if (rustClientInitPromise) return rustClientInitPromise;
+
+  rustClientInitPromise = (async () => {
+    await initRustClient();
+    rustClientInitialized = true;
+    console.log('[Viewport] quadratic-rust-client WASM initialized');
+  })();
+
+  return rustClientInitPromise;
+}
 
 /** Velocity for snap-back animation (px/ms) */
 export const SNAP_BACK_VELOCITY = 1.5;
@@ -33,10 +53,14 @@ export interface VisibleBounds {
  * Viewport - manages camera position and zoom
  *
  * Designed to run on the main thread and sync to the Rust renderer
- * via SharedArrayBuffer.
+ * via SharedArrayBuffer using WASM ViewportBufferWriter.
  */
 export class Viewport {
-  private buffer: ViewportBuffer;
+  /** WASM ViewportBufferWriter for writing to SharedArrayBuffer */
+  private viewportBuffer: ViewportBufferWriter | null = null;
+
+  /** The SharedArrayBuffer for viewport synchronization */
+  private buffer: SharedArrayBuffer | null = null;
 
   /** Position of the viewport in world coordinates */
   private positionX = 0;
@@ -51,6 +75,9 @@ export class Viewport {
   /** Size of the viewport in device pixels */
   private sizeWidth = 0;
   private sizeHeight = 0;
+
+  /** Current sheet ID (36-character UUID string) */
+  private sheetIdValue = '';
 
   /** Whether the viewport has changed and needs re-rendering */
   dirty = true;
@@ -67,18 +94,14 @@ export class Viewport {
   /** Remaining delay before snap-back starts (ms) */
   private snapBackDelayRemaining = 0;
 
-  /** SharedArrayBuffer for syncing viewport to renderer */
-  private buffer: SharedArrayBuffer | null = null;
-
   constructor(width = 0, height = 0, options?: DecelerateOptions) {
-    this.buffer = new ViewportBuffer();
     this.sizeWidth = width;
     this.sizeHeight = height;
     this.decelerate = new Decelerate(options ?? DEFAULT_DECELERATE_OPTIONS);
   }
 
   // =========================================================================
-  // SharedArrayBuffer Integration
+  // SharedArrayBuffer Integration (WASM-based)
   // =========================================================================
 
   /**
@@ -87,7 +110,21 @@ export class Viewport {
    */
   setBuffer(buffer: SharedArrayBuffer): void {
     this.buffer = buffer;
+    this.viewportBuffer = new ViewportBufferWriter(buffer);
     this.syncToBuffer();
+  }
+
+  /**
+   * Create and set a new SharedArrayBuffer for viewport synchronization.
+   * Returns the buffer for passing to workers.
+   * This is async because it needs to initialize the WASM module first.
+   */
+  async createBuffer(): Promise<SharedArrayBuffer> {
+    await ensureRustClientInitialized();
+    this.buffer = createViewportBuffer();
+    this.viewportBuffer = new ViewportBufferWriter(this.buffer);
+    this.syncToBuffer();
+    return this.buffer;
   }
 
   /**
@@ -98,20 +135,44 @@ export class Viewport {
   }
 
   /**
-   * Sync viewport state to the SharedArrayBuffer.
+   * Sync viewport state to the SharedArrayBuffer using WASM ping-pong buffering.
    * Called automatically when viewport changes.
+   *
+   * NOTE: Width and height are sent as device pixels (CSS * dpr) because the
+   * Rust renderer uses effective_scale (scale * dpr) for all calculations.
    */
   syncToBuffer(): void {
-    if (!this.buffer) return;
+    if (!this.viewportBuffer) return;
 
-    const view = new Float32Array(this.buffer);
-    view[0] = this.positionX;
-    view[1] = this.positionY;
-    view[2] = this.scaleValue;
-    view[3] = this.dprValue;
-    view[4] = this.sizeWidth;
-    view[5] = this.sizeHeight;
-    view[6] = this.dirty ? 1 : 0;
+    this.viewportBuffer.writeAll(
+      this.positionX,
+      this.positionY,
+      this.scaleValue,
+      this.dprValue,
+      this.sizeWidth * this.dprValue, // device pixels
+      this.sizeHeight * this.dprValue, // device pixels
+      this.dirty,
+      this.sheetIdValue
+    );
+  }
+
+  /**
+   * Set the current sheet ID.
+   * @param sheetId - 36-character UUID string
+   */
+  setSheetId(sheetId: string): void {
+    if (this.sheetIdValue !== sheetId) {
+      this.sheetIdValue = sheetId;
+      this.dirty = true;
+      this.syncToBuffer();
+    }
+  }
+
+  /**
+   * Get the current sheet ID.
+   */
+  get sheetId(): string {
+    return this.sheetIdValue;
   }
 
   // =========================================================================
@@ -119,11 +180,10 @@ export class Viewport {
   // =========================================================================
 
   /**
-   * Resize the viewport with device pixel ratio
+   * Resize the viewport
    *
-   * @param width - Width in device pixels
-   * @param height - Height in device pixels
-   * @param dpr - Device pixel ratio (e.g., 2.0 for Retina displays)
+   * @param width - Width in CSS pixels (logical pixels)
+   * @param height - Height in CSS pixels (logical pixels)
    */
   resize(width: number, height: number): void {
     const dpr = window.devicePixelRatio || 1;
@@ -158,10 +218,10 @@ export class Viewport {
    * panning that moves back toward the valid bounds.
    */
   pan(dx: number, dy: number): void {
-    // Convert screen delta to world delta using effective scale
-    const effectiveScale = this.scaleValue * this.dprValue;
-    const worldDx = dx / effectiveScale;
-    const worldDy = dy / effectiveScale;
+    // Convert screen delta (CSS pixels) to world delta
+    // DPR is not needed here since inputs are CSS pixels, not device pixels
+    const worldDx = dx / this.scaleValue;
+    const worldDy = dy / this.scaleValue;
 
     // Check if we're in negative space or delay is active
     const inGracePeriod = this.positionX < 0 || this.positionY < 0 || this.snapBackDelayRemaining > 0;
@@ -209,8 +269,8 @@ export class Viewport {
    * 4. Move viewport so cursor stays at same world position
    *
    * @param factor - Zoom factor (> 1 to zoom in, < 1 to zoom out)
-   * @param centerX - Center X in device pixels
-   * @param centerY - Center Y in device pixels
+   * @param centerX - Center X in CSS pixels
+   * @param centerY - Center Y in CSS pixels
    */
   zoom(factor: number, centerX: number, centerY: number): void {
     const oldScale = this.scaleValue;
@@ -227,9 +287,9 @@ export class Viewport {
       const newScreen = this.worldToScreen(worldPoint.x, worldPoint.y);
 
       // Step 4: Move viewport so cursor stays at same world position
-      const effectiveScale = this.scaleValue * this.dprValue;
-      const dx = (centerX - newScreen.x) / effectiveScale;
-      const dy = (centerY - newScreen.y) / effectiveScale;
+      // Use just scale since inputs are CSS pixels
+      const dx = (centerX - newScreen.x) / this.scaleValue;
+      const dy = (centerY - newScreen.y) / this.scaleValue;
       this.positionX -= dx;
       this.positionY -= dy;
 
@@ -243,21 +303,21 @@ export class Viewport {
     }
   }
 
-  /** Convert screen coordinates (device pixels) to world coordinates */
+  /** Convert screen coordinates (CSS pixels) to world coordinates */
   screenToWorld(screenX: number, screenY: number): { x: number; y: number } {
-    const effectiveScale = this.scaleValue * this.dprValue;
+    // Use just scale since inputs are CSS pixels, not device pixels
     return {
-      x: this.positionX + screenX / effectiveScale,
-      y: this.positionY + screenY / effectiveScale,
+      x: this.positionX + screenX / this.scaleValue,
+      y: this.positionY + screenY / this.scaleValue,
     };
   }
 
-  /** Convert world coordinates to screen coordinates (device pixels) */
+  /** Convert world coordinates to screen coordinates (CSS pixels) */
   worldToScreen(worldX: number, worldY: number): { x: number; y: number } {
-    const effectiveScale = this.scaleValue * this.dprValue;
+    // Use just scale since outputs are CSS pixels, not device pixels
     return {
-      x: (worldX - this.positionX) * effectiveScale,
-      y: (worldY - this.positionY) * effectiveScale,
+      x: (worldX - this.positionX) * this.scaleValue,
+      y: (worldY - this.positionY) * this.scaleValue,
     };
   }
 
@@ -289,7 +349,11 @@ export class Viewport {
     return this.scaleValue;
   }
 
-  /** Get the effective rendering scale (scale * dpr) */
+  /**
+   * Get the effective rendering scale (scale * dpr).
+   * This is used by the Rust renderer for device-pixel operations.
+   * TypeScript code should typically use just `scale` for CSS pixel math.
+   */
   get effectiveScale(): number {
     return this.scaleValue * this.dprValue;
   }
@@ -518,5 +582,14 @@ export class Viewport {
   /** Resume deceleration */
   resumeDecelerate(): void {
     this.decelerate.resume();
+  }
+
+  /** Free WASM resources when done with the viewport */
+  dispose(): void {
+    if (this.viewportBuffer) {
+      this.viewportBuffer.free();
+      this.viewportBuffer = null;
+    }
+    this.buffer = null;
   }
 }

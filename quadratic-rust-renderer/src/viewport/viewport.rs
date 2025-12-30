@@ -203,13 +203,5 @@ impl Viewport {
     }
 }
 
-/// Represents the visible area in world coordinates
-#[derive(Debug, Clone, Copy)]
-pub struct VisibleBounds {
-    pub left: f32,
-    pub top: f32,
-    pub right: f32,
-    pub bottom: f32,
-    pub width: f32,
-    pub height: f32,
-}
+// Re-export VisibleBounds from core-shared
+pub use quadratic_core_shared::VisibleBounds;

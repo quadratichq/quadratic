@@ -1,0 +1,10 @@
+{
+  "name": "quadratic-rust-client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg",
+    "build:dev": "wasm-pack build --dev --target web --out-dir pkg",
+    "test": "wasm-pack test --headless --chrome"
+  }
+}

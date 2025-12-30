@@ -1,0 +1,52 @@
+[package]
+name = "quadratic-rust-client"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "Rust client for Quadratic - built for WASM"
+repository.workspace = true
+license-file.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# WASM dependencies
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+console_error_panic_hook = "0.1.7"
+
+web-sys = { version = "0.3", features = [
+    "console",
+    "Window",
+] }
+
+# Quadratic shared types (with js feature for SharedArrayBuffer support)
+quadratic-core-shared = { path = "../quadratic-core-shared", default-features = false, features = ["js"] }
+
+# Required for WASM support (used by uuid in quadratic-core-shared)
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.release.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = false
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.dev.wasm-bindgen]
+debug-js-glue = true
+demangle-name-section = true
+dwarf-debug-info = false

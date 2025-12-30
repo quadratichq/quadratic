@@ -9,6 +9,7 @@ members = [
   "quadratic-core-cloud",
   "quadratic-files",
   "quadratic-multiplayer",
+  "quadratic-rust-client",
   "quadratic-rust-renderer",
   "quadratic-rust-shared",
 ]

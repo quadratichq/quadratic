@@ -3,9 +3,17 @@
 //! Backend-specific storage for WebGPU font texture handles.
 
 use std::collections::HashMap;
+
+#[cfg(feature = "wasm")]
 use wasm_bindgen::JsValue;
 
 pub use crate::primitives::{FontTextureId, FontTextureInfo};
+
+/// Error type for font texture operations (cross-platform)
+#[cfg(not(feature = "wasm"))]
+pub type FontTextureError = String;
+#[cfg(feature = "wasm")]
+pub type FontTextureError = JsValue;
 
 /// Manages WebGPU textures for font rendering
 ///
@@ -51,7 +59,7 @@ impl FontManager {
         width: u32,
         height: u32,
         data: &[u8],
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), FontTextureError> {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Font Texture"),
             size: wgpu::Extent3d {
@@ -156,7 +164,7 @@ impl FontManager {
         bind_group_layout: &wgpu::BindGroupLayout,
         uniform_buffer: &wgpu::Buffer,
         sampler: &wgpu::Sampler,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), FontTextureError> {
         self.upload_rgba(device, queue, texture_id, width, height, data)?;
         self.create_bind_group(
             device,

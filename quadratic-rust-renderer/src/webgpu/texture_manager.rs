@@ -3,9 +3,17 @@
 //! Backend-specific storage for WebGPU texture handles.
 
 use std::collections::HashMap;
+
+#[cfg(feature = "wasm")]
 use wasm_bindgen::JsValue;
 
 pub use crate::primitives::{TextureId, TextureInfo};
+
+/// Error type for texture operations (cross-platform)
+#[cfg(not(feature = "wasm"))]
+pub type SpriteTextureError = String;
+#[cfg(feature = "wasm")]
+pub type SpriteTextureError = JsValue;
 
 /// Manages GPU textures for sprite rendering
 #[derive(Debug, Default)]
@@ -47,7 +55,7 @@ impl TextureManager {
         width: u32,
         height: u32,
         data: &[u8],
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), SpriteTextureError> {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Sprite Texture"),
             size: wgpu::Extent3d {
