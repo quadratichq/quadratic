@@ -78,6 +78,11 @@ class RustRendererClient {
         rustRendererWasm.setViewportBuffer(e.data.buffer);
         return;
 
+      case 'clientRustRendererFPSBuffer':
+        console.log('[rustRendererClient] Received FPS buffer');
+        this.fpsBuffer = new Int32Array(e.data.buffer);
+        return;
+
       default:
         // Ignore messages from react dev tools
         if (!(e.data as any)?.source) {
@@ -90,6 +95,12 @@ class RustRendererClient {
   private animationFrameId?: number;
   private currentSheetId: string = '';
   private metaFillsRequested = false;
+
+  // FPS tracking via SharedArrayBuffer
+  private fpsBuffer?: Int32Array;
+  private fpsFrameCount = 0;
+  private fpsLastTime = 0;
+  private fpsUpdateInterval = 500; // Update FPS every 500ms
 
   private async init(canvas: OffscreenCanvas, corePort: MessagePort, devicePixelRatio: number) {
     this.canvas = canvas;
@@ -132,7 +143,26 @@ class RustRendererClient {
         this.checkNeededMetaFills();
 
         // Render a frame (viewport/deceleration is managed by the client)
-        rustRendererWasm.frame(elapsed);
+        // frame() returns true if actual rendering occurred
+        const didRender = rustRendererWasm.frame(elapsed);
+
+        // Increment frame counter only when actual rendering happened (for render light indicator)
+        if (didRender && this.fpsBuffer) {
+          const prev = Atomics.load(this.fpsBuffer, 1);
+          Atomics.store(this.fpsBuffer, 1, prev + 1);
+        }
+
+        // Track FPS and write to SharedArrayBuffer
+        this.fpsFrameCount++;
+        const fpsDelta = timestamp - this.fpsLastTime;
+        if (fpsDelta >= this.fpsUpdateInterval) {
+          const fps = Math.round((this.fpsFrameCount / fpsDelta) * 1000);
+          if (this.fpsBuffer) {
+            Atomics.store(this.fpsBuffer, 0, fps);
+          }
+          this.fpsFrameCount = 0;
+          this.fpsLastTime = timestamp;
+        }
       } catch (error) {
         console.error('[rustRendererClient] Error in render loop:', error);
       }

@@ -52,6 +52,11 @@ class RustRendererWebWorker {
   // Queue messages until the worker is ready
   private messageQueue: ClientRustRendererMessage[] = [];
 
+  // FPS tracking via SharedArrayBuffer (worker writes, main thread reads)
+  private fpsBuffer?: SharedArrayBuffer;
+  private fpsView?: Int32Array;
+  private lastFrameCount = 0;
+
   /**
    * Initialize the worker (call early, before init())
    */
@@ -101,6 +106,9 @@ class RustRendererWebWorker {
 
         // Create and send the viewport buffer
         this.initViewportBuffer();
+
+        // Create and send the FPS buffer
+        this.initFPSBuffer();
 
         // Flush queued messages
         this.messageQueue.forEach((msg) => this.send(msg));
@@ -229,6 +237,33 @@ class RustRendererWebWorker {
     } catch (e) {
       // SharedArrayBuffer may not be available (requires COOP/COEP headers)
       console.warn('[rustRendererWebWorker] Failed to create SharedArrayBuffer:', e);
+    }
+  }
+
+  /**
+   * Initialize and send the FPS SharedArrayBuffer to the worker.
+   * Worker writes FPS and frame counter, main thread reads it.
+   * Buffer layout: [fps: i32, frameCount: i32]
+   */
+  private initFPSBuffer() {
+    if (typeof SharedArrayBuffer === 'undefined') {
+      console.warn('[rustRendererWebWorker] SharedArrayBuffer not available for FPS');
+      return;
+    }
+
+    try {
+      // 8 bytes: 4 for FPS, 4 for rendering flag
+      this.fpsBuffer = new SharedArrayBuffer(8);
+      this.fpsView = new Int32Array(this.fpsBuffer);
+
+      this.send({
+        type: 'clientRustRendererFPSBuffer',
+        buffer: this.fpsBuffer,
+      });
+
+      console.log('[rustRendererWebWorker] FPS buffer sent to worker');
+    } catch (e) {
+      console.warn('[rustRendererWebWorker] Failed to create FPS SharedArrayBuffer:', e);
     }
   }
 
@@ -380,6 +415,25 @@ class RustRendererWebWorker {
    */
   get renderBackend(): 'webgpu' | 'webgl' | undefined {
     return this.backend;
+  }
+
+  /**
+   * Get the current FPS of the Rust renderer (read from SharedArrayBuffer)
+   */
+  get fps(): number {
+    if (!this.fpsView) return 0;
+    return Atomics.load(this.fpsView, 0);
+  }
+
+  /**
+   * Check if the Rust renderer is rendering (frame counter changed since last check)
+   */
+  get isRendering(): boolean {
+    if (!this.fpsView) return false;
+    const currentFrameCount = Atomics.load(this.fpsView, 1);
+    const isRendering = currentFrameCount !== this.lastFrameCount;
+    this.lastFrameCount = currentFrameCount;
+    return isRendering;
   }
 
   /**

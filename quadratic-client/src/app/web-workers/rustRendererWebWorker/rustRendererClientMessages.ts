@@ -59,6 +59,12 @@ export interface ClientRustRendererViewportBuffer {
   buffer: SharedArrayBuffer;
 }
 
+/** Send the FPS SharedArrayBuffer for zero-copy FPS sync */
+export interface ClientRustRendererFPSBuffer {
+  type: 'clientRustRendererFPSBuffer';
+  buffer: SharedArrayBuffer;
+}
+
 export type ClientRustRendererMessage =
   | ClientRustRendererInit
   | ClientRustRendererViewport
@@ -66,7 +72,8 @@ export type ClientRustRendererMessage =
   | ClientRustRendererResize
   | ClientRustRendererScreenshot
   | ClientRustRendererPing
-  | ClientRustRendererViewportBuffer;
+  | ClientRustRendererViewportBuffer
+  | ClientRustRendererFPSBuffer;
 
 // ============================================================================
 // Rust Renderer → Client Messages
