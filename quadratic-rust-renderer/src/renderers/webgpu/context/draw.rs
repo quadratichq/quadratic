@@ -555,4 +555,83 @@ impl WebGPUContext {
         pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         pass.draw_indexed(0..6, 0, 0..1);
     }
+
+    /// Draw emoji sprites using font texture manager
+    ///
+    /// Emoji textures are stored in the font texture manager (shared upload path).
+    /// Vertex format: [x, y, u, v, r, g, b, a] per vertex (8 floats)
+    pub fn draw_emoji_sprites(
+        &mut self,
+        pass: &mut wgpu::RenderPass<'_>,
+        texture_uid: u32,
+        vertices: &[f32],
+        indices: &[u32],
+        matrix: &[f32; 16],
+    ) {
+        if vertices.is_empty() || indices.is_empty() {
+            return;
+        }
+
+        // Get font texture view (emoji textures use font manager)
+        let font_texture_view = match self.font_texture_manager.get_view(texture_uid) {
+            Some(v) => v,
+            None => {
+                log::warn!("Emoji texture {} not found in font manager", texture_uid);
+                return;
+            }
+        };
+
+        // Create temporary buffers for this draw call
+        let vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Emoji Sprite Vertex Buffer"),
+                contents: bytemuck::cast_slice(vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        let index_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Emoji Sprite Index Buffer"),
+                contents: bytemuck::cast_slice(indices),
+                usage: wgpu::BufferUsages::INDEX,
+            });
+
+        // Create uniform buffer with matrix
+        let uniform_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Emoji Sprite Uniform Buffer"),
+                contents: bytemuck::cast_slice(matrix),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+
+        // Create bind group with uniform buffer, texture view, and sampler
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Emoji Sprite Bind Group"),
+            layout: &self.sprite_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(font_texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&self.linear_sampler),
+                },
+            ],
+        });
+
+        // Draw using standard sprite pipeline (non-premultiplied alpha)
+        pass.set_pipeline(&self.sprite_pipeline);
+        pass.set_bind_group(0, &bind_group, &[]);
+        pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        pass.draw_indexed(0..indices.len() as u32, 0, 0..1);
+    }
 }

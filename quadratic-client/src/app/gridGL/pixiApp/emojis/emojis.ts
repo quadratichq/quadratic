@@ -1,123 +1,222 @@
 import { debugFlags } from '@/app/debugFlags/debugFlags';
 import { BaseTexture, Rectangle, Texture } from 'pixi.js';
 
+// These constants match the spritesheet generator (scripts/emojis.js)
 const PAGE_SIZE = 1024;
 const CHARACTER_SIZE = 125;
-const FONT_NAME = 'OpenSans';
 
 // this scales the emoji to ensure it fits in the cell
 export const SCALE_EMOJI = 0.81;
 
-// This holds the location to place the next requested emoji
-interface CurrentLocation {
-  baseTexture: number;
+interface EmojiLocation {
+  page: number;
   x: number;
   y: number;
+  width: number;
+  height: number;
+}
+
+interface EmojiMapping {
+  pageSize: number;
+  characterSize: number;
+  scaleEmoji: number;
+  pages: { filename: string; emojiCount: number }[];
+  emojis: Record<string, EmojiLocation>;
 }
 
 class Emojis {
-  // we keep pages of base textures using the PAGE_SIZE x PAGE_SIZE canvas(es)
+  // Base textures for each spritesheet page
   private baseTextures: BaseTexture[] = [];
 
-  // this holds individual character textures (keyed by full emoji string)
+  // Cached textures for individual emojis
   private emojiTextures: Map<string, Texture> = new Map();
 
-  // this tracks the current location in the base textures
-  private currentLocation: CurrentLocation = { baseTexture: -1, x: 0, y: 0 };
+  // Mapping from emoji string to location in spritesheet
+  private mapping: EmojiMapping | null = null;
 
-  // this needs to be called the first time to ensure the emoji font is loaded
-  // (this is called before every ensureCharacter because we don't want to load
-  // the emoji font unless the user has emojis in their document)
-  private initialize() {
-    if (this.baseTextures.length > 0) return;
-    this.newBaseTexture();
+  // Loading state
+  private loadingPromise: Promise<void> | null = null;
+  private loaded = false;
+
+  // Fallback for emojis not in the spritesheet (JIT rendering)
+  private fallbackCanvas: HTMLCanvasElement | null = null;
+  private fallbackBaseTexture: BaseTexture | null = null;
+  private fallbackLocation = { x: 0, y: 0 };
+
+  /**
+   * Initialize by loading the mapping and spritesheet textures.
+   * This is called lazily when emojis are first requested.
+   */
+  private async initialize(): Promise<void> {
+    if (this.loaded) return;
+    if (this.loadingPromise) return this.loadingPromise;
+
+    this.loadingPromise = this.load();
+    await this.loadingPromise;
   }
 
-  private newBaseTexture(): number {
-    const page = document.createElement('canvas');
-    page.width = PAGE_SIZE;
-    page.height = PAGE_SIZE;
+  private async load(): Promise<void> {
+    try {
+      // Load the mapping JSON
+      const response = await fetch('/emojis/emoji-mapping.json');
+      if (!response.ok) {
+        throw new Error(`Failed to load emoji mapping: ${response.status}`);
+      }
+      this.mapping = await response.json();
 
-    // Create the BaseTexture from the canvas
-    const baseTexture = BaseTexture.from(page);
-    this.currentLocation = { baseTexture: this.currentLocation.baseTexture + 1, x: 0, y: 0 };
-    this.baseTextures.push(baseTexture);
-    return this.baseTextures.length - 1;
+      if (!this.mapping) {
+        throw new Error('Emoji mapping is empty');
+      }
+
+      // Load all spritesheet pages as base textures
+      const loadPromises = this.mapping.pages.map(async (page, index) => {
+        const texture = BaseTexture.from(`/emojis/${page.filename}`);
+        this.baseTextures[index] = texture;
+      });
+
+      await Promise.all(loadPromises);
+
+      this.loaded = true;
+
+      if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+        console.log(
+          `[Emojis] Loaded ${this.mapping.pages.length} spritesheet pages with ${Object.keys(this.mapping.emojis).length} emojis`
+        );
+      }
+    } catch (error) {
+      console.error('[Emojis] Failed to load emoji spritesheets:', error);
+      // Continue without spritesheets - will use fallback JIT rendering
+      this.loaded = true;
+    }
   }
 
-  ensureCharacter(emoji: string): Texture | undefined {
-    this.initialize();
+  /**
+   * Get or create a texture for an emoji.
+   * Returns undefined if the emoji is not available.
+   */
+  getCharacter(emoji: string): Texture | undefined {
+    // Start loading if not already started
+    if (!this.loaded && !this.loadingPromise) {
+      this.initialize();
+    }
 
+    // Check cache first
     let texture = this.emojiTextures.get(emoji);
     if (texture) {
       return texture;
     }
 
-    // The canvas for a PixiJS Texture created from a <canvas> element can be accessed via .baseTexture.resource.source
-    const { x, y, baseTexture } = this.currentLocation;
-    const resource = this.baseTextures[baseTexture].resource as any;
-    const canvas = resource.source as HTMLCanvasElement;
-    const context = canvas?.getContext('2d');
-    if (!canvas || !context) throw new Error('Expected canvas and context in ensureCharacter');
+    // If still loading, use fallback
+    if (!this.loaded) {
+      return this.getFallbackTexture(emoji);
+    }
 
-    // Set up font and alignment for drawing emoji
-    // Use slightly smaller font size to prevent clipping
+    // Look up in mapping
+    const location = this.mapping?.emojis[emoji];
+    if (location && this.baseTextures[location.page]) {
+      texture = new Texture(
+        this.baseTextures[location.page],
+        new Rectangle(location.x, location.y, location.width, location.height)
+      );
+      this.emojiTextures.set(emoji, texture);
+      return texture;
+    }
+
+    // Emoji not in spritesheet - use fallback JIT rendering
+    return this.getFallbackTexture(emoji);
+  }
+
+  /**
+   * Fallback JIT rendering for emojis not in the spritesheet.
+   * This handles edge cases like new emojis or uncommon sequences.
+   */
+  private getFallbackTexture(emoji: string): Texture | undefined {
+    // Check if already rendered as fallback
+    const cached = this.emojiTextures.get(emoji);
+    if (cached) return cached;
+
+    // Create fallback canvas if needed
+    if (!this.fallbackCanvas) {
+      this.fallbackCanvas = document.createElement('canvas');
+      this.fallbackCanvas.width = PAGE_SIZE;
+      this.fallbackCanvas.height = PAGE_SIZE;
+      this.fallbackBaseTexture = BaseTexture.from(this.fallbackCanvas);
+    }
+
+    const context = this.fallbackCanvas.getContext('2d');
+    if (!context || !this.fallbackBaseTexture) return undefined;
+
+    const { x, y } = this.fallbackLocation;
+
+    // Set up font and draw emoji
     const fontSize = CHARACTER_SIZE * SCALE_EMOJI;
-    context.font = `${fontSize}px ${FONT_NAME}`;
+    context.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-
-    // Draw the emoji character centered in the cell
     context.clearRect(x, y, CHARACTER_SIZE, CHARACTER_SIZE);
     context.fillText(emoji, x + CHARACTER_SIZE / 2, y + CHARACTER_SIZE / 2);
 
-    this.baseTextures[baseTexture].update();
+    this.fallbackBaseTexture.update();
 
-    // Create a new Texture from the baseTexture at the specific location
-    texture = new Texture(this.baseTextures[baseTexture], new Rectangle(x, y, CHARACTER_SIZE, CHARACTER_SIZE));
+    // Create texture
+    const texture = new Texture(this.fallbackBaseTexture, new Rectangle(x, y, CHARACTER_SIZE, CHARACTER_SIZE));
     this.emojiTextures.set(emoji, texture);
 
-    let newBaseTexture = baseTexture;
+    // Advance fallback location
     let nextX = x + CHARACTER_SIZE;
     let nextY = y;
     if (nextX + CHARACTER_SIZE > PAGE_SIZE) {
       nextX = 0;
       nextY += CHARACTER_SIZE;
       if (nextY + CHARACTER_SIZE > PAGE_SIZE) {
-        newBaseTexture = this.newBaseTexture();
+        // Fallback canvas is full - create a new one
+        // For now, just wrap around (unlikely to hit this limit)
         nextX = 0;
         nextY = 0;
       }
     }
-    this.currentLocation = { baseTexture: newBaseTexture, x: nextX, y: nextY };
+    this.fallbackLocation = { x: nextX, y: nextY };
 
     if (debugFlags.getFlag('debugShowCellHashesInfo')) {
-      console.log(
-        `[Emojis] texture pages: ${this.baseTextures.length}, current location: ${x}/${PAGE_SIZE}, ${y}/${PAGE_SIZE}`
-      );
+      console.log(`[Emojis] Fallback rendered: ${emoji}`);
     }
+
     return texture;
   }
 
-  getCharacter(emoji: string): Texture | undefined {
-    this.initialize();
-    return this.ensureCharacter(emoji);
+  /**
+   * Preload emoji spritesheets. Call this early to avoid delays.
+   */
+  async preload(): Promise<void> {
+    await this.initialize();
   }
 
-  // call this to see the base textures in the browser
-  test() {
-    this.initialize();
+  /**
+   * Check if an emoji is available in the spritesheet.
+   */
+  hasEmoji(emoji: string): boolean {
+    return this.mapping?.emojis[emoji] !== undefined;
+  }
 
+  /**
+   * Debug: visualize the loaded spritesheets
+   */
+  test(): void {
     const GAP = 10;
     for (let index = 0; index < this.baseTextures.length; index++) {
       const baseTexture = this.baseTextures[index];
-      const canvas = (baseTexture.resource as any).source as HTMLCanvasElement;
-      canvas.style.position = 'absolute';
-      canvas.style.top = `${index * GAP}px`;
-      canvas.style.left = `${index * GAP}px`;
-      canvas.style.border = '1px solid red';
-      canvas.style.background = 'white';
-      document.body.appendChild(canvas);
+      const resource = baseTexture.resource as any;
+      const source = resource?.source as HTMLImageElement | HTMLCanvasElement;
+      if (source && source instanceof HTMLImageElement) {
+        const img = source.cloneNode() as HTMLImageElement;
+        img.style.position = 'absolute';
+        img.style.top = `${index * GAP}px`;
+        img.style.left = `${index * GAP}px`;
+        img.style.border = '1px solid red';
+        img.style.background = 'white';
+        img.style.maxWidth = '512px';
+        document.body.appendChild(img);
+      }
     }
   }
 }

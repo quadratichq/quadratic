@@ -11,6 +11,7 @@ use quadratic_core_shared::{
 use super::super::fills::parse_color_string;
 
 use super::bitmap_font::{BitmapFonts, extract_char_code, split_text_to_characters};
+use super::emoji_sprites::{is_potential_emoji, EmojiSprites};
 use super::label_mesh::LabelMesh;
 
 /// Grid constants (matching TypeScript)
@@ -49,6 +50,25 @@ struct CharRenderData {
 
     /// Width to next character (for underline/strikethrough calculation)
     x_advance: f32,
+}
+
+/// Emoji character data (position info for sprite rendering)
+#[derive(Debug, Clone)]
+pub struct EmojiCharData {
+    /// The emoji string (may be multi-codepoint)
+    pub emoji: String,
+    /// Position in world coordinates (computed during layout)
+    pub x: f32,
+    pub y: f32,
+    /// Size in world coordinates
+    pub width: f32,
+    pub height: f32,
+    /// Line number (for alignment offset)
+    line: usize,
+    /// Position in unscaled coordinates (for alignment calculation)
+    position_x: f32,
+    /// Y position in unscaled coordinates (matching text baseline)
+    position_y: f32,
 }
 
 /// Line thickness for underline/strikethrough (matching TypeScript)
@@ -153,6 +173,9 @@ pub struct CellLabel {
     /// Character render data
     chars: Vec<CharRenderData>,
 
+    /// Emoji character data (rendered as sprites, not MSDF text)
+    emoji_chars: Vec<EmojiCharData>,
+
     /// Line widths for alignment
     line_widths: Vec<f32>,
 
@@ -199,6 +222,7 @@ impl CellLabel {
             text_height_with_descenders: DEFAULT_CELL_HEIGHT,
             glyph_height: LINE_HEIGHT,
             chars: Vec::new(),
+            emoji_chars: Vec::new(),
             line_widths: Vec::new(),
             horizontal_align_offsets: Vec::new(),
             cached_meshes: Vec::new(),
@@ -384,7 +408,13 @@ impl CellLabel {
 
     /// Process text and calculate glyph positions
     pub fn layout(&mut self, fonts: &BitmapFonts) {
+        self.layout_with_emojis(fonts, None);
+    }
+
+    /// Process text and calculate glyph positions, with emoji sprite support
+    pub fn layout_with_emojis(&mut self, fonts: &BitmapFonts, emoji_sprites: Option<&EmojiSprites>) {
         self.chars.clear();
+        self.emoji_chars.clear();
         self.line_widths.clear();
         self.horizontal_align_offsets.clear();
         self.mesh_dirty = true; // Mark mesh as needing rebuild
@@ -456,6 +486,56 @@ impl CellLabel {
                 last_line_width = 0.0;
                 i += 1;
                 continue;
+            }
+
+            // Check if this is a potential emoji
+            if is_potential_emoji(c) {
+                // Try to match an emoji from the spritesheet
+                if let Some(sprites) = emoji_sprites {
+                    // Try to find an emoji starting at this position
+                    // We need to look ahead to handle multi-codepoint emojis
+                    if let Some((emoji_str, emoji_len)) =
+                        Self::try_extract_emoji(&characters, i, sprites)
+                    {
+                        // Emoji size matches line height - the SCALE_EMOJI (0.81) was already
+                        // applied during spritesheet generation, so we use line_height directly
+                        let emoji_size = line_height;
+
+                        // Use line_height as the advance width to match text flow
+                        let advance = line_height;
+
+                        log::debug!(
+                            "[CellLabel] Found emoji '{}' at pos {} with size {}",
+                            emoji_str,
+                            pos_x,
+                            emoji_size
+                        );
+
+                        // Store emoji character data
+                        self.emoji_chars.push(EmojiCharData {
+                            emoji: emoji_str,
+                            x: 0.0, // Will be computed in finalize
+                            y: 0.0,
+                            width: emoji_size,
+                            height: emoji_size,
+                            line,
+                            position_x: pos_x,
+                            position_y: pos_y,  // Store Y position like regular chars
+                        });
+
+                        pos_x += advance;
+                        last_line_width = pos_x;
+                        prev_char_code = None;
+                        i += emoji_len;
+                        continue;
+                    } else {
+                        log::debug!(
+                            "[CellLabel] Potential emoji char '{}' (U+{:04X}) not found in spritesheet",
+                            c,
+                            c as u32
+                        );
+                    }
+                }
             }
 
             // Get the font for this character (may vary due to format spans)
@@ -657,6 +737,96 @@ impl CellLabel {
 
         // Add margins (3 * CELL_TEXT_MARGIN_LEFT) and scale
         (max_unwrapped_width + 3.0 * CELL_TEXT_MARGIN_LEFT) * scale
+    }
+
+    /// Try to extract an emoji starting at position `start_idx`
+    /// Returns (emoji_string, num_characters_consumed) if found
+    fn try_extract_emoji(
+        characters: &[char],
+        start_idx: usize,
+        sprites: &EmojiSprites,
+    ) -> Option<(String, usize)> {
+        // Try increasingly longer sequences to find the longest matching emoji
+        let max_len = (characters.len() - start_idx).min(12); // Most emojis are < 12 codepoints
+        let mut best_match: Option<(String, usize)> = None;
+
+        let mut emoji_str = String::new();
+        for len in 1..=max_len {
+            emoji_str.push(characters[start_idx + len - 1]);
+
+            if sprites.has_emoji(&emoji_str) {
+                best_match = Some((emoji_str.clone(), len));
+            }
+        }
+
+        best_match
+    }
+
+    /// Get emoji characters with computed world positions
+    /// Call this after layout() and before rendering
+    pub fn get_emoji_chars(&self, fonts: &BitmapFonts) -> Vec<EmojiCharData> {
+        if self.emoji_chars.is_empty() {
+            return Vec::new();
+        }
+
+        let font_name = self.font_name();
+        let font = match fonts.get(&font_name) {
+            Some(f) => f,
+            None => return Vec::new(),
+        };
+
+        let scale = font.scale_for_size(self.font_size);
+        let mut result = Vec::with_capacity(self.emoji_chars.len());
+
+        for emoji in &self.emoji_chars {
+            let align_offset = self
+                .horizontal_align_offsets
+                .get(emoji.line)
+                .copied()
+                .unwrap_or(0.0);
+
+            // Scale width and height to world coordinates
+            let width = emoji.width * scale;
+            let height = emoji.height * scale;
+
+            // Calculate horizontal position (same as TypeScript)
+            let left = self.text_x + (emoji.position_x + align_offset) * scale + OPEN_SANS_FIX_X;
+            let x = left + width / 2.0;
+
+            // Calculate vertical position
+            // TypeScript uses: y = charTop + (charBottom - charTop) / 2
+            // where charTop = yPos and charBottom = yPos + textureFrame.height * scale
+            // For emojis, we position so the center is at the line's vertical center
+            let line_top = self.text_y + emoji.position_y * scale + OPEN_SANS_FIX_Y;
+
+            // The center should be positioned at top + height/2 to give correct top-left
+            // when rendering subtracts height/2
+            let y = line_top + height / 2.0;
+
+            result.push(EmojiCharData {
+                emoji: emoji.emoji.clone(),
+                x,
+                y,
+                width,
+                height,
+                line: emoji.line,
+                position_x: emoji.position_x,
+                position_y: emoji.position_y,
+            });
+        }
+
+        result
+    }
+
+    /// Get all emoji strings contained in this label
+    /// Used for determining which emoji pages need to be loaded
+    pub fn get_emoji_strings(&self) -> Vec<&str> {
+        self.emoji_chars.iter().map(|e| e.emoji.as_str()).collect()
+    }
+
+    /// Check if this label contains any emojis
+    pub fn has_emojis(&self) -> bool {
+        !self.emoji_chars.is_empty()
     }
 
     /// Calculate the final text position based on alignment

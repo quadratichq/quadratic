@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
 
+use super::emoji_sprites::EmojiSprites;
 use super::{BitmapFonts, CellLabel, HorizontalLine};
 
 // Shared math utilities (cross-platform)
@@ -153,6 +154,25 @@ pub struct CellsTextHash {
 
     /// Cached horizontal lines (underline/strikethrough) from all labels
     cached_horizontal_lines: Vec<HorizontalLine>,
+
+    /// Cached emoji sprite data (emoji_string, x, y, width, height, texture_uid, uv)
+    /// Grouped by texture_uid for efficient rendering
+    cached_emoji_sprites: HashMap<u32, Vec<EmojiSpriteData>>,
+}
+
+/// Cached data for rendering an emoji sprite
+#[derive(Debug, Clone)]
+pub struct EmojiSpriteData {
+    /// X position in world coordinates
+    pub x: f32,
+    /// Y position in world coordinates
+    pub y: f32,
+    /// Width in world coordinates
+    pub width: f32,
+    /// Height in world coordinates
+    pub height: f32,
+    /// UV coordinates [u0, v0, u1, v1]
+    pub uvs: [f32; 4],
 }
 
 impl CellsTextHash {
@@ -195,6 +215,7 @@ impl CellsTextHash {
             columns_max_cache: HashMap::new(),
             rows_max_cache: HashMap::new(),
             cached_horizontal_lines: Vec::new(),
+            cached_emoji_sprites: HashMap::new(),
         }
     }
 
@@ -312,6 +333,15 @@ impl CellsTextHash {
 
     /// Rebuild cached mesh data if dirty
     pub fn rebuild_if_dirty(&mut self, fonts: &BitmapFonts) {
+        self.rebuild_if_dirty_with_emojis(fonts, None);
+    }
+
+    /// Rebuild cached mesh data if dirty, with emoji sprite support
+    pub fn rebuild_if_dirty_with_emojis(
+        &mut self,
+        fonts: &BitmapFonts,
+        emoji_sprites: Option<&EmojiSprites>,
+    ) {
         if !self.dirty {
             return;
         }
@@ -331,6 +361,9 @@ impl CellsTextHash {
 
         // Clear horizontal lines cache
         self.cached_horizontal_lines.clear();
+
+        // Clear emoji sprites cache
+        self.cached_emoji_sprites.clear();
 
         // Track vertex offsets per texture page (for legacy cache)
         let mut vertex_offsets: [u32; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
@@ -400,6 +433,31 @@ impl CellsTextHash {
             let horizontal_lines = label.get_horizontal_lines(fonts);
             self.cached_horizontal_lines
                 .extend(horizontal_lines.iter().cloned());
+
+            // Collect emoji sprites if emoji_sprites is available
+            if let Some(sprites) = emoji_sprites {
+                let emoji_chars = label.get_emoji_chars(fonts);
+                for emoji_char in emoji_chars {
+                    if let Some(render_data) = sprites.get_emoji(&emoji_char.emoji) {
+                        let sprite_data = EmojiSpriteData {
+                            x: emoji_char.x,
+                            y: emoji_char.y,
+                            width: emoji_char.width,
+                            height: emoji_char.height,
+                            uvs: [
+                                render_data.uv.u1,
+                                render_data.uv.v1,
+                                render_data.uv.u2,
+                                render_data.uv.v2,
+                            ],
+                        };
+                        self.cached_emoji_sprites
+                            .entry(render_data.texture_uid)
+                            .or_insert_with(Vec::new)
+                            .push(sprite_data);
+                    }
+                }
+            }
         }
 
         self.dirty = false;
@@ -433,6 +491,16 @@ impl CellsTextHash {
     /// Get cached horizontal lines (underline/strikethrough)
     pub fn get_horizontal_lines(&self) -> &[HorizontalLine] {
         &self.cached_horizontal_lines
+    }
+
+    /// Get cached emoji sprites grouped by texture UID
+    pub fn get_emoji_sprites(&self) -> &HashMap<u32, Vec<EmojiSpriteData>> {
+        &self.cached_emoji_sprites
+    }
+
+    /// Check if there are cached emoji sprites
+    pub fn has_emoji_sprites(&self) -> bool {
+        !self.cached_emoji_sprites.is_empty()
     }
 
     // === Auto-size methods ===

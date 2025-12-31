@@ -113,6 +113,89 @@ impl WebGLContext {
         );
     }
 
+    /// Draw emoji sprites using a texture from the font texture manager
+    /// Vertex format: [x, y, u, v, r, g, b, a, ...] (8 floats per vertex, 4 vertices per sprite)
+    /// Index format: [i0, i1, i2, i3, i4, i5, ...] (6 indices per sprite for 2 triangles)
+    pub fn draw_emoji_sprites(
+        &self,
+        texture_uid: u32,
+        vertices: &[f32],
+        indices: &[u32],
+        matrix: &[f32; 16],
+    ) {
+        if vertices.is_empty() || indices.is_empty() {
+            return;
+        }
+
+        // Get the texture from font_texture_manager
+        let texture = match self.font_texture_manager.get(texture_uid) {
+            Some(t) => t,
+            None => return, // Texture not loaded
+        };
+
+        // Enable blending with standard alpha (not premultiplied for emoji textures)
+        self.gl.enable(WebGl2RenderingContext::BLEND);
+        self.gl.blend_func_separate(
+            WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
+
+        self.gl.use_program(Some(&self.sprite_program));
+        self.gl.bind_vertex_array(Some(&self.sprite_vao));
+
+        // Bind the texture
+        self.gl.active_texture(WebGl2RenderingContext::TEXTURE0);
+        self.gl
+            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
+        self.gl.uniform1i(Some(&self.sprite_texture_location), 0);
+
+        // Upload vertex data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.sprite_vertex_buffer),
+        );
+
+        unsafe {
+            let array = js_sys::Float32Array::view(vertices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Upload index data (as u32 for large sprite counts)
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&self.sprite_index_buffer),
+        );
+
+        unsafe {
+            let array = js_sys::Uint32Array::view(indices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Set matrix uniform
+        self.gl
+            .uniform_matrix4fv_with_f32_array(Some(&self.sprite_matrix_location), false, matrix);
+
+        // Draw
+        self.gl.draw_elements_with_i32(
+            WebGl2RenderingContext::TRIANGLES,
+            indices.len() as i32,
+            WebGl2RenderingContext::UNSIGNED_INT,
+            0,
+        );
+
+        self.gl.bind_vertex_array(None);
+    }
+
     /// Draw solid-colored triangles (for underlines, strikethroughs, etc.)
     /// Vertex format: [x, y, r, g, b, a, ...] (6 floats per vertex)
     pub fn draw_triangles(&self, vertices: &[f32], matrix: &[f32; 16]) {

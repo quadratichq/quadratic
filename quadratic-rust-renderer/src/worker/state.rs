@@ -9,7 +9,7 @@
 use quadratic_core_shared::{RenderCell, RenderFill, SheetFill, SheetId, SheetOffsets};
 
 use crate::sheets::text::{
-    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, VisibleHashBounds, hash_key,
+    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, EmojiSprites, VisibleHashBounds, hash_key,
 };
 use crate::sheets::{Sheet, Sheets};
 use crate::ui::ui::UI;
@@ -29,6 +29,9 @@ pub struct RendererState {
     /// Bitmap fonts for text rendering (shared across all sheets)
     pub fonts: BitmapFonts,
 
+    /// Emoji spritesheets for emoji rendering (shared across all sheets)
+    pub emoji_sprites: EmojiSprites,
+
     /// Whether the renderer is running
     pub running: bool,
 
@@ -47,6 +50,7 @@ impl RendererState {
             sheets: Sheets::default(),
             ui: UI::default(),
             fonts: BitmapFonts::default(),
+            emoji_sprites: EmojiSprites::new(),
             running: false,
             show_headings: true,
             debug_show_text_updates: false,
@@ -161,6 +165,15 @@ impl RendererState {
     }
 
     // =========================================================================
+    // Emoji Sprites
+    // =========================================================================
+
+    /// Load emoji mapping from JSON string
+    pub fn load_emoji_mapping(&mut self, json: &str) -> Result<(), String> {
+        self.emoji_sprites.load_mapping(json)
+    }
+
+    // =========================================================================
     // Fills (delegated to current sheet)
     // =========================================================================
 
@@ -197,6 +210,11 @@ impl RendererState {
             // Layout labels
             let offsets = &sheet.sheet_offsets;
             let fonts = &self.fonts;
+            let emoji_sprites = if self.emoji_sprites.is_loaded() {
+                Some(&self.emoji_sprites)
+            } else {
+                None
+            };
 
             let labels: Vec<(i64, i64, CellLabel)> = cells
                 .iter()
@@ -204,9 +222,16 @@ impl RendererState {
                 .map(|cell| {
                     let mut label = CellLabel::from_render_cell(cell);
                     label.update_bounds(offsets);
-                    label.layout(fonts);
+                    label.layout_with_emojis(fonts, emoji_sprites);
                     (cell.x, cell.y, label)
                 })
+                .collect();
+
+            // Collect emoji strings that need their pages loaded
+            let emoji_strings: Vec<String> = labels
+                .iter()
+                .flat_map(|(_, _, label)| label.get_emoji_strings())
+                .map(|s| s.to_string())
                 .collect();
 
             // Create new hash
@@ -218,6 +243,15 @@ impl RendererState {
 
             if !hash.is_empty() {
                 sheet.hashes.insert(key, hash);
+            }
+
+            // Mark emoji pages as needed (after borrowing fonts/emoji_sprites is done)
+            for emoji in emoji_strings {
+                if let Some(page) = self.emoji_sprites.get_emoji_page(&emoji) {
+                    if !self.emoji_sprites.is_page_loaded(page) {
+                        self.emoji_sprites.mark_page_needed(page);
+                    }
+                }
             }
         }
         // Mark viewport dirty to trigger re-render with new label data

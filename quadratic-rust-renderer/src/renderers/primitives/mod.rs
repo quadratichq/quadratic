@@ -16,4 +16,5 @@ pub use font::{FontTextureId, FontTextureInfo};
 pub use line::{LineScaling, Lines};
 pub use native_lines::NativeLines;
 pub use rect::Rects;
+pub use sprite::UVRect;
 pub use texture::{TextureId, TextureInfo};

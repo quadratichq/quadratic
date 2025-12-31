@@ -10,6 +10,7 @@ export const FloatingFPS = memo(() => {
   const { leftHeading } = useHeadingSize();
   const bottomRem = useFloatingDebugPosition(0);
   const [rustFps, setRustFps] = useState(0);
+  const [rustBackend, setRustBackend] = useState<'webgpu' | 'webgl' | undefined>(undefined);
   const showRustRenderer = debugFlags.getFlag('debugUseRustRenderer');
 
   // Poll Rust FPS and rendering state from SharedArrayBuffer
@@ -18,6 +19,7 @@ export const FloatingFPS = memo(() => {
 
     const interval = setInterval(() => {
       setRustFps(rustRendererWebWorker.fps);
+      setRustBackend(rustRendererWebWorker.renderBackend);
       debugRustRendererLight(rustRendererWebWorker.isRendering);
     }, 16); // Poll at ~60fps for responsive light updates
 
@@ -61,7 +63,9 @@ export const FloatingFPS = memo(() => {
           >
             &nbsp;
           </div>
-          <span>Rust: {rustFps || '--'}</span>
+          <span>
+            {rustBackend === 'webgpu' ? 'WebGPU' : rustBackend === 'webgl' ? 'WebGL' : '--'}: {rustFps || '--'}
+          </span>
         </>
       )}
       <span>FPS</span>

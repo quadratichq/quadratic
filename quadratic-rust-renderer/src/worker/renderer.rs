@@ -430,6 +430,109 @@ impl WorkerRenderer {
     }
 
     // =========================================================================
+    // Emoji Sprites (Lazy Loading)
+    // =========================================================================
+
+    /// Load emoji mapping from JSON string
+    /// Expected format: { pageSize, characterSize, scaleEmoji, pages: [...], emojis: {...} }
+    /// This only loads the mapping - textures are loaded lazily as needed.
+    #[wasm_bindgen]
+    pub fn load_emoji_mapping(&mut self, json: &str) -> Result<(), JsValue> {
+        self.state
+            .load_emoji_mapping(json)
+            .map_err(|e| JsValue::from_str(&e))
+    }
+
+    /// Check if emoji mapping is loaded
+    #[wasm_bindgen]
+    pub fn has_emoji_mapping(&self) -> bool {
+        self.state.emoji_sprites.is_loaded()
+    }
+
+    /// Get the number of emoji spritesheet pages
+    #[wasm_bindgen]
+    pub fn emoji_page_count(&self) -> usize {
+        self.state.emoji_sprites.page_count()
+    }
+
+    /// Get pages that need to be loaded (collected during layout)
+    /// Returns a flat array of page indices
+    #[wasm_bindgen]
+    pub fn get_needed_emoji_pages(&self) -> Box<[u32]> {
+        self.state
+            .emoji_sprites
+            .get_needed_pages()
+            .iter()
+            .map(|&p| p as u32)
+            .collect::<Vec<_>>()
+            .into_boxed_slice()
+    }
+
+    /// Check if there are emoji pages that need loading
+    #[wasm_bindgen]
+    pub fn has_needed_emoji_pages(&self) -> bool {
+        self.state.emoji_sprites.has_needed_pages()
+    }
+
+    /// Get the URL for an emoji page
+    #[wasm_bindgen]
+    pub fn get_emoji_page_url(&self, page: usize) -> Option<String> {
+        self.state.emoji_sprites.page_url(page)
+    }
+
+    /// Mark an emoji page as loading (called before fetch starts)
+    #[wasm_bindgen]
+    pub fn mark_emoji_page_loading(&mut self, page: usize) {
+        self.state.emoji_sprites.mark_page_loading(page);
+    }
+
+    /// Upload an emoji spritesheet texture from raw RGBA pixel data
+    /// and mark the page as loaded
+    #[wasm_bindgen]
+    pub fn upload_emoji_page(
+        &mut self,
+        page: usize,
+        width: u32,
+        height: u32,
+        data: &[u8],
+    ) -> Result<(), JsValue> {
+        let texture_uid = self.state.emoji_sprites.texture_uid(page);
+
+        // Upload the texture (reuse font texture mechanism)
+        self.backend
+            .upload_font_texture_from_data(texture_uid, width, height, data)?;
+
+        // Mark page as loaded
+        self.state.emoji_sprites.mark_page_loaded(page);
+
+        // Mark viewport dirty to trigger re-render - no need to rebuild hashes
+        // since emoji sprite data (texture UID, UVs) is already cached
+        self.state.set_viewport_dirty();
+
+        log::info!(
+            "[Renderer] Uploaded emoji page {} (texture_uid: {}, {}x{})",
+            page,
+            texture_uid,
+            width,
+            height
+        );
+
+        Ok(())
+    }
+
+    /// Mark an emoji page as failed to load
+    #[wasm_bindgen]
+    pub fn mark_emoji_page_failed(&mut self, page: usize) {
+        self.state.emoji_sprites.mark_page_failed(page);
+    }
+
+    /// Check if an emoji page is loaded
+    #[wasm_bindgen]
+    pub fn is_emoji_page_loaded(&self, page: usize) -> bool {
+        self.state.emoji_sprites.is_page_loaded(page)
+    }
+
+    // =========================================================================
     // Labels
     // =========================================================================
 
@@ -902,9 +1005,21 @@ impl WorkerRenderer {
 
         // 4. Cell text
         if fonts_ready {
+            let emoji_sprites = if self.state.emoji_sprites.is_loaded() {
+                Some(&self.state.emoji_sprites)
+            } else {
+                None
+            };
             if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                 let visible = render::render_text(
-                    gl, sheet, &self.state.viewport, &self.state.fonts, &matrix_array, atlas_font_size, distance_range,
+                    gl,
+                    sheet,
+                    &self.state.viewport,
+                    &self.state.fonts,
+                    emoji_sprites,
+                    &matrix_array,
+                    atlas_font_size,
+                    distance_range,
                 );
                 if debug_show_text_updates && visible > 0 {
                     log::info!("[frame_webgl] rendered={}, scale={:.2}", visible, scale);
@@ -998,12 +1113,17 @@ impl WorkerRenderer {
         // Rebuild sprite caches before render pass (must be done outside render pass)
         if fonts_ready && use_sprites {
             let fonts = &self.state.fonts;
+            let emoji_sprites = if self.state.emoji_sprites.is_loaded() {
+                Some(&self.state.emoji_sprites)
+            } else {
+                None
+            };
             if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                 for hash in sheet.hashes.values_mut() {
                     if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                         continue;
                     }
-                    hash.rebuild_if_dirty(fonts);
+                    hash.rebuild_if_dirty_with_emojis(fonts, emoji_sprites);
                     hash.rebuild_sprite_if_dirty_webgpu(gpu, fonts, atlas_font_size, distance_range);
                 }
             }
@@ -1076,19 +1196,32 @@ impl WorkerRenderer {
 
             // 4. Text
             if fonts_ready {
-                // Pre-borrow fonts to avoid borrow conflicts with sheet
+                // Pre-borrow fonts and emoji sprites to avoid borrow conflicts with sheet
                 let fonts = &self.state.fonts;
+                let emoji_sprites = if self.state.emoji_sprites.is_loaded() {
+                    Some(&self.state.emoji_sprites)
+                } else {
+                    None
+                };
                 if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                     for hash in sheet.hashes.values_mut() {
                         if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                             continue;
                         }
                         // Rebuild mesh cache if dirty (needed before rendering)
-                        hash.rebuild_if_dirty(fonts);
+                        hash.rebuild_if_dirty_with_emojis(fonts, emoji_sprites);
                         hash.render_webgpu(
-                            gpu, &mut pass, &matrix_array,
-                            scale, effective_scale, atlas_font_size, distance_range,
+                            gpu,
+                            &mut pass,
+                            &matrix_array,
+                            scale,
+                            effective_scale,
+                            atlas_font_size,
+                            distance_range,
                         );
+
+                        // Render emoji sprites
+                        Self::render_emoji_sprites_webgpu(gpu, &mut pass, hash, &matrix_array);
                     }
                 }
             }
@@ -1146,5 +1279,67 @@ impl WorkerRenderer {
         output.present();
 
         true
+    }
+
+    /// Render emoji sprites for a hash using WebGPU
+    fn render_emoji_sprites_webgpu(
+        gpu: &mut crate::renderers::WebGPUContext,
+        pass: &mut wgpu::RenderPass<'_>,
+        hash: &crate::sheets::text::CellsTextHash,
+        matrix: &[f32; 16],
+    ) {
+        let emoji_sprites = hash.get_emoji_sprites();
+        if emoji_sprites.is_empty() {
+            return;
+        }
+
+        // Render each texture group
+        for (&texture_uid, sprites) in emoji_sprites {
+            if sprites.is_empty() {
+                continue;
+            }
+
+            // Build vertex data for all sprites in this group
+            let mut vertices: Vec<f32> = Vec::with_capacity(sprites.len() * 32);
+            let mut indices: Vec<u32> = Vec::with_capacity(sprites.len() * 6);
+
+            for (i, sprite) in sprites.iter().enumerate() {
+                // sprite.x and sprite.y are CENTER positions (matching TypeScript's anchor=0.5)
+                // Convert to corner positions for rendering
+                let half_w = sprite.width / 2.0;
+                let half_h = sprite.height / 2.0;
+                let x = sprite.x - half_w;
+                let y = sprite.y - half_h;
+                let x2 = sprite.x + half_w;
+                let y2 = sprite.y + half_h;
+                let u1 = sprite.uvs[0];
+                let v1 = sprite.uvs[1];
+                let u2 = sprite.uvs[2];
+                let v2 = sprite.uvs[3];
+
+                let base_index = (i * 4) as u32;
+
+                // Top-left, top-right, bottom-right, bottom-left
+                // Format: x, y, u, v, r, g, b, a
+                vertices.extend_from_slice(&[
+                    x, y, u1, v1, 1.0, 1.0, 1.0, 1.0, // Top-left
+                    x2, y, u2, v1, 1.0, 1.0, 1.0, 1.0, // Top-right
+                    x2, y2, u2, v2, 1.0, 1.0, 1.0, 1.0, // Bottom-right
+                    x, y2, u1, v2, 1.0, 1.0, 1.0, 1.0, // Bottom-left
+                ]);
+
+                indices.extend_from_slice(&[
+                    base_index,
+                    base_index + 1,
+                    base_index + 2,
+                    base_index,
+                    base_index + 2,
+                    base_index + 3,
+                ]);
+            }
+
+            // Draw the emoji sprites
+            gpu.draw_emoji_sprites(pass, texture_uid, &vertices, &indices, matrix);
+        }
     }
 }

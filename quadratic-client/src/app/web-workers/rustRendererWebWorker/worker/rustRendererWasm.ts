@@ -11,6 +11,8 @@
  */
 
 import init, { WorkerRenderer } from '@/app/quadratic-rust-renderer/quadratic_rust_renderer';
+import type { EmojiMappingResult } from './rustRendererEmojiLoader';
+import { fetchEmojiPage, startEmojiLoading } from './rustRendererEmojiLoader';
 import type { FontLoadResult } from './rustRendererFontLoader';
 import { startFontLoading } from './rustRendererFontLoader';
 
@@ -27,10 +29,18 @@ class RustRendererWasm {
   // Font loading promise started in constructor for early loading
   private fontLoadPromise: Promise<FontLoadResult>;
 
+  // Emoji mapping loading promise started in constructor for early loading
+  private emojiMappingPromise: Promise<EmojiMappingResult | null>;
+
+  // Track emoji pages currently being loaded (to avoid duplicate fetches)
+  private loadingEmojiPages: Set<number> = new Set();
+
   constructor() {
     // Start font loading immediately in constructor
     // This is a key optimization - fonts start loading as soon as the module is imported
     this.fontLoadPromise = startFontLoading();
+    // Start emoji mapping loading in parallel (textures loaded lazily on demand)
+    this.emojiMappingPromise = startEmojiLoading();
   }
 
   /**
@@ -78,6 +88,18 @@ class RustRendererWasm {
     const fontLoadResult = await this.fontLoadPromise;
     this.loadFontsIntoRenderer(renderer, fontLoadResult);
 
+    // Wait for emoji mapping to finish loading (started in constructor)
+    // Textures are loaded lazily when emojis are rendered
+    const emojiMappingResult = await this.emojiMappingPromise;
+    if (emojiMappingResult) {
+      try {
+        renderer.load_emoji_mapping(emojiMappingResult.mappingJson);
+        console.log('[rustRendererWasm] Emoji mapping loaded (textures loaded on demand)');
+      } catch (error) {
+        console.warn('[rustRendererWasm] Failed to load emoji mapping:', error);
+      }
+    }
+
     this.initialized = true;
 
     // Set pending viewport buffer if one was received before initialization
@@ -117,6 +139,60 @@ class RustRendererWasm {
           console.warn(`[rustRendererWasm] Failed to upload texture ${texture.textureUid}:`, error);
         }
       }
+    }
+  }
+
+  /**
+   * Load emoji page on demand (called when renderer needs a page).
+   */
+  private async loadEmojiPage(page: number): Promise<void> {
+    if (!this.renderer) return;
+
+    // Already loading this page
+    if (this.loadingEmojiPages.has(page)) return;
+
+    const pageUrl = this.renderer.get_emoji_page_url(page);
+    if (!pageUrl) {
+      console.warn(`[rustRendererWasm] No URL for emoji page ${page}`);
+      this.renderer.mark_emoji_page_failed(page);
+      return;
+    }
+
+    // Mark as loading to prevent duplicate fetches
+    this.loadingEmojiPages.add(page);
+    this.renderer.mark_emoji_page_loading(page);
+
+    console.log(`[rustRendererWasm] Loading emoji page ${page}: ${pageUrl}`);
+
+    try {
+      const result = await fetchEmojiPage(pageUrl);
+      if (!result) {
+        throw new Error('Failed to fetch/decode emoji page');
+      }
+
+      // Upload the texture
+      this.renderer.upload_emoji_page(page, result.width, result.height, result.data);
+      console.log(`[rustRendererWasm] Loaded emoji page ${page} (${result.width}x${result.height})`);
+    } catch (error) {
+      console.warn(`[rustRendererWasm] Failed to load emoji page ${page}:`, error);
+      this.renderer?.mark_emoji_page_failed(page);
+    } finally {
+      this.loadingEmojiPages.delete(page);
+    }
+  }
+
+  /**
+   * Check for and load any emoji pages needed by the renderer.
+   * Call this periodically (e.g., each frame or after cell updates).
+   */
+  private checkNeededEmojiPages(): void {
+    if (!this.initialized || !this.renderer) return;
+    if (!this.renderer.has_needed_emoji_pages()) return;
+
+    const neededPages = this.renderer.get_needed_emoji_pages();
+    for (const page of neededPages) {
+      // Start loading (async, doesn't block)
+      this.loadEmojiPage(page);
     }
   }
 
@@ -230,6 +306,10 @@ class RustRendererWasm {
   frame(elapsed: number): boolean {
     if (!this.initialized || !this.renderer) return false;
     this.frameCount++;
+
+    // Check for emoji pages that need loading (lazy loading)
+    this.checkNeededEmojiPages();
+
     return this.renderer.frame(elapsed);
   }
 

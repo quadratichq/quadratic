@@ -34,6 +34,7 @@ wasm = [
     "wasm-bindgen-futures",
     "console_error_panic_hook",
     "wgpu-wasm",
+    "image",
 ]
 
 # Native target - supports wgpu with native backends + software fallback
@@ -81,6 +82,14 @@ web-sys = { version = "0.3", optional = true, features = [
     "WebGlUniformLocation",
     "WebGlVertexArrayObject",
     "WebGlContextAttributes",
+    # Fetch API for loading emoji textures
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "Blob",
+    "ImageBitmap",
+    "ImageData",
 ] }
 
 # WebGPU via wgpu crate (cross-platform, stable API)
@@ -92,6 +101,8 @@ wgpu = { version = "23.0", optional = true, default-features = false }
 # Native-only dependencies (software rendering)
 tiny-skia = { version = "0.11", optional = true }
 env_logger = { version = "0.11", optional = true }
+
+# PNG decoding for emoji spritesheets (used by both wasm and native)
 image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
 
 # Error handling
