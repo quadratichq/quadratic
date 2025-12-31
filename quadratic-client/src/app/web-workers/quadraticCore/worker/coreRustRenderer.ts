@@ -9,7 +9,7 @@
 
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import { getRendererToCoreTypeName } from '@/app/web-workers/rustRendererWebWorker/rustRendererCoreMessages';
-// import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -44,11 +44,12 @@ class CoreRustRenderer {
       console.log(`[coreRustRenderer] message: ${typeName} (${data.length} bytes)`);
     }
 
-    // TODO: Forward the binary message to Rust WASM for decoding and handling
-    // core.handleRustRendererMessage(data);
-
-    // For now, just log it
-    console.log(`[coreRustRenderer] received ${data.length} bytes from rust renderer`);
+    // Forward the binary message to Rust WASM for decoding and handling
+    try {
+      core.handleRustRendererMessage(data);
+    } catch (error) {
+      console.error('[coreRustRenderer] Error handling renderer message:', error);
+    }
   };
 
   /**

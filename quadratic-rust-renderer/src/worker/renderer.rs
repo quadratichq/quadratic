@@ -1,27 +1,49 @@
-//! Worker Renderer
+//! Unified Worker Renderer
 //!
 //! The main entry point for browser-based rendering in a web worker.
-//! Receives an OffscreenCanvas and handles all rendering.
+//! Supports both WebGPU (preferred) and WebGL2 (fallback) backends.
+//!
+//! # Usage
+//!
+//! ```javascript
+//! // Check WebGPU availability and create renderer
+//! if (WorkerRenderer.is_webgpu_available()) {
+//!     const renderer = await WorkerRenderer.new_webgpu(canvas);
+//! } else {
+//!     const renderer = new WorkerRenderer(canvas);
+//! }
+//! ```
 
+#[cfg(target_arch = "wasm32")]
 use js_sys::SharedArrayBuffer;
 use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use web_sys::{HtmlImageElement, OffscreenCanvas};
 
-use crate::render_context::RenderContext;
-use crate::text::BitmapFont;
+#[cfg(target_arch = "wasm32")]
+use crate::renderers::render_context::RenderContext;
+#[cfg(target_arch = "wasm32")]
+use crate::sheets::text::BitmapFont;
 use crate::viewport::ViewportBuffer;
-use crate::webgl::WebGLContext;
 
+#[cfg(target_arch = "wasm32")]
+use super::js;
+#[cfg(target_arch = "wasm32")]
+use super::render;
 use super::state::RendererState;
+use super::RenderBackend;
 
-/// Worker-based renderer for browser
+#[cfg(target_arch = "wasm32")]
+use quadratic_core_shared::{RendererToCore, serialization};
+
+/// Unified worker-based renderer for browser
 ///
 /// This is the main entry point exposed to JavaScript.
-/// It owns the context and handles all rendering.
+/// It uses RenderBackend internally to support both WebGL and WebGPU.
 #[wasm_bindgen]
 pub struct WorkerRenderer {
-    /// WebGL rendering context
-    gl: WebGLContext,
+    /// Render backend (WebGL or WebGPU)
+    backend: RenderBackend,
 
     /// Shared renderer state
     state: RendererState,
@@ -30,24 +52,107 @@ pub struct WorkerRenderer {
     shared_viewport: Option<ViewportBuffer>,
 }
 
+// ============================================================================
+// Internal methods (not exposed to JavaScript)
+// ============================================================================
+
+#[cfg(target_arch = "wasm32")]
+impl WorkerRenderer {
+    /// Send a message to the core worker
+    fn send_to_core(&self, message: RendererToCore) {
+        match serialization::serialize(&message) {
+            Ok(bytes) => {
+                log::debug!("Sending {:?} to core ({} bytes)", message, bytes.len());
+                js::js_send_to_core(bytes);
+            }
+            Err(e) => {
+                log::error!("Failed to serialize message to core: {}", e);
+            }
+        }
+    }
+
+    /// Request meta fills for the current sheet
+    #[allow(dead_code)]
+    pub fn request_meta_fills(&self, sheet_id: quadratic_core_shared::SheetId) {
+        self.send_to_core(RendererToCore::RequestMetaFills { sheet_id });
+    }
+
+    /// Request hash cells for specific hashes
+    #[allow(dead_code)]
+    pub fn request_hashes(
+        &self,
+        sheet_id: quadratic_core_shared::SheetId,
+        hashes: Vec<quadratic_core_shared::Pos>,
+    ) {
+        if !hashes.is_empty() {
+            self.send_to_core(RendererToCore::RequestHashes { sheet_id, hashes });
+        }
+    }
+}
+
+// ============================================================================
+// JavaScript API (exposed via wasm_bindgen)
+// ============================================================================
+
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl WorkerRenderer {
-    /// Create a new renderer from a transferred OffscreenCanvas
+    // =========================================================================
+    // Construction
+    // =========================================================================
+
+    /// Check if WebGPU is available in this browser
+    #[wasm_bindgen]
+    pub fn is_webgpu_available() -> bool {
+        RenderBackend::is_webgpu_available()
+    }
+
+    /// Create a new WebGL renderer from a transferred OffscreenCanvas (sync)
     #[wasm_bindgen(constructor)]
     pub fn new(canvas: OffscreenCanvas) -> Result<WorkerRenderer, JsValue> {
         let width = canvas.width();
         let height = canvas.height();
 
-        log::info!("Creating WorkerRenderer ({}x{})", width, height);
-        let gl = WebGLContext::from_offscreen_canvas(canvas)?;
+        log::info!("Creating WorkerRenderer [WebGL] ({}x{})", width, height);
+        let backend = RenderBackend::create_webgl(canvas)?;
         let state = RendererState::new(width as f32, height as f32);
 
         Ok(Self {
-            gl,
+            backend,
             state,
             shared_viewport: None,
         })
     }
+
+    /// Create a new WebGPU renderer from a transferred OffscreenCanvas (async)
+    #[wasm_bindgen]
+    pub async fn new_webgpu(canvas: OffscreenCanvas) -> Result<WorkerRenderer, JsValue> {
+        let width = canvas.width();
+        let height = canvas.height();
+
+        log::info!("Creating WorkerRenderer [WebGPU] ({}x{})", width, height);
+        let backend = RenderBackend::create_webgpu(canvas).await?;
+        let state = RendererState::new(width as f32, height as f32);
+
+        Ok(Self {
+            backend,
+            state,
+            shared_viewport: None,
+        })
+    }
+
+    /// Get the backend type name
+    #[wasm_bindgen]
+    pub fn backend_name(&self) -> String {
+        match self.backend.backend_type() {
+            super::BackendType::WebGL => "WebGL".to_string(),
+            super::BackendType::WebGPU => "WebGPU".to_string(),
+        }
+    }
+
+    // =========================================================================
+    // Viewport Buffer
+    // =========================================================================
 
     /// Set the viewport buffer (SharedArrayBuffer from main thread)
     ///
@@ -57,7 +162,19 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn set_viewport_buffer(&mut self, buffer: SharedArrayBuffer) {
         log::info!("Setting shared viewport buffer");
-        self.shared_viewport = Some(ViewportBuffer::from_buffer(buffer));
+        let vb = ViewportBuffer::from_buffer(buffer);
+
+        // Immediately update state viewport with buffer values
+        self.state.set_viewport(vb.x(), vb.y(), vb.scale());
+        self.state.resize_viewport(vb.width(), vb.height(), vb.dpr());
+
+        // Resize the backend to match the correct canvas size
+        self.backend.resize(vb.width() as u32, vb.height() as u32);
+
+        // Mark dirty to ensure we render with correct values
+        self.state.set_viewport_dirty();
+
+        self.shared_viewport = Some(vb);
     }
 
     /// Check if using shared viewport
@@ -66,11 +183,18 @@ impl WorkerRenderer {
         self.shared_viewport.is_some()
     }
 
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
+
     /// Start the renderer
     #[wasm_bindgen]
     pub fn start(&mut self) {
         self.state.start();
         log::info!("WorkerRenderer started");
+
+        // Send Ready message to core to request initial data
+        self.send_to_core(RendererToCore::Ready);
     }
 
     /// Stop the renderer
@@ -95,9 +219,13 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn resize(&mut self, width: u32, height: u32, dpr: f32) {
         log::debug!("Resizing to {}x{} (DPR: {})", width, height, dpr);
-        self.gl.resize(width, height);
+        self.backend.resize(width, height);
         self.state.resize_viewport(width as f32, height as f32, dpr);
     }
+
+    // =========================================================================
+    // Viewport Getters
+    // =========================================================================
 
     /// Get current scale
     #[wasm_bindgen]
@@ -199,6 +327,10 @@ impl WorkerRenderer {
         self.state.is_dirty()
     }
 
+    // =========================================================================
+    // Debug
+    // =========================================================================
+
     /// Set debug mode: show colored overlay on text hashes that were recalculated
     #[wasm_bindgen]
     pub fn set_debug_show_text_updates(&mut self, show: bool) {
@@ -210,6 +342,10 @@ impl WorkerRenderer {
     pub fn get_debug_show_text_updates(&self) -> bool {
         self.state.get_debug_show_text_updates()
     }
+
+    // =========================================================================
+    // Cursor
+    // =========================================================================
 
     /// Set cursor position
     #[wasm_bindgen]
@@ -242,14 +378,23 @@ impl WorkerRenderer {
         Ok(())
     }
 
-    /// Upload a font texture from an HtmlImageElement
+    // =========================================================================
+    // Fonts
+    // =========================================================================
+
+    /// Upload a font texture from an HtmlImageElement (WebGL only)
     #[wasm_bindgen]
     pub fn upload_font_texture(
         &mut self,
         texture_uid: u32,
         image: &HtmlImageElement,
     ) -> Result<(), JsValue> {
-        self.gl.upload_font_texture(texture_uid, image)
+        match &mut self.backend {
+            RenderBackend::WebGL(gl) => gl.upload_font_texture(texture_uid, image),
+            RenderBackend::WebGPU(_) => {
+                Err(JsValue::from_str("upload_font_texture not supported on WebGPU, use upload_font_texture_from_data"))
+            }
+        }
     }
 
     /// Upload a font texture from raw RGBA pixel data
@@ -261,7 +406,7 @@ impl WorkerRenderer {
         height: u32,
         data: &[u8],
     ) -> Result<(), JsValue> {
-        self.gl
+        self.backend
             .upload_font_texture_from_data(texture_uid, width, height, data)?;
         // Mark headings dirty so they render now that textures are available
         self.state.set_headings_dirty();
@@ -284,18 +429,9 @@ impl WorkerRenderer {
         self.state.has_fonts()
     }
 
-    /// Check if fonts are fully ready (metadata loaded AND all textures uploaded)
-    fn fonts_ready(&self) -> bool {
-        if !self.state.has_fonts() {
-            return false;
-        }
-        for uid in self.state.get_required_texture_uids() {
-            if !self.gl.has_font_texture(uid) {
-                return false;
-            }
-        }
-        true
-    }
+    // =========================================================================
+    // Labels
+    // =========================================================================
 
     /// Add a cell label (text content)
     /// col and row are 1-indexed cell coordinates
@@ -322,7 +458,17 @@ impl WorkerRenderer {
         valign: u8,
     ) {
         self.state.add_styled_label(
-            text, col, row, font_size, bold, italic, color_r, color_g, color_b, align, valign,
+            text,
+            col,
+            row,
+            Some(font_size),
+            bold,
+            italic,
+            color_r,
+            color_g,
+            color_b,
+            Some(align as i32),
+            Some(valign as i32),
         );
     }
 
@@ -435,7 +581,8 @@ impl WorkerRenderer {
     /// Mark a fills hash as dirty (needs reload when visible)
     #[wasm_bindgen]
     pub fn mark_fills_hash_dirty(&mut self, hash_x: i32, hash_y: i32) {
-        self.state.mark_fills_hash_dirty(hash_x as i64, hash_y as i64);
+        self.state
+            .mark_fills_hash_dirty(hash_x as i64, hash_y as i64);
     }
 
     /// Get fill hashes that need to be loaded (visible but not yet loaded)
@@ -477,7 +624,6 @@ impl WorkerRenderer {
     }
 
     /// Add test fills for development/debugging
-    /// Creates various cell-based and meta fills to verify rendering
     #[wasm_bindgen]
     pub fn add_test_fills(&mut self) {
         self.state.add_test_fills();
@@ -488,12 +634,6 @@ impl WorkerRenderer {
     // =========================================================================
 
     /// Add multiple labels for a hash in batch (parallelized)
-    /// This is more efficient than calling add_label/add_styled_label repeatedly.
-    ///
-    /// texts: array of text strings
-    /// cols: flat array of column indices (1-indexed)
-    /// rows: flat array of row indices (1-indexed)
-    /// colors: optional flat array of [r, g, b, r, g, b, ...] for each label (values 0-255)
     #[wasm_bindgen]
     pub fn add_labels_batch(
         &mut self,
@@ -539,14 +679,12 @@ impl WorkerRenderer {
     }
 
     /// Get label hashes that need to be loaded (visible but not yet loaded)
-    /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
     #[wasm_bindgen]
     pub fn get_needed_label_hashes(&self) -> Box<[i32]> {
         self.state.get_needed_label_hashes().into_boxed_slice()
     }
 
     /// Get label hashes that can be unloaded (outside viewport)
-    /// Returns: flat array of [hash_x, hash_y, hash_x, hash_y, ...]
     #[wasm_bindgen]
     pub fn get_offscreen_label_hashes(&self) -> Box<[i32]> {
         self.state.get_offscreen_label_hashes().into_boxed_slice()
@@ -571,7 +709,6 @@ impl WorkerRenderer {
     }
 
     /// Add test labels for development/debugging
-    /// Creates various cell labels to verify text rendering
     #[wasm_bindgen]
     pub fn add_test_labels(&mut self) {
         self.state.add_test_labels();
@@ -582,21 +719,12 @@ impl WorkerRenderer {
     // =========================================================================
 
     /// Get max content width for a column (for auto-resize)
-    ///
-    /// Returns the unwrapped text width of the widest cell in this column.
-    /// Used when double-clicking column header border to auto-fit column width.
-    /// Returns 0.0 if no cells in the column.
     #[wasm_bindgen]
     pub fn get_column_max_width(&self, column: i64) -> f32 {
         self.state.get_column_max_width(column)
     }
 
     /// Get max content height for a row (for auto-resize)
-    ///
-    /// Returns the height needed to display the tallest cell in this row,
-    /// including descenders (characters like g, y, p that extend below baseline).
-    /// Used when double-clicking row header border to auto-fit row height.
-    /// Returns the default cell height (21.0) if no cells in the row.
     #[wasm_bindgen]
     pub fn get_row_max_height(&self, row: i64) -> f32 {
         self.state.get_row_max_height(row)
@@ -610,254 +738,68 @@ impl WorkerRenderer {
     /// elapsed: Time since last frame in milliseconds (for deceleration)
     /// Returns true if a render actually occurred, false if nothing was dirty
     #[wasm_bindgen]
-    pub fn frame(&mut self, _elapsed: f32) -> bool {
+    pub fn frame(&mut self, elapsed: f32) -> bool {
         if !self.state.is_running() {
             return false;
         }
 
+        // Don't render until viewport buffer is set
+        if self.shared_viewport.is_none() {
+            return false;
+        }
+
         // Sync from shared viewport buffer
-        // Viewport is controlled by TypeScript and synced via SharedArrayBuffer
         if let Some(ref mut shared) = self.shared_viewport {
             let changed = shared.sync();
             if changed {
-                // Update state viewport from shared buffer
-                self.state.set_viewport(shared.x(), shared.y(), shared.scale());
-                self.state.resize_viewport(shared.width(), shared.height(), shared.dpr());
+                self.state
+                    .set_viewport(shared.x(), shared.y(), shared.scale());
+                self.state
+                    .resize_viewport(shared.width(), shared.height(), shared.dpr());
+                // Also resize backend if dimensions changed
+                self.backend
+                    .resize(shared.width() as u32, shared.height() as u32);
             }
         }
 
         // Update content based on viewport and sheet offsets
         self.state.update_content();
 
-        // Update headings first to get their size
-        let (heading_width, heading_height) = self.state.update_headings();
-
-        // Process dirty hashes with time budget (~8ms, half of 60fps frame)
-        // This does the expensive layout/mesh work incrementally
+        // Process dirty hashes with time budget (~8ms)
         let (processed, remaining) = self.state.process_dirty_hashes(8.0);
 
-        // Check if anything is dirty and needs rendering
+        // Check if anything needs rendering
         let needs_render = self.state.is_dirty() || processed > 0;
 
         if !needs_render {
             return false;
         }
 
-        // Begin frame (clears command buffer)
-        self.gl.begin_frame();
+        // Dispatch to backend-specific rendering
+        // Note: We check backend type first to avoid borrow issues
+        let is_webgl = matches!(&self.backend, RenderBackend::WebGL(_));
+        let rendered = if is_webgl {
+            self.frame_webgl(elapsed)
+        } else {
+            self.frame_webgpu(elapsed)
+        };
 
-        // Clear with out-of-bounds background color (0xfdfdfd = very light gray)
-        let oob_gray = 253.0 / 255.0;
-        self.gl.clear(oob_gray, oob_gray, oob_gray, 1.0);
+        if rendered {
+            // Mark everything as clean after rendering
+            self.state.mark_clean();
 
-        // Get the view-projection matrix with heading offset
-        let matrix = self
-            .state
-            .viewport
-            .view_projection_matrix_with_offset(heading_width, heading_height);
-        let matrix_array: [f32; 16] = matrix.to_cols_array();
-
-        // Set viewport to content area (after headings)
-        let canvas_width = self.state.viewport.width() as i32;
-        let canvas_height = self.state.viewport.height() as i32;
-        let content_x = heading_width as i32;
-        let content_y = heading_height as i32;
-        let content_width = canvas_width - heading_width as i32;
-        let content_height = canvas_height - heading_height as i32;
-
-        self.gl.set_viewport(
-            content_x,
-            content_y,
-            content_width.max(0),
-            content_height.max(0),
-        );
-
-        self.gl.set_scissor(
-            content_x,
-            content_y,
-            content_width.max(0),
-            content_height.max(0),
-        );
-
-        // Render content in z-order (back to front):
-
-        // 1. Background (white grid area)
-        self.render_background(&matrix_array);
-
-        // 2. Cell fills (backgrounds) - after background, before grid lines
-        self.render_fills(&matrix_array);
-
-        // 3. Grid lines
-        self.state
-            .content
-            .grid_lines
-            .render(&mut self.gl, &matrix_array);
-
-        // 4. Cell text
-        self.render_text(&matrix_array);
-
-        // 5. Cursor (on top of text)
-        let viewport_scale = self.state.viewport.effective_scale();
-        self.state
-            .content
-            .cursor
-            .render(&mut self.gl, &matrix_array, viewport_scale);
-
-        // Reset viewport and disable scissor for headings
-        self.gl.reset_viewport();
-        self.gl.disable_scissor();
-
-        // Render headings (in screen space, on top of everything)
-        if self.state.show_headings {
-            self.render_headings();
-        }
-
-        // Execute all buffered draw commands
-        self.gl.end_frame();
-
-        // Mark everything as clean after rendering
-        self.state.mark_clean();
-
-        // Also clear the shared viewport buffer dirty flag
-        if let Some(ref mut shared) = self.shared_viewport {
-            shared.mark_clean();
-        }
-
-        // If there are remaining dirty hashes, force another frame to continue processing
-        if remaining > 0 {
-            self.state.force_dirty();
-        }
-
-        true
-    }
-
-    // =========================================================================
-    // Layer Building Methods
-    // =========================================================================
-
-    /// Render the background (white grid area)
-    fn render_background(&mut self, matrix: &[f32; 16]) {
-        let bounds = self.state.viewport.visible_bounds();
-
-        if bounds.right <= 0.0 || bounds.bottom <= 0.0 {
-            return;
-        }
-
-        let x = bounds.left.max(0.0);
-        let y = bounds.top.max(0.0);
-        let width = bounds.right - x;
-        let height = bounds.bottom - y;
-
-        let mut rects = crate::primitives::Rects::new();
-        rects.add(x, y, width, height, [1.0, 1.0, 1.0, 1.0]);
-        rects.render(&mut self.gl, matrix);
-    }
-
-    /// Render cell fills (background colors)
-    fn render_fills(&mut self, matrix: &[f32; 16]) {
-        let offsets = self.state.get_sheet_offsets().clone();
-        self.state.fills.render(
-            &mut self.gl,
-            matrix,
-            &self.state.viewport,
-            &offsets,
-        );
-    }
-
-    /// Render cell text using spatial hash culling
-    fn render_text(&mut self, matrix: &[f32; 16]) {
-        if self.state.hashes.is_empty() || !self.fonts_ready() {
-            return;
-        }
-
-        let scale = self.state.viewport.scale();
-        let effective_scale = self.state.viewport.effective_scale();
-
-        let bounds = self.state.viewport.visible_bounds();
-        let padding = 100.0;
-        let min_x = bounds.left - padding;
-        let max_x = bounds.left + bounds.width + padding;
-        let min_y = bounds.top - padding;
-        let max_y = bounds.top + bounds.height + padding;
-
-        let (font_scale, distance_range) = self.state.get_text_params();
-
-        // Render only ready hashes (dirty hashes are processed separately with time budget)
-        let mut visible_count = 0;
-        let mut skipped_dirty = 0;
-
-        for hash in self.state.hashes.values_mut() {
-            if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
-                continue;
+            // Clear the shared viewport buffer dirty flag
+            if let Some(ref mut shared) = self.shared_viewport {
+                shared.mark_clean();
             }
 
-            // Skip dirty hashes - they'll be processed next frame
-            if hash.is_dirty() {
-                skipped_dirty += 1;
-                continue;
+            // If there are remaining dirty hashes, force another frame
+            if remaining > 0 {
+                self.state.force_dirty();
             }
-
-            visible_count += 1;
-
-            if scale < crate::text::SPRITE_SCALE_THRESHOLD {
-                hash.rebuild_sprite_if_dirty(
-                    &self.gl,
-                    &self.state.fonts,
-                    font_scale,
-                    distance_range,
-                );
-            }
-
-            hash.render(
-                &self.gl,
-                matrix,
-                scale,
-                effective_scale,
-                font_scale,
-                distance_range,
-            );
         }
 
-        if self.state.debug_show_text_updates && (visible_count > 0 || skipped_dirty > 0) {
-            log::info!(
-                "[render_cells_text] rendered={}, skipped_dirty={}, scale={:.2}",
-                visible_count,
-                skipped_dirty,
-                scale
-            );
-        }
-    }
-
-    /// Render grid headings (column and row headers)
-    fn render_headings(&mut self) {
-        if !self.fonts_ready() {
-            return;
-        }
-
-        let canvas_width = self.state.viewport.width();
-        let canvas_height = self.state.viewport.height();
-
-        // Layout heading labels
-        self.state.headings.layout(&self.state.fonts);
-
-        // Create screen-space matrix
-        let screen_matrix = self
-            .state
-            .create_screen_space_matrix(canvas_width, canvas_height);
-
-        // Get text params for headings
-        let (font_scale, distance_range) = self.state.get_heading_text_params();
-        let offsets = self.state.get_sheet_offsets().clone();
-
-        // Render headings directly
-        self.state.headings.render(
-            &mut self.gl,
-            &screen_matrix,
-            &self.state.fonts,
-            font_scale,
-            distance_range,
-            &offsets,
-        );
+        rendered
     }
 
     // =========================================================================
@@ -865,13 +807,328 @@ impl WorkerRenderer {
     // =========================================================================
 
     /// Handle a bincode-encoded message from core.
-    ///
-    /// This is the main entry point for receiving messages from the core worker.
-    /// Messages are encoded using bincode for efficiency.
     #[wasm_bindgen]
     pub fn handle_core_message(&mut self, data: &[u8]) {
         if let Err(e) = super::message_handler::handle_core_message(&mut self.state, data) {
             log::error!("[WorkerRenderer] Error handling core message: {}", e);
         }
+    }
+}
+
+// =========================================================================
+// Backend-specific frame rendering (private impl)
+// =========================================================================
+
+#[cfg(target_arch = "wasm32")]
+impl WorkerRenderer {
+    /// Check if fonts are fully ready (metadata loaded AND all textures uploaded)
+    fn fonts_ready(&self) -> bool {
+        if !self.state.has_fonts() {
+            return false;
+        }
+        for uid in self.state.get_required_texture_uids() {
+            if !self.backend.has_font_texture(uid) {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Render a frame using WebGL
+    fn frame_webgl(&mut self, _elapsed: f32) -> bool {
+        // Pre-extract all values we need before borrowing backend
+        let fonts_ready = self.fonts_ready();
+        let (heading_width, heading_height) = self.state.get_heading_dimensions();
+        let matrix = self
+            .state
+            .viewport
+            .view_projection_matrix_with_offset(heading_width, heading_height);
+        let matrix_array: [f32; 16] = matrix.to_cols_array();
+        let canvas_width = self.state.viewport.width();
+        let canvas_height = self.state.viewport.height();
+        let content_x = heading_width as i32;
+        let content_y = heading_height as i32;
+        let content_width = (canvas_width as i32) - content_x;
+        let content_height = (canvas_height as i32) - content_y;
+        let offsets = self.state.get_sheet_offsets().clone();
+        let (font_scale, distance_range) = self.state.get_text_params();
+        let viewport_scale = self.state.viewport.effective_scale();
+        let show_headings = self.state.show_headings;
+        let debug_show_text_updates = self.state.debug_show_text_updates;
+        let scale = self.state.viewport.scale();
+        let screen_matrix = self.state.create_screen_space_matrix(canvas_width, canvas_height);
+        let (heading_font_scale, heading_distance_range) = self.state.get_heading_text_params();
+
+        // Background vertices
+        let bg_vertices = render::get_background_vertices(&self.state.viewport);
+
+        // Now borrow backend
+        let gl = match &mut self.backend {
+            RenderBackend::WebGL(gl) => gl,
+            _ => return false,
+        };
+
+        // Begin frame
+        gl.begin_frame();
+
+        // Clear with out-of-bounds background color
+        let oob_gray = 253.0 / 255.0;
+        gl.clear(oob_gray, oob_gray, oob_gray, 1.0);
+
+        // Set viewport to content area (after headings)
+        gl.set_viewport(content_x, content_y, content_width.max(0), content_height.max(0));
+        gl.set_scissor(content_x, content_y, content_width.max(0), content_height.max(0));
+
+        // 1. Background
+        if let Some(_vertices) = bg_vertices {
+            let mut rects = crate::renderers::primitives::Rects::new();
+            // The vertices contain position and color, but we just need a simple white rect
+            let bounds = self.state.viewport.visible_bounds();
+            let x = bounds.left.max(0.0);
+            let y = bounds.top.max(0.0);
+            let width = bounds.right - x;
+            let height = bounds.bottom - y;
+            rects.add(x, y, width, height, [1.0, 1.0, 1.0, 1.0]);
+            rects.render(gl, &matrix_array);
+        }
+
+        // 2. Cell fills
+        if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+            sheet.fills.render(gl, &matrix_array, &self.state.viewport, &offsets);
+        }
+
+        // 3. Grid lines
+        self.state.ui.grid_lines.render(gl, &matrix_array);
+
+        // 4. Cell text
+        if fonts_ready {
+            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+                let (visible, skipped) = render::render_text(
+                    gl, sheet, &self.state.viewport, &matrix_array, font_scale, distance_range,
+                );
+                if debug_show_text_updates && (visible > 0 || skipped > 0) {
+                    log::info!(
+                        "[frame_webgl] rendered={}, skipped_dirty={}, scale={:.2}",
+                        visible, skipped, scale
+                    );
+                }
+            }
+        }
+
+        // 5. Cursor
+        self.state.ui.cursor.render(gl, &matrix_array, viewport_scale);
+
+        // Reset viewport for headings
+        gl.reset_viewport();
+        gl.disable_scissor();
+
+        // 6. Headings (screen space)
+        if show_headings && fonts_ready {
+            self.state.ui.headings.layout(&self.state.fonts);
+            self.state.ui.headings.render(
+                gl,
+                &screen_matrix,
+                &self.state.fonts,
+                heading_font_scale,
+                heading_distance_range,
+                &offsets,
+            );
+        }
+
+        // Execute all buffered draw commands
+        gl.end_frame();
+
+        true
+    }
+
+    /// Render a frame using WebGPU
+    fn frame_webgpu(&mut self, _elapsed: f32) -> bool {
+        // Pre-extract all values we need before complex borrows
+        let fonts_ready = self.fonts_ready();
+        let (heading_width, heading_height) = self.state.get_heading_dimensions();
+        let matrix = self.state.viewport
+            .view_projection_matrix_with_offset(heading_width, heading_height);
+        let matrix_array: [f32; 16] = matrix.to_cols_array();
+        let canvas_width = self.state.viewport.width();
+        let canvas_height = self.state.viewport.height();
+        let content_x = heading_width as u32;
+        let content_y = heading_height as u32;
+        let content_width = (canvas_width as u32).saturating_sub(content_x);
+        let content_height = (canvas_height as u32).saturating_sub(content_y);
+        let scale = self.state.viewport.scale();
+        let effective_scale = self.state.viewport.effective_scale();
+        let (font_scale, distance_range) = self.state.get_text_params();
+        let show_headings = self.state.show_headings;
+        let offsets = self.state.get_sheet_offsets().clone();
+        let screen_matrix = self.state.create_screen_space_matrix(canvas_width, canvas_height);
+        let (heading_font_scale, heading_distance_range) = self.state.get_heading_text_params();
+
+        // Pre-extract background vertices
+        let bg_vertices = render::get_background_vertices(&self.state.viewport);
+
+        // Pre-extract fill vertices
+        let (meta_fill_vertices, hash_fill_vertices) = if let Some(sheet) = self.state.sheets.current_sheet() {
+            render::get_fill_vertices(sheet, &self.state.viewport)
+        } else {
+            (None, Vec::new())
+        };
+
+        // Pre-extract grid line vertices
+        let grid_line_vertices = self.state.ui.grid_lines.get_vertices().map(|v| v.to_vec());
+
+        // Pre-extract cursor vertices
+        let cursor_fill_vertices = self.state.ui.cursor.get_fill_vertices().map(|v| v.to_vec());
+        let cursor_border_vertices = self.state.ui.cursor.get_border_vertices(effective_scale).map(|v| v.to_vec());
+
+        // Pre-extract viewport bounds for text culling
+        let bounds = self.state.viewport.visible_bounds();
+        let padding = 100.0;
+        let min_x = bounds.left - padding;
+        let max_x = bounds.left + bounds.width + padding;
+        let min_y = bounds.top - padding;
+        let max_y = bounds.top + bounds.height + padding;
+
+        // Now borrow backend
+        let gpu = match &mut self.backend {
+            RenderBackend::WebGPU(gpu) => gpu,
+            _ => return false,
+        };
+
+        // Get surface texture
+        let output = match gpu.get_current_texture() {
+            Ok(t) => t,
+            Err(e) => {
+                log::error!("Failed to get surface texture: {:?}", e);
+                return false;
+            }
+        };
+
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = gpu.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
+
+        // Clear with out-of-bounds background color
+        let oob_gray = 253.0 / 255.0;
+
+        {
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: oob_gray as f64,
+                            g: oob_gray as f64,
+                            b: oob_gray as f64,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            // Set viewport to content area
+            if content_width > 0 && content_height > 0 {
+                pass.set_viewport(
+                    content_x as f32, content_y as f32,
+                    content_width as f32, content_height as f32,
+                    0.0, 1.0,
+                );
+            }
+
+            // 1. Background
+            if let Some(ref vertices) = bg_vertices {
+                gpu.draw_triangles(&mut pass, vertices, &matrix_array);
+            }
+
+            // 2. Fills
+            if let Some(ref vertices) = meta_fill_vertices {
+                gpu.draw_triangles(&mut pass, vertices, &matrix_array);
+            }
+            for vertices in &hash_fill_vertices {
+                gpu.draw_triangles(&mut pass, vertices, &matrix_array);
+            }
+
+            // 3. Grid lines
+            if let Some(ref line_vertices) = grid_line_vertices {
+                gpu.draw_lines(&mut pass, line_vertices, &matrix_array);
+            }
+
+            // 4. Text
+            if fonts_ready {
+                if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+                    for hash in sheet.hashes.values_mut() {
+                        if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
+                            continue;
+                        }
+                        if hash.is_dirty() {
+                            continue;
+                        }
+                        hash.render_webgpu(
+                            gpu, &mut pass, &matrix_array,
+                            scale, effective_scale, font_scale, distance_range,
+                        );
+                    }
+                }
+            }
+
+            // 5. Cursor
+            if let Some(ref fill_vertices) = cursor_fill_vertices {
+                gpu.draw_triangles(&mut pass, fill_vertices, &matrix_array);
+            }
+            if let Some(ref border_vertices) = cursor_border_vertices {
+                gpu.draw_triangles(&mut pass, border_vertices, &matrix_array);
+            }
+        }
+
+        // 6. Headings in a second pass (screen space)
+        if show_headings && fonts_ready {
+            self.state.ui.headings.layout(&self.state.fonts);
+            let debug_label_bounds = self.state.ui.headings.debug_label_bounds;
+
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Headings Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            let tex_width = output.texture.width();
+            let tex_height = output.texture.height();
+            pass.set_viewport(0.0, 0.0, tex_width as f32, tex_height as f32, 0.0, 1.0);
+            pass.set_scissor_rect(0, 0, tex_width, tex_height);
+
+            render::render_headings_webgpu(
+                gpu,
+                &mut pass,
+                &mut self.state.ui.headings,
+                &self.state.fonts,
+                &screen_matrix,
+                heading_font_scale,
+                heading_distance_range,
+                &offsets,
+                scale,
+                debug_label_bounds,
+            );
+        }
+
+        // Submit
+        gpu.queue().submit(std::iter::once(encoder.finish()));
+        output.present();
+
+        true
     }
 }

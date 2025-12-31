@@ -8,7 +8,7 @@
  * Supports both WebGPU (preferred) and WebGL2 (fallback) backends.
  */
 
-import init, { WorkerRenderer, WorkerRendererGPU } from '../pkg/quadratic_rust_renderer.js';
+import init, { WorkerRenderer } from '../pkg/quadratic_rust_renderer.js';
 
 // Type for batch labels message
 interface AddLabelsBatchMessage {
@@ -219,7 +219,7 @@ type WorkerMessage =
   | GetColumnMaxWidthMessage
   | GetRowMaxHeightMessage;
 
-let renderer: WorkerRenderer | WorkerRendererGPU | null = null;
+let renderer: WorkerRenderer | null = null;
 let animationFrameId: number | null = null;
 let currentBackend: 'webgpu' | 'webgl' = 'webgl';
 let storedCanvas: OffscreenCanvas | null = null;
@@ -300,12 +300,12 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
         storedCanvas = data.canvas;
 
         // Check WebGPU availability and user preference
-        const webgpuAvailable = WorkerRendererGPU.is_available();
+        const webgpuAvailable = WorkerRenderer.is_webgpu_available();
         const useWebGPU = data.preferWebGPU && webgpuAvailable;
 
         if (useWebGPU) {
           // Create WebGPU renderer (async)
-          renderer = await WorkerRendererGPU.new(data.canvas);
+          renderer = await WorkerRenderer.new_webgpu(data.canvas);
           currentBackend = 'webgpu';
         } else {
           // Create WebGL renderer (sync)
@@ -332,7 +332,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>): Promise<void> => {
       self.postMessage({
         type: 'backendInfo',
         backend: currentBackend,
-        webgpuAvailable: WorkerRendererGPU.is_available(),
+        webgpuAvailable: WorkerRenderer.is_webgpu_available(),
       });
       break;
 

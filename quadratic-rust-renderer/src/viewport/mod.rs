@@ -13,13 +13,10 @@ mod viewport;
 mod viewport_buffer;
 
 // Re-export core types from core-shared
-pub use quadratic_core_shared::{
-    SHEET_ID_SIZE, SliceFlag, SliceOffset, VIEWPORT_BUFFER_SIZE, VIEWPORT_SLICE_SIZE, VisibleBounds,
-};
+pub use quadratic_core_shared::VisibleBounds;
 
 #[cfg(feature = "js")]
 pub use quadratic_core_shared::ViewportBuffer;
 
 // Renderer-specific types
 pub use viewport::Viewport;
-pub use viewport_buffer::ViewportSource;

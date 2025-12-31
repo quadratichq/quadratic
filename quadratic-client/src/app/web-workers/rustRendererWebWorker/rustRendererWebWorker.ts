@@ -10,7 +10,6 @@ import initRustClient, {
   createViewportBuffer,
   ViewportBufferWriter,
 } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type {
   ClientRustRendererMessage,
   ClientRustRendererPing,
@@ -76,6 +75,13 @@ class RustRendererWebWorker {
     }
 
     this.canvas = canvas;
+
+    // Set canvas dimensions BEFORE transfer to avoid 300x150 default
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
     this.offscreenCanvas = canvas.transferControlToOffscreen();
 
     const message: ClientRustRendererMessage = {
@@ -150,13 +156,8 @@ class RustRendererWebWorker {
         }
         return;
 
-      case 'rustRendererClientRequestMetaFills':
-        // Request meta fills from core and send them to rust renderer
-        quadraticCore.sendSheetMetaFillsToRustRenderer(e.data.sheetId);
-        return;
+      // Note: Meta fills are now requested directly from WASM to core via bincode messages
     }
-
-    console.warn('[rustRendererWebWorker] unhandled message:', e.data);
   };
 
   private send(message: ClientRustRendererMessage, transferables?: Transferable[]) {

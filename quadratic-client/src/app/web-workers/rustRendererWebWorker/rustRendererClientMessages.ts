@@ -147,11 +147,7 @@ export interface RustRendererClientPong {
   roundTripMs: number;
 }
 
-/** Request meta fills (row/column/sheet fills) from core */
-export interface RustRendererClientRequestMetaFills {
-  type: 'rustRendererClientRequestMetaFills';
-  sheetId: string;
-}
+// Note: Meta fills are now requested directly from WASM to core via bincode messages
 
 export type RustRendererClientMessage =
   | RustRendererClientReady
@@ -161,5 +157,4 @@ export type RustRendererClientMessage =
   | RustRendererClientCellHover
   | RustRendererClientCellEdit
   | RustRendererClientSelectionChanged
-  | RustRendererClientPong
-  | RustRendererClientRequestMetaFills;
+  | RustRendererClientPong;

@@ -109,6 +109,16 @@ pub enum RendererToCore {
 
     /// Renderer is ready and requesting initial data
     Ready,
+
+    /// Request meta fills for a sheet (infinite row/column/sheet fills)
+    RequestMetaFills { sheet_id: SheetId },
+
+    /// Request hash cells for specific hashes
+    RequestHashes {
+        sheet_id: SheetId,
+        /// List of hash positions to request
+        hashes: Vec<Pos>,
+    },
 }
 
 /// Cell data for a hash bucket.

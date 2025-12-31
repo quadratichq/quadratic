@@ -2,7 +2,7 @@
 //!
 //! Decodes CoreToRenderer messages and updates the renderer state.
 
-use quadratic_core_shared::{serialization, CoreToRenderer, SheetFill, SheetOffsets};
+use quadratic_core_shared::{CoreToRenderer, SheetFill, SheetOffsets, serialization};
 
 use super::state::RendererState;
 
@@ -39,13 +39,16 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
             );
 
             // Store the offsets in the renderer state
-            state.set_sheet_offsets(sheet_id.to_string(), offsets);
+            state.set_sheet_offsets(sheet_id, offsets);
 
             Ok(())
         }
 
         CoreToRenderer::InitSheet { sheet_id, .. } => {
-            log::info!("[message_handler] Received InitSheet for sheet {}", sheet_id);
+            log::info!(
+                "[message_handler] Received InitSheet for sheet {}",
+                sheet_id
+            );
             // TODO: Implement cell data handling
             Ok(())
         }
@@ -62,7 +65,11 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
                 );
 
                 // Set fills for this hash in the renderer state
-                state.set_fills_for_hash(hash_cells.hash_pos.x, hash_cells.hash_pos.y, hash_cells.fills);
+                state.set_fills_for_hash(
+                    hash_cells.hash_pos.x,
+                    hash_cells.hash_pos.y,
+                    hash_cells.fills,
+                );
 
                 // TODO: Implement text cell data handling
             }
@@ -104,37 +111,26 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
             let offsets: SheetOffsets = serialization::deserialize(&info.offsets_bytes)
                 .map_err(|e| format!("Failed to deserialize offsets in SheetInfo: {e}"))?;
 
-            let (default_col, default_row) = offsets.defaults();
-            log::info!(
-                "[message_handler] Received SheetInfo for sheet {}: '{}', order={}, color={:?}, default_col={}, default_row={}",
-                info.sheet_id,
-                info.name,
-                info.order,
-                info.color,
-                default_col,
-                default_row
-            );
-
             // Add or update the sheet in the renderer state
-            state.set_sheet(
-                info.sheet_id.to_string(),
-                info.name,
-                info.order,
-                info.color,
-                offsets,
-            );
+            state.set_sheet(info.sheet_id, offsets);
 
             Ok(())
         }
 
         CoreToRenderer::SheetDeleted { sheet_id } => {
-            log::info!("[message_handler] Received SheetDeleted for sheet {}", sheet_id);
-            state.remove_sheet(&sheet_id.to_string());
+            log::info!(
+                "[message_handler] Received SheetDeleted for sheet {}",
+                sheet_id
+            );
+            state.remove_sheet(sheet_id);
             Ok(())
         }
 
         CoreToRenderer::ClearSheet { sheet_id } => {
-            log::info!("[message_handler] Received ClearSheet for sheet {}", sheet_id);
+            log::info!(
+                "[message_handler] Received ClearSheet for sheet {}",
+                sheet_id
+            );
             // TODO: Implement sheet clear handling
             Ok(())
         }

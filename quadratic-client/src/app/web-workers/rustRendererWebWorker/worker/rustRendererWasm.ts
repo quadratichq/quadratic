@@ -10,19 +10,16 @@
  * running in parallel with WASM initialization.
  */
 
-import init, { WorkerRenderer, WorkerRendererGPU } from '@/app/quadratic-rust-renderer/quadratic_rust_renderer';
+import init, { WorkerRenderer } from '@/app/quadratic-rust-renderer/quadratic_rust_renderer';
 import type { FontLoadResult } from './rustRendererFontLoader';
 import { startFontLoading } from './rustRendererFontLoader';
-
-// Union type for renderer (WebGL or WebGPU)
-type Renderer = WorkerRenderer | WorkerRendererGPU;
 
 class RustRendererWasm {
   private canvas?: OffscreenCanvas;
   private devicePixelRatio = 1;
   private initialized = false;
   private backend?: 'webgpu' | 'webgl';
-  private renderer?: Renderer;
+  private renderer?: WorkerRenderer;
 
   // Buffer for messages received before initialization
   private pendingMessages: Uint8Array[] = [];
@@ -49,10 +46,10 @@ class RustRendererWasm {
     await init();
 
     // Try WebGPU first, fall back to WebGL
-    let renderer: Renderer;
-    if (WorkerRendererGPU.is_available()) {
+    let renderer: WorkerRenderer;
+    if (WorkerRenderer.is_webgpu_available()) {
       try {
-        renderer = await WorkerRendererGPU.new(canvas);
+        renderer = await WorkerRenderer.new_webgpu(canvas);
         this.backend = 'webgpu';
         console.log('[rustRendererWasm] Using WebGPU backend');
       } catch (error) {
@@ -82,8 +79,6 @@ class RustRendererWasm {
     const fontLoadResult = await this.fontLoadPromise;
     this.loadFontsIntoRenderer(renderer, fontLoadResult);
 
-    renderer.start();
-
     this.initialized = true;
 
     console.log(`[rustRendererWasm] Fonts loaded: ${renderer.has_fonts()}`);
@@ -95,6 +90,9 @@ class RustRendererWasm {
       this.pendingViewportBuffer = undefined;
     }
 
+    // Start the renderer (delayed to ensure viewport buffer can be set first)
+    renderer.start();
+
     // Replay any messages that arrived before initialization
     this.replayPendingMessages();
 
@@ -105,7 +103,7 @@ class RustRendererWasm {
    * Load pre-fetched fonts into the renderer.
    * Uses add_font() which takes JSON format.
    */
-  private loadFontsIntoRenderer(renderer: Renderer, fontLoadResult: FontLoadResult): void {
+  private loadFontsIntoRenderer(renderer: WorkerRenderer, fontLoadResult: FontLoadResult): void {
     for (const font of fontLoadResult.fonts) {
       // Add font using JSON format
       try {
@@ -161,16 +159,7 @@ class RustRendererWasm {
     this.pendingMessages = [];
   }
 
-  /**
-   * Send the Ready message to core.
-   * This will be called once WASM is initialized and ready.
-   */
-  sendReadyToCore() {
-    // TODO: This will be implemented when bincode message handling is ready.
-    // The WASM code will serialize a RendererToCore::Ready message
-    // and it will be sent via rustRendererCore.sendToCore(bincodeBytes).
-    console.log('[rustRendererWasm] sendReadyToCore (not yet implemented)');
-  }
+  // Note: Ready message is now sent automatically from WASM when renderer.start() is called
 
   /**
    * Update the viewport (visible area and scale).
@@ -333,7 +322,7 @@ class RustRendererWasm {
     return this.backend;
   }
 
-  get rendererInstance(): Renderer | undefined {
+  get rendererInstance(): WorkerRenderer | undefined {
     return this.renderer;
   }
 }

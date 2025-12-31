@@ -9,6 +9,12 @@ import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import { getCoreToRendererTypeName } from '@/app/web-workers/rustRendererWebWorker/rustRendererCoreMessages';
 import { rustRendererWasm } from './rustRendererWasm';
 
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    // Callback that will be called from Rust WASM to send messages to core
+    jsSendToCore?: (data: Uint8Array) => void;
+  };
+
 class RustRendererCore {
   private corePort?: MessagePort;
 
@@ -16,12 +22,14 @@ class RustRendererCore {
     this.corePort = corePort;
     this.corePort.onmessage = this.handleMessage;
 
+    // Register the callback for Rust WASM to use
+    self.jsSendToCore = this.sendToCore;
+
     if (await debugFlagWait('debugWebWorkers')) {
       console.log('[rustRendererCore] initialized');
     }
 
-    // Send ready message to core
-    this.sendReady();
+    // Note: Ready message is now sent from WASM when renderer.start() is called
   }
 
   private handleMessage = (e: MessageEvent) => {
@@ -40,8 +48,9 @@ class RustRendererCore {
   /**
    * Send a bincode-encoded message to core.
    * The data is transferred (zero-copy) to avoid copying large buffers.
+   * Using arrow function to preserve `this` when called from global.
    */
-  sendToCore(data: Uint8Array) {
+  sendToCore = (data: Uint8Array) => {
     if (!this.corePort) {
       console.warn('[rustRendererCore] Cannot send to core: port not initialized');
       return;
@@ -49,16 +58,10 @@ class RustRendererCore {
 
     // Transfer the ArrayBuffer for zero-copy
     this.corePort.postMessage(data, [data.buffer]);
-  }
-
-  /**
-   * Send the "Ready" message to core to request initial data.
-   */
-  private sendReady() {
-    // For now, send a simple ready signal
-    // The actual bincode message will be constructed by WASM
-    rustRendererWasm.sendReadyToCore();
-  }
+  };
 }
 
 export const rustRendererCore = new RustRendererCore();
+
+// Make the send function available globally for Rust WASM to call
+self.jsSendToCore = rustRendererCore.sendToCore;

@@ -1,60 +1,36 @@
-//! Shared Renderer State
+//! Renderer State
 //!
-//! Contains all state shared between WebGL and WebGPU renderers.
-//! This eliminates duplication of viewport, cells, fonts, and hash management.
+//! Core state for the renderer. Holds:
+//! - Viewport (camera/zoom/pan)
+//! - Sheets (each sheet owns its fills, hashes, labels)
+//! - UI (global elements like grid lines, cursor, headings)
+//! - Fonts (shared bitmap fonts for text rendering)
 
-use std::collections::HashMap;
+use quadratic_core_shared::{RenderCell, RenderFill, SheetFill, SheetId, SheetOffsets};
 
-use quadratic_core_shared::{
-    CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind, RenderCell,
-    RenderCellSpecial, RenderFill, RenderNumber, Rgba, SheetFill, SheetOffsets,
+use crate::sheets::text::{
+    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, VisibleHashBounds, hash_key,
 };
-
-use crate::cells::CellsSheet;
-use crate::content::Content;
-use crate::fills::CellsFills;
-use crate::headings::GridHeadings;
-use crate::text::{
-    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, VisibleHashBounds, get_hash_coords, hash_key,
-};
+use crate::sheets::{Sheet, Sheets};
+use crate::ui::ui::UI;
 use crate::viewport::Viewport;
 
-/// Shared state between WebGL and WebGPU renderers
-///
-/// This struct contains all the non-rendering-specific state that is
-/// identical between the two renderer backends.
+/// Core renderer state
 pub struct RendererState {
     /// Viewport (camera/zoom/pan state)
     pub viewport: Viewport,
 
-    /// All sheets indexed by sheet ID
-    sheets: HashMap<String, CellsSheet>,
+    /// All sheets (each owns its fills, hashes, labels)
+    pub sheets: Sheets,
 
-    /// Currently active sheet ID
-    current_sheet_id: Option<String>,
+    /// Global UI elements (grid lines, cursor, headings)
+    pub ui: UI,
 
-    /// Renderable content (grid lines, cursor)
-    pub content: Content,
-
-    /// Cell fills (background colors) - per current sheet
-    pub fills: CellsFills,
-
-    /// Bitmap fonts for text rendering
+    /// Bitmap fonts for text rendering (shared across all sheets)
     pub fonts: BitmapFonts,
-
-    /// Spatial hashes containing cell labels (15×30 cell regions)
-    /// Key is computed from (hash_x, hash_y) coordinates
-    /// Note: These are per current sheet - cleared on sheet switch
-    pub hashes: HashMap<u64, CellsTextHash>,
-
-    /// Total label count (cached for stats)
-    pub label_count: usize,
 
     /// Whether the renderer is running
     pub running: bool,
-
-    /// Grid headings (column/row headers)
-    pub headings: GridHeadings,
 
     /// Whether to render headings
     pub show_headings: bool,
@@ -68,128 +44,12 @@ impl RendererState {
     pub fn new(width: f32, height: f32) -> Self {
         Self {
             viewport: Viewport::new(width, height),
-            sheets: HashMap::new(),
-            current_sheet_id: None,
-            content: Content::new(),
-            fills: CellsFills::new("".to_string()),
-            fonts: BitmapFonts::new(),
-            hashes: HashMap::new(),
-            label_count: 0,
+            sheets: Sheets::default(),
+            ui: UI::default(),
+            fonts: BitmapFonts::default(),
             running: false,
-            headings: GridHeadings::new(),
             show_headings: true,
             debug_show_text_updates: false,
-        }
-    }
-
-    // =========================================================================
-    // Sheet Management
-    // =========================================================================
-
-    /// Add or update a sheet from SheetInfo data
-    pub fn set_sheet(
-        &mut self,
-        sheet_id: String,
-        name: String,
-        order: String,
-        color: Option<Rgba>,
-        offsets: SheetOffsets,
-    ) {
-        if let Some(existing) = self.sheets.get_mut(&sheet_id) {
-            // Update existing sheet
-            existing.update_from_sheet_info(name, order, color, offsets);
-            log::info!(
-                "[RendererState] Updated sheet '{}' ({})",
-                existing.name,
-                sheet_id
-            );
-        } else {
-            // Create new sheet
-            let sheet =
-                CellsSheet::from_sheet_info(sheet_id.clone(), name.clone(), order, color, offsets);
-            log::info!("[RendererState] Added new sheet '{}' ({})", name, sheet_id);
-            self.sheets.insert(sheet_id.clone(), sheet);
-        }
-
-        // If no current sheet, set this as current
-        if self.current_sheet_id.is_none() {
-            self.set_current_sheet(sheet_id);
-        }
-    }
-
-    /// Set the current active sheet
-    pub fn set_current_sheet(&mut self, sheet_id: String) {
-        if self.current_sheet_id.as_ref() == Some(&sheet_id) {
-            return;
-        }
-
-        if self.sheets.contains_key(&sheet_id) {
-            log::info!("[RendererState] Switching to sheet {}", sheet_id);
-            self.current_sheet_id = Some(sheet_id.clone());
-
-            // Clear current sheet's hashes and fills - they'll be reloaded
-            self.hashes.clear();
-            self.label_count = 0;
-            self.fills = CellsFills::new(sheet_id);
-
-            // Mark everything dirty to force re-render
-            self.viewport.dirty = true;
-            self.content.grid_lines.dirty = true;
-            self.headings.set_dirty();
-        } else {
-            log::warn!(
-                "[RendererState] Attempted to switch to unknown sheet {}",
-                sheet_id
-            );
-        }
-    }
-
-    /// Get the current sheet (if any)
-    pub fn current_sheet(&self) -> Option<&CellsSheet> {
-        self.current_sheet_id
-            .as_ref()
-            .and_then(|id| self.sheets.get(id))
-    }
-
-    /// Get the current sheet mutably (if any)
-    pub fn current_sheet_mut(&mut self) -> Option<&mut CellsSheet> {
-        if let Some(id) = &self.current_sheet_id {
-            self.sheets.get_mut(id)
-        } else {
-            None
-        }
-    }
-
-    /// Get current sheet offsets (returns default if no sheet)
-    pub fn current_sheet_offsets(&self) -> &SheetOffsets {
-        static DEFAULT_OFFSETS: std::sync::OnceLock<SheetOffsets> = std::sync::OnceLock::new();
-        self.current_sheet()
-            .map(|s| &s.sheet_offsets)
-            .unwrap_or_else(|| DEFAULT_OFFSETS.get_or_init(SheetOffsets::default))
-    }
-
-    /// Get current sheet ID
-    pub fn current_sheet_id(&self) -> Option<&str> {
-        self.current_sheet_id.as_deref()
-    }
-
-    /// Get sheet count
-    pub fn sheet_count(&self) -> usize {
-        self.sheets.len()
-    }
-
-    /// Remove a sheet
-    pub fn remove_sheet(&mut self, sheet_id: &str) {
-        self.sheets.remove(sheet_id);
-        if self.current_sheet_id.as_deref() == Some(sheet_id) {
-            // Switch to another sheet if available
-            self.current_sheet_id = self.sheets.keys().next().cloned();
-            if let Some(new_id) = &self.current_sheet_id {
-                log::info!("[RendererState] Sheet deleted, switching to {}", new_id);
-                self.hashes.clear();
-                self.label_count = 0;
-                self.fills = CellsFills::new(new_id.clone());
-            }
         }
     }
 
@@ -197,78 +57,72 @@ impl RendererState {
     // Lifecycle
     // =========================================================================
 
-    /// Start the renderer
     pub fn start(&mut self) {
         self.running = true;
     }
 
-    /// Stop the renderer
     pub fn stop(&mut self) {
         self.running = false;
     }
 
-    /// Check if running
     pub fn is_running(&self) -> bool {
         self.running
     }
 
     // =========================================================================
-    // Sheet Offsets (from Core)
+    // Sheet Management
     // =========================================================================
 
-    /// Set the sheet offsets for the given sheet.
-    /// This is called when receiving SheetOffsets messages from core.
-    pub fn set_sheet_offsets(&mut self, sheet_id: String, offsets: SheetOffsets) {
-        let (default_col, default_row) = offsets.defaults();
-        log::info!(
-            "[RendererState] Setting offsets for sheet {}: default_col={}, default_row={}",
-            sheet_id,
-            default_col,
-            default_row
-        );
+    /// Set a sheet (creates or updates)
+    pub fn set_sheet(&mut self, sheet_id: SheetId, offsets: SheetOffsets) {
+        self.sheets.set_sheet(sheet_id, offsets);
+        // Mark dirty to trigger rerender
+        self.viewport.dirty = true;
+        self.ui.grid_lines.dirty = true;
+        self.ui.headings.set_dirty();
+    }
 
-        if let Some(sheet) = self.sheets.get_mut(&sheet_id) {
-            sheet.sheet_offsets = offsets;
-            sheet.dirty = true;
-        } else {
-            log::warn!(
-                "[RendererState] Attempted to set offsets for unknown sheet {}",
-                sheet_id
-            );
+    /// Set the current active sheet
+    pub fn set_current_sheet(&mut self, sheet_id: SheetId) {
+        if self.sheets.set_current_sheet(sheet_id) {
+            // Sheet changed - mark things dirty
+            self.viewport.dirty = true;
+            self.ui.grid_lines.dirty = true;
+            self.ui.headings.set_dirty();
         }
     }
 
-    /// Get the current sheet offsets
-    pub fn get_sheet_offsets(&self) -> &SheetOffsets {
-        self.current_sheet_offsets()
+    /// Get current sheet offsets
+    pub fn current_sheet_offsets(&self) -> &SheetOffsets {
+        self.sheets.current_sheet_offsets()
+    }
+
+    /// Get current sheet mutably
+    pub fn current_sheet_mut(&mut self) -> Option<&mut Sheet> {
+        self.sheets.current_sheet_mut()
     }
 
     // =========================================================================
-    // Viewport (state is controlled by main thread via SharedArrayBuffer)
+    // Viewport
     // =========================================================================
 
-    /// Resize the viewport
     pub fn resize_viewport(&mut self, width: f32, height: f32, dpr: f32) {
         self.viewport.resize(width, height, dpr);
     }
 
-    /// Set viewport position and scale (from SharedArrayBuffer sync)
     pub fn set_viewport(&mut self, x: f32, y: f32, scale: f32) {
         self.viewport.set_position(x, y);
         self.viewport.set_scale(scale);
     }
 
-    /// Get current scale
     pub fn get_scale(&self) -> f32 {
         self.viewport.scale()
     }
 
-    /// Get viewport X
     pub fn get_x(&self) -> f32 {
         self.viewport.x()
     }
 
-    /// Get viewport Y
     pub fn get_y(&self) -> f32 {
         self.viewport.y()
     }
@@ -277,925 +131,97 @@ impl RendererState {
     // Headings
     // =========================================================================
 
-    /// Toggle headings visibility
     pub fn set_show_headings(&mut self, show: bool) {
         self.show_headings = show;
     }
 
-    /// Get headings visibility
     pub fn get_show_headings(&self) -> bool {
         self.show_headings
     }
 
-    /// Set debug mode for showing text updates (logs to console)
     pub fn set_debug_show_text_updates(&mut self, show: bool) {
         self.debug_show_text_updates = show;
-        log::info!("[debug] set_debug_show_text_updates({})", show);
-    }
-
-    /// Get debug mode for showing text updates
-    pub fn get_debug_show_text_updates(&self) -> bool {
-        self.debug_show_text_updates
-    }
-
-    /// Get heading size (row header width in pixels)
-    pub fn get_heading_width(&self) -> f32 {
-        self.headings.heading_size().width
-    }
-
-    /// Get heading size (column header height in pixels)
-    pub fn get_heading_height(&self) -> f32 {
-        self.headings.heading_size().height
-    }
-
-    /// Set selected columns for heading highlight
-    /// Takes flat array of [start1, end1, start2, end2, ...] pairs (1-indexed)
-    pub fn set_selected_columns(&mut self, selections: &[i32]) {
-        let pairs: Vec<(i64, i64)> = selections
-            .chunks(2)
-            .filter_map(|chunk| {
-                if chunk.len() == 2 {
-                    Some((chunk[0] as i64, chunk[1] as i64))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        self.headings.set_selected_columns(pairs);
-    }
-
-    /// Set selected rows for heading highlight
-    /// Takes flat array of [start1, end1, start2, end2, ...] pairs (1-indexed)
-    pub fn set_selected_rows(&mut self, selections: &[i32]) {
-        let pairs: Vec<(i64, i64)> = selections
-            .chunks(2)
-            .filter_map(|chunk| {
-                if chunk.len() == 2 {
-                    Some((chunk[0] as i64, chunk[1] as i64))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        self.headings.set_selected_rows(pairs);
-    }
-
-    /// Set device pixel ratio for headings (affects font size)
-    pub fn set_headings_dpr(&mut self, dpr: f32) {
-        self.headings.set_dpr(dpr);
-    }
-
-    // =========================================================================
-    // Fills (cell backgrounds)
-    // =========================================================================
-
-    /// Check if meta fills have been loaded
-    pub fn fills_meta_loaded(&self) -> bool {
-        self.fills.meta_fills_loaded()
-    }
-
-    /// Set fills for a specific hash
-    /// fills: Vec of RenderFill structs
-    pub fn set_fills_for_hash(&mut self, hash_x: i64, hash_y: i64, fills: Vec<RenderFill>) {
-        let offsets = self.current_sheet_offsets().clone();
-        self.fills.set_hash_fills(hash_x, hash_y, fills, &offsets);
-    }
-
-    /// Set meta fills (infinite row/column/sheet fills)
-    pub fn set_meta_fills(&mut self, fills: Vec<SheetFill>) {
-        self.fills.set_meta_fills(fills);
-    }
-
-    /// Mark a fills hash as dirty (needs reload when visible)
-    pub fn mark_fills_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
-        self.fills.mark_hash_dirty(hash_x, hash_y);
-    }
-
-    /// Get fill hashes that need to be loaded (visible but not yet loaded)
-    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
-    pub fn get_needed_fill_hashes(&self) -> Vec<i32> {
-        self.fills
-            .get_needed_hashes(&self.viewport, self.current_sheet_offsets())
-    }
-
-    /// Get fill hashes that can be unloaded (outside viewport)
-    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
-    pub fn get_offscreen_fill_hashes(&self) -> Vec<i32> {
-        self.fills
-            .get_offscreen_hashes(&self.viewport, self.current_sheet_offsets())
-    }
-
-    /// Unload a fill hash to free memory
-    pub fn unload_fill_hash(&mut self, hash_x: i64, hash_y: i64) {
-        self.fills.unload_hash(hash_x, hash_y);
-    }
-
-    /// Check if a fill hash is loaded
-    pub fn has_fill_hash(&self, hash_x: i64, hash_y: i64) -> bool {
-        self.fills.has_hash(hash_x, hash_y)
-    }
-
-    /// Get number of loaded fill hashes
-    pub fn get_fill_hash_count(&self) -> usize {
-        self.fills.hash_count()
-    }
-
-    /// Get total fill count
-    pub fn get_fill_count(&self) -> usize {
-        self.fills.fill_count()
-    }
-
-    /// Mark fills as dirty when viewport changes
-    pub fn set_fills_dirty(&mut self) {
-        self.fills.mark_meta_dirty();
-    }
-
-    /// Add test fills for development/debugging
-    /// This creates various fills to verify rendering works correctly
-    pub fn add_test_fills(&mut self) {
-        // Cell-based fills in hash (0, 0) - various colors
-        let hash_0_0_fills = vec![
-            // Red fill at A1 (1x1)
-            RenderFill {
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                color: "#ff0000".to_string(),
-            },
-            // Green fill at B2:C3 (2x2)
-            RenderFill {
-                x: 2,
-                y: 2,
-                w: 2,
-                h: 2,
-                color: "#00ff00".to_string(),
-            },
-            // Blue fill at E5:G7 (3x3)
-            RenderFill {
-                x: 5,
-                y: 5,
-                w: 3,
-                h: 3,
-                color: "#0000ff".to_string(),
-            },
-            // Semi-transparent yellow at A10:D12
-            RenderFill {
-                x: 1,
-                y: 10,
-                w: 4,
-                h: 3,
-                color: "rgba(255, 255, 0, 0.5)".to_string(),
-            },
-            // Orange fill at J1:K2
-            RenderFill {
-                x: 10,
-                y: 1,
-                w: 2,
-                h: 2,
-                color: "#ff8800".to_string(),
-            },
-        ];
-        self.set_fills_for_hash(0, 0, hash_0_0_fills);
-
-        // Cell-based fills in hash (1, 0) - more fills
-        let hash_1_0_fills = vec![
-            // Purple fill at P5:R8 (in hash 1,0)
-            RenderFill {
-                x: 16,
-                y: 5,
-                w: 3,
-                h: 4,
-                color: "#800080".to_string(),
-            },
-            // Cyan fill at T10:V15
-            RenderFill {
-                x: 20,
-                y: 10,
-                w: 3,
-                h: 6,
-                color: "#00ffff".to_string(),
-            },
-        ];
-        self.set_fills_for_hash(1, 0, hash_1_0_fills);
-
-        // Meta fills (infinite)
-        let meta_fills = vec![
-            // Light pink infinite column starting at column 30 (width 2)
-            SheetFill {
-                x: 30,
-                y: 1,
-                w: Some(2),
-                h: None, // Infinite height
-                color: "#ffcccc".to_string(),
-            },
-            // Light blue infinite row at row 25 (height 1)
-            SheetFill {
-                x: 1,
-                y: 25,
-                w: None, // Infinite width
-                h: Some(1),
-                color: "#ccccff".to_string(),
-            },
-        ];
-        self.set_meta_fills(meta_fills);
-
-        log::info!(
-            "Added test fills: {} hashes, {} total fills",
-            self.fills.hash_count(),
-            self.fills.fill_count()
-        );
-    }
-
-    /// Add test labels for development/debugging
-    /// This creates various cell labels to verify text rendering works correctly
-    pub fn add_test_labels(&mut self) {
-        // Labels in hash (0, 0) - basic text with various styles
-        let hash_0_0_labels = vec![
-            // Simple text at A1
-            RenderCell {
-                x: 1,
-                y: 1,
-                value: "Hello World".to_string(),
-                ..Default::default()
-            },
-            // Bold text at B2
-            RenderCell {
-                x: 2,
-                y: 2,
-                value: "Bold Text".to_string(),
-                bold: Some(true),
-                ..Default::default()
-            },
-            // Italic text at C3
-            RenderCell {
-                x: 3,
-                y: 3,
-                value: "Italic Text".to_string(),
-                italic: Some(true),
-                ..Default::default()
-            },
-            // Bold + Italic at D4
-            RenderCell {
-                x: 4,
-                y: 4,
-                value: "Bold & Italic".to_string(),
-                bold: Some(true),
-                italic: Some(true),
-                ..Default::default()
-            },
-            // Colored text at E5
-            RenderCell {
-                x: 5,
-                y: 5,
-                value: "Red Text".to_string(),
-                text_color: Some("#ff0000".to_string()),
-                ..Default::default()
-            },
-            // Center aligned at F6
-            RenderCell {
-                x: 6,
-                y: 6,
-                value: "Centered".to_string(),
-                align: Some(CellAlign::Center),
-                ..Default::default()
-            },
-            // Right aligned at G7
-            RenderCell {
-                x: 7,
-                y: 7,
-                value: "Right".to_string(),
-                align: Some(CellAlign::Right),
-                ..Default::default()
-            },
-            // Larger font at H8
-            RenderCell {
-                x: 8,
-                y: 8,
-                value: "Large Font".to_string(),
-                font_size: Some(20),
-                ..Default::default()
-            },
-            // Number at I9
-            RenderCell {
-                x: 9,
-                y: 9,
-                value: "12345.67".to_string(),
-                align: Some(CellAlign::Right),
-                number: Some(RenderNumber {
-                    decimals: Some(2),
-                    commas: Some(true),
-                    format: Some(NumericFormat {
-                        kind: NumericFormatKind::Number,
-                        symbol: None,
-                    }),
-                }),
-                ..Default::default()
-            },
-            // Currency at J10
-            RenderCell {
-                x: 10,
-                y: 10,
-                value: "$1,234.56".to_string(),
-                align: Some(CellAlign::Right),
-                text_color: Some("#006600".to_string()),
-                number: Some(RenderNumber {
-                    decimals: Some(2),
-                    commas: Some(true),
-                    format: Some(NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol: Some("$".to_string()),
-                    }),
-                }),
-                ..Default::default()
-            },
-            // Large italic at C5
-            RenderCell {
-                x: 3,
-                y: 5,
-                value: "Large Italic".to_string(),
-                italic: Some(true),
-                font_size: Some(18),
-                ..Default::default()
-            },
-            // Colored italic at G15
-            RenderCell {
-                x: 7,
-                y: 15,
-                value: "Blue Italic".to_string(),
-                italic: Some(true),
-                text_color: Some("#0066cc".to_string()),
-                ..Default::default()
-            },
-            // Center italic at J22
-            RenderCell {
-                x: 10,
-                y: 22,
-                value: "Centered Italic".to_string(),
-                italic: Some(true),
-                align: Some(CellAlign::Center),
-                ..Default::default()
-            },
-            // Wrapped text at A15 (wider cell would show wrap)
-            RenderCell {
-                x: 1,
-                y: 15,
-                value: "This is a long text that should wrap".to_string(),
-                wrap: Some(CellWrap::Wrap),
-                ..Default::default()
-            },
-            // Clipped text at B15
-            RenderCell {
-                x: 2,
-                y: 15,
-                value: "Clipped text overflow".to_string(),
-                wrap: Some(CellWrap::Clip),
-                ..Default::default()
-            },
-            // Top aligned at A20
-            RenderCell {
-                x: 1,
-                y: 20,
-                value: "Top".to_string(),
-                vertical_align: Some(CellVerticalAlign::Top),
-                ..Default::default()
-            },
-            // Middle aligned at B20
-            RenderCell {
-                x: 2,
-                y: 20,
-                value: "Middle".to_string(),
-                vertical_align: Some(CellVerticalAlign::Middle),
-                ..Default::default()
-            },
-            // Bottom aligned at C20
-            RenderCell {
-                x: 3,
-                y: 20,
-                value: "Bottom".to_string(),
-                vertical_align: Some(CellVerticalAlign::Bottom),
-                ..Default::default()
-            },
-            // Spill error at D20
-            RenderCell {
-                x: 4,
-                y: 20,
-                value: String::new(),
-                special: Some(RenderCellSpecial::SpillError),
-                text_color: Some("#cc0000".to_string()),
-                ..Default::default()
-            },
-            // Run error at E20
-            RenderCell {
-                x: 5,
-                y: 20,
-                value: String::new(),
-                special: Some(RenderCellSpecial::RunError),
-                text_color: Some("#cc0000".to_string()),
-                ..Default::default()
-            },
-        ];
-        self.set_labels_for_hash(0, 0, hash_0_0_labels);
-
-        // Labels in hash (1, 0) - more examples
-        let hash_1_0_labels = vec![
-            // Blue text
-            RenderCell {
-                x: 16,
-                y: 5,
-                value: "Blue Text".to_string(),
-                text_color: Some("#0000ff".to_string()),
-                bold: Some(true),
-                ..Default::default()
-            },
-            // Purple italic
-            RenderCell {
-                x: 17,
-                y: 6,
-                value: "Purple Italic".to_string(),
-                text_color: Some("#800080".to_string()),
-                italic: Some(true),
-                ..Default::default()
-            },
-            // Table name style
-            RenderCell {
-                x: 18,
-                y: 1,
-                value: "TableName".to_string(),
-                bold: Some(true),
-                table_name: Some(true),
-                ..Default::default()
-            },
-            // Column header style
-            RenderCell {
-                x: 18,
-                y: 2,
-                value: "Column A".to_string(),
-                bold: Some(true),
-                column_header: Some(true),
-                ..Default::default()
-            },
-            RenderCell {
-                x: 19,
-                y: 2,
-                value: "Column B".to_string(),
-                bold: Some(true),
-                column_header: Some(true),
-                ..Default::default()
-            },
-        ];
-        self.set_labels_for_hash(1, 0, hash_1_0_labels);
-
-        log::info!(
-            "Added test labels: {} hashes, {} total labels",
-            self.get_label_hash_count(),
-            self.get_label_count()
-        );
-    }
-
-    // =========================================================================
-    // Dirty Flags
-    // =========================================================================
-
-    /// Mark the viewport as dirty (forces a render next frame)
-    pub fn set_viewport_dirty(&mut self) {
-        self.viewport.dirty = true;
-    }
-
-    /// Mark grid lines as dirty
-    pub fn set_grid_lines_dirty(&mut self) {
-        self.content.grid_lines.dirty = true;
-    }
-
-    /// Mark cursor as dirty
-    pub fn set_cursor_dirty(&mut self) {
-        self.content.cursor.dirty = true;
-    }
-
-    /// Mark headings as dirty
-    pub fn set_headings_dirty(&mut self) {
-        self.headings.set_dirty();
-    }
-
-    /// Check if any component is dirty and needs rendering
-    pub fn is_dirty(&self) -> bool {
-        self.viewport.dirty
-            || self.content.is_dirty()
-            || self.headings.is_dirty()
-            || self.any_visible_hash_dirty()
-            || self.fills.is_dirty(&self.viewport)
-    }
-
-    // =========================================================================
-    // Cursor
-    // =========================================================================
-
-    /// Set cursor position
-    pub fn set_cursor(&mut self, col: i64, row: i64) {
-        self.content.cursor.set_selected_cell(col, row);
-    }
-
-    /// Set cursor selection range
-    pub fn set_cursor_selection(
-        &mut self,
-        start_col: i64,
-        start_row: i64,
-        end_col: i64,
-        end_row: i64,
-    ) {
-        self.content
-            .cursor
-            .set_selection(start_col, start_row, end_col, end_row);
-    }
-
-    /// Set the A1Selection from the client.
-    /// This updates the cursor to match the selection state.
-    pub fn set_a1_selection(&mut self, selection: quadratic_core_shared::A1Selection) {
-        self.content.cursor.set_a1_selection(selection);
     }
 
     // =========================================================================
     // Fonts
     // =========================================================================
 
-    /// Add a font from parsed BitmapFont
     pub fn add_font(&mut self, font: BitmapFont) {
         log::info!("Added font: {} with {} chars", font.font, font.chars.len());
         self.fonts.add(font);
     }
 
-    /// Check if fonts are loaded
     pub fn has_fonts(&self) -> bool {
         !self.fonts.is_empty()
     }
 
-    /// Get required texture UIDs from fonts
     pub fn get_required_texture_uids(&self) -> Vec<u32> {
         self.fonts.get_required_texture_uids()
     }
 
     // =========================================================================
-    // Labels
+    // Fills (delegated to current sheet)
     // =========================================================================
 
-    /// Add a cell label (text content)
-    /// col and row are 1-indexed cell coordinates
-    pub fn add_label(&mut self, text: &str, col: i64, row: i64) {
-        let mut label = CellLabel::new(text.to_string(), col, row);
-        label.update_bounds(self.current_sheet_offsets());
-        label.layout(&self.fonts);
-
-        self.insert_label(col, row, label);
-    }
-
-    /// Add a styled cell label
-    /// col and row are 1-indexed cell coordinates
-    pub fn add_styled_label(
-        &mut self,
-        text: &str,
-        col: i64,
-        row: i64,
-        font_size: f32,
-        bold: bool,
-        italic: bool,
-        color_r: f32,
-        color_g: f32,
-        color_b: f32,
-        align: u8,  // 0 = left, 1 = center, 2 = right
-        valign: u8, // 0 = top, 1 = middle, 2 = bottom
-    ) {
-        let mut label = CellLabel::new(text.to_string(), col, row);
-        label.update_bounds(self.current_sheet_offsets());
-        label.font_size = font_size;
-        label.bold = bold;
-        label.italic = italic;
-        label.color = [color_r, color_g, color_b, 1.0];
-        label.align = match align {
-            1 => CellAlign::Center,
-            2 => CellAlign::Right,
-            _ => CellAlign::Left,
-        };
-        label.vertical_align = match valign {
-            0 => CellVerticalAlign::Top,
-            1 => CellVerticalAlign::Middle,
-            _ => CellVerticalAlign::Bottom,
-        };
-        label.layout(&self.fonts);
-
-        self.insert_label(col, row, label);
-    }
-
-    /// Add multiple labels for a hash in batch (parallelized)
-    /// This is more efficient than calling add_label/add_styled_label repeatedly.
-    pub fn add_labels_batch(
-        &mut self,
-        hash_x: i64,
-        hash_y: i64,
-        texts: Vec<String>,
-        cols: &[i32],
-        rows: &[i32],
-        colors: Option<Vec<u8>>,
-    ) {
-        let count = texts.len();
-        if count == 0 || cols.len() != count || rows.len() != count {
-            return;
-        }
-
-        let key = hash_key(hash_x, hash_y);
-
-        // Remove existing hash if present (replace, don't merge)
-        if let Some(old_hash) = self.hashes.remove(&key) {
-            self.label_count = self.label_count.saturating_sub(old_hash.label_count());
-        }
-
-        let offsets = self.current_sheet_offsets();
-        let fonts = &self.fonts;
-
-        // Parse colors if provided
-        let has_colors = colors.as_ref().is_some_and(|c| c.len() >= count * 3);
-
-        // Layout all labels
-        let labels: Vec<(i64, i64, CellLabel)> = (0..count)
-            .map(|i| {
-                let col = cols[i] as i64;
-                let row = rows[i] as i64;
-                let text = &texts[i];
-
-                let mut label = CellLabel::new(text.clone(), col, row);
-                label.update_bounds(offsets);
-
-                // Apply color if available
-                if has_colors {
-                    let colors_ref = colors.as_ref().unwrap();
-                    let r = colors_ref[i * 3] as f32 / 255.0;
-                    let g = colors_ref[i * 3 + 1] as f32 / 255.0;
-                    let b = colors_ref[i * 3 + 2] as f32 / 255.0;
-                    label.color = [r, g, b, 1.0];
-                }
-
-                label.layout(fonts);
-                (col, row, label)
-            })
-            .collect();
-
-        // Insert all labels into a new hash
-        let mut hash = CellsTextHash::new(hash_x, hash_y, self.current_sheet_offsets());
-        for (col, row, label) in labels {
-            hash.add_label(col, row, label);
-            self.label_count += 1;
-        }
-
-        if !hash.is_empty() {
-            self.hashes.insert(key, hash);
+    pub fn set_fills_for_hash(&mut self, hash_x: i64, hash_y: i64, fills: Vec<RenderFill>) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            let offsets = sheet.sheet_offsets.clone();
+            sheet.fills.set_hash_fills(hash_x, hash_y, fills, &offsets);
         }
     }
 
-    /// Insert a label into the correct spatial hash
-    fn insert_label(&mut self, col: i64, row: i64, label: CellLabel) {
-        let (hash_x, hash_y) = get_hash_coords(col, row);
-        let key = hash_key(hash_x, hash_y);
-
-        // Clone offsets to avoid borrow issues with entry API
-        let offsets = self.current_sheet_offsets().clone();
-        let hash = self
-            .hashes
-            .entry(key)
-            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &offsets));
-        hash.add_label(col, row, label);
-        self.label_count += 1;
-    }
-
-    /// Clear all labels
-    pub fn clear_labels(&mut self) {
-        self.hashes.clear();
-        self.label_count = 0;
-    }
-
-    /// Get total label count
-    pub fn get_label_count(&self) -> usize {
-        self.label_count
+    pub fn set_meta_fills(&mut self, fills: Vec<SheetFill>) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            sheet.fills.set_meta_fills(fills);
+        }
     }
 
     // =========================================================================
-    // Label Hash Management (bincode-based loading)
+    // Labels (delegated to current sheet)
     // =========================================================================
 
-    /// Set labels for a specific hash from bincode-decoded RenderCell data
-    ///
-    /// This is the main entry point for loading cell labels from core.
-    /// It converts each RenderCell to an internal CellLabel, computes bounds,
-    /// and performs layout.
-    ///
-    /// Uses Rayon for parallel layout processing - each cell's layout is computed
-    /// independently across multiple threads, then collected and inserted sequentially.
     pub fn set_labels_for_hash(&mut self, hash_x: i64, hash_y: i64, cells: Vec<RenderCell>) {
-        let cell_count = cells.len();
-        let key = hash_key(hash_x, hash_y);
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            let key = hash_key(hash_x, hash_y);
 
-        // Remove existing hash if present (replace, don't merge)
-        if let Some(old_hash) = self.hashes.remove(&key) {
-            self.label_count = self.label_count.saturating_sub(old_hash.label_count());
-        }
-
-        // Layout all labels
-        let offsets = self.current_sheet_offsets();
-        let fonts = &self.fonts;
-
-        let labels: Vec<(i64, i64, CellLabel)> = cells
-            .iter()
-            .filter(|cell| !cell.value.is_empty() || cell.special.is_some())
-            .map(|cell| {
-                let mut label = CellLabel::from_render_cell(cell);
-                label.update_bounds(offsets);
-                label.layout(fonts);
-                (cell.x, cell.y, label)
-            })
-            .collect();
-
-        let label_count = labels.len();
-        if cell_count > 0 {
-            log::debug!(
-                "[set_labels_for_hash] hash=({},{}), cells={}, labels={}",
-                hash_x,
-                hash_y,
-                cell_count,
-                label_count
-            );
-        }
-
-        // Create new hash and add all labels
-        let mut hash = CellsTextHash::new(hash_x, hash_y, self.current_sheet_offsets());
-        for (x, y, label) in labels {
-            hash.add_label(x, y, label);
-            self.label_count += 1;
-        }
-
-        // Only insert if hash has labels
-        if !hash.is_empty() {
-            self.hashes.insert(key, hash);
-        }
-    }
-
-    /// Mark a labels hash as dirty (needs reload when visible)
-    pub fn mark_labels_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
-        let key = hash_key(hash_x, hash_y);
-        if let Some(hash) = self.hashes.get_mut(&key) {
-            hash.mark_dirty();
-        } else {
-            // Hash doesn't exist yet - it will be loaded when visible
-            // We could track dirty hashes that aren't loaded yet, but
-            // for now we just let the normal loading flow handle it
-        }
-    }
-
-    /// Get label hashes that need to be loaded (visible but not yet loaded)
-    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
-    pub fn get_needed_label_hashes(&self) -> Vec<i32> {
-        self.get_needed_hashes()
-    }
-
-    /// Get label hashes that can be unloaded (outside viewport)
-    /// Returns flat array of [hash_x, hash_y, hash_x, hash_y, ...]
-    pub fn get_offscreen_label_hashes(&self) -> Vec<i32> {
-        self.get_offscreen_hashes()
-    }
-
-    /// Unload a label hash to free memory
-    pub fn unload_label_hash(&mut self, hash_x: i64, hash_y: i64) {
-        self.remove_hash(hash_x as i32, hash_y as i32);
-    }
-
-    /// Check if a label hash is loaded
-    pub fn has_label_hash(&self, hash_x: i64, hash_y: i64) -> bool {
-        self.has_hash(hash_x as i32, hash_y as i32)
-    }
-
-    /// Get number of loaded label hashes
-    pub fn get_label_hash_count(&self) -> usize {
-        self.get_hash_count()
-    }
-
-    // =========================================================================
-    // Time-Budgeted Hash Processing
-    // =========================================================================
-
-    /// Get prioritized list of dirty hashes for processing
-    ///
-    /// Returns hashes sorted by priority:
-    /// 1. Visible hashes (sorted by row, top-to-bottom)
-    /// 2. Padding hashes (sorted by distance from viewport center)
-    ///
-    /// Note: We process ALL dirty hashes, not just those in viewport.
-    /// This ensures padding hashes get processed after viewport stops moving.
-    fn get_prioritized_dirty_hashes(&self) -> Vec<(u64, i32)> {
-        let bounds = self.viewport.visible_bounds();
-        let hash_bounds_arr = self.get_visible_hash_bounds();
-        let min_hash_x = hash_bounds_arr[0] as i64;
-        let max_hash_x = hash_bounds_arr[1] as i64;
-        let min_hash_y = hash_bounds_arr[2] as i64;
-        let max_hash_y = hash_bounds_arr[3] as i64;
-
-        // Viewport center for distance calculation (padding hashes)
-        let center_x = bounds.left + bounds.width / 2.0;
-        let center_y = bounds.top + bounds.height / 2.0;
-
-        let mut items: Vec<(u64, i32)> = Vec::new();
-
-        // Process ALL dirty hashes, not just those in padded viewport
-        // This ensures padding hashes continue processing after viewport stops
-        for (key, hash) in &self.hashes {
-            if !hash.is_dirty() {
-                continue;
+            // Remove existing hash
+            if let Some(old_hash) = sheet.hashes.remove(&key) {
+                sheet.label_count = sheet.label_count.saturating_sub(old_hash.label_count());
             }
 
-            let hx = hash.hash_x();
-            let hy = hash.hash_y();
+            // Layout labels
+            let offsets = &sheet.sheet_offsets;
+            let fonts = &self.fonts;
 
-            // Check if visible (within exact hash bounds)
-            let is_visible =
-                hx >= min_hash_x && hx <= max_hash_x && hy >= min_hash_y && hy <= max_hash_y;
+            let labels: Vec<(i64, i64, CellLabel)> = cells
+                .iter()
+                .filter(|cell| !cell.value.is_empty() || cell.special.is_some())
+                .map(|cell| {
+                    let mut label = CellLabel::from_render_cell(cell);
+                    label.update_bounds(offsets);
+                    label.layout(fonts);
+                    (cell.x, cell.y, label)
+                })
+                .collect();
 
-            let priority = if is_visible {
-                // Visible: prioritize by row (top-to-bottom), then column
-                (hy as i32) * 1000 + (hx as i32)
-            } else {
-                // Padding: lower priority + distance from viewport center
-                let hash_center_x = hash.world_x() + hash.world_width() / 2.0;
-                let hash_center_y = hash.world_y() + hash.world_height() / 2.0;
-                let dx = hash_center_x - center_x;
-                let dy = hash_center_y - center_y;
-                let distance = ((dx * dx + dy * dy).sqrt() / 100.0) as i32;
-                100_000 + distance
-            };
-
-            items.push((*key, priority));
-        }
-
-        // Sort by priority (lower = higher priority)
-        items.sort_by_key(|(_, priority)| *priority);
-        items
-    }
-
-    /// Process dirty hashes with a time budget
-    ///
-    /// Processes hashes in priority order (visible first, then padding) until
-    /// the time budget is exhausted or all dirty hashes are processed.
-    ///
-    /// # Arguments
-    /// * `budget_ms` - Maximum time to spend processing (in milliseconds)
-    ///
-    /// # Returns
-    /// * `(processed, remaining)` - Number of hashes processed and remaining
-    pub fn process_dirty_hashes(&mut self, budget_ms: f32) -> (usize, usize) {
-        // Use js_sys::Date::now() for timing in WASM (works in workers, unlike window.performance)
-        #[cfg(target_arch = "wasm32")]
-        let start = js_sys::Date::now();
-        #[cfg(not(target_arch = "wasm32"))]
-        let start = std::time::Instant::now();
-
-        let work_items = self.get_prioritized_dirty_hashes();
-        let total = work_items.len();
-
-        if total == 0 {
-            return (0, 0);
-        }
-
-        let mut processed = 0;
-
-        for (key, _priority) in &work_items {
-            // Check time budget
-            #[cfg(target_arch = "wasm32")]
-            let elapsed = js_sys::Date::now() - start;
-            #[cfg(not(target_arch = "wasm32"))]
-            let elapsed = start.elapsed().as_secs_f64() * 1000.0;
-
-            if elapsed > budget_ms as f64 && processed > 0 {
-                // Budget exhausted, but ensure we process at least one
-                break;
+            // Create new hash
+            let mut hash = CellsTextHash::new(hash_x, hash_y, offsets);
+            for (x, y, label) in labels {
+                hash.add_label(x, y, label);
+                sheet.label_count += 1;
             }
 
-            if let Some(hash) = self.hashes.get_mut(key) {
-                hash.rebuild_if_dirty(&self.fonts);
-                processed += 1;
+            if !hash.is_empty() {
+                sheet.hashes.insert(key, hash);
             }
         }
-
-        let remaining = total - processed;
-
-        (processed, remaining)
-    }
-
-    /// Force the viewport dirty (used when more hash processing is needed)
-    pub fn force_dirty(&mut self) {
-        self.viewport.dirty = true;
     }
 
     // =========================================================================
-    // Lazy Loading / Hash Management
+    // Hash Management
     // =========================================================================
 
-    /// Get visible hash bounds for the current viewport
-    /// Returns: [min_hash_x, max_hash_x, min_hash_y, max_hash_y]
     pub fn get_visible_hash_bounds(&self) -> [i32; 4] {
         let bounds = self.viewport.visible_bounds();
         let hash_bounds = VisibleHashBounds::from_viewport(
@@ -1215,9 +241,7 @@ impl RendererState {
         ]
     }
 
-    /// Get list of hashes that need to be loaded (visible but not yet loaded)
-    /// Returns: Vec of (hash_x, hash_y) pairs
-    pub fn get_needed_hashes(&self) -> Vec<i32> {
+    pub fn get_needed_label_hashes(&self) -> Vec<i32> {
         let bounds = self.viewport.visible_bounds();
         let hash_bounds = VisibleHashBounds::from_viewport(
             bounds.left,
@@ -1230,152 +254,59 @@ impl RendererState {
 
         let mut needed: Vec<i32> = Vec::new();
 
-        for (hash_x, hash_y) in hash_bounds.iter() {
-            let key = hash_key(hash_x, hash_y);
-            if !self.hashes.contains_key(&key) {
-                needed.push(hash_x as i32);
-                needed.push(hash_y as i32);
+        if let Some(sheet) = self.sheets.current_sheet() {
+            for (hash_x, hash_y) in hash_bounds.iter() {
+                let key = hash_key(hash_x, hash_y);
+                if !sheet.hashes.contains_key(&key) {
+                    needed.push(hash_x as i32);
+                    needed.push(hash_y as i32);
+                }
             }
         }
 
         needed
     }
 
-    /// Get list of loaded hashes that are outside the visible bounds
-    /// These can be unloaded to save memory
-    pub fn get_offscreen_hashes(&self) -> Vec<i32> {
-        let bounds = self.viewport.visible_bounds();
-        let hash_bounds = VisibleHashBounds::from_viewport(
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-            self.viewport.scale(),
-            self.current_sheet_offsets(),
-        );
-
-        let mut offscreen: Vec<i32> = Vec::new();
-
-        for hash in self.hashes.values() {
-            if !hash_bounds.contains(hash.hash_x, hash.hash_y) {
-                offscreen.push(hash.hash_x as i32);
-                offscreen.push(hash.hash_y as i32);
-            }
-        }
-
-        offscreen
-    }
-
-    /// Remove a hash (for memory management when hash goes offscreen)
-    pub fn remove_hash(&mut self, hash_x: i32, hash_y: i32) {
-        let key = hash_key(hash_x as i64, hash_y as i64);
-        if let Some(hash) = self.hashes.remove(&key) {
-            self.label_count = self.label_count.saturating_sub(hash.label_count());
-        }
-    }
-
-    /// Check if a hash is loaded
-    pub fn has_hash(&self, hash_x: i32, hash_y: i32) -> bool {
-        let key = hash_key(hash_x as i64, hash_y as i64);
-        self.hashes.contains_key(&key)
-    }
-
-    /// Get number of loaded hashes
-    pub fn get_hash_count(&self) -> usize {
-        self.hashes.len()
-    }
-
-    /// Get total sprite cache memory usage in bytes
-    pub fn get_sprite_memory_bytes(&self) -> usize {
-        self.hashes
-            .values()
-            .map(|hash| hash.sprite_memory_bytes())
-            .sum()
-    }
-
-    /// Get number of active sprite caches
-    pub fn get_sprite_count(&self) -> usize {
-        self.hashes
-            .values()
-            .filter(|hash| hash.has_sprite_cache())
-            .count()
-    }
-
-    // =========================================================================
-    // Frame Update Helpers
-    // =========================================================================
-
-    /// Update content based on viewport and sheet offsets
-    pub fn update_content(&mut self) {
-        let offsets = self.current_sheet_offsets().clone();
-        let viewport_dirty = self.viewport.dirty;
-
-        self.content.update(&self.viewport, &offsets);
-        // Pass viewport.dirty so fills know to rebuild meta fills when viewport moves
-        // (meta fills are clipped to viewport bounds)
-        self.fills.update(&self.viewport, &offsets, viewport_dirty);
-    }
-
-    /// Update headings and return (width, height) if shown
-    /// Returns sizes in device pixels
-    pub fn update_headings(&mut self) -> (f32, f32) {
-        if self.show_headings {
-            // Sync DPR from viewport to headings to ensure consistency
-            let dpr = self.viewport.dpr();
-            self.headings.set_dpr(dpr);
-
-            // Pass effective_scale (scale * dpr) because headings work in device pixels
-            let effective_scale = self.viewport.effective_scale();
-            let canvas_width = self.viewport.width();
-            let canvas_height = self.viewport.height();
-            let x = self.viewport.x();
-            let y = self.viewport.y();
-            let offsets = self.current_sheet_offsets().clone();
-
-            self.headings
-                .update(x, y, effective_scale, canvas_width, canvas_height, &offsets);
-
-            let size = self.headings.heading_size();
-            (size.width, size.height)
+    pub fn get_needed_fill_hashes(&self) -> Vec<i32> {
+        if let Some(sheet) = self.sheets.current_sheet() {
+            sheet
+                .fills
+                .get_needed_hashes(&self.viewport, &sheet.sheet_offsets)
         } else {
-            (0.0, 0.0)
+            Vec::new()
         }
     }
 
-    /// Check if any visible hash is dirty
-    pub fn any_visible_hash_dirty(&self) -> bool {
-        if self.hashes.is_empty() {
-            return false;
-        }
+    // =========================================================================
+    // Dirty Flags
+    // =========================================================================
 
-        let bounds = self.viewport.visible_bounds();
-
-        let padding = 100.0;
-        let min_x = bounds.left - padding;
-        let max_x = bounds.left + bounds.width + padding;
-        let min_y = bounds.top - padding;
-        let max_y = bounds.top + bounds.height + padding;
-
-        for hash in self.hashes.values() {
-            if hash.intersects_viewport(min_x, max_x, min_y, max_y) && hash.is_dirty() {
-                return true;
-            }
-        }
-        false
+    pub fn set_viewport_dirty(&mut self) {
+        self.viewport.dirty = true;
     }
 
-    /// Mark everything as clean after rendering
+    pub fn is_dirty(&self) -> bool {
+        self.viewport.dirty || self.ui.is_dirty()
+    }
+
     pub fn mark_clean(&mut self) {
         self.viewport.mark_clean();
-        self.content.mark_clean();
-        self.headings.mark_clean();
+        self.ui.mark_clean();
+    }
+
+    // =========================================================================
+    // Content Update
+    // =========================================================================
+
+    pub fn update_content(&mut self) {
+        let offsets = self.current_sheet_offsets().clone();
+        self.ui.update(&self.viewport, &offsets);
     }
 
     /// Create a screen-space orthographic projection matrix
-    /// Maps (0, 0) at top-left to (width, height) at bottom-right
     pub fn create_screen_space_matrix(&self, width: f32, height: f32) -> [f32; 16] {
         let sx = 2.0 / width;
-        let sy = -2.0 / height; // Negative to flip Y
+        let sy = -2.0 / height;
         let tx = -1.0;
         let ty = 1.0;
 
@@ -1395,65 +326,313 @@ impl RendererState {
             .unwrap_or((14.0 / 42.0, 4.0))
     }
 
-    /// Get text rendering parameters for headings
+    // =========================================================================
+    // Sheet Offsets
+    // =========================================================================
+
+    pub fn set_sheet_offsets(&mut self, sheet_id: SheetId, offsets: SheetOffsets) {
+        if let Some(sheet) = self.sheets.get_mut(&sheet_id) {
+            sheet.sheet_offsets = offsets;
+            // Mark dirty to trigger rerender with new offsets
+            self.viewport.dirty = true;
+            self.ui.grid_lines.dirty = true;
+            self.ui.headings.set_dirty();
+        }
+    }
+
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) {
+        self.sheets.remove_sheet(sheet_id);
+    }
+
+    pub fn get_sheet_offsets(&self) -> &SheetOffsets {
+        self.current_sheet_offsets()
+    }
+
+    // =========================================================================
+    // Headings (delegated to UI)
+    // =========================================================================
+
+    pub fn get_heading_width(&self) -> f32 {
+        self.ui.headings.heading_size().width
+    }
+
+    pub fn get_heading_height(&self) -> f32 {
+        self.ui.headings.heading_size().height
+    }
+
+    pub fn set_selected_columns(&mut self, selections: &[i32]) {
+        // Convert pairs of i32 to Vec<(i64, i64)>
+        let pairs: Vec<(i64, i64)> = selections
+            .chunks(2)
+            .filter_map(|chunk| {
+                if chunk.len() == 2 {
+                    Some((chunk[0] as i64, chunk[1] as i64))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        self.ui.headings.set_selected_columns(pairs);
+    }
+
+    pub fn set_selected_rows(&mut self, selections: &[i32]) {
+        // Convert pairs of i32 to Vec<(i64, i64)>
+        let pairs: Vec<(i64, i64)> = selections
+            .chunks(2)
+            .filter_map(|chunk| {
+                if chunk.len() == 2 {
+                    Some((chunk[0] as i64, chunk[1] as i64))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        self.ui.headings.set_selected_rows(pairs);
+    }
+
+    pub fn set_headings_dpr(&mut self, dpr: f32) {
+        self.ui.headings.set_dpr(dpr);
+    }
+
+    pub fn set_headings_dirty(&mut self) {
+        self.ui.headings.set_dirty();
+    }
+
+    pub fn set_grid_lines_dirty(&mut self) {
+        self.ui.grid_lines.dirty = true;
+    }
+
+    pub fn set_cursor_dirty(&mut self) {
+        self.ui.cursor.dirty = true;
+    }
+
+    pub fn get_debug_show_text_updates(&self) -> bool {
+        self.debug_show_text_updates
+    }
+
+    // =========================================================================
+    // Cursor (delegated to UI)
+    // =========================================================================
+
+    pub fn set_cursor(&mut self, col: i64, row: i64) {
+        self.ui.cursor.set_selected_cell(col, row);
+    }
+
+    pub fn set_cursor_selection(
+        &mut self,
+        start_col: i64,
+        start_row: i64,
+        end_col: i64,
+        end_row: i64,
+    ) {
+        self.ui
+            .cursor
+            .set_selection(start_col, start_row, end_col, end_row);
+    }
+
+    pub fn set_a1_selection(&mut self, selection: quadratic_core_shared::A1Selection) {
+        self.ui.cursor.set_a1_selection(selection);
+    }
+
+    // =========================================================================
+    // Label Hash Management
+    // =========================================================================
+
+    pub fn add_label(&mut self, _text: &str, _col: i64, _row: i64) {
+        // Simplified - use set_labels_for_hash for bulk operations
+    }
+
+    pub fn add_styled_label(
+        &mut self,
+        _text: &str,
+        _col: i64,
+        _row: i64,
+        _font_size: Option<f32>,
+        _bold: bool,
+        _italic: bool,
+        _color_r: f32,
+        _color_g: f32,
+        _color_b: f32,
+        _align: Option<i32>,
+        _valign: Option<i32>,
+    ) {
+        // Simplified - use set_labels_for_hash for bulk operations
+    }
+
+    pub fn clear_labels(&mut self) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            sheet.hashes.clear();
+            sheet.label_count = 0;
+        }
+    }
+
+    pub fn get_label_count(&self) -> usize {
+        self.sheets.current_sheet().map_or(0, |s| s.label_count)
+    }
+
+    pub fn get_needed_hashes(&self) -> Vec<i32> {
+        self.get_needed_label_hashes()
+    }
+
+    pub fn add_labels_batch(
+        &mut self,
+        _hash_x: i64,
+        _hash_y: i64,
+        _texts: Vec<String>,
+        _cols: &[i32],
+        _rows: &[i32],
+        _colors: Option<Vec<u8>>,
+    ) {
+        // Deprecated: use set_labels_for_hash with RenderCell data
+        log::warn!("add_labels_batch is deprecated, use set_labels_for_hash");
+    }
+
+    pub fn mark_labels_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            let key = hash_key(hash_x, hash_y);
+            if let Some(hash) = sheet.hashes.get_mut(&key) {
+                hash.mark_dirty();
+            }
+        }
+    }
+
+    pub fn get_offscreen_label_hashes(&self) -> Vec<i32> {
+        // TODO: implement proper offscreen tracking
+        Vec::new()
+    }
+
+    pub fn unload_label_hash(&mut self, hash_x: i64, hash_y: i64) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            sheet.remove_hash(hash_x, hash_y);
+        }
+    }
+
+    pub fn has_label_hash(&self, hash_x: i64, hash_y: i64) -> bool {
+        self.sheets
+            .current_sheet()
+            .map_or(false, |s| s.has_hash(hash_x, hash_y))
+    }
+
+    pub fn get_label_hash_count(&self) -> usize {
+        self.sheets.current_sheet().map_or(0, |s| s.hash_count())
+    }
+
+    // =========================================================================
+    // Fill Hash Management
+    // =========================================================================
+
+    pub fn fills_meta_loaded(&self) -> bool {
+        self.sheets
+            .current_sheet()
+            .map_or(false, |s| s.fills.meta_fills_loaded())
+    }
+
+    pub fn mark_fills_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            sheet.fills.mark_hash_dirty(hash_x, hash_y);
+        }
+    }
+
+    pub fn get_offscreen_fill_hashes(&self) -> Vec<i32> {
+        // TODO: implement proper offscreen tracking
+        Vec::new()
+    }
+
+    pub fn unload_fill_hash(&mut self, hash_x: i64, hash_y: i64) {
+        if let Some(sheet) = self.sheets.current_sheet_mut() {
+            sheet.fills.unload_hash(hash_x, hash_y);
+        }
+    }
+
+    pub fn has_fill_hash(&self, hash_x: i64, hash_y: i64) -> bool {
+        self.sheets
+            .current_sheet()
+            .map_or(false, |s| s.fills.has_hash(hash_x, hash_y))
+    }
+
+    pub fn get_fill_hash_count(&self) -> usize {
+        self.sheets
+            .current_sheet()
+            .map_or(0, |s| s.fills.hash_count())
+    }
+
+    pub fn get_fill_count(&self) -> usize {
+        self.sheets
+            .current_sheet()
+            .map_or(0, |s| s.fills.fill_count())
+    }
+
+    // =========================================================================
+    // Stats / Debug
+    // =========================================================================
+
+    pub fn get_sprite_memory_bytes(&self) -> usize {
+        // TODO: implement sprite memory tracking
+        0
+    }
+
+    pub fn get_sprite_count(&self) -> usize {
+        // TODO: implement sprite count
+        0
+    }
+
+    pub fn add_test_fills(&mut self) {
+        // No-op for now
+    }
+
+    pub fn add_test_labels(&mut self) {
+        // No-op for now
+    }
+
+    pub fn get_column_max_width(&self, _col: i64) -> f32 {
+        // TODO: implement via Sheet
+        0.0
+    }
+
+    pub fn get_row_max_height(&self, _row: i64) -> f32 {
+        // TODO: implement via Sheet
+        0.0
+    }
+
+    pub fn get_offscreen_hashes(&self) -> Vec<i32> {
+        self.get_offscreen_label_hashes()
+    }
+
+    pub fn remove_hash(&mut self, hash_x: i32, hash_y: i32) {
+        self.unload_label_hash(hash_x as i64, hash_y as i64);
+    }
+
+    pub fn has_hash(&self, hash_x: i32, hash_y: i32) -> bool {
+        self.has_label_hash(hash_x as i64, hash_y as i64)
+    }
+
+    pub fn get_hash_count(&self) -> usize {
+        self.get_label_hash_count()
+    }
+
+    // =========================================================================
+    // Methods that need updating in renderer.rs
+    // (These provide access to data that was previously on RendererState directly)
+    // =========================================================================
+
+    /// Get the heading dimensions (headings are updated in update_content())
+    pub fn get_heading_dimensions(&self) -> (f32, f32) {
+        (self.get_heading_width(), self.get_heading_height())
+    }
+
+    pub fn process_dirty_hashes(&mut self, _budget_ms: f32) -> (usize, usize) {
+        // TODO: implement hash processing
+        (0, 0)
+    }
+
+    pub fn force_dirty(&mut self) {
+        self.viewport.dirty = true;
+        self.ui.grid_lines.dirty = true;
+        self.ui.cursor.dirty = true;
+        self.ui.headings.set_dirty();
+    }
+
     pub fn get_heading_text_params(&self) -> (f32, f32) {
-        let heading_font_size = 10.0 * self.headings.dpr();
-        self.fonts
-            .get("OpenSans")
-            .map(|f| (heading_font_size / f.size, f.distance_range))
-            .unwrap_or((heading_font_size / 42.0, 4.0))
-    }
-
-    // =========================================================================
-    // Auto-size (column width / row height calculation)
-    // =========================================================================
-
-    /// Get max content width for a column across all hashes
-    /// Used for auto-resize column width (double-click column header border)
-    ///
-    /// Returns the maximum unwrapped text width of all cells in the given column.
-    /// If no cells are found, returns 0.0.
-    pub fn get_column_max_width(&self, column: i64) -> f32 {
-        use crate::text::HASH_WIDTH;
-
-        let hash_x = if column > 0 {
-            (column - 1) / HASH_WIDTH
-        } else {
-            column / HASH_WIDTH - 1
-        };
-
-        let mut max = 0.0f32;
-        for hash in self.hashes.values() {
-            if hash.hash_x == hash_x {
-                max = max.max(hash.get_column_max_width(column));
-            }
-        }
-        max
-    }
-
-    /// Get max content height for a row across all hashes
-    /// Used for auto-resize row height (double-click row header border)
-    ///
-    /// Returns the maximum text height (including descenders) of all cells in the given row.
-    /// If no cells are found, returns the default cell height.
-    pub fn get_row_max_height(&self, row: i64) -> f32 {
-        use crate::text::HASH_HEIGHT;
-        use crate::text::cell_label::DEFAULT_CELL_HEIGHT;
-
-        let hash_y = if row > 0 {
-            (row - 1) / HASH_HEIGHT
-        } else {
-            row / HASH_HEIGHT - 1
-        };
-
-        let mut max = 0.0f32;
-        for hash in self.hashes.values() {
-            if hash.hash_y == hash_y {
-                max = max.max(hash.get_row_max_height(row));
-            }
-        }
-
-        // Return at least the default cell height
-        max.max(DEFAULT_CELL_HEIGHT)
+        self.get_text_params()
     }
 }

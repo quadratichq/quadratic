@@ -6,9 +6,8 @@
 use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
 
-use crate::render_context::RenderContext;
-use crate::webgl::WebGLContext;
-use crate::webgpu::WebGPUContext;
+use crate::renderers::render_context::RenderContext;
+use crate::renderers::{WebGLContext, WebGPUContext};
 
 /// Which rendering backend is active
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

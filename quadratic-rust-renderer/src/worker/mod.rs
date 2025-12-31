@@ -8,20 +8,20 @@
 //! From JavaScript, check WebGPU availability and create the appropriate renderer:
 //!
 //! ```javascript
-//! if (WorkerRendererGPU.is_available()) {
-//!     const renderer = await WorkerRendererGPU.new(canvas);
+//! if (WorkerRenderer.is_webgpu_available()) {
+//!     const renderer = await WorkerRenderer.new_webgpu(canvas);
 //! } else {
 //!     const renderer = new WorkerRenderer(canvas);
 //! }
 //! ```
 
 mod backend;
+pub mod js;
 pub mod message_handler;
+mod render;
 mod renderer;
-mod renderer_webgpu;
 mod state;
 
 pub use backend::{BackendType, RenderBackend};
 pub use renderer::WorkerRenderer;
-pub use renderer_webgpu::WorkerRendererGPU;
 pub use state::RendererState;

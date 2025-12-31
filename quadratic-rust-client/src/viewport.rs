@@ -149,6 +149,12 @@ impl ViewportBufferWriter {
         self.int32_view
             .set_index(target_flag_idx, SliceFlag::Ready as i32);
 
+        // Invalidate the other slice to ensure reader gets latest data
+        let other_slice = if target_slice == 0 { 1 } else { 0 };
+        let other_flag_idx = Self::flag_index(other_slice);
+        self.int32_view
+            .set_index(other_flag_idx, SliceFlag::Uninitialized as i32);
+
         // Toggle for next write
         self.write_slice = if target_slice == 0 { 1 } else { 0 };
     }
