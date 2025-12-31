@@ -16,7 +16,9 @@ use quadratic_core_shared::{
 };
 
 use crate::grid::{
-    formatting::{CellAlign, CellVerticalAlign, CellWrap, NumericFormatKind as CoreNumericFormatKind},
+    formatting::{
+        CellAlign, CellVerticalAlign, CellWrap, NumericFormatKind as CoreNumericFormatKind,
+    },
     js_types::{JsNumber, JsRenderCellFormatSpan, JsRenderCellLinkSpan, JsRenderCellSpecial},
 };
 
@@ -183,11 +185,18 @@ impl GridController {
 
                     // Send initial hashes for a reasonable viewport (e.g., first 10x10 hashes)
                     let initial_hashes: Vec<quadratic_core_shared::Pos> = (0..10_i64)
-                        .flat_map(|x| (0..10_i64).map(move |y| quadratic_core_shared::Pos::new(x, y)))
+                        .flat_map(|x| {
+                            (0..10_i64).map(move |y| quadratic_core_shared::Pos::new(x, y))
+                        })
                         .collect();
 
-                    if let Err(e) = self.send_hashes_to_rust_renderer(first_sheet_id, &initial_hashes) {
-                        log(&format!("[rust_renderer] Error sending initial hashes: {}", e));
+                    if let Err(e) =
+                        self.send_hashes_to_rust_renderer(first_sheet_id, &initial_hashes)
+                    {
+                        log(&format!(
+                            "[rust_renderer] Error sending initial hashes: {}",
+                            e
+                        ));
                     }
                 }
             }
@@ -355,13 +364,17 @@ impl GridController {
                     underline: cell.underline,
                     strike_through: cell.strike_through,
                     text_color: cell.text_color,
-                    font_size: None,
+                    font_size: cell.font_size,
                     special: cell.special.map(convert_special),
                     number: cell.number.map(convert_number),
                     table_name: cell.table_name,
                     column_header: cell.column_header,
                     link_spans: cell.link_spans.into_iter().map(convert_link_span).collect(),
-                    format_spans: cell.format_spans.into_iter().map(convert_format_span).collect(),
+                    format_spans: cell
+                        .format_spans
+                        .into_iter()
+                        .map(convert_format_span)
+                        .collect(),
                 })
                 .collect();
 

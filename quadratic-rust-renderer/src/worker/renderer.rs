@@ -851,13 +851,13 @@ impl WorkerRenderer {
         let content_width = (canvas_width as i32) - content_x;
         let content_height = (canvas_height as i32) - content_y;
         let offsets = self.state.get_sheet_offsets().clone();
-        let (font_scale, distance_range) = self.state.get_text_params();
+        let (atlas_font_size, distance_range) = self.state.get_text_params();
         let viewport_scale = self.state.viewport.effective_scale();
         let show_headings = self.state.show_headings;
         let debug_show_text_updates = self.state.debug_show_text_updates;
         let scale = self.state.viewport.scale();
         let screen_matrix = self.state.create_screen_space_matrix(canvas_width, canvas_height);
-        let (heading_font_scale, heading_distance_range) = self.state.get_heading_text_params();
+        let (heading_atlas_font_size, heading_distance_range) = self.state.get_heading_text_params();
 
         // Background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
@@ -904,7 +904,7 @@ impl WorkerRenderer {
         if fonts_ready {
             if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                 let visible = render::render_text(
-                    gl, sheet, &self.state.viewport, &self.state.fonts, &matrix_array, font_scale, distance_range,
+                    gl, sheet, &self.state.viewport, &self.state.fonts, &matrix_array, atlas_font_size, distance_range,
                 );
                 if debug_show_text_updates && visible > 0 {
                     log::info!("[frame_webgl] rendered={}, scale={:.2}", visible, scale);
@@ -926,7 +926,7 @@ impl WorkerRenderer {
                 gl,
                 &screen_matrix,
                 &self.state.fonts,
-                heading_font_scale,
+                heading_atlas_font_size,
                 heading_distance_range,
                 &offsets,
             );
@@ -954,11 +954,11 @@ impl WorkerRenderer {
         let content_height = (canvas_height as u32).saturating_sub(content_y);
         let scale = self.state.viewport.scale();
         let effective_scale = self.state.viewport.effective_scale();
-        let (font_scale, distance_range) = self.state.get_text_params();
+        let (atlas_font_size, distance_range) = self.state.get_text_params();
         let show_headings = self.state.show_headings;
         let offsets = self.state.get_sheet_offsets().clone();
         let screen_matrix = self.state.create_screen_space_matrix(canvas_width, canvas_height);
-        let (heading_font_scale, heading_distance_range) = self.state.get_heading_text_params();
+        let (heading_atlas_font_size, heading_distance_range) = self.state.get_heading_text_params();
 
         // Pre-extract background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
@@ -1004,7 +1004,7 @@ impl WorkerRenderer {
                         continue;
                     }
                     hash.rebuild_if_dirty(fonts);
-                    hash.rebuild_sprite_if_dirty_webgpu(gpu, fonts, font_scale, distance_range);
+                    hash.rebuild_sprite_if_dirty_webgpu(gpu, fonts, atlas_font_size, distance_range);
                 }
             }
         }
@@ -1087,7 +1087,7 @@ impl WorkerRenderer {
                         hash.rebuild_if_dirty(fonts);
                         hash.render_webgpu(
                             gpu, &mut pass, &matrix_array,
-                            scale, effective_scale, font_scale, distance_range,
+                            scale, effective_scale, atlas_font_size, distance_range,
                         );
                     }
                 }
@@ -1133,7 +1133,7 @@ impl WorkerRenderer {
                 &mut self.state.ui.headings,
                 &self.state.fonts,
                 &screen_matrix,
-                heading_font_scale,
+                heading_atlas_font_size,
                 heading_distance_range,
                 &offsets,
                 scale,

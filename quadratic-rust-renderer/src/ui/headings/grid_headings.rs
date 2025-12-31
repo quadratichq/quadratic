@@ -396,12 +396,20 @@ impl GridHeadings {
     /// Render headings directly to WebGL
     ///
     /// Renders in order: backgrounds, lines, text (for proper z-ordering)
+    ///
+    /// # Arguments
+    /// * `ctx` - Render context
+    /// * `matrix` - View-projection matrix
+    /// * `fonts` - Bitmap fonts
+    /// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+    /// * `distance_range` - MSDF distance range
+    /// * `offsets` - Sheet offsets
     pub fn render(
         &mut self,
         ctx: &mut impl RenderContext,
         matrix: &[f32; 16],
         fonts: &BitmapFonts,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
         offsets: &SheetOffsets,
     ) {
@@ -488,6 +496,10 @@ impl GridHeadings {
             }
             let vertices = mesh.get_vertex_data();
             let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
+
+            // Calculate the correct font_scale for this mesh's font size
+            let font_scale = mesh.font_size / atlas_font_size;
+
             ctx.draw_text(
                 &vertices,
                 &indices,

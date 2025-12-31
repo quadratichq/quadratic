@@ -169,12 +169,16 @@ impl RendererState {
             let offsets = sheet.sheet_offsets.clone();
             sheet.fills.set_hash_fills(hash_x, hash_y, fills, &offsets);
         }
+        // Mark viewport dirty to trigger re-render with new fill data
+        self.viewport.dirty = true;
     }
 
     pub fn set_meta_fills(&mut self, fills: Vec<SheetFill>) {
         if let Some(sheet) = self.sheets.current_sheet_mut() {
             sheet.fills.set_meta_fills(fills);
         }
+        // Mark viewport dirty to trigger re-render with new meta fill data
+        self.viewport.dirty = true;
     }
 
     // =========================================================================
@@ -216,6 +220,8 @@ impl RendererState {
                 sheet.hashes.insert(key, hash);
             }
         }
+        // Mark viewport dirty to trigger re-render with new label data
+        self.viewport.dirty = true;
     }
 
     // =========================================================================
@@ -316,14 +322,18 @@ impl RendererState {
     }
 
     /// Get text rendering parameters for the default font
+    ///
+    /// Returns (atlas_font_size, distance_range) where:
+    /// - atlas_font_size: The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+    /// - distance_range: MSDF distance field range (typically 4.0)
+    ///
+    /// Note: font_scale is now calculated per-label based on label.font_size / atlas_font_size
+    /// to properly support different font sizes in the same sheet.
     pub fn get_text_params(&self) -> (f32, f32) {
         self.fonts
             .get("OpenSans")
-            .map(|f| {
-                let render_size = 14.0;
-                (render_size / f.size, f.distance_range)
-            })
-            .unwrap_or((14.0 / 42.0, 4.0))
+            .map(|f| (f.size, f.distance_range))
+            .unwrap_or((42.0, 4.0))
     }
 
     // =========================================================================

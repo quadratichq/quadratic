@@ -1,21 +1,30 @@
 //! Cell text rendering
 
 use crate::renderers::WebGLContext;
-use crate::sheets::text::SPRITE_SCALE_THRESHOLD;
 use crate::sheets::text::BitmapFonts;
+use crate::sheets::text::SPRITE_SCALE_THRESHOLD;
 use crate::sheets::Sheet;
 use crate::viewport::Viewport;
 
 /// Render cell text using WebGL
 ///
 /// Returns visible_count for debug logging
+///
+/// # Arguments
+/// * `gl` - WebGL context
+/// * `sheet` - Sheet to render
+/// * `viewport` - Viewport for culling and scale
+/// * `fonts` - Bitmap fonts
+/// * `matrix` - View-projection matrix
+/// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+/// * `distance_range` - MSDF distance range
 pub fn render_text(
     gl: &WebGLContext,
     sheet: &mut Sheet,
     viewport: &Viewport,
     fonts: &BitmapFonts,
     matrix: &[f32; 16],
-    font_scale: f32,
+    atlas_font_size: f32,
     distance_range: f32,
 ) -> usize {
     if sheet.hashes.is_empty() {
@@ -45,7 +54,7 @@ pub fn render_text(
 
         // Rebuild sprite cache if zoomed out and sprite is dirty
         if use_sprites {
-            hash.rebuild_sprite_if_dirty(gl, fonts, font_scale, distance_range);
+            hash.rebuild_sprite_if_dirty(gl, fonts, atlas_font_size, distance_range);
         }
 
         visible_count += 1;
@@ -55,7 +64,7 @@ pub fn render_text(
             matrix,
             scale,
             effective_scale,
-            font_scale,
+            atlas_font_size,
             distance_range,
         );
     }
@@ -66,6 +75,16 @@ pub fn render_text(
 /// Render cell text using WebGPU
 ///
 /// Returns visible_count for debug logging
+///
+/// # Arguments
+/// * `gpu` - WebGPU context
+/// * `pass` - Render pass
+/// * `sheet` - Sheet to render
+/// * `viewport` - Viewport for culling and scale
+/// * `fonts` - Bitmap fonts
+/// * `matrix` - View-projection matrix
+/// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+/// * `distance_range` - MSDF distance range
 #[cfg(feature = "wasm")]
 pub fn render_text_webgpu<'a>(
     gpu: &mut crate::renderers::WebGPUContext,
@@ -74,7 +93,7 @@ pub fn render_text_webgpu<'a>(
     viewport: &Viewport,
     fonts: &BitmapFonts,
     matrix: &[f32; 16],
-    font_scale: f32,
+    atlas_font_size: f32,
     distance_range: f32,
 ) -> usize {
     if sheet.hashes.is_empty() {
@@ -109,7 +128,7 @@ pub fn render_text_webgpu<'a>(
             matrix,
             scale,
             effective_scale,
-            font_scale,
+            atlas_font_size,
             distance_range,
         );
     }

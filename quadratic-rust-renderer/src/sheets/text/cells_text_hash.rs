@@ -73,6 +73,35 @@ const SPRITE_TARGET_WIDTH: u32 = 512;
 /// Minimum sprite dimension (don't go too small)
 const MIN_SPRITE_DIMENSION: u32 = 64;
 
+/// Key for grouping cached text data by (texture_uid, font_size)
+/// Font size is stored as integer (multiplied by 100) for hash equality
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct TextCacheKey {
+    texture_uid: u32,
+    font_size_scaled: u32, // font_size * 100 for hash comparison
+}
+
+impl TextCacheKey {
+    fn new(texture_uid: u32, font_size: f32) -> Self {
+        Self {
+            texture_uid,
+            font_size_scaled: (font_size * 100.0) as u32,
+        }
+    }
+
+    fn font_size(&self) -> f32 {
+        self.font_size_scaled as f32 / 100.0
+    }
+}
+
+/// Cached data for a specific (texture_uid, font_size) combination
+#[derive(Debug, Clone, Default)]
+struct TextCacheEntry {
+    vertices: Vec<f32>,
+    indices: Vec<u32>,
+    vertex_offset: u32,
+}
+
 /// A spatial hash containing labels for a 15×30 cell region
 pub struct CellsTextHash {
     /// Hash coordinates (not pixel coordinates)
@@ -85,7 +114,12 @@ pub struct CellsTextHash {
     /// Whether this hash needs to rebuild its mesh cache
     dirty: bool,
 
-    /// Cached batched vertex data per texture page
+    /// Cached batched vertex data per (texture_uid, font_size) combination
+    /// This allows proper MSDF rendering with correct font_scale per group
+    cached_text_data: HashMap<TextCacheKey, TextCacheEntry>,
+
+    /// Legacy cached data per texture page (kept for backward compatibility)
+    /// TODO: Remove once all rendering uses the new per-font-size groups
     cached_vertices: [Vec<f32>; MAX_TEXTURE_PAGES],
     cached_indices: [Vec<u32>; MAX_TEXTURE_PAGES],
 
@@ -146,6 +180,7 @@ impl CellsTextHash {
             hash_y,
             labels: HashMap::new(),
             dirty: true,
+            cached_text_data: HashMap::new(),
             cached_vertices: std::array::from_fn(|_| Vec::new()),
             cached_indices: std::array::from_fn(|_| Vec::new()),
             world_x,
@@ -281,7 +316,10 @@ impl CellsTextHash {
             return;
         }
 
-        // Clear cached data
+        // Clear cached data (new per-font-size cache)
+        self.cached_text_data.clear();
+
+        // Clear legacy cached data
         for i in 0..MAX_TEXTURE_PAGES {
             self.cached_vertices[i].clear();
             self.cached_indices[i].clear();
@@ -294,7 +332,7 @@ impl CellsTextHash {
         // Clear horizontal lines cache
         self.cached_horizontal_lines.clear();
 
-        // Track vertex offsets per texture page
+        // Track vertex offsets per texture page (for legacy cache)
         let mut vertex_offsets: [u32; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
 
         // Collect meshes from all labels and update auto-size caches
@@ -331,17 +369,30 @@ impl CellsTextHash {
 
                 let mesh_vertices = mesh.get_vertex_data();
                 let mesh_indices = mesh.get_index_data();
-                let offset = vertex_offsets[tex_id];
 
-                // Add vertices to cache
-                self.cached_vertices[tex_id].extend_from_slice(&mesh_vertices);
+                // Add to new per-font-size cache
+                let cache_key = TextCacheKey::new(mesh.texture_uid, mesh.font_size);
+                let entry = self.cached_text_data.entry(cache_key).or_default();
 
-                // Add indices with offset applied (convert u16 mesh indices to u32)
+                let offset = entry.vertex_offset;
+
+                // Add vertices to per-font-size cache
+                entry.vertices.extend_from_slice(&mesh_vertices);
+
+                // Add indices with offset applied
                 for &i in mesh_indices {
-                    self.cached_indices[tex_id].push(i as u32 + offset);
+                    entry.indices.push(i as u32 + offset);
                 }
 
                 // Update offset (each vertex has 8 floats: x,y,u,v,r,g,b,a)
+                entry.vertex_offset += (mesh_vertices.len() / 8) as u32;
+
+                // Also add to legacy cache for backward compatibility
+                let legacy_offset = vertex_offsets[tex_id];
+                self.cached_vertices[tex_id].extend_from_slice(&mesh_vertices);
+                for &i in mesh_indices {
+                    self.cached_indices[tex_id].push(i as u32 + legacy_offset);
+                }
                 vertex_offsets[tex_id] += (mesh_vertices.len() / 8) as u32;
             }
 
@@ -410,28 +461,41 @@ impl CellsTextHash {
 
     /// Render all cached text for this hash using MSDF text rendering (WebGL)
     ///
-    /// Renders each texture page's cached text in one draw call per page.
+    /// Renders each (texture_uid, font_size) group with the correct font_scale
+    /// for proper MSDF anti-aliasing.
+    ///
+    /// # Arguments
+    /// * `gl` - WebGL context
+    /// * `matrix` - View-projection matrix
+    /// * `viewport_scale` - Current viewport scale (zoom level * DPR)
+    /// * `atlas_font_size` - The font size the atlas was generated at (typically 42.0 for OpenSans)
+    /// * `distance_range` - MSDF distance range (typically 4.0)
     #[cfg(feature = "wasm")]
     fn render_text(
         &self,
         gl: &WebGLContext,
         matrix: &[f32; 16],
         viewport_scale: f32,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
     ) {
-        for tex_id in 0..MAX_TEXTURE_PAGES {
-            if self.cached_vertices[tex_id].is_empty() {
+        // Render each (texture_uid, font_size) group with the correct font_scale
+        for (cache_key, entry) in &self.cached_text_data {
+            if entry.vertices.is_empty() {
                 continue;
             }
-            if !gl.has_font_texture(tex_id as u32) {
+            if !gl.has_font_texture(cache_key.texture_uid) {
                 continue;
             }
 
+            // Calculate the correct font_scale for this group's font size
+            // font_scale = render_font_size / atlas_font_size
+            let font_scale = cache_key.font_size() / atlas_font_size;
+
             gl.draw_text(
-                &self.cached_vertices[tex_id],
-                &self.cached_indices[tex_id],
-                tex_id as u32,
+                &entry.vertices,
+                &entry.indices,
+                cache_key.texture_uid,
                 matrix,
                 viewport_scale,
                 font_scale,
@@ -495,12 +559,18 @@ impl CellsTextHash {
     /// This pre-renders all text in this hash to a texture that can be
     /// displayed as a single sprite when zoomed out. Based on the
     /// "War and Peace and WebGL" technique for smooth text at small sizes.
+    ///
+    /// # Arguments
+    /// * `gl` - WebGL context
+    /// * `fonts` - Bitmap fonts
+    /// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+    /// * `distance_range` - MSDF distance range
     #[cfg(feature = "wasm")]
     pub fn rebuild_sprite_if_dirty(
         &mut self,
         gl: &WebGLContext,
         fonts: &BitmapFonts,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
     ) {
         if !self.sprite_dirty {
@@ -601,7 +671,7 @@ impl CellsTextHash {
         let sprite_scale = tex_width as f32 / self.world_width;
 
         // Render text to the render target with correct MSDF scale
-        self.render_text(gl, &ortho, sprite_scale, font_scale, distance_range);
+        self.render_text(gl, &ortho, sprite_scale, atlas_font_size, distance_range);
 
         // Generate mipmaps for smooth scaling at very small sizes
         sprite_cache.generate_mipmaps(gl.gl());
@@ -646,7 +716,7 @@ impl CellsTextHash {
     /// * `matrix` - View-projection matrix
     /// * `user_scale` - User-visible zoom level (for threshold comparison)
     /// * `effective_scale` - Rendering scale including DPR (for MSDF fwidth calculation)
-    /// * `font_scale` - Font scale factor
+    /// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
     /// * `distance_range` - MSDF distance range
     #[cfg(feature = "wasm")]
     pub fn render(
@@ -655,7 +725,7 @@ impl CellsTextHash {
         matrix: &[f32; 16],
         user_scale: f32,
         effective_scale: f32,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
     ) {
         if self.labels.is_empty() {
@@ -664,7 +734,7 @@ impl CellsTextHash {
 
         if user_scale >= SPRITE_SCALE_THRESHOLD {
             // Zoomed in: use MSDF text rendering for sharp glyphs
-            self.render_text(gl, matrix, effective_scale, font_scale, distance_range);
+            self.render_text(gl, matrix, effective_scale, atlas_font_size, distance_range);
         } else {
             // Zoomed out: use pre-rendered sprite for smooth appearance
             self.render_sprite(gl, matrix);
@@ -682,7 +752,7 @@ impl CellsTextHash {
     /// * `matrix` - View-projection matrix
     /// * `user_scale` - User-visible zoom level (for threshold comparison)
     /// * `effective_scale` - Rendering scale including DPR (for MSDF fwidth calculation)
-    /// * `font_scale` - Font scale factor
+    /// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
     /// * `distance_range` - MSDF distance range
     #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
     pub fn render_webgpu(
@@ -692,7 +762,7 @@ impl CellsTextHash {
         matrix: &[f32; 16],
         user_scale: f32,
         effective_scale: f32,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
     ) {
         if self.labels.is_empty() {
@@ -706,7 +776,7 @@ impl CellsTextHash {
                 pass,
                 matrix,
                 effective_scale,
-                font_scale,
+                atlas_font_size,
                 distance_range,
             );
         } else {
@@ -728,7 +798,7 @@ impl CellsTextHash {
                     pass,
                     matrix,
                     effective_scale,
-                    font_scale,
+                    atlas_font_size,
                     distance_range,
                 );
             }
@@ -736,6 +806,17 @@ impl CellsTextHash {
     }
 
     /// Render text glyphs using MSDF (WebGPU - cross-platform via wgpu)
+    ///
+    /// Renders each (texture_uid, font_size) group with the correct font_scale
+    /// for proper MSDF anti-aliasing.
+    ///
+    /// # Arguments
+    /// * `gpu` - WebGPU context
+    /// * `pass` - Render pass
+    /// * `matrix` - View-projection matrix
+    /// * `viewport_scale` - Current viewport scale (zoom level * DPR)
+    /// * `atlas_font_size` - The font size the atlas was generated at (typically 42.0 for OpenSans)
+    /// * `distance_range` - MSDF distance range (typically 4.0)
     #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
     fn render_text_webgpu(
         &self,
@@ -743,22 +824,27 @@ impl CellsTextHash {
         pass: &mut wgpu::RenderPass<'_>,
         matrix: &[f32; 16],
         viewport_scale: f32,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
     ) {
-        for tex_id in 0..MAX_TEXTURE_PAGES {
-            if self.cached_vertices[tex_id].is_empty() {
+        // Render each (texture_uid, font_size) group with the correct font_scale
+        for (cache_key, entry) in &self.cached_text_data {
+            if entry.vertices.is_empty() {
                 continue;
             }
-            if !gpu.has_font_texture(tex_id as u32) {
+            if !gpu.has_font_texture(cache_key.texture_uid) {
                 continue;
             }
 
+            // Calculate the correct font_scale for this group's font size
+            // font_scale = render_font_size / atlas_font_size
+            let font_scale = cache_key.font_size() / atlas_font_size;
+
             gpu.draw_text(
                 pass,
-                &self.cached_vertices[tex_id],
-                &self.cached_indices[tex_id],
-                tex_id as u32,
+                &entry.vertices,
+                &entry.indices,
+                cache_key.texture_uid,
                 matrix,
                 viewport_scale,
                 font_scale,
@@ -811,12 +897,18 @@ impl CellsTextHash {
     ///
     /// This pre-renders all text in this hash to a texture that can be
     /// displayed as a single sprite when zoomed out.
+    ///
+    /// # Arguments
+    /// * `gpu` - WebGPU context
+    /// * `fonts` - Bitmap fonts
+    /// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+    /// * `distance_range` - MSDF distance range
     #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
     pub fn rebuild_sprite_if_dirty_webgpu(
         &mut self,
         gpu: &mut WebGPUContext,
         fonts: &BitmapFonts,
-        font_scale: f32,
+        atlas_font_size: f32,
         distance_range: f32,
     ) {
         if !self.sprite_dirty {
@@ -897,7 +989,7 @@ impl CellsTextHash {
                 &mut render_pass,
                 &ortho,
                 sprite_scale,
-                font_scale,
+                atlas_font_size,
                 distance_range,
             );
         }

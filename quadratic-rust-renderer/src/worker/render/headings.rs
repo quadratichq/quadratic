@@ -8,12 +8,22 @@ use crate::ui::headings::GridHeadings;
 use quadratic_core_shared::SheetOffsets;
 
 /// Render headings using WebGL
+///
+/// # Arguments
+/// * `gl` - WebGL context
+/// * `headings` - Grid headings
+/// * `fonts` - Bitmap fonts
+/// * `screen_matrix` - Screen space matrix
+/// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+/// * `distance_range` - MSDF distance range
+/// * `offsets` - Sheet offsets
+/// * `scale` - Viewport scale
 pub fn render_headings(
     gl: &mut WebGLContext,
     headings: &mut GridHeadings,
     fonts: &BitmapFonts,
     screen_matrix: &[f32; 16],
-    font_scale: f32,
+    atlas_font_size: f32,
     distance_range: f32,
     offsets: &SheetOffsets,
     scale: f32,
@@ -22,13 +32,25 @@ pub fn render_headings(
     headings.layout(fonts);
 
     // Render headings
-    headings.render(gl, screen_matrix, fonts, font_scale, distance_range, offsets);
+    headings.render(gl, screen_matrix, fonts, atlas_font_size, distance_range, offsets);
 
     // Note: grid line alpha is handled inside GridHeadings::render()
     let _ = scale; // Used for grid line alpha calculation
 }
 
 /// Render headings using WebGPU
+///
+/// # Arguments
+/// * `gpu` - WebGPU context
+/// * `pass` - Render pass
+/// * `headings` - Grid headings
+/// * `fonts` - Bitmap fonts
+/// * `screen_matrix` - Screen space matrix
+/// * `atlas_font_size` - The font size the atlas was generated at (e.g., 42.0 for OpenSans)
+/// * `distance_range` - MSDF distance range
+/// * `offsets` - Sheet offsets
+/// * `scale` - Viewport scale
+/// * `debug_label_bounds` - Whether to debug label bounds
 #[cfg(feature = "wasm")]
 pub fn render_headings_webgpu<'a>(
     gpu: &mut crate::renderers::WebGPUContext,
@@ -36,7 +58,7 @@ pub fn render_headings_webgpu<'a>(
     headings: &mut GridHeadings,
     fonts: &BitmapFonts,
     screen_matrix: &[f32; 16],
-    font_scale: f32,
+    atlas_font_size: f32,
     distance_range: f32,
     offsets: &SheetOffsets,
     scale: f32,
@@ -137,6 +159,9 @@ pub fn render_headings_webgpu<'a>(
         let vertices = mesh.get_vertex_data();
         let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
 
+        // Calculate the correct font_scale for this mesh's font size
+        let font_scale = mesh.font_size / atlas_font_size;
+
         gpu.draw_text(
             pass,
             &vertices,
@@ -149,4 +174,3 @@ pub fn render_headings_webgpu<'a>(
         );
     }
 }
-
