@@ -17,8 +17,9 @@ pub fn render_fills(
 }
 
 /// Get fill vertices for WebGPU rendering
+/// Note: This requires mutable access to rebuild dirty caches
 pub fn get_fill_vertices(
-    sheet: &Sheet,
+    sheet: &mut Sheet,
     viewport: &Viewport,
 ) -> (Option<Vec<f32>>, Vec<Vec<f32>>) {
     let bounds = viewport.visible_bounds();
@@ -27,6 +28,10 @@ pub fn get_fill_vertices(
     let max_x = bounds.right + padding;
     let min_y = bounds.top - padding;
     let max_y = bounds.bottom + padding;
+
+    // Rebuild caches if needed (fills were marked dirty when set)
+    let offsets = sheet.sheet_offsets.clone();
+    sheet.fills.update(viewport, &offsets, true);
 
     // Meta fills (infinite backgrounds)
     let meta_vertices = sheet.fills.cached_meta_rects().vertices();
@@ -51,4 +56,3 @@ pub fn get_fill_vertices(
 
     (meta, hash_vertices)
 }
-

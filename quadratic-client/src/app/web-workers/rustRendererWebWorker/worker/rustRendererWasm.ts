@@ -56,12 +56,11 @@ class RustRendererWasm {
         console.warn('[rustRendererWasm] WebGPU initialization failed, falling back to WebGL:', error);
         renderer = new WorkerRenderer(canvas);
         this.backend = 'webgl';
-        console.log('[rustRendererWasm] Using WebGL backend');
       }
     } else {
       renderer = new WorkerRenderer(canvas);
       this.backend = 'webgl';
-      console.log('[rustRendererWasm] Using WebGL backend (WebGPU not available)');
+      console.log('[rustRendererWasm] Using WebGL backend');
     }
 
     this.renderer = renderer;
@@ -81,16 +80,13 @@ class RustRendererWasm {
 
     this.initialized = true;
 
-    console.log(`[rustRendererWasm] Fonts loaded: ${renderer.has_fonts()}`);
-
     // Set pending viewport buffer if one was received before initialization
     if (this.pendingViewportBuffer) {
-      console.log('[rustRendererWasm] Setting pending viewport buffer');
       this.renderer.set_viewport_buffer(this.pendingViewportBuffer);
       this.pendingViewportBuffer = undefined;
     }
 
-    // Start the renderer (delayed to ensure viewport buffer can be set first)
+    // Start the renderer (sends Ready message to core)
     renderer.start();
 
     // Replay any messages that arrived before initialization

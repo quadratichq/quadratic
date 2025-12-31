@@ -10,9 +10,87 @@ use crate::Rect;
 use crate::grid::SheetId;
 use crate::wasm_bindings::js::log;
 use quadratic_core_shared::{
-    CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, CoreToRenderer, HashCells, RendererToCore, SheetFill,
-    SheetInfo, serialization,
+    CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, CoreToRenderer, HashCells, NumericFormatKind, RenderCell,
+    RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial, RenderNumber, RendererToCore,
+    SheetFill, SheetInfo, serialization,
 };
+
+use crate::grid::{
+    formatting::{CellAlign, CellVerticalAlign, CellWrap, NumericFormatKind as CoreNumericFormatKind},
+    js_types::{JsNumber, JsRenderCellFormatSpan, JsRenderCellLinkSpan, JsRenderCellSpecial},
+};
+
+fn convert_align(align: CellAlign) -> quadratic_core_shared::CellAlign {
+    match align {
+        CellAlign::Left => quadratic_core_shared::CellAlign::Left,
+        CellAlign::Center => quadratic_core_shared::CellAlign::Center,
+        CellAlign::Right => quadratic_core_shared::CellAlign::Right,
+    }
+}
+
+fn convert_vertical_align(align: CellVerticalAlign) -> quadratic_core_shared::CellVerticalAlign {
+    match align {
+        CellVerticalAlign::Top => quadratic_core_shared::CellVerticalAlign::Top,
+        CellVerticalAlign::Middle => quadratic_core_shared::CellVerticalAlign::Middle,
+        CellVerticalAlign::Bottom => quadratic_core_shared::CellVerticalAlign::Bottom,
+    }
+}
+
+fn convert_wrap(wrap: CellWrap) -> quadratic_core_shared::CellWrap {
+    match wrap {
+        CellWrap::Wrap => quadratic_core_shared::CellWrap::Wrap,
+        CellWrap::Clip => quadratic_core_shared::CellWrap::Clip,
+        CellWrap::Overflow => quadratic_core_shared::CellWrap::Overflow,
+    }
+}
+
+fn convert_special(special: JsRenderCellSpecial) -> RenderCellSpecial {
+    match special {
+        JsRenderCellSpecial::Chart => RenderCellSpecial::Chart,
+        JsRenderCellSpecial::SpillError => RenderCellSpecial::SpillError,
+        JsRenderCellSpecial::RunError => RenderCellSpecial::RunError,
+        JsRenderCellSpecial::Logical => RenderCellSpecial::Logical,
+        JsRenderCellSpecial::Checkbox => RenderCellSpecial::Checkbox,
+        JsRenderCellSpecial::List => RenderCellSpecial::List,
+    }
+}
+
+fn convert_number(num: JsNumber) -> RenderNumber {
+    RenderNumber {
+        decimals: num.decimals,
+        commas: num.commas,
+        format: num.format.map(|f| quadratic_core_shared::NumericFormat {
+            kind: match f.kind {
+                CoreNumericFormatKind::Number => NumericFormatKind::Number,
+                CoreNumericFormatKind::Currency => NumericFormatKind::Currency,
+                CoreNumericFormatKind::Percentage => NumericFormatKind::Percentage,
+                CoreNumericFormatKind::Exponential => NumericFormatKind::Exponential,
+            },
+            symbol: f.symbol.clone(),
+        }),
+    }
+}
+
+fn convert_link_span(span: JsRenderCellLinkSpan) -> RenderCellLinkSpan {
+    RenderCellLinkSpan {
+        start: span.start,
+        end: span.end,
+        url: span.url,
+    }
+}
+
+fn convert_format_span(span: JsRenderCellFormatSpan) -> RenderCellFormatSpan {
+    RenderCellFormatSpan {
+        start: span.start,
+        end: span.end,
+        bold: span.bold,
+        italic: span.italic,
+        underline: span.underline,
+        strike_through: span.strike_through,
+        text_color: span.text_color,
+        link: span.link,
+    }
+}
 
 impl GridController {
     /// Internal: Send complete sheet info (metadata + offsets) to the rust renderer.
@@ -92,8 +170,26 @@ impl GridController {
         match message {
             RendererToCore::Ready => {
                 log("[rust_renderer] Renderer ready, sending initial data");
-                // Send all sheet info (already done on load, but re-send in case)
+
+                // Send all sheet info
                 let _ = self.send_all_sheet_info_to_rust_renderer();
+
+                // Send meta fills and initial hashes for the first sheet
+                if let Some(first_sheet_id) = self.sheet_ids().first().copied() {
+                    // Send meta fills
+                    if let Err(e) = self.send_meta_fills_to_rust_renderer_by_id(first_sheet_id) {
+                        log(&format!("[rust_renderer] Error sending meta fills: {}", e));
+                    }
+
+                    // Send initial hashes for a reasonable viewport (e.g., first 10x10 hashes)
+                    let initial_hashes: Vec<quadratic_core_shared::Pos> = (0..10_i64)
+                        .flat_map(|x| (0..10_i64).map(move |y| quadratic_core_shared::Pos::new(x, y)))
+                        .collect();
+
+                    if let Err(e) = self.send_hashes_to_rust_renderer(first_sheet_id, &initial_hashes) {
+                        log(&format!("[rust_renderer] Error sending initial hashes: {}", e));
+                    }
+                }
             }
 
             RendererToCore::RequestMetaFills { sheet_id } => {
@@ -241,8 +337,33 @@ impl GridController {
                 })
                 .collect();
 
-            // TODO: Get cells and convert to MessageRenderCell format
-            let cells = Vec::new();
+            // Get cells and convert to RenderCell format
+            let a1_context = self.a1_context();
+            let js_render_cells = sheet.get_render_cells(rect, &a1_context);
+            let cells: Vec<RenderCell> = js_render_cells
+                .into_iter()
+                .map(|cell| RenderCell {
+                    x: cell.x,
+                    y: cell.y,
+                    value: cell.value,
+                    language: cell.language,
+                    align: cell.align.map(convert_align),
+                    vertical_align: cell.vertical_align.map(convert_vertical_align),
+                    wrap: cell.wrap.map(convert_wrap),
+                    bold: cell.bold,
+                    italic: cell.italic,
+                    underline: cell.underline,
+                    strike_through: cell.strike_through,
+                    text_color: cell.text_color,
+                    font_size: None,
+                    special: cell.special.map(convert_special),
+                    number: cell.number.map(convert_number),
+                    table_name: cell.table_name,
+                    column_header: cell.column_header,
+                    link_spans: cell.link_spans.into_iter().map(convert_link_span).collect(),
+                    format_spans: cell.format_spans.into_iter().map(convert_format_span).collect(),
+                })
+                .collect();
 
             hash_cells_vec.push(HashCells {
                 sheet_id: shared_sheet_id.clone(),

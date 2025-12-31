@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
 
-use super::{BitmapFonts, CellLabel};
+use super::{BitmapFonts, CellLabel, HorizontalLine};
 
 // Shared math utilities (cross-platform)
 #[cfg(any(feature = "wasm", feature = "wgpu-wasm", feature = "wgpu-native"))]
@@ -116,6 +116,9 @@ pub struct CellsTextHash {
     /// Max content height per row (for row auto-resize)
     /// Key is row index, value is text height with descenders
     rows_max_cache: HashMap<i64, f32>,
+
+    /// Cached horizontal lines (underline/strikethrough) from all labels
+    cached_horizontal_lines: Vec<HorizontalLine>,
 }
 
 impl CellsTextHash {
@@ -156,6 +159,7 @@ impl CellsTextHash {
             sprite_cache_webgpu: None,
             columns_max_cache: HashMap::new(),
             rows_max_cache: HashMap::new(),
+            cached_horizontal_lines: Vec::new(),
         }
     }
 
@@ -287,6 +291,9 @@ impl CellsTextHash {
         self.columns_max_cache.clear();
         self.rows_max_cache.clear();
 
+        // Clear horizontal lines cache
+        self.cached_horizontal_lines.clear();
+
         // Track vertex offsets per texture page
         let mut vertex_offsets: [u32; MAX_TEXTURE_PAGES] = [0; MAX_TEXTURE_PAGES];
 
@@ -337,6 +344,11 @@ impl CellsTextHash {
                 // Update offset (each vertex has 8 floats: x,y,u,v,r,g,b,a)
                 vertex_offsets[tex_id] += (mesh_vertices.len() / 8) as u32;
             }
+
+            // Collect horizontal lines (underline/strikethrough)
+            let horizontal_lines = label.get_horizontal_lines(fonts);
+            self.cached_horizontal_lines
+                .extend(horizontal_lines.iter().cloned());
         }
 
         self.dirty = false;
@@ -365,6 +377,11 @@ impl CellsTextHash {
     /// Check if there's cached data for a texture page
     pub fn has_cached_data(&self, texture_id: usize) -> bool {
         texture_id < MAX_TEXTURE_PAGES && !self.cached_vertices[texture_id].is_empty()
+    }
+
+    /// Get cached horizontal lines (underline/strikethrough)
+    pub fn get_horizontal_lines(&self) -> &[HorizontalLine] {
+        &self.cached_horizontal_lines
     }
 
     // === Auto-size methods ===
@@ -421,6 +438,41 @@ impl CellsTextHash {
                 distance_range,
             );
         }
+
+        // Render horizontal lines (underline/strikethrough)
+        self.render_horizontal_lines(gl, matrix);
+    }
+
+    /// Render horizontal lines (underline/strikethrough) using WebGL
+    #[cfg(feature = "wasm")]
+    fn render_horizontal_lines(&self, gl: &WebGLContext, matrix: &[f32; 16]) {
+        if self.cached_horizontal_lines.is_empty() {
+            return;
+        }
+
+        // Convert horizontal lines to triangle vertices
+        // Each line becomes 2 triangles (6 vertices), each vertex is 6 floats [x, y, r, g, b, a]
+        let mut vertices: Vec<f32> = Vec::with_capacity(self.cached_horizontal_lines.len() * 36);
+
+        for line in &self.cached_horizontal_lines {
+            let x1 = line.x;
+            let y1 = line.y;
+            let x2 = line.x + line.width;
+            let y2 = line.y + line.height;
+            let [r, g, b, a] = line.color;
+
+            // Triangle 1: top-left, top-right, bottom-right
+            vertices.extend_from_slice(&[x1, y1, r, g, b, a]);
+            vertices.extend_from_slice(&[x2, y1, r, g, b, a]);
+            vertices.extend_from_slice(&[x2, y2, r, g, b, a]);
+
+            // Triangle 2: top-left, bottom-right, bottom-left
+            vertices.extend_from_slice(&[x1, y1, r, g, b, a]);
+            vertices.extend_from_slice(&[x2, y2, r, g, b, a]);
+            vertices.extend_from_slice(&[x1, y2, r, g, b, a]);
+        }
+
+        gl.draw_triangles(&vertices, matrix);
     }
 
     /// Render the cached sprite (pre-rendered texture) for this hash (WebGL)
@@ -713,6 +765,46 @@ impl CellsTextHash {
                 distance_range,
             );
         }
+
+        // Render horizontal lines (underline/strikethrough)
+        self.render_horizontal_lines_webgpu(gpu, pass, matrix);
+    }
+
+    /// Render horizontal lines (underline/strikethrough) using WebGPU
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+    fn render_horizontal_lines_webgpu(
+        &self,
+        gpu: &mut WebGPUContext,
+        pass: &mut wgpu::RenderPass<'_>,
+        matrix: &[f32; 16],
+    ) {
+        if self.cached_horizontal_lines.is_empty() {
+            return;
+        }
+
+        // Convert horizontal lines to triangle vertices
+        // Each line becomes 2 triangles (6 vertices), each vertex is 6 floats [x, y, r, g, b, a]
+        let mut vertices: Vec<f32> = Vec::with_capacity(self.cached_horizontal_lines.len() * 36);
+
+        for line in &self.cached_horizontal_lines {
+            let x1 = line.x;
+            let y1 = line.y;
+            let x2 = line.x + line.width;
+            let y2 = line.y + line.height;
+            let [r, g, b, a] = line.color;
+
+            // Triangle 1: top-left, top-right, bottom-right
+            vertices.extend_from_slice(&[x1, y1, r, g, b, a]);
+            vertices.extend_from_slice(&[x2, y1, r, g, b, a]);
+            vertices.extend_from_slice(&[x2, y2, r, g, b, a]);
+
+            // Triangle 2: top-left, bottom-right, bottom-left
+            vertices.extend_from_slice(&[x1, y1, r, g, b, a]);
+            vertices.extend_from_slice(&[x2, y2, r, g, b, a]);
+            vertices.extend_from_slice(&[x1, y2, r, g, b, a]);
+        }
+
+        gpu.draw_triangles(pass, &vertices, matrix);
     }
 
     /// Rebuild sprite cache for WebGPU if dirty (cross-platform via wgpu)

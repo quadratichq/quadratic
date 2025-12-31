@@ -5,7 +5,7 @@
  * This module handles the MessagePort and forwards binary messages to WASM.
  */
 
-import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { getCoreToRendererTypeName } from '@/app/web-workers/rustRendererWebWorker/rustRendererCoreMessages';
 import { rustRendererWasm } from './rustRendererWasm';
 
@@ -18,16 +18,14 @@ declare var self: WorkerGlobalScope &
 class RustRendererCore {
   private corePort?: MessagePort;
 
-  async init(corePort: MessagePort) {
+  init(corePort: MessagePort) {
     this.corePort = corePort;
     this.corePort.onmessage = this.handleMessage;
 
     // Register the callback for Rust WASM to use
     self.jsSendToCore = this.sendToCore;
 
-    if (await debugFlagWait('debugWebWorkers')) {
-      console.log('[rustRendererCore] initialized');
-    }
+    console.log('[rustRendererCore] initialized');
 
     // Note: Ready message is now sent from WASM when renderer.start() is called
   }

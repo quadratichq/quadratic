@@ -5,7 +5,7 @@
 
 use bincode::{Decode, Encode};
 
-use crate::{CellAlign, CellVerticalAlign, CellWrap, Pos, Rect, Rgba, SheetId};
+use crate::{Pos, Rect, Rgba, SheetId};
 
 /// Messages sent from quadratic-core to quadratic-rust-renderer.
 #[derive(Debug, Clone, Encode, Decode)]
@@ -128,34 +128,9 @@ pub struct HashCells {
     /// Hash position (quadrant coordinates)
     pub hash_pos: Pos,
     /// Cells in this hash
-    pub cells: Vec<MessageRenderCell>,
+    pub cells: Vec<crate::RenderCell>,
     /// Fills in this hash (cell background colors)
     pub fills: Vec<crate::RenderFill>,
-}
-
-/// A cell to be rendered (message version).
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct MessageRenderCell {
-    /// Position within the sheet
-    pub pos: Pos,
-    /// Display value (formatted string)
-    pub value: String,
-    /// Text style
-    pub style: TextStyle,
-}
-
-/// Text styling for a cell.
-#[derive(Debug, Default, Clone, Encode, Decode)]
-pub struct TextStyle {
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
-    pub strike_through: bool,
-    pub text_color: Option<Rgba>,
-    pub fill_color: Option<Rgba>,
-    pub align: Option<CellAlign>,
-    pub vertical_align: Option<CellVerticalAlign>,
-    pub wrap: Option<CellWrap>,
 }
 
 /// Current selection state.

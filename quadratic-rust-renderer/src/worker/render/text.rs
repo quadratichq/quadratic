@@ -1,26 +1,30 @@
 //! Cell text rendering
 
 use crate::renderers::WebGLContext;
+use crate::sheets::text::SPRITE_SCALE_THRESHOLD;
+use crate::sheets::text::BitmapFonts;
 use crate::sheets::Sheet;
 use crate::viewport::Viewport;
 
 /// Render cell text using WebGL
 ///
-/// Returns (visible_count, skipped_dirty) for debug logging
+/// Returns visible_count for debug logging
 pub fn render_text(
     gl: &WebGLContext,
     sheet: &mut Sheet,
     viewport: &Viewport,
+    fonts: &BitmapFonts,
     matrix: &[f32; 16],
     font_scale: f32,
     distance_range: f32,
-) -> (usize, usize) {
+) -> usize {
     if sheet.hashes.is_empty() {
-        return (0, 0);
+        return 0;
     }
 
     let scale = viewport.scale();
     let effective_scale = viewport.effective_scale();
+    let use_sprites = scale < SPRITE_SCALE_THRESHOLD;
 
     let bounds = viewport.visible_bounds();
     let padding = 100.0;
@@ -30,17 +34,18 @@ pub fn render_text(
     let max_y = bounds.top + bounds.height + padding;
 
     let mut visible_count = 0;
-    let mut skipped_dirty = 0;
 
     for hash in sheet.hashes.values_mut() {
         if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
             continue;
         }
 
-        // Skip dirty hashes - they'll be processed next frame
-        if hash.is_dirty() {
-            skipped_dirty += 1;
-            continue;
+        // Rebuild mesh cache if dirty (needed before rendering)
+        hash.rebuild_if_dirty(fonts);
+
+        // Rebuild sprite cache if zoomed out and sprite is dirty
+        if use_sprites {
+            hash.rebuild_sprite_if_dirty(gl, fonts, font_scale, distance_range);
         }
 
         visible_count += 1;
@@ -55,24 +60,25 @@ pub fn render_text(
         );
     }
 
-    (visible_count, skipped_dirty)
+    visible_count
 }
 
 /// Render cell text using WebGPU
 ///
-/// Returns (visible_count, skipped_dirty) for debug logging
+/// Returns visible_count for debug logging
 #[cfg(feature = "wasm")]
 pub fn render_text_webgpu<'a>(
     gpu: &mut crate::renderers::WebGPUContext,
     pass: &mut wgpu::RenderPass<'a>,
     sheet: &mut Sheet,
     viewport: &Viewport,
+    fonts: &BitmapFonts,
     matrix: &[f32; 16],
     font_scale: f32,
     distance_range: f32,
-) -> (usize, usize) {
+) -> usize {
     if sheet.hashes.is_empty() {
-        return (0, 0);
+        return 0;
     }
 
     let scale = viewport.scale();
@@ -86,18 +92,14 @@ pub fn render_text_webgpu<'a>(
     let max_y = bounds.top + bounds.height + padding;
 
     let mut visible_count = 0;
-    let mut skipped_dirty = 0;
 
     for hash in sheet.hashes.values_mut() {
         if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
             continue;
         }
 
-        // Skip dirty hashes - they'll be processed next frame
-        if hash.is_dirty() {
-            skipped_dirty += 1;
-            continue;
-        }
+        // Rebuild mesh cache if dirty (needed before rendering)
+        hash.rebuild_if_dirty(fonts);
 
         visible_count += 1;
 
@@ -112,6 +114,5 @@ pub fn render_text_webgpu<'a>(
         );
     }
 
-    (visible_count, skipped_dirty)
+    visible_count
 }
-

@@ -104,7 +104,7 @@ class RustRendererClient {
     this.devicePixelRatio = devicePixelRatio;
 
     // Initialize communication with core worker (must complete before WASM starts)
-    await rustRendererCore.init(corePort);
+    rustRendererCore.init(corePort);
 
     try {
       // Initialize the WASM renderer

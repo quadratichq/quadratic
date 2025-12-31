@@ -112,4 +112,50 @@ impl WebGLContext {
             WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
         );
     }
+
+    /// Draw solid-colored triangles (for underlines, strikethroughs, etc.)
+    /// Vertex format: [x, y, r, g, b, a, ...] (6 floats per vertex)
+    pub fn draw_triangles(&self, vertices: &[f32], matrix: &[f32; 16]) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        // Enable blending with standard alpha
+        self.gl.enable(WebGl2RenderingContext::BLEND);
+        self.gl.blend_func_separate(
+            WebGl2RenderingContext::SRC_ALPHA,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            WebGl2RenderingContext::ONE,
+            WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
+
+        self.gl.use_program(Some(&self.basic_program));
+        self.gl.bind_vertex_array(Some(&self.vao));
+
+        // Upload vertex data
+        self.gl.bind_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&self.vertex_buffer),
+        );
+
+        unsafe {
+            let array = js_sys::Float32Array::view(vertices);
+            self.gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &array,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        }
+
+        // Set matrix uniform
+        self.gl
+            .uniform_matrix4fv_with_f32_array(Some(&self.matrix_location), false, matrix);
+
+        // Draw (6 floats per vertex)
+        let vertex_count = (vertices.len() / 6) as i32;
+        self.gl
+            .draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, vertex_count);
+
+        self.gl.bind_vertex_array(None);
+    }
 }

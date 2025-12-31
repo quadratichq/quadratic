@@ -903,14 +903,11 @@ impl WorkerRenderer {
         // 4. Cell text
         if fonts_ready {
             if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-                let (visible, skipped) = render::render_text(
-                    gl, sheet, &self.state.viewport, &matrix_array, font_scale, distance_range,
+                let visible = render::render_text(
+                    gl, sheet, &self.state.viewport, &self.state.fonts, &matrix_array, font_scale, distance_range,
                 );
-                if debug_show_text_updates && (visible > 0 || skipped > 0) {
-                    log::info!(
-                        "[frame_webgl] rendered={}, skipped_dirty={}, scale={:.2}",
-                        visible, skipped, scale
-                    );
+                if debug_show_text_updates && visible > 0 {
+                    log::info!("[frame_webgl] rendered={}, scale={:.2}", visible, scale);
                 }
             }
         }
@@ -966,8 +963,8 @@ impl WorkerRenderer {
         // Pre-extract background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
 
-        // Pre-extract fill vertices
-        let (meta_fill_vertices, hash_fill_vertices) = if let Some(sheet) = self.state.sheets.current_sheet() {
+        // Pre-extract fill vertices (mutable access needed to rebuild caches)
+        let (meta_fill_vertices, hash_fill_vertices) = if let Some(sheet) = self.state.sheets.current_sheet_mut() {
             render::get_fill_vertices(sheet, &self.state.viewport)
         } else {
             (None, Vec::new())
@@ -988,11 +985,29 @@ impl WorkerRenderer {
         let min_y = bounds.top - padding;
         let max_y = bounds.top + bounds.height + padding;
 
+        // Check if we need sprite rendering (zoomed out)
+        use crate::sheets::text::SPRITE_SCALE_THRESHOLD;
+        let use_sprites = scale < SPRITE_SCALE_THRESHOLD;
+
         // Now borrow backend
         let gpu = match &mut self.backend {
             RenderBackend::WebGPU(gpu) => gpu,
             _ => return false,
         };
+
+        // Rebuild sprite caches before render pass (must be done outside render pass)
+        if fonts_ready && use_sprites {
+            let fonts = &self.state.fonts;
+            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+                for hash in sheet.hashes.values_mut() {
+                    if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
+                        continue;
+                    }
+                    hash.rebuild_if_dirty(fonts);
+                    hash.rebuild_sprite_if_dirty_webgpu(gpu, fonts, font_scale, distance_range);
+                }
+            }
+        }
 
         // Get surface texture
         let output = match gpu.get_current_texture() {
@@ -1061,14 +1076,15 @@ impl WorkerRenderer {
 
             // 4. Text
             if fonts_ready {
+                // Pre-borrow fonts to avoid borrow conflicts with sheet
+                let fonts = &self.state.fonts;
                 if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                     for hash in sheet.hashes.values_mut() {
                         if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
                             continue;
                         }
-                        if hash.is_dirty() {
-                            continue;
-                        }
+                        // Rebuild mesh cache if dirty (needed before rendering)
+                        hash.rebuild_if_dirty(fonts);
                         hash.render_webgpu(
                             gpu, &mut pass, &matrix_array,
                             scale, effective_scale, font_scale, distance_range,

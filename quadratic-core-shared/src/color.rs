@@ -67,6 +67,45 @@ impl Rgba {
         }
     }
 
+    /// Parse a CSS color string like "rgb(255, 128, 0)" or "rgba(255, 128, 0, 0.5)"
+    pub fn from_css(css: &str) -> Option<Self> {
+        let css = css.trim();
+
+        // Try hex format first
+        if css.starts_with('#') {
+            return Self::from_hex(css);
+        }
+
+        // Parse rgb() or rgba()
+        if css.starts_with("rgba(") && css.ends_with(')') {
+            let inner = &css[5..css.len() - 1];
+            let parts: Vec<&str> = inner.split(',').map(|s| s.trim()).collect();
+            if parts.len() == 4 {
+                let r = parts[0].parse::<u8>().ok()?;
+                let g = parts[1].parse::<u8>().ok()?;
+                let b = parts[2].parse::<u8>().ok()?;
+                // Alpha can be 0.0-1.0 or 0-255
+                let a = if let Ok(a) = parts[3].parse::<f32>() {
+                    if a <= 1.0 { (a * 255.0) as u8 } else { a as u8 }
+                } else {
+                    return None;
+                };
+                return Some(Self::new(r, g, b, a));
+            }
+        } else if css.starts_with("rgb(") && css.ends_with(')') {
+            let inner = &css[4..css.len() - 1];
+            let parts: Vec<&str> = inner.split(',').map(|s| s.trim()).collect();
+            if parts.len() == 3 {
+                let r = parts[0].parse::<u8>().ok()?;
+                let g = parts[1].parse::<u8>().ok()?;
+                let b = parts[2].parse::<u8>().ok()?;
+                return Some(Self::rgb(r, g, b));
+            }
+        }
+
+        None
+    }
+
     /// Convert to a hex string like "#RRGGBBAA"
     pub fn to_hex(&self) -> String {
         format!(

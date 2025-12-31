@@ -3,7 +3,10 @@
 //! Simplified version of CellLabel from TypeScript.
 //! Handles basic text layout with alignment and wrapping.
 
-use quadratic_core_shared::{CellAlign, CellVerticalAlign, CellWrap, RenderCell, SheetOffsets};
+use quadratic_core_shared::{
+    CellAlign, CellVerticalAlign, CellWrap, RenderCell, RenderCellFormatSpan,
+    RenderCellLinkSpan, SheetOffsets,
+};
 
 use super::super::fills::parse_color_string;
 
@@ -40,6 +43,46 @@ struct CharRenderData {
 
     /// Texture UID
     texture_uid: u32,
+
+    /// Per-character color [r, g, b, a] (may differ from cell color due to format spans)
+    color: [f32; 4],
+
+    /// Width to next character (for underline/strikethrough calculation)
+    x_advance: f32,
+}
+
+/// Line thickness for underline/strikethrough (matching TypeScript)
+const HORIZONTAL_LINE_THICKNESS: f32 = 1.0;
+
+/// Underline offset from baseline (matching TypeScript UNDERLINE_OFFSET = 52 / LINE_HEIGHT * scale)
+const UNDERLINE_OFFSET_RATIO: f32 = 52.0 / 64.0; // 52/64 based on font metrics
+
+/// Strikethrough offset from baseline (matching TypeScript STRIKE_THROUGH_OFFSET = 32)
+const STRIKE_THROUGH_OFFSET_RATIO: f32 = 32.0 / 64.0;
+
+/// A horizontal line (underline or strikethrough)
+#[derive(Debug, Clone)]
+pub struct HorizontalLine {
+    /// X position (world coordinates)
+    pub x: f32,
+    /// Y position (world coordinates)
+    pub y: f32,
+    /// Width
+    pub width: f32,
+    /// Height (thickness)
+    pub height: f32,
+    /// Color [r, g, b, a]
+    pub color: [f32; 4],
+}
+
+/// Formatting information for a single character
+#[derive(Debug, Clone)]
+struct CharFormatting {
+    bold: bool,
+    italic: bool,
+    underline: bool,
+    strike_through: bool,
+    color: [f32; 4],
 }
 
 /// Cell label - handles text layout for a single cell
@@ -76,6 +119,18 @@ pub struct CellLabel {
     /// Wrapping
     pub wrap: CellWrap,
 
+    /// Underline
+    pub underline: bool,
+
+    /// Strike-through
+    pub strike_through: bool,
+
+    /// Format spans for RichText inline styling
+    format_spans: Vec<RenderCellFormatSpan>,
+
+    /// Link spans for RichText hyperlinks
+    link_spans: Vec<RenderCellLinkSpan>,
+
     /// Computed text position
     text_x: f32,
     text_y: f32,
@@ -107,6 +162,9 @@ pub struct CellLabel {
     /// Cached mesh data (built once, reused every frame)
     cached_meshes: Vec<LabelMesh>,
 
+    /// Cached horizontal lines (underline/strikethrough)
+    cached_horizontal_lines: Vec<HorizontalLine>,
+
     /// Whether the mesh cache is valid
     mesh_dirty: bool,
 }
@@ -129,6 +187,10 @@ impl CellLabel {
             align: CellAlign::Left,
             vertical_align: CellVerticalAlign::Bottom,
             wrap: CellWrap::Overflow,
+            underline: false,
+            strike_through: false,
+            format_spans: Vec::new(),
+            link_spans: Vec::new(),
             text_x: 0.0,
             text_y: 0.0,
             text_width: 0.0,
@@ -140,6 +202,7 @@ impl CellLabel {
             line_widths: Vec::new(),
             horizontal_align_offsets: Vec::new(),
             cached_meshes: Vec::new(),
+            cached_horizontal_lines: Vec::new(),
             mesh_dirty: true,
         }
     }
@@ -173,6 +236,8 @@ impl CellLabel {
         // Apply text styling
         label.bold = cell.bold.unwrap_or(false);
         label.italic = cell.italic.unwrap_or(false);
+        label.underline = cell.underline.unwrap_or(false);
+        label.strike_through = cell.strike_through.unwrap_or(false);
         label.font_size = cell
             .font_size
             .map(|s| s as f32)
@@ -188,7 +253,66 @@ impl CellLabel {
         label.vertical_align = cell.vertical_align.unwrap_or_default();
         label.wrap = cell.wrap.unwrap_or_default();
 
+        // Copy format spans for RichText styling
+        label.format_spans = cell.format_spans.clone();
+
+        // Copy link spans for RichText hyperlinks
+        label.link_spans = cell.link_spans.clone();
+
         label
+    }
+
+    /// Check if this cell has format spans (requiring per-character font/color handling)
+    fn has_format_spans(&self) -> bool {
+        !self.format_spans.is_empty()
+    }
+
+    /// Get bold/italic style for a specific character, merging cell defaults with span overrides
+    /// This is a static helper that takes refs to avoid borrow issues
+    fn get_style_for_char_static(
+        char_index: usize,
+        cell_bold: bool,
+        cell_italic: bool,
+        format_spans: &[RenderCellFormatSpan],
+    ) -> (bool, bool) {
+        let mut bold = cell_bold;
+        let mut italic = cell_italic;
+
+        // Find span containing this character and apply overrides
+        for span in format_spans {
+            if char_index >= span.start as usize && char_index < span.end as usize {
+                if let Some(b) = span.bold {
+                    bold = b;
+                }
+                if let Some(i) = span.italic {
+                    italic = i;
+                }
+                break; // Spans don't overlap
+            }
+        }
+
+        (bold, italic)
+    }
+
+    /// Get the color for a specific character, merging cell default with span override
+    /// This is a static helper that takes refs to avoid borrow issues
+    fn get_color_for_char_static(
+        char_index: usize,
+        cell_color: [f32; 4],
+        format_spans: &[RenderCellFormatSpan],
+    ) -> [f32; 4] {
+        // Find span containing this character
+        for span in format_spans {
+            if char_index >= span.start as usize && char_index < span.end as usize {
+                if let Some(ref color_str) = span.text_color {
+                    return parse_color_string(color_str);
+                }
+                break;
+            }
+        }
+
+        // Use cell default color
+        cell_color
     }
 
     /// Update cell bounds from sheet offsets
@@ -274,16 +398,17 @@ impl CellLabel {
             return;
         }
 
-        let font_name = self.font_name();
-        let font = match fonts.get(&font_name) {
+        // Get base font for scale calculation
+        let base_font_name = self.font_name();
+        let base_font = match fonts.get(&base_font_name) {
             Some(f) => f,
             None => {
-                log::warn!("Font not found: {}", font_name);
+                log::warn!("Font not found: {}", base_font_name);
                 return;
             }
         };
 
-        let scale = font.scale_for_size(self.font_size);
+        let scale = base_font.scale_for_size(self.font_size);
         let line_height = (self.font_size / DEFAULT_FONT_SIZE) * LINE_HEIGHT / scale;
         let max_width = if self.wrap == CellWrap::Wrap {
             Some((self.cell_width - CELL_TEXT_MARGIN_LEFT * 3.0) / scale)
@@ -292,6 +417,7 @@ impl CellLabel {
         };
 
         let characters = split_text_to_characters(&self.text);
+        let has_spans = self.has_format_spans();
 
         let mut pos_x = 0.0f32;
         let mut pos_y = 0.0f32;
@@ -299,41 +425,63 @@ impl CellLabel {
         let mut last_line_width = 0.0f32;
         let mut max_line_width = 0.0f32;
         let mut prev_char_code: Option<u32> = None;
-        let mut last_break_pos: Option<usize> = None;
+        let mut last_break_pos: i32 = -1;
         let mut last_break_width = 0.0f32;
 
         // Track maximum descender extension for glyph height calculation
         let mut max_descender_extension = 0.0f32;
-        let font_line_height = font.line_height();
+        let font_line_height = base_font.line_height();
 
-        for (i, c) in characters.iter().enumerate() {
-            let char_code = extract_char_code(*c);
+        // Use index-based loop to allow resetting index on word wrap
+        let mut i = 0usize;
+        while i < characters.len() {
+            let c = characters[i];
+            let char_code = extract_char_code(c);
 
             // Handle whitespace for word wrapping
             if c.is_whitespace() {
-                last_break_pos = Some(i);
+                last_break_pos = i as i32;
                 last_break_width = last_line_width;
             }
 
             // Handle newlines
-            if *c == '\r' || *c == '\n' {
+            if c == '\r' || c == '\n' {
                 self.line_widths.push(last_line_width);
                 max_line_width = max_line_width.max(last_line_width);
                 line += 1;
                 pos_x = 0.0;
                 pos_y += line_height;
                 prev_char_code = None;
-                last_break_pos = None;
+                last_break_pos = -1;
+                last_line_width = 0.0;
+                i += 1;
                 continue;
             }
 
-            // Get character data
-            let char_data = match font.get_char(char_code) {
-                Some(c) => c,
-                None => continue, // Skip unknown characters
+            // Get the font for this character (may vary due to format spans)
+            let char_font = if has_spans {
+                let (bold, italic) = Self::get_style_for_char_static(
+                    i,
+                    self.bold,
+                    self.italic,
+                    &self.format_spans,
+                );
+                let font_name = BitmapFonts::get_font_name(bold, italic);
+                fonts.get(&font_name).unwrap_or(base_font)
+            } else {
+                base_font
             };
 
-            // Apply kerning
+            // Get character data from the appropriate font
+            let char_data = match char_font.get_char(char_code) {
+                Some(c) => c,
+                None => {
+                    i += 1;
+                    continue;
+                }
+            };
+
+            // Apply kerning (only within same font)
             if let Some(prev) = prev_char_code {
                 if let Some(kern) = char_data.kerning.get(&prev) {
                     pos_x += kern;
@@ -346,6 +494,13 @@ impl CellLabel {
             let descender_extension = (char_bottom - expected_line_bottom).max(0.0);
             max_descender_extension = max_descender_extension.max(descender_extension);
 
+            // Get color for this character (may vary due to format spans)
+            let char_color = if has_spans {
+                Self::get_color_for_char_static(i, self.color, &self.format_spans)
+            } else {
+                self.color
+            };
+
             // Store character render data
             let char_render = CharRenderData {
                 position_x: pos_x + char_data.x_offset,
@@ -355,6 +510,8 @@ impl CellLabel {
                 frame_height: char_data.frame.height,
                 uvs: char_data.uvs,
                 texture_uid: char_data.texture_uid,
+                color: char_color,
+                x_advance: char_data.x_advance,
             };
 
             self.chars.push(char_render);
@@ -365,33 +522,55 @@ impl CellLabel {
             // Check for word wrap
             if let Some(max_w) = max_width {
                 if pos_x > max_w && char_data.x_advance < max_w {
-                    // Need to wrap
-                    let break_at = last_break_pos.unwrap_or(i);
-                    let chars_to_remove = i - break_at;
+                    // Need to wrap - figure out where to break
+                    let break_at = if last_break_pos >= 0 {
+                        last_break_pos as usize
+                    } else {
+                        i
+                    };
+
+                    // Calculate how many chars to remove from self.chars
+                    let chars_to_remove = if last_break_pos >= 0 {
+                        i - break_at
+                    } else {
+                        1
+                    };
 
                     // Remove characters after break point
                     for _ in 0..chars_to_remove {
                         self.chars.pop();
                     }
 
-                    self.line_widths.push(if last_break_pos.is_some() {
+                    // Push line width
+                    let width_to_push = if last_break_pos >= 0 {
                         last_break_width
                     } else {
                         last_line_width
-                    });
-                    max_line_width =
-                        max_line_width.max(self.line_widths.last().copied().unwrap_or(0.0));
+                    };
+                    self.line_widths.push(width_to_push);
+                    max_line_width = max_line_width.max(width_to_push);
 
+                    // Start new line
                     line += 1;
                     pos_x = 0.0;
                     pos_y += line_height;
                     prev_char_code = None;
-                    last_break_pos = None;
+                    last_line_width = 0.0;
+
+                    // Reset index to reprocess from break point
+                    // If we broke at a space, skip it and start from next char
+                    i = if last_break_pos >= 0 {
+                        (last_break_pos + 1) as usize
+                    } else {
+                        i // Re-process current char on new line
+                    };
+                    last_break_pos = -1;
                     continue;
                 }
             }
 
             last_line_width = pos_x;
+            i += 1;
         }
 
         // Add final line width
@@ -578,10 +757,192 @@ impl CellLabel {
                 LabelMesh::new(font_name.clone(), self.font_size, char_data.texture_uid)
             });
 
-            mesh.add_glyph(x, y, width, height, &char_data.uvs, self.color);
+            // Use per-character color (may differ from cell color due to format spans)
+            mesh.add_glyph(x, y, width, height, &char_data.uvs, char_data.color);
         }
 
         self.cached_meshes = meshes.into_values().collect();
+
+        // Build horizontal lines (underline/strikethrough)
+        self.build_horizontal_lines(scale);
+    }
+
+    /// Build horizontal lines for underline and strikethrough
+    fn build_horizontal_lines(&mut self, scale: f32) {
+        self.cached_horizontal_lines.clear();
+
+        if self.chars.is_empty() {
+            return;
+        }
+
+        // Collect runs of underlined and strikethrough characters
+        #[derive(Debug)]
+        struct LineRun {
+            start_char_idx: usize,
+            end_char_idx: usize,
+            line: usize,
+            is_underline: bool, // true = underline, false = strikethrough
+        }
+
+        let mut runs: Vec<LineRun> = Vec::new();
+
+        // Track current runs
+        let mut current_underline_start: Option<usize> = None;
+        let mut current_underline_line = 0usize;
+        let mut current_strike_start: Option<usize> = None;
+        let mut current_strike_line = 0usize;
+
+        for i in 0..=self.chars.len() {
+            let (has_underline, has_strike, char_line, _char_color) = if i < self.chars.len() {
+                let formatting = self.get_char_formatting(i);
+                (
+                    formatting.underline,
+                    formatting.strike_through,
+                    self.chars[i].line,
+                    self.chars[i].color,
+                )
+            } else {
+                (false, false, usize::MAX, [0.0, 0.0, 0.0, 1.0])
+            };
+
+            // Handle underline runs
+            if has_underline && current_underline_start.is_none() {
+                current_underline_start = Some(i);
+                current_underline_line = char_line;
+            } else if (!has_underline || char_line != current_underline_line)
+                && current_underline_start.is_some()
+            {
+                runs.push(LineRun {
+                    start_char_idx: current_underline_start.unwrap(),
+                    end_char_idx: i - 1,
+                    line: current_underline_line,
+                    is_underline: true,
+                });
+                current_underline_start = if has_underline { Some(i) } else { None };
+                current_underline_line = char_line;
+            }
+
+            // Handle strikethrough runs
+            if has_strike && current_strike_start.is_none() {
+                current_strike_start = Some(i);
+                current_strike_line = char_line;
+            } else if (!has_strike || char_line != current_strike_line)
+                && current_strike_start.is_some()
+            {
+                runs.push(LineRun {
+                    start_char_idx: current_strike_start.unwrap(),
+                    end_char_idx: i - 1,
+                    line: current_strike_line,
+                    is_underline: false,
+                });
+                current_strike_start = if has_strike { Some(i) } else { None };
+                current_strike_line = char_line;
+            }
+        }
+
+        // Convert runs to horizontal lines
+        let line_height_scaled = LINE_HEIGHT * (self.font_size / DEFAULT_FONT_SIZE);
+
+        for run in runs {
+            if run.start_char_idx >= self.chars.len() || run.end_char_idx >= self.chars.len() {
+                continue;
+            }
+
+            let start_char = &self.chars[run.start_char_idx];
+            let end_char = &self.chars[run.end_char_idx];
+
+            // Calculate x position (including alignment offset)
+            let start_align_offset = self
+                .horizontal_align_offsets
+                .get(start_char.line)
+                .copied()
+                .unwrap_or(0.0);
+            let end_align_offset = self
+                .horizontal_align_offsets
+                .get(end_char.line)
+                .copied()
+                .unwrap_or(0.0);
+
+            let start_x =
+                self.text_x + (start_char.position_x + start_align_offset) * scale + OPEN_SANS_FIX_X;
+            // End x should include the character width
+            let end_x = self.text_x
+                + (end_char.position_x + end_char.x_advance + end_align_offset) * scale
+                + OPEN_SANS_FIX_X;
+
+            // Calculate y position based on line type
+            let base_y = self.text_y + (run.line as f32 * line_height_scaled) + OPEN_SANS_FIX_Y;
+            let y = if run.is_underline {
+                // Underline is near the bottom of the line
+                base_y + line_height_scaled * UNDERLINE_OFFSET_RATIO
+            } else {
+                // Strikethrough is in the middle of the line
+                base_y + line_height_scaled * STRIKE_THROUGH_OFFSET_RATIO
+            };
+
+            // Get color from the first character in the run
+            let color = start_char.color;
+
+            self.cached_horizontal_lines.push(HorizontalLine {
+                x: start_x,
+                y,
+                width: (end_x - start_x).max(1.0),
+                height: HORIZONTAL_LINE_THICKNESS,
+                color,
+            });
+        }
+    }
+
+    /// Get character formatting for a specific index
+    fn get_char_formatting(&self, char_idx: usize) -> CharFormatting {
+        let mut formatting = CharFormatting {
+            bold: self.bold,
+            italic: self.italic,
+            underline: self.underline,
+            strike_through: self.strike_through,
+            color: self.color,
+        };
+
+        // Apply format spans
+        for span in &self.format_spans {
+            if char_idx >= span.start as usize && char_idx < span.end as usize {
+                if let Some(bold) = span.bold {
+                    formatting.bold = bold;
+                }
+                if let Some(italic) = span.italic {
+                    formatting.italic = italic;
+                }
+                if let Some(underline) = span.underline {
+                    formatting.underline = underline;
+                }
+                if let Some(strike_through) = span.strike_through {
+                    formatting.strike_through = strike_through;
+                }
+                if let Some(ref color_str) = span.text_color {
+                    formatting.color = parse_color_string(color_str);
+                }
+            }
+        }
+
+        // Check for link spans (links are underlined by default)
+        for span in &self.link_spans {
+            if char_idx >= span.start as usize && char_idx < span.end as usize {
+                formatting.underline = true;
+                // Links are typically blue, but we keep the text color
+                break;
+            }
+        }
+
+        formatting
+    }
+
+    /// Get cached horizontal lines (underline/strikethrough)
+    pub fn get_horizontal_lines(&mut self, fonts: &BitmapFonts) -> &[HorizontalLine] {
+        if self.mesh_dirty {
+            self.rebuild_mesh_cache(fonts);
+            self.mesh_dirty = false;
+        }
+        &self.cached_horizontal_lines
     }
 
     /// Build the label mesh with glyph data (legacy, non-cached)
@@ -635,7 +996,8 @@ impl CellLabel {
                 LabelMesh::new(font_name.clone(), self.font_size, char_data.texture_uid)
             });
 
-            mesh.add_glyph(x, y, width, height, &char_data.uvs, self.color);
+            // Use per-character color (may differ from cell color due to format spans)
+            mesh.add_glyph(x, y, width, height, &char_data.uvs, char_data.color);
         }
 
         meshes.into_values().collect()
