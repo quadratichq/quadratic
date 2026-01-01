@@ -14,6 +14,7 @@ pub struct BoundsRect {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(bincode::Encode, bincode::Decode)]
 pub enum GridBounds {
     Empty,
     NonEmpty(Rect),

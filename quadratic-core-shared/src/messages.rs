@@ -5,7 +5,7 @@
 
 use bincode::{Decode, Encode};
 
-use crate::{Pos, Rect, RenderCodeCell, Rgba, SheetId};
+use crate::{GridBounds, Pos, Rect, RenderCodeCell, Rgba, SheetId};
 
 /// Messages sent from quadratic-core to quadratic-rust-renderer.
 #[derive(Debug, Clone, Encode, Decode)]
@@ -188,6 +188,8 @@ pub struct SheetInfo {
     /// Column widths and row heights for the sheet.
     /// Uses bincode-encoded bytes since SheetOffsets has complex internal structure.
     pub offsets_bytes: Vec<u8>,
+    /// The bounds of all data in the sheet (for limiting hash requests)
+    pub bounds: GridBounds,
 }
 
 /// Keyboard/mouse modifiers.

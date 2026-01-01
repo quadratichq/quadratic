@@ -4,7 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use quadratic_core_shared::{SheetId, SheetOffsets};
+use quadratic_core_shared::{GridBounds, SheetId, SheetOffsets};
 
 use super::fills::CellsFills;
 use super::text::{hash_key, CellsTextHash};
@@ -17,6 +17,9 @@ pub struct Sheet {
 
     /// Sheet offsets for column widths and row heights
     pub sheet_offsets: SheetOffsets,
+
+    /// Bounds of all data in the sheet (for limiting hash requests)
+    pub bounds: GridBounds,
 
     /// Spatial hashes containing cell labels
     /// Key is computed from (hash_x, hash_y) coordinates
@@ -43,6 +46,7 @@ impl Sheet {
         Self {
             sheet_id: sheet_id.clone(),
             sheet_offsets: SheetOffsets::default(),
+            bounds: GridBounds::Empty,
             fills: CellsFills::new(sheet_id),
             hashes: HashMap::new(),
             tables: TableCache::new(),
@@ -52,10 +56,11 @@ impl Sheet {
     }
 
     /// Create a sheet from sheet info
-    pub fn from_sheet_info(sheet_id: SheetId, offsets: SheetOffsets) -> Self {
+    pub fn from_sheet_info(sheet_id: SheetId, offsets: SheetOffsets, bounds: GridBounds) -> Self {
         Self {
             sheet_id: sheet_id.clone(),
             sheet_offsets: offsets,
+            bounds,
             fills: CellsFills::new(sheet_id),
             hashes: HashMap::new(),
             tables: TableCache::new(),
@@ -91,9 +96,10 @@ impl Sheet {
             .retain(|(col, row)| !(*col >= start_col && *col < end_col && *row >= start_row && *row < end_row));
     }
 
-    /// Update sheet offsets
-    pub fn update_from_sheet_info(&mut self, offsets: SheetOffsets) {
+    /// Update sheet offsets and bounds
+    pub fn update_from_sheet_info(&mut self, offsets: SheetOffsets, bounds: GridBounds) {
         self.sheet_offsets = offsets;
+        self.bounds = bounds;
         // Update table bounds when offsets change
         self.tables.update_bounds(&self.sheet_offsets);
     }

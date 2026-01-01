@@ -855,6 +855,16 @@ impl CellsTextHash {
         } else {
             // Zoomed out: use pre-rendered sprite for smooth appearance
             if let Some(ref sprite_cache) = self.sprite_cache_webgpu {
+                log::info!(
+                    "[CellsTextHash] Drawing sprite for hash ({}, {}): {}x{} texture with {} mips, {}x{} world",
+                    self.hash_x,
+                    self.hash_y,
+                    sprite_cache.width,
+                    sprite_cache.height,
+                    sprite_cache.mip_level_count,
+                    self.world_width,
+                    self.world_height
+                );
                 gpu.draw_sprite_texture(
                     pass,
                     &sprite_cache.view,
@@ -865,6 +875,11 @@ impl CellsTextHash {
                     matrix,
                 );
             } else {
+                log::warn!(
+                    "[CellsTextHash] No sprite cache for hash ({}, {}), falling back to MSDF",
+                    self.hash_x,
+                    self.hash_y
+                );
                 // Fallback to MSDF if sprite cache not ready
                 self.render_text_webgpu(
                     gpu,
@@ -1012,11 +1027,20 @@ impl CellsTextHash {
 
         if needs_new_target {
             // Use mipmapped render target for smooth scaling at small sizes
-            self.sprite_cache_webgpu = Some(WebGPURenderTarget::new_with_mipmaps(
+            let target = WebGPURenderTarget::new_with_mipmaps(
                 gpu.device(),
                 tex_width,
                 tex_height,
-            ));
+            );
+            log::debug!(
+                "[CellsTextHash] Created sprite cache {}x{} with {} mip levels for hash ({}, {})",
+                target.width,
+                target.height,
+                target.mip_level_count,
+                self.hash_x,
+                self.hash_y
+            );
+            self.sprite_cache_webgpu = Some(target);
         }
 
         let sprite_cache = self.sprite_cache_webgpu.as_ref().unwrap();
@@ -1069,6 +1093,15 @@ impl CellsTextHash {
 
         // Submit the render commands
         gpu.queue().submit(std::iter::once(encoder.finish()));
+
+        log::info!(
+            "[CellsTextHash] Rendered text to sprite cache ({}, {}): {}x{} texture with {} mip levels",
+            self.hash_x,
+            self.hash_y,
+            sprite_cache.width,
+            sprite_cache.height,
+            sprite_cache.mip_level_count
+        );
 
         // Generate mipmaps for smooth scaling at small sizes
         gpu.generate_mipmaps(sprite_cache);

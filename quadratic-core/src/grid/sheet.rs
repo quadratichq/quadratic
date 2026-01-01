@@ -9,7 +9,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
-use super::bounds::GridBounds;
+use quadratic_core_shared::GridBounds;
+
 use super::SheetId;
 use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;

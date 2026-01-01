@@ -60,7 +60,12 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
         CoreToRenderer::SheetInfo(info) => {
             let offsets: SheetOffsets = serialization::deserialize(&info.offsets_bytes)
                 .map_err(|e| format!("Failed to deserialize offsets in SheetInfo: {e}"))?;
-            state.set_sheet(info.sheet_id, offsets);
+            log::info!(
+                "[rust_renderer] Received SheetInfo for sheet {:?}, bounds: {:?}",
+                info.sheet_id,
+                info.bounds
+            );
+            state.set_sheet(info.sheet_id, offsets, info.bounds);
             Ok(())
         }
 

@@ -117,7 +117,6 @@ impl RefRangeBounds {
     }
 
     /// Returns a test range from the A1-string.
-    #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
         Self::from_str(a1, None).unwrap()
     }

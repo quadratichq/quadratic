@@ -10,10 +10,10 @@ use js_sys::{Float32Array, Int32Array, SharedArrayBuffer, Uint8Array};
 use std::sync::atomic::{AtomicI32, Ordering};
 
 #[cfg(all(not(test), feature = "js"))]
-use crate::{Pos, SheetId, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, Pos, SheetId};
 
 #[cfg(test)]
-use crate::{Pos, SheetId, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, Pos, SheetId};
 
 /// Size of the sheet_id field in bytes (UUID string)
 pub const SHEET_ID_SIZE: usize = 36;
@@ -219,7 +219,9 @@ impl ViewportBuffer {
         }
         let sheet_id = String::from_utf8_lossy(&sheet_id_bytes).to_string();
 
-        (position_x, position_y, scale, dpr, width, height, dirty, sheet_id)
+        (
+            position_x, position_y, scale, dpr, width, height, dirty, sheet_id,
+        )
     }
 
     /// Sync from the SharedArrayBuffer - call this each frame
@@ -240,7 +242,17 @@ impl ViewportBuffer {
             None
         };
 
-        if let Some((new_x, new_y, new_scale, new_dpr, new_width, new_height, dirty_value, new_sheet_id)) = data {
+        if let Some((
+            new_x,
+            new_y,
+            new_scale,
+            new_dpr,
+            new_width,
+            new_height,
+            dirty_value,
+            new_sheet_id,
+        )) = data
+        {
             let changed = (self.position_x - new_x).abs() > f32::EPSILON
                 || (self.position_y - new_y).abs() > f32::EPSILON
                 || (self.scale - new_scale).abs() > f32::EPSILON

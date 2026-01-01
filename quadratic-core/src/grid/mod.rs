@@ -1,4 +1,3 @@
-pub use bounds::GridBounds;
 pub use cells_accessed::*;
 pub use column::Column;
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
@@ -8,8 +7,8 @@ pub use formatting::{
     Bold, CellAlign, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
     NumericDecimals, NumericFormat, NumericFormatKind, StrikeThrough, TextColor, Underline,
 };
-pub use quadratic_core_shared::SheetId;
 use indexmap::IndexMap;
+pub use quadratic_core_shared::{GridBounds, SheetId};
 pub use region_map::RegionMap;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
@@ -25,7 +24,6 @@ pub mod ai;
 
 pub use a1_selection_ext::A1SelectionExt;
 mod block;
-mod bounds;
 mod cells_accessed;
 mod cells_accessed_cache;
 pub mod column;

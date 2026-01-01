@@ -142,8 +142,16 @@ impl MipmapGenerator {
         mip_level_count: u32,
     ) {
         if mip_level_count <= 1 {
+            log::warn!("[Mipmap] Called with mip_level_count={}, skipping", mip_level_count);
             return;
         }
+
+        log::info!(
+            "[Mipmap] Generating {} levels for {}x{} texture",
+            mip_level_count - 1,
+            width,
+            height
+        );
 
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Mipmap Encoder"),
@@ -190,6 +198,13 @@ impl MipmapGenerator {
             // Calculate target dimensions
             current_width = (current_width / 2).max(1);
             current_height = (current_height / 2).max(1);
+
+            log::info!(
+                "[Mipmap] Level {}: {}x{}",
+                target_mip,
+                current_width,
+                current_height
+            );
 
             // Render to target mip level
             {

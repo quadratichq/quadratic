@@ -573,7 +573,7 @@ impl WebGPUContext {
                 cache: None,
             });
 
-        // Create sampler
+        // Create sampler for general textures (fonts, sprites, etc.)
         let linear_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("Linear Sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -581,6 +581,23 @@ impl WebGPUContext {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Linear, // Enable trilinear filtering for mipmaps
+            ..Default::default()
+        });
+
+        // Create sampler for sprite caches with LOD limit
+        // Prevents using the smallest mip levels (which appear as dots when zoomed way out)
+        // For a 512px sprite cache texture:
+        //   LOD 0 = 512px, LOD 1 = 256px, LOD 2 = 128px, LOD 3 = 64px, LOD 4 = 32px, ...
+        // We limit to LOD 3 (64px) to keep text somewhat readable
+        let sprite_cache_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Sprite Cache Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 3.0, // Don't go below ~64px (for 512px base texture)
             ..Default::default()
         });
 
@@ -651,6 +668,7 @@ impl WebGPUContext {
             sprite_texture_views: HashMap::new(),
             sprite_bind_groups: HashMap::new(),
             linear_sampler,
+            sprite_cache_sampler,
             mipmap_generator,
             font_texture_manager: FontManager::new(),
             uniform_buffer,

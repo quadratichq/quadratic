@@ -152,6 +152,9 @@ impl GridController {
         let offsets_bytes = serialization::serialize(&sheet.offsets)
             .map_err(|e| format!("Failed to serialize offsets: {e}"))?;
 
+        // Get the sheet bounds (data + formatting) for limiting renderer hash requests
+        let bounds = sheet.bounds(false);
+
         // Create SheetInfo with all metadata and offsets
         let sheet_info = SheetInfo {
             sheet_id: shared_sheet_id,
@@ -162,6 +165,7 @@ impl GridController {
                 .as_ref()
                 .and_then(|c| quadratic_core_shared::Rgba::from_hex(c)),
             offsets_bytes,
+            bounds,
         };
 
         // Create the message
@@ -172,9 +176,10 @@ impl GridController {
             .map_err(|e| format!("Failed to serialize message: {e}"))?;
 
         log(&format!(
-            "[rust_renderer] Sending SheetInfo '{}' ({} bytes) to renderer",
+            "[rust_renderer] Sending SheetInfo '{}' ({} bytes) to renderer, bounds: {:?}",
             sheet.name,
-            bytes.len()
+            bytes.len(),
+            bounds
         ));
 
         // Send to rust renderer via JS callback

@@ -39,6 +39,12 @@ impl WebGPUContext {
     /// Generate mipmaps for a render target texture
     pub fn generate_mipmaps(&self, render_target: &super::super::render_target::RenderTarget) {
         if render_target.mip_level_count > 1 {
+            log::debug!(
+                "[WebGPU] Generating {} mip levels for {}x{} texture",
+                render_target.mip_level_count,
+                render_target.width,
+                render_target.height
+            );
             self.mipmap_generator.generate(
                 &self.device,
                 &self.queue,
@@ -46,6 +52,11 @@ impl WebGPUContext {
                 render_target.width,
                 render_target.height,
                 render_target.mip_level_count,
+            );
+        } else {
+            log::warn!(
+                "[WebGPU] Skipping mipmap generation: only {} mip levels",
+                render_target.mip_level_count
             );
         }
     }

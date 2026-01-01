@@ -77,11 +77,24 @@ impl RenderTarget {
             view_formats: &[],
         });
 
-        // View for sampling (all mip levels)
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        // View for sampling (all mip levels) - explicitly specify to include all levels
+        let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Sprite Sample View (all mips)"),
+            base_mip_level: 0,
+            mip_level_count: Some(mip_level_count), // Explicitly include all mip levels
+            ..Default::default()
+        });
+
+        log::debug!(
+            "[RenderTarget] Created {}x{} texture with {} mip levels, sample view includes all mips",
+            width,
+            height,
+            mip_level_count
+        );
 
         // View for rendering (base mip level only - required for render attachment)
         let render_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Sprite Render View (base mip)"),
             base_mip_level: 0,
             mip_level_count: Some(1),
             ..Default::default()

@@ -1,7 +1,8 @@
 //! Calculates all bounds for the sheet: data, formatting, and borders. We cache
 //! this value and only recalculate when necessary.
 
-use crate::{CellValue, Pos, Rect, a1::A1Context, grid::GridBounds};
+use crate::{CellValue, Pos, Rect, a1::A1Context};
+use quadratic_core_shared::GridBounds;
 
 use super::Sheet;
 

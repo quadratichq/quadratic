@@ -66,6 +66,9 @@ pub struct WebGPUContext {
     // Shared sampler for textures
     pub(crate) linear_sampler: wgpu::Sampler,
 
+    // Sampler for sprite caches with LOD limit (prevents tiny mips)
+    pub(crate) sprite_cache_sampler: wgpu::Sampler,
+
     // Mipmap generator for sprite cache textures
     pub(crate) mipmap_generator: MipmapGenerator,
 

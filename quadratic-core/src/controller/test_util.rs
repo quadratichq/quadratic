@@ -2,6 +2,12 @@
 use crate::number::decimal_from_str;
 
 #[cfg(test)]
+#[cfg(test)]
+use super::{
+    GridController, active_transactions::transaction_name::TransactionName,
+    operations::operation::Operation,
+};
+#[cfg(test)]
 use crate::{
     Array, ArraySize, CellValue, SheetPos,
     cellvalue::Import,
@@ -11,21 +17,13 @@ use crate::{
     grid::{CodeCellLanguage, CodeRun},
     grid::{DataTable, DataTableKind},
 };
-#[cfg(test)]
-use quadratic_core_shared::ViewportBuffer;
-
-#[cfg(test)]
-use super::{
-    GridController, active_transactions::transaction_name::TransactionName,
-    operations::operation::Operation,
-};
 
 #[cfg(test)]
 impl GridController {
     // create a new gc for testing purposes with a viewport buffer
     pub fn test_with_viewport_buffer() -> Self {
         let mut gc = Self::from_grid(Grid::test(), 0);
-        gc.viewport_buffer = Some(ViewportBuffer::default());
+        // gc.viewport_buffer = Some(ViewportBuffer::default());
         gc
     }
 

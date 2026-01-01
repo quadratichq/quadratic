@@ -9,11 +9,12 @@
 use std::collections::HashSet;
 
 use quadratic_core_shared::{
-    Pos, RenderCell, RenderCodeCell, RenderFill, SheetFill, SheetId, SheetOffsets,
+    GridBounds, Pos, RenderCell, RenderCodeCell, RenderFill, SheetFill, SheetId, SheetOffsets,
 };
 
 use crate::sheets::text::{
     BitmapFont, BitmapFonts, CellLabel, CellsTextHash, EmojiSprites, VisibleHashBounds, hash_key,
+    HASH_HEIGHT, HASH_WIDTH,
 };
 use crate::sheets::{Sheet, Sheets};
 use crate::ui::ui::UI;
@@ -86,8 +87,8 @@ impl RendererState {
     // =========================================================================
 
     /// Set a sheet (creates or updates)
-    pub fn set_sheet(&mut self, sheet_id: SheetId, offsets: SheetOffsets) {
-        self.sheets.set_sheet(sheet_id, offsets);
+    pub fn set_sheet(&mut self, sheet_id: SheetId, offsets: SheetOffsets, bounds: GridBounds) {
+        self.sheets.set_sheet(sheet_id, offsets, bounds);
         // Mark dirty to trigger rerender
         self.viewport.dirty = true;
         self.ui.grid_lines.dirty = true;
@@ -299,9 +300,9 @@ impl RendererState {
                     sheet.label_count += 1;
                 }
 
-                if !hash.is_empty() {
-                    sheet.hashes.insert(key, hash);
-                }
+                // Always insert the hash, even if empty, to mark it as loaded
+                // and prevent re-requesting the same empty region repeatedly
+                sheet.hashes.insert(key, hash);
             }
 
             // Mark emoji pages as needed (after borrowing fonts/emoji_sprites is done)
@@ -391,8 +392,7 @@ impl RendererState {
                         // If the neighbor has right overflow that extends to or past our cell,
                         // clip them at our left edge
                         if neighbor_overflow_right > 0.0 {
-                            let neighbor_text_right =
-                                neighbor_cell_right + neighbor_overflow_right;
+                            let neighbor_text_right = neighbor_cell_right + neighbor_overflow_right;
                             if neighbor_text_right > cell_left {
                                 neighbor_updates.push((
                                     neighbor_hash_x,
@@ -549,6 +549,26 @@ impl RendererState {
     /// This prevents overwhelming the system when zoomed out very far
     const MAX_HASH_REQUEST_BATCH: usize = 20;
 
+    /// Check if a hash overlaps with the sheet's data bounds
+    fn hash_overlaps_bounds(hash_x: i64, hash_y: i64, bounds: &GridBounds) -> bool {
+        match bounds {
+            GridBounds::Empty => false,
+            GridBounds::NonEmpty(data_rect) => {
+                // Calculate the cell range for this hash (1-indexed)
+                let hash_start_col = hash_x * HASH_WIDTH + 1;
+                let hash_end_col = hash_start_col + HASH_WIDTH - 1;
+                let hash_start_row = hash_y * HASH_HEIGHT + 1;
+                let hash_end_row = hash_start_row + HASH_HEIGHT - 1;
+
+                // Check if hash cell range overlaps with data bounds
+                hash_end_col >= data_rect.min.x
+                    && hash_start_col <= data_rect.max.x
+                    && hash_end_row >= data_rect.min.y
+                    && hash_start_row <= data_rect.max.y
+            }
+        }
+    }
+
     /// Get needed hashes that haven't been requested yet (as Pos for requesting)
     pub fn get_unrequested_hashes(&mut self) -> Vec<Pos> {
         let bounds = self.viewport.visible_bounds();
@@ -562,23 +582,49 @@ impl RendererState {
         );
 
         let mut needed: Vec<Pos> = Vec::new();
+        let mut skipped_bounds = 0;
+        let mut skipped_loaded = 0;
+        let mut skipped_pending = 0;
 
         if let Some(sheet) = self.sheets.current_sheet() {
+            let sheet_bounds = &sheet.bounds;
             for (hash_x, hash_y) in hash_bounds.iter() {
                 let key = hash_key(hash_x, hash_y);
-                // Only request if not loaded AND not already pending
-                if !sheet.hashes.contains_key(&key)
-                    && !self.pending_hash_requests.contains(&(hash_x, hash_y))
-                {
-                    needed.push(Pos::new(hash_x, hash_y));
-                    // Mark as pending
-                    self.pending_hash_requests.insert((hash_x, hash_y));
 
-                    // Limit batch size to prevent overwhelming the system
-                    if needed.len() >= Self::MAX_HASH_REQUEST_BATCH {
-                        break;
-                    }
+                // Track why we skip hashes
+                if sheet.hashes.contains_key(&key) {
+                    skipped_loaded += 1;
+                    continue;
                 }
+                if self.pending_hash_requests.contains(&(hash_x, hash_y)) {
+                    skipped_pending += 1;
+                    continue;
+                }
+                if !Self::hash_overlaps_bounds(hash_x, hash_y, sheet_bounds) {
+                    skipped_bounds += 1;
+                    continue;
+                }
+
+                needed.push(Pos::new(hash_x, hash_y));
+                // Mark as pending
+                self.pending_hash_requests.insert((hash_x, hash_y));
+
+                // Limit batch size to prevent overwhelming the system
+                if needed.len() >= Self::MAX_HASH_REQUEST_BATCH {
+                    break;
+                }
+            }
+
+            // Log filtering stats
+            if !needed.is_empty() || skipped_bounds > 0 {
+                log::info!(
+                    "[rust_renderer] get_unrequested_hashes: requesting {} hashes, skipped {} (outside bounds), {} (loaded), {} (pending), sheet_bounds: {:?}",
+                    needed.len(),
+                    skipped_bounds,
+                    skipped_loaded,
+                    skipped_pending,
+                    sheet_bounds
+                );
             }
         }
 

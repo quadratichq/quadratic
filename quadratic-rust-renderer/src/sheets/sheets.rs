@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use quadratic_core_shared::{SheetId, SheetOffsets};
+use quadratic_core_shared::{GridBounds, SheetId, SheetOffsets};
 
 use super::Sheet;
 
@@ -23,11 +23,11 @@ impl Sheets {
     }
 
     /// Add or update a sheet
-    pub fn set_sheet(&mut self, sheet_id: SheetId, offsets: SheetOffsets) {
+    pub fn set_sheet(&mut self, sheet_id: SheetId, offsets: SheetOffsets, bounds: GridBounds) {
         if let Some(existing) = self.sheets.get_mut(&sheet_id) {
-            existing.update_from_sheet_info(offsets);
+            existing.update_from_sheet_info(offsets, bounds);
         } else {
-            let sheet = Sheet::from_sheet_info(sheet_id.clone(), offsets);
+            let sheet = Sheet::from_sheet_info(sheet_id.clone(), offsets, bounds);
             self.sheets.insert(sheet_id.clone(), sheet);
         }
 

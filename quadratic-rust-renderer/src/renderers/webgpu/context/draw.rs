@@ -528,6 +528,7 @@ impl WebGPUContext {
             });
 
         // Create temporary bind group for this texture
+        // Use sprite_cache_sampler with LOD limit to prevent text from becoming dots
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Sprite Cache Bind Group"),
             layout: &self.sprite_bind_group_layout,
@@ -542,7 +543,7 @@ impl WebGPUContext {
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&self.linear_sampler),
+                    resource: wgpu::BindingResource::Sampler(&self.sprite_cache_sampler),
                 },
             ],
         });
