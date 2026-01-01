@@ -14,8 +14,8 @@ use crate::renderers::Rects;
 use super::parse_color_string;
 
 /// Hash dimensions (matches client: CellsTypes.ts and core: renderer_constants.rs)
-pub const HASH_WIDTH: i64 = 15; // columns per hash
-pub const HASH_HEIGHT: i64 = 30; // rows per hash
+pub const HASH_WIDTH: i64 = 50; // columns per hash
+pub const HASH_HEIGHT: i64 = 100; // rows per hash
 
 /// A spatial hash containing fills for a 15×30 cell region
 pub struct CellsFillsHash {
@@ -177,7 +177,7 @@ impl CellsFillsHash {
 
 /// Get hash coordinates for a cell position (1-indexed columns/rows)
 pub fn get_fill_hash_coords(col: i64, row: i64) -> (i64, i64) {
-    // Adjust for 1-indexed: col 1-15 → hash 0, col 16-30 → hash 1, etc.
+    // Adjust for 1-indexed: col 1-50 → hash 0, col 51-100 → hash 1, etc.
     (
         (col - 1).div_euclid(HASH_WIDTH),
         (row - 1).div_euclid(HASH_HEIGHT),
@@ -199,16 +199,16 @@ mod tests {
 
     #[test]
     fn test_get_fill_hash_coords() {
-        // 1-indexed coordinates: cols 1-15 → hash 0, cols 16-30 → hash 1
+        // 1-indexed coordinates: cols 1-50 → hash 0, cols 51-100 → hash 1
         assert_eq!(get_fill_hash_coords(1, 1), (0, 0));
-        assert_eq!(get_fill_hash_coords(15, 30), (0, 0));
-        assert_eq!(get_fill_hash_coords(16, 31), (1, 1));
-        assert_eq!(get_fill_hash_coords(31, 61), (2, 2));
+        assert_eq!(get_fill_hash_coords(50, 100), (0, 0));
+        assert_eq!(get_fill_hash_coords(51, 101), (1, 1));
+        assert_eq!(get_fill_hash_coords(101, 201), (2, 2));
 
         // Edge cases for 1-indexed
         assert_eq!(get_fill_hash_coords(0, 0), (-1, -1)); // col 0 is before col 1
-        assert_eq!(get_fill_hash_coords(-14, -29), (-1, -1));
-        assert_eq!(get_fill_hash_coords(-15, -30), (-2, -2));
+        assert_eq!(get_fill_hash_coords(-49, -99), (-1, -1));
+        assert_eq!(get_fill_hash_coords(-50, -100), (-2, -2));
     }
 
     #[test]

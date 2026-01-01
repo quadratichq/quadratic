@@ -13,50 +13,26 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
     let message: CoreToRenderer = serialization::deserialize(data)
         .map_err(|e| format!("Failed to deserialize message: {e}"))?;
 
-    log::trace!("[message_handler] Decoded message: {:?}", message);
-
     match message {
         CoreToRenderer::SheetOffsets {
             sheet_id,
             offsets_bytes,
         } => {
-            // Decode the SheetOffsets from the embedded bytes
-            // Core's SheetOffsets and core-shared's SheetOffsets are structurally identical
             let offsets: SheetOffsets = serialization::deserialize(&offsets_bytes)
                 .map_err(|e| format!("Failed to deserialize offsets: {e}"))?;
-
-            let (_default_col, _default_row) = offsets.defaults();
-
-            // Store the offsets in the renderer state
             state.set_sheet_offsets(sheet_id, offsets);
-
             Ok(())
         }
 
-        CoreToRenderer::InitSheet { sheet_id, .. } => {
-            log::trace!("[message_handler] Received InitSheet for sheet {}", sheet_id);
-            Ok(())
-        }
+        CoreToRenderer::InitSheet { .. } => Ok(()),
 
         CoreToRenderer::HashCells(hash_cells_vec) => {
             for hash_cells in hash_cells_vec {
-                log::debug!(
-                    "[message_handler] Received HashCells for sheet {} hash ({}, {}): {} cells, {} fills",
-                    hash_cells.sheet_id,
-                    hash_cells.hash_pos.x,
-                    hash_cells.hash_pos.y,
-                    hash_cells.cells.len(),
-                    hash_cells.fills.len()
-                );
-
-                // Set fills for this hash in the renderer state
                 state.set_fills_for_hash(
                     hash_cells.hash_pos.x,
                     hash_cells.hash_pos.y,
                     hash_cells.fills,
                 );
-
-                // Set text cells for this hash
                 state.set_labels_for_hash(
                     hash_cells.hash_pos.x,
                     hash_cells.hash_pos.y,
@@ -66,76 +42,67 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
             Ok(())
         }
 
-        CoreToRenderer::DirtyHashes { sheet_id, hashes } => {
-            log::debug!(
-                "[message_handler] Received DirtyHashes for sheet {}: {} hashes",
-                sheet_id,
-                hashes.len()
-            );
+        CoreToRenderer::DirtyHashes { .. } => {
             // TODO: Implement dirty hash handling
             Ok(())
         }
 
-        CoreToRenderer::Selection(selection) => {
-            log::debug!(
-                "[message_handler] Received Selection for sheet {} at ({}, {})",
-                selection.sheet_id,
-                selection.cursor.x,
-                selection.cursor.y
-            );
+        CoreToRenderer::Selection(_selection) => {
             // TODO: Implement selection handling
             Ok(())
         }
 
-        CoreToRenderer::MultiplayerCursors(cursors) => {
-            log::debug!(
-                "[message_handler] Received MultiplayerCursors: {} cursors",
-                cursors.len()
-            );
+        CoreToRenderer::MultiplayerCursors(_cursors) => {
             // TODO: Implement multiplayer cursor handling
             Ok(())
         }
 
         CoreToRenderer::SheetInfo(info) => {
-            // Decode the SheetOffsets from the embedded bytes
             let offsets: SheetOffsets = serialization::deserialize(&info.offsets_bytes)
                 .map_err(|e| format!("Failed to deserialize offsets in SheetInfo: {e}"))?;
-
-            // Add or update the sheet in the renderer state
             state.set_sheet(info.sheet_id, offsets);
-
             Ok(())
         }
 
         CoreToRenderer::SheetDeleted { sheet_id } => {
-            log::trace!("[message_handler] SheetDeleted: {}", sheet_id);
             state.remove_sheet(sheet_id);
             Ok(())
         }
 
-        CoreToRenderer::ClearSheet { sheet_id } => {
-            log::trace!("[message_handler] ClearSheet: {}", sheet_id);
+        CoreToRenderer::ClearSheet { .. } => {
             // TODO: Implement sheet clear handling
             Ok(())
         }
 
         CoreToRenderer::SheetMetaFills {
-            sheet_id,
+            sheet_id: _,
             fills_bytes,
         } => {
-            // Decode the fills from the embedded bytes
             let fills: Vec<SheetFill> = serialization::deserialize(&fills_bytes)
                 .map_err(|e| format!("Failed to deserialize meta fills: {e}"))?;
-
-            log::debug!(
-                "[message_handler] Received SheetMetaFills for sheet {}: {} fills",
-                sheet_id,
-                fills.len()
-            );
-
-            // Set meta fills in the renderer state
             state.set_meta_fills(fills);
+            Ok(())
+        }
 
+        CoreToRenderer::CodeCells {
+            sheet_id,
+            code_cells,
+        } => {
+            state.set_code_cells(sheet_id, code_cells);
+            Ok(())
+        }
+
+        CoreToRenderer::CodeCellUpdate {
+            sheet_id,
+            code_cell,
+            pos,
+        } => {
+            state.update_code_cell(sheet_id, pos, code_cell);
+            Ok(())
+        }
+
+        CoreToRenderer::ActiveTable { sheet_id, pos } => {
+            state.set_active_table(sheet_id, pos);
             Ok(())
         }
     }

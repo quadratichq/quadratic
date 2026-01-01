@@ -19,7 +19,7 @@ pub struct Viewport {
     scale: f32,
 
     /// Device pixel ratio (for high-DPI displays)
-    dpr: f32,
+    pub dpr: f32,
 
     /// Size of the viewport in device pixels
     size: Vec2,

@@ -51,6 +51,13 @@ export class Update {
   private update = () => {
     if (pixiApp.destroyed) return;
 
+    // Skip all processing and rendering when TS renderer is disabled (for performance testing)
+    if (debugFlag('debugDisableTsRenderer')) {
+      this.raf = requestAnimationFrame(this.update);
+      this.updateFps();
+      return;
+    }
+
     if (content.copying) {
       this.raf = requestAnimationFrame(this.update);
       return;

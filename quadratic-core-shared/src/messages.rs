@@ -5,7 +5,7 @@
 
 use bincode::{Decode, Encode};
 
-use crate::{Pos, Rect, Rgba, SheetId};
+use crate::{Pos, Rect, RenderCodeCell, Rgba, SheetId};
 
 /// Messages sent from quadratic-core to quadratic-rust-renderer.
 #[derive(Debug, Clone, Encode, Decode)]
@@ -52,6 +52,29 @@ pub enum CoreToRenderer {
         sheet_id: SheetId,
         /// Bincode-encoded Vec<SheetFill>
         fills_bytes: Vec<u8>,
+    },
+
+    /// Code cells/tables for a sheet (for rendering table headers)
+    CodeCells {
+        sheet_id: SheetId,
+        /// All code cells (tables) in the sheet
+        code_cells: Vec<RenderCodeCell>,
+    },
+
+    /// Update to a single code cell (when table changes)
+    CodeCellUpdate {
+        sheet_id: SheetId,
+        /// The updated code cell, or None if deleted
+        code_cell: Option<RenderCodeCell>,
+        /// Position of the code cell (anchor position)
+        pos: Pos,
+    },
+
+    /// Active table changed (for highlighting the selected table)
+    ActiveTable {
+        sheet_id: SheetId,
+        /// Position of the active table's anchor, or None if no table is active
+        pos: Option<Pos>,
     },
 }
 

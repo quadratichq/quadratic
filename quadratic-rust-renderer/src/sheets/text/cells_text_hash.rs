@@ -38,22 +38,16 @@ use crate::renderers::webgpu::RenderTarget as WebGPURenderTarget;
 #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
 use crate::renderers::WebGPUContext;
 
-/// Hash dimensions (matches client: CellsTypes.ts)
-pub const HASH_WIDTH: i64 = 15; // columns per hash
-pub const HASH_HEIGHT: i64 = 30; // rows per hash
+/// Hash dimensions (matches client: CellsTypes.ts and core: renderer_constants.rs)
+pub const HASH_WIDTH: i64 = 50; // columns per hash
+pub const HASH_HEIGHT: i64 = 100; // rows per hash
 
 /// Cell dimensions in pixels (default)
 pub const DEFAULT_CELL_WIDTH: f32 = 100.0;
 pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
 
-/// Base number of hashes to load beyond the visible viewport (for preloading)
-pub const HASH_PADDING: i64 = 3;
-
-/// Minimum hash padding - ensures some preloading at all zoom levels
-const MIN_HASH_PADDING: i64 = 2;
-
-/// Maximum hash padding to prevent excessive memory usage
-const MAX_HASH_PADDING: i64 = 30;
+/// Number of hashes to load beyond the visible viewport (for preloading)
+pub const HASH_PADDING: i64 = 1;
 
 /// Maximum texture pages we support
 /// With global texture ID scheme: fontIndex * 16 + localPageId
@@ -62,8 +56,9 @@ const MAX_TEXTURE_PAGES: usize = 64;
 
 /// Scale threshold below which we switch from MSDF text to sprite rendering.
 /// When viewport_scale < SPRITE_SCALE_THRESHOLD, use the cached sprite.
-/// 0.2 means sprite rendering activates when zoomed out to 20% or less.
-pub const SPRITE_SCALE_THRESHOLD: f32 = 0.2;
+/// 0.5 means sprite rendering activates when zoomed out to 50% or less.
+/// This significantly improves performance when zoomed out.
+pub const SPRITE_SCALE_THRESHOLD: f32 = 0.5;
 
 /// Target width for sprite cache texture.
 /// We use a fixed medium resolution where MSDF still produces clean output,
@@ -265,6 +260,16 @@ impl CellsTextHash {
     /// Get a mutable label at the given cell position
     pub fn get_label_mut(&mut self, col: i64, row: i64) -> Option<&mut CellLabel> {
         self.labels.get_mut(&(col, row))
+    }
+
+    /// Iterate over all labels in this hash
+    pub fn labels_iter(&self) -> impl Iterator<Item = (&(i64, i64), &CellLabel)> {
+        self.labels.iter()
+    }
+
+    /// Iterate over all labels mutably
+    pub fn labels_iter_mut(&mut self) -> impl Iterator<Item = (&(i64, i64), &mut CellLabel)> {
+        self.labels.iter_mut()
     }
 
     /// Check if this hash is empty
@@ -1134,7 +1139,7 @@ impl CellsTextHash {
 /// Get hash coordinates for a cell position
 /// Get hash coordinates for a cell position (1-indexed columns/rows)
 pub fn get_hash_coords(col: i64, row: i64) -> (i64, i64) {
-    // Adjust for 1-indexed: col 1-15 → hash 0, col 16-30 → hash 1, etc.
+    // Adjust for 1-indexed: col 1-50 → hash 0, col 51-100 → hash 1, etc.
     (
         (col - 1).div_euclid(HASH_WIDTH),
         (row - 1).div_euclid(HASH_HEIGHT),
@@ -1182,28 +1187,15 @@ impl VisibleHashBounds {
         let (min_hash_x, min_hash_y) = get_hash_coords(min_col, min_row);
         let (max_hash_x, max_hash_y) = get_hash_coords(max_col, max_row);
 
-        // Calculate dynamic padding based on viewport scale.
-        //
-        // At HIGH zoom (scale > 1): Need more padding because you scroll through
-        // hashes quickly in world coordinates. Scale UP padding with zoom.
-        //
-        // At LOW zoom (scale < 1): Need more padding because more hashes are
-        // visible on screen. Scale UP padding inversely with zoom.
-        //
-        // Formula: max(base * scale, base / scale) - covers both cases
-        let scale_clamped = viewport_scale.clamp(0.1, 10.0);
-        let high_zoom_padding = (HASH_PADDING as f32 * scale_clamped).ceil() as i64;
-        let low_zoom_padding = (HASH_PADDING as f32 / scale_clamped).ceil() as i64;
-        let dynamic_padding = high_zoom_padding
-            .max(low_zoom_padding)
-            .max(MIN_HASH_PADDING)
-            .min(MAX_HASH_PADDING);
+        // Use constant padding - with large hashes (50x100), we don't need
+        // aggressive preloading. 1 hash of padding is enough for smooth scrolling.
+        let _viewport_scale = viewport_scale; // unused but kept for API compatibility
 
         Self {
-            min_hash_x: min_hash_x - dynamic_padding,
-            max_hash_x: max_hash_x + dynamic_padding,
-            min_hash_y: min_hash_y - dynamic_padding,
-            max_hash_y: max_hash_y + dynamic_padding,
+            min_hash_x: min_hash_x - HASH_PADDING,
+            max_hash_x: max_hash_x + HASH_PADDING,
+            min_hash_y: min_hash_y - HASH_PADDING,
+            max_hash_y: max_hash_y + HASH_PADDING,
         }
     }
 
@@ -1235,16 +1227,16 @@ mod tests {
 
     #[test]
     fn test_get_hash_coords() {
-        // 1-indexed coordinates: cols 1-15 → hash 0, cols 16-30 → hash 1
+        // 1-indexed coordinates: cols 1-50 → hash 0, cols 51-100 → hash 1
         assert_eq!(get_hash_coords(1, 1), (0, 0));
-        assert_eq!(get_hash_coords(15, 30), (0, 0));
-        assert_eq!(get_hash_coords(16, 31), (1, 1));
-        assert_eq!(get_hash_coords(31, 61), (2, 2));
+        assert_eq!(get_hash_coords(50, 100), (0, 0));
+        assert_eq!(get_hash_coords(51, 101), (1, 1));
+        assert_eq!(get_hash_coords(101, 201), (2, 2));
 
         // Edge cases for 1-indexed
         assert_eq!(get_hash_coords(0, 0), (-1, -1)); // col 0 is before col 1
-        assert_eq!(get_hash_coords(-14, -29), (-1, -1));
-        assert_eq!(get_hash_coords(-15, -30), (-2, -2));
+        assert_eq!(get_hash_coords(-49, -99), (-1, -1));
+        assert_eq!(get_hash_coords(-50, -100), (-2, -2));
     }
 
     #[test]
@@ -1252,9 +1244,9 @@ mod tests {
         let offsets = SheetOffsets::default();
         let hash = CellsTextHash::new(0, 0, &offsets);
 
-        // Hash at (0,0) covers world coords (0,0) to (1500, 630)
+        // Hash at (0,0) covers world coords (0,0) to (5000, 2100) with 50x100 cells at 100x21 pixels
         assert!(hash.intersects_viewport(0.0, 100.0, 0.0, 100.0));
         assert!(hash.intersects_viewport(-100.0, 100.0, -100.0, 100.0));
-        assert!(!hash.intersects_viewport(2000.0, 3000.0, 0.0, 100.0));
+        assert!(!hash.intersects_viewport(6000.0, 7000.0, 0.0, 100.0));
     }
 }

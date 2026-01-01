@@ -132,6 +132,12 @@ class RustRendererClient {
 
   private startRenderLoop() {
     const loop = (timestamp: number) => {
+      // Skip all processing and rendering when Rust renderer is disabled (for performance testing)
+      if (debugFlag('debugDisableRustRenderer')) {
+        this.animationFrameId = requestAnimationFrame(loop);
+        return;
+      }
+
       try {
         const elapsed = this.lastFrameTime ? timestamp - this.lastFrameTime : 16;
         this.lastFrameTime = timestamp;

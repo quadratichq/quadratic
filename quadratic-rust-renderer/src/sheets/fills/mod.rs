@@ -27,11 +27,8 @@ use crate::renderers::render_context::RenderContext;
 use crate::renderers::{Color, Rects};
 use crate::viewport::Viewport;
 
-/// Base number of hashes to load beyond the visible viewport (for preloading)
-const HASH_PADDING: i64 = 2;
-
-/// Maximum hash padding to prevent excessive memory usage when very zoomed out
-const MAX_HASH_PADDING: i64 = 10;
+/// Number of hashes to load beyond the visible viewport (for preloading)
+const HASH_PADDING: i64 = 1;
 
 /// Grid background color (white)
 const GRID_BACKGROUND: Color = [1.0, 1.0, 1.0, 1.0];
@@ -355,16 +352,13 @@ impl CellsFills {
         let (min_hash_x, min_hash_y) = get_fill_hash_coords(min_col, min_row);
         let (max_hash_x, max_hash_y) = get_fill_hash_coords(max_col, max_row);
 
-        // Calculate dynamic padding based on viewport scale
-        let scale_clamped = viewport.scale().max(0.1);
-        let dynamic_padding =
-            ((HASH_PADDING as f32 / scale_clamped).ceil() as i64).min(MAX_HASH_PADDING);
-
+        // Use constant padding - with large hashes (50x100), we don't need
+        // aggressive preloading
         VisibleFillHashBounds {
-            min_hash_x: min_hash_x - dynamic_padding,
-            max_hash_x: max_hash_x + dynamic_padding,
-            min_hash_y: min_hash_y - dynamic_padding,
-            max_hash_y: max_hash_y + dynamic_padding,
+            min_hash_x: min_hash_x - HASH_PADDING,
+            max_hash_x: max_hash_x + HASH_PADDING,
+            min_hash_y: min_hash_y - HASH_PADDING,
+            max_hash_y: max_hash_y + HASH_PADDING,
         }
     }
 }

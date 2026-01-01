@@ -147,12 +147,6 @@ impl EmojiSprites {
         self.needed_pages.clear();
         self.mapping = Some(mapping);
 
-        log::info!(
-            "[EmojiSprites] Loaded mapping with {} pages, {} emojis",
-            page_count,
-            self.mapping.as_ref().map(|m| m.emojis.len()).unwrap_or(0)
-        );
-
         Ok(())
     }
 
@@ -206,7 +200,6 @@ impl EmojiSprites {
         if page < self.page_states.len() && self.page_states[page] == PageState::NotLoaded {
             self.page_states[page] = PageState::Needed;
             self.needed_pages.insert(page);
-            log::debug!("[EmojiSprites] Page {} marked as needed", page);
         }
     }
 
@@ -233,7 +226,6 @@ impl EmojiSprites {
         if page < self.page_states.len() {
             self.page_states[page] = PageState::Loaded;
             self.needed_pages.remove(&page);
-            log::info!("[EmojiSprites] Page {} loaded", page);
         }
     }
 
@@ -242,7 +234,6 @@ impl EmojiSprites {
         if page < self.page_states.len() {
             self.page_states[page] = PageState::Failed;
             self.needed_pages.remove(&page);
-            log::warn!("[EmojiSprites] Page {} failed to load", page);
         }
     }
 

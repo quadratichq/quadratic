@@ -56,7 +56,7 @@ export interface CodeRust {
   };
 }
 
-// this is the columns/rows for the CellsHash -- keep this in sync with transaction_summary.rs
-// original was 20 by 40
-export const sheetHashWidth = 15;
-export const sheetHashHeight = 30;
+// this is the columns/rows for the CellsHash -- keep this in sync with renderer_constants.rs
+// increased from 15x30 to 50x100 for better performance (fewer hash requests)
+export const sheetHashWidth = 50;
+export const sheetHashHeight = 100;

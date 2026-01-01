@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use crate::Rect;
 
 // keep this in sync with CellsTypes.ts
-pub const CELL_SHEET_WIDTH: u32 = 15;
-pub const CELL_SHEET_HEIGHT: u32 = 30;
+pub const CELL_SHEET_WIDTH: u32 = 50;
+pub const CELL_SHEET_HEIGHT: u32 = 100;
 
 /// Returns the hashes that are covered by the given rects.
 pub fn hashes_in_rects(rects: &Vec<Rect>) -> Vec<(i64, i64)> {

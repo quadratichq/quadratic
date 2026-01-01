@@ -26,12 +26,12 @@ use crate::renderers::render_context::RenderContext;
 use crate::sheets::text::BitmapFont;
 use crate::viewport::ViewportBuffer;
 
+use super::RenderBackend;
 #[cfg(target_arch = "wasm32")]
 use super::js;
 #[cfg(target_arch = "wasm32")]
 use super::render;
 use super::state::RendererState;
-use super::RenderBackend;
 
 #[cfg(target_arch = "wasm32")]
 use quadratic_core_shared::{RendererToCore, serialization};
@@ -62,7 +62,6 @@ impl WorkerRenderer {
     fn send_to_core(&self, message: RendererToCore) {
         match serialization::serialize(&message) {
             Ok(bytes) => {
-                log::debug!("Sending {:?} to core ({} bytes)", message, bytes.len());
                 js::js_send_to_core(bytes);
             }
             Err(e) => {
@@ -78,7 +77,6 @@ impl WorkerRenderer {
     }
 
     /// Request hash cells for specific hashes
-    #[allow(dead_code)]
     pub fn request_hashes(
         &self,
         sheet_id: quadratic_core_shared::SheetId,
@@ -113,7 +111,6 @@ impl WorkerRenderer {
         let width = canvas.width();
         let height = canvas.height();
 
-        log::info!("Creating WorkerRenderer [WebGL] ({}x{})", width, height);
         let backend = RenderBackend::create_webgl(canvas)?;
         let state = RendererState::new(width as f32, height as f32);
 
@@ -130,7 +127,6 @@ impl WorkerRenderer {
         let width = canvas.width();
         let height = canvas.height();
 
-        log::info!("Creating WorkerRenderer [WebGPU] ({}x{})", width, height);
         let backend = RenderBackend::create_webgpu(canvas).await?;
         let state = RendererState::new(width as f32, height as f32);
 
@@ -161,12 +157,12 @@ impl WorkerRenderer {
     /// to control viewport position and zoom.
     #[wasm_bindgen]
     pub fn set_viewport_buffer(&mut self, buffer: SharedArrayBuffer) {
-        log::info!("Setting shared viewport buffer");
         let vb = ViewportBuffer::from_buffer(buffer);
 
         // Immediately update state viewport with buffer values
         self.state.set_viewport(vb.x(), vb.y(), vb.scale());
-        self.state.resize_viewport(vb.width(), vb.height(), vb.dpr());
+        self.state
+            .resize_viewport(vb.width(), vb.height(), vb.dpr());
 
         // Resize the backend to match the correct canvas size
         self.backend.resize(vb.width() as u32, vb.height() as u32);
@@ -191,7 +187,6 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn start(&mut self) {
         self.state.start();
-        log::info!("WorkerRenderer started");
 
         // Send Ready message to core to request initial data
         self.send_to_core(RendererToCore::Ready);
@@ -201,7 +196,6 @@ impl WorkerRenderer {
     #[wasm_bindgen]
     pub fn stop(&mut self) {
         self.state.stop();
-        log::info!("WorkerRenderer stopped");
     }
 
     /// Check if running
@@ -218,7 +212,6 @@ impl WorkerRenderer {
     /// * `dpr` - Device pixel ratio (e.g., 2.0 for Retina displays)
     #[wasm_bindgen]
     pub fn resize(&mut self, width: u32, height: u32, dpr: f32) {
-        log::debug!("Resizing to {}x{} (DPR: {})", width, height, dpr);
         self.backend.resize(width, height);
         self.state.resize_viewport(width as f32, height as f32, dpr);
     }
@@ -391,9 +384,9 @@ impl WorkerRenderer {
     ) -> Result<(), JsValue> {
         match &mut self.backend {
             RenderBackend::WebGL(gl) => gl.upload_font_texture(texture_uid, image),
-            RenderBackend::WebGPU(_) => {
-                Err(JsValue::from_str("upload_font_texture not supported on WebGPU, use upload_font_texture_from_data"))
-            }
+            RenderBackend::WebGPU(_) => Err(JsValue::from_str(
+                "upload_font_texture not supported on WebGPU, use upload_font_texture_from_data",
+            )),
         }
     }
 
@@ -508,14 +501,6 @@ impl WorkerRenderer {
         // Mark viewport dirty to trigger re-render - no need to rebuild hashes
         // since emoji sprite data (texture UID, UVs) is already cached
         self.state.set_viewport_dirty();
-
-        log::info!(
-            "[Renderer] Uploaded emoji page {} (texture_uid: {}, {}x{})",
-            page,
-            texture_uid,
-            width,
-            height
-        );
 
         Ok(())
     }
@@ -747,14 +732,8 @@ impl WorkerRenderer {
         rows: &[i32],
         colors: Option<Vec<u8>>,
     ) {
-        self.state.add_labels_batch(
-            hash_x as i64,
-            hash_y as i64,
-            texts,
-            cols,
-            rows,
-            colors,
-        );
+        self.state
+            .add_labels_batch(hash_x as i64, hash_y as i64, texts, cols, rows, colors);
     }
 
     /// Set cell labels for a specific hash
@@ -852,7 +831,7 @@ impl WorkerRenderer {
         }
 
         // Sync from shared viewport buffer
-        if let Some(ref mut shared) = self.shared_viewport {
+        let viewport_changed = if let Some(ref mut shared) = self.shared_viewport {
             let changed = shared.sync();
             if changed {
                 self.state
@@ -862,6 +841,19 @@ impl WorkerRenderer {
                 // Also resize backend if dimensions changed
                 self.backend
                     .resize(shared.width() as u32, shared.height() as u32);
+            }
+            changed
+        } else {
+            false
+        };
+
+        // Check for needed hashes and request them from core
+        if viewport_changed {
+            if let Some(sheet_id) = self.state.current_sheet_id() {
+                let needed = self.state.get_unrequested_hashes();
+                if !needed.is_empty() {
+                    self.request_hashes(sheet_id, needed);
+                }
             }
         }
 
@@ -959,8 +951,11 @@ impl WorkerRenderer {
         let show_headings = self.state.show_headings;
         let debug_show_text_updates = self.state.debug_show_text_updates;
         let scale = self.state.viewport.scale();
-        let screen_matrix = self.state.create_screen_space_matrix(canvas_width, canvas_height);
-        let (heading_atlas_font_size, heading_distance_range) = self.state.get_heading_text_params();
+        let screen_matrix = self
+            .state
+            .create_screen_space_matrix(canvas_width, canvas_height);
+        let (heading_atlas_font_size, heading_distance_range) =
+            self.state.get_heading_text_params();
 
         // Background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
@@ -979,8 +974,18 @@ impl WorkerRenderer {
         gl.clear(oob_gray, oob_gray, oob_gray, 1.0);
 
         // Set viewport to content area (after headings)
-        gl.set_viewport(content_x, content_y, content_width.max(0), content_height.max(0));
-        gl.set_scissor(content_x, content_y, content_width.max(0), content_height.max(0));
+        gl.set_viewport(
+            content_x,
+            content_y,
+            content_width.max(0),
+            content_height.max(0),
+        );
+        gl.set_scissor(
+            content_x,
+            content_y,
+            content_width.max(0),
+            content_height.max(0),
+        );
 
         // 1. Background
         if let Some(_vertices) = bg_vertices {
@@ -997,7 +1002,9 @@ impl WorkerRenderer {
 
         // 2. Cell fills
         if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-            sheet.fills.render(gl, &matrix_array, &self.state.viewport, &offsets);
+            sheet
+                .fills
+                .render(gl, &matrix_array, &self.state.viewport, &offsets);
         }
 
         // 3. Grid lines
@@ -1021,20 +1028,41 @@ impl WorkerRenderer {
                     atlas_font_size,
                     distance_range,
                 );
-                if debug_show_text_updates && visible > 0 {
-                    log::info!("[frame_webgl] rendered={}, scale={:.2}", visible, scale);
-                }
+                // Debug text updates logging removed for performance
             }
         }
 
-        // 5. Cursor
-        self.state.ui.cursor.render(gl, &matrix_array, viewport_scale);
+        // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
+        if fonts_ready {
+            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+                render::render_table_headers(
+                    gl,
+                    sheet,
+                    &self.state.viewport,
+                    &offsets,
+                    &self.state.fonts,
+                    &matrix_array,
+                    viewport_scale,
+                    atlas_font_size,
+                    distance_range,
+                    heading_width,
+                    heading_height,
+                    self.state.viewport.dpr,
+                );
+            }
+        }
+
+        // 7. Cursor
+        self.state
+            .ui
+            .cursor
+            .render(gl, &matrix_array, viewport_scale);
 
         // Reset viewport for headings
         gl.reset_viewport();
         gl.disable_scissor();
 
-        // 6. Headings (screen space)
+        // 8. Headings (screen space)
         if show_headings && fonts_ready {
             self.state.ui.headings.layout(&self.state.fonts);
             self.state.ui.headings.render(
@@ -1058,7 +1086,9 @@ impl WorkerRenderer {
         // Pre-extract all values we need before complex borrows
         let fonts_ready = self.fonts_ready();
         let (heading_width, heading_height) = self.state.get_heading_dimensions();
-        let matrix = self.state.viewport
+        let matrix = self
+            .state
+            .viewport
             .view_projection_matrix_with_offset(heading_width, heading_height);
         let matrix_array: [f32; 16] = matrix.to_cols_array();
         let canvas_width = self.state.viewport.width();
@@ -1072,17 +1102,40 @@ impl WorkerRenderer {
         let (atlas_font_size, distance_range) = self.state.get_text_params();
         let show_headings = self.state.show_headings;
         let offsets = self.state.get_sheet_offsets().clone();
-        let screen_matrix = self.state.create_screen_space_matrix(canvas_width, canvas_height);
-        let (heading_atlas_font_size, heading_distance_range) = self.state.get_heading_text_params();
+        let screen_matrix = self
+            .state
+            .create_screen_space_matrix(canvas_width, canvas_height);
+        let (heading_atlas_font_size, heading_distance_range) =
+            self.state.get_heading_text_params();
 
         // Pre-extract background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
 
         // Pre-extract fill vertices (mutable access needed to rebuild caches)
-        let (meta_fill_vertices, hash_fill_vertices) = if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-            render::get_fill_vertices(sheet, &self.state.viewport)
+        let (meta_fill_vertices, hash_fill_vertices) =
+            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+                render::get_fill_vertices(sheet, &self.state.viewport)
+            } else {
+                (None, Vec::new())
+            };
+
+        // Pre-extract table vertices (backgrounds and text meshes)
+        let (table_name_bg, table_col_bg, table_outlines, table_header_lines, table_text_meshes) = if fonts_ready {
+            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
+                render::get_table_vertices_for_webgpu(
+                    sheet,
+                    &self.state.viewport,
+                    &offsets,
+                    &self.state.fonts,
+                    heading_width,
+                    heading_height,
+                    self.state.viewport.dpr,
+                )
+            } else {
+                (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new())
+            }
         } else {
-            (None, Vec::new())
+            (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new())
         };
 
         // Pre-extract grid line vertices
@@ -1090,7 +1143,12 @@ impl WorkerRenderer {
 
         // Pre-extract cursor vertices
         let cursor_fill_vertices = self.state.ui.cursor.get_fill_vertices().map(|v| v.to_vec());
-        let cursor_border_vertices = self.state.ui.cursor.get_border_vertices(effective_scale).map(|v| v.to_vec());
+        let cursor_border_vertices = self
+            .state
+            .ui
+            .cursor
+            .get_border_vertices(effective_scale)
+            .map(|v| v.to_vec());
 
         // Pre-extract viewport bounds for text culling
         let bounds = self.state.viewport.visible_bounds();
@@ -1124,7 +1182,12 @@ impl WorkerRenderer {
                         continue;
                     }
                     hash.rebuild_if_dirty_with_emojis(fonts, emoji_sprites);
-                    hash.rebuild_sprite_if_dirty_webgpu(gpu, fonts, atlas_font_size, distance_range);
+                    hash.rebuild_sprite_if_dirty_webgpu(
+                        gpu,
+                        fonts,
+                        atlas_font_size,
+                        distance_range,
+                    );
                 }
             }
         }
@@ -1138,10 +1201,14 @@ impl WorkerRenderer {
             }
         };
 
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = gpu.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = gpu
+            .device()
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
 
         // Clear with out-of-bounds background color
         let oob_gray = 253.0 / 255.0;
@@ -1170,9 +1237,12 @@ impl WorkerRenderer {
             // Set viewport to content area
             if content_width > 0 && content_height > 0 {
                 pass.set_viewport(
-                    content_x as f32, content_y as f32,
-                    content_width as f32, content_height as f32,
-                    0.0, 1.0,
+                    content_x as f32,
+                    content_y as f32,
+                    content_width as f32,
+                    content_height as f32,
+                    0.0,
+                    1.0,
                 );
             }
 
@@ -1226,7 +1296,39 @@ impl WorkerRenderer {
                 }
             }
 
-            // 5. Cursor
+            // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
+            if !table_name_bg.is_empty() {
+                gpu.draw_triangles(&mut pass, &table_name_bg, &matrix_array);
+            }
+            if !table_col_bg.is_empty() {
+                gpu.draw_triangles(&mut pass, &table_col_bg, &matrix_array);
+            }
+            if !table_outlines.is_empty() {
+                gpu.draw_triangles(&mut pass, &table_outlines, &matrix_array);
+            }
+            if !table_header_lines.is_empty() {
+                gpu.draw_triangles(&mut pass, &table_header_lines, &matrix_array);
+            }
+            for mesh in &table_text_meshes {
+                if mesh.is_empty() {
+                    continue;
+                }
+                let font_scale = mesh.font_size / atlas_font_size;
+                let indices_u32: Vec<u32> =
+                    mesh.get_index_data().iter().map(|&i| i as u32).collect();
+                gpu.draw_text(
+                    &mut pass,
+                    &mesh.get_vertex_data(),
+                    &indices_u32,
+                    mesh.texture_uid,
+                    &matrix_array,
+                    effective_scale,
+                    font_scale,
+                    distance_range,
+                );
+            }
+
+            // 7. Cursor
             if let Some(ref fill_vertices) = cursor_fill_vertices {
                 gpu.draw_triangles(&mut pass, fill_vertices, &matrix_array);
             }
@@ -1235,7 +1337,7 @@ impl WorkerRenderer {
             }
         }
 
-        // 6. Headings in a second pass (screen space)
+        // 8. Headings in a second pass (screen space)
         if show_headings && fonts_ready {
             self.state.ui.headings.layout(&self.state.fonts);
             let debug_label_bounds = self.state.ui.headings.debug_label_bounds;

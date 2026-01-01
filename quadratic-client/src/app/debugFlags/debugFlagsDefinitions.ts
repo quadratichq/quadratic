@@ -47,7 +47,9 @@ export type DebugFlagKeys =
   | 'debugShowCoordinates'
   | 'debugShowAPITimes'
   | 'debugEnableSyncedConnections'
-  | 'debugUseRustRenderer';
+  | 'debugUseRustRenderer'
+  | 'debugDisableTsRenderer'
+  | 'debugDisableRustRenderer';
 
 export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> = {
   debug: {
@@ -268,6 +270,20 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     description: 'Enable the experimental Rust/WebGPU renderer alongside Pixi.js',
     group: 'Rendering',
     restart: true,
+  },
+  debugDisableTsRenderer: {
+    initial: false,
+    title: 'Disable TS Renderer',
+    description: 'Disable the TypeScript (Pixi.js) renderer processing and rendering for performance testing',
+    group: 'Rendering',
+    restart: false,
+  },
+  debugDisableRustRenderer: {
+    initial: false,
+    title: 'Disable Rust Renderer',
+    description: 'Disable the Rust/WebGPU renderer processing and rendering for performance testing',
+    group: 'Rendering',
+    restart: false,
   },
 };
 

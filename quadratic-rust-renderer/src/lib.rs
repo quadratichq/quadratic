@@ -39,6 +39,7 @@
 // Platform-agnostic modules
 mod renderers;
 mod sheets;
+mod tables;
 mod ui;
 mod utils;
 mod viewport;

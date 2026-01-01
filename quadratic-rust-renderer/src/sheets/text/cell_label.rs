@@ -190,6 +190,24 @@ pub struct CellLabel {
 
     /// Whether the mesh cache is valid
     mesh_dirty: bool,
+
+    // === Overflow and clipping for neighbor content ===
+
+    /// How much text overflows to the left of the cell bounds
+    /// Positive value means text extends past cell_x to the left
+    overflow_left: f32,
+
+    /// How much text overflows to the right of the cell bounds
+    /// Positive value means text extends past cell_x + cell_width to the right
+    overflow_right: f32,
+
+    /// Clip boundary from neighbor content to the left (in world coordinates)
+    /// When set, glyphs should not render to the left of this boundary
+    clip_left: Option<f32>,
+
+    /// Clip boundary from neighbor content to the right (in world coordinates)
+    /// When set, glyphs should not render to the right of this boundary
+    clip_right: Option<f32>,
 }
 
 impl CellLabel {
@@ -228,6 +246,10 @@ impl CellLabel {
             cached_meshes: Vec::new(),
             cached_horizontal_lines: Vec::new(),
             mesh_dirty: true,
+            overflow_left: 0.0,
+            overflow_right: 0.0,
+            clip_left: None,
+            clip_right: None,
         }
     }
 
@@ -275,7 +297,21 @@ impl CellLabel {
         // Apply alignment (use core-shared types directly)
         label.align = cell.align.unwrap_or_default();
         label.vertical_align = cell.vertical_align.unwrap_or_default();
-        label.wrap = cell.wrap.unwrap_or_default();
+
+        // Determine wrap mode:
+        // - Table name rows and column headers are always clipped
+        // - Other table cells (column_header implies table) default to clip, can be wrap, but never overflow
+        let is_table_name = cell.table_name.unwrap_or(false);
+        let is_column_header = cell.column_header.unwrap_or(false);
+
+        if is_table_name || is_column_header {
+            // Table headers are always clipped
+            label.wrap = CellWrap::Clip;
+        } else {
+            // Regular cells use their wrap setting, but could be restricted for table cells
+            // Note: If there's a way to detect general table cells, we'd prevent Overflow here too
+            label.wrap = cell.wrap.unwrap_or_default();
+        }
 
         // Copy format spans for RichText styling
         label.format_spans = cell.format_spans.clone();
@@ -504,13 +540,6 @@ impl CellLabel {
                         // Use line_height as the advance width to match text flow
                         let advance = line_height;
 
-                        log::debug!(
-                            "[CellLabel] Found emoji '{}' at pos {} with size {}",
-                            emoji_str,
-                            pos_x,
-                            emoji_size
-                        );
-
                         // Store emoji character data
                         self.emoji_chars.push(EmojiCharData {
                             emoji: emoji_str,
@@ -528,12 +557,6 @@ impl CellLabel {
                         prev_char_code = None;
                         i += emoji_len;
                         continue;
-                    } else {
-                        log::debug!(
-                            "[CellLabel] Potential emoji char '{}' (U+{:04X}) not found in spritesheet",
-                            c,
-                            c as u32
-                        );
                     }
                 }
             }
@@ -830,18 +853,60 @@ impl CellLabel {
     }
 
     /// Calculate the final text position based on alignment
+    /// Also calculates overflow (how much text extends beyond cell bounds)
     fn calculate_position(&mut self, _scale: f32) {
-        // Horizontal positioning
+        // Reset overflow values
+        self.overflow_left = 0.0;
+        self.overflow_right = 0.0;
+
+        let cell_left = self.cell_x;
+        let cell_right = self.cell_x + self.cell_width;
+
+        // Horizontal positioning and overflow calculation
+        // Based on TypeScript CellLabel.updateText() logic
         match self.align {
             CellAlign::Left => {
                 self.text_x = self.cell_x;
+                let text_right = self.text_x + self.text_width;
+                // Left-aligned text can only overflow to the right
+                if text_right > cell_right {
+                    self.overflow_right = text_right - cell_right;
+                }
             }
             CellAlign::Center => {
                 self.text_x = self.cell_x + (self.cell_width - self.text_width) / 2.0;
+                let text_left = self.text_x;
+                let text_right = self.text_x + self.text_width;
+                // Center-aligned text can overflow both directions
+                if text_left < cell_left {
+                    self.overflow_left = cell_left - text_left;
+                }
+                if text_right > cell_right {
+                    self.overflow_right = text_right - cell_right;
+                }
             }
             CellAlign::Right => {
                 self.text_x = self.cell_x + self.cell_width - self.text_width;
+                let text_left = self.text_x;
+                // Right-aligned text can only overflow to the left
+                if text_left < cell_left {
+                    self.overflow_left = cell_left - text_left;
+                }
             }
+        }
+
+        // Debug logging for overflow
+        if self.overflow_left > 0.0 || self.overflow_right > 0.0 {
+            log::debug!(
+                "[CellLabel] ({}, {}) '{}': overflow_left={:.1}, overflow_right={:.1}, text_width={:.1}, cell_width={:.1}",
+                self.col,
+                self.row,
+                &self.text[..self.text.len().min(20)],
+                self.overflow_left,
+                self.overflow_right,
+                self.text_width,
+                self.cell_width
+            );
         }
 
         // Vertical positioning
@@ -864,6 +929,100 @@ impl CellLabel {
                 }
             }
         }
+    }
+
+    // === Overflow and clipping methods ===
+
+    /// Get the overflow to the left (how much text extends past cell_x)
+    #[inline]
+    pub fn overflow_left(&self) -> f32 {
+        self.overflow_left
+    }
+
+    /// Get the overflow to the right (how much text extends past cell_x + cell_width)
+    #[inline]
+    pub fn overflow_right(&self) -> f32 {
+        self.overflow_right
+    }
+
+    /// Check if text overflows to the left
+    #[inline]
+    pub fn has_overflow_left(&self) -> bool {
+        self.overflow_left > 0.0
+    }
+
+    /// Check if text overflows to the right
+    #[inline]
+    pub fn has_overflow_right(&self) -> bool {
+        self.overflow_right > 0.0
+    }
+
+    /// Set the left clip boundary (in world coordinates)
+    /// Call this when a neighbor to the left has content
+    pub fn set_clip_left(&mut self, clip_x: f32) {
+        self.clip_left = Some(clip_x);
+        self.mesh_dirty = true;
+    }
+
+    /// Set the right clip boundary (in world coordinates)
+    /// Call this when a neighbor to the right has content
+    pub fn set_clip_right(&mut self, clip_x: f32) {
+        self.clip_right = Some(clip_x);
+        self.mesh_dirty = true;
+    }
+
+    /// Clear the left clip boundary
+    pub fn clear_clip_left(&mut self) {
+        if self.clip_left.is_some() {
+            self.clip_left = None;
+            self.mesh_dirty = true;
+        }
+    }
+
+    /// Clear the right clip boundary
+    pub fn clear_clip_right(&mut self) {
+        if self.clip_right.is_some() {
+            self.clip_right = None;
+            self.mesh_dirty = true;
+        }
+    }
+
+    /// Get effective left clip boundary
+    /// Returns cell_x if no explicit clip is set, otherwise the clip boundary
+    #[inline]
+    pub fn effective_clip_left(&self) -> f32 {
+        self.clip_left.unwrap_or(self.cell_x)
+    }
+
+    /// Get effective right clip boundary
+    /// Returns cell_x + cell_width if no explicit clip is set, otherwise the clip boundary
+    #[inline]
+    pub fn effective_clip_right(&self) -> f32 {
+        self.clip_right.unwrap_or(self.cell_x + self.cell_width)
+    }
+
+    /// Get the actual left edge of text (text_x, which may be before cell_x for right/center aligned text)
+    #[inline]
+    pub fn text_left(&self) -> f32 {
+        self.text_x
+    }
+
+    /// Get the actual right edge of text
+    #[inline]
+    pub fn text_right(&self) -> f32 {
+        self.text_x + self.text_width
+    }
+
+    /// Get cell left boundary (for neighbor clipping calculation)
+    #[inline]
+    pub fn cell_left(&self) -> f32 {
+        self.cell_x
+    }
+
+    /// Get cell right boundary (for neighbor clipping calculation)
+    #[inline]
+    pub fn cell_right(&self) -> f32 {
+        self.cell_x + self.cell_width
     }
 
     /// Get cached meshes, rebuilding if dirty
@@ -892,6 +1051,24 @@ impl CellLabel {
 
         let scale = font.scale_for_size(self.font_size);
 
+        // Calculate effective clip boundaries
+        // For Clip mode: use cell bounds
+        // For Overflow mode: use neighbor-based clip bounds (if set)
+        let (clip_left, clip_right) = if self.wrap == CellWrap::Clip {
+            // Clip mode: always clip to cell bounds
+            (self.cell_x, self.cell_x + self.cell_width)
+        } else {
+            // Overflow mode: clip to neighbor content boundaries if set
+            // If no neighbor clip is set, allow overflow (use very large bounds)
+            let left = self.clip_left.unwrap_or(f32::NEG_INFINITY);
+            let right = self.clip_right.unwrap_or(f32::INFINITY);
+            (left, right)
+        };
+
+        // Debug logging when clip bounds are applied
+
+        let cell_bottom = self.cell_y + self.cell_height;
+
         // Group glyphs by texture
         let mut meshes: std::collections::HashMap<u32, LabelMesh> =
             std::collections::HashMap::new();
@@ -908,16 +1085,15 @@ impl CellLabel {
             let width = char_data.frame_width * scale;
             let height = char_data.frame_height * scale;
 
-            // Clipping check
-            let cell_right = self.cell_x + self.cell_width;
-            let cell_bottom = self.cell_y + self.cell_height;
-
-            if self.wrap == CellWrap::Clip {
-                if x + width < self.cell_x || x > cell_right {
-                    continue; // Clipped horizontally
-                }
+            // Horizontal clipping check
+            // Clip if any part of the glyph extends past the clip boundaries
+            // For right clip: if glyph extends past clip_right, don't render it
+            // For left clip: if glyph starts before clip_left, don't render it
+            if x < clip_left || x + width > clip_right {
+                continue; // Clipped horizontally
             }
 
+            // Vertical clipping check (always clip to cell bounds vertically)
             if y + height < self.cell_y || y > cell_bottom {
                 continue; // Clipped vertically
             }
@@ -1152,7 +1328,7 @@ impl CellLabel {
             let cell_bottom = self.cell_y + self.cell_height;
 
             if self.wrap == CellWrap::Clip {
-                if x + width < self.cell_x || x > cell_right {
+                if x < self.cell_x || x + width > cell_right {
                     continue; // Clipped horizontally
                 }
             }

@@ -32,10 +32,6 @@ impl WebGLContext {
         self.font_texture_manager.has_texture(texture_uid)
     }
 
-    // =========================================================================
-    // Emoji textures (reuse font_texture_manager since it's just a UID->texture map)
-    // =========================================================================
-
     /// Upload an emoji spritesheet texture from raw RGBA pixel data
     pub fn upload_emoji_texture_from_data(
         &mut self,

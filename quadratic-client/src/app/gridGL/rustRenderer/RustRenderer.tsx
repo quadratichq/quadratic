@@ -4,6 +4,7 @@
  * It creates a canvas that is transferred to the rust renderer worker as an OffscreenCanvas.
  */
 
+import { setDebugFlag } from '@/app/debugFlags/debugFlags';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { ViewportControls } from '@/app/gridGL/rustRenderer/viewport/ViewportControls';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -11,31 +12,56 @@ import { rustRendererWebWorker } from '@/app/web-workers/rustRendererWebWorker/r
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
-type OpacityMode = 'half' | 'rust' | 'ts';
+type RendererMode = 'both' | 'rust-only' | 'ts-only';
 
 export const RustRenderer = memo(() => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backend, setBackend] = useState<string | null>(null);
-  const [opacityMode, setOpacityMode] = useLocalStorage<OpacityMode>('rustRendererOpacityMode', 'half');
+  const [rendererMode, setRendererMode] = useLocalStorage<RendererMode>('rustRendererMode', 'both');
   const [, setViewportControls] = useState<ViewportControls | undefined>(undefined);
 
+  // Use reactive debug flags hook
+  const { debugFlags } = useDebugFlags();
+  const isEnabled = debugFlags.getFlag('debugUseRustRenderer');
+  const isTsDisabled = debugFlags.getFlag('debugDisableTsRenderer');
+  const isRustDisabled = debugFlags.getFlag('debugDisableRustRenderer');
+
+  // Calculate opacity based on renderer mode
   const getOpacity = () => {
-    switch (opacityMode) {
-      case 'rust':
+    if (isRustDisabled) return 0; // Hide Rust canvas when disabled
+    if (isTsDisabled) return 1; // Full opacity when TS is disabled
+    switch (rendererMode) {
+      case 'rust-only':
         return 1;
-      case 'ts':
+      case 'ts-only':
         return 0;
-      case 'half':
+      case 'both':
       default:
         return 0.5;
     }
   };
 
-  // Use reactive debug flags hook
-  const { debugFlags } = useDebugFlags();
-  const isEnabled = debugFlags.getFlag('debugUseRustRenderer');
+  // Sync renderer mode with debug flags
+  const handleRendererModeChange = (mode: RendererMode) => {
+    setRendererMode(mode);
+    switch (mode) {
+      case 'rust-only':
+        setDebugFlag('debugDisableTsRenderer', true);
+        setDebugFlag('debugDisableRustRenderer', false);
+        break;
+      case 'ts-only':
+        setDebugFlag('debugDisableTsRenderer', false);
+        setDebugFlag('debugDisableRustRenderer', true);
+        break;
+      case 'both':
+      default:
+        setDebugFlag('debugDisableTsRenderer', false);
+        setDebugFlag('debugDisableRustRenderer', false);
+        break;
+    }
+  };
 
   const initRenderer = useCallback(async () => {
     if (!canvasRef.current || initialized) return;
@@ -145,65 +171,94 @@ export const RustRenderer = memo(() => {
         >
           {error ? `Error: ${error}` : `Rust: ${initialized ? backend || 'ready' : 'loading...'}`}
         </div>
-        {/* Opacity controls */}
+        {/* Renderer mode controls */}
         {initialized && !error && (
           <div
             style={{
               display: 'flex',
-              gap: 2,
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              borderRadius: 4,
-              padding: 2,
+              flexDirection: 'column',
+              gap: 4,
             }}
           >
-            <button
-              onClick={() => setOpacityMode('ts')}
+            {/* Active renderer indicator */}
+            <div
               style={{
                 padding: '4px 8px',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: opacityMode === 'ts' ? 'bold' : 'normal',
-                backgroundColor: opacityMode === 'ts' ? '#4a90d9' : 'rgba(255, 255, 255, 0.2)',
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
                 color: 'white',
-                border: 'none',
-                borderRadius: 3,
-                cursor: 'pointer',
+                fontSize: 10,
+                fontFamily: 'monospace',
+                borderRadius: 4,
+                textAlign: 'center',
               }}
             >
-              TS
-            </button>
-            <button
-              onClick={() => setOpacityMode('half')}
+              {isTsDisabled && !isRustDisabled && 'TS: OFF | Rust: ON'}
+              {!isTsDisabled && isRustDisabled && 'TS: ON | Rust: OFF'}
+              {!isTsDisabled && !isRustDisabled && 'TS: ON | Rust: ON'}
+              {isTsDisabled && isRustDisabled && 'Both: OFF'}
+            </div>
+            {/* Mode selector buttons */}
+            <div
               style={{
-                padding: '4px 8px',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: opacityMode === 'half' ? 'bold' : 'normal',
-                backgroundColor: opacityMode === 'half' ? '#4a90d9' : 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 3,
-                cursor: 'pointer',
+                display: 'flex',
+                gap: 2,
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                borderRadius: 4,
+                padding: 2,
               }}
             >
-              50/50
-            </button>
-            <button
-              onClick={() => setOpacityMode('rust')}
-              style={{
-                padding: '4px 8px',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: opacityMode === 'rust' ? 'bold' : 'normal',
-                backgroundColor: opacityMode === 'rust' ? '#4a90d9' : 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 3,
-                cursor: 'pointer',
-              }}
-            >
-              Rust
-            </button>
+              <button
+                onClick={() => handleRendererModeChange('ts-only')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  fontWeight: rendererMode === 'ts-only' ? 'bold' : 'normal',
+                  backgroundColor: rendererMode === 'ts-only' ? '#4a90d9' : 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                }}
+                title="Test TS renderer only (disables Rust processing)"
+              >
+                TS Only
+              </button>
+              <button
+                onClick={() => handleRendererModeChange('both')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  fontWeight: rendererMode === 'both' ? 'bold' : 'normal',
+                  backgroundColor: rendererMode === 'both' ? '#4a90d9' : 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                }}
+                title="Run both renderers (50% opacity overlay)"
+              >
+                Both
+              </button>
+              <button
+                onClick={() => handleRendererModeChange('rust-only')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  fontWeight: rendererMode === 'rust-only' ? 'bold' : 'normal',
+                  backgroundColor: rendererMode === 'rust-only' ? '#4a90d9' : 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                }}
+                title="Test Rust renderer only (disables TS processing)"
+              >
+                Rust Only
+              </button>
+            </div>
           </div>
         )}
       </div>

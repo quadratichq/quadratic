@@ -45,11 +45,9 @@ impl Sheets {
         }
 
         if self.sheets.contains_key(&sheet_id) {
-            log::info!("[Sheets] Switching to sheet {}", sheet_id);
             self.current = Some(sheet_id);
             true
         } else {
-            log::warn!("[Sheets] Attempted to switch to unknown sheet {}", sheet_id);
             false
         }
     }
@@ -92,9 +90,6 @@ impl Sheets {
         if self.current == Some(sheet_id) {
             // Switch to another sheet if available
             self.current = self.sheets.keys().next().cloned();
-            if let Some(new_id) = &self.current {
-                log::info!("[Sheets] Sheet deleted, switching to {}", new_id);
-            }
         }
     }
 

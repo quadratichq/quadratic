@@ -11,15 +11,19 @@ use crate::grid::SheetId;
 use crate::wasm_bindings::js::log;
 use quadratic_core_shared::{
     CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, CoreToRenderer, HashCells, NumericFormatKind, RenderCell,
-    RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial, RenderNumber, RendererToCore,
-    SheetFill, SheetInfo, serialization,
+    RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial, RenderCodeCell,
+    RenderCodeCellState, RenderColumnHeader, RenderNumber, RendererToCore, SheetFill, SheetInfo,
+    serialization,
 };
 
 use crate::grid::{
     formatting::{
         CellAlign, CellVerticalAlign, CellWrap, NumericFormatKind as CoreNumericFormatKind,
     },
-    js_types::{JsNumber, JsRenderCellFormatSpan, JsRenderCellLinkSpan, JsRenderCellSpecial},
+    js_types::{
+        JsDataTableColumnHeader, JsNumber, JsRenderCellFormatSpan, JsRenderCellLinkSpan,
+        JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
+    },
 };
 
 fn convert_align(align: CellAlign) -> quadratic_core_shared::CellAlign {
@@ -91,6 +95,45 @@ fn convert_format_span(span: JsRenderCellFormatSpan) -> RenderCellFormatSpan {
         strike_through: span.strike_through,
         text_color: span.text_color,
         link: span.link,
+    }
+}
+
+fn convert_code_cell_state(state: JsRenderCodeCellState) -> RenderCodeCellState {
+    match state {
+        JsRenderCodeCellState::NotYetRun => RenderCodeCellState::NotYetRun,
+        JsRenderCodeCellState::RunError => RenderCodeCellState::RunError,
+        JsRenderCodeCellState::SpillError => RenderCodeCellState::SpillError,
+        JsRenderCodeCellState::Success => RenderCodeCellState::Success,
+        JsRenderCodeCellState::HTML => RenderCodeCellState::Html,
+        JsRenderCodeCellState::Image => RenderCodeCellState::Image,
+    }
+}
+
+fn convert_column_header(column: JsDataTableColumnHeader) -> RenderColumnHeader {
+    RenderColumnHeader {
+        name: column.name,
+        display: column.display,
+        value_index: column.value_index,
+    }
+}
+
+fn convert_code_cell(cell: JsRenderCodeCell) -> RenderCodeCell {
+    RenderCodeCell {
+        x: cell.x,
+        y: cell.y,
+        w: cell.w,
+        h: cell.h,
+        language: cell.language,
+        state: convert_code_cell_state(cell.state),
+        name: cell.name,
+        columns: cell.columns.into_iter().map(convert_column_header).collect(),
+        first_row_header: cell.first_row_header,
+        show_name: cell.show_name,
+        show_columns: cell.show_columns,
+        is_code: cell.is_code,
+        is_html: cell.is_html,
+        is_html_image: cell.is_html_image,
+        alternating_colors: cell.alternating_colors,
     }
 }
 
@@ -176,11 +219,16 @@ impl GridController {
                 // Send all sheet info
                 let _ = self.send_all_sheet_info_to_rust_renderer();
 
-                // Send meta fills and initial hashes for the first sheet
+                // Send meta fills, code cells, and initial hashes for the first sheet
                 if let Some(first_sheet_id) = self.sheet_ids().first().copied() {
                     // Send meta fills
                     if let Err(e) = self.send_meta_fills_to_rust_renderer_by_id(first_sheet_id) {
                         log(&format!("[rust_renderer] Error sending meta fills: {}", e));
+                    }
+
+                    // Send code cells (tables)
+                    if let Err(e) = self.send_code_cells_to_rust_renderer(first_sheet_id) {
+                        log(&format!("[rust_renderer] Error sending code cells: {}", e));
                     }
 
                     // Send initial hashes for a reasonable viewport (e.g., first 10x10 hashes)
@@ -307,6 +355,64 @@ impl GridController {
 
         crate::wasm_bindings::js::jsSendToRustRenderer(bytes);
 
+        Ok(())
+    }
+
+    /// Send code cells (tables) for a sheet to the rust renderer.
+    fn send_code_cells_to_rust_renderer(&self, sheet_id: SheetId) -> Result<(), String> {
+        let sheet = self
+            .try_sheet(sheet_id)
+            .ok_or_else(|| "Sheet not found".to_string())?;
+
+        let shared_sheet_id = quadratic_core_shared::SheetId::from_str(&sheet_id.to_string())
+            .map_err(|e| format!("Invalid sheet_id: {e}"))?;
+
+        // Collect all code cells/tables from the sheet
+        let code_cells: Vec<RenderCodeCell> = sheet
+            .data_tables
+            .expensive_iter()
+            .filter_map(|(pos, _data_table)| {
+                // Use the existing render_code_cell method via get_render_code_cell
+                sheet
+                    .get_render_code_cell(*pos)
+                    .map(|js_cell| convert_code_cell(js_cell))
+            })
+            .collect();
+
+        if code_cells.is_empty() {
+            log(&format!(
+                "[rust_renderer] No code cells to send for sheet {}",
+                sheet_id
+            ));
+            return Ok(());
+        }
+
+        let message = CoreToRenderer::CodeCells {
+            sheet_id: shared_sheet_id,
+            code_cells: code_cells.clone(),
+        };
+
+        let bytes = serialization::serialize(&message)
+            .map_err(|e| format!("Failed to serialize message: {e}"))?;
+
+        log(&format!(
+            "[rust_renderer] Sending {} code cells ({} bytes)",
+            code_cells.len(),
+            bytes.len()
+        ));
+
+        crate::wasm_bindings::js::jsSendToRustRenderer(bytes);
+
+        Ok(())
+    }
+
+    /// Send code cells for all sheets to the rust renderer.
+    /// This is called when the file is loaded.
+    #[allow(dead_code)]
+    pub fn send_all_code_cells_to_rust_renderer(&self) -> Result<(), String> {
+        for sheet_id in self.sheet_ids() {
+            self.send_code_cells_to_rust_renderer(sheet_id)?;
+        }
         Ok(())
     }
 

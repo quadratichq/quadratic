@@ -1,13 +1,14 @@
 //! Sheet - manages a single sheet's data
 //!
-//! Each sheet owns its own fills, labels, and spatial hashes.
+//! Each sheet owns its own fills, labels, spatial hashes, and table cache.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use quadratic_core_shared::{SheetId, SheetOffsets};
 
 use super::fills::CellsFills;
 use super::text::{hash_key, CellsTextHash};
+use crate::tables::TableCache;
 
 /// Manages data for a single sheet
 pub struct Sheet {
@@ -24,8 +25,16 @@ pub struct Sheet {
     /// Cell fills (background colors)
     pub fills: CellsFills,
 
+    /// Table cache for rendering table headers
+    pub tables: TableCache,
+
     /// Total label count (cached for stats)
     pub label_count: usize,
+
+    /// Content cache - tracks which cells have content for overflow clipping
+    /// Key is (column, row) - used to determine if a neighbor cell has content
+    /// that should cause text to be clipped
+    pub content_cache: HashSet<(i64, i64)>,
 }
 
 impl Sheet {
@@ -36,7 +45,9 @@ impl Sheet {
             sheet_offsets: SheetOffsets::default(),
             fills: CellsFills::new(sheet_id),
             hashes: HashMap::new(),
+            tables: TableCache::new(),
             label_count: 0,
+            content_cache: HashSet::new(),
         }
     }
 
@@ -47,13 +58,44 @@ impl Sheet {
             sheet_offsets: offsets,
             fills: CellsFills::new(sheet_id),
             hashes: HashMap::new(),
+            tables: TableCache::new(),
             label_count: 0,
+            content_cache: HashSet::new(),
         }
+    }
+
+    /// Check if a cell has content (for overflow clipping)
+    pub fn has_content(&self, col: i64, row: i64) -> bool {
+        self.content_cache.contains(&(col, row))
+    }
+
+    /// Add a cell to the content cache
+    pub fn add_content(&mut self, col: i64, row: i64) {
+        self.content_cache.insert((col, row));
+    }
+
+    /// Remove a cell from the content cache
+    pub fn remove_content(&mut self, col: i64, row: i64) {
+        self.content_cache.remove(&(col, row));
+    }
+
+    /// Clear content cache for a hash region
+    pub fn clear_content_for_hash(&mut self, hash_x: i64, hash_y: i64) {
+        use super::text::{HASH_WIDTH, HASH_HEIGHT};
+        let start_col = hash_x * HASH_WIDTH + 1;
+        let end_col = start_col + HASH_WIDTH;
+        let start_row = hash_y * HASH_HEIGHT + 1;
+        let end_row = start_row + HASH_HEIGHT;
+
+        self.content_cache
+            .retain(|(col, row)| !(*col >= start_col && *col < end_col && *row >= start_row && *row < end_row));
     }
 
     /// Update sheet offsets
     pub fn update_from_sheet_info(&mut self, offsets: SheetOffsets) {
         self.sheet_offsets = offsets;
+        // Update table bounds when offsets change
+        self.tables.update_bounds(&self.sheet_offsets);
     }
 
     /// Get a mutable reference to a hash, creating it if needed
@@ -88,5 +130,39 @@ impl Sheet {
         self.hashes.clear();
         self.label_count = 0;
         self.fills = CellsFills::new(self.sheet_id.clone());
+        self.tables.clear();
+        self.content_cache.clear();
+    }
+
+    /// Find the next cell with content to the left of the given column on the same row
+    /// Returns the column index if found, None otherwise
+    pub fn find_content_left(&self, col: i64, row: i64) -> Option<i64> {
+        // Start from col-1 and search left
+        let mut search_col = col - 1;
+        // Limit search to avoid scanning too far (100 columns max)
+        let min_col = (col - 100).max(1);
+        while search_col >= min_col {
+            if self.content_cache.contains(&(search_col, row)) {
+                return Some(search_col);
+            }
+            search_col -= 1;
+        }
+        None
+    }
+
+    /// Find the next cell with content to the right of the given column on the same row
+    /// Returns the column index if found, None otherwise
+    pub fn find_content_right(&self, col: i64, row: i64) -> Option<i64> {
+        // Start from col+1 and search right
+        let mut search_col = col + 1;
+        // Limit search to avoid scanning too far (100 columns max)
+        let max_col = col + 100;
+        while search_col <= max_col {
+            if self.content_cache.contains(&(search_col, row)) {
+                return Some(search_col);
+            }
+            search_col += 1;
+        }
+        None
     }
 }
