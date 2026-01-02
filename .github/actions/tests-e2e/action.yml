@@ -53,3 +53,8 @@ runs:
         overwrite: true
         include-hidden-files: true
         if-no-files-found: warn
+
+    - name: Fail if tests failed
+      if: steps.run-tests.outcome == 'failure'
+      run: exit 1
+      shell: bash
