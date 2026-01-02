@@ -58,7 +58,6 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
       .first()
       .click({ timeout: 60 * 1000 });
     await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
-    await page.locator('[role="alertdialog"] button:has-text("Delete")').click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5 * 1000);
   }
 

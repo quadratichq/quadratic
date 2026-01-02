@@ -53,8 +53,41 @@ pub trait PubSub {
         channel: &str,
     ) -> impl Future<Output = Result<()>> + Send;
 
+    /// Get a list of scheduled tasks
+    fn scheduled_tasks(
+        &mut self,
+        set_key: &str,
+    ) -> impl Future<Output = Result<Vec<String>>> + Send;
+
+    /// Upsert a scheduled task
+    fn upsert_scheduled_task(
+        &mut self,
+        set_key: &str,
+        task: &str,
+    ) -> impl Future<Output = Result<()>> + Send;
+
+    /// Remove a scheduled task
+    fn remove_scheduled_task(
+        &mut self,
+        set_key: &str,
+        task: &str,
+    ) -> impl Future<Output = Result<()>> + Send;
+
     /// Subscribe to a channel
-    fn subscribe(&mut self, channel: &str, group: &str) -> impl Future<Output = Result<()>> + Send;
+    fn subscribe(
+        &mut self,
+        channel: &str,
+        group: &str,
+        id: Option<&str>,
+    ) -> impl Future<Output = Result<()>> + Send;
+
+    /// Subscribe to a channel with first message
+    fn subscribe_with_first_message(
+        &mut self,
+        channel: &str,
+        group: &str,
+        id: Option<&str>,
+    ) -> impl Future<Output = Result<()>> + Send;
 
     /// Publish a message to a channel
     fn publish(
@@ -78,8 +111,39 @@ pub trait PubSub {
     /// Trim a channel
     fn trim(&mut self, channel: &str, key: &str) -> impl Future<Output = Result<i64>> + Send;
 
+    /// Publish a message to a channel once with dedupe key
+    fn publish_once_with_dedupe_key(
+        &mut self,
+        dedupe_key: &str,
+        channel: &str,
+        key: &str,
+        value: &[u8],
+        active_channel: Option<&str>,
+    ) -> impl Future<Output = Result<bool>> + Send;
+
+    /// Acknowledge a message which was published once with dedupe key
+    fn ack_once(
+        &mut self,
+        dedupe_key: &str,
+        channel: &str,
+        group: &str,
+        key: &str,
+        active_channel: Option<&str>,
+    ) -> impl Future<Output = Result<()>> + Send;
+
     /// Get messages from a channel
     fn messages(
+        &mut self,
+        channel: &str,
+        group: &str,
+        consumer: &str,
+        keys: Option<&str>,
+        max_messages: usize,
+        preserve_sequence: bool,
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
+
+    /// Get messages from a channel
+    fn messages_with_dedupe_key(
         &mut self,
         channel: &str,
         group: &str,
@@ -97,8 +161,17 @@ pub trait PubSub {
         preserve_sequence: bool,
     ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
 
+    /// Get messages from a channel between two specific keys
+    fn get_messages_between(
+        &mut self,
+        channel: &str,
+        start: &str,
+        end: &str,
+        preserve_sequence: bool,
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
+
     /// Get messages from a channel after a specific key
-    fn get_messages_from(
+    fn get_messages_after(
         &mut self,
         channel: &str,
         id: &str,
@@ -111,4 +184,7 @@ pub trait PubSub {
         channel: &str,
         preserve_sequence: bool,
     ) -> impl Future<Output = Result<(String, Vec<u8>)>> + Send;
+
+    /// Get the length of a channel
+    fn length(&mut self, channel: &str) -> impl Future<Output = Result<usize>> + Send;
 }
