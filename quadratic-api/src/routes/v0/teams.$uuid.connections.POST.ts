@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -47,6 +48,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
     },
   });
+
+  // if this is a synced connection type, create a synced connection
+  if (isSyncedConnectionType(type)) {
+    await dbClient.syncedConnection.create({
+      data: {
+        connectionId: result.id,
+      },
+    });
+  }
 
   // Return its identifier
   return res.status(201).json({ uuid: result.uuid });

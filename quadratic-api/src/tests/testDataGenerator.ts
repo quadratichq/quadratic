@@ -286,6 +286,8 @@ export async function clearDb() {
     dbClient.fileInvite.deleteMany(),
     dbClient.userFileRole.deleteMany(),
     dbClient.file.deleteMany(),
+    dbClient.syncedConnectionLog.deleteMany(),
+    dbClient.syncedConnection.deleteMany(),
     dbClient.connection.deleteMany(),
     dbClient.userTeamRole.deleteMany(),
     dbClient.teamInvite.deleteMany(),

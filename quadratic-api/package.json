@@ -27,6 +27,7 @@
     "docker:down": "docker compose down",
     "docker:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- ts-node-dev --watch src --project ./tsconfig.json -- ./src/server.ts && npm run docker:down",
     "docker:test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles && npm run docker:down",
+    "docker:test:connections": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles --testPathPattern=connection && npm run docker:down",
     "docker:test:scheduled-tasks": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles --testPathPattern=scheduled[-_]task.*test && npm run docker:down",
     "docker:test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- jest --runInBand && npm run docker:down",
     "key:generate": "openssl rand -hex 32",
