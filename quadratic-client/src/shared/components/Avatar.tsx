@@ -32,7 +32,6 @@ export const Avatar = memo(
             alt={alt}
             ref={ref}
             src={src}
-            crossOrigin="anonymous"
             onError={handleError}
             style={{ ...stylePreset, ...style }}
             className={className}
