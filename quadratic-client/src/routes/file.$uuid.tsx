@@ -204,7 +204,7 @@ export const Component = memo(() => {
   const { loggedInUser } = useRootRouteLoaderData();
   const loaderData = useLoaderData() as FileData;
   const {
-    file: { uuid: fileUuid },
+    file: { uuid: fileUuid, timezone: fileTimezone },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = loaderData;
@@ -230,6 +230,30 @@ export const Component = memo(() => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
 
+  // Set timezone if not already set and user has editor rights
+  useEffect(() => {
+    const setTimezoneIfNeeded = async () => {
+      // Check if timezone is not set
+      if (fileTimezone !== null) return;
+
+      // Check if user has editor rights
+      const hasEditorRights = filePermissions.includes('FILE_EDIT');
+      if (!hasEditorRights) return;
+
+      // Get user's current timezone
+      try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (userTimezone) {
+          await apiClient.files.update(fileUuid, { timezone: userTimezone });
+        }
+      } catch (error) {
+        // Silently fail if timezone detection or update fails
+        console.error('Failed to set timezone:', error);
+      }
+    };
+
+    setTimezoneIfNeeded();
+  }, [fileTimezone, filePermissions, fileUuid]);
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
