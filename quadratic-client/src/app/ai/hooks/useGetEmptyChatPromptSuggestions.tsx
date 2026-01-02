@@ -1,8 +1,10 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -19,6 +21,7 @@ export type EmptyChatPromptSuggestions = z.infer<
 export const useGetEmptyChatPromptSuggestions = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { connections, isLoading: isConnectionsLoading } = useConnectionsFetcher();
+  const { getSummaryContext } = useSummaryContextMessages();
 
   const getEmptyChatPromptSuggestions = useRecoilCallback(
     ({ snapshot }) =>
@@ -39,7 +42,10 @@ export const useGetEmptyChatPromptSuggestions = () => {
           }
 
           const connection = connections.find((connection) => connection.uuid === context.connection?.id);
-          if (!connection && files.length === 0 && importFiles.length === 0) {
+          const sheetHasData = fileHasData();
+
+          // Return early only if there's no connection, no attached files, no import files, AND no data on the sheet
+          if (!connection && files.length === 0 && importFiles.length === 0 && !sheetHasData) {
             return;
           }
 
@@ -57,13 +63,27 @@ export const useGetEmptyChatPromptSuggestions = () => {
             }
           }
 
+          // Get sheet data summary if there's data on the sheet
+          let sheetDataSummary: ChatMessage[] = [];
+          if (sheetHasData) {
+            sheetDataSummary = await getSummaryContext();
+          }
+
           const messages: ChatMessage[] = [
+            // Include sheet data summary context first
+            ...sheetDataSummary,
             {
               role: 'user',
               content: [
                 ...files,
                 createTextContent(
                   `Use empty_chat_prompt_suggestions tool to provide three prompt suggestions for the user based on:\n
+${
+  sheetHasData
+    ? ` - The spreadsheet already has data loaded (see the file summary context above). Generate suggestions relevant to analyzing, visualizing, or working with this existing data.`
+    : ''
+}
+
 ${
   !!context.connection && !!connectionSchemaMarkdown
     ? ` - User has selected a ${context.connection.type} connection named ${context.connection.name} with id ${context.connection.id}. Details of this connection are as follows for generating the prompt suggestions:
@@ -115,7 +135,7 @@ ${
           console.error('[useGetEmptyChatPromptSuggestions] error: ', error);
         }
       },
-    [handleAIRequestToAPI, connections, isConnectionsLoading]
+    [handleAIRequestToAPI, connections, isConnectionsLoading, getSummaryContext]
   );
 
   return { getEmptyChatPromptSuggestions };
