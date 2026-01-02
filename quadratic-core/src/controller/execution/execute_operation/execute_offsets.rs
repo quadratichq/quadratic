@@ -47,7 +47,7 @@ impl GridController {
                 }
             }
 
-            transaction.add_fill_cells(sheet_id);
+            transaction.add_fill_cells_from_columns(sheet, column);
             transaction.add_borders(sheet_id);
             self.thumbnail_dirty_sheet_rect(
                 transaction,
@@ -106,7 +106,7 @@ impl GridController {
                     .insert((None, Some(row)), new_size);
             }
 
-            transaction.add_fill_cells(sheet_id);
+            transaction.add_fill_cells_from_rows(sheet, row);
             transaction.add_borders(sheet_id);
             self.thumbnail_dirty_sheet_rect(
                 transaction,
@@ -176,9 +176,13 @@ impl GridController {
                 });
             }
 
-            transaction.add_fill_cells(sheet_id);
+            let min_row = row_heights.iter().map(|row_height| row_height.row).min();
+            if let Some(min_row) = min_row {
+                let sheet = self.try_sheet(sheet_id).expect("sheet should exist");
+                transaction.add_fill_cells_from_rows(sheet, min_row);
+            }
             transaction.add_borders(sheet_id);
-            if let Some(min_row) = row_heights.iter().map(|row_height| row_height.row).min() {
+            if let Some(min_row) = min_row {
                 self.thumbnail_dirty_sheet_rect(
                     transaction,
                     SheetRect::single_pos((1, min_row).into(), sheet_id),
@@ -247,13 +251,16 @@ impl GridController {
                 }
             }
 
-            transaction.add_fill_cells(sheet_id);
-            transaction.add_borders(sheet_id);
-            if let Some(min_column) = column_widths
+            let min_column = column_widths
                 .iter()
                 .map(|column_width| column_width.column)
-                .min()
-            {
+                .min();
+            if let Some(min_column) = min_column {
+                let sheet = self.try_sheet(sheet_id).expect("sheet should exist");
+                transaction.add_fill_cells_from_columns(sheet, min_column);
+            }
+            transaction.add_borders(sheet_id);
+            if let Some(min_column) = min_column {
                 self.thumbnail_dirty_sheet_rect(
                     transaction,
                     SheetRect::single_pos((min_column, 1).into(), sheet_id),
@@ -303,7 +310,7 @@ impl GridController {
                 &self.a1_context,
                 vec![A1Selection::all(sheet_id)],
             );
-            transaction.add_fill_cells(sheet_id);
+            transaction.add_all_fill_cells(sheet);
             transaction.add_borders(sheet_id);
         }
 
@@ -357,7 +364,7 @@ impl GridController {
                 &self.a1_context,
                 vec![A1Selection::all(sheet_id)],
             );
-            transaction.add_fill_cells(sheet_id);
+            transaction.add_all_fill_cells(sheet);
             transaction.add_borders(sheet_id);
         }
 

@@ -118,7 +118,7 @@ impl Sheet {
 
         // remove the column's data from the sheet
         if self.formats.has_fills() {
-            transaction.add_fill_cells(self.id);
+            transaction.add_fill_cells_from_columns(self, column);
         }
 
         // remove the column's formats from the sheet

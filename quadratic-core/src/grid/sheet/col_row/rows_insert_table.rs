@@ -72,7 +72,8 @@ impl Sheet {
                             .as_ref()
                             .is_some_and(|formats| formats.has_fills())
                         {
-                            transaction.add_fill_cells(sheet_id);
+                            let output_rect = dt.output_rect(pos, false);
+                            transaction.add_fill_cells(sheet_id, output_rect);
                         }
                         if !dt
                             .borders

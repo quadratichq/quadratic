@@ -102,7 +102,7 @@ mod test {
         },
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
-            js::{clear_js_calls, expect_js_call},
+            js::{clear_js_calls, expect_js_call, expect_js_call_count},
         },
     };
 
@@ -384,17 +384,8 @@ mod test {
             format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             false,
         );
-        // should send sheet fills for the duplicated sheet
-        let fills = gc.sheet(duplicated_sheet_id).get_all_render_fills();
-        expect_js_call(
-            "jsSheetFills",
-            format!(
-                "{},{:?}",
-                duplicated_sheet_id,
-                serde_json::to_vec(&fills).unwrap()
-            ),
-            false,
-        );
+        // should send sheet fills for the duplicated sheet (now per hash)
+        expect_js_call_count("jsHashRenderFills", 1, false);
         // should send borders for the duplicated sheet
         let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet();
         let borders_str = serde_json::to_vec(&borders).unwrap();

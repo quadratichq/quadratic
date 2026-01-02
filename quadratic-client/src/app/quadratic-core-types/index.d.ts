@@ -92,6 +92,7 @@ export type JsFormulaParseResult = { parse_error_msg: string | null, parse_error
 export type JsGetAICellResult = { selection: string, page: number, total_pages: number, values: Array<JsCellValueRanges>, };
 export type JsHashesDirty = { sheet_id: SheetId, hashes: Array<Pos>, };
 export type JsHashRenderCells = { sheet_id: SheetId, hash: Pos, cells: Array<JsRenderCell>, };
+export type JsHashRenderFills = { sheet_id: SheetId, hash: Pos, fills: Array<JsRenderFill>, };
 export type JsHashValidationWarnings = { sheet_id: SheetId, hash: Pos | null, warnings: Array<JsValidationWarning>, };
 export type JsHtmlOutput = { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, };
 export type JsNumber = { decimals: number | null, commas: boolean | null, format: NumericFormat | null, };
