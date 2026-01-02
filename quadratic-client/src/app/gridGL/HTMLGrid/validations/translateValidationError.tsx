@@ -201,7 +201,7 @@ export const translateValidationError = async (
           if ('DateRange' in r) {
             return (
               <div key={i}>
-                {isNotUndefinedOrNull(r.DateRange[0]) && isNotUndefinedOrNull(r.DateRange[1]) && (
+                {r.DateRange[0] != null && r.DateRange[1] != null && (
                   <>
                     Date {verb} be between{' '}
                     <span className={listClassName}>
@@ -210,13 +210,13 @@ export const translateValidationError = async (
                     .
                   </>
                 )}
-                {isNotUndefinedOrNull(r.DateRange[0]) && !isNotUndefinedOrNull(r.DateRange[1]) && (
+                {r.DateRange[0] != null && r.DateRange[1] == null && (
                   <>
                     Date {verb} be on or after{' '}
                     <span className={listClassName}>{numberToDate(BigInt(r.DateRange[0]!))}</span>.
                   </>
                 )}
-                {!isNotUndefinedOrNull(r.DateRange[0]) && isNotUndefinedOrNull(r.DateRange[1]) && (
+                {r.DateRange[0] == null && r.DateRange[1] != null && (
                   <>
                     Date {verb} be on or before{' '}
                     <span className={listClassName}>{numberToDate(BigInt(r.DateRange[1]!))}</span>.
