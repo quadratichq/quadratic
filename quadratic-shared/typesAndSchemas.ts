@@ -523,6 +523,29 @@ export const ApiSchemas = {
   '/v0/user/ai-rules.GET.response': z.object({
     aiRules: z.string().nullable(),
   }),
+  '/v0/user/ai-languages.PATCH.request': z.object({
+    aiLanguages: z.object({
+      formulas: z.boolean(),
+      python: z.boolean(),
+      javascript: z.boolean(),
+    }),
+  }),
+  '/v0/user/ai-languages.PATCH.response': z.object({
+    aiLanguages: z.object({
+      formulas: z.boolean(),
+      python: z.boolean(),
+      javascript: z.boolean(),
+    }),
+  }),
+  '/v0/user/ai-languages.GET.response': z.object({
+    aiLanguages: z
+      .object({
+        formulas: z.boolean(),
+        python: z.boolean(),
+        javascript: z.boolean(),
+      })
+      .nullable(),
+  }),
 
   /**
    *

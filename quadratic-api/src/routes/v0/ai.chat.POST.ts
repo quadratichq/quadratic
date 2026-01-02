@@ -12,7 +12,12 @@ import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
-import { getAIRulesContext, getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import {
+  getAILanguagesContext,
+  getAIRulesContext,
+  getQuadraticContext,
+  getToolUseContext,
+} from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
@@ -54,11 +59,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  // Fetch user and team AI rules
+  // Fetch user and team AI rules and language preferences
   const [user, team] = await Promise.all([
     dbClient.user.findUnique({
       where: { id: userId },
-      select: { aiRules: true },
+      select: { aiRules: true, aiLanguages: true },
     }),
     dbClient.team.findUnique({
       where: { id: ownerTeam.id },
@@ -152,6 +157,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const aiRulesContext = getAIRulesContext(user?.aiRules ?? null, team?.aiRules ?? null);
   if (aiRulesContext.length > 0) {
     args.messages = [...aiRulesContext, ...args.messages];
+  }
+
+  // Add AI language preferences context
+  const aiLanguagesContext = getAILanguagesContext(
+    user?.aiLanguages as { formulas: boolean; python: boolean; javascript: boolean } | null
+  );
+  if (aiLanguagesContext.length > 0) {
+    args.messages = [...aiLanguagesContext, ...args.messages];
   }
 
   const parsedResponse = await handleAIRequest({
