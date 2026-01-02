@@ -199,9 +199,16 @@ impl Sheet {
 
     /// Returns the JsCellValue at a position
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
-        self.display_value(pos).map(|value| JsCellValue {
-            value: value.to_string(),
-            kind: value.into(),
+        self.display_value(pos).map(|value| {
+            let spans = match &value {
+                CellValue::RichText(spans) => Some(spans.clone()),
+                _ => None,
+            };
+            JsCellValue {
+                value: value.to_string(),
+                kind: value.into(),
+                spans,
+            }
         })
     }
 
@@ -445,40 +452,63 @@ impl Sheet {
         }
     }
 
-    /// Returns the rows with wrap formatting in a rect.
+    /// Returns the rows that need auto-resizing in a rect.
+    /// This includes rows with wrap formatting and rows with multi-line text (containing newlines).
     pub fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
-        self.formats
-            .wrap
-            .nondefault_rects_in_rect(rect)
-            .filter(|(_, wrap)| wrap == &Some(CellWrap::Wrap))
-            .flat_map(|(rect, _)| {
+        let mut rows: HashSet<i64> = HashSet::new();
+
+        // Include rows with wrap formatting
+        for (wrap_rect, wrap) in self.formats.wrap.nondefault_rects_in_rect(rect) {
+            if wrap == Some(CellWrap::Wrap) {
                 if include_blanks {
-                    rect.y_range().collect::<Vec<i64>>()
+                    rows.extend(wrap_rect.y_range());
                 } else {
-                    self.columns
-                        .get_nondefault_rects_in_rect(rect)
-                        .flat_map(|(rect, _)| rect.y_range())
-                        .chain(
-                            self.data_tables
-                                .get_nondefault_rects_in_rect(rect)
-                                .flat_map(|rect| rect.y_range()),
-                        )
-                        .collect()
-                }
-            })
-            .chain(self.iter_data_tables_intersects_rect(rect).flat_map(
-                |(output_rect, intersection_rect, data_table)| {
-                    let mut rows_to_resize = HashSet::new();
-                    data_table.get_rows_with_wrap_in_display_rect(
-                        &output_rect.min,
-                        &intersection_rect,
-                        include_blanks,
-                        &mut rows_to_resize,
+                    rows.extend(
+                        self.columns
+                            .get_nondefault_rects_in_rect(wrap_rect)
+                            .flat_map(|(r, _)| r.y_range())
+                            .chain(
+                                self.data_tables
+                                    .get_nondefault_rects_in_rect(wrap_rect)
+                                    .flat_map(|r| r.y_range()),
+                            ),
                     );
-                    rows_to_resize
-                },
-            ))
-            .collect()
+                }
+            }
+        }
+
+        // Include rows with multi-line text (containing newlines)
+        for pos in self.columns.iter_content_in_rect(rect) {
+            if !rows.contains(&pos.y)
+                && let Some(CellValue::Text(text)) = self.columns.get_value(&pos)
+                && (text.contains('\n') || text.contains('\r'))
+            {
+                rows.insert(pos.y);
+            }
+        }
+
+        // Include rows from data tables with wrap formatting
+        for (output_rect, intersection_rect, data_table) in
+            self.iter_data_tables_intersects_rect(rect)
+        {
+            data_table.get_rows_with_wrap_in_display_rect(
+                &output_rect.min,
+                &intersection_rect,
+                include_blanks,
+                &mut rows,
+            );
+
+            // Also check data table cells for multi-line text
+            data_table.get_rows_with_multiline_text_in_display_rect(
+                &output_rect.min,
+                &intersection_rect,
+                &mut rows,
+            );
+        }
+
+        let mut result: Vec<i64> = rows.into_iter().collect();
+        result.sort();
+        result
     }
 
     /// Returns the rows with wrap formatting in a column.
@@ -881,6 +911,39 @@ mod test {
     }
 
     #[test]
+    fn test_get_rows_with_multiline_text() {
+        let mut sheet = Sheet::test();
+
+        // Set single-line values - should not be included
+        sheet.set_value(pos![A1], "single line");
+        sheet.set_value(pos![A2], "another single line");
+
+        // Set multi-line values - should be included
+        sheet.set_value(pos![A3], "line one\nline two");
+        sheet.set_value(pos![A4], "line one\rline two");
+        sheet.set_value(pos![B5], "multiple\nlines\nhere");
+
+        let rect = Rect {
+            min: pos![A1],
+            max: pos![B6],
+        };
+
+        // Without wrap formatting, should still find rows with multiline text
+        let rows = sheet.get_rows_with_wrap_in_rect(rect, false);
+        assert_eq!(rows, vec![3, 4, 5]);
+
+        // Add wrap formatting to row 1
+        sheet
+            .formats
+            .wrap
+            .set_rect(1, 1, Some(1), Some(1), Some(CellWrap::Wrap));
+
+        // Now should include row 1 (wrap) and rows 3, 4, 5 (multiline text)
+        let rows = sheet.get_rows_with_wrap_in_rect(rect, false);
+        assert_eq!(rows, vec![1, 3, 4, 5]);
+    }
+
+    #[test]
     fn js_cell_value() {
         let mut sheet = Sheet::test();
         sheet.set_value(Pos { x: 0, y: 0 }, "test");
@@ -889,7 +952,32 @@ mod test {
             js_cell_value,
             Some(JsCellValue {
                 value: "test".to_string(),
-                kind: JsCellValueKind::Text
+                kind: JsCellValueKind::Text,
+                spans: None,
+            })
+        );
+    }
+
+    #[test]
+    fn js_cell_value_rich_text() {
+        use crate::TextSpan;
+
+        let mut sheet = Sheet::test();
+        let rich_text_spans = vec![
+            TextSpan::plain("Hello "),
+            TextSpan::link("world", "https://example.com"),
+        ];
+        sheet.set_value(
+            Pos { x: 0, y: 0 },
+            CellValue::RichText(rich_text_spans.clone()),
+        );
+        let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
+        assert_eq!(
+            js_cell_value,
+            Some(JsCellValue {
+                value: "Hello world".to_string(),
+                kind: JsCellValueKind::RichText,
+                spans: Some(rich_text_spans),
             })
         );
     }

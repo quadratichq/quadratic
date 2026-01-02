@@ -146,6 +146,10 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreSetCellRichText':
+        core.setCellRichText(e.data.sheetId, e.data.x, e.data.y, e.data.spansJson, e.data.cursor);
+        return;
+
       case 'clientCoreGetEditCell':
         this.send({
           type: 'coreClientGetEditCell',
@@ -769,6 +773,14 @@ class CoreClient {
           type: 'coreClientSetFormats',
           id: e.data.id,
           response: core.setFormats(e.data.sheetId, e.data.selection, e.data.formats, e.data.cursor, e.data.isAi),
+        });
+        return;
+
+      case 'clientCoreSetFormatsA1':
+        this.send({
+          type: 'coreClientSetFormatsA1',
+          id: e.data.id,
+          response: core.setFormatsA1(e.data.formatEntries, e.data.cursor, e.data.isAi),
         });
         return;
 

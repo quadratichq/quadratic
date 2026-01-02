@@ -5,7 +5,7 @@ import { copyToClipboard, pasteFromClipboard } from './helpers/sheet.helper';
 
 test('Tile paste formatting', async ({ page }) => {
   const fileName = 'Tile_Paste_Formatting';
-  await logIn(page, { emailPrefix: `e2e_tile_paste_formatting` });
+  await logIn(page, { emailPrefix: `e2e_tile_paste_fmt` });
   await cleanUpFiles(page, { fileName });
   await createFile(page, { fileName, skipNavigateBack: true });
 

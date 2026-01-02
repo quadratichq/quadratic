@@ -280,6 +280,15 @@ export interface CoreClientSetCellValues {
   id: number;
 }
 
+export interface ClientCoreSetCellRichText {
+  type: 'clientCoreSetCellRichText';
+  sheetId: string;
+  x: number;
+  y: number;
+  spansJson: string;
+  cursor: string;
+}
+
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
   selection: string;
@@ -1368,6 +1377,20 @@ export interface CoreClientSetFormats {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreSetFormatsA1 {
+  type: 'clientCoreSetFormatsA1';
+  id: number;
+  formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[];
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientSetFormatsA1 {
+  type: 'coreClientSetFormatsA1';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreGetAIFormats {
   type: 'clientCoreGetAIFormats';
   id: number;
@@ -1521,6 +1544,7 @@ export type ClientCoreMessage =
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
   | ClientCoreSetCellValues
+  | ClientCoreSetCellRichText
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
   | ClientCoreSummarizeSelection
@@ -1606,6 +1630,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveRows
   | ClientCoreGetAICells
   | ClientCoreSetFormats
+  | ClientCoreSetFormatsA1
   | ClientCoreGetAIFormats
   | ClientCoreResizeColumns
   | ClientCoreResizeRows
@@ -1686,6 +1711,7 @@ export type CoreClientMessage =
   | CoreClientCoreError
   | CoreClientGetAICells
   | CoreClientSetFormats
+  | CoreClientSetFormatsA1
   | CoreClientGetAIFormats
   | CoreClientGridToDataTable
   | CoreClientDataTablesCache

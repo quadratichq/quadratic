@@ -43,6 +43,7 @@ import type {
   SheetBounds,
   SheetInfo,
   SheetRect,
+  TextSpan,
   TrackedTransaction,
   Validation,
   ValidationUpdate,
@@ -110,6 +111,7 @@ import type {
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetFormatsA1,
   CoreClientSetFormula,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
@@ -495,6 +497,21 @@ class QuadraticCore {
     });
   }
 
+  /**
+   * Sets a cell to a RichText value with the given spans.
+   * Each span can have: text, link, bold, italic, underline, strike_through, text_color, font_size
+   */
+  setCellRichText(sheetId: string, x: number, y: number, spans: TextSpan[]) {
+    this.send({
+      type: 'clientCoreSetCellRichText',
+      sheetId,
+      x,
+      y,
+      spansJson: JSON.stringify(spans),
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
   setCellValues(sheetId: string, x: number, y: number, values: string[][], isAi: boolean) {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -849,6 +866,25 @@ class QuadraticCore {
         sheetId,
         selection,
         formats,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  setFormatsA1(
+    formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[],
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormatsA1) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetFormatsA1',
+        id,
+        formatEntries,
         cursor: sheets.getCursorPosition(),
         isAi,
       });

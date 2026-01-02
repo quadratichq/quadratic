@@ -25,6 +25,7 @@ import { isMac } from '@/shared/utils/isMac';
 import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
+const MINIMUM_ROW_SIZE = CELL_HEIGHT;
 
 export interface ColumnRowResize {
   index: number;
@@ -292,9 +293,9 @@ export class PointerHeading {
       } else if (this.resizing.row !== null) {
         let size: number;
         if (this.resizing.row >= 0) {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.resizing.start);
+          size = Math.max(MINIMUM_ROW_SIZE, world.y - this.resizing.start);
         } else {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.resizing.start + this.viewportChanges.change);
+          size = Math.max(MINIMUM_ROW_SIZE, world.y - this.resizing.start + this.viewportChanges.change);
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.viewportChanges.originalSize;
