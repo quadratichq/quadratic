@@ -6,6 +6,7 @@ export type UpgradeDialogEventSource =
   | 'SelectAIModelMenu'
   | 'AIUsageExceeded'
   | 'DashboardSidebar'
+  | 'SettingsDialog'
   | 'periodicSolicitation';
 
 export const showUpgradeDialogAtom = atom<

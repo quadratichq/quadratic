@@ -48,15 +48,20 @@ pub trait Storage {
 
     async fn read(&self, key: &str) -> Result<Bytes>;
     async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()>;
+    async fn presigned_url(&self, key: &str) -> Result<String>;
     fn path(&self) -> &str;
     fn config(&self) -> Self::Config;
 
     fn read_error(key: &str, e: impl ToString) -> SharedError {
-        SharedError::Storage(StorageError::Read(key.into(), e.to_string()))
+        StorageError::Read(key.into(), e.to_string()).into()
     }
 
     fn write_error(key: &str, e: impl ToString) -> SharedError {
-        SharedError::Storage(StorageError::Write(key.into(), e.to_string()))
+        StorageError::Write(key.into(), e.to_string()).into()
+    }
+
+    fn presigned_url_error(key: &str, e: impl ToString) -> SharedError {
+        StorageError::GeneratePresignedUrl(key.into(), e.to_string()).into()
     }
 }
 
@@ -76,6 +81,13 @@ impl Storage for StorageContainer {
         match self {
             Self::S3(s3) => s3.write(key, data).await,
             Self::FileSystem(fs) => fs.write(key, data).await,
+        }
+    }
+
+    async fn presigned_url(&self, data: &str) -> Result<String> {
+        match self {
+            Self::S3(s3) => s3.presigned_url(data).await,
+            Self::FileSystem(fs) => fs.presigned_url(data).await,
         }
     }
 

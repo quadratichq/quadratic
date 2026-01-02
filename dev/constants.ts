@@ -59,6 +59,12 @@ export const COMPONENTS = {
     shortcut: "s",
     name: "Shared",
   },
+  cloudController: {
+    color: "magentaBright",
+    dark: "magentaBright",
+    name: "CloudController",
+    shortcut: "o",
+  },
 };
 
 export const SPACE = "     ";

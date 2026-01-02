@@ -30,15 +30,17 @@ export const PDFImport = memo(
     const label = 'Action: PDF import';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={`${toolArgs.data.file_name}`} className={className} />;
+    return (
+      <ToolCard icon={icon} label={label} description={`${toolArgs.data.file_name}`} className={className} compact />
+    );
   }
 );

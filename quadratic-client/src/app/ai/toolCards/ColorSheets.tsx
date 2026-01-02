@@ -27,7 +27,7 @@ export const ColorSheets = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Color sheets';
+    const label = loading ? 'Coloring sheets' : 'Colored sheets';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

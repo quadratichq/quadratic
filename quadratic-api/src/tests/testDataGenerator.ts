@@ -1,8 +1,11 @@
+import type { File, User } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import dbClient from '../dbClient';
 import { encryptFromEnv } from '../utils/crypto';
-import { getDecryptedTeam } from '../utils/teams';
+import { createScheduledTask } from '../utils/scheduledTasks';
+import { getDecryptedTeam, type DecryptedTeam } from '../utils/teams';
 
 type UserData = Parameters<typeof dbClient.user.create>[0]['data'];
 type FileData = Parameters<typeof dbClient.file.create>[0]['data'];
@@ -23,6 +26,9 @@ export async function createUser({ auth0Id }: Partial<UserData>) {
     data: {
       auth0Id: id,
       email,
+      clientDataKv: {
+        lastSeenChangelogVersion: process.env.VERSION || undefined,
+      },
     },
   });
 
@@ -100,6 +106,30 @@ export async function createTeam({
 
   return getDecryptedTeam(dbTeam);
 }
+
+export const createUserTeamAndFile = async (): Promise<{
+  uniqueId: string;
+  testUser: User;
+  testTeam: DecryptedTeam;
+  testFile: File;
+}> => {
+  // Generate unique IDs to avoid database conflicts
+  const uniqueId = Math.random().toString(36).substring(2, 15);
+
+  const testUser = await createUser({ auth0Id: `test-user-${uniqueId}` });
+  const testTeam = await createTeam({
+    users: [{ userId: testUser.id, role: 'OWNER' }],
+  });
+  const testFile = await createFile({
+    data: {
+      name: `Test File ${uniqueId}`,
+      ownerTeamId: testTeam.id,
+      creatorUserId: testUser.id,
+    },
+  });
+
+  return { uniqueId, testUser, testTeam, testFile };
+};
 
 /**
  *
@@ -231,6 +261,14 @@ export async function upgradeTeamToPro(teamId?: number) {
   });
 }
 
+export const scheduledTask = async (userId: number, fileId: number) =>
+  await createScheduledTask({
+    userId,
+    fileId,
+    cronExpression: '0 0 * * *',
+    operations: Array.from(toUint8Array({ action: 'test', type: 'daily' })),
+  });
+
 /**
  *
  * Single function for clearing the database. Not every test will use all these
@@ -242,6 +280,8 @@ export async function clearDb() {
   await dbClient.$transaction([
     dbClient.analyticsAIChatMessage.deleteMany(),
     dbClient.analyticsAIChat.deleteMany(),
+    dbClient.scheduledTaskLog.deleteMany(),
+    dbClient.scheduledTask.deleteMany(),
     dbClient.fileCheckpoint.deleteMany(),
     dbClient.fileInvite.deleteMany(),
     dbClient.userFileRole.deleteMany(),

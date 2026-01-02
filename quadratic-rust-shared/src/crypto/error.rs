@@ -10,4 +10,7 @@ use thiserror::Error;
 pub enum Crypto {
     #[error("Error decoding {0}")]
     AesCbcDecode(String),
+
+    #[error("Error encoding {0}")]
+    AesCbcEncode(String),
 }

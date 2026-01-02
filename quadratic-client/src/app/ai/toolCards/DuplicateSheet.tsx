@@ -27,7 +27,7 @@ export const DuplicateSheet = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Duplicate sheet';
+    const label = loading ? 'Duplicating sheet' : 'Duplicated sheet';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

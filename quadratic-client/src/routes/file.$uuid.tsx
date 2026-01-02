@@ -185,18 +185,29 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   handleSentryReplays(data.team.settings.analyticsAi);
 
+  // Fetch clientDataKv (team data is now loaded via useTeamData hook when needed)
+  let clientDataKv: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'] | undefined = undefined;
+  try {
+    const fetchedClientDataKv = await apiClient.user.clientDataKv.get();
+    clientDataKv = fetchedClientDataKv.clientDataKv;
+  } catch {
+    // If we can't fetch clientDataKv, continue without it
+    clientDataKv = undefined;
+  }
+
   startupTimer.end('file.loader');
-  return data;
+  return { ...data, userMakingRequest: { ...data.userMakingRequest, clientDataKv } };
 };
 
 export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
+  const loaderData = useLoaderData() as FileData;
   const {
-    file: { uuid: fileUuid },
+    file: { uuid: fileUuid, timezone: fileTimezone },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions },
-  } = useLoaderData() as FileData;
+  } = loaderData;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -219,6 +230,30 @@ export const Component = memo(() => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
 
+  // Set timezone if not already set and user has editor rights
+  useEffect(() => {
+    const setTimezoneIfNeeded = async () => {
+      // Check if timezone is not set
+      if (fileTimezone !== null) return;
+
+      // Check if user has editor rights
+      const hasEditorRights = filePermissions.includes('FILE_EDIT');
+      if (!hasEditorRights) return;
+
+      // Get user's current timezone
+      try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (userTimezone) {
+          await apiClient.files.update(fileUuid, { timezone: userTimezone });
+        }
+      } catch (error) {
+        // Silently fail if timezone detection or update fails
+        console.error('Failed to set timezone:', error);
+      }
+    };
+
+    setTimezoneIfNeeded();
+  }, [fileTimezone, filePermissions, fileUuid]);
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
