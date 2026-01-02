@@ -26,13 +26,9 @@ impl GridController {
     }
 
     /// Attempts to replace handlebars with the actual value from the grid
-    fn replace_handlebars(
+    pub fn replace_handlebars(
         &self,
-        transaction: &mut PendingTransaction,
-
-        // todo: do we need this?
-        _sheet_pos: SheetPos,
-
+        mut transaction: Option<&mut PendingTransaction>,
         code: &str,
         default_sheet_id: SheetId,
     ) -> Result<String, A1Error> {
@@ -77,9 +73,11 @@ impl GridController {
             let rect = rects[0];
             result.push_str(&Self::get_cells_comma_delimited_string(sheet, rect));
 
-            transaction
-                .cells_accessed
-                .add_sheet_rect(rect.to_sheet_rect(sheet.id));
+            if let Some(trans) = transaction.as_mut() {
+                trans
+                    .cells_accessed
+                    .add_sheet_rect(rect.to_sheet_rect(sheet.id));
+            }
 
             last_match_end = whole_match.end();
         }
@@ -98,19 +96,12 @@ impl GridController {
         kind: ConnectionKind,
         id: String,
     ) {
-        // send the request to get the sql data via the connector to the host
+        let mut replaced_code = None;
+
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            match self.replace_handlebars(transaction, sheet_pos, &code, sheet_pos.sheet_id) {
-                Ok(replaced_code) => {
-                    crate::wasm_bindings::js::jsConnection(
-                        transaction.id.to_string(),
-                        sheet_pos.x as i32,
-                        sheet_pos.y as i32,
-                        sheet_pos.sheet_id.to_string(),
-                        replaced_code,
-                        kind,
-                        id.to_owned(),
-                    );
+            match self.replace_handlebars(Some(&mut *transaction), &code, sheet_pos.sheet_id) {
+                Ok(replaced) => {
+                    replaced_code = Some(replaced);
                 }
                 Err(msg) => {
                     let error = RunError {
@@ -131,6 +122,21 @@ impl GridController {
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
+
+        if !transaction.is_server()
+            && let Some(f) = self.run_connection_callback.as_mut()
+            && let Some(replaced_code) = replaced_code
+        {
+            f(
+                transaction.id.to_string(),
+                sheet_pos.x as i32,
+                sheet_pos.y as i32,
+                sheet_pos.sheet_id.to_string(),
+                replaced_code,
+                kind,
+                id,
+            );
+        }
     }
 }
 
@@ -155,11 +161,9 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        let sheet_pos = pos![sheet_id!A1];
-
         let code = r#"{{$A$2}}"#;
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .replace_handlebars(Some(&mut transaction), code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
@@ -175,7 +179,7 @@ mod tests {
 
         let code = r#"{{'Sheet2'!$A$2}}"#;
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .replace_handlebars(Some(&mut transaction), code, sheet_id)
             .unwrap();
         assert_eq!(result, "test2".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
@@ -194,16 +198,9 @@ mod tests {
         gc.set_cell_value(pos![sheet_id!A2], "test".to_string(), None, false);
 
         let mut transaction = PendingTransaction::default();
-
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-
         let code = r#"{{A2}}"#;
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .replace_handlebars(Some(&mut transaction), code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
@@ -216,7 +213,7 @@ mod tests {
 
         let code = format!(r#"{{{{'{SHEET_NAME}1'!A2}}}}"#);
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, &code, sheet_id)
+            .replace_handlebars(Some(&mut transaction), &code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
@@ -235,11 +232,9 @@ mod tests {
 
         gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
-        let sheet_pos = pos![sheet_id!A2];
-
         let mut transaction = PendingTransaction::default();
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .replace_handlebars(Some(&mut transaction), code, sheet_id)
             .unwrap();
         assert_eq!(
             result,

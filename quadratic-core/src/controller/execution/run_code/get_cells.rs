@@ -185,6 +185,26 @@ impl GridController {
             error: None,
         }
     }
+
+    /// Record cells accessed for a transaction (used by connections to track handlebars cell references)
+    pub fn record_cells_accessed(
+        &mut self,
+        transaction_id: String,
+        sheet_rect: crate::SheetRect,
+    ) -> Result<(), CoreError> {
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|_| CoreError::TransactionNotFound("Transaction Id is invalid".into()))?;
+
+        let mut transaction = self
+            .transactions
+            .get_async_transaction(transaction_id)
+            .map_err(|_| CoreError::TransactionNotFound("Transaction Id not found".into()))?;
+
+        transaction.cells_accessed.add_sheet_rect(sheet_rect);
+        self.transactions.update_async_transaction(&transaction);
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
