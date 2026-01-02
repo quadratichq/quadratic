@@ -27,7 +27,7 @@ export const Redo = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Action: redo';
+    const label = loading ? 'Redoing' : 'Redone';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
@@ -37,15 +37,15 @@ export const Redo = memo(
     }, [toolArgs?.data?.count, toolArgs?.success]);
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={description} className={className} />;
+    return <ToolCard icon={icon} label={label} description={description} className={className} compact />;
   }
 );

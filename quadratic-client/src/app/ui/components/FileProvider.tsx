@@ -16,7 +16,9 @@ type Sync = {
 
 export type FileContextType = {
   name: string;
+  timezone: string | null;
   renameFile: (newName: string) => void;
+  updateTimezone: (newTimezone: string) => void;
   syncState: Sync['state'];
 };
 
@@ -33,6 +35,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.file.name);
+  const [timezone, setTimezone] = useState<FileContextType['timezone']>(initialFileData.file.timezone);
   let isFirstUpdate = useRef(true);
   const setPermissions = useSetRecoilState(editorInteractionStatePermissionsAtom);
   const setFileManuallyRenamed = useSetRecoilState(fileManuallyRenamedAtom);
@@ -76,6 +79,15 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     [syncChanges, uuid, setFileManuallyRenamed]
   );
 
+  const updateTimezone: FileContextType['updateTimezone'] = useCallback(
+    (newTimezone) => {
+      trackEvent('[ScheduledTasks].updateTimezone', { newTimezone });
+      setTimezone(newTimezone);
+      syncChanges(() => apiClient.files.update(uuid, { timezone: newTimezone }));
+    },
+    [syncChanges, uuid]
+  );
+
   // When the file name changes, update document title and sync to server
   useEffect(() => {
     document.title = `${name} - Quadratic`;
@@ -109,7 +121,9 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     <FileContext.Provider
       value={{
         name,
+        timezone,
         renameFile,
+        updateTimezone,
         syncState,
       }}
     >

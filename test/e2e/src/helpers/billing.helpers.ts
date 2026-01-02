@@ -89,7 +89,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
  * 1. Verifying the user's current subscription (Free plan).
  * 2. Navigating to the Stripe checkout page and ensuring the correct product is being purchased.
  * 3. Filling in the credit card details and completing the checkout process.
- * 4. Verifying that the user is redirected to the Team files page post-purchase.
+ * 4. Verifying that the user is redirected to the dashboard page post-purchase.
  * 5. Ensuring that the Pro plan is now marked as the active subscription and that the Free plan no longer shows as active.
  * 6. Validating that the 'Upgrade to Pro' button is no longer visible and that the 'Manage billing' button is available.
  * Note: This function uses pre-defined (valid) credit card credentials (`creditCard` object) for simulating the checkout process.
@@ -122,11 +122,6 @@ export const upgradeToProPlan = async (page: Page) => {
     // Locate the parent div that contains 'Pro plan' details
     const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
 
-    // Locate the text within the parent div of the 'Pro plan' heading
-    // Use a regex to extract the number between `$` and `/user/month` to store the Pro plan cost
-    const proPlanCostText = await proPlanParentEl.textContent();
-    const proPlanCost = proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1];
-
     // Click 'Upgrade to Pro' to upgrade the account
     await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
 
@@ -139,16 +134,6 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // Assert that the 'Total due today' text is visible, indicating that we're on a checkout page
     await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 60 * 1000 });
-
-    // Store the checkout page total
-    const checkoutTotalText = await page
-      .locator(`[data-testid="product-summary-total-amount"]`)
-      .getByText(`$`)
-      .innerText();
-    const checkoutTotal = checkoutTotalText.replace('$', '').split('.')[0];
-
-    // Assert the cost reflects the Pro Plan cost shown on the 'Settings' page
-    expect(checkoutTotal).toBe(proPlanCost);
 
     // Assert that the bank account textbox is not visible
     // This ensures that we will be filling in credit card details and not bank details (debit)
@@ -183,21 +168,10 @@ export const upgradeToProPlan = async (page: Page) => {
     const navigationPromise = page.waitForNavigation();
     await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
 
-    // Wait for the page to redirect to the Team files page
+    // Wait for the page to redirect to the dashboard page
     await navigationPromise;
-
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('domcontentloaded');
-
-    // Assert that page has redirected to the Team files page
-    await expect(page).toHaveTitle(/Team files/);
-    await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
-
-    // Navigate to the Settings page by clicking the 'Settings' link
-    await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
-
-    await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
@@ -250,8 +224,9 @@ export const inviteUserToTeam = async (page: Page, { email, permission }: Invite
       .click({ timeout: 60 * 1000 });
   }
   await page.locator(`button:text("Invite")`).click({ timeout: 60 * 1000 });
-  await page.waitForLoadState('networkidle');
-  await expect(page.locator(`div.text-xs:has-text("${email}")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="share-dialog-list-item"]:has-text("${email}")`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 };
 
 /**

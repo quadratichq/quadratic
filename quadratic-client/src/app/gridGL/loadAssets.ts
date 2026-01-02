@@ -1,6 +1,7 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { createBorderTypes } from '@/app/gridGL/generateTextures';
+import { FONT_VERSION } from '@/shared/constants/appConstants';
 import FontFaceObserver from 'fontfaceobserver';
 import { Assets, BitmapFont } from 'pixi.js';
 
@@ -20,15 +21,17 @@ export function isBitmapFontLoaded(): boolean {
 }
 
 export async function loadAssets() {
+  if (assetsLoaded) return;
   if (debugFlag('debugShowFileIO')) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
   // Load PixiJS fonts for canvas
+  const fontVersion = FONT_VERSION ? `?v=${FONT_VERSION}` : '';
   const fontBundle = {
-    OpenSans: '/fonts/opensans/OpenSans.fnt',
-    'OpenSans-Bold': '/fonts/opensans/OpenSans-Bold.fnt',
-    'OpenSans-Italic': '/fonts/opensans/OpenSans-Italic.fnt',
-    'OpenSans-BoldItalic': '/fonts/opensans/OpenSans-BoldItalic.fnt',
+    OpenSans: `/fonts/opensans/OpenSans.fnt${fontVersion}`,
+    'OpenSans-Bold': `/fonts/opensans/OpenSans-Bold.fnt${fontVersion}`,
+    'OpenSans-Italic': `/fonts/opensans/OpenSans-Italic.fnt${fontVersion}`,
+    'OpenSans-BoldItalic': `/fonts/opensans/OpenSans-BoldItalic.fnt${fontVersion}`,
   };
   // Add bundles to Assets
   Assets.addBundle('fontBundle', fontBundle);
@@ -60,10 +63,8 @@ export async function loadAssets() {
     openSansItalicPromise,
     openSansBoldItalicPromise,
     Assets.loadBundle('fontBundle'),
+    Assets.loadBundle('iconBundle'),
   ]);
-
-  // we don't need to wait for the icon bundle to load to start the renderWorker
-  Assets.loadBundle('iconBundle');
 
   assetsLoaded = true;
 

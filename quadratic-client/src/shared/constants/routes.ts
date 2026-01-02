@@ -20,6 +20,14 @@ export const ROUTES = {
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   FILES_CREATE: '/files/create',
+  FILES_CREATE_AI: '/files/create/ai',
+  // Team-based AI creation routes (these are the actual routes)
+  TEAM_FILES_CREATE_AI: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai`,
+  TEAM_FILES_CREATE_AI_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/file`,
+  TEAM_FILES_CREATE_AI_PROMPT: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/prompt`,
+  TEAM_FILES_CREATE_AI_PDF: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/pdf`,
+  TEAM_FILES_CREATE_AI_CONNECTION: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/connection`,
+  TEAM_FILES_CREATE_AI_WEB: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/web`,
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {
@@ -67,8 +75,9 @@ export const ROUTES = {
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
   TEAM_CONNECTION: (teamUuid: string, connectionUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
-  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
+  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}/files`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
+  TEAM_FILES_DELETED: (teamUuid: string) => `/teams/${teamUuid}/files/deleted`,
   TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
@@ -80,6 +89,7 @@ export const ROUTES = {
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
     FILE_SHARING: (uuid: string) => `/api/files/${uuid}/sharing`,
+    TEAM: (teamUuid: string) => `/api/teams/${teamUuid}`,
     CONNECTIONS: {
       POST: `/api/connections`,
       LIST: (teamUuid: string) => `/api/connections?team-uuid=${teamUuid}`,

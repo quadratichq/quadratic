@@ -28,18 +28,27 @@ export const AddTextValidation = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Add text validation';
+    const label = loading ? 'Adding text validation' : 'Added text validation';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError description={toolArgs.error.message} className={className} />;
+      return (
+        <ToolCard
+          icon={icon}
+          label={label}
+          hasError
+          description={toolArgs.error.message}
+          className={className}
+          compact
+        />
+      );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={toolArgs.data.selection} className={className} />;
+    return <ToolCard icon={icon} label={label} description={toolArgs.data.selection} className={className} compact />;
   }
 );

@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import path from 'path';
+import { waitForAppReady, waitForNetworkIdle } from './wait.helpers';
 
 type CreateFileOptions = {
   fileName: string;
@@ -9,11 +10,8 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   // Click New File
   await page.locator(`button:text-is("New file")`).click({ timeout: 30 * 1000 });
 
-  const quadraticLoading = page.locator('html[data-loading-start]');
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for app to load (removed redundant 10s waitForTimeout)
+  await waitForAppReady(page);
 
   // Name file
   await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
@@ -29,12 +27,9 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   }
 
   if (!skipNavigateBack) {
-    // Navigate back to files
+    // Navigate back to files (removed redundant 10s waitForTimeout)
     await page.locator(`nav a >> nth = 0`).click({ timeout: 60 * 1000 });
-    await page.waitForTimeout(10 * 1000);
-    await page.waitForLoadState('domcontentloaded');
-    await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
   }
 };
 
@@ -63,7 +58,6 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
       .first()
       .click({ timeout: 60 * 1000 });
     await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
-    await page.locator('[role="alertdialog"] button:has-text("Delete")').click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5 * 1000);
   }
 
@@ -78,14 +72,11 @@ type NavigateIntoFileOptions = {
 export const navigateIntoFile = async (page: Page, { fileName, skipClose = false }: NavigateIntoFileOptions) => {
   // Search for the file
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
-  await page.waitForTimeout(2000);
+  await waitForNetworkIdle(page); // Wait for filter results instead of fixed 2s
   await page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
 
-  const quadraticLoading = page.locator('html[data-loading-start]');
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for app to load (removed redundant 10s waitForTimeout)
+  await waitForAppReady(page);
 
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible({
@@ -149,17 +140,13 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
   // Click Local File option
   await page.locator(`[role="menuitem"]:has-text("Local File")`).click({ timeout: 60 * 1000 });
 
-  await page.waitForTimeout(2000);
-
   // Wait for file import dialog to finish loading
   await expect(page.locator(`[role="alertdialog"] h2:has-text("Import files")`)).not.toBeVisible({
     timeout: 1 * 60 * 1000,
   });
 
-  const quadraticLoading = page.locator('html[data-loading-start]');
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Wait for app to load (removed redundant 10s waitForTimeout)
+  await waitForAppReady(page);
 
   // Confirm file is uploaded
   await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({

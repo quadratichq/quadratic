@@ -17,6 +17,7 @@ export class Control {
     npm;
     rust;
     shared;
+    cloudController;
     signals = {};
     status = {
         client: false,
@@ -32,6 +33,7 @@ export class Control {
         postgres: false,
         redis: false,
         shared: false,
+        cloudController: false,
     };
     constructor(cli) {
         this.cli = cli;
@@ -51,6 +53,7 @@ export class Control {
             this.kill("connection"),
             this.kill("python"),
             this.kill("shared"),
+            this.kill("cloudController"),
         ]);
         process.exit(0);
     }
@@ -168,6 +171,10 @@ export class Control {
                 }
                 if (this.status.connection !== "killed" && !this.connection) {
                     this.runConnection();
+                }
+                if (this.status.cloudController !== "killed" &&
+                    !this.cloudController) {
+                    this.runCloudController();
                 }
             }
         }));
@@ -451,6 +458,57 @@ export class Control {
             this.status.shared = "killed";
         }
     }
+    async runCloudController() {
+        if (this.quitting)
+            return;
+        if (this.status.cloudController === "killed")
+            return;
+        this.status.cloudController = false;
+        this.ui.print("cloudController");
+        await this.kill("cloudController");
+        this.signals.cloudController = new AbortController();
+        if (this.cli.options.noRust) {
+            this.cloudController = spawn("./quadratic-cloud-controller", [], {
+                signal: this.signals.cloudController.signal,
+                cwd: "quadratic-cloud-controller/target/debug",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        else {
+            this.cloudController = spawn("cargo", this.cli.options.cloudController
+                ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target"]
+                : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target"], {
+                signal: this.signals.cloudController.signal,
+                cwd: "quadratic-cloud-controller",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        this.ui.printOutput("cloudController", (data) => {
+            this.handleResponse("cloudController", data, {
+                success: ["Finished ", "Running "],
+                error: ["error[", "npm ERR!"],
+                start: "    Compiling",
+            });
+        });
+    }
+    async restartCloudController() {
+        this.cli.options.cloudController = !this.cli.options.cloudController;
+        this.runCloudController();
+    }
+    async killCloudController() {
+        if (this.status.cloudController === "killed") {
+            this.status.cloudController = false;
+            this.ui.print("cloudController", "restarting...");
+            this.runCloudController();
+        }
+        else {
+            if (this.cloudController) {
+                await this.kill("cloudController");
+                this.ui.print("cloudController", "killed", "red");
+            }
+            this.status.cloudController = "killed";
+        }
+    }
     async runConnection() {
         if (this.quitting)
             return;
@@ -557,7 +615,8 @@ export class Control {
             else {
                 this.ui.print("db", "failed");
                 this.status.db = "error";
-                this.quit("Failed to migrate database. Likely you will need to `npm run prisma:dev:reset`");
+                this.ui.print("db", "Failed to migrate database. Likely you will need to `npm run prisma:dev:reset --workspace=quadratic-api`", "red");
+                this.runApi();
             }
         });
     }
@@ -634,9 +693,8 @@ export class Control {
     }
     async start(ui) {
         this.ui = ui;
+        // if Redis and PostgreSQL are not running, we quit before continuing
         await this.checkServices();
-        // If checkServices() found errors, quit() was called and process will exit
-        // Only continue if services are running
         this.runNpmInstall();
         this.runRust();
         this.runPython();

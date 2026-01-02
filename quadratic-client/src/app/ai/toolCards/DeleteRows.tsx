@@ -27,7 +27,7 @@ export const DeleteRows = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Delete rows';
+    const label = loading ? 'Deleting rows' : 'Deleted rows';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
@@ -37,15 +37,24 @@ export const DeleteRows = memo(
     }, [toolArgs?.data?.rows, toolArgs?.data?.sheet_name, toolArgs?.success]);
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError description={toolArgs.error.message} className={className} />;
+      return (
+        <ToolCard
+          icon={icon}
+          label={label}
+          hasError
+          description={toolArgs.error.message}
+          className={className}
+          compact
+        />
+      );
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={description} className={className} />;
+    return <ToolCard icon={icon} label={label} description={description} className={className} compact />;
   }
 );

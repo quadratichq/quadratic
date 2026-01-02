@@ -1,11 +1,11 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import {
-  apiEc2SecurityGroup,
-  apiPrivateSubnet1,
-  apiPrivateSubnet2,
-  apiPrivateSubnet3,
-  apiVPC,
+    apiEc2SecurityGroup,
+    apiPrivateSubnet1,
+    apiPrivateSubnet2,
+    apiPrivateSubnet3,
+    apiVPC,
 } from "../api/api_network";
 import { bastionSecurityGroup } from "./bastian";
 

@@ -217,6 +217,7 @@ impl TrackedOperation {
             Operation::ResizeRows {
                 sheet_id,
                 row_heights,
+                ..
             } => Some(Self::RowsResized {
                 sheet_name: get_sheet_name(*sheet_id, gc),
                 count: row_heights.len(),
@@ -328,6 +329,12 @@ impl TrackedOperation {
 
             Operation::ComputeCode { sheet_pos, .. } => Some(Self::ComputeCode {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
+            }),
+            Operation::ComputeCodeSelection { selection } => Some(Self::ComputeCode {
+                selection: selection.as_ref().map_or_else(
+                    || "*".to_string(),
+                    |selection| selection.to_string(Some(selection.sheet_id), gc.a1_context()),
+                ),
             }),
 
             Operation::MoveDataTable {

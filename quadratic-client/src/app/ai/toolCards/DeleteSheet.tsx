@@ -27,18 +27,20 @@ export const DeleteSheet = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Delete sheet';
+    const label = loading ? 'Deleting sheet' : 'Deleted sheet';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
-    return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}"`} className={className} />;
+    return (
+      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}"`} className={className} compact />
+    );
   }
 );

@@ -24,12 +24,17 @@ export type FilesListUserFile = {
   thumbnail: string | null;
   updatedDate: string;
   uuid: string;
+  hasScheduledTasks?: boolean;
   creator?: {
     name?: string;
     picture?: string;
     email?: string;
   };
   filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
+  /** Whether this is a private file (true) or team file (false). Used to show a tag on the file card. */
+  isPrivate?: boolean;
+  /** Whether this file was shared with the current user. */
+  isSharedWithMe?: boolean;
 };
 
 export function FilesList({

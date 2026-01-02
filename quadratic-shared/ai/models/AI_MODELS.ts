@@ -1,9 +1,6 @@
 import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-// updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 32;
-
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
@@ -16,6 +13,10 @@ export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'azure-openai:gpt-4.1';
+
+// Start with AI models
+export const DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
+export const DEFAULT_MODEL_START_WITH_AI_PLAN: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
 export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'vertexai-anthropic:claude-sonnet-4-5@20250929';
 
 // Internal tool call models
@@ -94,7 +95,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'max',
+    mode: 'others',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -106,6 +107,56 @@ export const MODELS_CONFIGURATION: {
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
     displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai-anthropic',
+    promptCaching: true,
+    thinking: true,
+    imageSupport: true,
+  },
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off': {
+    ...AI_RATES.claude_opus_4_5_20251101_rate,
+    model: 'claude-opus-4-5@20251101',
+    backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-off',
+    displayName: 'Opus 4.5',
+    displayProvider: 'Claude',
+    temperature: 0.1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai-anthropic',
+    promptCaching: true,
+    thinking: false,
+    thinkingToggle: false,
+    imageSupport: true,
+  },
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on': {
+    ...AI_RATES.claude_opus_4_5_20251101_rate,
+    model: 'claude-opus-4-5@20251101',
+    backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-on',
+    displayName: 'Opus 4.5',
+    displayProvider: 'Claude',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'max',
+    provider: 'vertexai-anthropic',
+    promptCaching: true,
+    thinking: true,
+    thinkingToggle: true,
+    imageSupport: true,
+  },
+  'vertexai-anthropic:claude-opus-4-5@20251101': {
+    ...AI_RATES.claude_opus_4_5_20251101_rate,
+    model: 'claude-opus-4-5@20251101',
+    backupModelKey: 'anthropic:claude-opus-4.5:thinking-toggle-on',
+    displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
@@ -143,7 +194,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -354,7 +405,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
+    backupModelKey: 'azure-openai:gpt-5',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -371,7 +422,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
+    backupModelKey: 'azure-openai:gpt-5',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 1,
@@ -405,6 +456,40 @@ export const MODELS_CONFIGURATION: {
     ...AI_RATES.claude_haiku_4_5_20251001_rate,
     model: 'claude-haiku-4-5-20251001',
     displayName: 'Haiku 4.5',
+    displayProvider: 'Claude',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'anthropic',
+    promptCaching: true,
+    thinking: true,
+    thinkingToggle: true,
+    imageSupport: true,
+  },
+  'anthropic:claude-opus-4.5:thinking-toggle-off': {
+    ...AI_RATES.claude_opus_4_5_20251101_rate,
+    model: 'claude-opus-4-5-20251101',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
+    displayName: 'Opus 4.5',
+    displayProvider: 'Claude',
+    temperature: 0.1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'anthropic',
+    promptCaching: true,
+    thinking: false,
+    thinkingToggle: false,
+    imageSupport: true,
+  },
+  'anthropic:claude-opus-4.5:thinking-toggle-on': {
+    ...AI_RATES.claude_opus_4_5_20251101_rate,
+    model: 'claude-opus-4-5-20251101',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
+    displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,

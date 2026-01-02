@@ -2,10 +2,12 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useTeamData } from '@/shared/hooks/useTeamData';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
@@ -43,6 +45,7 @@ export const TopBarFileNameAndLocationMenu = () => {
                 <span className={`block max-w-[50vw] truncate`}>{name}</span>
               )}
             </Type>
+            <ConnectionStatusIcon />
           </div>
         </div>
       )}
@@ -57,6 +60,10 @@ function FileLocation() {
     team,
     userMakingRequest: { fileRole, teamRole, id: userId },
   } = useFileRouteLoaderData();
+  // Use useTeamData for reactive team name updates
+  const { teamData } = useTeamData();
+  const teamName = teamData?.activeTeam?.team.name ?? team.name;
+
   const linkProps = {
     reloadDocument: true,
     className: 'underline:none text-inherit block max-w-40 truncate',
@@ -72,21 +79,21 @@ function FileLocation() {
   if (ownerUserId && ownerUserId === userId) {
     // My private file
     dashboardLink = (
-      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps}>
+      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} data-testid="file-location-link-my-files">
         My files
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {
     // Team file
     dashboardLink = (
-      <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps}>
-        {team.name}
+      <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps} data-testid="file-location-link-team-files">
+        {teamName}
       </Link>
     );
   } else if (fileRole) {
     // File i was invited to
     dashboardLink = (
-      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
+      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} data-testid="file-location-link-shared-with-me">
         Shared with me
       </Link>
     );

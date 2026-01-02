@@ -33,7 +33,6 @@ class PythonWebWorker {
 
       case 'pythonClientState':
         this.state = message.data.state;
-        events.emit('pythonState', message.data.state, message.data.current, message.data.awaitingExecution);
         break;
 
       case 'pythonClientGetJwt':
@@ -62,7 +61,6 @@ class PythonWebWorker {
     trackEvent('[PythonWebWorker].restartFromUser');
     this.initWorker();
     quadraticCore.sendCancelExecution('Python');
-    events.emit('pythonState', 'loading');
   };
 }
 

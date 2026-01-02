@@ -8,8 +8,8 @@ import {
   convertTintToString,
 } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
+import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import { captureException } from '@sentry/react';
-import type { ColorResult } from 'react-color';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react');

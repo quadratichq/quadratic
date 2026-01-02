@@ -199,6 +199,12 @@ pub enum Operation {
         sheet_pos: SheetPos,
     },
 
+    /// Runs the code cell at an A1Selection.
+    /// Currently just used for scheduled tasks.
+    ComputeCodeSelection {
+        selection: Option<A1Selection>,
+    },
+
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.
     SetCellFormats {
         sheet_rect: SheetRect,
@@ -310,6 +316,8 @@ pub enum Operation {
     ResizeRows {
         sheet_id: SheetId,
         row_heights: Vec<JsRowHeight>,
+        #[serde(default)]
+        client_resized: bool,
     },
 
     /// Changes the default row size

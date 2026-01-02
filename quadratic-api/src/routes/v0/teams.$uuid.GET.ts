@@ -35,8 +35,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  // Update billing info
-  await updateBilling(team);
+  // Update billing info to ensure we have the latest subscription status
+  // Only do this if we're checking for a subscription update after checkout
+  if (req.query.updateBilling === 'true') {
+    await updateBilling(team);
+  }
 
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
@@ -81,6 +84,15 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
             where: {
               userId: userMakingRequestId,
             },
+          },
+          ScheduledTask: {
+            where: {
+              status: { not: 'DELETED' },
+            },
+            select: {
+              id: true,
+            },
+            take: 1,
           },
         },
         orderBy: {
@@ -146,6 +158,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       onboardingComplete: dbTeam.onboardingComplete !== false,
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
+        aiRules: dbTeam.aiRules ?? null,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
     },
@@ -172,6 +185,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           publicLinkAccess: file.publicLinkAccess,
           thumbnail: file.thumbnail,
           creatorId: file.creatorUserId,
+          hasScheduledTasks: file.ScheduledTask.length > 0,
         },
         userMakingRequest: {
           filePermissions: getFilePermissions({
@@ -194,6 +208,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           updatedDate: file.updatedDate.toISOString(),
           publicLinkAccess: file.publicLinkAccess,
           thumbnail: file.thumbnail,
+          hasScheduledTasks: file.ScheduledTask.length > 0,
         },
         userMakingRequest: {
           filePermissions: getFilePermissions({

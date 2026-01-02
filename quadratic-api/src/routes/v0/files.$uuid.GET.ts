@@ -8,6 +8,7 @@ import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
+import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
@@ -31,7 +32,7 @@ export default [
 async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0/files/:uuid.GET.response']>) {
   const userId = req.user?.id;
   const {
-    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam },
+    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam, timezone },
     userMakingRequest: { filePermissions, fileRole, teamRole, teamPermissions },
   } = await getFile({ uuid: req.params.uuid, userId });
 
@@ -42,6 +43,22 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
 
   if (decryptedTeam.sshPublicKey === null) {
     throw new ApiError(500, 'Unable to retrieve SSH keys');
+  }
+
+  // Update billing info to ensure we have the latest subscription status
+  // Only do this if we're checking for a subscription update after checkout
+  if (req.query.updateBilling === 'true') {
+    await updateBilling(ownerTeam);
+    // Re-fetch the team to get the updated subscription status
+    const updatedTeam = await dbClient.team.findUnique({
+      where: { id: ownerTeam.id },
+    });
+    if (updatedTeam) {
+      // Update the ownerTeam's billing fields with fresh data from DB
+      ownerTeam.stripeSubscriptionStatus = updatedTeam.stripeSubscriptionStatus;
+      ownerTeam.stripeCurrentPeriodEnd = updatedTeam.stripeCurrentPeriodEnd;
+      ownerTeam.stripeSubscriptionId = updatedTeam.stripeSubscriptionId;
+    }
   }
 
   const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
@@ -60,6 +77,16 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
     throw new ApiError(500, 'No Checkpoints exist for this file');
   }
   const lastCheckpointDataUrl = await getFileUrl(checkpoint.s3Key);
+
+  // Check if the file has any active scheduled tasks
+  const scheduledTask = await dbClient.scheduledTask.findFirst({
+    where: {
+      fileId: id,
+      status: { not: 'DELETED' },
+    },
+    select: { id: true },
+  });
+  const hasScheduledTasks = scheduledTask !== null;
 
   // Privacy of the file as it relates to the user making the request.
   // `undefined` means it was shared _somehow_, e.g. direct invite or public link,
@@ -88,11 +115,13 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       createdDate: createdDate.toISOString(),
       updatedDate: updatedDate.toISOString(),
       publicLinkAccess,
-      lastCheckpointSequenceNumber: checkpoint?.sequenceNumber,
-      lastCheckpointVersion: checkpoint?.version,
+      lastCheckpointSequenceNumber: checkpoint.sequenceNumber,
+      lastCheckpointVersion: checkpoint.version,
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
       ownerUserId: ownerUserId ? ownerUserId : undefined,
+      timezone: timezone ?? null,
+      hasScheduledTasks,
     },
     team: {
       uuid: ownerTeam.uuid,

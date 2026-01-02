@@ -15,11 +15,15 @@ use http::{
     header::{CACHE_CONTROL, PRAGMA},
 };
 use quadratic_rust_shared::sql::Connection;
-use quadratic_rust_shared::{auth::jwt::get_jwks, cache::memory::MemoryCache};
+use quadratic_rust_shared::{
+    auth::jwt::{get_jwks, merge_jwks, parse_jwks},
+    cache::memory::MemoryCache,
+};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 use tokio::time;
 use tower_http::{
+    classify::{ServerErrorsAsFailures, SharedClassifier},
     cors::{Any, CorsLayer},
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::{DefaultMakeSpan, TraceLayer},
@@ -186,10 +190,28 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         // cors
         .layer(cors)
         //
-        // logger
+        // logger - classify only 5xx as failures
         .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+            TraceLayer::new(SharedClassifier::new(ServerErrorsAsFailures::new()))
+                .make_span_with(DefaultMakeSpan::default().include_headers(true))
+                .on_response(
+                    |response: &Response, latency: Duration, _span: &tracing::Span| {
+                        let status = response.status();
+                        if status.is_server_error() {
+                            tracing::error!(
+                                status = status.as_u16(),
+                                latency_ms = latency.as_millis(),
+                                "response failed"
+                            );
+                        } else if status.is_client_error() {
+                            tracing::warn!(
+                                status = status.as_u16(),
+                                latency_ms = latency.as_millis(),
+                                "client error"
+                            );
+                        }
+                    },
+                ),
         )
         //
         // don't show authorization header in logs
@@ -218,7 +240,14 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Fetch JWKS from the remote URI (e.g., WorkOS)
+    let mut jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Merge the local JWKS with the remote JWKS
+    let local_jwks = parse_jwks(&config.quadratic_jwks)?;
+    jwks = merge_jwks(jwks, local_jwks);
+
     let state = Arc::new(State::new(&config, Some(jwks.clone())).await?);
     let app = app(state.clone())?;
 

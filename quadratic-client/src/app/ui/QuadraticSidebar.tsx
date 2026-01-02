@@ -10,21 +10,30 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
-import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
+import { KernelMenu } from '@/app/ui/menus/KernelMenu/KernelMenu';
+import { scheduledTasksAtom } from '@/jotai/scheduledTasksAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import {
+  AIIcon,
+  DatabaseIcon,
+  ManageSearch,
+  MemoryIcon,
+  ScheduledTasksIcon,
+  SettingsIcon,
+  SpinnerIcon,
+} from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtom } from 'jotai';
 import React from 'react';
 import { Link } from 'react-router';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
 
@@ -33,6 +42,7 @@ export const QuadraticSidebar = () => {
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const [showScheduledTasks, setShowScheduledTasks] = useAtom(scheduledTasksAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -41,6 +51,7 @@ export const QuadraticSidebar = () => {
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
+  const canViewTeam = isAvailableArgs.teamPermissions?.includes('TEAM_VIEW');
 
   return (
     <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent md:flex">
@@ -94,6 +105,19 @@ export const QuadraticSidebar = () => {
 
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
+        {canViewTeam && (
+          <SidebarTooltip label="Scheduled tasks">
+            <SidebarToggle
+              pressed={showScheduledTasks.show}
+              onPressedChange={() => {
+                setShowScheduledTasks((prev) => ({ ...prev, show: !prev.show, currentTaskId: null }));
+              }}
+            >
+              <ScheduledTasksIcon />
+            </SidebarToggle>
+          </SidebarTooltip>
+        )}
+
         <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
           <SidebarToggle pressed={showCommandPalette} onPressedChange={() => setShowCommandPalette((prev) => !prev)}>
             <ManageSearch />
@@ -101,7 +125,11 @@ export const QuadraticSidebar = () => {
         </SidebarTooltip>
       </div>
       <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
-        <ThemePickerMenu />
+        <SidebarTooltip label="Settings">
+          <SidebarToggle pressed={false} onPressedChange={() => showSettingsDialog()} disabled={!isAuthenticated}>
+            <SettingsIcon />
+          </SidebarToggle>
+        </SidebarTooltip>
       </div>
     </nav>
   );

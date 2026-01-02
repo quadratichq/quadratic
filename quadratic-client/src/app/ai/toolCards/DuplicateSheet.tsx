@@ -27,20 +27,26 @@ export const DuplicateSheet = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Duplicate sheet';
+    const label = loading ? 'Duplicating sheet' : 'Duplicated sheet';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     return (
-      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.name_of_new_sheet}"`} className={className} />
+      <ToolCard
+        icon={icon}
+        label={label}
+        description={`"${toolArgs.data.name_of_new_sheet}"`}
+        className={className}
+        compact
+      />
     );
   }
 );

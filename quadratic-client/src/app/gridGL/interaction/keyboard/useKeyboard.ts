@@ -18,6 +18,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { Size } from '@/app/shared/types/size';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
@@ -30,8 +31,17 @@ export const useKeyboard = (): {
   onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
+  const scheduledTasks = useScheduledTasks();
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if ((pixiAppSettings.input.show && inlineEditorHandler.isOpen()) || pixiAppSettings.isRenamingTable()) return;
+
+    if (scheduledTasks.show && event.key === 'Escape') {
+      scheduledTasks.closeScheduledTasks();
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (
       keyboardPanMode(event) ||
       keyboardLink(event) ||
