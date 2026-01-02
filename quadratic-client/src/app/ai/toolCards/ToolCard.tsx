@@ -46,7 +46,7 @@ export const ToolCard = memo(
             {description && (
               <>
                 {' '}
-                <span className="text-muted-foreground">• {description}</span>
+                <span className="text-muted-foreground">· {description}</span>
               </>
             )}
           </span>
