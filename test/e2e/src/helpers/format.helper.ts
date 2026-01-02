@@ -19,4 +19,10 @@ export const clickMoreFormattingIcon = async (page: Page) => {
 
   // Click the icon - the click will bubble up to the PopoverTrigger parent
   await moreIcon.click();
+
+  // Wait for the popover content containing the horizontal-align button to be visible
+  await page
+    .locator('[data-radix-popper-content-wrapper]')
+    .filter({ has: page.locator('button[data-testid="horizontal-align"]') })
+    .waitFor({ state: 'visible' });
 };

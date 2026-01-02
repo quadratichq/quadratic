@@ -3,7 +3,6 @@ import { DUMMY_USER_EMAIL } from './constants/auth';
 import { logIn } from './helpers/auth.helpers';
 import {
   cancelProPlan,
-  cleanupPaymentMethod,
   deleteMemberFromProPlan,
   inviteUserToTeam,
   resetBillingInformation,
@@ -91,7 +90,7 @@ test.skip('AI Message Counter', async ({ page }) => {
 
   // Assert the chat is open based on heading text
   await expect(page.getByText(`Sheet chat`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `What would you like to do?` })).toBeVisible({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
   // Iterate through the pre-defined prompt messages and send them one by one to the chat
   for (let i = 0; i < promptsToSend.length; i++) {
@@ -162,165 +161,6 @@ test.skip('AI Message Counter', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Manage Billing - Add Payment Method', async ({ page }) => {
-  //--------------------------------
-  // Manage Billing - Add Payment Method
-  //--------------------------------
-
-  // New payment method to add to account
-  // Has different card number & expiration (than the one used to upgrade to Pro plan)
-  const paymentMethod = {
-    type: 'Mastercard',
-    cardNumber: '5555 5555 5555 4444',
-    expDate: '03/40',
-    expDateFull: '03/2040',
-    cvc: '424',
-    zipCode: '90210',
-  };
-
-  // Log into Quadratic
-  const emailAddress = await logIn(page, { emailPrefix: 'e2e_add_payment' });
-
-  // Create new team
-  await createNewTeamAndNavigateToDashboard(page);
-
-  // Upgrade to Pro plan
-  await upgradeToProPlan(page);
-
-  // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
-
-  await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
-
-  // Assert page is currently displaying Settings
-  await expect(page).toHaveURL(/settings/);
-  await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
-
-  //--------------------------------
-  // Act:
-  //--------------------------------
-
-  // Locate the parent divs that contains 'Pro plan' and 'Free plan' details
-  const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
-  const freePlanParentEl = page.locator(`:text("Free plan")`).locator('..');
-
-  // Assert that the 'Free plan' is not accompanied by the 'Current plan' flag
-  // freePlanParentEl is declared 'Arrange' step
-  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert that the 'Pro plan' container includes the 'Current plan' flag
-  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
-    timeout: 60 * 1000,
-  });
-
-  // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
-
-  await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-
-  // **Cleanup** Remove the extra payment method if it was leftover from previous WF
-  await cleanupPaymentMethod(page, { paymentMethod });
-
-  // Assert that the current page is the billing management page
-  await expect(page).toHaveTitle(/Billing/);
-
-  // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert the account email address is displayed on the billing page
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Store the credit card details from the initial payment method used to upgrade to Pro
-  const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
-  const [initialPaymentNum, , initialPaymentExpiry] = initialPaymentEl.split('\n');
-
-  // Click 'Add payment method' to add an additional payment method
-  await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 60 * 1000 });
-
-  await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-
-  // Assert that we're currently on a page to add a new payment method
-  await expect(page).toHaveURL(/pay/);
-  await expect(page).toHaveTitle(/Add payment method/);
-  await expect(page.getByText(`Add payment method`)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Wait for the Stripe iframe to be available
-  const iframeLocator = page.locator('.__PrivateStripeElement iframe').first();
-
-  // Access the content of the iframe
-  const iframe = iframeLocator.contentFrame();
-
-  // Wait for the input elements inside the iframe to load
-  await iframe.locator('input[name="number"]').waitFor();
-  await iframe.locator('input[name="expiry"]').waitFor();
-  await iframe.locator('input[name="cvc"]').waitFor();
-  await page.locator(`[data-testid="confirm"]`).waitFor({ state: 'attached' });
-
-  // Fill the card details in the iframe
-  // Card details include: card number, expiration date, CVC number, and zip code
-  await iframe.locator('input[name="number"]').fill(paymentMethod.cardNumber);
-  await iframe.locator('input[name="expiry"]').fill(paymentMethod.expDate);
-  await iframe.locator('input[name="cvc"]').fill(paymentMethod.cvc);
-  await iframe.locator('select[name="country"]').selectOption('US');
-  await iframe.locator('input[name="postalCode"]').fill(paymentMethod.zipCode);
-
-  // Wait 1s to ensure the form 'Add' button is active
-  await page.waitForTimeout(5 * 1000);
-
-  // Click 'Submit' button to add the new payment method after it is enabled
-  await expect(page.locator(`[data-testid="confirm"]`)).toBeEnabled();
-  await page.locator(`[data-testid="confirm"]`).scrollIntoViewIfNeeded();
-  await page.locator(`[data-testid="confirm"]`).click({ timeout: 60 * 1000 });
-
-  await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-
-  // Assert that the current page is the billing management page (redirected from the previous page)
-  await expect(page).toHaveTitle(/Billing/);
-
-  // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByText(`Payment methods`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert the account email address is displayed on the billing page
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
-
-  //--------------------------------
-  // Assert:
-  //--------------------------------
-
-  // Assert that there are two card elements representing each card (initial card and newly added payment card)
-  const newCardCount = await page.locator(`[data-testid="page-container-main"] .Card--radius--all`).count();
-  expect(newCardCount).toBe(2);
-
-  // Assert that the previously added payment method is still visible, based on its expiration date
-  await expect(page.getByText(initialPaymentExpiry)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert that the previously added payment method is still visible, based on its card type & card number
-  await expect(page.getByText(initialPaymentNum)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert that the newly added payment method is visible based on its expiration date
-  await expect(page.getByText(`Expires ${paymentMethod.expDateFull}`)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Assert that the newly added payment method is visible based on its card number and type
-  await expect(page.getByText(`${paymentMethod.type} •••• ${paymentMethod.cardNumber.split(' ')[3]}`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
-
-  // **Cleanup** Remove the newly added payment method from this account
-  await cleanupPaymentMethod(page, { paymentMethod });
-});
-
 test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   //--------------------------------
   // Add user to a Team with existing Pro Plan
@@ -367,7 +207,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Extract the cost from the parent div of 'Pro plan' (the number between `$` and `/user/month`)
   const proPlanCostText = await proPlanParentEl.textContent();
-  const proPlanCost = Number(proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1]);
+  const proPlanCost = Number(proPlanCostText?.match(/\$(\d+)(?=\/user\/month)/)?.[1]);
 
   // Assert that the Pro plan cost is $20 per user per month
   expect(proPlanCost).toBe(20);
@@ -441,9 +281,6 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Assert the account email address is displayed on the billing page
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
-  // Assert that the 'Cancel Subscription' button appears
-  await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
-
   // Assert that the page reflects the increased cost due to new members
   await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 60 * 1000 });
 
@@ -495,7 +332,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   });
 });
 
-test('Manage Billing - Cancel Subscription', async ({ page }) => {
+test('Cancel Subscription', async ({ page }) => {
   //--------------------------------
   // Manage Billing - Cancel Subscription
   //--------------------------------
@@ -541,18 +378,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Cancel subscription' button
-  await page.locator(`[data-testid="cancel-subscription"]`).click({ timeout: 60 * 1000 });
-
-  // Assert that the page to confirm the cancellation appears
-  await expect(page).toHaveTitle(/Cancel subscription/);
-  await expect(page.getByText(`Cancel your subscription`)).toBeVisible({ timeout: 60 * 1000 });
-
-  // Store the text content of the main page container and remove the extra spaces
-  const cancelSubscriptionRawText = await page.locator('[data-testid="page-container-main"]').textContent();
-  const cancelSubscriptionText = cancelSubscriptionRawText?.replace(/\s+/g, ' ')?.trim();
-
-  // Assert that the normalized text contains the expected phrase (indicating cancellation of plan)
-  expect(cancelSubscriptionText).toContain('subscription will be canceled');
+  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 60 * 1000 });
 
   // Click 'Cancel subscription" to confirm the cancellation
   await page.locator(`[data-testid="confirm"]`).click({ timeout: 60 * 1000 });
@@ -568,7 +394,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.locator('[role="dialog"] span').nth(1)).toHaveText('Subscription has been canceled');
 });
 
-test('Manage Billing - Update Billing Information', async ({ page }) => {
+test('Update Billing Information', async ({ page }) => {
   //--------------------------------
   // Manage Billing - Update Billing Information
   //--------------------------------

@@ -589,7 +589,7 @@ jobs:
       ]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
       options: --user root
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 15
@@ -734,3 +734,21 @@ jobs:
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
+
+  # This job provides a single required status check for branch protection.
+  # It will fail if any e2e test shard fails, ensuring PRs cannot be merged
+  # with failing e2e tests.
+  test-e2e-status:
+    name: Tests-E2E Status
+    needs: [test-e2e-matrix-run]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && (github.head_ref != 'qa' || github.base_ref != 'main')
+    timeout-minutes: 5
+    steps:
+      - name: Check E2E test results
+        run: |
+          if [ "${{ needs.test-e2e-matrix-run.result }}" != "success" ]; then
+            echo "E2E tests failed or were cancelled. Result: ${{ needs.test-e2e-matrix-run.result }}"
+            exit 1
+          fi
+          echo "All E2E tests passed successfully!"

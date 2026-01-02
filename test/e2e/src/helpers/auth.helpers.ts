@@ -9,6 +9,22 @@ type LogInOptions = {
   route?: string;
 };
 
+const handleQuadraticLoading = async (page: Page) => {
+  await page.locator('html[data-loading-start]').waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+};
+
+const handleStartWithAi = async (page: Page) => {
+  const startWithAiHeader = page.locator('h1:has-text("Start with AI")');
+  if (await startWithAiHeader.isVisible({ timeout: 2000 }).catch(() => false)) {
+    // Click the Quadratic logo to go back to dashboard
+    await page
+      .locator('a[href="/"]')
+      .first()
+      .click({ timeout: 60 * 1000 });
+    await handleQuadraticLoading(page);
+  }
+};
+
 const handleHumanCheck = async (page: Page) => {
   const humanCheckHeader = page.locator('text=Before continuing, we need to be sure');
   if (await humanCheckHeader.isVisible({ timeout: 1500 }).catch(() => false)) {
@@ -122,8 +138,12 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       await skipButton.click({ timeout: 60 * 1000 });
     }
   }
+
+  // If "Start with AI" screen is shown, go back to dashboard
+  await handleStartWithAi(page);
+
   // wait for shared with me visibility on dashboard
-  await page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator('[data-testid="dashboard-sidebar-shared-with-me-link"]').waitFor({ timeout: 2 * 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
@@ -177,11 +197,22 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
 
   await handleQuadraticLoading(page);
 
-  // Wait for canvas to be visible
-  await page.locator(`#QuadraticCanvasID`).waitFor({ timeout: 2 * 60 * 1000 });
+  // After onboarding, user may land on canvas or "Start with AI" screen
+  const canvasLocator = page.locator(`#QuadraticCanvasID`);
+  const startWithAiHeader = page.locator('h1:has-text("Start with AI")');
 
-  // Click on dashboard
-  await page.locator('nav a[href="/"]').click({ timeout: 2 * 60 * 1000 });
+  // Wait for either canvas or "Start with AI" screen
+  await Promise.race([
+    canvasLocator.waitFor({ timeout: 2 * 60 * 1000 }),
+    startWithAiHeader.waitFor({ timeout: 2 * 60 * 1000 }),
+  ]);
+
+  // If on "Start with AI" screen, go back to dashboard; otherwise click nav link from canvas
+  if (await startWithAiHeader.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await handleStartWithAi(page);
+  } else {
+    await page.locator('nav a[href="/"]').click({ timeout: 2 * 60 * 1000 });
+  }
 
   // Wait for shared with me visibility on dashboard
   await page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
@@ -226,8 +257,6 @@ export const handleOnboarding = async (page: Page) => {
       // Try again to see if the button appears - give it more time in CI
       const retryVisible = await onboardingBtnUsePersonal.isVisible({ timeout: 30 * 1000 }).catch(() => false);
       if (!retryVisible) {
-        // Still not visible after waiting, log and assume onboarding isn't needed or already completed
-        console.log('⚠️  On onboarding URL but button not visible, assuming onboarding already completed');
         await handleQuadraticLoading(page);
         return;
       }
@@ -277,8 +306,4 @@ export const handleOnboarding = async (page: Page) => {
   }
 
   await handleQuadraticLoading(page);
-};
-
-export const handleQuadraticLoading = async (page: Page) => {
-  await page.locator('html[data-loading-start]').waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 };

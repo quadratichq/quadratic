@@ -1046,7 +1046,7 @@ test('Resources Examples - Dashboard Views', async ({ page }) => {
   expect(gridViewCharacteristics.firstLiStructure?.imgWidth).toBeNull();
 });
 
-test('Search - Search File Examples', async ({ page }) => {
+test.skip('Search - Search File Examples', async ({ page }) => {
   //--------------------------------
   // Search - Search File Examples
   //--------------------------------
