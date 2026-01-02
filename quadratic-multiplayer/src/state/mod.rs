@@ -32,6 +32,7 @@ pub(crate) struct State {
     pub(crate) connections: Mutex<HashMap<Uuid, Connection>>,
     pub(crate) pubsub: Mutex<PubSub>,
     pub(crate) settings: Settings,
+    pub(crate) active_channels: String,
 }
 
 impl State {
@@ -40,7 +41,6 @@ impl State {
             host: config.pubsub_host.to_owned(),
             port: config.pubsub_port.to_owned(),
             password: config.pubsub_password.to_owned(),
-            active_channels: config.pubsub_active_channels.to_owned(),
         });
 
         Ok(State {
@@ -48,6 +48,7 @@ impl State {
             connections: Mutex::new(HashMap::new()),
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config, jwks).await,
+            active_channels: config.pubsub_active_channels.to_owned(),
         })
     }
 }

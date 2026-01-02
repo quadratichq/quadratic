@@ -51,24 +51,32 @@ export const useAIModel = (): UseAIModelReturn => {
 
   const modelKey = useMemo(() => {
     if (modelType === 'others') {
-      if (othersModelKey) {
+      // Validate that othersModelKey exists and is a valid model in configuration
+      if (othersModelKey && MODELS_CONFIGURATION[othersModelKey]) {
         return othersModelKey;
       }
-      setModelType('max');
-      return defaultOthersModelKey;
+      // Invalid or missing othersModelKey, fallback to max (useEffect will fix localStorage)
+      return maxModelKey;
     }
     // 'default' users (previously 'fast') are now treated as 'max'
     if (modelType === 'default' || modelType === 'max') {
       return maxModelKey;
     }
-    return modelType;
-  }, [defaultOthersModelKey, maxModelKey, modelType, othersModelKey, setModelType]);
+    // Fallback for any invalid/corrupted modelType value in localStorage
+    return maxModelKey;
+  }, [maxModelKey, modelType, othersModelKey]);
 
   useEffect(() => {
     if (debug) return;
 
     // Migrate users who had 'default' (fast) selected to 'max' (recommended)
     if (modelType === 'default') {
+      setModelType('max');
+      return;
+    }
+
+    // Handle invalid/corrupted modelType values in localStorage
+    if (modelType !== 'max' && modelType !== 'others') {
       setModelType('max');
       return;
     }

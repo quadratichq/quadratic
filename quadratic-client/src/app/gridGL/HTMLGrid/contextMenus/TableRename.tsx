@@ -11,7 +11,7 @@ import { useRecoilValue } from 'recoil';
 export const TableRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const getInputElement = useCallback((element: HTMLInputElement) => {
     inputRef.current = element;
   }, []);

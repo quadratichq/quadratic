@@ -18,7 +18,7 @@ export const Component = () => {
 
   const files = filesPrivate.map(
     ({
-      file: { name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail },
+      file: { name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail, hasScheduledTasks },
       userMakingRequest: { filePermissions },
     }) => ({
       name,
@@ -28,6 +28,7 @@ export const Component = () => {
       uuid,
       publicLinkAccess,
       permissions: filePermissions,
+      hasScheduledTasks,
     })
   );
 
