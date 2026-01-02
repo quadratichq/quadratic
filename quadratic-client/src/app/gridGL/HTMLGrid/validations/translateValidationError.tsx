@@ -201,25 +201,25 @@ export const translateValidationError = async (
           if ('DateRange' in r) {
             return (
               <div key={i}>
-                {r.DateRange[0] && r.DateRange[1] && (
+                {isNotUndefinedOrNull(r.DateRange[0]) && isNotUndefinedOrNull(r.DateRange[1]) && (
                   <>
                     Date {verb} be between{' '}
                     <span className={listClassName}>
-                      {numberToDate(BigInt(r.DateRange[0]))} and {numberToDate(BigInt(r.DateRange[1]))}
+                      {numberToDate(BigInt(r.DateRange[0]!))} and {numberToDate(BigInt(r.DateRange[1]!))}
                     </span>
                     .
                   </>
                 )}
-                {r.DateRange[0] && !r.DateRange[1] && (
+                {isNotUndefinedOrNull(r.DateRange[0]) && !isNotUndefinedOrNull(r.DateRange[1]) && (
                   <>
                     Date {verb} be on or after{' '}
-                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[0]))}</span>.
+                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[0]!))}</span>.
                   </>
                 )}
-                {!r.DateRange[0] && r.DateRange[1] && (
+                {!isNotUndefinedOrNull(r.DateRange[0]) && isNotUndefinedOrNull(r.DateRange[1]) && (
                   <>
                     Date {verb} be on or before{' '}
-                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[1]))}</span>.
+                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[1]!))}</span>.
                   </>
                 )}
               </div>
