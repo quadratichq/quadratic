@@ -10,11 +10,16 @@
 //! - Cohort Members
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use bytes::Bytes;
+use chrono::NaiveDate;
 use reqwest::Client;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use std::collections::HashMap;
 
+use crate::synced::SyncedClient;
 use crate::synced::mixpanel::MixpanelServer;
 use crate::{SharedError, error::Result, synced::mixpanel::events::ExportParams};
+use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub struct MixpanelConfig {
@@ -22,6 +27,45 @@ pub struct MixpanelConfig {
     pub project_id: String,
     pub server: MixpanelServer,
     pub user_agent: Option<String>,
+}
+
+#[async_trait]
+impl SyncedClient for MixpanelClient {
+    /// Get the streams available for this client
+    fn streams() -> Vec<&'static str> {
+        vec![
+            "events",
+            // "engage",
+            // "funnels",
+            // "revenue",
+            // "annotations",
+            // "cohorts",
+            // "cohort_members",
+        ]
+    }
+
+    /// Test the connection and authentication
+    async fn test_connection(&self) -> bool {
+        let today = chrono::Utc::now().date_naive();
+        let mut params = ExportParams::new(today, today);
+        params.limit = Some(1);
+        self.export_events(params).await.is_ok()
+    }
+
+    /// Process a single stream
+    async fn process(
+        &self,
+        stream: &str,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, Bytes>> {
+        let params = ExportParams::new(start_date, end_date);
+
+        match stream {
+            "events" => self.export_events_streaming(params).await,
+            _ => Err(SharedError::Synced("Not implemented".to_string())),
+        }
+    }
 }
 
 impl MixpanelConfig {
@@ -118,14 +162,6 @@ impl MixpanelClient {
             .await
             .map_err(|e| SharedError::Synced(format!("Failed to parse response: {}", e)))?;
         Ok(result)
-    }
-
-    /// test the connection and authentication
-    pub async fn test_connection(&self) -> bool {
-        let today = chrono::Utc::now().date_naive();
-        let mut params = ExportParams::new(today, today);
-        params.limit = Some(1);
-        self.export_events(params).await.is_ok()
     }
 
     /// get project information (if available)

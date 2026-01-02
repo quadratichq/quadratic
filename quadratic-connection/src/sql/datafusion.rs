@@ -7,15 +7,22 @@ use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
     sql::datafusion_connection::{
-        DatafusionConnection, tests::new_datafusion_connection as new_datafusion_test_connection,
+        DatafusionConnection, EmptyConnection,
+        tests::new_datafusion_connection as new_datafusion_test_connection,
     },
-    synced::mixpanel::{MixpanelConnection, client::MixpanelClient},
+    synced::{
+        SyncedClient, SyncedConnection,
+        google_analytics::client::{GoogleAnalyticsClient, GoogleAnalyticsConnection},
+        mixpanel::{MixpanelConnection, client::MixpanelClient},
+        plaid::{PlaidConnection, client::PlaidClient},
+    },
 };
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
     auth::Claims,
+    connection::get_api_connection,
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse},
@@ -23,33 +30,80 @@ use crate::{
     state::State,
 };
 
-/// Test the connection to the database.
-pub(crate) async fn test_mixpanel(
-    Json(connection): Json<MixpanelConnection>,
-) -> Json<TestResponse> {
-    let client = MixpanelClient::new(&connection.api_secret, &connection.project_id);
-    TestResponse::new(client.test_connection().await, None).into()
+/// Macro to generate test handler functions for Datafusion connections.
+macro_rules! test_handler {
+    ($fn_name:ident, $connection_type:ty) => {
+        pub(crate) async fn $fn_name(
+            state: Extension<Arc<State>>,
+            Json(connection): Json<$connection_type>,
+        ) -> Result<Json<TestResponse>> {
+            let client = connection
+                .to_client((**state).settings.environment.clone())
+                .await?;
+            Ok(TestResponse::new(client.test_connection().await, None).into())
+        }
+    };
+}
+
+test_handler!(test_google_analytics, GoogleAnalyticsConnection);
+test_handler!(test_mixpanel, MixpanelConnection);
+
+pub(crate) async fn test_plaid(
+    state: Extension<Arc<State>>,
+    Json(connection): Json<PlaidConnection>,
+) -> Result<Json<TestResponse>> {
+    let client = PlaidClient::new(
+        &state.settings.plaid_client_id,
+        &state.settings.plaid_secret,
+        state.settings.plaid_environment,
+        Some(connection.access_token),
+    );
+
+    Ok(TestResponse::new(client.test_connection().await, None).into())
 }
 
 /// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
-    state: &State,
-    _claims: &Claims,
+    state: State,
+    claims: &Claims,
     connection_id: &Uuid,
-    _team_id: &Uuid,
-    _headers: &HeaderMap,
+    team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<DatafusionConnection>> {
+    let api_connection: ApiConnection<EmptyConnection> = match cfg!(not(test)) {
+        true => {
+            get_api_connection(&state, "", &claims.email, connection_id, team_id, headers).await?
+        }
+        false => ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            type_details: EmptyConnection {},
+        },
+    };
+
     let mut datafusion_connection = match cfg!(not(test)) {
-        true => state.settings.datafusion_connection.clone(),
+        true => state.settings.datafusion_connection,
         false => new_datafusion_test_connection(),
     };
 
+    let streams = match api_connection.r#type.as_str() {
+        "MIXPANEL" => MixpanelClient::streams(),
+        "GOOGLE_ANALYTICS" => GoogleAnalyticsClient::streams(),
+        "PLAID" => PlaidClient::streams(),
+        _ => vec![],
+    };
+
     datafusion_connection.connection_id = Some(*connection_id);
+    datafusion_connection.streams = streams
+        .into_iter()
+        .map(|stream| stream.to_string())
+        .collect();
 
     let api_connection = ApiConnection {
         uuid: *connection_id,
-        name: "".into(),
-        r#type: "".into(),
+        name: api_connection.name,
+        r#type: api_connection.r#type,
         type_details: datafusion_connection,
     };
 
@@ -65,7 +119,14 @@ pub(crate) async fn query(
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
     let connection_id = sql_query.connection_id;
-    let connection = get_connection(&state, &claims, &connection_id, &team_id, &headers).await?;
+    let connection = get_connection(
+        (**state).clone(),
+        &claims,
+        &connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
 
     query_generic::<DatafusionConnection>(connection.type_details, state, sql_query).await
 }
@@ -79,7 +140,8 @@ pub(crate) async fn schema(
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let api_connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
+    let api_connection =
+        get_connection((**state).clone(), &claims, &id, &team_id, &headers).await?;
 
     schema_generic(api_connection, state, params).await
 }
@@ -106,8 +168,9 @@ mod tests {
     #[traced_test]
     #[ignore]
     async fn test_mixpanel_connection_success() {
+        let state = Extension(Arc::new(new_state().await));
         let connection = get_test_mixpanel_connection();
-        let response = test_mixpanel(Json(connection)).await;
+        let response = test_mixpanel(state, Json(connection)).await.unwrap();
         assert!(response.0.connected);
     }
 
@@ -120,7 +183,9 @@ mod tests {
         let team_id = Uuid::new_v4();
         let headers = HeaderMap::new();
 
-        let result = get_connection(&state, &claims, &connection_id, &team_id, &headers).await;
+        let result =
+            get_connection(state.clone(), &claims, &connection_id, &team_id, &headers).await;
+        println!("result: {:?}", result);
         assert!(result.is_ok());
 
         let api_connection = result.unwrap();

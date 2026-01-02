@@ -16,6 +16,8 @@ export const codeCellsById = {
   SUPABASE: { id: 'SUPABASE', label: 'Supabase', type: 'connection' },
   NEON: { id: 'NEON', label: 'Neon', type: 'connection' },
   MIXPANEL: { id: 'MIXPANEL', label: 'Mixpanel', type: 'connection' },
+  GOOGLE_ANALYTICS: { id: 'GOOGLE_ANALYTICS', label: 'Google Analytics', type: 'connection' },
+  PLAID: { id: 'PLAID', label: 'Plaid', type: 'connection' },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];
@@ -76,6 +78,10 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
       case 'NEON':
         return 'pgsql';
       case 'MIXPANEL':
+        return 'sql';
+      case 'GOOGLE_ANALYTICS':
+        return 'sql';
+      case 'PLAID':
         return 'sql';
     }
   }

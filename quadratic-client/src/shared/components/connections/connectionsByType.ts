@@ -1,10 +1,12 @@
 import * as Bigquery from '@/shared/components/connections/ConnectionFormBigquery';
 import * as Cockroachdb from '@/shared/components/connections/ConnectionFormCockroachdb';
+import * as GoogleAnalytics from '@/shared/components/connections/ConnectionFormGoogleAnalytics';
 import * as Mariadb from '@/shared/components/connections/ConnectionFormMariadb';
 import * as Mixpanel from '@/shared/components/connections/ConnectionFormMixpanel';
 import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
 import * as Mysql from '@/shared/components/connections/ConnectionFormMysql';
 import * as Neon from '@/shared/components/connections/ConnectionFormNeon';
+import * as Plaid from '@/shared/components/connections/ConnectionFormPlaid';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
 import * as Snowflake from '@/shared/components/connections/ConnectionFormSnowflake';
 import * as Supabase from '@/shared/components/connections/ConnectionFormSupabase';
@@ -29,6 +31,7 @@ import NeonLogo from './logo-neon.svg?react';
 import NetsuiteLogo from './logo-netsuite.svg?react';
 import OracleLogo from './logo-oracle.svg?react';
 import OtherLogo from './logo-other.svg?react';
+import PlaidLogo from './logo-plaid.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
 import QuickbooksLogo from './logo-quickbooks.svg?react';
 import RedshiftLogo from './logo-redshift.svg?react';
@@ -52,12 +55,16 @@ export type ConnectionFormValues = {
 
 export type UseConnectionForm<T extends ConnectionFormValues> = (connection: Connection | undefined) => {
   form: UseFormReturn<T>;
+  percentCompleted?: number;
 };
 
 export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   form: UseFormReturn<T>;
   children: ReactNode;
   handleSubmitForm: SubmitHandler<ConnectionFormValues>;
+  percentCompleted?: number;
+  connection?: Connection;
+  teamUuid: string;
 }) => ReactNode;
 
 type ConnectionTypeData<T extends ConnectionFormValues> = {
@@ -133,6 +140,18 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     ConnectionForm: Mixpanel.ConnectionForm,
     useConnectionForm: Mixpanel.useConnectionForm,
   },
+  GOOGLE_ANALYTICS: {
+    name: 'Google Analytics',
+    Logo: GoogleAnalyticsLogo,
+    ConnectionForm: GoogleAnalytics.ConnectionForm,
+    useConnectionForm: GoogleAnalytics.useConnectionForm,
+  },
+  PLAID: {
+    name: 'Plaid',
+    Logo: PlaidLogo,
+    ConnectionForm: Plaid.ConnectionForm,
+    useConnectionForm: Plaid.useConnectionForm,
+  },
 };
 
 export type PotentialConnectionType =
@@ -153,7 +172,6 @@ export type PotentialConnectionType =
   | 'NETSUITE'
   | 'QUICKBOOKS'
   | 'SHOPIFY'
-  | 'GOOGLE_ANALYTICS'
   | 'OTHER';
 export const potentialConnectionsByType: Record<
   PotentialConnectionType,
@@ -229,10 +247,6 @@ export const potentialConnectionsByType: Record<
   SHOPIFY: {
     name: 'Shopify',
     Logo: ShopifyLogo,
-  },
-  GOOGLE_ANALYTICS: {
-    name: 'Google Analytics',
-    Logo: GoogleAnalyticsLogo,
   },
   OTHER: {
     name: 'Other',

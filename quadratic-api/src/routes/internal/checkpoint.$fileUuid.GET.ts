@@ -19,7 +19,7 @@ router.get('/file/:uuid/checkpoint', validateM2MAuth(), validateUUID(), async (r
   const fileUuid = req.params.uuid;
 
   // Get the most recent checkpoint for the file
-  const result = await dbClient.file.findUniqueOrThrow({
+  const result = await dbClient.file.findUnique({
     where: {
       uuid: fileUuid,
     },
@@ -33,7 +33,15 @@ router.get('/file/:uuid/checkpoint', validateM2MAuth(), validateUUID(), async (r
     },
   });
 
+  if (!result) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
   const checkpoint = result.FileCheckpoint[0];
+
+  if (!checkpoint) {
+    return res.status(404).json({ error: 'No checkpoint found for file' });
+  }
 
   return res.status(200).json({
     fileUuid: fileUuid,

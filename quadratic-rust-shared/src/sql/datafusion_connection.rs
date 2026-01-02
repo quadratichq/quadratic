@@ -8,7 +8,7 @@ use arrow::array::ArrayRef;
 use arrow_array::array::Array;
 use async_trait::async_trait;
 use bytes::Bytes;
-use datafusion::prelude::{ParquetReadOptions, SessionContext};
+use datafusion::prelude::{ParquetReadOptions, SessionConfig, SessionContext};
 use derivative::Derivative;
 use object_store::ObjectStore;
 use parquet::arrow::ArrowWriter;
@@ -28,18 +28,23 @@ pub fn default_object_store() -> Arc<dyn ObjectStore> {
     Arc::new(InMemory::new())
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EmptyConnection {}
+
 /// Datafusion connection
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(Debug, Clone)]
 pub struct DatafusionConnection {
     pub connection_id: Option<Uuid>,
     pub database: Option<String>,
-    #[serde(skip, default = "SessionContext::new")]
+    pub streams: Vec<String>,
+    #[serde(skip, default = "DatafusionConnection::new_session_context")]
     #[derivative(Debug = "ignore")]
     pub session_context: SessionContext,
     #[serde(skip, default = "default_object_store")]
     #[derivative(Debug = "ignore")]
-    pub object_store: Arc<dyn ObjectStore>,
+    object_store: Arc<dyn ObjectStore>,
     pub object_store_url: Url,
 }
 
@@ -49,7 +54,8 @@ impl DatafusionConnection {
         DatafusionConnection {
             connection_id: None,
             database: None,
-            session_context: SessionContext::new(),
+            streams: vec![],
+            session_context: Self::new_session_context(),
             object_store,
             object_store_url,
         }
@@ -71,13 +77,19 @@ impl DatafusionConnection {
         }
     }
 
+    fn new_session_context() -> SessionContext {
+        let config = SessionConfig::new()
+            .set_bool("datafusion.sql_parser.enable_ident_normalization", false);
+        SessionContext::new_with_config(config)
+    }
+
     /// Get the parquet path for a table in the object store (format: s3://synced-data/consolidated/{table}/{connection_id}/{table}.parquet)
-    pub fn object_store_parquet_path(&self, url: &Url, table: &str) -> Result<String> {
+    pub fn object_store_parquet_path(&self, table: &str) -> Result<String> {
         let connection_id = self
             .connection_id
             .ok_or_else(|| connect_error("Connection ID is required"))?;
 
-        Ok(format!("{}/{}/{}/", url.as_str(), connection_id, table))
+        Ok(format!("/{}/{}/", connection_id, table))
     }
 }
 
@@ -113,21 +125,22 @@ impl<'a> Connection<'a> for DatafusionConnection {
 
     /// Connect to a datafusion database
     async fn connect(&self) -> Result<SessionContext> {
-        let ctx: SessionContext = SessionContext::new();
+        let ctx = Self::new_session_context();
 
         // register the object store in datafusion context
         ctx.register_object_store(&self.object_store_url, self.object_store.clone());
 
-        // hard-code for now
-        // TODO(ddimaria): remove this in favor of getting the tables elsewhere
-        let tables = vec!["events"];
-
         // register the parquet path for every table
-        for table in tables {
-            let parquet_path = self.object_store_parquet_path(&self.object_store_url, table)?;
-            ctx.register_parquet(table, &parquet_path, ParquetReadOptions::default())
-                .await
-                .map_err(connect_error)?;
+        for table in &self.streams {
+            let parquet_path = self.object_store_parquet_path(table)?;
+
+            ctx.register_parquet(
+                table.to_owned(),
+                &parquet_path,
+                ParquetReadOptions::default(),
+            )
+            .await
+            .map_err(connect_error)?;
         }
 
         Ok(ctx)
@@ -138,11 +151,17 @@ impl<'a> Connection<'a> for DatafusionConnection {
         &mut self,
         client: &mut Self::Conn,
         sql: &str,
-        _max_bytes: Option<u64>,
+        max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
         let df = client.sql(sql).await.map_err(query_error)?;
         // test helper
         // df.clone().show().await.unwrap();
+        // df.clone()
+        //     .explain(false, false)
+        //     .unwrap()
+        //     .show()
+        //     .await
+        //     .unwrap();
         let batches = df.collect().await.map_err(query_error)?;
 
         if batches.is_empty() {
@@ -150,17 +169,29 @@ impl<'a> Connection<'a> for DatafusionConnection {
         }
 
         let mut total_records = 0;
+        let mut total_bytes = 0;
+        let mut over_the_limit = false;
         let buffer = Vec::new();
         let mut writer = ArrowWriter::try_new(buffer, batches[0].schema(), None)?;
 
+        // enforce max bytes
         for batch in &batches {
             total_records += batch.num_rows();
+            total_bytes += batch.get_array_memory_size() as u64;
+
+            if let Some(max_bytes) = max_bytes
+                && total_bytes > max_bytes
+            {
+                over_the_limit = true;
+                break;
+            }
+
             writer.write(batch)?;
         }
 
         let parquet = writer.into_inner()?;
 
-        Ok((parquet.into(), false, total_records))
+        Ok((parquet.into(), over_the_limit, total_records))
     }
 
     /// Get the schema of a datafusion database

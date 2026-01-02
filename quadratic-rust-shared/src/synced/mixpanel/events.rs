@@ -347,21 +347,7 @@ impl MixpanelClient {
 
         // flatten all properties, converting complex objects to JSON strings
         if let serde_json::Value::Object(properties) = &event.properties {
-            for (key, value) in properties {
-                let flattened_value = match value {
-                    // keep simple types as-is
-                    serde_json::Value::Null
-                    | serde_json::Value::Bool(_)
-                    | serde_json::Value::Number(_)
-                    | serde_json::Value::String(_) => value.clone(),
-
-                    // convert complex types to JSON strings
-                    serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-                        serde_json::Value::String(value.to_string())
-                    }
-                };
-                flattened.insert(key.clone(), flattened_value);
-            }
+            flattened.extend(crate::utils::json::flatten_json_map(properties));
         }
 
         flattened

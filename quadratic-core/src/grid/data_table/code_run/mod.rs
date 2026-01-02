@@ -158,6 +158,9 @@ pub enum ConnectionKind {
     Supabase,
     Neon,
     Mixpanel,
+    #[serde(rename = "GOOGLE_ANALYTICS")]
+    GoogleAnalytics,
+    Plaid,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {
