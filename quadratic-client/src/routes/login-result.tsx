@@ -11,8 +11,14 @@ export const loader = async ({ request }: { request: Request }) => {
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
   try {
-    await authClient.handleSigninRedirect(request.url);
+    // Check if already authenticated first - if so, ignore any auth codes in the URL
     let isAuthenticated = await authClient.isAuthenticated();
+
+    // Only process the redirect if not already authenticated
+    if (!isAuthenticated) {
+      await authClient.handleSigninRedirect(request.url);
+      isAuthenticated = await authClient.isAuthenticated();
+    }
     if (isAuthenticated) {
       // Acknowledge the user has just logged in. The backend may need
       // to run some logic before making any other API calls in parallel
