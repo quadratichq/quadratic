@@ -224,19 +224,18 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
 }
 
 function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
   const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
     if (!toolSpec.sources.includes(source) || !toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }
+    // Skip WebSearchInternal as web search is now handled by Parallel API
     if (name === AITool.WebSearchInternal) {
-      hasWebSearchInternal = true;
       return false;
     }
     return toolName ? name === toolName : true;
   });
 
-  if (tools.length === 0 && !hasWebSearchInternal) {
+  if (tools.length === 0) {
     return undefined;
   }
 
@@ -249,7 +248,6 @@ function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITo
           parameters: convertParametersToGenAISchema(parameters),
         })
       ),
-      googleSearch: hasWebSearchInternal ? {} : undefined,
     },
   ];
 
@@ -259,9 +257,7 @@ function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITo
 function getGenAIToolChoice(toolName?: AITool): ToolConfig {
   return toolName === undefined
     ? { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } }
-    : toolName === AITool.WebSearchInternal
-      ? { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY, allowedFunctionNames: ['google_search'] } }
-      : { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY, allowedFunctionNames: [toolName] } };
+    : { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY, allowedFunctionNames: [toolName] } };
 }
 
 export async function parseGenAIStream(
@@ -346,10 +342,10 @@ export async function parseGenAIStream(
         }
       }
 
-      // search grounding metadata
+      // search grounding metadata (legacy - no longer produced as we use Parallel API for search)
       if (candidate?.groundingMetadata && Object.keys(candidate.groundingMetadata).length > 0) {
         responseMessage.content.push({
-          type: 'google_search_grounding_metadata',
+          type: 'web_search_metadata',
           text: JSON.stringify(candidate.groundingMetadata),
         });
       }
@@ -412,10 +408,10 @@ export function parseGenAIResponse(
     }
   });
 
-  // search grounding metadata
+  // search grounding metadata (legacy - no longer produced as we use Parallel API for search)
   if (candidate?.groundingMetadata) {
     responseMessage.content.push({
-      type: 'google_search_grounding_metadata',
+      type: 'web_search_metadata',
       text: JSON.stringify(candidate?.groundingMetadata),
     });
   }

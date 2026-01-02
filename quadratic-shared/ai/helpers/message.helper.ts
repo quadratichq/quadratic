@@ -19,6 +19,8 @@ import type {
   ToolResultMessage,
   UserMessagePrompt,
   UserPromptContextType,
+  WebSearchContent,
+  WebSearchMetadata,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { isQuadraticModel } from './model.helper';
 
@@ -226,8 +228,13 @@ export const isContentFile = (
   return isContentImage(content) || isContentPdfFile(content) || isContentTextFile(content);
 };
 
+export const isContentWebSearchInternal = (content: InternalMessage['content']): content is WebSearchContent => {
+  return content.source === 'web_search';
+};
+
+// Legacy alias for backwards compatibility - handles both new and old formats
 export const isContentGoogleSearchInternal = (content: InternalMessage['content']): content is GoogleSearchContent => {
-  return content.source === 'google_search';
+  return content.source === 'web_search' || content.source === 'google_search';
 };
 
 export const isContentImportFilesToGridInternal = (
@@ -236,10 +243,17 @@ export const isContentImportFilesToGridInternal = (
   return content.source === 'import_files_to_grid';
 };
 
+export const isContentWebSearchMetadata = (
+  content: Content[number] | AIResponseContent[number]
+): content is WebSearchMetadata => {
+  return content.type === 'web_search_metadata';
+};
+
+// Legacy alias for backwards compatibility
 export const isContentGoogleSearchGroundingMetadata = (
   content: Content[number] | AIResponseContent[number]
 ): content is GoogleSearchGroundingMetadata => {
-  return content.type === 'google_search_grounding_metadata';
+  return content.type === 'web_search_metadata' || content.type === 'google_search_grounding_metadata';
 };
 
 export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {

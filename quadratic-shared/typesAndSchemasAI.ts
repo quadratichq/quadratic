@@ -332,10 +332,20 @@ export type TextFileContent = z.infer<typeof TextFileContentSchema>;
 export const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
 export type FileContent = z.infer<typeof FileContentSchema>;
 
-const GoogleSearchGroundingMetadataSchema = z.object({
+const WebSearchMetadataSchema = z.object({
+  type: z.literal('web_search_metadata'),
+  text: z.string().transform((val) => val.trim()),
+});
+export type WebSearchMetadata = z.infer<typeof WebSearchMetadataSchema>;
+
+// Legacy schema for backwards compatibility with existing data
+const LegacyGoogleSearchMetadataSchema = z.object({
   type: z.literal('google_search_grounding_metadata'),
   text: z.string().transform((val) => val.trim()),
 });
+
+// Combined schema that accepts both new and legacy formats
+const GoogleSearchGroundingMetadataSchema = z.union([WebSearchMetadataSchema, LegacyGoogleSearchMetadataSchema]);
 export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
 
 const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
@@ -468,11 +478,30 @@ const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const InternalWebSearchContextTypeSchema = z.literal('webSearchInternal');
-const GoogleSearchContentSchema = z.object({
+
+const WebSearchResultSchema = z.object({
+  url: z.string(),
+  title: z.string(),
+  excerpt: z.string(),
+});
+export type WebSearchResult = z.infer<typeof WebSearchResultSchema>;
+
+const WebSearchContentSchema = z.object({
+  source: z.literal('web_search'),
+  query: z.string(),
+  results: z.array(WebSearchResultSchema),
+});
+export type WebSearchContent = z.infer<typeof WebSearchContentSchema>;
+
+// Legacy schema for backwards compatibility with existing data
+const LegacyGoogleSearchContentSchema = z.object({
   source: z.literal('google_search'),
   query: z.string(),
-  results: z.array(z.union([TextContentSchema, GoogleSearchGroundingMetadataSchema])),
+  results: z.array(z.union([TextContentSchema, WebSearchMetadataSchema])),
 });
+
+// Combined schema that accepts both new and legacy formats
+const GoogleSearchContentSchema = z.union([WebSearchContentSchema, LegacyGoogleSearchContentSchema]);
 export type GoogleSearchContent = z.infer<typeof GoogleSearchContentSchema>;
 
 const InternalImportFilesToGridTypeSchema = z.literal('importFilesToGrid');
