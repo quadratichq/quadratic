@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-multiplayer"
-version = "0.22.1"
+version = "0.23.0"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -31,6 +31,8 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "auth",
     "aws",
     "environment",
+    "multiplayer",
+    "net",
     "protobuf",
     "pubsub",
     "quadratic-api"

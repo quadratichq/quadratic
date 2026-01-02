@@ -57,7 +57,7 @@ pub struct PendingTransaction {
     pub(crate) cells_accessed: CellsAccessed,
 
     /// save code_cell info for async calls
-    pub(crate) current_sheet_pos: Option<SheetPos>,
+    pub current_sheet_pos: Option<SheetPos>,
 
     /// whether we are awaiting an async call for a code cell
     pub(crate) waiting_for_async_code_cell: bool,

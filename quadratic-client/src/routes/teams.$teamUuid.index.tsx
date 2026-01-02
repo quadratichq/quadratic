@@ -72,6 +72,7 @@ export const Component = () => {
         uuid: file.uuid,
         publicLinkAccess: file.publicLinkAccess,
         permissions: userMakingRequest.filePermissions,
+        hasScheduledTasks: file.hasScheduledTasks,
         creator,
         isPrivate: false,
       });
