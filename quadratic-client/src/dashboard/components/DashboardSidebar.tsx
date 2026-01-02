@@ -420,8 +420,8 @@ function SidebarNavLink({
       className={classes}
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
-      {...dropProps}
       {...(dataTestId ? { 'data-testid': dataTestId } : {})}
+      {...dropProps}
     >
       {children}
     </NavLink>

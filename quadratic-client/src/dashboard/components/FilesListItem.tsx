@@ -82,7 +82,7 @@ export function FilesListItemUserFile({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions, hasScheduledTasks } = file;
   const actionUrl = ROUTES.API.FILE(uuid);
 
   // Determine if the user can move files
@@ -216,6 +216,7 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            hasScheduledTasks={hasScheduledTasks}
             isPrivate={file.isPrivate}
             isSharedWithMe={file.isSharedWithMe}
             viewPreferences={viewPreferences}
@@ -382,7 +383,6 @@ function ListItemView({
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
             src={thumbnail}
-            crossOrigin="anonymous"
             alt="File thumbnail screenshot"
             className="dark-mode-hack object-cover"
             draggable="false"
