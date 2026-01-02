@@ -199,9 +199,19 @@ impl Sheet {
 
     /// Returns the JsCellValue at a position
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
-        self.display_value(pos).map(|value| JsCellValue {
-            value: value.to_string(),
-            kind: value.into(),
+        self.display_value(pos).map(|value| {
+            // For date/time types, use the stored format if available
+            let formatted_value = match &value {
+                CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_) => {
+                    let date_time_format = self.formats.date_time.get(pos);
+                    value.to_edit_with_format(date_time_format)
+                }
+                _ => value.to_string(),
+            };
+            JsCellValue {
+                value: formatted_value,
+                kind: value.into(),
+            }
         })
     }
 
