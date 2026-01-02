@@ -216,7 +216,6 @@ impl GridController {
     }
 
     /// Recalculates sheet bounds, and if changed then sends to TS.
-    #[function_timer::function_timer]
     pub(crate) fn send_updated_bounds(
         &mut self,
         transaction: &PendingTransaction,

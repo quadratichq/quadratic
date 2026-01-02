@@ -28,7 +28,6 @@ impl GridController {
     ///
     /// This also maintains any old values from the data table, such as the
     /// user-defined chart size.
-    #[function_timer::function_timer]
     pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
