@@ -468,6 +468,7 @@ export const questionsById: Record<
                 name={props.id}
                 value="free"
                 size="lg"
+                variant="secondary"
                 className="mt-auto w-full"
                 disabled={isSubmitting}
                 loading={isSubmittingFree}
@@ -482,7 +483,6 @@ export const questionsById: Record<
                 name={props.id}
                 value="pro"
                 size="lg"
-                variant="secondary"
                 className="mt-4 w-full"
                 disabled={isSubmitting}
                 loading={isSubmittingPro}
