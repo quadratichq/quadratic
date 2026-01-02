@@ -49,6 +49,8 @@ export interface AIUserMessageFormWrapperProps {
   onContentChange?: (content: Content) => void;
   showEmptyChatPromptSuggestions?: boolean;
   uiContext: 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
+  /** When true, hides @ mention and enhance prompt buttons, used in full-screen chat mode */
+  fullScreenMode?: boolean;
 }
 
 export interface SubmitPromptArgs {
@@ -98,6 +100,7 @@ export const AIUserMessageForm = memo(
       waitingOnMessageIndex,
       filesSupportedText,
       uiContext,
+      fullScreenMode,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
@@ -129,6 +132,17 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex === props.messageIndex,
       [props.messageIndex, waitingOnMessageIndex]
     );
+
+    // Emit form state changes for full-screen mode dynamic suggestions
+    useEffect(() => {
+      if (fullScreenMode) {
+        events.emit('aiAnalystFormStateChanged', {
+          files,
+          importFiles: importFiles.map((f) => ({ name: f.name, size: f.size })),
+          context,
+        });
+      }
+    }, [fullScreenMode, files, importFiles, context]);
 
     const handleClickForm = useCallback(
       (e: React.MouseEvent<HTMLFormElement>) => {
@@ -353,6 +367,20 @@ export const AIUserMessageForm = memo(
       };
     }, [uiContext]);
 
+    // Listen for when a prompt is set from outside (e.g., full-screen chat example prompts)
+    useEffect(() => {
+      const handleSetPrompt = (newPrompt: string) => {
+        setPrompt(newPrompt);
+        textareaRef.current?.focus();
+      };
+      if (uiContext === 'analyst-new-chat') {
+        events.on('aiAnalystSetPrompt', handleSetPrompt);
+      }
+      return () => {
+        events.off('aiAnalystSetPrompt', handleSetPrompt);
+      };
+    }, [uiContext]);
+
     const textarea = (
       <Textarea
         ref={textareaRef}
@@ -459,6 +487,7 @@ export const AIUserMessageForm = memo(
             setContext={setContext}
             filesSupportedText={filesSupportedText}
             isAnalyst={isAnalyst}
+            fullScreenMode={fullScreenMode}
           />
         </form>
       </div>
@@ -537,6 +566,7 @@ interface AIUserMessageFormFooterProps {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
   isAnalyst: boolean;
+  fullScreenMode?: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -557,6 +587,7 @@ const AIUserMessageFormFooter = memo(
     setContext,
     filesSupportedText,
     isAnalyst,
+    fullScreenMode,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -590,7 +621,7 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-            {isAnalyst && (
+            {isAnalyst && !fullScreenMode && (
               <TooltipPopover label="Reference sheet data" fastMode={true}>
                 <Button
                   size="icon-sm"
@@ -611,12 +642,14 @@ const AIUserMessageFormFooter = memo(
                 textareaRef={textareaRef}
               />
             )}
-            <AIUserMessageFormOptimizeButton
-              disabled={disabled}
-              prompt={prompt}
-              setPrompt={setPrompt}
-              textareaRef={textareaRef}
-            />
+            {!fullScreenMode && (
+              <AIUserMessageFormOptimizeButton
+                disabled={disabled}
+                prompt={prompt}
+                setPrompt={setPrompt}
+                textareaRef={textareaRef}
+              />
+            )}
           </div>
 
           <div className="flex">
