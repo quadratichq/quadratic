@@ -1557,4 +1557,27 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.OptimizePrompt]: async (args) => {
     return [createTextContent(`Optimized prompt: ${args.optimized_prompt}`)];
   },
+
+  // AI Spreadsheet tools - these are handled by the AI Spreadsheet component, not here
+  [AITool.AddInputNode]: async (args) => {
+    return [createTextContent(`Added input node: ${args.label} (${args.input_type})`)];
+  },
+  [AITool.AddTransformNode]: async (args) => {
+    return [createTextContent(`Added transform node: ${args.label} (${args.transform_type})`)];
+  },
+  [AITool.AddOutputNode]: async (args) => {
+    return [createTextContent(`Added output node: ${args.label} (${args.output_type})`)];
+  },
+  [AITool.ConnectNodes]: async (args) => {
+    return [createTextContent(`Connected ${args.source_node_id} to ${args.target_node_id}`)];
+  },
+  [AITool.RemoveNode]: async (args) => {
+    return [createTextContent(`Removed node: ${args.node_id}`)];
+  },
+  [AITool.UpdateNode]: async (args) => {
+    return [createTextContent(`Updated node: ${args.node_id}`)];
+  },
+  [AITool.ClearCanvas]: async (args) => {
+    return [createTextContent(`Canvas cleared: ${args.confirm}`)];
+  },
 } as const;

@@ -81,6 +81,7 @@ export const ROUTES = {
   TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
+  TEAM_CANVAS: (teamUuid: string) => `/teams/${teamUuid}/canvas`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
   TEMPLATES: '/templates',
