@@ -5,34 +5,21 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
-use quadratic_rust_shared::{SharedError, aws::error::Aws as AwsError};
+use quadratic_rust_shared::{
+    ErrorLevel, SharedError, aws::error::Aws as AwsError,
+    net::websocket_server::error::WebsocketServerError,
+};
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
 use thiserror::Error;
 use uuid::Uuid;
 
 pub(crate) type Result<T> = std::result::Result<T, MpError>;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display, EnumString)]
-pub(crate) enum ErrorLevel {
-    Error,
-    Warning,
-}
 
 impl From<&MpError> for ErrorLevel {
     fn from(error: &MpError) -> Self {
         match error {
             MpError::PubSub(_) => ErrorLevel::Error,
             _ => ErrorLevel::Warning,
-        }
-    }
-}
-
-impl ErrorLevel {
-    pub(crate) fn log(&self, msg: &str) {
-        match self {
-            ErrorLevel::Error => tracing::error!("{}", msg),
-            ErrorLevel::Warning => tracing::warn!("{}", msg),
         }
     }
 }
@@ -143,6 +130,18 @@ impl From<jsonwebtoken::errors::Error> for MpError {
 impl From<prost::DecodeError> for MpError {
     fn from(error: prost::DecodeError) -> Self {
         MpError::Serialization(error.to_string())
+    }
+}
+
+impl From<WebsocketServerError> for MpError {
+    fn from(error: WebsocketServerError) -> Self {
+        match error {
+            WebsocketServerError::Authentication(error) => MpError::Authentication(error),
+            WebsocketServerError::SendingMessage(error) => MpError::SendingMessage(error),
+            WebsocketServerError::FilePermissions(error) => MpError::FilePermissions(error),
+            WebsocketServerError::Serialization(error) => MpError::Serialization(error),
+            _ => MpError::Unknown(error.to_string()),
+        }
     }
 }
 

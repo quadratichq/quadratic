@@ -321,6 +321,20 @@ Note: you may need to restart node dev occasionally if it doesn't pick up your c
 
 ## E2E Testing
 
+### Install Prerequisites
+
+Use Node 24 and install dependencies:
+
+```bash
+cd tests/e2e
+nvm use 24
+npm i
+npx playwright install-deps
+npx playwright install
+```
+
+### Running Tests
+
 1. All machines types to locally run E2E tests from /quadratic/test/e2e/:
    * `npm run test` to run all tests
    * `npm run test:ui` to open UI that runs tests
@@ -328,3 +342,37 @@ Note: you may need to restart node dev occasionally if it doesn't pick up your c
 2. To generate images on Mac or Windows, run e2e /quadratic:
    * `npm run test` will run all tests in docker
    * `npm run test:update` will update screenshots in tests, similar to above (use test.only to limit the updates)
+
+### Linux Instructions on a Mac
+
+1. Install Operating System: Playwright supports Ubuntu LTS releases 22.04 and 24.04.
+1. Install and setup SSH: Ensure SSH is installed and add you public SSH key to the linux server.
+1. Setup the host in VS Code/Cursor: `Cmd + Shift + P` and select `Remote-SSH: Add a New Host.
+1. Connect to the host in VS Code/Cursor: `Cmd + Shift + P` and select `Remote-SSH: Connect to Host.
+1. Forward port `9323` in VS Code/Cursor:: In the bottom view, select the `Ports` tab and click on the `Add Port` button.
+1. Start the Playwright Server (adjust `E2E_URL` as needed): `DISPLAY=:99 E2E_URL=https://qa.quadratic-preview.com/ npx playwright test --ui --ui-host=0.0.0.0 --ui-port=9323`
+1. Open Browser: Point to http://localhost:9323/ and start testing.
+
+### Taking a single snapshot
+
+Adjust `E2E_URL` as needed.
+
+```shell
+E2E_URL=https://qa.quadratic-preview.com/ npx playwright test -g "Connection goes down in Multiplayer Session" --update-snapshots --workers=1
+```
+
+### Process for Updating All Snapshots
+
+First, update all snapshots:
+
+```shell
+E2E_URL=https://qa.quadratic-preview.com/ ./update-all-snapshots.sh
+```
+
+Next, go to the PR in GitHub and look at the diffs of the images.  For any diff that seems like a legitamate bug, copy the image path.  After you collected all image paths, revert those files from the previous commit.
+
+```shell
+git restore --source HEAD^ <file_path>
+git add .
+git commit -m "Remove snapshots for actual bugs"
+```

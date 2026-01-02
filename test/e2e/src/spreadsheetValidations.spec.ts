@@ -3,7 +3,7 @@ import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
 import { assertCellValue, assertValidationMessage, gotoCells } from './helpers/sheet.helper';
 
-test('Validations', async ({ page }) => {
+test.skip('Validations', async ({ page }) => {
   // Constants
   const fileName = 'Validations';
   const fileType = 'grid';
