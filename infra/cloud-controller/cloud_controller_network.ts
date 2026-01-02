@@ -14,31 +14,9 @@ const config = new pulumi.Config();
 // Configuration from Pulumi ESC - uses the shared VPC
 const vpcId = config.require("vpc-id");
 const subNet1 = config.require("subnet1");
-const subNet2 = config.require("subnet2");
 
-// Export subnet IDs for use in the main cloud controller module
+// Export subnet ID for use in the main cloud controller module
 export const cloudControllerSubnet1 = subNet1;
-export const cloudControllerSubnet2 = subNet2;
-
-// Create a Security Group for the Cloud Controller NLB
-export const cloudControllerNlbSecurityGroup = new aws.ec2.SecurityGroup(
-  "cloud-controller-nlb-security-group",
-  {
-    vpcId: vpcId,
-    ingress: [
-      {
-        protocol: "tcp",
-        fromPort: 443,
-        toPort: 443,
-        cidrBlocks: ["0.0.0.0/0"],
-      },
-    ],
-    egress: [
-      { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
-    ],
-    tags: { Name: "cloud-controller-nlb-sg" },
-  },
-);
 
 // Create a Security Group for the Cloud Controller EC2 instance
 export const cloudControllerEc2SecurityGroup = new aws.ec2.SecurityGroup(
@@ -51,7 +29,7 @@ export const cloudControllerEc2SecurityGroup = new aws.ec2.SecurityGroup(
         protocol: "tcp",
         fromPort: 80,
         toPort: 80,
-        securityGroups: [cloudControllerNlbSecurityGroup.id],
+        cidrBlocks: ["0.0.0.0/0"],
       },
       // Worker-only server port (internal communication from cloud workers)
       // Cloud workers are Docker containers on the same host, so they communicate
@@ -63,4 +41,3 @@ export const cloudControllerEc2SecurityGroup = new aws.ec2.SecurityGroup(
     tags: { Name: "cloud-controller-ec2-sg" },
   },
 );
-

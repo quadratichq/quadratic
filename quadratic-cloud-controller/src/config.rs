@@ -21,9 +21,9 @@ pub(crate) struct Config {
     pub(crate) files_port: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
-    pub(crate) jwt_encoding_key: String,
-    pub(crate) jwt_expiration_seconds: u64,
-    pub(crate) jwks: String,
+    pub(crate) quadratic_jwt_encoding_key: String,
+    pub(crate) quadratic_jwt_expiration_seconds: u64,
+    pub(crate) quadratic_jwks: String,
     pub(crate) worker_jwt_email: String,
     pub(crate) namespace: String,
     pub(crate) pubsub_host: String,
@@ -39,7 +39,7 @@ impl Config {
         dotenv().ok();
 
         // Try prefixed first, fall back to non-prefixed if that fails
-        let config = envy::prefixed("FILES__")
+        let config = envy::prefixed("CLOUD_CONTROLLER__")
             .from_env::<Config>()
             .or_else(|_| envy::from_env::<Config>())
             .map_err(|e| ControllerError::Config(e.to_string()))?;

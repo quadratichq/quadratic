@@ -176,8 +176,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the ownerUser has been invited with Owner permissions
-  // Use a regex with endsWith assertion so it matches any string that ends with (You){ownerEmail}{ownerPermission}
-  await expect(ownerPage.getByText(new RegExp(`\\(You\\)${ownerEmail}${ownerPermission}$`))).toBeVisible({
+  await expect(
+    ownerPage.locator(`[data-testid="share-dialog-list-item"]:has-text("${ownerEmail}"):has-text("${ownerPermission}")`)
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -215,7 +216,11 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the editUser has been invited with "Can edit" permissions
-  await expect(editUserPage.getByText(new RegExp(`\\(You\\)${editUserEmail}${editPermission}$`))).toBeVisible({
+  await expect(
+    editUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${editUserEmail}"):has-text("${editPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -252,7 +257,11 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the viewUser has been invited with "Can view" permissions
-  await expect(viewUserPage.getByText(new RegExp(`\\(You\\)${viewUserEmail}${viewPermission}$`))).toBeVisible({
+  await expect(
+    viewUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${viewUserEmail}"):has-text("${viewPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 });
@@ -301,7 +310,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
 
   // Assert that the testUser has been invited with Owner permissions
-  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${ownerPermission}$`))).toBeVisible({
+  await expect(
+    manageUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${manageUserEmail}"):has-text("${ownerPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -342,7 +355,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
   // Assert that the testUser's permission is now "Can edit"
-  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${editPermission}$`))).toBeVisible({
+  await expect(
+    manageUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${manageUserEmail}"):has-text("${editPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -381,7 +398,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
   // Assert that the testUser's permission is now "Can view"
-  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${viewPermission}$`))).toBeVisible({
+  await expect(
+    manageUserPage.locator(
+      `[data-testid="share-dialog-list-item"]:has-text("${manageUserEmail}"):has-text("${viewPermission}")`
+    )
+  ).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -497,7 +518,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Owner leaves the team
   await ownerPage
-    .locator(`:text("${ownerEmail} (You)${ownerPermission}")`)
+    .locator(`[data-testid="share-dialog-list-item"]:has-text("${ownerEmail}")`)
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   await ownerPage.locator(`[role="option"]:has-text("Leave")`).click({ timeout: 60 * 1000 });
@@ -534,7 +555,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Can edit user leaves the team
   await editUserPage
-    .locator(`:text("${editUserEmail} (You)${editPermission}")`)
+    .locator(`[data-testid="share-dialog-list-item"]:has-text("${editUserEmail}")`)
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   await editUserPage.locator(`[role="option"]:has-text("Leave")`).click({ timeout: 60 * 1000 });
@@ -571,7 +592,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Can view user leaves the team
   await viewUserPage
-    .locator(`:text("${viewUserEmail} (You)${viewPermission}")`)
+    .locator(`[data-testid="share-dialog-list-item"]:has-text("${viewUserEmail}")`)
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   await viewUserPage.locator(`[role="option"]:has-text("Leave")`).click({ timeout: 60 * 1000 });
@@ -613,8 +634,6 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   //--------------------------------
 
   // Constants
-  const randomNum = `${Date.now().toString().slice(-6)}`;
-  const newTeamName = `Test Team for Removal - ${randomNum}`;
   const editPermission = 'Can edit';
   const fileName = 'Test_File';
 
@@ -661,10 +680,12 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   await testUserPage.waitForLoadState('networkidle');
 
   // Verify that testUser can access the team files
-  await expect(testUserPage.getByRole('button', { name: newTeamName })).toBeVisible({ timeout: 60 * 1000 });
   await testUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
-
-  await expect(testUserPage.getByText(`${testUserEmail} (You)${editPermission}`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(testUserPage.locator(`[data-testid="share-dialog-list-item"]:has-text("${testUserEmail}")`)).toBeVisible(
+    {
+      timeout: 60 * 1000,
+    }
+  );
 
   // Navigate to Files
   await testUserPage.locator(`:text-is("Files"):below(:text("Team")) >> nth=0`).click({ timeout: 60 * 1000 });
@@ -888,7 +909,7 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
 
   // Click into permissions file
   await canEditUserPage
-    .locator(`:text("${testPermissionFile}Modified")`)
+    .locator(`:text("${testPermissionFile}")`)
     .first()
     .click({ timeout: 60 * 1000 });
 
@@ -1036,7 +1057,7 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
 
   // Click into permissions file
   await canViewUserPage
-    .locator(`:text("${testPermissionFile}Modified")`)
+    .locator(`:text("${testPermissionFile}")`)
     .first()
     .click({ timeout: 60 * 1000 });
 

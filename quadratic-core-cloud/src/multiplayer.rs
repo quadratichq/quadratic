@@ -17,9 +17,9 @@ use crate::error::Result;
 /// Connect to the Multiplayer server
 pub(crate) async fn connect(
     multiplayer_url: &str,
-    m2m_auth_token: &str,
+    jwt: &str,
 ) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
-    let headers = vec![("authorization".into(), format!("Bearer {}", m2m_auth_token))];
+    let headers = vec![("authorization".into(), format!("Bearer {}", jwt))];
     let websocket = WebsocketClient::connect_with_headers(multiplayer_url, headers).await?;
 
     Ok(websocket)
@@ -120,11 +120,9 @@ mod tests {
         let user_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let session_id = Uuid::new_v4();
-        let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
+        let jwt = "M2M_AUTH_TOKEN".to_string();
 
-        let (websocket, response) = connect("ws://localhost:3001/ws", &m2m_auth_token)
-            .await
-            .unwrap();
+        let (websocket, response) = connect("ws://localhost:3001/ws", &jwt).await.unwrap();
         let (mut sender, mut receiver) = websocket.split();
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
 

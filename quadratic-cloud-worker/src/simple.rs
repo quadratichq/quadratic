@@ -10,7 +10,7 @@ use tracing::info;
 // const INTERVAL_MS: u64 = 60000; // every minute
 const INTERVAL_MS: u64 = 20000; // every 20 seconds
 const API_URL: &str = "http://localhost:8000";
-const M2M_AUTH_TOKEN: &str = "M2M_AUTH_TOKEN";
+const JWT: &str = "JWT";
 const MULTIPLAYER_URL: &str = "ws://localhost:3001/ws";
 const CONNECTION_URL: &str = "http://localhost:3003";
 
@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     loop {
         tokio::select! {
             _ = interval.tick() => {
-                let tasks = get_scheduled_tasks(API_URL, M2M_AUTH_TOKEN).await?;
+                let tasks = get_scheduled_tasks(API_URL, JWT).await?;
 
                 // run non-Send futures concurrently on the same thread
                 let local = LocalSet::new();
@@ -37,13 +37,13 @@ async fn main() -> Result<()> {
 
                         let result: Result<()> = async {
                             let file_init_data =
-                                get_file_init_data(API_URL, M2M_AUTH_TOKEN, file_id).await?;
+                                get_file_init_data(API_URL, JWT, file_id).await?;
 
                             let mut worker = Worker::new(
                                 file_id,
                                 file_init_data.sequence_number as u64,
                                 &file_init_data.presigned_url,
-                                M2M_AUTH_TOKEN.to_string(),
+                                JWT.to_string(),
                                 MULTIPLAYER_URL.to_string(),
                                 CONNECTION_URL.to_string(),
                             )
@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
                                 .process_operations(
                                     operations,
                                     file_init_data.team_id.to_string(),
-                                    M2M_AUTH_TOKEN.to_string(),
+                                    JWT.to_string(),
                                 )
                                 .await?;
 
