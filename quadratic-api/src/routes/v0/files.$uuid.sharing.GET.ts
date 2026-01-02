@@ -46,6 +46,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
             },
           },
           TeamInvite: {
+            where: {
+              status: 'PENDING',
+            },
             select: {
               email: true,
             },
@@ -61,6 +64,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
         },
       },
       FileInvite: {
+        where: {
+          status: 'PENDING',
+        },
         orderBy: {
           createdDate: 'asc',
         },

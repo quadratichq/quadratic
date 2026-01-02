@@ -41,19 +41,31 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
     throw new ApiError(403, 'You do not have permission to delete this invite.');
   }
 
-  // Ok, try deleting the invite
-  try {
-    await dbClient.fileInvite.delete({
-      where: {
-        id: inviteToDeleteId,
-      },
-    });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      throw new ApiError(404, 'Invite does not exist');
-    }
-    throw error;
+  // Check if invite exists
+  const invite = await dbClient.fileInvite.findUnique({
+    where: {
+      id: inviteToDeleteId,
+    },
+  });
+
+  if (!invite) {
+    throw new ApiError(404, 'Invite does not exist');
   }
+
+  // Can only delete pending invites
+  if (invite.status !== 'PENDING') {
+    throw new ApiError(400, 'Can only delete pending invites');
+  }
+
+  // Soft delete by updating status
+  await dbClient.fileInvite.update({
+    where: {
+      id: inviteToDeleteId,
+    },
+    data: {
+      status: 'DELETED',
+    },
+  });
 
   return res.status(200).json({ message: 'Invite deleted' });
 }

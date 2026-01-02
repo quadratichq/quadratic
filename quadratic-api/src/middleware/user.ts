@@ -16,15 +16,21 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
   const teamInvites = await dbClient.teamInvite.findMany({
     where: {
       email,
+      status: 'PENDING',
     },
   });
   if (teamInvites.length) {
     for (const { teamId, role } of teamInvites) {
       await addUserToTeam({ userId, teamId, role });
     }
-    await dbClient.teamInvite.deleteMany({
+    // Mark invites as accepted instead of deleting
+    await dbClient.teamInvite.updateMany({
       where: {
         email,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'ACCEPTED',
       },
     });
   }
@@ -33,6 +39,7 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
   const fileInvites = await dbClient.fileInvite.findMany({
     where: {
       email,
+      status: 'PENDING',
     },
   });
   if (fileInvites.length) {
@@ -43,9 +50,14 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
         role,
       })),
     });
-    await dbClient.fileInvite.deleteMany({
+    // Mark invites as accepted instead of deleting
+    await dbClient.fileInvite.updateMany({
       where: {
         email,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'ACCEPTED',
       },
     });
   }
