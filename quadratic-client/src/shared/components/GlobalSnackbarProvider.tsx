@@ -129,7 +129,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
   const customButton = activeMessage?.button ? (
     <Button
       variant="link"
-      className="!text-background underline"
+      className="whitespace-nowrap !text-background underline"
       onClick={() => {
         activeMessage.button?.callback();
         setOpen(false);
@@ -150,8 +150,8 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     ? {
         children: (
           <Alert severity={activeMessage.severity} variant="filled" onClose={handleClose}>
-            <div className="column center flex px-0.5">
-              {message}
+            <div className="flex w-full items-center gap-2">
+              <span className="flex-1">{message}</span>
               {customButton}
             </div>
           </Alert>
