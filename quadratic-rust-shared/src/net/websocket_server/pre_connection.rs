@@ -1,18 +1,23 @@
 use uuid::Uuid;
 
+use crate::auth::jwt::Claims;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PreConnection {
     pub id: Uuid,
     pub jwt: Option<String>,
     pub m2m_token: Option<String>,
+    /// Validated claims from the JWT (if authenticated via JWT)
+    pub claims: Option<Claims>,
 }
 
 impl PreConnection {
-    pub fn new(jwt: Option<String>, m2m_token: Option<String>) -> Self {
+    pub fn new(jwt: Option<String>, m2m_token: Option<String>, claims: Option<Claims>) -> Self {
         Self {
             id: Uuid::new_v4(),
             jwt,
             m2m_token,
+            claims,
         }
     }
 

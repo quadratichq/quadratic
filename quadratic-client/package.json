@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.22.1",
+  "version": "0.23.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -92,6 +92,8 @@
     "react-router": "^7.5.2",
     "recoil": "^0.7.7",
     "remark-gfm": "^4.0.0",
+    "set-cookie-parser": "^2.7.2",
+    "simple-swizzle": "^0.2.4",
     "tailwind-merge": "^3.2.0",
     "uuid": "^11.1.0",
     "vscode-jsonrpc": "^8.2.1",
@@ -105,9 +107,9 @@
     "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
     "@types/color": "^4.2.0",
     "@types/fontfaceobserver": "^2.1.3",
-    "@types/react": "^19.1.1",
+    "@types/react": "^18.3.18",
     "@types/react-avatar-editor": "^13.0.2",
-    "@types/react-dom": "^19.1.2",
+    "@types/react-dom": "^18.3.5",
     "@types/react-linkify": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
