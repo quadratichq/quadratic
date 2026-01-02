@@ -49,17 +49,43 @@ pub fn benchmark_function(
     group.bench_function(name, |b| b.iter(&f));
 }
 
-/// Print the functions in the benchmark
+/// Print the functions in the benchmark (aggregated by function name)
+/// Times are stored in microseconds and displayed in milliseconds
 pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
+    use std::collections::HashMap;
+
     let mut builder = Builder::default();
-    builder.set_header(vec!["Function", "Time"]);
+    builder.set_header(vec!["Function", "Time", "Calls", "Avg"]);
     let functions = functions.lock().unwrap();
 
-    functions.iter().for_each(|(name, time)| {
-        if !(ignore_zero && time == &0) {
-            builder.push_record(vec![name, &format!("{time} ms")]);
+    // Aggregate times by function name (times are in microseconds)
+    let mut aggregated: HashMap<&str, (i64, u64)> = HashMap::new();
+    for (fn_name, time_us) in functions.iter() {
+        let entry = aggregated.entry(fn_name.as_str()).or_insert((0, 0));
+        entry.0 += time_us;
+        entry.1 += 1;
+    }
+
+    // Sort by total time descending
+    let mut sorted: Vec<_> = aggregated.into_iter().collect();
+    sorted.sort_by(|a, b| b.1.0.cmp(&a.1.0));
+
+    for (fn_name, (total_time_us, call_count)) in sorted {
+        let total_time_ms = total_time_us / 1000;
+        let avg_time_us = if call_count > 0 {
+            total_time_us / call_count as i64
+        } else {
+            0
+        };
+        if !(ignore_zero && total_time_ms == 0) {
+            builder.push_record(vec![
+                fn_name,
+                &format!("{total_time_ms} ms"),
+                &format!("{call_count}"),
+                &format!("{avg_time_us} µs"),
+            ]);
         }
-    });
+    }
 
     drop(functions);
 
@@ -67,6 +93,8 @@ pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
     table.with(Style::modern());
     table.with(Modify::new((0, 0)).with(Color::BOLD));
     table.with(Modify::new((0, 1)).with(Color::BOLD));
+    table.with(Modify::new((0, 2)).with(Color::BOLD));
+    table.with(Modify::new((0, 3)).with(Color::BOLD));
 
     println!("\nBenchmark: {name}\n{table}");
 }

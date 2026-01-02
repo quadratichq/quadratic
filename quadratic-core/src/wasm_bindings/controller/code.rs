@@ -109,7 +109,6 @@ impl GridController {
         sheet_id: String,
         selection: String,
         code_string: String,
-        code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
@@ -117,7 +116,7 @@ impl GridController {
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
                 .map_err(|e| format!("Invalid selection: {e}"))?;
-            let transaction_id = self.set_formula(selection, code_string, code_cell_name, cursor);
+            let transaction_id = self.set_formula(selection, code_string, cursor);
             Ok(Some(
                 serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
             ))

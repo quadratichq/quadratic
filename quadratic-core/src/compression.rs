@@ -32,7 +32,7 @@ pub enum SerializationFormat {
     Json,
 }
 
-#[function_timer::function_timer(dbgjs)]
+#[function_timer::function_timer]
 pub fn serialize_and_compress<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,
@@ -45,7 +45,7 @@ where
     compress(compression_format, serialized)
 }
 
-#[function_timer::function_timer(dbgjs)]
+#[function_timer::function_timer]
 pub fn decompress_and_deserialize<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,

@@ -829,13 +829,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetFormula':
-        transactionId = core.setFormula(
-          e.data.sheetId,
-          e.data.selection,
-          e.data.codeString,
-          e.data.codeCellName,
-          e.data.cursor
-        );
+        transactionId = core.setFormula(e.data.sheetId, e.data.selection, e.data.codeString, e.data.cursor);
         if (typeof transactionId === 'object' && 'error' in transactionId) {
           this.send({
             type: 'coreClientSetFormula',

@@ -36,7 +36,8 @@ pub fn function_timer(_attrs: TokenStream, item: TokenStream) -> TokenStream {
             let end = chrono::Utc::now();
             let duration = end - start;
 
-            crate::FUNCTIONS.lock().unwrap().push((#fn_name.to_string(), duration.num_milliseconds()));
+            // Use microseconds for better precision on fast functions
+            crate::FUNCTIONS.lock().unwrap().push((#fn_name.to_string(), duration.num_microseconds().unwrap_or(0)));
 
             #print_output
 
