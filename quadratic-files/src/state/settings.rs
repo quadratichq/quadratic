@@ -98,6 +98,10 @@ impl Settings {
                         .storage_encryption_keys
                         .to_owned()
                         .expect("Expected STORAGE_ENCRYPTION_KEYS to have a value"),
+                    presigned_url_base: format!(
+                        "{}:{}/storage/presigned",
+                        config.host, config.port
+                    ),
                 }))
             }
         };

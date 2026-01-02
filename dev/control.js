@@ -2,192 +2,176 @@ import { exec, spawn } from "node:child_process";
 import treeKill from "tree-kill";
 import { killPort } from "./utils.js";
 export class Control {
-  cli;
-  ui;
-  quitting = false;
-  api;
-  types;
-  core;
-  client;
-  multiplayer;
-  files;
-  connection;
-  python;
-  db;
-  npm;
-  rust;
-  shared;
-  signals = {};
-  status = {
-    client: false,
-    api: false,
-    core: false,
-    multiplayer: false,
-    files: false,
-    connection: false,
-    python: false,
-    types: false,
-    db: false,
-    npm: false,
-    postgres: false,
-    redis: false,
-    shared: false,
-  };
-  constructor(cli) {
-    this.cli = cli;
-  }
-  async quit(errorMessage) {
-    if (this.quitting) return;
-    this.quitting = true;
-    this.ui.quit(errorMessage);
-    await Promise.all([
-      this.kill("api"),
-      this.kill("types"),
-      this.kill("core"),
-      this.kill("client"),
-      this.kill("multiplayer"),
-      this.kill("files"),
-      this.kill("connection"),
-      this.kill("python"),
-      this.kill("shared"),
-    ]);
-    process.exit(0);
-  }
-  handleResponse(name, data, options, successCallback) {
-    const response = data.toString();
-    if (
-      Array.isArray(options.success)
-        ? options.success.some((s) => response.includes(s))
-        : response.includes(options.success)
-    ) {
-      this.status[name] = true;
-      if (successCallback) {
-        successCallback();
-      }
-    } else if (
-      Array.isArray(options.error)
-        ? options.error.some((s) => response.includes(s))
-        : response.includes(options.error)
-    ) {
-      this.status[name] = "error";
-    } else if (
-      Array.isArray(options.start)
-        ? options.start.some((s) => response.includes(s))
-        : response.includes(options.start)
-    ) {
-      this.status[name] = false;
+    cli;
+    ui;
+    quitting = false;
+    api;
+    types;
+    core;
+    client;
+    multiplayer;
+    files;
+    connection;
+    python;
+    db;
+    npm;
+    rust;
+    shared;
+    cloudController;
+    signals = {};
+    status = {
+        client: false,
+        api: false,
+        core: false,
+        multiplayer: false,
+        files: false,
+        connection: false,
+        python: false,
+        types: false,
+        db: false,
+        npm: false,
+        postgres: false,
+        redis: false,
+        shared: false,
+        cloudController: false,
+    };
+    constructor(cli) {
+        this.cli = cli;
     }
-  }
-  async checkServices(exitOnError = true) {
-    this.ui.print("redis", "checking whether redis is running...");
-    this.ui.print("postgres", "checking whether postgres is running...");
-    const [redisRunning, postgresRunning] = await Promise.all([
-      this.isRedisRunning(),
-      this.isPostgresRunning(),
-    ]);
-    const redisNotRunning =
-      redisRunning !== true && redisRunning !== "not found";
-    const postgresNotRunning =
-      postgresRunning !== true && postgresRunning !== "not found";
-    const redisNotFound = redisRunning === "not found";
-    const postgresNotFound = postgresRunning === "not found";
-    const errors = [];
-    // Check Redis
-    if (redisNotFound) {
-      this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-      errors.push(
-        "redis-cli not found. Please install redis-cli or ensure it's in your PATH.",
-      );
-    } else if (redisRunning === true) {
-      this.status.redis = true;
-      this.ui.print("redis", "is running", "green");
-    } else {
-      this.status.redis = "error";
+    async quit(errorMessage) {
+        if (this.quitting)
+            return;
+        this.quitting = true;
+        this.ui.quit(errorMessage);
+        await Promise.all([
+            this.kill("api"),
+            this.kill("types"),
+            this.kill("core"),
+            this.kill("client"),
+            this.kill("multiplayer"),
+            this.kill("files"),
+            this.kill("connection"),
+            this.kill("python"),
+            this.kill("shared"),
+            this.kill("cloudController"),
+        ]);
+        process.exit(0);
     }
-    // Check PostgreSQL
-    if (postgresNotFound) {
-      this.status.postgres = "killed"; // use killed to indicate that pg_isready was not found
-      errors.push(
-        "pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.",
-      );
-    } else if (postgresRunning === true) {
-      this.status.postgres = true;
-      this.ui.print("postgres", "is running", "green");
-    } else {
-      this.status.postgres = "error";
+    handleResponse(name, data, options, successCallback) {
+        const response = data.toString();
+        if (Array.isArray(options.success)
+            ? options.success.some((s) => response.includes(s))
+            : response.includes(options.success)) {
+            this.status[name] = true;
+            if (successCallback) {
+                successCallback();
+            }
+        }
+        else if (Array.isArray(options.error)
+            ? options.error.some((s) => response.includes(s))
+            : response.includes(options.error)) {
+            this.status[name] = "error";
+        }
+        else if (Array.isArray(options.start)
+            ? options.start.some((s) => response.includes(s))
+            : response.includes(options.start)) {
+            this.status[name] = false;
+        }
     }
-    // Combine "not running" errors if both are failing
-    if (redisNotRunning && postgresNotRunning) {
-      errors.push(
-        "Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.",
-      );
-    } else {
-      if (redisNotRunning) {
-        errors.push(
-          "Redis is NOT running! Please start redis before running node dev.",
-        );
-      }
-      if (postgresNotRunning) {
-        errors.push(
-          "PostgreSQL is NOT running! Please start PostgreSQL before running node dev.",
-        );
-      }
-    }
-    // If there are any errors, quit with combined message (if exitOnError is true)
-    if (errors.length > 0) {
-      if (exitOnError) {
-        await this.quit(errors.join(" | "));
-        return; // quit() will exit, but TypeScript doesn't know that
-      }
-      // If exitOnError is false, status has already been updated and UI will show it
-    }
-  }
-  async runApi(restart) {
-    if (this.quitting) return;
-    this.status.api = false;
-    await this.kill("api");
-    try {
-      this.ui.print(
-        "api",
-        "killing port 8000 to ensure it's really good and dead...",
-      );
-      await killPort(8000);
-      // need to ignore the error if there is no process running on port 8000
-    } catch (e) {}
-    this.ui.print("api");
-    // this function is called more than once,
-    // so we need to check if it's the first run
-    let firstRun = true;
-    this.signals.api = new AbortController();
-    this.api = spawn(
-      "npm",
-      [
-        "run",
-        this.cli.options.api ? "start" : "start-no-watch",
-        "--workspace=quadratic-api",
-      ],
-      { signal: this.signals.api.signal },
-    );
-    this.ui.printOutput("api", (data) =>
-      this.handleResponse(
-        "api",
-        data,
-        {
-          success: "Server running",
-          error: `"level":"error"`,
-          start: "> quadratic-api",
-        },
-        () => {
-          if (firstRun && !restart) {
-            firstRun = false;
-            if (this.status.multiplayer !== "killed" && !this.multiplayer) {
-              this.runMultiplayer();
+    async checkServices(exitOnError = true) {
+        this.ui.print("redis", "checking whether redis is running...");
+        this.ui.print("postgres", "checking whether postgres is running...");
+        const [redisRunning, postgresRunning] = await Promise.all([
+            this.isRedisRunning(),
+            this.isPostgresRunning(),
+        ]);
+        const redisNotRunning = redisRunning !== true && redisRunning !== "not found";
+        const postgresNotRunning = postgresRunning !== true && postgresRunning !== "not found";
+        const redisNotFound = redisRunning === "not found";
+        const postgresNotFound = postgresRunning === "not found";
+        const errors = [];
+        // Check Redis
+        if (redisNotFound) {
+            this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
+            errors.push("redis-cli not found. Please install redis-cli or ensure it's in your PATH.");
+        }
+        else if (redisRunning === true) {
+            this.status.redis = true;
+            this.ui.print("redis", "is running", "green");
+        }
+        else {
+            this.status.redis = "error";
+        }
+        // Check PostgreSQL
+        if (postgresNotFound) {
+            this.status.postgres = "killed"; // use killed to indicate that pg_isready was not found
+            errors.push("pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.");
+        }
+        else if (postgresRunning === true) {
+            this.status.postgres = true;
+            this.ui.print("postgres", "is running", "green");
+        }
+        else {
+            this.status.postgres = "error";
+        }
+        // Combine "not running" errors if both are failing
+        if (redisNotRunning && postgresNotRunning) {
+            errors.push("Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.");
+        }
+        else {
+            if (redisNotRunning) {
+                errors.push("Redis is NOT running! Please start redis before running node dev.");
+            }
+            if (postgresNotRunning) {
+                errors.push("PostgreSQL is NOT running! Please start PostgreSQL before running node dev.");
             }
             if (this.status.files !== "killed" && !this.files) {
               this.runFiles();
             }
-            if (this.status.connection !== "killed" && !this.connection) {
-              this.runConnection();
+            // If exitOnError is false, status has already been updated and UI will show it
+        }
+    }
+    async runApi(restart) {
+        if (this.quitting)
+            return;
+        this.status.api = false;
+        await this.kill("api");
+        try {
+            this.ui.print("api", "killing port 8000 to ensure it's really good and dead...");
+            await killPort(8000);
+            // need to ignore the error if there is no process running on port 8000
+        }
+        catch (e) { }
+        this.ui.print("api");
+        // this function is called more than once,
+        // so we need to check if it's the first run
+        let firstRun = true;
+        this.signals.api = new AbortController();
+        this.api = spawn("npm", [
+            "run",
+            this.cli.options.api ? "start" : "start-no-watch",
+            "--workspace=quadratic-api",
+        ], { signal: this.signals.api.signal });
+        this.ui.printOutput("api", (data) => this.handleResponse("api", data, {
+            success: "Server running",
+            error: `"level":"error"`,
+            start: "> quadratic-api",
+        }, () => {
+            if (firstRun && !restart) {
+                firstRun = false;
+                if (this.status.multiplayer !== "killed" && !this.multiplayer) {
+                    this.runMultiplayer();
+                }
+                if (this.status.files !== "killed" && !this.files) {
+                    this.runFiles();
+                }
+                if (this.status.connection !== "killed" && !this.connection) {
+                    this.runConnection();
+                }
+                if (this.status.cloudController !== "killed" &&
+                    !this.cloudController) {
+                    this.runCloudController();
+                }
             }
           }
         },
@@ -488,81 +472,105 @@ export class Control {
     } else {
       if (this.shared) {
         await this.kill("shared");
-        this.ui.print("shared", "killed", "red");
-      }
-      this.status.shared = "killed";
+        let firstRun = true;
+        this.signals.shared = new AbortController();
+        this.shared = spawn(`npm run ${this.cli.options.shared ? "watch" : "compile"} --workspace=quadratic-shared`, {
+            signal: this.signals.shared.signal,
+            shell: true,
+        });
+        this.ui.printOutput("shared", (data) => {
+            this.handleResponse("shared", data, {
+                success: [" 0 errors.", "successfully"],
+                error: ["error"],
+                start: "Starting",
+            }, () => {
+                if (firstRun && !restart) {
+                    firstRun = false;
+                    if (this.status.db !== "killed" && !this.db) {
+                        this.runDb();
+                    }
+                }
+            });
+        });
     }
-  }
-  async runConnection() {
-    if (this.quitting) return;
-    if (this.status.connection === "killed") return;
-    this.status.connection = false;
-    this.ui.print("connection");
-    await this.kill("connection");
-    try {
-      this.ui.print(
-        "connection",
-        "killing port 3003 to ensure it's really good and dead...",
-      );
-      await killPort(3003);
-      // need to ignore the error if there is no process running on port 3001
-    } catch (e) {}
-    this.signals.connection = new AbortController();
-    if (this.cli.options.noRust) {
-      this.connection = spawn("./quadratic-connection", [], {
-        signal: this.signals.connection.signal,
-        cwd: "quadratic-connection/target/debug",
-        env: { ...process.env, RUST_LOG: "info" },
-      });
-    } else {
-      this.connection = spawn(
-        "cargo",
-        this.cli.options.connection
-          ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
-          : ["run", "-p", "quadratic-connection", "--target-dir=target"],
-        {
-          signal: this.signals.connection.signal,
-          cwd: "quadratic-connection",
-          env: { ...process.env, RUST_LOG: "info" },
-        },
-      );
+    async restartShared() {
+        this.cli.options.shared = !this.cli.options.shared;
+        if (this.shared) {
+            this.runShared(true);
+        }
     }
-    this.ui.printOutput("connection", (data) => {
-      this.handleResponse("connection", data, {
-        success: "listening on",
-        error: [
-          "error[",
-          "error:",
-          "failed to compile",
-          "npm ERR!",
-          "Compiling failed",
-          "Exit status: 1",
-        ],
-        start: "    Compiling",
-      });
-    });
-    this.connection.on("exit", (code) => {
-      // Only set error status if exit code indicates failure and status wasn't already set to success
-      if (code !== 0 && code !== null && this.status.connection !== true) {
-        this.status.connection = "error";
-        this.ui.print("connection", "exited with error code", "red");
-      }
-      this.connection = undefined;
-    });
-  }
-  async restartConnection() {
-    this.cli.options.connection = !this.cli.options.connection;
-    if (this.connection) {
-      this.runConnection();
+    async killShared() {
+        if (this.status.shared === "killed") {
+            this.status.shared = false;
+            this.ui.print("shared", "restarting...");
+            this.runShared();
+        }
+        else {
+            if (this.shared) {
+                await this.kill("shared");
+                this.ui.print("shared", "killed", "red");
+            }
+            this.status.shared = "killed";
+        }
     }
-  }
-  async killConnection() {
-    if (this.status.connection === "killed") {
-      this.status.connection = false;
-      this.ui.print("connection", "restarting...");
-      this.runConnection();
-    } else {
-      if (this.connection) {
+    async runCloudController() {
+        if (this.quitting)
+            return;
+        if (this.status.cloudController === "killed")
+            return;
+        this.status.cloudController = false;
+        this.ui.print("cloudController");
+        await this.kill("cloudController");
+        this.signals.cloudController = new AbortController();
+        if (this.cli.options.noRust) {
+            this.cloudController = spawn("./quadratic-cloud-controller", [], {
+                signal: this.signals.cloudController.signal,
+                cwd: "quadratic-cloud-controller/target/debug",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        else {
+            this.cloudController = spawn("cargo", this.cli.options.cloudController
+                ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target"]
+                : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target"], {
+                signal: this.signals.cloudController.signal,
+                cwd: "quadratic-cloud-controller",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        this.ui.printOutput("cloudController", (data) => {
+            this.handleResponse("cloudController", data, {
+                success: ["Finished ", "Running "],
+                error: ["error[", "npm ERR!"],
+                start: "    Compiling",
+            });
+        });
+    }
+    async restartCloudController() {
+        this.cli.options.cloudController = !this.cli.options.cloudController;
+        this.runCloudController();
+    }
+    async killCloudController() {
+        if (this.status.cloudController === "killed") {
+            this.status.cloudController = false;
+            this.ui.print("cloudController", "restarting...");
+            this.runCloudController();
+        }
+        else {
+            if (this.cloudController) {
+                await this.kill("cloudController");
+                this.ui.print("cloudController", "killed", "red");
+            }
+            this.status.cloudController = "killed";
+        }
+    }
+    async runConnection() {
+        if (this.quitting)
+            return;
+        if (this.status.connection === "killed")
+            return;
+        this.status.connection = false;
+        this.ui.print("connection");
         await this.kill("connection");
         this.ui.print("connection", "killed", "red");
       }
@@ -679,24 +687,6 @@ export class Control {
         if (e.code === "ENOENT") {
           resolve("not found");
         }
-<<<<<<< HEAD
-      });
-      postgres.on("close", (code) => {
-        resolve(code === 0);
-      });
-    });
-  }
-  async start(ui) {
-    this.ui = ui;
-    await this.checkServices();
-    // If checkServices() found errors, quit() was called and process will exit
-    // Only continue if services are running
-    this.runNpmInstall();
-    this.runRust();
-    this.runPython();
-    this.runShared();
-  }
-=======
         else {
             this.connection = spawn("cargo", this.cli.options.connection
                 ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
@@ -859,13 +849,11 @@ export class Control {
     }
     async start(ui) {
         this.ui = ui;
+        // if Redis and PostgreSQL are not running, we quit before continuing
         await this.checkServices();
-        // If checkServices() found errors, quit() was called and process will exit
-        // Only continue if services are running
         this.runNpmInstall();
         this.runRust();
         this.runPython();
         this.runShared();
     }
->>>>>>> origin/google-analytics-connection
 }

@@ -93,6 +93,15 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
               userId: userMakingRequestId,
             },
           },
+          ScheduledTask: {
+            where: {
+              status: { not: 'DELETED' },
+            },
+            select: {
+              id: true,
+            },
+            take: 1,
+          },
         },
         orderBy: {
           createdDate: 'asc',
@@ -184,6 +193,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           publicLinkAccess: file.publicLinkAccess,
           thumbnail: file.thumbnail,
           creatorId: file.creatorUserId,
+          hasScheduledTasks: file.ScheduledTask.length > 0,
         },
         userMakingRequest: {
           filePermissions: getFilePermissions({
@@ -206,6 +216,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           updatedDate: file.updatedDate.toISOString(),
           publicLinkAccess: file.publicLinkAccess,
           thumbnail: file.thumbnail,
+          hasScheduledTasks: file.ScheduledTask.length > 0,
         },
         userMakingRequest: {
           filePermissions: getFilePermissions({
