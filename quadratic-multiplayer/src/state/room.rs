@@ -242,8 +242,8 @@ mod tests {
         let file_id = Uuid::new_v4();
         let mut user = new_user(0);
         let mut user2 = new_user(1);
-        let connection = PreConnection::new(None, None);
-        let connection2 = PreConnection::new(None, None);
+        let connection = PreConnection::new(None, None, None);
+        let connection2 = PreConnection::new(None, None, None);
 
         let is_new = state
             .enter_room(file_id, &mut user, connection, 0)
@@ -291,10 +291,10 @@ mod tests {
         let mut user = new_user(0);
         let mut user2 = new_user(1);
         let mut user3 = new_user(2);
-        let connection = PreConnection::new(None, None);
-        let connection2 = PreConnection::new(None, None);
-        let connection3 = PreConnection::new(None, None);
-        let connection4 = PreConnection::new(None, None);
+        let connection = PreConnection::new(None, None, None);
+        let connection2 = PreConnection::new(None, None, None);
+        let connection3 = PreConnection::new(None, None, None);
+        let connection4 = PreConnection::new(None, None, None);
 
         state
             .enter_room(file_id, &mut user, connection, 0)

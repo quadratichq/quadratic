@@ -12,4 +12,7 @@ pub(crate) enum WorkerError {
 
     #[error("Create worker error: {0}")]
     CreateWorker(String),
+
+    #[error("Get token error: {0}")]
+    GetToken(String),
 }

@@ -83,7 +83,7 @@ impl WorkerStatus {
 /// // load file
 /// // establish ws connection
 /// // send EnterRoom message
-/// let worker = Worker::new(file_id, sequence_num, presigned_url, m2m_auth_token).await?;
+/// let worker = Worker::new(file_id, sequence_num, presigned_url, jwt).await?;
 ///
 /// // receive catchup transactions
 /// // receive room transactions
@@ -102,7 +102,7 @@ impl WorkerStatus {
 /// * `session_id` - The session ID of the worker.
 /// * `file` - The file to process.
 /// * `transaction_id` - The ID of the transaction to process.
-/// * `m2m_auth_token` - The M2M auth token to use for the worker.
+/// * `jwt` - The JWT to use for the worker.
 /// * `websocket_sender` - The websocket sender to use for the worker.
 /// * `websocket_receiver` - The websocket receiver to use for the worker.
 /// * `websocket_receiver_handle` - The websocket receiver handle to use for the worker.
@@ -113,7 +113,7 @@ pub struct Worker {
     pub(crate) session_id: Uuid,
     pub(crate) file: Arc<Mutex<GridController>>,
     pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
-    pub(crate) m2m_auth_token: String,
+    pub(crate) jwt: String,
     pub(crate) multiplayer_url: String,
     pub(crate) connection_url: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
@@ -144,7 +144,7 @@ impl Worker {
     /// * `file_id` - The ID of the file to process.
     /// * `sequence_num` - The sequence number of the file to process.
     /// * `presigned_url` - The presigned URL of the file to process.
-    /// * `m2m_auth_token` - The M2M auth token to use for the worker.
+    /// * `jwt` - The JWT to use for the worker.
     /// * `multiplayer_url` - The URL of the multiplayer websocket server.
     /// * `connection_url` - The URL of the connection service.
     ///
@@ -153,13 +153,11 @@ impl Worker {
         file_id: Uuid,
         sequence_num: u64,
         presigned_url: &str,
-        m2m_auth_token: String,
+        jwt: String,
         multiplayer_url: String,
         connection_url: String,
     ) -> Result<Self> {
-        tracing::info!("📂 [Worker] Loading file {} from presigned URL", file_id);
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
-        tracing::info!("✅ [Worker] File loaded successfully");
 
         let session_id = Uuid::new_v4();
         let mut worker = Worker {
@@ -167,7 +165,7 @@ impl Worker {
             sequence_num,
             session_id,
             file: Arc::new(Mutex::new(file)),
-            m2m_auth_token,
+            jwt,
             multiplayer_url,
             connection_url,
             transaction_id: Arc::new(Mutex::new(None)),
@@ -179,9 +177,7 @@ impl Worker {
         };
 
         // first, connect to the multiplayer server
-        tracing::info!("🔌 [Worker] Connecting to multiplayer server");
         worker.connect().await?;
-        tracing::info!("✅ [Worker] Connected to multiplayer");
 
         let enter_room_notify = Arc::clone(&worker.status.lock().await.enter_room_notify);
         let catchup_notify = Arc::clone(&worker.status.lock().await.catchup_notify);
@@ -190,31 +186,22 @@ impl Worker {
         let catchup_notified = catchup_notify.notified();
 
         // then, enter the room
-        tracing::info!("🚪 [Worker] Entering room for file {}", file_id);
         worker.enter_room(file_id).await?;
 
         // Wait for EnterRoom response from server before proceeding
         // This ensures the multiplayer server has registered our session
-        tracing::info!("⏳ [Worker] Waiting for EnterRoom confirmation...");
         enter_room_notified.await;
-        tracing::info!("✅ [Worker] Entered room confirmed");
 
         // finally, get the catchup transactions
         // Request transactions starting from sequence_num + 1 since the loaded file
         // already contains all transactions up to and including sequence_num
-        tracing::info!(
-            "📥 [Worker] Requesting catchup transactions from sequence {}",
-            sequence_num + 1
-        );
         worker
             .get_transactions(file_id, worker.session_id, worker.sequence_num + 1)
             .await?;
 
         // Wait for catchup transactions to be received before proceeding
         // This ensures we don't have a race condition on the first run
-        tracing::info!("⏳ [Worker] Waiting for catchup transactions...");
         catchup_notified.await;
-        tracing::info!("✅ [Worker] Catchup transactions received");
 
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
@@ -259,8 +246,7 @@ impl Worker {
     /// sender and receiver.
     async fn connect(&mut self) -> Result<()> {
         if !self.is_connected() {
-            let (websocket, _response) =
-                connect(&self.multiplayer_url, &self.m2m_auth_token).await?;
+            let (websocket, _response) = connect(&self.multiplayer_url, &self.jwt).await?;
             let (sender, receiver) = websocket.split();
 
             self.websocket_sender = Some(Arc::new(Mutex::new(sender)));
@@ -306,8 +292,8 @@ impl Worker {
                                         file_id: room_file_id,
                                         sequence_num: room_seq,
                                     } => {
-                                        tracing::info!(
-                                            "📨 [Worker] Received EnterRoom confirmation for file {} at sequence {}",
+                                        tracing::trace!(
+                                            "[Worker] Received EnterRoom confirmation for file {} at sequence {}",
                                             room_file_id,
                                             room_seq
                                         );
@@ -391,7 +377,7 @@ impl Worker {
                             }
                         }
                         Ok(WebsocketMessage::Close(_)) => {
-                            tracing::info!("WebSocket closed normally");
+                            tracing::trace!("WebSocket closed normally");
                             break;
                         }
                         Ok(_) => {}
@@ -427,7 +413,7 @@ impl Worker {
             let user_id = Uuid::new_v4();
             enter_room(&mut *sender.lock().await, user_id, file_id, self.session_id).await?;
 
-            tracing::info!("Entered room {file_id}");
+            tracing::trace!("Entered room {file_id}");
         }
 
         Ok(())
@@ -462,28 +448,8 @@ impl Worker {
         team_id: String,
         token: String,
     ) -> Result<()> {
-        tracing::info!("🔄 [Worker] Deserializing operations");
         let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
             .map_err(|e| CoreCloudError::Serialization(e.to_string()))?;
-
-        tracing::info!("⚙️  [Worker] Processing {} operation(s)", operations.len());
-
-        // Log what operations we're executing
-        for op in &operations {
-            match op {
-                Operation::ComputeCode { sheet_pos } => {
-                    tracing::info!(
-                        "🔧 [Worker] Executing code at position {}:{}",
-                        sheet_pos.x,
-                        sheet_pos.y
-                    );
-                }
-                Operation::ComputeCodeSelection { selection } => {
-                    tracing::info!("🔧 [Worker] Executing code selection: {:?}", selection);
-                }
-                _ => {}
-            }
-        }
 
         let transaction_id = match process_transaction(
             Arc::clone(&self.file),
@@ -514,10 +480,6 @@ impl Worker {
             forward_transaction.operations.to_owned()
         };
 
-        tracing::info!(
-            "📡 [Worker] Sending transaction {} to multiplayer",
-            transaction_id
-        );
         if let Some(sender) = self.websocket_sender.as_mut() {
             send_transaction(
                 &mut *sender.lock().await,
@@ -528,14 +490,14 @@ impl Worker {
             )
             .await?;
         }
-        tracing::info!("✅ [Worker] Transaction sent");
+        tracing::trace!("[Worker] Transaction sent");
 
         Ok(())
     }
 
     /// Leave the room for a given file.
     pub async fn leave_room(&mut self) -> Result<()> {
-        tracing::info!("🚪 [Worker] Leaving room for file {}", self.file_id);
+        tracing::trace!("Worker] Leaving room for file {}", self.file_id);
 
         // First, abort the heartbeat task to prevent it from trying to send after closing
         if let Some(handle) = &self.heartbeat_handle {
@@ -550,25 +512,25 @@ impl Worker {
             // Send leave room message - log errors but don't fail
             match leave_room(&mut sender_lock, self.session_id, self.file_id).await {
                 Ok(_) => {
-                    tracing::info!("✅ [Worker] Leave room message sent successfully");
+                    tracing::trace!("[Worker] Leave room message sent successfully");
                     // Give the server a moment to process the leave room message
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }
                 Err(e) => {
-                    tracing::warn!("⚠️  [Worker] Error sending leave room message: {}", e);
+                    tracing::warn!("[Worker] Error sending leave room message: {}", e);
                 }
             }
 
             // Close the WebSocket connection gracefully
             match sender_lock.close().await {
-                Ok(_) => tracing::info!("✅ [Worker] WebSocket connection closed gracefully"),
+                Ok(_) => tracing::trace!("[Worker] WebSocket connection closed gracefully"),
                 Err(e) => {
                     // Suppress benign shutdown errors
                     let error_str = format!("{:?}", e);
                     if !error_str.contains("AlreadyClosed")
                         && !error_str.contains("ResetWithoutClosingHandshake")
                     {
-                        tracing::warn!("⚠️  [Worker] Error closing WebSocket: {}", e);
+                        tracing::warn!("[Worker] Error closing WebSocket: {}", e);
                     }
                 }
             }
@@ -599,10 +561,7 @@ impl Worker {
             }
         }
 
-        tracing::info!(
-            "✅ [Worker] Successfully left room for file {}",
-            self.file_id
-        );
+        tracing::trace!("[Worker] Successfully left room for file {}", self.file_id);
         Ok(())
     }
 
@@ -651,7 +610,7 @@ mod tests {
         let full_file_url = format!("{file_id}-{sequence_num}.grid");
         let presigned_url = storage.presigned_url(&full_file_url).await.unwrap();
         let team_id = "test_team_id".to_string();
-        let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
+        let jwt = "M2M_AUTH_TOKEN".to_string();
 
         let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let operations = vec![Operation::ComputeCode { sheet_pos }];
@@ -662,7 +621,7 @@ mod tests {
             file_id,
             sequence_num,
             &presigned_url,
-            m2m_auth_token.clone(),
+            jwt.clone(),
             "ws://localhost:3001/ws".to_string(),
             "http://localhost:3003".to_string(),
         )
@@ -671,7 +630,7 @@ mod tests {
 
         // send a transaction to the server so that worker_1 gets a catchup transaction message
         browser_worker
-            .process_operations(binary_ops.clone(), team_id.clone(), m2m_auth_token.clone())
+            .process_operations(binary_ops.clone(), team_id.clone(), jwt.clone())
             .await
             .unwrap();
 
@@ -683,7 +642,7 @@ mod tests {
             file_id,
             sequence_num,
             &presigned_url,
-            m2m_auth_token.clone(),
+            jwt.clone(),
             "ws://localhost:3001/ws".to_string(),
             "http://localhost:3003".to_string(),
         )
@@ -691,7 +650,7 @@ mod tests {
         .unwrap();
 
         cloud_worker
-            .process_operations(binary_ops, team_id, m2m_auth_token)
+            .process_operations(binary_ops, team_id, jwt)
             .await
             .unwrap();
 
