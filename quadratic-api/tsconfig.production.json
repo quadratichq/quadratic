@@ -2,12 +2,12 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    "module": "commonjs",
+    "module": "nodenext",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "es2020",
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "sourceMap": false,
     "outDir": "dist"
   },

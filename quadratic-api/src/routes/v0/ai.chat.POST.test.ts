@@ -26,29 +26,34 @@ const payload: AIRequestBody = {
   useQuadraticContext: false,
 };
 
-jest.mock('@anthropic-ai/bedrock-sdk', () => ({
-  AnthropicBedrock: jest.fn().mockImplementation(() => ({
-    messages: {
-      create: jest.fn().mockResolvedValue({
-        id: 'msg_mock123',
-        content: [
-          createTextContent('This is a mocked response from Claude'),
+// Mock LangChain AWS Bedrock
+jest.mock('@langchain/aws', () => ({
+  ChatBedrockConverse: jest.fn().mockImplementation(() => {
+    const mockModel = {
+      invoke: jest.fn().mockResolvedValue({
+        content: 'This is a mocked response from Claude',
+        tool_calls: [
           {
-            type: 'tool_use',
             id: 'tool_123',
             name: 'example_tool',
-            input: { param1: 'value1' },
+            args: { param1: 'value1' },
           },
         ],
-        usage: {
-          input_tokens: 100,
-          output_tokens: 100,
-          cache_read_input_tokens: 0,
-          cache_creation_input_tokens: 0,
+        response_metadata: {
+          usage: {
+            input_tokens: 100,
+            output_tokens: 100,
+            cache_read_input_tokens: 0,
+            cache_creation_input_tokens: 0,
+          },
         },
       }),
-    },
-  })),
+      bindTools: jest.fn().mockReturnThis(),
+    };
+    // Make bindTools return the same mock model
+    mockModel.bindTools.mockReturnValue(mockModel);
+    return mockModel;
+  }),
 }));
 
 let teamId: number;
