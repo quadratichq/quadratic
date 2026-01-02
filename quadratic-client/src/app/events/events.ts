@@ -172,6 +172,7 @@ interface EventTypes {
 
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
+  aiAnalystInsertText: (text: string) => void;
   aiAnalystReady: () => void;
 
   // Formatting button keyboard triggers (for visual feedback)

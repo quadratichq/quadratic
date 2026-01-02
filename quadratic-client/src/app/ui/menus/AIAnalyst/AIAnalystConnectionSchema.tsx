@@ -1,5 +1,6 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { events } from '@/app/events/events';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useAIAnalystConnectionSchemaPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
@@ -36,6 +37,10 @@ export const AIAnalystConnectionSchema = memo(() => {
     [setPanelWidth]
   );
 
+  const handleInsertQuery = useCallback((tableQuery: string) => {
+    events.emit('aiAnalystInsertText', tableQuery);
+  }, []);
+
   if (presentationMode || !aiAnalystActiveSchemaConnectionUuid) {
     return null;
   }
@@ -70,6 +75,7 @@ export const AIAnalystConnectionSchema = memo(() => {
               <ChevronLeftIcon />
             </Button>
           }
+          onInsertQuery={handleInsertQuery}
           teamUuid={teamUuid}
           type={connectionType}
           uuid={aiAnalystActiveSchemaConnectionUuid}
