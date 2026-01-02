@@ -59,7 +59,7 @@ const MAX_CHAR_LENGTH = 1000;
 export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 
 const SPILL_ERROR_TEXT = ' #SPILL';
-const RUN_ERROR_TEXT = ' #ERROR';
+const DEFAULT_ERROR_TEXT = ' #ERROR';
 
 // values based on line position and thickness in monaco editor
 const HORIZONTAL_LINE_THICKNESS = 1;
@@ -163,7 +163,8 @@ export class CellLabel {
         text = SPILL_ERROR_TEXT;
         break;
       case 'RunError':
-        text = RUN_ERROR_TEXT;
+        // Use the specific error text if available (e.g., "#N/A", "#DIV/0!")
+        text = cell.errorText ? ` ${cell.errorText}` : DEFAULT_ERROR_TEXT;
         break;
       case 'Chart':
         text = '';

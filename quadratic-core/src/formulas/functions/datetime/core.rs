@@ -1,17 +1,11 @@
-use chrono::{Datelike, Months, NaiveDate, Timelike};
+//! Core date and time functions: constructors and extractors.
+
+use chrono::{Datelike, Timelike};
 use rust_decimal::prelude::*;
 
 use super::*;
 
-pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
-    include_in_docs: true,
-    include_in_completions: true,
-    name: "Date & time functions",
-    docs: Some(include_str!("datetime_docs.md")),
-    get_functions,
-};
-
-fn get_functions() -> Vec<FormulaFunction> {
+pub fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Current date/time
         formula_fn!(
@@ -223,6 +217,19 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(d) => d.year(),
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => d.years(),
+                    CellValue::Text(s) => {
+                        if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                            dt.year()
+                        } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
+                            d.year()
+                        } else {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "date or duration".into(),
+                                got: Some(date.inner.type_name().into()),
+                            }
+                            .with_span(date.span));
+                        }
+                    }
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "date or duration".into(),
@@ -264,6 +271,19 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(d) => d.month(),
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => d.subyear_months() as u32,
+                    CellValue::Text(s) => {
+                        if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                            dt.month()
+                        } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
+                            d.month()
+                        } else {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "date or duration".into(),
+                                got: Some(date.inner.type_name().into()),
+                            }
+                            .with_span(date.span));
+                        }
+                    }
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "date or duration".into(),
@@ -310,6 +330,19 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(d) => d.day() as i64,
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => d.days(),
+                    CellValue::Text(s) => {
+                        if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                            dt.day() as i64
+                        } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
+                            d.day() as i64
+                        } else {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "date, duration, or number".into(),
+                                got: Some(date.inner.type_name().into()),
+                            }
+                            .with_span(date.span));
+                        }
+                    }
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "date, duration, or number".into(),
@@ -359,6 +392,25 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => t.hour(),
                     CellValue::Duration(d) => d.subday_hours() as u32,
+                    CellValue::Text(s) => {
+                        // Check time first (most specific for time extraction)
+                        if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
+                            t.hour()
+                        // Check date-only before datetime (date-only should return 0)
+                        } else if let Some(CellValue::Date(_)) = CellValue::unpack_date(s) {
+                            0
+                        // Check datetime last (has both date and time components)
+                        } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s)
+                        {
+                            dt.hour()
+                        } else {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "time, duration, or number".into(),
+                                got: Some(time.inner.type_name().into()),
+                            }
+                            .with_span(time.span));
+                        }
+                    }
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "time, duration, or number".into(),
@@ -408,6 +460,25 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => t.minute(),
                     CellValue::Duration(d) => d.subhour_minutes() as u32,
+                    CellValue::Text(s) => {
+                        // Check time first (most specific for time extraction)
+                        if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
+                            t.minute()
+                        // Check date-only before datetime (date-only should return 0)
+                        } else if let Some(CellValue::Date(_)) = CellValue::unpack_date(s) {
+                            0
+                        // Check datetime last (has both date and time components)
+                        } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s)
+                        {
+                            dt.minute()
+                        } else {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "time, duration, or number".into(),
+                                got: Some(time.inner.type_name().into()),
+                            }
+                            .with_span(time.span));
+                        }
+                    }
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "time, duration, or number".into(),
@@ -457,6 +528,25 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => t.second(),
                     CellValue::Duration(d) => d.subminute_seconds() as u32,
+                    CellValue::Text(s) => {
+                        // Check time first (most specific for time extraction)
+                        if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
+                            t.second()
+                        // Check date-only before datetime (date-only should return 0)
+                        } else if let Some(CellValue::Date(_)) = CellValue::unpack_date(s) {
+                            0
+                        // Check datetime last (has both date and time components)
+                        } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s)
+                        {
+                            dt.second()
+                        } else {
+                            return Err(RunErrorMsg::Expected {
+                                expected: "time, duration, or number".into(),
+                                got: Some(time.inner.type_name().into()),
+                            }
+                            .with_span(time.span));
+                        }
+                    }
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "time, duration, or number".into(),
@@ -467,55 +557,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
-        // Arithmetic
-        formula_fn!(
-            /// Adds a number of months to a date.
-            ///
-            /// If the date goes past the end of the month, the last day in the
-            /// month is returned.
-            #[examples("EDATE(DATE(2024, 04, 08), 8)")]
-            #[zip_map]
-            fn EDATE(span: Span, [day]: NaiveDate, [months_offset]: i64) {
-                add_months_offset_to_day(day, months_offset)
-                    .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?
-            }
-        ),
-        formula_fn!(
-            /// Returns the last day of the month that is `months_offset` months
-            /// after `day`.
-            ///
-            /// - If `months_offset` is zero, then the value returned is the
-            ///   last day of the month containing `day`.
-            /// - If `months_offset` is positive, then the day returned is that
-            ///   many months later.
-            /// - If `months_offset` is negative, then the day returned is that
-            ///   many months earlier.
-            #[examples("EOMONTH(DATE(2024, 04, 08))", "EOMONTH(DATE(2024, 04, 08), 8)")]
-            #[zip_map]
-            fn EOMONTH(span: Span, [day]: NaiveDate, [months_offset]: (Option<i64>)) {
-                let day = add_months_offset_to_day(day, months_offset.unwrap_or(0))
-                    .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?;
-
-                // Find last day of month
-                (1..=31).rev().find_map(|i| day.with_day(i))
-            }
-        ),
     ]
-}
-
-/// Adds a number of months to a date, or returns `None` in the case of
-/// overflow.
-///
-/// If the date goes past the end of the month, the last day in the month is
-/// returned.
-fn add_months_offset_to_day(day: NaiveDate, months: i64) -> Option<NaiveDate> {
-    if let Ok(m) = u32::try_from(months) {
-        day.checked_add_months(Months::new(m))
-    } else if let Ok(m) = u32::try_from(months.saturating_neg()) {
-        day.checked_sub_months(Months::new(m))
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]
@@ -556,6 +598,13 @@ mod tests {
     #[test]
     fn test_formula_time() {
         let g = GridController::new();
+
+        // Verify TIME outputs CellValue::Time
+        assert!(matches!(
+            eval(&g, "TIME(12, 30, 45)"),
+            Value::Single(CellValue::Time(_)),
+        ));
+
         assert_eq!(eval_to_string(&g, "TIME(2, 30, 45)"), "02:30:45");
         assert_eq!(eval_to_string(&g, "TIME(2, 30, -45)"), "02:29:15");
         assert_eq!(eval_to_string(&g, "TIME(2, -30, 45)"), "01:30:45");
@@ -788,60 +837,64 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_eomonth() {
-        let year = 2006; // not before or after a leap year
+    fn test_formula_year_with_string() {
         let g = GridController::new();
-        for (month, expected_final_day) in [(1, 31), (2, 28), (3, 31), (4, 30), (11, 30), (12, 31)]
-        {
-            for init_day in [1, 2, expected_final_day - 1, expected_final_day] {
-                let formula = format!("EOMONTH(DATE({year}, {month}, {init_day}))");
-                let expected = format!("{year}-{month:02}-{expected_final_day:02}");
-                assert_eq!(expected, eval_to_string(&g, &formula));
-            }
-
-            let init_day = 20;
-            for month_offset in [-5, -2, 0, 2, 5] {
-                let new_month = month - month_offset;
-                let formula =
-                    format!("EOMONTH(DATE({year}, {new_month}, {init_day}), {month_offset})");
-                let expected = format!("{year}-{month:02}-{expected_final_day:02}");
-                assert_eq!(expected, eval_to_string(&g, &formula));
-            }
-        }
-
-        // Test with leap year
-        assert_eq!(
-            "2008-02-29",
-            eval_to_string(&g, "EOMONTH(DATE(2008, 02, 15))"),
-        );
-        assert_eq!(
-            "2008-02-29",
-            eval_to_string(&g, "EOMONTH(DATE(2008, 01, 15), 1)"),
-        );
+        // Test YEAR with string date input
+        assert_eq!("2024", eval_to_string(&g, "YEAR(\"2024-04-08\")"));
+        assert_eq!("2024", eval_to_string(&g, "YEAR(\"04/08/2024\")"));
+        assert_eq!("2024", eval_to_string(&g, "YEAR(\"2024-12-25 14:30:00\")"));
     }
 
     #[test]
-    fn test_formula_edate() {
+    fn test_formula_month_with_string() {
         let g = GridController::new();
-        assert_eq!(
-            "2008-02-29",
-            eval_to_string(&g, "EDATE(DATE(2008, 01, 31), 1)"),
-        );
-        assert_eq!(
-            "2008-03-31",
-            eval_to_string(&g, "EDATE(DATE(2008, 01, 31), 2)"),
-        );
-        assert_eq!(
-            "2008-02-28",
-            eval_to_string(&g, "EDATE(DATE(2008, 01, 28), 1)"),
-        );
-        assert_eq!(
-            "2008-03-28",
-            eval_to_string(&g, "EDATE(DATE(2008, 01, 28), 2)"),
-        );
-        assert_eq!(
-            "2008-02-29",
-            eval_to_string(&g, "EDATE(DATE(2008, 03, 30), -1)"),
-        );
+        // Test MONTH with string date input
+        assert_eq!("4", eval_to_string(&g, "MONTH(\"2024-04-08\")"));
+        assert_eq!("12", eval_to_string(&g, "MONTH(\"12/25/2024\")"));
+        assert_eq!("6", eval_to_string(&g, "MONTH(\"2024-06-15 10:30:00\")"));
+    }
+
+    #[test]
+    fn test_formula_day_with_string() {
+        let g = GridController::new();
+        // Test DAY with string date input
+        assert_eq!("8", eval_to_string(&g, "DAY(\"2024-04-08\")"));
+        assert_eq!("25", eval_to_string(&g, "DAY(\"12/25/2024\")"));
+        assert_eq!("15", eval_to_string(&g, "DAY(\"2024-06-15 10:30:00\")"));
+    }
+
+    #[test]
+    fn test_formula_hour_with_string() {
+        let g = GridController::new();
+        // Test HOUR with string datetime input
+        assert_eq!("14", eval_to_string(&g, "HOUR(\"2024-04-08 14:30:45\")"));
+        // Test HOUR with string time input
+        assert_eq!("16", eval_to_string(&g, "HOUR(\"4:30 PM\")"));
+        assert_eq!("9", eval_to_string(&g, "HOUR(\"09:15:30\")"));
+        // Test HOUR with date-only string (should return 0)
+        assert_eq!("0", eval_to_string(&g, "HOUR(\"2024-04-08\")"));
+    }
+
+    #[test]
+    fn test_formula_minute_with_string() {
+        let g = GridController::new();
+        // Test MINUTE with string datetime input
+        assert_eq!("30", eval_to_string(&g, "MINUTE(\"2024-04-08 14:30:45\")"));
+        // Test MINUTE with string time input
+        assert_eq!("45", eval_to_string(&g, "MINUTE(\"2:45 PM\")"));
+        assert_eq!("15", eval_to_string(&g, "MINUTE(\"09:15:30\")"));
+        // Test MINUTE with date-only string (should return 0)
+        assert_eq!("0", eval_to_string(&g, "MINUTE(\"2024-04-08\")"));
+    }
+
+    #[test]
+    fn test_formula_second_with_string() {
+        let g = GridController::new();
+        // Test SECOND with string datetime input
+        assert_eq!("45", eval_to_string(&g, "SECOND(\"2024-04-08 14:30:45\")"));
+        // Test SECOND with string time input
+        assert_eq!("30", eval_to_string(&g, "SECOND(\"09:15:30\")"));
+        // Test SECOND with date-only string (should return 0)
+        assert_eq!("0", eval_to_string(&g, "SECOND(\"2024-04-08\")"));
     }
 }

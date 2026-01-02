@@ -32,6 +32,10 @@ path = "src/bin/convert_grid_to_json.rs"
 name = "upgrade_file"
 path = "src/bin/upgrade_file.rs"
 
+[[bin]]
+name = "export_formulas"
+path = "src/bin/export_formulas.rs"
+
 [features]
 default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
@@ -53,6 +57,8 @@ async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.14.0"
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+rand = "0.9"
 regex = "1.7"
 rstar = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
@@ -119,6 +125,8 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = 
 prost = { version = "0.13.5", default-features = false }
 encoding_rs_io = "0.1.7"
 rust_decimal = "1.37.2"
+statrs = "0.18"
+roxmltree = "0.20"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 rust_xlsxwriter = { version = "0.89.1", features = ["wasm", "chrono"] }

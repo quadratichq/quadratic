@@ -216,9 +216,12 @@ impl SyntaxRule for ExpressionWithPrecedence {
         }
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        // Check recursion depth to prevent stack overflow
+        p.enter_depth()?;
+
         // Consume an expression at the given precedence level, which may
         // consist of expressions with higher precedence.
-        match self.0 {
+        let result = match self.0 {
             OpPrecedence::Atom => parse_one_of!(
                 p,
                 [
@@ -240,7 +243,10 @@ impl SyntaxRule for ExpressionWithPrecedence {
             prec if !prec.prefix_ops().is_empty() => parse_prefix_ops(p, prec),
             prec if !prec.suffix_ops().is_empty() => parse_suffix_ops(p, prec),
             prec => internal_error!("don't know what to do for precedence {:?}", prec),
-        }
+        };
+
+        p.exit_depth();
+        result
     }
 }
 
@@ -346,23 +352,58 @@ fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<
     let mut ret = p.parse(ExpressionWithPrecedence(precedence.next()))?;
 
     // Repeatedly try to consume a suffix.
-    while let Some(tok) = p.peek_next() {
-        if allowed_ops.contains(&tok) {
-            p.next();
-            let op = Spanned {
-                span: p.span(),
-                inner: p.token_str().to_string(),
-            };
-            ret = AstNode {
-                span: Span::merge(ret.span, op.span),
-                inner: ast::AstNodeContents::FunctionCall {
-                    func: op,
-                    args: vec![ret],
-                },
+    loop {
+        if let Some(tok) = p.peek_next() {
+            if allowed_ops.contains(&tok) {
+                p.next();
+                let op = Spanned {
+                    span: p.span(),
+                    inner: p.token_str().to_string(),
+                };
+                ret = AstNode {
+                    span: Span::merge(ret.span, op.span),
+                    inner: ast::AstNodeContents::FunctionCall {
+                        func: op,
+                        args: vec![ret],
+                    },
+                };
+                continue;
             }
-        } else {
-            break;
+
+            // Check for function call suffix: expression followed by (args)
+            // This handles LAMBDA(...)(...) syntax
+            if tok == Token::LParen {
+                let call_args = p.parse(List {
+                    inner: TupleExpression,
+                    sep: Token::ArgSep,
+                    start: Token::LParen,
+                    end: Token::RParen,
+                    sep_name: "comma",
+                    allow_trailing_sep: false,
+                    allow_empty: true,
+                })?;
+
+                // Create an internal __LAMBDA_INVOKE__ node with the callee as the first
+                // argument and the call arguments as remaining arguments.
+                // Note: We use __LAMBDA_INVOKE__ (not CALL) to avoid conflicting with
+                // the Excel CALL function, which should remain unimplemented.
+                let mut args = vec![ret];
+                args.extend(call_args.inner);
+
+                ret = AstNode {
+                    span: Span::merge(args[0].span, call_args.span),
+                    inner: ast::AstNodeContents::FunctionCall {
+                        func: Spanned {
+                            span: call_args.span,
+                            inner: "__LAMBDA_INVOKE__".to_string(),
+                        },
+                        args,
+                    },
+                };
+                continue;
+            }
         }
+        break;
     }
     Ok(ret)
 }

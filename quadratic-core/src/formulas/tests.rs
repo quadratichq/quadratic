@@ -541,3 +541,143 @@ fn test_syntax_check_ok() {
     assert_check_syntax_succeeds(&g, "XLOOKUP(\"zebra\", A1:Z1, A4:Z6)");
     assert_check_syntax_succeeds(&g, "ABS(({1, 2; 3, 4}, A1:C10))");
 }
+
+// ============================================================================
+// LAMBDA tests
+// ============================================================================
+
+#[test]
+fn test_lambda_basic_invocation() {
+    let g = GridController::new();
+
+    // Basic lambda invocation: LAMBDA(x, x+1)(5) = 6
+    assert_eq!("6", eval_to_string(&g, "LAMBDA(x, x+1)(5)"));
+
+    // Lambda with multiple parameters
+    assert_eq!("15", eval_to_string(&g, "LAMBDA(a, b, a+b)(5, 10)"));
+
+    // Lambda with multiplication
+    assert_eq!("50", eval_to_string(&g, "LAMBDA(x, y, x*y)(5, 10)"));
+
+    // Lambda that returns a constant
+    assert_eq!("42", eval_to_string(&g, "LAMBDA(x, 42)(999)"));
+
+    // Lambda with no parameters (just a body)
+    assert_eq!("100", eval_to_string(&g, "LAMBDA(100)()"));
+}
+
+#[test]
+fn test_lambda_celsius_to_fahrenheit() {
+    let g = GridController::new();
+
+    // Classic example: Celsius to Fahrenheit
+    // F = C * 9/5 + 32
+    // 0°C = 32°F
+    assert_eq!("32", eval_to_string(&g, "LAMBDA(c, c*9/5+32)(0)"));
+    // 100°C = 212°F
+    assert_eq!("212", eval_to_string(&g, "LAMBDA(c, c*9/5+32)(100)"));
+    // 25°C = 77°F
+    assert_eq!("77", eval_to_string(&g, "LAMBDA(c, c*9/5+32)(25)"));
+}
+
+#[test]
+fn test_lambda_with_formula_functions() {
+    let g = GridController::new();
+
+    // Lambda that uses built-in functions
+    assert_eq!("5", eval_to_string(&g, "LAMBDA(x, ABS(x))(-5)"));
+    assert_eq!("10", eval_to_string(&g, "LAMBDA(a, b, MAX(a, b))(5, 10)"));
+    assert_eq!("3", eval_to_string(&g, "LAMBDA(x, SQRT(x))(9)"));
+}
+
+#[test]
+fn test_lambda_nested_expression() {
+    let g = GridController::new();
+
+    // Complex nested expression
+    // (4 + 3) * (4 - 3) + 16 = 7 * 1 + 16 = 23
+    assert_eq!(
+        "23",
+        eval_to_string(&g, "LAMBDA(x, (x + 3) * (x - 3) + 16)(4)")
+    );
+
+    // Lambda with conditional
+    assert_eq!(
+        "positive",
+        eval_to_string(&g, "LAMBDA(x, IF(x > 0, \"positive\", \"negative\"))(5)")
+    );
+    assert_eq!(
+        "negative",
+        eval_to_string(&g, "LAMBDA(x, IF(x > 0, \"positive\", \"negative\"))(-5)")
+    );
+}
+
+#[test]
+fn test_lambda_case_insensitive() {
+    let g = GridController::new();
+
+    // LAMBDA is case-insensitive
+    assert_eq!("6", eval_to_string(&g, "lambda(x, x+1)(5)"));
+    assert_eq!("6", eval_to_string(&g, "Lambda(x, x+1)(5)"));
+    assert_eq!("6", eval_to_string(&g, "LAMBDA(x, x+1)(5)"));
+}
+
+#[test]
+fn test_lambda_parameter_case_insensitive() {
+    let g = GridController::new();
+
+    // Parameters should work case-insensitively
+    // When we use 'x' as a parameter, it's stored as 'X'
+    // When the body references 'x', it's looked up as 'X'
+    assert_eq!("6", eval_to_string(&g, "LAMBDA(X, X+1)(5)"));
+    assert_eq!("6", eval_to_string(&g, "LAMBDA(x, X+1)(5)"));
+}
+
+#[test]
+fn test_lambda_shadowing() {
+    let mut g = GridController::new();
+    let sheet_id = g.sheet_ids()[0];
+
+    // Set X1 to 100 (column X, row 1)
+    g.set_cell_value(pos![sheet_id!X1], "100".into(), None, false);
+
+    // Without LAMBDA, X1 returns a 1x1 array containing 100
+    assert_eq!("{100}", eval_to_string(&g, "X1"));
+
+    // With LAMBDA, x parameter should shadow the column reference
+    // When we use x in the lambda body, it refers to the parameter, not column X
+    assert_eq!("6", eval_to_string(&g, "LAMBDA(x, x+1)(5)"));
+
+    // If the body uses a full cell reference like X1, it should still work
+    // Note: X1 returns a 1x1 array, so the result is also an array
+    assert_eq!("101", eval_to_string(&g, "LAMBDA(y, SUM(X1)+1)(5)"));
+}
+
+#[test]
+fn test_lambda_errors() {
+    let g = GridController::new();
+
+    // Missing body - LAMBDA with no arguments
+    assert_eq!(
+        RunErrorMsg::MissingRequiredArgument {
+            func_name: "LAMBDA".into(),
+            arg_name: "body".into(),
+        },
+        eval_to_err(&g, "LAMBDA()").msg
+    );
+
+    // Wrong number of arguments when calling lambda
+    assert_eq!(
+        RunErrorMsg::TooManyArguments {
+            func_name: "LAMBDA".into(),
+            max_arg_count: 1,
+        },
+        eval_to_err(&g, "LAMBDA(x, x+1)(5, 10)").msg
+    );
+
+    // Calling a non-lambda value
+    assert!(matches!(
+        eval_to_err(&g, "(5)(10)").msg,
+        RunErrorMsg::Expected { expected, .. } if expected == "lambda"
+    ));
+}

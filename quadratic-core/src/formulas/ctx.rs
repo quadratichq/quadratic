@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use itertools::Itertools;
 use smallvec::{SmallVec, smallvec};
 
@@ -22,6 +24,14 @@ pub struct Ctx<'ctx> {
 
     /// Whether to only parse, skipping expensive computations.
     pub skip_computation: bool,
+
+    /// Variable bindings for LAMBDA parameters.
+    /// Maps variable names (case-insensitive, stored uppercase) to their values.
+    pub variables: HashMap<String, Value>,
+
+    /// Set of omitted variable names (case-insensitive, stored uppercase).
+    /// Used by ISOMITTED to check if a LAMBDA parameter was not provided.
+    pub omitted_variables: HashSet<String>,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -31,6 +41,8 @@ impl<'ctx> Ctx<'ctx> {
             sheet_pos,
             cells_accessed: Default::default(),
             skip_computation: false,
+            variables: HashMap::new(),
+            omitted_variables: HashSet::new(),
         }
     }
 
@@ -43,6 +55,64 @@ impl<'ctx> Ctx<'ctx> {
             sheet_pos: Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
             cells_accessed: Default::default(),
             skip_computation: true,
+            variables: HashMap::new(),
+            omitted_variables: HashSet::new(),
+        }
+    }
+
+    /// Looks up a variable by name (case-insensitive).
+    /// Returns `None` if the variable is not defined.
+    pub fn lookup_variable(&self, name: &str) -> Option<&Value> {
+        self.variables.get(&name.to_ascii_uppercase())
+    }
+
+    /// Checks if a variable was omitted (not provided) in a LAMBDA call.
+    /// Returns `true` if the variable is in the omitted set.
+    pub fn is_variable_omitted(&self, name: &str) -> bool {
+        self.omitted_variables.contains(&name.to_ascii_uppercase())
+    }
+
+    /// Creates a child context with additional variable bindings.
+    /// The child context shares the same grid_controller and sheet_pos,
+    /// but has its own variable scope that includes both parent variables
+    /// and the new bindings.
+    pub fn with_bindings(&self, bindings: &[(String, Value)]) -> Self {
+        let mut variables = self.variables.clone();
+        for (name, value) in bindings {
+            variables.insert(name.to_ascii_uppercase(), value.clone());
+        }
+        Ctx {
+            grid_controller: self.grid_controller,
+            sheet_pos: self.sheet_pos,
+            cells_accessed: self.cells_accessed.clone(),
+            skip_computation: self.skip_computation,
+            variables,
+            omitted_variables: self.omitted_variables.clone(),
+        }
+    }
+
+    /// Creates a child context with additional variable bindings and omitted variables.
+    /// Used by LAMBDA invocation to track which parameters were not provided.
+    pub fn with_bindings_and_omitted(
+        &self,
+        bindings: &[(String, Value)],
+        omitted: &[String],
+    ) -> Self {
+        let mut variables = self.variables.clone();
+        for (name, value) in bindings {
+            variables.insert(name.to_ascii_uppercase(), value.clone());
+        }
+        let mut omitted_variables = self.omitted_variables.clone();
+        for name in omitted {
+            omitted_variables.insert(name.to_ascii_uppercase());
+        }
+        Ctx {
+            grid_controller: self.grid_controller,
+            sheet_pos: self.sheet_pos,
+            cells_accessed: self.cells_accessed.clone(),
+            skip_computation: self.skip_computation,
+            variables,
+            omitted_variables,
         }
     }
 

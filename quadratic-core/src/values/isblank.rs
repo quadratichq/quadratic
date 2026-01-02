@@ -29,6 +29,7 @@ impl IsBlank for Value {
             Value::Single(v) => v.is_blank(),
             Value::Array(a) => a.is_blank(),
             Value::Tuple(t) => t.is_blank(),
+            Value::Lambda(_) => false, // Lambdas are never blank
         }
     }
 }
