@@ -20,7 +20,7 @@ pub use cells_fills_hash::CellsFillsHash;
 use std::collections::{HashMap, HashSet};
 
 use quadratic_core_shared::{RenderFill, SheetFill, SheetId, SheetOffsets};
-use quadratic_rust_renderer_shared::{get_hash_coords, hash_key};
+use quadratic_renderer_core::{get_hash_coords, hash_key};
 
 use crate::renderers::render_context::RenderContext;
 use crate::renderers::{Color, Rects};

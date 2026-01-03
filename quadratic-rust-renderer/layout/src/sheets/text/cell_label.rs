@@ -281,7 +281,7 @@ impl CellLabel {
     }
 
     /// Get cached meshes as TextBuffers
-    pub fn get_text_buffers(&self) -> Vec<quadratic_rust_renderer_shared::TextBuffer> {
+    pub fn get_text_buffers(&self) -> Vec<quadratic_renderer_core::TextBuffer> {
         self.cached_meshes.to_text_buffers()
     }
 

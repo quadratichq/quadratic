@@ -28,6 +28,16 @@ pub fn handle_core_message(state: &mut RendererState, data: &[u8]) -> Result<(),
 
         CoreToRenderer::HashCells(hash_cells_vec) => {
             for hash_cells in hash_cells_vec {
+                // If current sheet is not set or differs, set it from the hash data
+                // This handles the race condition where hashes arrive before SheetInfo
+                if state.current_sheet_id() != Some(hash_cells.sheet_id) {
+                    log::info!(
+                        "[rust_renderer] Setting current sheet from hash data: {:?}",
+                        hash_cells.sheet_id
+                    );
+                    state.set_current_sheet(hash_cells.sheet_id);
+                }
+
                 state.set_fills_for_hash(
                     hash_cells.hash_pos.x,
                     hash_cells.hash_pos.y,

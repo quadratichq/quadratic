@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use quadratic_rust_renderer_shared::{
+use quadratic_renderer_core::{
     CursorRenderData, FillBuffer, HashRenderData, LineBuffer, RenderBatch, TextBuffer,
 };
 

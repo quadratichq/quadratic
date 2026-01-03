@@ -119,8 +119,8 @@ log = "0.4"
 # Enable js feature when building for wasm to get ViewportBuffer
 quadratic-core-shared = { path = "../quadratic-core-shared", default-features = false }
 
-# Shared types for layout/render worker communication
-quadratic-rust-renderer-shared = { path = "shared", features = ["wasm"] }
+# Core library (shared types for layout/render worker communication)
+quadratic-renderer-core = { path = "core", features = ["js"] }
 
 # Required for WASM support (used by uuid in quadratic-core-shared)
 getrandom = { version = "0.3", features = ["wasm_js"] }

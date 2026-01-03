@@ -1,6 +1,6 @@
 //! Viewport state for layout calculations
 
-use quadratic_rust_renderer_shared::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
+use quadratic_renderer_core::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
 
 /// Visible bounds in world coordinates
 #[derive(Debug, Clone, Copy, Default)]

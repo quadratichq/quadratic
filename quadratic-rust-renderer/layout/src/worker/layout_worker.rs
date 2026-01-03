@@ -164,6 +164,10 @@ impl LayoutWorker {
             if changed {
                 self.state.set_viewport(shared.x(), shared.y(), shared.scale());
                 self.state.resize_viewport(shared.width(), shared.height(), shared.dpr());
+                // Update current sheet if it changed
+                if let Some(sheet_id) = shared.sheet_id() {
+                    self.state.set_current_sheet(sheet_id);
+                }
             }
             changed
         } else {

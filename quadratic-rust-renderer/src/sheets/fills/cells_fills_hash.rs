@@ -7,7 +7,7 @@
 //! - Lazy loading: only load hashes within viewport + padding
 
 use quadratic_core_shared::{RenderFill, SheetOffsets};
-use quadratic_rust_renderer_shared::{HASH_HEIGHT, HASH_WIDTH};
+use quadratic_renderer_core::{HASH_HEIGHT, HASH_WIDTH};
 
 use crate::renderers::Rects;
 use crate::renderers::render_context::RenderContext;

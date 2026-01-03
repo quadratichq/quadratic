@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use quadratic_core_shared::{Pos, RenderCodeCell, SheetOffsets};
-use quadratic_rust_renderer_shared::TableRenderData;
+use quadratic_renderer_core::TableRenderData;
 
 /// Table layout data
 pub struct TableLayout {

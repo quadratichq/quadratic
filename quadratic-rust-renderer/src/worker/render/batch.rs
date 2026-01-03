@@ -3,7 +3,7 @@
 //! This module renders directly from the RenderBatch sent by the Layout Worker,
 //! avoiding the heavy computation of text layout in the render thread.
 
-use quadratic_rust_renderer_shared::{HashRenderData, RenderBatch};
+use quadratic_renderer_core::{HashRenderData, RenderBatch};
 
 use crate::renderers::WebGLContext;
 

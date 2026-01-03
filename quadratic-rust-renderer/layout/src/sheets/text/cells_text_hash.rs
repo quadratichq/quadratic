@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
-use quadratic_rust_renderer_shared::{FillBuffer, HashRenderData, TextBuffer, HASH_HEIGHT, HASH_WIDTH};
+use quadratic_renderer_core::{FillBuffer, HashRenderData, TextBuffer, HASH_HEIGHT, HASH_WIDTH};
 
 use super::{BitmapFonts, CellLabel, HorizontalLine};
 

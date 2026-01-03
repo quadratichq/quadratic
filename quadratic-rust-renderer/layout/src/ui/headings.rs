@@ -1,7 +1,7 @@
 //! Headings layout (column/row headers)
 
 use quadratic_core_shared::SheetOffsets;
-use quadratic_rust_renderer_shared::HeadingsRenderData;
+use quadratic_renderer_core::HeadingsRenderData;
 
 use crate::sheets::text::BitmapFonts;
 use crate::viewport::Viewport;

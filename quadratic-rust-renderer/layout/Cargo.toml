@@ -20,7 +20,9 @@ wasm = [
 [dependencies]
 # Workspace crates
 quadratic-core-shared = { path = "../../quadratic-core-shared", default-features = false }
-quadratic-rust-renderer-shared = { path = "../shared", features = ["wasm"] }
+
+# Core library (shared types for layout/render worker communication)
+quadratic-renderer-core = { path = "../core", features = ["js"] }
 
 # WASM bindings (optional)
 wasm-bindgen = { version = "0.2", optional = true }

@@ -35,14 +35,25 @@ impl Sheets {
     }
 
     /// Set the current active sheet
+    /// Creates a placeholder sheet with default offsets if it doesn't exist yet.
+    /// The offsets will be updated when SheetInfo arrives.
     pub fn set_current_sheet(&mut self, sheet_id: SheetId) -> bool {
-        if self.sheets.contains_key(&sheet_id) {
-            let changed = self.current_sheet_id != Some(sheet_id);
-            self.current_sheet_id = Some(sheet_id);
-            changed
-        } else {
-            false
+        let changed = self.current_sheet_id != Some(sheet_id);
+        self.current_sheet_id = Some(sheet_id);
+
+        // Create placeholder sheet if it doesn't exist yet
+        // This allows hash data to be stored before SheetInfo arrives
+        if !self.sheets.contains_key(&sheet_id) {
+            let sheet = Sheet::new(sheet_id, SheetOffsets::default(), GridBounds::Empty);
+            self.sheets.insert(sheet_id, sheet);
         }
+
+        changed
+    }
+
+    /// Get the current sheet ID (may be set before sheet exists)
+    pub fn current_sheet_id(&self) -> Option<SheetId> {
+        self.current_sheet_id
     }
 
     /// Get the current sheet

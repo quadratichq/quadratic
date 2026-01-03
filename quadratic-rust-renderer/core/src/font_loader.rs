@@ -4,7 +4,9 @@
 //! that can be used for text rendering. The actual file I/O is left to the caller,
 //! so this can work in both native and WASM environments.
 
-use crate::sheets::text::{BitmapChar, BitmapFont, BitmapFonts, CharFrame};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::sheets::text::BitmapFonts;
+use crate::sheets::text::{BitmapChar, BitmapFont, CharFrame};
 use std::collections::HashMap;
 
 /// Parse a BMFont XML string into a BitmapFont

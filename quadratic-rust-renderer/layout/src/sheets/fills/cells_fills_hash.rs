@@ -1,7 +1,7 @@
 //! CellsFillsHash - spatial hash for fill rectangles
 
 use quadratic_core_shared::{RenderFill, SheetOffsets};
-use quadratic_rust_renderer_shared::{FillBuffer, HASH_HEIGHT, HASH_WIDTH};
+use quadratic_renderer_core::{FillBuffer, HASH_HEIGHT, HASH_WIDTH};
 
 use crate::utils::color::parse_color_string;
 

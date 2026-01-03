@@ -1,6 +1,6 @@
 //! Label mesh - vertex and index buffers for text rendering
 
-use quadratic_rust_renderer_shared::TextBuffer;
+use quadratic_renderer_core::TextBuffer;
 
 /// Mesh data for a text label, grouped by texture
 #[derive(Debug, Clone, Default)]

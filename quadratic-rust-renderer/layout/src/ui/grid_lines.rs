@@ -1,7 +1,7 @@
 //! Grid lines layout
 
 use quadratic_core_shared::SheetOffsets;
-use quadratic_rust_renderer_shared::LineBuffer;
+use quadratic_renderer_core::LineBuffer;
 
 use crate::viewport::Viewport;
 

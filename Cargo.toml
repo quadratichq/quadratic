@@ -14,7 +14,6 @@ members = [
   "quadratic-rust-renderer/core",
   "quadratic-rust-renderer/layout",
   "quadratic-rust-renderer/native",
-  "quadratic-rust-renderer/shared",
   "quadratic-rust-shared",
 ]
 exclude = ["poc/number_type", "dev-rust"]

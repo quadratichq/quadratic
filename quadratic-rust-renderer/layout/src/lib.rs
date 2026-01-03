@@ -31,7 +31,7 @@ mod viewport;
 pub mod worker;
 
 // Re-exports
-pub use quadratic_rust_renderer_shared::{RenderBatch, HashRenderData};
+pub use quadratic_renderer_core::{HashRenderData, RenderBatch};
 pub use viewport::Viewport;
 
 #[cfg(feature = "wasm")]

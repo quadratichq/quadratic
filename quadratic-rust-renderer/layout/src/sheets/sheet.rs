@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use quadratic_core_shared::{GridBounds, SheetId, SheetOffsets};
-use quadratic_rust_renderer_shared::hash_key;
+use quadratic_renderer_core::hash_key;
 
 use super::fills::CellsFills;
 use super::text::CellsTextHash;
@@ -77,7 +77,7 @@ impl Sheet {
 
     /// Clear content cache for a hash region
     pub fn clear_content_for_hash(&mut self, hash_x: i64, hash_y: i64) {
-        use quadratic_rust_renderer_shared::{HASH_HEIGHT, HASH_WIDTH};
+        use quadratic_renderer_core::{HASH_HEIGHT, HASH_WIDTH};
 
         let start_col = hash_x * HASH_WIDTH + 1;
         let end_col = start_col + HASH_WIDTH;

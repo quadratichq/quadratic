@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use quadratic_core_shared::{RenderFill, SheetFill, SheetOffsets};
-use quadratic_rust_renderer_shared::{hash_key, FillBuffer};
+use quadratic_renderer_core::{hash_key, FillBuffer};
 
 use super::CellsFillsHash;
 use crate::utils::color::parse_color_string;

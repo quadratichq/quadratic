@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use quadratic_core_shared::{
     GridBounds, Pos, RenderCell, RenderCodeCell, RenderFill, SheetFill, SheetId, SheetOffsets,
 };
-use quadratic_rust_renderer_shared::{hash_key, RenderBatch};
+use quadratic_renderer_core::{hash_key, RenderBatch};
 
 use crate::sheets::text::{BitmapFonts, CellLabel, CellsTextHash};
 use crate::sheets::Sheets;
@@ -102,7 +102,7 @@ impl LayoutState {
     }
 
     pub fn current_sheet_id(&self) -> Option<SheetId> {
-        self.sheets.current_sheet().map(|s| s.sheet_id)
+        self.sheets.current_sheet_id()
     }
 
     // =========================================================================

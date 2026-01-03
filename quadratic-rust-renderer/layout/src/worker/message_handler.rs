@@ -40,32 +40,32 @@ pub fn handle_core_message(state: &mut LayoutState, data: &[u8]) -> Result<(), S
 
             // Updated cell data for specific hashes
             for hash_data in hash_cells {
-                if state.current_sheet_id() == Some(hash_data.sheet_id) {
-                    log::debug!(
-                        "[layout] Processing hash ({}, {}) with {} cells",
-                        hash_data.hash_pos.x,
-                        hash_data.hash_pos.y,
-                        hash_data.cells.len()
+                // If current sheet is not set or differs, set it from the hash data
+                // This handles the race condition where hashes arrive before SheetInfo
+                if state.current_sheet_id() != Some(hash_data.sheet_id) {
+                    log::info!(
+                        "[layout] Setting current sheet from hash data: {:?}",
+                        hash_data.sheet_id
                     );
-                    state.set_labels_for_hash(
-                        hash_data.hash_pos.x,
-                        hash_data.hash_pos.y,
-                        hash_data.cells,
-                    );
-                    state.set_fills_for_hash(
-                        hash_data.hash_pos.x,
-                        hash_data.hash_pos.y,
-                        hash_data.fills,
-                    );
-                } else {
-                    log::warn!(
-                        "[layout] Ignoring hash ({}, {}) - sheet_id {:?} != current {:?}",
-                        hash_data.hash_pos.x,
-                        hash_data.hash_pos.y,
-                        hash_data.sheet_id,
-                        state.current_sheet_id()
-                    );
+                    state.set_current_sheet(hash_data.sheet_id);
                 }
+
+                log::debug!(
+                    "[layout] Processing hash ({}, {}) with {} cells",
+                    hash_data.hash_pos.x,
+                    hash_data.hash_pos.y,
+                    hash_data.cells.len()
+                );
+                state.set_labels_for_hash(
+                    hash_data.hash_pos.x,
+                    hash_data.hash_pos.y,
+                    hash_data.cells,
+                );
+                state.set_fills_for_hash(
+                    hash_data.hash_pos.x,
+                    hash_data.hash_pos.y,
+                    hash_data.fills,
+                );
             }
         }
 

@@ -68,7 +68,7 @@ mod tests {
             255, 255, 255, 255, // White
         ];
 
-        let png = encode_png(&pixels, 2, 2).unwrap();
+        let png = encode(&pixels, 2, 2, ImageFormat::Png).unwrap();
 
         // PNG magic bytes
         assert_eq!(&png[0..8], &[137, 80, 78, 71, 13, 10, 26, 10]);
@@ -81,7 +81,7 @@ mod tests {
             255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
         ];
 
-        let jpeg = encode_jpeg(&pixels, 2, 2, 80).unwrap();
+        let jpeg = encode(&pixels, 2, 2, ImageFormat::Jpeg(80)).unwrap();
 
         // JPEG magic bytes
         assert_eq!(&jpeg[0..2], &[0xFF, 0xD8]);

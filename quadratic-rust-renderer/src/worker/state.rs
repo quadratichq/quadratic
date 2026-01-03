@@ -557,7 +557,9 @@ impl RendererState {
     /// Check if a hash overlaps with the sheet's data bounds
     fn hash_overlaps_bounds(hash_x: i64, hash_y: i64, bounds: &GridBounds) -> bool {
         match bounds {
-            GridBounds::Empty => false,
+            // Empty bounds means we don't know the bounds yet - allow all hashes
+            // This happens when sheet is created as placeholder before SheetInfo arrives
+            GridBounds::Empty => true,
             GridBounds::NonEmpty(data_rect) => {
                 // Calculate the cell range for this hash (1-indexed)
                 let hash_start_col = hash_x * HASH_WIDTH + 1;
@@ -642,8 +644,9 @@ impl RendererState {
     }
 
     /// Get the current sheet ID (if any)
+    /// Note: This can return Some even if the sheet hasn't been created yet
     pub fn current_sheet_id(&self) -> Option<SheetId> {
-        self.sheets.current_sheet().map(|s| s.sheet_id)
+        self.sheets.current.clone()
     }
 
     pub fn get_needed_fill_hashes(&self) -> Vec<i32> {

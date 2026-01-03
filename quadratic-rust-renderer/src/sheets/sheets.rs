@@ -39,17 +39,22 @@ impl Sheets {
 
     /// Set the current active sheet
     /// Returns true if the sheet was switched (caller should mark things dirty)
+    /// Creates a placeholder sheet with default offsets if it doesn't exist yet.
+    /// The offsets will be updated when SheetInfo arrives.
     pub fn set_current_sheet(&mut self, sheet_id: SheetId) -> bool {
         if self.current == Some(sheet_id.clone()) {
             return false;
         }
 
-        if self.sheets.contains_key(&sheet_id) {
-            self.current = Some(sheet_id);
-            true
-        } else {
-            false
+        // Create placeholder sheet if it doesn't exist yet
+        // This allows hash data to be stored before SheetInfo arrives
+        if !self.sheets.contains_key(&sheet_id) {
+            let sheet = Sheet::from_sheet_info(sheet_id.clone(), SheetOffsets::default(), GridBounds::Empty);
+            self.sheets.insert(sheet_id.clone(), sheet);
         }
+
+        self.current = Some(sheet_id);
+        true
     }
 
     /// Get the current sheet (if any)

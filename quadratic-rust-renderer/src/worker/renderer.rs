@@ -841,6 +841,10 @@ impl WorkerRenderer {
                 // Also resize backend if dimensions changed
                 self.backend
                     .resize(shared.width() as u32, shared.height() as u32);
+                // Update current sheet if it changed
+                if let Some(sheet_id) = shared.sheet_id() {
+                    self.state.set_current_sheet(sheet_id);
+                }
             }
             changed
         } else {
@@ -964,7 +968,7 @@ impl WorkerRenderer {
     fn frame_webgl_with_batch(
         &mut self,
         _elapsed: f32,
-        _batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
+        _batch: Option<quadratic_renderer_core::RenderBatch>,
     ) -> bool {
         // Pre-extract all values we need before borrowing backend
         let fonts_ready = self.fonts_ready();
@@ -1113,7 +1117,7 @@ impl WorkerRenderer {
     fn frame_webgpu_with_batch(
         &mut self,
         _elapsed: f32,
-        _batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
+        _batch: Option<quadratic_renderer_core::RenderBatch>,
     ) -> bool {
         // Pre-extract all values we need before complex borrows
         let fonts_ready = self.fonts_ready();

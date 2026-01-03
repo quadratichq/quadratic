@@ -36,15 +36,20 @@ pub mod wgpu_backend;
 
 pub mod font_loader;
 
+// Console logger for WASM (uses browser console)
+#[cfg(feature = "js")]
+pub mod console_logger;
+
 // Re-exports for convenience
 pub use layout::LayoutEngine;
 pub use render::CoreState;
 pub use sheets::{Sheet, Sheets};
 pub use tables::{TableOutline, TableOutlines};
 pub use types::{
-    BorderLineStyle, CursorRenderData, FillBuffer, HashRenderData, HeadingsRenderData,
-    HorizontalBorder, LineBuffer, RenderBatch, SheetBorders, TableRenderData, TextBuffer,
-    VerticalBorder,
+    get_hash_coords, hash_key, BorderLineStyle, CursorRenderData, EmojiSpriteData, FillBuffer,
+    HashRenderData, HeadingsRenderData, HorizontalBorder, HorizontalLineData, LineBuffer,
+    RenderBatch, SheetBorders, TableRenderData, TextBuffer, VerticalBorder, HASH_HEIGHT,
+    HASH_PADDING, HASH_WIDTH,
 };
 pub use ui::UI;
 pub use viewport::Viewport;

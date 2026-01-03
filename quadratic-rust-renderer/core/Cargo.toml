@@ -6,15 +6,36 @@ description = "Platform-agnostic rendering and layout core for Quadratic"
 
 [features]
 default = []
+
 # Enable wgpu backend (used by renderer-wasm WebGPU mode and native)
 wgpu = ["dep:wgpu"]
 
+# JS/WASM interop (ViewportBuffer, console logger)
+js = [
+    "dep:wasm-bindgen",
+    "quadratic-core-shared/js",
+]
+
+# Full WASM target (js + wasm-specific features)
+wasm = ["js", "dep:wasm-bindgen-futures", "dep:console_error_panic_hook"]
+
+# wgpu for WASM WebGPU backend
+wgpu-wasm = ["wgpu", "wgpu/webgpu"]
+
+# wgpu for native platforms (Vulkan, Metal, DX12)
+wgpu-native = ["wgpu", "wgpu/vulkan-portability", "wgpu/metal", "wgpu/dx12"]
+
 [dependencies]
-# Quadratic shared types (no wasm features)
+# Quadratic shared types (no wasm features by default)
 quadratic-core-shared = { path = "../../quadratic-core-shared", default-features = false }
 
 # wgpu for GPU rendering (optional - enabled by renderer-wasm and native)
 wgpu = { version = "23.0", optional = true, default-features = false, features = ["wgsl"] }
+
+# WASM bindings (optional)
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
 
 # XML parsing for BMFont files
 quick-xml = "0.37"

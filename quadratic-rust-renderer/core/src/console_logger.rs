@@ -4,10 +4,10 @@
 
 use log::{Level, Log, Metadata, Record};
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "js")]
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -46,6 +46,12 @@ impl ConsoleLogger {
     }
 }
 
+impl Default for ConsoleLogger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Default console logger (no prefix)
 pub static CONSOLE_LOGGER: ConsoleLogger = ConsoleLogger::new();
 
@@ -78,7 +84,7 @@ impl Log for ConsoleLogger {
                 ),
             };
 
-            #[cfg(feature = "wasm")]
+            #[cfg(feature = "js")]
             {
                 match record.level() {
                     Level::Error => error(&msg),
@@ -89,7 +95,7 @@ impl Log for ConsoleLogger {
                 }
             }
 
-            #[cfg(not(feature = "wasm"))]
+            #[cfg(not(feature = "js"))]
             {
                 eprintln!("{}", msg);
             }

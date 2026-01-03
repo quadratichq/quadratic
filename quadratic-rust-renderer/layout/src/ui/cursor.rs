@@ -1,7 +1,7 @@
 //! Cursor layout
 
 use quadratic_core_shared::{A1Selection, SheetOffsets};
-use quadratic_rust_renderer_shared::{CursorRenderData, FillBuffer};
+use quadratic_renderer_core::{CursorRenderData, FillBuffer};
 
 /// Cursor colors
 const CURSOR_FILL_COLOR: [f32; 4] = [0.227, 0.506, 0.894, 0.1]; // Blue with alpha
