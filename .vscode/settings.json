@@ -269,10 +269,13 @@
     "wgpu",
     "WGSL",
     "workos",
+    "xadvance",
     "XLOOKUP",
     "Xlsb",
     "xlsxwriter",
+    "xoffset",
     "xyxy",
+    "yoffset",
     "Zeroable",
     "zstd"
   ],

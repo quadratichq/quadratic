@@ -50,6 +50,7 @@
     "build:file:blank": "cd quadratic-core && cargo run --bin generate_blank_current_file",
     "build:file:convert": "cd quadratic-core && cargo run --bin convert_grid_to_json",
     "build:file:upgrade": "cd quadratic-core && cargo run --bin upgrade_file",
+    "screenshot": "cargo run -p quadratic-renderer-native --example screenshot --",
     "build:font": "cd quadratic-client && node scripts/fonts.js",
     "coverage:wasm:gen": "cd quadratic-core && cd quadratic-core && CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:wasm:html": "cd quadratic-core && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",

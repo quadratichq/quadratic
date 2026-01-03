@@ -37,7 +37,8 @@ pub use request::{CellFill, CellText, RenderRequest, SelectionRange};
 
 // Re-export core types that users might need
 pub use quadratic_renderer_core::{
-    CoreState, FillBuffer, HashRenderData, LayoutEngine, LineBuffer, RenderBatch, TextBuffer,
+    BorderLineStyle, CoreState, FillBuffer, HashRenderData, HorizontalBorder, LayoutEngine,
+    LineBuffer, RenderBatch, SheetBorders, TableOutline, TableOutlines, TextBuffer, VerticalBorder,
 };
 
 /// Convenience function: render a selection to PNG bytes

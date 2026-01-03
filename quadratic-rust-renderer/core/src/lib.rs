@@ -40,9 +40,11 @@ pub mod font_loader;
 pub use layout::LayoutEngine;
 pub use render::CoreState;
 pub use sheets::{Sheet, Sheets};
+pub use tables::{TableOutline, TableOutlines};
 pub use types::{
-    CursorRenderData, FillBuffer, HashRenderData, HeadingsRenderData, LineBuffer, RenderBatch,
-    TableRenderData, TextBuffer,
+    BorderLineStyle, CursorRenderData, FillBuffer, HashRenderData, HeadingsRenderData,
+    HorizontalBorder, LineBuffer, RenderBatch, SheetBorders, TableRenderData, TextBuffer,
+    VerticalBorder,
 };
 pub use ui::UI;
 pub use viewport::Viewport;

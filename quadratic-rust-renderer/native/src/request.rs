@@ -1,6 +1,7 @@
 //! Render request types
 
 use quadratic_core_shared::SheetOffsets;
+use quadratic_renderer_core::{SheetBorders, TableOutlines};
 
 /// A range of cells to render (1-indexed, inclusive)
 #[derive(Debug, Clone, Copy)]
@@ -88,6 +89,12 @@ pub struct RenderRequest {
     /// Cell text to render
     pub text: Vec<CellText>,
 
+    /// Cell borders to render
+    pub borders: SheetBorders,
+
+    /// Table outlines to render
+    pub table_outlines: TableOutlines,
+
     /// Background color [r, g, b, a] (default white)
     pub background_color: Option<[f32; 4]>,
 
@@ -106,30 +113,27 @@ impl RenderRequest {
             offsets: SheetOffsets::default(),
             fills: Vec::new(),
             text: Vec::new(),
+            borders: SheetBorders::new(),
+            table_outlines: TableOutlines::new(),
             background_color: None,
             show_grid_lines: true,
         }
     }
 
-    /// Calculate the viewport position and scale to fit the selection
+    /// Calculate the viewport position and scale to fit the selection exactly
     pub fn calculate_viewport(&self) -> (f32, f32, f32) {
         let (world_x, world_y, world_w, world_h) = self.selection.world_bounds(&self.offsets);
 
         // Calculate scale to fit selection in output size
+        // When dimensions are calculated from aspect ratio, scale_x ≈ scale_y
         let scale_x = self.width as f32 / world_w;
         let scale_y = self.height as f32 / world_h;
-        let auto_scale = scale_x.min(scale_y);
 
-        // Use provided scale or auto-calculated
-        let scale = self.scale.unwrap_or(auto_scale);
+        // Use provided scale or the minimum to ensure content fits
+        let scale = self.scale.unwrap_or_else(|| scale_x.min(scale_y));
 
-        // Center the selection in the viewport
-        let scaled_w = world_w * scale;
-        let scaled_h = world_h * scale;
-        let offset_x = (self.width as f32 - scaled_w) / 2.0 / scale;
-        let offset_y = (self.height as f32 - scaled_h) / 2.0 / scale;
-
-        (world_x - offset_x, world_y - offset_y, scale)
+        // Position at exact start of selection (no centering offset)
+        (world_x, world_y, scale)
     }
 
     /// Get background color (default white)

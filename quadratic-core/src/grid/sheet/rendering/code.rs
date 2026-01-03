@@ -139,6 +139,14 @@ impl Sheet {
         }
     }
 
+    /// Returns all render code cells (tables) in the sheet
+    pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
+        self.data_tables
+            .expensive_iter()
+            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
+            .collect()
+    }
+
     /// Send images in this sheet to the client. Note: we only have images
     /// inside CodeRuns. We may open this up in the future to allow images to be
     /// placed directly on the grid without a CodeRun. In that case, we'll need

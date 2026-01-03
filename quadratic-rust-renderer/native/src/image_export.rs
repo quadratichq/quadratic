@@ -26,9 +26,8 @@ pub fn encode(
     format: ImageFormat,
 ) -> anyhow::Result<Vec<u8>> {
     // Create image from raw pixels
-    let image: ImageBuffer<Rgba<u8>, _> =
-        ImageBuffer::from_raw(width, height, pixels.to_vec())
-            .ok_or_else(|| anyhow::anyhow!("Failed to create image buffer"))?;
+    let image: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(width, height, pixels.to_vec())
+        .ok_or_else(|| anyhow::anyhow!("Failed to create image buffer"))?;
 
     let mut output = Vec::new();
     let mut cursor = Cursor::new(&mut output);
@@ -41,7 +40,8 @@ pub fn encode(
             // Convert to RGB for JPEG (no alpha channel)
             let rgb_image = image::DynamicImage::ImageRgba8(image).into_rgb8();
 
-            let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, quality);
+            let mut encoder =
+                image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, quality);
             encoder.encode(
                 rgb_image.as_raw(),
                 width,
@@ -52,16 +52,6 @@ pub fn encode(
     }
 
     Ok(output)
-}
-
-/// Encode RGBA pixels to PNG
-pub fn encode_png(pixels: &[u8], width: u32, height: u32) -> anyhow::Result<Vec<u8>> {
-    encode(pixels, width, height, ImageFormat::Png)
-}
-
-/// Encode RGBA pixels to JPEG
-pub fn encode_jpeg(pixels: &[u8], width: u32, height: u32, quality: u8) -> anyhow::Result<Vec<u8>> {
-    encode(pixels, width, height, ImageFormat::Jpeg(quality))
 }
 
 #[cfg(test)]
@@ -88,10 +78,7 @@ mod tests {
     fn test_encode_jpeg() {
         // Create a simple 2x2 image
         let pixels = vec![
-            255, 0, 0, 255,
-            0, 255, 0, 255,
-            0, 0, 255, 255,
-            255, 255, 255, 255,
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
         ];
 
         let jpeg = encode_jpeg(&pixels, 2, 2, 80).unwrap();
