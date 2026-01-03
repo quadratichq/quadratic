@@ -1,0 +1,102 @@
+//! Image encoding utilities
+
+use image::{ImageBuffer, ImageFormat as ImgFormat, Rgba};
+use std::io::Cursor;
+
+/// Output image format
+#[derive(Debug, Clone, Copy)]
+pub enum ImageFormat {
+    /// PNG format (lossless)
+    Png,
+    /// JPEG format with quality (0-100)
+    Jpeg(u8),
+}
+
+impl Default for ImageFormat {
+    fn default() -> Self {
+        Self::Png
+    }
+}
+
+/// Encode RGBA pixels to an image format
+pub fn encode(
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+    format: ImageFormat,
+) -> anyhow::Result<Vec<u8>> {
+    // Create image from raw pixels
+    let image: ImageBuffer<Rgba<u8>, _> =
+        ImageBuffer::from_raw(width, height, pixels.to_vec())
+            .ok_or_else(|| anyhow::anyhow!("Failed to create image buffer"))?;
+
+    let mut output = Vec::new();
+    let mut cursor = Cursor::new(&mut output);
+
+    match format {
+        ImageFormat::Png => {
+            image.write_to(&mut cursor, ImgFormat::Png)?;
+        }
+        ImageFormat::Jpeg(quality) => {
+            // Convert to RGB for JPEG (no alpha channel)
+            let rgb_image = image::DynamicImage::ImageRgba8(image).into_rgb8();
+
+            let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, quality);
+            encoder.encode(
+                rgb_image.as_raw(),
+                width,
+                height,
+                image::ExtendedColorType::Rgb8,
+            )?;
+        }
+    }
+
+    Ok(output)
+}
+
+/// Encode RGBA pixels to PNG
+pub fn encode_png(pixels: &[u8], width: u32, height: u32) -> anyhow::Result<Vec<u8>> {
+    encode(pixels, width, height, ImageFormat::Png)
+}
+
+/// Encode RGBA pixels to JPEG
+pub fn encode_jpeg(pixels: &[u8], width: u32, height: u32, quality: u8) -> anyhow::Result<Vec<u8>> {
+    encode(pixels, width, height, ImageFormat::Jpeg(quality))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_encode_png() {
+        // Create a simple 2x2 image
+        let pixels = vec![
+            255, 0, 0, 255, // Red
+            0, 255, 0, 255, // Green
+            0, 0, 255, 255, // Blue
+            255, 255, 255, 255, // White
+        ];
+
+        let png = encode_png(&pixels, 2, 2).unwrap();
+
+        // PNG magic bytes
+        assert_eq!(&png[0..8], &[137, 80, 78, 71, 13, 10, 26, 10]);
+    }
+
+    #[test]
+    fn test_encode_jpeg() {
+        // Create a simple 2x2 image
+        let pixels = vec![
+            255, 0, 0, 255,
+            0, 255, 0, 255,
+            0, 0, 255, 255,
+            255, 255, 255, 255,
+        ];
+
+        let jpeg = encode_jpeg(&pixels, 2, 2, 80).unwrap();
+
+        // JPEG magic bytes
+        assert_eq!(&jpeg[0..2], &[0xFF, 0xD8]);
+    }
+}

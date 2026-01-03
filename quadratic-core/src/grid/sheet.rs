@@ -113,6 +113,16 @@ impl Sheet {
         )
     }
 
+    /// Returns the sheet's name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns the sheet's offsets (column widths and row heights).
+    pub fn offsets(&self) -> &SheetOffsets {
+        &self.offsets
+    }
+
     /// Returns an error if a sheet name would be invalid to add.
     pub fn validate_sheet_name(
         name: &str,

@@ -1,0 +1,46 @@
+[package]
+name = "quadratic-renderer-native"
+version = "0.1.0"
+edition = "2021"
+description = "Native headless rendering for Quadratic (thumbnails, exports, server-side)"
+
+[dependencies]
+# Core library with wgpu backend
+quadratic-renderer-core = { path = "../core", features = ["wgpu"] }
+
+# Quadratic shared types
+quadratic-core-shared = { path = "../../quadratic-core-shared", default-features = false }
+
+# Quadratic core (for loading grid files) - js feature needed for compilation
+quadratic-core = { path = "../../quadratic-core", default-features = false, features = ["js"] }
+
+# wgpu for native GPU rendering (Vulkan, Metal, DX12)
+wgpu = { version = "23.0", features = [
+    "vulkan-portability",
+    "metal",
+    "dx12",
+    "wgsl",
+] }
+
+# Block on async for simple synchronous API
+pollster = "0.4"
+
+# Image encoding (PNG, JPEG)
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# Math
+glam = "0.30"
+
+# Serialization (for loading sheet data)
+serde = { version = "1.0", features = ["derive"] }
+bincode = { version = "2.0.0", features = ["serde"] }
+
+# Utilities
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+# CLI for examples
+clap = { version = "4.5", features = ["derive"] }

@@ -4,15 +4,12 @@
 //! by the main thread and synced via SharedArrayBuffer using atomic locking
 //! to ensure consistent reads.
 
-#[cfg(all(not(test), feature = "js"))]
+#[cfg(feature = "js")]
 use js_sys::{Float32Array, Int32Array, SharedArrayBuffer, Uint8Array};
-#[cfg(all(not(test), feature = "js"))]
+
+#[cfg(feature = "js")]
 use std::sync::atomic::{AtomicI32, Ordering};
 
-#[cfg(all(not(test), feature = "js"))]
-use crate::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, Pos, SheetId};
-
-#[cfg(test)]
 use crate::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, Pos, SheetId};
 
 /// Size of the sheet_id field in bytes (UUID string)
@@ -64,7 +61,7 @@ pub struct VisibleBounds {
 /// The viewport state is controlled by the main thread and synced via SharedArrayBuffer.
 /// Uses atomic locking to ensure consistent reads across all fields.
 #[derive(Clone)]
-#[cfg(all(not(test), feature = "js"))]
+#[cfg(feature = "js")]
 pub struct ViewportBuffer {
     /// The SharedArrayBuffer containing viewport state
     buffer: SharedArrayBuffer,
@@ -99,14 +96,14 @@ pub struct ViewportBuffer {
     max_scale: f32,
 }
 
-#[cfg(all(not(test), feature = "js"))]
+#[cfg(feature = "js")]
 impl PartialEq for ViewportBuffer {
     fn eq(&self, _: &Self) -> bool {
         true
     }
 }
 
-#[cfg(all(not(test), feature = "js"))]
+#[cfg(feature = "js")]
 impl std::fmt::Debug for ViewportBuffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ViewportBuffer")
@@ -120,10 +117,10 @@ impl std::fmt::Debug for ViewportBuffer {
     }
 }
 
-#[cfg(all(not(test), feature = "js"))]
+#[cfg(feature = "js")]
 unsafe impl Send for ViewportBuffer {}
 
-#[cfg(all(not(test), feature = "js"))]
+#[cfg(feature = "js")]
 impl ViewportBuffer {
     /// Create a new ViewportBuffer from a SharedArrayBuffer
     pub fn from_buffer(buffer: SharedArrayBuffer) -> Self {
@@ -401,7 +398,7 @@ impl ViewportBuffer {
 // ============================================================================
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg(test)]
+#[cfg(not(feature = "js"))]
 pub struct ViewportBuffer {
     position_x: f32,
     position_y: f32,
@@ -412,7 +409,7 @@ pub struct ViewportBuffer {
     sheet_id: SheetId,
 }
 
-#[cfg(test)]
+#[cfg(not(feature = "js"))]
 impl Default for ViewportBuffer {
     fn default() -> Self {
         ViewportBuffer {
@@ -427,7 +424,7 @@ impl Default for ViewportBuffer {
     }
 }
 
-#[cfg(test)]
+#[cfg(not(feature = "js"))]
 impl ViewportBuffer {
     pub fn x(&self) -> f32 {
         self.position_x

@@ -2,31 +2,34 @@
 use crate::number::decimal_from_str;
 
 #[cfg(test)]
-#[cfg(test)]
 use super::{
-    GridController, active_transactions::transaction_name::TransactionName,
-    operations::operation::Operation,
+    active_transactions::transaction_name::TransactionName, operations::operation::Operation,
 };
 #[cfg(test)]
 use crate::{
     Array, ArraySize, CellValue, SheetPos,
     cellvalue::Import,
-    grid::Grid,
     grid::SheetId,
     grid::column_header::DataTableColumnHeader,
     grid::{CodeCellLanguage, CodeRun},
     grid::{DataTable, DataTableKind},
 };
 
-#[cfg(test)]
+use super::GridController;
+#[cfg(not(feature = "js"))]
+use crate::grid::Grid;
+
 impl GridController {
     // create a new gc for testing purposes with a viewport buffer
+    #[cfg(not(feature = "js"))]
     pub fn test_with_viewport_buffer() -> Self {
-        let mut gc = Self::from_grid(Grid::test(), 0);
-        // gc.viewport_buffer = Some(ViewportBuffer::default());
+        let gc = Self::from_grid(Grid::test(), 0);
         gc
     }
+}
 
+#[cfg(test)]
+impl GridController {
     pub fn test_set_code_run_array_2d(
         &mut self,
         sheet_id: SheetId,
