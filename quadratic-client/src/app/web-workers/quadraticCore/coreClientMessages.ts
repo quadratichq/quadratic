@@ -342,6 +342,12 @@ export interface ClientCoreSendSheetMetaFillsToRustRenderer {
   sheetId: string;
 }
 
+// Layout worker messages
+export interface ClientCoreInitLayoutWorkerPort {
+  type: 'clientCoreInitLayoutWorkerPort';
+  port: MessagePort;
+}
+
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
@@ -1581,6 +1587,7 @@ export type ClientCoreMessage =
   | ClientCoreGetSheetMetaFills
   | ClientCoreSendAllSheetOffsetsToRustRenderer
   | ClientCoreSendSheetMetaFillsToRustRenderer
+  | ClientCoreInitLayoutWorkerPort
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
   | ClientCoreSetCellStrikeThrough

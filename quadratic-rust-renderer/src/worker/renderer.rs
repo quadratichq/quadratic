@@ -857,26 +857,27 @@ impl WorkerRenderer {
             }
         }
 
-        // Update content based on viewport and sheet offsets
+        // Update UI content based on viewport (grid lines, cursor, headings)
         self.state.update_content();
 
-        // Process dirty hashes with time budget (~8ms)
-        let (processed, remaining) = self.state.process_dirty_hashes(8.0);
+        // Check if we have a pre-computed batch from the layout worker
+        let batch = self.state.batch_cache.take();
+        let has_batch = batch.is_some();
 
         // Check if anything needs rendering
-        let needs_render = self.state.is_dirty() || processed > 0;
+        // Note: We don't process dirty hashes anymore - Layout Worker handles all geometry
+        let needs_render = self.state.is_dirty() || has_batch;
 
         if !needs_render {
             return false;
         }
 
         // Dispatch to backend-specific rendering
-        // Note: We check backend type first to avoid borrow issues
         let is_webgl = matches!(&self.backend, RenderBackend::WebGL(_));
         let rendered = if is_webgl {
-            self.frame_webgl(elapsed)
+            self.frame_webgl_with_batch(elapsed, batch)
         } else {
-            self.frame_webgpu(elapsed)
+            self.frame_webgpu_with_batch(elapsed, batch)
         };
 
         if rendered {
@@ -886,11 +887,6 @@ impl WorkerRenderer {
             // Clear the shared viewport buffer dirty flag
             if let Some(ref mut shared) = self.shared_viewport {
                 shared.mark_clean();
-            }
-
-            // If there are remaining dirty hashes, force another frame
-            if remaining > 0 {
-                self.state.force_dirty();
             }
         }
 
@@ -907,6 +903,39 @@ impl WorkerRenderer {
         if let Err(e) = super::message_handler::handle_core_message(&mut self.state, data) {
             log::error!("[WorkerRenderer] Error handling core message: {}", e);
         }
+    }
+
+    // =========================================================================
+    // Layout Batch Handling (from Layout Worker)
+    // =========================================================================
+
+    /// Handle a bincode-encoded RenderBatch from the layout worker.
+    /// This is the main data path for pre-computed geometry.
+    #[wasm_bindgen]
+    pub fn handle_layout_batch(&mut self, data: &[u8]) {
+        match super::batch_receiver::decode_render_batch(data) {
+            Ok(batch) => {
+                self.state.batch_cache.update(batch);
+            }
+            Err(e) => {
+                log::error!("[WorkerRenderer] Error decoding layout batch: {}", e);
+            }
+        }
+    }
+
+    /// Check if a new layout batch is available for rendering.
+    #[wasm_bindgen]
+    pub fn has_layout_batch(&self) -> bool {
+        self.state.batch_cache.has_batch()
+    }
+
+    /// Get layout batch stats (batches_received, batches_rendered).
+    #[wasm_bindgen]
+    pub fn get_batch_stats(&self) -> Vec<u64> {
+        vec![
+            self.state.batch_cache.batches_received,
+            self.state.batch_cache.batches_rendered,
+        ]
     }
 }
 
@@ -929,8 +958,12 @@ impl WorkerRenderer {
         true
     }
 
-    /// Render a frame using WebGL
-    fn frame_webgl(&mut self, _elapsed: f32) -> bool {
+    /// Render a frame using WebGL with optional pre-computed batch
+    fn frame_webgl_with_batch(
+        &mut self,
+        _elapsed: f32,
+        batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
+    ) -> bool {
         // Pre-extract all values we need before borrowing backend
         let fonts_ready = self.fonts_ready();
         let (heading_width, heading_height) = self.state.get_heading_dimensions();
@@ -949,8 +982,8 @@ impl WorkerRenderer {
         let (atlas_font_size, distance_range) = self.state.get_text_params();
         let viewport_scale = self.state.viewport.effective_scale();
         let show_headings = self.state.show_headings;
-        let debug_show_text_updates = self.state.debug_show_text_updates;
-        let scale = self.state.viewport.scale();
+        let _debug_show_text_updates = self.state.debug_show_text_updates;
+        let _scale = self.state.viewport.scale();
         let screen_matrix = self
             .state
             .create_screen_space_matrix(canvas_width, canvas_height);
@@ -1010,26 +1043,20 @@ impl WorkerRenderer {
         // 3. Grid lines
         self.state.ui.grid_lines.render(gl, &matrix_array);
 
-        // 4. Cell text
+        // 4. Cell text - render from pre-computed batch
         if fonts_ready {
-            let emoji_sprites = if self.state.emoji_sprites.is_loaded() {
-                Some(&self.state.emoji_sprites)
-            } else {
-                None
-            };
-            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-                let visible = render::render_text(
+            if let Some(ref batch) = batch {
+                render::render_text_from_batch(
                     gl,
-                    sheet,
-                    &self.state.viewport,
-                    &self.state.fonts,
-                    emoji_sprites,
+                    batch,
                     &matrix_array,
+                    viewport_scale,
                     atlas_font_size,
                     distance_range,
                 );
-                // Debug text updates logging removed for performance
             }
+            // Note: No fallback path - Layout Worker provides all text geometry.
+            // If no batch is available, cell text is simply not rendered this frame.
         }
 
         // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
@@ -1081,8 +1108,12 @@ impl WorkerRenderer {
         true
     }
 
-    /// Render a frame using WebGPU
-    fn frame_webgpu(&mut self, _elapsed: f32) -> bool {
+    /// Render a frame using WebGPU with optional pre-computed batch
+    fn frame_webgpu_with_batch(
+        &mut self,
+        _elapsed: f32,
+        batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
+    ) -> bool {
         // Pre-extract all values we need before complex borrows
         let fonts_ready = self.fonts_ready();
         let (heading_width, heading_height) = self.state.get_heading_dimensions();
@@ -1168,29 +1199,9 @@ impl WorkerRenderer {
             _ => return false,
         };
 
-        // Rebuild sprite caches before render pass (must be done outside render pass)
-        if fonts_ready && use_sprites {
-            let fonts = &self.state.fonts;
-            let emoji_sprites = if self.state.emoji_sprites.is_loaded() {
-                Some(&self.state.emoji_sprites)
-            } else {
-                None
-            };
-            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-                for hash in sheet.hashes.values_mut() {
-                    if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
-                        continue;
-                    }
-                    hash.rebuild_if_dirty_with_emojis(fonts, emoji_sprites);
-                    hash.rebuild_sprite_if_dirty_webgpu(
-                        gpu,
-                        fonts,
-                        atlas_font_size,
-                        distance_range,
-                    );
-                }
-            }
-        }
+        // Note: Sprite caching and geometry computation is now handled by Layout Worker.
+        // The batch contains pre-computed text geometry ready for GPU upload.
+        // TODO: Implement batch-based rendering for WebGPU (similar to WebGL)
 
         // Get surface texture
         let output = match gpu.get_current_texture() {
@@ -1264,37 +1275,22 @@ impl WorkerRenderer {
                 gpu.draw_lines(&mut pass, line_vertices, &matrix_array);
             }
 
-            // 4. Text
+            // 4. Text - render from pre-computed batch
             if fonts_ready {
-                // Pre-borrow fonts and emoji sprites to avoid borrow conflicts with sheet
-                let fonts = &self.state.fonts;
-                let emoji_sprites = if self.state.emoji_sprites.is_loaded() {
-                    Some(&self.state.emoji_sprites)
-                } else {
-                    None
-                };
-                if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-                    for hash in sheet.hashes.values_mut() {
-                        if !hash.intersects_viewport(min_x, max_x, min_y, max_y) {
-                            continue;
-                        }
-                        // Rebuild mesh cache if dirty (needed before rendering)
-                        hash.rebuild_if_dirty_with_emojis(fonts, emoji_sprites);
-                        hash.render_webgpu(
-                            gpu,
-                            &mut pass,
-                            &matrix_array,
-                            scale,
-                            effective_scale,
-                            atlas_font_size,
-                            distance_range,
-                        );
-
-                        // Render emoji sprites
-                        Self::render_emoji_sprites_webgpu(gpu, &mut pass, hash, &matrix_array);
-                    }
+                if let Some(ref batch) = batch {
+                    render::render_text_from_batch_webgpu(
+                        gpu,
+                        &mut pass,
+                        batch,
+                        &matrix_array,
+                        effective_scale,
+                        atlas_font_size,
+                        distance_range,
+                    );
                 }
             }
+            // Silence unused variable warnings for removed code paths
+            let _ = (min_x, max_x, min_y, max_y, scale, use_sprites);
 
             // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
             if !table_name_bg.is_empty() {
@@ -1304,10 +1300,10 @@ impl WorkerRenderer {
                 gpu.draw_triangles(&mut pass, &table_col_bg, &matrix_array);
             }
             if !table_outlines.is_empty() {
-                gpu.draw_triangles(&mut pass, &table_outlines, &matrix_array);
+                gpu.draw_lines(&mut pass, &table_outlines, &matrix_array);
             }
             if !table_header_lines.is_empty() {
-                gpu.draw_triangles(&mut pass, &table_header_lines, &matrix_array);
+                gpu.draw_lines(&mut pass, &table_header_lines, &matrix_array);
             }
             for mesh in &table_text_meshes {
                 if mesh.is_empty() {

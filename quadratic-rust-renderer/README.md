@@ -1,132 +1,213 @@
 # Quadratic Rust Renderer
 
-A proof-of-concept port of the Pixi.js renderer from `quadratic-client/src/app/gridGL` into Rust for use via WebAssembly.
+A GPU-accelerated renderer for the Quadratic spreadsheet application, designed to run in a Web Worker for browser rendering.
 
 ## Overview
 
-This project aims to replace the TypeScript/Pixi.js-based renderer with a Rust implementation using `wgpu` for GPU-accelerated rendering. The benefits include:
+This project replaces the TypeScript/Pixi.js-based renderer with a Rust implementation supporting both WebGPU (preferred) and WebGL2 (fallback) backends. The benefits include:
 
-- **Performance**: Native code compiled to WASM can be significantly faster
+- **Performance**: Native code compiled to WASM with GPU acceleration
 - **Memory Safety**: Rust's ownership model prevents common graphics bugs
-- **WebGPU Native**: Modern graphics API with better performance than WebGL
-- **Code Sharing**: Potential to share rendering logic with native desktop apps
+- **Dual Backend**: WebGPU for modern browsers with WebGL2 fallback
+- **Shared Viewport**: Uses SharedArrayBuffer for zero-copy viewport synchronization with the main thread
 
 ## Architecture
 
-The renderer is structured to mirror the existing Pixi.js implementation:
+The renderer is organized into platform-agnostic modules with a browser-specific worker entry point:
 
 ```
 src/
-├── lib.rs              # WASM entry point and exports
-├── app.rs              # Main renderer application (PixiApp equivalent)
-├── viewport/           # Viewport/camera controls
-│   ├── mod.rs
-│   ├── viewport.rs     # Viewport container
-│   ├── drag.rs         # Drag interactions
-│   └── wheel.rs        # Zoom/scroll handling
-├── content/            # Renderable content
-│   ├── mod.rs
-│   ├── content.rs      # Main content container
-│   ├── grid_lines.rs   # Grid line rendering
-│   ├── headings.rs     # Row/column headings
-│   └── cursor.rs       # Cursor rendering
-├── cells/              # Cell rendering
-│   ├── mod.rs
-│   ├── cells_sheet.rs  # Sheet cell management
-│   ├── cells_labels.rs # Text label rendering
-│   └── borders.rs      # Cell border rendering
-├── gpu/                # GPU abstractions
-│   ├── mod.rs
-│   ├── context.rs      # WGPU context management
-│   ├── pipeline.rs     # Render pipelines
-│   └── buffers.rs      # Vertex/index buffers
-└── utils/              # Utilities
-    ├── mod.rs
-    └── color.rs        # Color conversions
+├── lib.rs                  # WASM entry point and exports
+├── renderers/              # Graphics backends
+│   ├── primitives/         # Shared rendering primitives
+│   │   ├── color.rs        # Color types and conversions
+│   │   ├── font.rs         # Font texture ID management
+│   │   ├── line.rs         # Line primitives
+│   │   ├── rect.rs         # Rectangle primitives
+│   │   ├── sprite.rs       # Sprite rendering
+│   │   └── texture.rs      # Texture management
+│   ├── webgl/              # WebGL2 backend
+│   │   ├── context/        # WebGL context, draw calls, textures
+│   │   ├── shaders/        # GLSL shaders (basic, msdf, sprite)
+│   │   ├── font_manager.rs # WebGL font texture management
+│   │   └── text.rs         # WebGL text rendering
+│   └── webgpu/             # WebGPU backend
+│       ├── context/        # WebGPU context, draw calls, viewport
+│       ├── shaders/        # WGSL shaders (basic, instanced, msdf, sprite)
+│       ├── font_manager.rs # WebGPU font texture management
+│       └── render_target.rs
+├── sheets/                 # Sheet data management
+│   ├── sheet.rs            # Individual sheet state
+│   ├── sheets.rs           # Multi-sheet container
+│   ├── fills/              # Cell background fills (hash-based)
+│   │   └── cells_fills_hash.rs
+│   └── text/               # Text/label rendering
+│       ├── bitmap_font.rs  # Bitmap font data structures
+│       ├── cell_label.rs   # Individual cell label
+│       ├── cells_text_hash.rs  # Spatial hash for text
+│       ├── emoji_sprites.rs    # Emoji spritesheet handling
+│       ├── label_mesh.rs   # Text mesh generation
+│       └── a1_notation.rs  # A1-style cell reference parsing
+├── tables/                 # Data table rendering
+│   ├── table_cache.rs      # Table geometry caching
+│   ├── table_render_data.rs # Table render data structures
+│   └── table_rendering.rs  # Table header/outline rendering
+├── ui/                     # Global UI elements
+│   ├── ui.rs               # UI container
+│   ├── cursor.rs           # Cursor and selection rendering
+│   ├── grid_lines.rs       # Grid line rendering
+│   └── headings/           # Row/column headings
+│       ├── column_headings.rs
+│       ├── row_headings.rs
+│       └── grid_headings.rs
+├── viewport/               # Camera/viewport management
+│   ├── viewport.rs         # Viewport state and transforms
+│   └── viewport_buffer.rs  # SharedArrayBuffer integration
+├── utils/                  # Utilities
+│   ├── color.rs            # Color conversions
+│   ├── console_logger.rs   # WASM console logging
+│   └── math.rs             # Math helpers
+└── worker/                 # Web Worker entry point (browser only)
+    ├── renderer.rs         # WorkerRenderer - main JS API
+    ├── state.rs            # RendererState - core state management
+    ├── backend.rs          # RenderBackend enum (WebGL/WebGPU)
+    ├── message_handler.rs  # Core message handling
+    ├── batch_receiver.rs   # Layout batch processing
+    └── render/             # Per-element rendering helpers
+        ├── background.rs
+        ├── cursor.rs
+        ├── fills.rs
+        ├── headings.rs
+        ├── tables.rs
+        └── text.rs
 ```
 
 ## Building
 
 ### Prerequisites
 
-- Rust 1.89.0+ (see rust-toolchain.toml)
+- Rust nightly (see `rust-toolchain.toml`)
 - wasm-pack: `cargo install wasm-pack`
 - cargo-watch (optional, for development): `cargo install cargo-watch`
 
 ### Development
 
 ```bash
-# Watch mode with auto-rebuild
+# Watch mode with auto-rebuild (WASM)
 npm run start
 
-# Or manually build for development
+# Or with local dev server
+npm run dev
+
+# Manual build for development
 npm run build:dev
 ```
 
 ### Production
 
 ```bash
+# Build WASM package
 npm run build
+
+# Build native (for cloud rendering)
+npm run build:native
+```
+
+### Testing
+
+```bash
+# Native tests
+npm run test
+
+# WASM tests (requires Chrome)
+npm run test:wasm
+
+# Linting
+npm run lint
+npm run lint:wasm
 ```
 
 ## Usage
 
-After building, import the WASM module in your JavaScript/TypeScript:
+The renderer runs in a Web Worker and communicates with the main thread via SharedArrayBuffer for viewport state.
 
-```typescript
-import init, { RustRenderer } from './pkg/quadratic_rust_renderer';
+```javascript
+import init, { WorkerRenderer } from './pkg/quadratic_rust_renderer';
 
 async function main() {
   await init();
 
-  const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-  const renderer = await RustRenderer.new(canvas);
+  // Transfer an OffscreenCanvas to the worker
+  const canvas = document.getElementById('canvas').transferControlToOffscreen();
 
-  // Start render loop
+  // Create renderer - auto-selects WebGPU or WebGL
+  let renderer;
+  if (WorkerRenderer.is_webgpu_available()) {
+    renderer = await WorkerRenderer.new_webgpu(canvas);
+  } else {
+    renderer = new WorkerRenderer(canvas); // WebGL fallback
+  }
+
+  console.log(`Using ${renderer.backend_name()} backend`);
+
+  // Set up shared viewport buffer from main thread
+  renderer.set_viewport_buffer(sharedViewportBuffer);
+
+  // Start rendering
   renderer.start();
+
+  // Render loop
+  function frame(timestamp) {
+    const elapsed = timestamp - lastTime;
+    renderer.frame(elapsed);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 ```
-
-## Integration with Quadratic Client
-
-This POC is designed to eventually replace the Pixi.js renderer in `quadratic-client`. The integration path:
-
-1. **Phase 1**: Build standalone renderer with basic grid/cell rendering
-2. **Phase 2**: Add cell content, labels, and formatting support
-3. **Phase 3**: Implement viewport interactions (pan, zoom, selection)
-4. **Phase 4**: Add advanced features (tables, images, validations)
-5. **Phase 5**: Integrate with the existing quadratic-client application
 
 ## Key Differences from Pixi.js
 
 | Pixi.js | Rust Renderer |
 |---------|---------------|
-| Container hierarchy | Render order managed explicitly |
-| Sprites/Graphics | Custom vertex buffers |
-| BitmapText | fontdue for glyph rasterization |
-| WebGL 1/2 | WebGPU (with WebGL fallback) |
+| Container hierarchy | Flat render order with explicit passes |
+| Sprites/Graphics | Vertex buffers with custom shaders |
+| BitmapText | MSDF text rendering with bitmap fonts |
+| WebGL 1/2 | WebGPU (preferred) + WebGL2 (fallback) |
 | requestAnimationFrame | wasm-bindgen-futures async loop |
+| Main thread rendering | Web Worker with OffscreenCanvas |
+| Direct viewport control | SharedArrayBuffer viewport sync |
 
-## Testing
+## Communication with Core
 
-```bash
-npm run test
-```
+The renderer communicates with `quadratic-core` via bincode-encoded messages:
+
+- **RendererToCore**: Requests for hash data (fills, labels)
+- **CoreToRenderer**: Sheet data, cell data, table data, offsets
+
+Data is organized in spatial hashes for efficient viewport-based loading and unloading.
 
 ## Current Status
 
-🚧 **Work in Progress** - This is a proof of concept.
+✅ **Implemented**:
 
-- [ ] Basic WASM initialization
-- [ ] WGPU context setup
-- [ ] Grid lines rendering
-- [ ] Cell background rendering
-- [ ] Text rendering
-- [ ] Viewport pan/zoom
-- [ ] Cursor rendering
-- [ ] Selection rendering
-- [ ] Row/column headings
-- [ ] Tables
+- [x] WASM initialization and Web Worker integration
+- [x] WebGPU context setup with WebGL2 fallback
+- [x] SharedArrayBuffer viewport synchronization
+- [x] Grid lines rendering
+- [x] Cell background fills (with spatial hashing)
+- [x] MSDF text rendering with bitmap fonts
+- [x] Emoji sprite rendering (lazy-loaded pages)
+- [x] Viewport pan/zoom (via shared buffer)
+- [x] Cursor and selection rendering
+- [x] Row/column headings
+- [x] Data tables (headers, outlines, column names)
+- [x] Multi-sheet support
+- [x] Text overflow clipping
+
+🚧 **In Progress / Planned**:
+
 - [ ] Images
 - [ ] Validations
-
+- [ ] Code cell decorations
+- [ ] Performance optimizations

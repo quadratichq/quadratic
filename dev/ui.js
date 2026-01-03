@@ -105,7 +105,18 @@ export class UI {
         }
     }
     statusItem(component) {
-        const error = this.control.status[component] === "error";
+        // For rustRenderer, we combine the status of both rustRenderer and rustLayout
+        const isCombinedRenderer = component === "rustRenderer";
+        const status = this.control.status[component];
+        const layoutStatus = isCombinedRenderer ? this.control.status.rustLayout : null;
+        // Combined error check: error if either has error
+        const error = status === "error" || (isCombinedRenderer && layoutStatus === "error");
+        // Combined killed check: killed only if both are killed
+        const killed = status === "killed" && (!isCombinedRenderer || layoutStatus === "killed");
+        // Combined loading check: loading if either is loading (not done)
+        const loading = !status || (isCombinedRenderer && !layoutStatus);
+        // Combined done check: done if both are done
+        const done = status === true && (!isCombinedRenderer || layoutStatus === true);
         const { name, color, dark, shortcut } = COMPONENTS[component];
         const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
         const writeColor = error ? "red" : this.cli.options.dark ? dark : color;
@@ -115,19 +126,19 @@ export class UI {
         if (this.getHideOption(component)) {
             this.write(" " + NO_LOGS);
         }
-        if (this.control.status[component] === "error") {
+        if (error) {
             this.write(" " + BROKEN, "red");
         }
-        else if (this.control.status[component] === "killed") {
+        else if (killed) {
             this.write(" " + KILLED);
         }
-        else if (!this.control.status[component]) {
+        else if (loading) {
             this.write(" " + ANIMATE_STATUS[this.spin], "gray");
         }
         else if (this.cli.options[component]) {
             this.write(" " + WATCH, "gray");
         }
-        else {
+        else if (done) {
             this.write(" " + DONE, "green");
         }
         if (component === "core" && this.cli.options.perf) {
@@ -172,7 +183,7 @@ export class UI {
         // we don't need to show core since we're not compiling it
         if (!this.cli.options.noRust) {
             this.statusItem("core");
-            this.statusItem("rustRenderer");
+            this.statusItem("rustRenderer"); // combined UI for rustRenderer + rustLayout
             this.statusItem("rustClient");
         }
         this.statusItem("multiplayer");

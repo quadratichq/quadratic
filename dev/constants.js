@@ -8,6 +8,13 @@ export const COMPONENTS = {
         name: "RustRenderer",
         shortcut: "e",
     },
+    rustLayout: {
+        color: "yellow",
+        dark: "yellow",
+        name: "RustLayout",
+        shortcut: "e", // same shortcut as rustRenderer - controlled together (hidden from UI)
+        hide: true, // hidden from status bar - combined with rustRenderer in UI
+    },
     rustClient: {
         color: "cyanBright",
         dark: "cyanBright",

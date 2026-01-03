@@ -1,0 +1,5 @@
+[toolchain]
+# Nightly required for Rust 2024 edition (workspace-level)
+channel = "nightly"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+targets = ["wasm32-unknown-unknown"]

@@ -34,9 +34,12 @@ export class Input {
             case "c": // toggle core
                 this.control.restartCore();
                 break;
-            case "e": // toggle rust-renderer
+            case "e": // toggle rust-renderer and rust-layout
                 if (this.control.status.rustRenderer === "killed") {
                     this.control.status.rustRenderer = false;
+                }
+                if (this.control.status.rustLayout === "killed") {
+                    this.control.status.rustLayout = false;
                 }
                 this.control.restartRustRenderer();
                 break;
@@ -122,8 +125,9 @@ export class Input {
             case "C": // toggle showing Core
                 this.cli.options.hideCore = !this.cli.options.hideCore;
                 break;
-            case "E": // toggle showing RustRenderer
+            case "E": // toggle showing RustWasm (renderer + layout)
                 this.cli.options.hideRustRenderer = !this.cli.options.hideRustRenderer;
+                this.cli.options.hideRustLayout = !this.cli.options.hideRustLayout;
                 break;
             case "M": // toggle showing Multiplayer
                 this.cli.options.hideMultiplayer = !this.cli.options.hideMultiplayer;

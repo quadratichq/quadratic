@@ -15,13 +15,12 @@
 
 mod cells_fills_hash;
 
-pub use cells_fills_hash::{
-    CellsFillsHash, fill_hash_key, get_fill_hash_coords,
-};
+pub use cells_fills_hash::CellsFillsHash;
 
 use std::collections::{HashMap, HashSet};
 
 use quadratic_core_shared::{RenderFill, SheetFill, SheetId, SheetOffsets};
+use quadratic_rust_renderer_shared::{get_hash_coords, hash_key};
 
 use crate::renderers::render_context::RenderContext;
 use crate::renderers::{Color, Rects};
@@ -89,7 +88,7 @@ impl CellsFills {
         fills: Vec<RenderFill>,
         offsets: &SheetOffsets,
     ) {
-        let key = fill_hash_key(hash_x, hash_y);
+        let key = hash_key(hash_x, hash_y);
 
         if fills.is_empty() {
             // Remove empty hashes
@@ -119,7 +118,7 @@ impl CellsFills {
     /// the fills in fills_by_hash so they remain visible until the update arrives.
     /// This gives better UX - stale data is better than no data.
     pub fn mark_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
-        let key = fill_hash_key(hash_x, hash_y);
+        let key = hash_key(hash_x, hash_y);
         // Remove from loaded set so it will be re-requested when visible
         // But keep the cached fills so they remain visible until update arrives
         self.loaded_hashes.remove(&key);
@@ -133,7 +132,7 @@ impl CellsFills {
 
         for hash_y in bounds.min_hash_y..=bounds.max_hash_y {
             for hash_x in bounds.min_hash_x..=bounds.max_hash_x {
-                let key = fill_hash_key(hash_x, hash_y);
+                let key = hash_key(hash_x, hash_y);
                 if !self.loaded_hashes.contains(&key) {
                     needed.push(hash_x as i32);
                     needed.push(hash_y as i32);
@@ -162,14 +161,14 @@ impl CellsFills {
 
     /// Unload a hash to free memory
     pub fn unload_hash(&mut self, hash_x: i64, hash_y: i64) {
-        let key = fill_hash_key(hash_x, hash_y);
+        let key = hash_key(hash_x, hash_y);
         self.fills_by_hash.remove(&key);
         self.loaded_hashes.remove(&key);
     }
 
     /// Check if a hash is loaded
     pub fn has_hash(&self, hash_x: i64, hash_y: i64) -> bool {
-        let key = fill_hash_key(hash_x, hash_y);
+        let key = hash_key(hash_x, hash_y);
         self.loaded_hashes.contains(&key)
     }
 
@@ -349,8 +348,8 @@ impl CellsFills {
         let (max_row, _) = offsets.row_from_y(bounds.bottom.max(0.0) as f64);
 
         // Convert to hash coordinates
-        let (min_hash_x, min_hash_y) = get_fill_hash_coords(min_col, min_row);
-        let (max_hash_x, max_hash_y) = get_fill_hash_coords(max_col, max_row);
+        let (min_hash_x, min_hash_y) = get_hash_coords(min_col, min_row);
+        let (max_hash_x, max_hash_y) = get_hash_coords(max_col, max_row);
 
         // Use constant padding - with large hashes (50x100), we don't need
         // aggressive preloading

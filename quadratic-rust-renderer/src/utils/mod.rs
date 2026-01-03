@@ -3,5 +3,6 @@
 pub mod color;
 pub mod math;
 
+// Re-export console_logger from shared crate
 #[cfg(feature = "wasm")]
-pub mod console_logger;
+pub use quadratic_rust_renderer_shared::console_logger;

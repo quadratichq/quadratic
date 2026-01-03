@@ -11,6 +11,8 @@ members = [
   "quadratic-multiplayer",
   "quadratic-rust-client",
   "quadratic-rust-renderer",
+  "quadratic-rust-renderer/layout",
+  "quadratic-rust-renderer/shared",
   "quadratic-rust-shared",
 ]
 exclude = ["poc/number_type", "dev-rust"]

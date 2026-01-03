@@ -586,9 +586,9 @@ impl WebGPUContext {
 
         // Create sampler for sprite caches with LOD limit
         // Prevents using the smallest mip levels (which appear as dots when zoomed way out)
-        // For a 512px sprite cache texture:
-        //   LOD 0 = 512px, LOD 1 = 256px, LOD 2 = 128px, LOD 3 = 64px, LOD 4 = 32px, ...
-        // We limit to LOD 3 (64px) to keep text somewhat readable
+        // For a 2048px sprite cache texture:
+        //   LOD 0 = 2048px, LOD 1 = 1024px, LOD 2 = 512px, LOD 3 = 256px, LOD 4 = 128px, ...
+        // We limit to LOD 3 (256px) to keep text somewhat readable
         let sprite_cache_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("Sprite Cache Sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -597,7 +597,7 @@ impl WebGPUContext {
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: 0.0,
-            lod_max_clamp: 3.0, // Don't go below ~64px (for 512px base texture)
+            lod_max_clamp: 3.0, // Don't go below ~256px (for 2048px base texture)
             ..Default::default()
         });
 

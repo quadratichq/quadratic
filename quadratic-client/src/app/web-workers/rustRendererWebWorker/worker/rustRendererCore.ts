@@ -32,7 +32,16 @@ class RustRendererCore {
 
   private handleMessage = (e: MessageEvent) => {
     // Messages from core are binary (bincode encoded)
-    const data = e.data as Uint8Array;
+    // Handle both Uint8Array and ArrayBuffer (in case of direct buffer transfer)
+    let data: Uint8Array;
+    if (e.data instanceof Uint8Array) {
+      data = e.data;
+    } else if (e.data instanceof ArrayBuffer) {
+      data = new Uint8Array(e.data);
+    } else {
+      console.error('[rustRendererCore] Unexpected message type:', typeof e.data);
+      return;
+    }
 
     if (debugFlag('debugWebWorkersMessages')) {
       const typeName = getCoreToRendererTypeName(data);

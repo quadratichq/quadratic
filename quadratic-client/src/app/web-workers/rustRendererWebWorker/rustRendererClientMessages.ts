@@ -65,6 +65,12 @@ export interface ClientRustRendererFPSBuffer {
   buffer: SharedArrayBuffer;
 }
 
+/** Send the layout worker MessagePort for receiving RenderBatch */
+export interface ClientRustRendererLayoutPort {
+  type: 'clientRustRendererLayoutPort';
+  layoutPort: MessagePort;
+}
+
 export type ClientRustRendererMessage =
   | ClientRustRendererInit
   | ClientRustRendererViewport
@@ -73,7 +79,8 @@ export type ClientRustRendererMessage =
   | ClientRustRendererScreenshot
   | ClientRustRendererPing
   | ClientRustRendererViewportBuffer
-  | ClientRustRendererFPSBuffer;
+  | ClientRustRendererFPSBuffer
+  | ClientRustRendererLayoutPort;
 
 // ============================================================================
 // Rust Renderer → Client Messages

@@ -10,7 +10,7 @@ export class CLI {
             .option("-a, --api", "Watch the quadratic-api directory")
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")
-            .option("-e, --rustRenderer", "Watch the quadratic-rust-renderer directory")
+            .option("-e, --rustRenderer", "Watch the quadratic-rust-renderer and quadratic-rust-layout directories")
             .option("-i, --rustClient", "Watch the quadratic-rust-client directory")
             .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
             .option("-f, --files", "Watch the quadratic-files directory")
@@ -25,7 +25,7 @@ export class CLI {
             .option("-R, --hideReact", "Hide React output")
             .option("-A, --hideAPI", "Hide API output")
             .option("-C, --hideCore", "Hide Core output")
-            .option("-E, --hideRustRenderer", "Hide RustRenderer output")
+            .option("-E, --hideRustRenderer", "Hide RustRenderer (renderer + layout) output")
             .option("-U, --hideRustClient", "Hide RustClient output")
             .option("-T, --hideTypes", "Hide Types output")
             .option("-M, --hideMultiplayer", "Hide Multiplayer output")
@@ -40,6 +40,10 @@ export class CLI {
         program.parse();
         this.options = program.opts();
         this.options.client = !program.opts().react;
+        // Sync hideRustLayout with hideRustRenderer (combined in UI)
+        if (this.options.hideRustRenderer) {
+            this.options.hideRustLayout = true;
+        }
         if (this.options.all) {
             this.options.api = true;
             this.options.core = true;

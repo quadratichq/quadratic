@@ -70,12 +70,12 @@ pub fn render_table_headers<R: RenderContext>(
         output.column_backgrounds.render(ctx, matrix);
     }
 
-    // 3. Render table outlines (around entire table)
+    // 3. Render table outlines (around entire table) - uses native lines for 1px borders
     if !output.outlines.is_empty() {
         output.outlines.render(ctx, matrix);
     }
 
-    // 4. Render column header bottom lines
+    // 4. Render column header bottom lines - uses native lines for 1px lines
     if !output.column_header_lines.is_empty() {
         output.column_header_lines.render(ctx, matrix);
     }
@@ -169,8 +169,9 @@ pub fn get_table_vertices_for_webgpu(
     // Get background vertices (in world coordinates)
     let name_bg_vertices = output.name_backgrounds.vertices().to_vec();
     let column_bg_vertices = output.column_backgrounds.vertices().to_vec();
-    let outline_vertices = output.outlines.vertices().to_vec();
-    let header_line_vertices = output.column_header_lines.vertices().to_vec();
+    // Get native line vertices for outlines and header lines (1px lines)
+    let outline_vertices = output.outlines.get_vertices().to_vec();
+    let header_line_vertices = output.column_header_lines.get_vertices().to_vec();
 
     // Build text meshes
     let meshes = build_table_meshes(

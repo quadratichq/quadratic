@@ -61,7 +61,7 @@ pub fn init_wasm() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    let _ = log::set_logger(&utils::console_logger::CONSOLE_LOGGER);
+    let _ = log::set_logger(&utils::console_logger::RENDER_LOGGER);
     log::set_max_level(log::LevelFilter::Debug);
 
     log::info!("Quadratic Rust Renderer (WASM Worker) initialized");

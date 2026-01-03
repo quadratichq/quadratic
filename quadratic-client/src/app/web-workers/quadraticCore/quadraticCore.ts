@@ -408,6 +408,12 @@ class QuadraticCore {
     this.rustRendererCorePort = undefined; // Port has been transferred
 
     console.log('[quadraticCore] Rust renderer initialized');
+
+    // Wait for the layout worker to be ready and send its core port
+    console.log('[quadraticCore] Waiting for layout worker...');
+    await rustRendererWebWorker.waitForLayoutWorker();
+    this.initLayoutWorkerPort();
+    console.log('[quadraticCore] Layout worker port sent to core');
   }
 
   /**
@@ -432,6 +438,18 @@ class QuadraticCore {
   sendSheetMetaFillsToRustRenderer(sheetId: string): void {
     if (!this.isRustRendererEnabled()) return;
     this.send({ type: 'clientCoreSendSheetMetaFillsToRustRenderer', sheetId });
+  }
+
+  /**
+   * Initialize the layout worker port for core.
+   * This should be called after the layout worker is initialized in rustRendererWebWorker.
+   */
+  initLayoutWorkerPort(): void {
+    const port = rustRendererWebWorker.getLayoutCorePort();
+    if (port) {
+      console.log('[quadraticCore] Sending layout worker port to core');
+      this.worker?.postMessage({ type: 'clientCoreInitLayoutWorkerPort', port }, [port]);
+    }
   }
 
   async export(): Promise<Uint8Array> {

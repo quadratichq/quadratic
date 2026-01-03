@@ -18,10 +18,35 @@ declare var self: WorkerGlobalScope & typeof globalThis;
 class RustRendererClient {
   private canvas?: OffscreenCanvas;
   private devicePixelRatio = 1;
+  private layoutPort?: MessagePort;
 
   constructor() {
     self.onmessage = this.handleMessage;
   }
+
+  /**
+   * Set up the layout worker communication port.
+   * The layout worker sends pre-computed RenderBatch messages to this port.
+   */
+  initLayoutPort(layoutPort: MessagePort) {
+    this.layoutPort = layoutPort;
+    layoutPort.onmessage = this.handleLayoutMessage;
+    console.log('[rustRendererClient] Layout port initialized');
+  }
+
+  private handleLayoutMessage = (e: MessageEvent) => {
+    const data = e.data;
+
+    // Handle layout batch messages
+    if (data?.type === 'layoutRenderBatch') {
+      const batch = new Uint8Array(data.batch);
+      console.log(`[rustRendererClient] Received batch from layout worker: ${batch.byteLength} bytes`);
+      rustRendererWasm.handleLayoutBatch(batch);
+      return;
+    }
+
+    console.warn('[rustRendererClient] Unknown layout message type:', data?.type);
+  };
 
   private handleMessage = async (e: MessageEvent<ClientRustRendererMessage>) => {
     if (debugFlag('debugWebWorkersMessages') && e.data.type !== 'clientRustRendererViewport') {
@@ -79,6 +104,11 @@ class RustRendererClient {
       case 'clientRustRendererFPSBuffer':
         console.log('[rustRendererClient] Received FPS buffer');
         this.fpsBuffer = new Int32Array(e.data.buffer);
+        return;
+
+      case 'clientRustRendererLayoutPort':
+        console.log('[rustRendererClient] Received layout port');
+        this.initLayoutPort(e.data.layoutPort);
         return;
 
       default:

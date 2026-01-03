@@ -16,6 +16,7 @@
 //! ```
 
 mod backend;
+pub mod batch_receiver;
 pub mod js;
 pub mod message_handler;
 mod render;
@@ -23,5 +24,6 @@ mod renderer;
 mod state;
 
 pub use backend::{BackendType, RenderBackend};
+pub use batch_receiver::BatchCache;
 pub use renderer::WorkerRenderer;
 pub use state::RendererState;

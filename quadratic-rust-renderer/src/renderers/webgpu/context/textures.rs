@@ -15,6 +15,17 @@ pub type TextureError = String;
 pub type TextureError = JsValue;
 
 impl WebGPUContext {
+    /// Check if a font texture exists
+    pub fn has_font_texture(&self, texture_uid: u32) -> bool {
+        self.font_texture_manager.has_texture(texture_uid)
+    }
+
+    /// Check if an emoji texture exists
+    /// Emoji textures are stored in the font texture manager (same upload path)
+    pub fn has_emoji_texture(&self, texture_uid: u32) -> bool {
+        self.font_texture_manager.has_texture(texture_uid)
+    }
+
     /// Upload a font texture from raw RGBA pixel data
     pub fn upload_font_texture_from_data(
         &mut self,

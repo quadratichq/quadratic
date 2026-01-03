@@ -15,6 +15,7 @@ import type {
   ClientRustRendererPing,
   RustRendererClientMessage,
 } from './rustRendererClientMessages';
+import { rustLayoutWebWorker } from './rustLayoutWebWorker';
 
 // Track WASM initialization
 let rustClientInitialized = false;
@@ -55,6 +56,12 @@ class RustRendererWebWorker {
   private fpsBuffer?: SharedArrayBuffer;
   private fpsView?: Int32Array;
   private lastFrameCount = 0;
+
+  // Layout worker integration
+  private layoutWorkerEnabled = false;
+  private layoutCorePort?: MessagePort; // Port to send to core for layout worker communication
+  private layoutWorkerReadyResolve?: () => void;
+  private layoutWorkerReadyPromise?: Promise<void>;
 
   /**
    * Initialize the worker (call early, before init())
@@ -111,10 +118,13 @@ class RustRendererWebWorker {
         console.log(`[rustRendererWebWorker] ready with ${e.data.backend} backend`);
 
         // Create and send the viewport buffer
-        this.initViewportBuffer();
+        await this.initViewportBuffer();
 
         // Create and send the FPS buffer
         this.initFPSBuffer();
+
+        // Initialize the layout worker (if enabled)
+        await this.initLayoutWorker();
 
         // Flush queued messages
         this.messageQueue.forEach((msg) => this.send(msg));
@@ -266,6 +276,90 @@ class RustRendererWebWorker {
     } catch (e) {
       console.warn('[rustRendererWebWorker] Failed to create FPS SharedArrayBuffer:', e);
     }
+  }
+
+  /**
+   * Initialize the layout worker for offloading text layout computation.
+   * The layout worker pre-computes vertex buffers and sends RenderBatch to the render worker.
+   */
+  private async initLayoutWorker() {
+    // Require SharedArrayBuffer for viewport sync
+    if (!this.viewportSharedBuffer) {
+      console.warn('[rustRendererWebWorker] Cannot initialize layout worker without viewport buffer');
+      return;
+    }
+
+    try {
+      console.log('[rustRendererWebWorker] Initializing layout worker...');
+
+      // Create MessageChannel for Layout → Render communication
+      const layoutRenderChannel = new MessageChannel();
+
+      // Create MessageChannel for Core → Layout communication
+      const coreLayoutChannel = new MessageChannel();
+
+      // Store the core-side port to send to core worker later
+      this.layoutCorePort = coreLayoutChannel.port2;
+
+      // Send the layout port to the render worker
+      // This allows render worker to receive RenderBatch from layout worker
+      this.send(
+        {
+          type: 'clientRustRendererLayoutPort',
+          layoutPort: layoutRenderChannel.port2,
+        },
+        [layoutRenderChannel.port2]
+      );
+
+      // Initialize the layout worker with core port, render port, and viewport buffer
+      await rustLayoutWebWorker.init(coreLayoutChannel.port1, layoutRenderChannel.port1, this.viewportSharedBuffer);
+
+      this.layoutWorkerEnabled = true;
+      console.log('[rustRendererWebWorker] Layout worker initialized');
+
+      // Resolve the promise so quadraticCore can send the port
+      if (this.layoutWorkerReadyResolve) {
+        this.layoutWorkerReadyResolve();
+      }
+    } catch (e) {
+      console.error('[rustRendererWebWorker] Failed to initialize layout worker:', e);
+    }
+  }
+
+  /**
+   * Wait for the layout worker to be initialized.
+   * Returns a promise that resolves when the layout worker is ready.
+   */
+  waitForLayoutWorker(): Promise<void> {
+    if (this.layoutWorkerEnabled) {
+      return Promise.resolve();
+    }
+
+    if (!this.layoutWorkerReadyPromise) {
+      this.layoutWorkerReadyPromise = new Promise((resolve) => {
+        this.layoutWorkerReadyResolve = resolve;
+      });
+    }
+
+    return this.layoutWorkerReadyPromise;
+  }
+
+  /**
+   * Get the core port for the layout worker.
+   * This should be sent to the core worker so it can communicate with the layout worker.
+   * Returns undefined if layout worker is not enabled.
+   */
+  getLayoutCorePort(): MessagePort | undefined {
+    const port = this.layoutCorePort;
+    this.layoutCorePort = undefined; // Transfer ownership
+    return port;
+  }
+
+  /**
+   * Check if layout worker is enabled
+   */
+  get isLayoutWorkerEnabled(): boolean {
+    return this.layoutWorkerEnabled;
   }
 
   /**

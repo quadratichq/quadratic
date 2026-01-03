@@ -19,6 +19,7 @@ use crate::sheets::text::{
 use crate::sheets::{Sheet, Sheets};
 use crate::ui::ui::UI;
 use crate::viewport::Viewport;
+use crate::worker::BatchCache;
 
 /// Core renderer state
 pub struct RendererState {
@@ -48,6 +49,9 @@ pub struct RendererState {
 
     /// Hashes that have been requested but not yet received
     pending_hash_requests: HashSet<(i64, i64)>,
+
+    /// Cache for RenderBatch from the layout worker
+    pub batch_cache: BatchCache,
 }
 
 impl RendererState {
@@ -63,6 +67,7 @@ impl RendererState {
             show_headings: true,
             debug_show_text_updates: false,
             pending_hash_requests: HashSet::new(),
+            batch_cache: BatchCache::new(),
         }
     }
 

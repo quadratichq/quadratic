@@ -7,7 +7,7 @@
 
 use quadratic_core_shared::SheetOffsets;
 
-use crate::renderers::{Color, Rects};
+use crate::renderers::{Color, NativeLines, Rects};
 use crate::sheets::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel};
 use crate::viewport::Viewport;
 
@@ -48,11 +48,13 @@ pub struct TableRenderOutput {
     /// Column header background rectangles (white, one per table with show_columns).
     pub column_backgrounds: Rects,
 
-    /// Table outline rectangles (around entire table).
-    pub outlines: Rects,
+    /// Table outline lines (around entire table).
+    /// Uses NativeLines for 1px lines that don't flicker when zooming.
+    pub outlines: NativeLines,
 
     /// Horizontal line at the bottom of column headers.
-    pub column_header_lines: Rects,
+    /// Uses NativeLines for 1px lines that don't flicker when zooming.
+    pub column_header_lines: NativeLines,
 
     /// Text labels for table names.
     pub name_labels: Vec<TextLabel>,
@@ -66,8 +68,8 @@ impl TableRenderOutput {
         Self {
             name_backgrounds: Rects::new(),
             column_backgrounds: Rects::new(),
-            outlines: Rects::new(),
-            column_header_lines: Rects::new(),
+            outlines: NativeLines::new(),
+            column_header_lines: NativeLines::new(),
             name_labels: Vec::new(),
             column_labels: Vec::new(),
         }
@@ -172,19 +174,18 @@ pub fn render_tables(
             }
 
             // Add horizontal line at the bottom of column headers
-            // In TypeScript, this line is drawn at columnsHeight with alignment=1 (below the path)
-            // So the line covers [columnsHeight, columnsHeight + 1] in world coordinates
+            // Uses NativeLines for 1px lines that don't flicker when zooming
             let line_color = if is_active {
                 PRIMARY_COLOR
             } else {
                 MUTED_FOREGROUND
             };
-            // Draw at the exact bottom of headers, extending 1 pixel down (matches TS behavior)
+            // Draw horizontal line at the bottom of headers
             output.column_header_lines.add(
                 headers_bounds.left(),
-                headers_bounds.bottom() - 1.0, // Position at bottom - 1 so line is within headers
-                headers_bounds.width,
-                1.0, // 1 pixel height
+                headers_bounds.bottom(),
+                headers_bounds.right(),
+                headers_bounds.bottom(),
                 line_color,
             );
         }
@@ -195,7 +196,7 @@ pub fn render_tables(
         } else {
             MUTED_FOREGROUND
         };
-        add_outline_rect(
+        add_outline_lines(
             &mut output.outlines,
             &table.table_bounds,
             outline_color,
@@ -224,11 +225,11 @@ fn add_background_rect(
     rects.add(bounds.left(), bounds.top(), bounds.width, bounds.height, color);
 }
 
-/// Add an outline rectangle in world space.
+/// Add outline lines around a rectangle in world space.
 /// The matrix transformation handles conversion to screen coordinates.
-/// Draws a 1-pixel border around the rectangle (matching TypeScript TableOutline).
-fn add_outline_rect(
-    rects: &mut Rects,
+/// Uses NativeLines for 1-pixel borders that don't flicker when zooming.
+fn add_outline_lines(
+    lines: &mut NativeLines,
     bounds: &TableBounds,
     color: Color,
     _viewport: &Viewport,
@@ -236,21 +237,19 @@ fn add_outline_rect(
     _heading_height: f32,
     _scale: f32,
 ) {
-    let line_width = 1.0; // 1 pixel border (matches TypeScript)
-
     let x = bounds.left();
     let y = bounds.top();
     let w = bounds.width;
     let h = bounds.height;
 
-    // Top border
-    rects.add(x, y, w, line_width, color);
-    // Bottom border
-    rects.add(x, y + h - line_width, w, line_width, color);
-    // Left border
-    rects.add(x, y, line_width, h, color);
-    // Right border
-    rects.add(x + w - line_width, y, line_width, h, color);
+    // Top border (left to right)
+    lines.add(x, y, x + w, y, color);
+    // Bottom border (left to right)
+    lines.add(x, y + h, x + w, y + h, color);
+    // Left border (top to bottom)
+    lines.add(x, y, x, y + h, color);
+    // Right border (top to bottom)
+    lines.add(x + w, y, x + w, y + h, color);
 }
 
 /// Create a text label for the table name.

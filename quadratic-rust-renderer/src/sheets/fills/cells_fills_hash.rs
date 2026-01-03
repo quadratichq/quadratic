@@ -1,21 +1,18 @@
 //! CellsFillsHash - spatial hash for efficient fill rendering
 //!
-//! Groups fills into 15×30 cell regions for:
+//! Groups fills into 50×100 cell regions for:
 //! - Hash-level visibility culling
 //! - Incremental updates (only rebuild dirty hashes)
 //! - Batched rectangle caching per hash
 //! - Lazy loading: only load hashes within viewport + padding
 
 use quadratic_core_shared::{RenderFill, SheetOffsets};
+use quadratic_rust_renderer_shared::{HASH_HEIGHT, HASH_WIDTH};
 
-use crate::renderers::render_context::RenderContext;
 use crate::renderers::Rects;
+use crate::renderers::render_context::RenderContext;
 
 use super::parse_color_string;
-
-/// Hash dimensions (matches client: CellsTypes.ts and core: renderer_constants.rs)
-pub const HASH_WIDTH: i64 = 50; // columns per hash
-pub const HASH_HEIGHT: i64 = 100; // rows per hash
 
 /// A spatial hash containing fills for a 15×30 cell region
 pub struct CellsFillsHash {
@@ -156,7 +153,8 @@ impl CellsFillsHash {
             let height = (y_end + h_end - y) as f32;
 
             let color = parse_color_string(&fill.color);
-            self.cached_rects.add(x as f32, y as f32, width, height, color);
+            self.cached_rects
+                .add(x as f32, y as f32, width, height, color);
         }
 
         self.dirty = false;
@@ -172,50 +170,5 @@ impl CellsFillsHash {
     /// Get the cached rects for external rendering (e.g., WebGPU)
     pub fn cached_rects(&self) -> &Rects {
         &self.cached_rects
-    }
-}
-
-/// Get hash coordinates for a cell position (1-indexed columns/rows)
-pub fn get_fill_hash_coords(col: i64, row: i64) -> (i64, i64) {
-    // Adjust for 1-indexed: col 1-50 → hash 0, col 51-100 → hash 1, etc.
-    (
-        (col - 1).div_euclid(HASH_WIDTH),
-        (row - 1).div_euclid(HASH_HEIGHT),
-    )
-}
-
-/// Get hash key from hash coordinates
-pub fn fill_hash_key(hash_x: i64, hash_y: i64) -> u64 {
-    // Combine hash coordinates into a single key
-    // Using bit manipulation to support negative coordinates
-    let x_bits = (hash_x as i32) as u32;
-    let y_bits = (hash_y as i32) as u32;
-    ((x_bits as u64) << 32) | (y_bits as u64)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_fill_hash_coords() {
-        // 1-indexed coordinates: cols 1-50 → hash 0, cols 51-100 → hash 1
-        assert_eq!(get_fill_hash_coords(1, 1), (0, 0));
-        assert_eq!(get_fill_hash_coords(50, 100), (0, 0));
-        assert_eq!(get_fill_hash_coords(51, 101), (1, 1));
-        assert_eq!(get_fill_hash_coords(101, 201), (2, 2));
-
-        // Edge cases for 1-indexed
-        assert_eq!(get_fill_hash_coords(0, 0), (-1, -1)); // col 0 is before col 1
-        assert_eq!(get_fill_hash_coords(-49, -99), (-1, -1));
-        assert_eq!(get_fill_hash_coords(-50, -100), (-2, -2));
-    }
-
-    #[test]
-    fn test_fill_hash_key() {
-        assert_eq!(fill_hash_key(0, 0), 0);
-        assert_eq!(fill_hash_key(1, 0), 1 << 32);
-        assert_eq!(fill_hash_key(0, 1), 1);
-        assert_eq!(fill_hash_key(1, 1), (1 << 32) | 1);
     }
 }

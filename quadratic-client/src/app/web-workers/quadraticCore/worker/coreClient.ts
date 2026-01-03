@@ -21,6 +21,7 @@ import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConne
 import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
 import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
 import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { coreRustLayout } from '@/app/web-workers/quadraticCore/worker/coreRustLayout';
 import { coreRustRenderer } from '@/app/web-workers/quadraticCore/worker/coreRustRenderer';
 import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
@@ -232,6 +233,10 @@ class CoreClient {
 
       case 'clientCoreSendSheetMetaFillsToRustRenderer':
         core.sendSheetMetaFillsToRustRenderer(e.data.sheetId);
+        return;
+
+      case 'clientCoreInitLayoutWorkerPort':
+        coreRustLayout.init(e.data.port);
         return;
 
       case 'clientCoreSetCommas':

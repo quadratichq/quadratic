@@ -9,6 +9,7 @@ export class Control {
     types;
     core;
     rustRenderer;
+    rustLayout;
     rustClient;
     client;
     multiplayer;
@@ -26,6 +27,7 @@ export class Control {
         api: false,
         core: false,
         rustRenderer: false,
+        rustLayout: false,
         rustClient: false,
         multiplayer: false,
         files: false,
@@ -52,6 +54,7 @@ export class Control {
             this.kill("types"),
             this.kill("core"),
             this.kill("rustRenderer"),
+            this.kill("rustLayout"),
             this.kill("rustClient"),
             this.kill("client"),
             this.kill("multiplayer"),
@@ -299,6 +302,31 @@ export class Control {
             error: "error[",
             start: ["> quadratic", "[Running "],
         }));
+        // Also run the layout worker (controlled by the same flag)
+        this.runRustLayout(restart);
+    }
+    async runRustLayout(restart) {
+        if (this.cli.options.noRust)
+            return;
+        if (this.quitting)
+            return;
+        if (this.status.rustLayout === "killed")
+            return;
+        this.status.rustLayout = false;
+        this.ui.print("rustLayout");
+        await this.kill("rustLayout");
+        this.signals.rustLayout = new AbortController();
+        this.rustLayout = spawn("npm", [
+            "run",
+            this.cli.options.rustRenderer
+                ? "watch:wasm:rust-layout"
+                : "build:wasm:rust-layout",
+        ], { signal: this.signals.rustLayout.signal });
+        this.ui.printOutput("rustLayout", (data) => this.handleResponse("rustLayout", data, {
+            success: ["[Finished running. Exit status: 0", "ready to publish"],
+            error: "error[",
+            start: ["> quadratic", "[Running "],
+        }));
     }
     async restartRustRenderer() {
         this.cli.options.rustRenderer = !this.cli.options.rustRenderer;
@@ -307,6 +335,7 @@ export class Control {
     async killRustRenderer() {
         if (this.status.rustRenderer === "killed") {
             this.status.rustRenderer = false;
+            this.status.rustLayout = false;
             this.ui.print("rustRenderer", "restarting...");
             this.runRustRenderer();
         }
@@ -315,7 +344,12 @@ export class Control {
                 await this.kill("rustRenderer");
                 this.ui.print("rustRenderer", "killed", "red");
             }
+            if (this.rustLayout) {
+                await this.kill("rustLayout");
+                this.ui.print("rustLayout", "killed", "red");
+            }
             this.status.rustRenderer = "killed";
+            this.status.rustLayout = "killed";
         }
     }
     async runRustClient(restart) {

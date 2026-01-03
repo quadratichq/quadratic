@@ -20,6 +20,7 @@ use crate::utils::math::ortho_matrix;
 
 // RenderContext trait for has_font_texture method
 #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+#[allow(unused_imports)]
 use crate::renderers::render_context::RenderContext;
 
 // WASM-only imports (WebGL fallback, JS interop)
@@ -56,15 +57,20 @@ const MAX_TEXTURE_PAGES: usize = 64;
 
 /// Scale threshold below which we switch from MSDF text to sprite rendering.
 /// When viewport_scale < SPRITE_SCALE_THRESHOLD, use the cached sprite.
-/// 0.5 means sprite rendering activates when zoomed out to 50% or less.
-/// This significantly improves performance when zoomed out.
-pub const SPRITE_SCALE_THRESHOLD: f32 = 0.5;
+///
+/// At threshold zoom on 2x DPR, a 5000px hash displays at:
+///   0.5 threshold → 5000 * 0.5 * 2 = 5000 device pixels (too large for sprites)
+///   0.25 threshold → 5000 * 0.25 * 2 = 2500 device pixels (manageable)
+///
+/// We use 0.25 (25% zoom) so sprites aren't over-magnified.
+/// MSDF text handles 25-100% zoom; sprites handle <25% zoom.
+pub const SPRITE_SCALE_THRESHOLD: f32 = 0.25;
 
 /// Target width for sprite cache texture.
-/// We use a fixed medium resolution where MSDF still produces clean output,
-/// then rely on texture filtering (with mipmaps) for smaller display sizes.
-/// This follows the "War and Peace and WebGL" technique.
-const SPRITE_TARGET_WIDTH: u32 = 512;
+/// At the 25% threshold on 2x DPR, a 5000px hash displays at 2500 device pixels.
+/// 2048px sprite → only 1.2x magnification (acceptable quality).
+/// Higher resolution = more GPU memory but sharper text when zoomed out.
+const SPRITE_TARGET_WIDTH: u32 = 2048;
 
 /// Minimum sprite dimension (don't go too small)
 const MIN_SPRITE_DIMENSION: u32 = 64;
@@ -72,30 +78,30 @@ const MIN_SPRITE_DIMENSION: u32 = 64;
 /// Key for grouping cached text data by (texture_uid, font_size)
 /// Font size is stored as integer (multiplied by 100) for hash equality
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct TextCacheKey {
-    texture_uid: u32,
-    font_size_scaled: u32, // font_size * 100 for hash comparison
+pub struct TextCacheKey {
+    pub texture_uid: u32,
+    pub font_size_scaled: u32, // font_size * 100 for hash comparison
 }
 
 impl TextCacheKey {
-    fn new(texture_uid: u32, font_size: f32) -> Self {
+    pub fn new(texture_uid: u32, font_size: f32) -> Self {
         Self {
             texture_uid,
             font_size_scaled: (font_size * 100.0) as u32,
         }
     }
 
-    fn font_size(&self) -> f32 {
+    pub fn font_size(&self) -> f32 {
         self.font_size_scaled as f32 / 100.0
     }
 }
 
 /// Cached data for a specific (texture_uid, font_size) combination
 #[derive(Debug, Clone, Default)]
-struct TextCacheEntry {
-    vertices: Vec<f32>,
-    indices: Vec<u32>,
-    vertex_offset: u32,
+pub struct TextCacheEntry {
+    pub vertices: Vec<f32>,
+    pub indices: Vec<u32>,
+    pub vertex_offset: u32,
 }
 
 /// A spatial hash containing labels for a 15×30 cell region
@@ -999,12 +1005,40 @@ impl CellsTextHash {
         atlas_font_size: f32,
         distance_range: f32,
     ) {
+        self.rebuild_sprite_with_overflow_webgpu(
+            gpu,
+            fonts,
+            atlas_font_size,
+            distance_range,
+            &[],
+        );
+    }
+
+    /// Rebuild sprite cache with overflow data from adjacent hashes (WebGPU)
+    ///
+    /// This includes text from adjacent hashes that overflows into this hash's world space.
+    ///
+    /// # Arguments
+    /// * `gpu` - WebGPU context
+    /// * `fonts` - Bitmap fonts
+    /// * `atlas_font_size` - Font size the atlas was generated at
+    /// * `distance_range` - MSDF distance range
+    /// * `adjacent_overflow` - Vector of cached text data from adjacent hashes that overflow into this hash
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+    pub fn rebuild_sprite_with_overflow_webgpu(
+        &mut self,
+        gpu: &mut WebGPUContext,
+        fonts: &BitmapFonts,
+        atlas_font_size: f32,
+        distance_range: f32,
+        adjacent_overflow: &[&HashMap<TextCacheKey, TextCacheEntry>],
+    ) {
         if !self.sprite_dirty {
             return;
         }
 
-        // Don't generate sprite for empty hashes
-        if self.labels.is_empty() {
+        // Don't generate sprite for empty hashes (unless there's overflow)
+        if self.labels.is_empty() && adjacent_overflow.is_empty() {
             self.sprite_cache_webgpu = None;
             self.sprite_dirty = false;
             return;
@@ -1080,7 +1114,20 @@ impl CellsTextHash {
             // Set viewport to match sprite texture dimensions
             render_pass.set_viewport(0.0, 0.0, tex_width as f32, tex_height as f32, 0.0, 1.0);
 
-            // Render text to the sprite texture
+            // Render overflow from all adjacent hashes first (drawn behind)
+            for overflow_data in adjacent_overflow {
+                Self::render_external_text_data(
+                    gpu,
+                    &mut render_pass,
+                    &ortho,
+                    overflow_data,
+                    sprite_scale,
+                    atlas_font_size,
+                    distance_range,
+                );
+            }
+
+            // Render this hash's own text (drawn on top)
             self.render_text_webgpu(
                 gpu,
                 &mut render_pass,
@@ -1094,19 +1141,104 @@ impl CellsTextHash {
         // Submit the render commands
         gpu.queue().submit(std::iter::once(encoder.finish()));
 
-        log::info!(
-            "[CellsTextHash] Rendered text to sprite cache ({}, {}): {}x{} texture with {} mip levels",
+        log::debug!(
+            "[CellsTextHash] Rendered text to sprite cache ({}, {}): {}x{} texture with {} mip levels, adjacent_overflow_count={}",
             self.hash_x,
             self.hash_y,
             sprite_cache.width,
             sprite_cache.height,
-            sprite_cache.mip_level_count
+            sprite_cache.mip_level_count,
+            adjacent_overflow.len()
         );
 
         // Generate mipmaps for smooth scaling at small sizes
         gpu.generate_mipmaps(sprite_cache);
 
         self.sprite_dirty = false;
+    }
+
+    /// Get cached text data for rendering overflow to adjacent hash sprites
+    /// Returns a reference to the cached vertices/indices by texture
+    pub fn get_cached_text_data(&self) -> &HashMap<TextCacheKey, TextCacheEntry> {
+        &self.cached_text_data
+    }
+
+    /// Check if this hash has labels with overflow to the right
+    /// (overflow that extends past world_x + world_width)
+    pub fn has_overflow_right(&self) -> bool {
+        let hash_right = self.world_x + self.world_width;
+        self.labels.values().any(|label| label.text_right() > hash_right)
+    }
+
+    /// Check if this hash has labels with overflow to the left
+    /// (overflow that extends before world_x)
+    pub fn has_overflow_left(&self) -> bool {
+        self.labels.values().any(|label| label.text_left() < self.world_x)
+    }
+
+    /// Check if this hash has labels that might overflow to the bottom
+    /// (cells in the last few rows whose text could extend below hash boundary)
+    /// We're conservative here and include any hash that has labels in the last rows
+    pub fn has_overflow_bottom(&self) -> bool {
+        let hash_bottom = self.world_y + self.world_height;
+        // Check if any label's bottom edge extends past hash boundary
+        // Label y is the top, so we check y + height
+        self.labels.values().any(|label| {
+            label.y() + label.height() > hash_bottom - 5.0 // Within 5px of bottom
+        })
+    }
+
+    /// Check if this hash has labels that might overflow to the top
+    /// (cells in the first few rows whose text could extend above hash boundary)
+    pub fn has_overflow_top(&self) -> bool {
+        // Check if any label's top edge is near the hash top boundary
+        self.labels.values().any(|label| {
+            label.y() < self.world_y + 5.0 // Within 5px of top
+        })
+    }
+
+    /// Render text data from another hash to this hash's sprite cache render pass
+    /// Used to include overflow text from adjacent hashes.
+    ///
+    /// # Arguments
+    /// * `gpu` - WebGPU context
+    /// * `pass` - Active render pass on this hash's sprite texture
+    /// * `matrix` - Orthographic matrix for this hash's sprite
+    /// * `other_cached_data` - Cached text data from the adjacent hash
+    /// * `sprite_scale` - Scale for MSDF rendering
+    /// * `atlas_font_size` - Font size the atlas was generated at
+    /// * `distance_range` - MSDF distance range
+    #[cfg(any(feature = "wgpu-wasm", feature = "wgpu-native"))]
+    pub fn render_external_text_data(
+        gpu: &mut WebGPUContext,
+        pass: &mut wgpu::RenderPass<'_>,
+        matrix: &[f32; 16],
+        other_cached_data: &HashMap<TextCacheKey, TextCacheEntry>,
+        sprite_scale: f32,
+        atlas_font_size: f32,
+        distance_range: f32,
+    ) {
+        for (cache_key, entry) in other_cached_data {
+            if entry.vertices.is_empty() {
+                continue;
+            }
+            if !gpu.has_font_texture(cache_key.texture_uid) {
+                continue;
+            }
+
+            let font_scale = cache_key.font_size() / atlas_font_size;
+
+            gpu.draw_text(
+                pass,
+                &entry.vertices,
+                &entry.indices,
+                cache_key.texture_uid,
+                matrix,
+                sprite_scale,
+                font_scale,
+                distance_range,
+            );
+        }
     }
 
     /// Check if this hash has a valid sprite cache (WebGL or WebGPU)

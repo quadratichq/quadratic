@@ -60,6 +60,8 @@ declare var self: WorkerGlobalScope &
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
     // Send bincode-encoded message to rust renderer (via MessagePort)
     sendToRustRenderer?: (message: Uint8Array) => void;
+    // Send bincode-encoded message to rust layout worker (via MessagePort)
+    sendToRustLayout?: (message: Uint8Array) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -245,12 +247,25 @@ export const jsTimestamp = (): bigint => {
 };
 
 /**
- * Send a bincode-encoded message to the rust renderer worker.
+ * Send a bincode-encoded message to the rust renderer/layout worker.
  * This is called from Rust when the rust renderer is enabled.
- * The message is forwarded via the MessagePort to the rust renderer worker.
+ *
+ * When Layout Worker is enabled:
+ *   - Cell data goes ONLY to Layout Worker
+ *   - Layout Worker computes geometry and sends RenderBatch to Render Worker
+ *   - Render Worker only handles GPU rendering
+ *
+ * When Layout Worker is NOT enabled (fallback):
+ *   - Cell data goes directly to Render Worker
+ *   - Render Worker computes geometry itself (slower)
  */
 export const jsSendToRustRenderer = (message: Uint8Array) => {
-  if (self.sendToRustRenderer) {
+  if (self.sendToRustLayout) {
+    // Layout Worker enabled: send cell data ONLY to Layout Worker
+    // Layout Worker will compute geometry and send RenderBatch to Render Worker
+    self.sendToRustLayout(message);
+  } else if (self.sendToRustRenderer) {
+    // Fallback: send to Render Worker when Layout Worker is not enabled
     self.sendToRustRenderer(message);
   }
 };

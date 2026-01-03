@@ -216,6 +216,41 @@ class RustRendererWasm {
   }
 
   /**
+   * Handle a bincode-encoded RenderBatch from the layout worker.
+   * This contains pre-computed geometry ready for GPU upload.
+   */
+  handleLayoutBatch(data: Uint8Array) {
+    if (!this.initialized || !this.renderer) {
+      console.log(`[rustRendererWasm] Ignoring layout batch (${data.length} bytes) - not yet initialized`);
+      return;
+    }
+
+    // Forward the bincode batch to the WASM renderer
+    this.renderer.handle_layout_batch(data);
+  }
+
+  /**
+   * Check if a new layout batch is available for rendering.
+   */
+  hasLayoutBatch(): boolean {
+    if (!this.initialized || !this.renderer) return false;
+    return this.renderer.has_layout_batch();
+  }
+
+  /**
+   * Get layout batch stats (batches received, batches rendered).
+   */
+  getLayoutBatchStats(): { received: bigint; rendered: bigint } | null {
+    if (!this.initialized || !this.renderer) return null;
+    try {
+      const stats = this.renderer.get_batch_stats();
+      return { received: stats[0], rendered: stats[1] };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Replay any messages that were queued before initialization.
    */
   private replayPendingMessages() {
