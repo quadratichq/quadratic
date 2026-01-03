@@ -83,7 +83,7 @@ impl LayoutWorker {
     pub fn add_font(&mut self, font_json: &str) -> Result<(), JsValue> {
         let font: crate::sheets::text::BitmapFont = serde_json::from_str(font_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse font JSON: {}", e)))?;
-        log::info!("[LayoutWorker] Adding font: {}", font.font);
+        log::info!("[LayoutWorker] Adding font: {}", font.name());
         self.state.add_font(font);
         log::info!(
             "[LayoutWorker] has_fonts: {}",
@@ -186,7 +186,7 @@ impl LayoutWorker {
     }
 
     /// Generate render batch and return as bytes.
-    /// Returns None if not ready (no fonts, not running).
+    /// Returns None if not ready (no fonts, not running) or nothing has changed.
     #[wasm_bindgen]
     pub fn update(&mut self) -> Option<Box<[u8]>> {
         if !self.state.is_running() {
@@ -198,19 +198,15 @@ impl LayoutWorker {
             return None;
         }
 
-        let batch = self.state.generate_render_batch();
+        // Only returns Some if there's dirty content to send
+        let batch = self.state.generate_render_batch()?;
 
-        // Log batch info periodically
-        if batch.sequence % 60 == 1 {
-            log::debug!(
-                "[LayoutWorker] Generated batch #{}: {} hashes, viewport ({}, {}) scale {}",
-                batch.sequence,
-                batch.hashes.len(),
-                batch.viewport_x,
-                batch.viewport_y,
-                batch.viewport_scale
-            );
-        }
+        // Log batch info
+        log::debug!(
+            "[LayoutWorker] Sending batch #{}: {} hashes",
+            batch.sequence,
+            batch.hashes.len(),
+        );
 
         // Serialize to bincode
         match bincode::encode_to_vec(&batch, bincode::config::standard()) {

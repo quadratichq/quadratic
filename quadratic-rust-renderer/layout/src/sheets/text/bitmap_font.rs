@@ -1,84 +1,105 @@
 //! Bitmap font metrics for text layout
 //!
-//! This module only handles font metrics - texture data stays in the render worker.
+//! This module handles font metrics for layout. The format matches the JSON
+//! produced by the TypeScript font loader (parseBMFontXML).
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Character metrics from bitmap font
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CharData {
-    pub id: u32,
+/// Character frame in the texture atlas
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct CharFrame {
     pub x: f32,
     pub y: f32,
     pub width: f32,
     pub height: f32,
-    #[serde(rename = "xoffset")]
-    pub x_offset: f32,
-    #[serde(rename = "yoffset")]
-    pub y_offset: f32,
-    #[serde(rename = "xadvance")]
-    pub x_advance: f32,
-    pub page: u32,
 }
 
-/// Kerning pair
+/// Character data from bitmap font (matches TypeScript BitmapChar)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KerningPair {
-    pub first: u32,
-    pub second: u32,
-    pub amount: f32,
+pub struct CharData {
+    /// Texture UID (identifies which texture page this char is on)
+    pub texture_uid: u32,
+
+    /// Horizontal advance (how far to move for next character)
+    pub x_advance: f32,
+
+    /// X offset from cursor position
+    pub x_offset: f32,
+
+    /// Y offset from cursor position
+    pub y_offset: f32,
+
+    /// Original width of the character
+    pub orig_width: f32,
+
+    /// Height of the texture
+    pub texture_height: f32,
+
+    /// Kerning pairs (char code -> adjustment)
+    #[serde(default)]
+    pub kerning: HashMap<u32, f32>,
+
+    /// UV coordinates [u0, v0, u1, v1, u2, v2, u3, v3] for the 4 corners
+    #[serde(default)]
+    pub uvs: Vec<f32>,
+
+    /// Frame in the texture atlas
+    pub frame: CharFrame,
 }
 
-/// Bitmap font definition (metrics only)
+/// Bitmap font definition (matches TypeScript BitmapFontJson)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitmapFont {
+    /// Font name (e.g., "OpenSans", "OpenSans-Bold")
     pub font: String,
+
+    /// Font size the atlas was generated at
     pub size: f32,
-    #[serde(rename = "lineHeight")]
+
+    /// Line height
     pub line_height: f32,
-    #[serde(default)]
-    pub base: f32,
-    #[serde(rename = "distanceRange", default = "default_distance_range")]
+
+    /// MSDF distance field range (typically 4)
+    #[serde(default = "default_distance_range")]
     pub distance_range: f32,
-    #[serde(rename = "scaleW", default = "default_scale")]
-    pub scale_w: f32,
-    #[serde(rename = "scaleH", default = "default_scale")]
-    pub scale_h: f32,
-    pub pages: Vec<String>,
-    #[serde(default)]
-    pub chars: HashMap<String, CharData>,
-    #[serde(default)]
-    pub kernings: Vec<KerningPair>,
+
+    /// Character data indexed by char code (as number key in JSON)
+    pub chars: HashMap<u32, CharData>,
 }
 
 fn default_distance_range() -> f32 {
     4.0
 }
 
-fn default_scale() -> f32 {
-    512.0
-}
-
 impl BitmapFont {
+    /// Get the font name
+    pub fn name(&self) -> &str {
+        &self.font
+    }
+
     /// Get character data by char code
     pub fn get_char(&self, char_code: u32) -> Option<&CharData> {
-        self.chars.get(&char_code.to_string())
+        self.chars.get(&char_code)
     }
 
     /// Get kerning between two characters
     pub fn get_kerning(&self, first: u32, second: u32) -> f32 {
-        self.kernings
-            .iter()
-            .find(|k| k.first == first && k.second == second)
-            .map(|k| k.amount)
+        self.chars
+            .get(&first)
+            .and_then(|c| c.kerning.get(&second))
+            .copied()
             .unwrap_or(0.0)
     }
 
-    /// Calculate global texture UID for a page
-    /// font_index * 16 + page
-    pub fn texture_uid(&self, font_index: usize, page: u32) -> u32 {
-        (font_index * 16 + page as usize) as u32
+    /// Get line height
+    pub fn line_height(&self) -> f32 {
+        self.line_height
+    }
+
+    /// Calculate scale factor for a target font size
+    pub fn scale_for_size(&self, target_size: f32) -> f32 {
+        target_size / self.size
     }
 }
 
@@ -118,21 +139,21 @@ impl BitmapFonts {
         self.fonts.is_empty()
     }
 
+    /// Count the number of fonts
+    pub fn count(&self) -> usize {
+        self.fonts.len()
+    }
+
     /// Get default font (OpenSans or first available)
     pub fn default_font(&self) -> Option<&BitmapFont> {
         self.fonts.get("OpenSans").or_else(|| self.fonts.values().next())
     }
 
-    /// Get required texture UIDs for all fonts
-    pub fn get_required_texture_uids(&self) -> Vec<u32> {
-        let mut uids = Vec::new();
-        for (name, font) in &self.fonts {
-            if let Some(index) = self.font_indices.get(name) {
-                for page in 0..font.pages.len() {
-                    uids.push((*index * 16 + page) as u32);
-                }
-            }
-        }
-        uids
+    /// Get font name for a given style
+    pub fn get_font_name(bold: bool, italic: bool) -> String {
+        let bold_str = if bold { "Bold" } else { "" };
+        let italic_str = if italic { "Italic" } else { "" };
+        let separator = if bold || italic { "-" } else { "" };
+        format!("OpenSans{separator}{bold_str}{italic_str}")
     }
 }

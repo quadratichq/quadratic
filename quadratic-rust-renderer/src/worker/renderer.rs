@@ -860,29 +860,31 @@ impl WorkerRenderer {
         // Update UI content based on viewport (grid lines, cursor, headings)
         self.state.update_content();
 
-        // Check if we have a pre-computed batch from the layout worker
-        let batch = self.state.batch_cache.take();
-        let has_batch = batch.is_some();
-
-        // Check if anything needs rendering
-        // Note: We don't process dirty hashes anymore - Layout Worker handles all geometry
-        let needs_render = self.state.is_dirty() || has_batch;
+        // Check if we need to render:
+        // - New data from layout worker
+        // - State is dirty (viewport changed, etc.)
+        // - We have cached hash data to render
+        let has_new_batch_data = self.state.batch_cache.has_new_data();
+        let has_cached_data = self.state.batch_cache.has_hashes();
+        let needs_render = self.state.is_dirty() || has_new_batch_data || (viewport_changed && has_cached_data);
 
         if !needs_render {
             return false;
         }
 
         // Dispatch to backend-specific rendering
+        // Pass None for batch - rendering now uses the persistent cache
         let is_webgl = matches!(&self.backend, RenderBackend::WebGL(_));
         let rendered = if is_webgl {
-            self.frame_webgl_with_batch(elapsed, batch)
+            self.frame_webgl_with_batch(elapsed, None)
         } else {
-            self.frame_webgpu_with_batch(elapsed, batch)
+            self.frame_webgpu_with_batch(elapsed, None)
         };
 
         if rendered {
             // Mark everything as clean after rendering
             self.state.mark_clean();
+            self.state.batch_cache.mark_rendered();
 
             // Clear the shared viewport buffer dirty flag
             if let Some(ref mut shared) = self.shared_viewport {
@@ -958,11 +960,11 @@ impl WorkerRenderer {
         true
     }
 
-    /// Render a frame using WebGL with optional pre-computed batch
+    /// Render a frame using WebGL with cached batch data
     fn frame_webgl_with_batch(
         &mut self,
         _elapsed: f32,
-        batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
+        _batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
     ) -> bool {
         // Pre-extract all values we need before borrowing backend
         let fonts_ready = self.fonts_ready();
@@ -992,6 +994,9 @@ impl WorkerRenderer {
 
         // Background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
+
+        // Pre-extract cached hash data for text rendering
+        let cached_hashes = self.state.batch_cache.get_hashes_vec();
 
         // Now borrow backend
         let gl = match &mut self.backend {
@@ -1043,20 +1048,16 @@ impl WorkerRenderer {
         // 3. Grid lines
         self.state.ui.grid_lines.render(gl, &matrix_array);
 
-        // 4. Cell text - render from pre-computed batch
-        if fonts_ready {
-            if let Some(ref batch) = batch {
-                render::render_text_from_batch(
-                    gl,
-                    batch,
-                    &matrix_array,
-                    viewport_scale,
-                    atlas_font_size,
-                    distance_range,
-                );
-            }
-            // Note: No fallback path - Layout Worker provides all text geometry.
-            // If no batch is available, cell text is simply not rendered this frame.
+        // 4. Cell text - render from cached hash data
+        if fonts_ready && !cached_hashes.is_empty() {
+            render::render_text_from_cache(
+                gl,
+                &cached_hashes,
+                &matrix_array,
+                viewport_scale,
+                atlas_font_size,
+                distance_range,
+            );
         }
 
         // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
@@ -1112,7 +1113,7 @@ impl WorkerRenderer {
     fn frame_webgpu_with_batch(
         &mut self,
         _elapsed: f32,
-        batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
+        _batch: Option<quadratic_rust_renderer_shared::RenderBatch>,
     ) -> bool {
         // Pre-extract all values we need before complex borrows
         let fonts_ready = self.fonts_ready();
@@ -1192,6 +1193,9 @@ impl WorkerRenderer {
         // Check if we need sprite rendering (zoomed out)
         use crate::sheets::text::SPRITE_SCALE_THRESHOLD;
         let use_sprites = scale < SPRITE_SCALE_THRESHOLD;
+
+        // Pre-extract cached hash data for text rendering
+        let cached_hashes = self.state.batch_cache.get_hashes_vec();
 
         // Now borrow backend
         let gpu = match &mut self.backend {
@@ -1275,19 +1279,17 @@ impl WorkerRenderer {
                 gpu.draw_lines(&mut pass, line_vertices, &matrix_array);
             }
 
-            // 4. Text - render from pre-computed batch
-            if fonts_ready {
-                if let Some(ref batch) = batch {
-                    render::render_text_from_batch_webgpu(
-                        gpu,
-                        &mut pass,
-                        batch,
-                        &matrix_array,
-                        effective_scale,
-                        atlas_font_size,
-                        distance_range,
-                    );
-                }
+            // 4. Text - render from cached hash data
+            if fonts_ready && !cached_hashes.is_empty() {
+                render::render_text_from_cache_webgpu(
+                    gpu,
+                    &mut pass,
+                    &cached_hashes,
+                    &matrix_array,
+                    effective_scale,
+                    atlas_font_size,
+                    distance_range,
+                );
             }
             // Silence unused variable warnings for removed code paths
             let _ = (min_x, max_x, min_y, max_y, scale, use_sprites);

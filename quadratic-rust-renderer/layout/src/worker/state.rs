@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use quadratic_core_shared::{
     GridBounds, Pos, RenderCell, RenderCodeCell, RenderFill, SheetFill, SheetId, SheetOffsets,
 };
-use quadratic_rust_renderer_shared::{hash_key, FillBuffer, RenderBatch};
+use quadratic_rust_renderer_shared::{hash_key, RenderBatch};
 
 use crate::sheets::text::{BitmapFonts, CellLabel, CellsTextHash};
 use crate::sheets::Sheets;
@@ -233,14 +233,16 @@ impl LayoutState {
     // Layout & Render Batch Generation
     // =========================================================================
 
-    /// Generate a complete RenderBatch for the current frame
-    pub fn generate_render_batch(&mut self) -> RenderBatch {
-        self.sequence += 1;
-
+    /// Generate a RenderBatch containing only dirty/changed data.
+    /// Returns None if nothing has changed.
+    pub fn generate_render_batch(&mut self) -> Option<RenderBatch> {
         let bounds = self.viewport.visible_bounds();
         let offsets = self.sheets.current_sheet_offsets();
 
-        // Update UI
+        // Track if we have any dirty content
+        let mut has_dirty_content = false;
+
+        // Update UI (this sets dirty flags internally)
         self.ui.update(&self.viewport, &offsets);
 
         // Build render batch
@@ -254,61 +256,62 @@ impl LayoutState {
             ..Default::default()
         };
 
-        // Background
-        let mut bg = FillBuffer::new();
-        bg.add_rect(
-            bounds.left.max(0.0),
-            bounds.top.max(0.0),
-            bounds.width,
-            bounds.height,
-            [1.0, 1.0, 1.0, 1.0],
-        );
-        batch.background = Some(bg);
-
-        // Grid lines
+        // Grid lines - only include if dirty
         if let Some(buffer) = self.ui.grid_lines.take_buffer() {
             batch.grid_lines = Some(buffer);
+            has_dirty_content = true;
         }
 
-        // Cursor
+        // Cursor - only include if dirty
         if let Some(data) = self.ui.cursor.take_render_data() {
             batch.cursor = Some(data);
+            has_dirty_content = true;
         }
 
-        // Process visible hashes
+        // Process visible hashes - ONLY include dirty ones
         if let Some(sheet) = self.sheets.current_sheet_mut() {
             let hash_bounds = self.viewport.visible_hash_bounds(&offsets);
 
             for (hash_x, hash_y) in hash_bounds.iter() {
                 let key = hash_key(hash_x, hash_y);
 
-                // Text hashes - always include in batch, but only rebuild if dirty
+                // Text hashes - ONLY include if dirty
                 if let Some(hash) = sheet.hashes.get_mut(&key) {
-                    if hash.is_dirty() || self.viewport.dirty {
-                        // Rebuild and add new render data
+                    if hash.is_dirty() {
+                        // Rebuild and add to batch
                         let render_data = hash.rebuild(&self.fonts);
                         batch.hashes.push(render_data);
-                    } else if let Some(cached) = hash.get_cached_render_data() {
-                        // Use cached render data (already computed)
-                        batch.hashes.push(cached);
+                        has_dirty_content = true;
                     }
+                    // If not dirty, renderer already has this data cached - don't resend
                 }
 
-                // Fill hashes
+                // Fill hashes - rebuild if dirty but don't add to batch yet
+                // (fills are handled differently)
                 if let Some(fill_hash) = sheet.fills.hashes_mut().get_mut(&key) {
-                    fill_hash.rebuild_if_dirty(&offsets);
+                    if fill_hash.is_dirty() {
+                        fill_hash.rebuild_if_dirty(&offsets);
+                        has_dirty_content = true;
+                    }
                 }
             }
 
-            // Meta fills
-            batch.meta_fills = sheet.fills.build_meta_fills_buffer(&self.viewport, &offsets);
+            // Meta fills - only include if they changed
+            // TODO: Track meta fills dirty state properly
         }
 
         // Mark clean
         self.viewport.mark_clean();
         self.ui.mark_clean();
 
-        batch
+        // Only return a batch if something was dirty
+        if has_dirty_content {
+            self.sequence += 1;
+            batch.sequence = self.sequence;
+            Some(batch)
+        } else {
+            None
+        }
     }
 
     // =========================================================================

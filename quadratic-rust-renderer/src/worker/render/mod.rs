@@ -15,9 +15,9 @@ mod text;
 #[cfg(target_arch = "wasm32")]
 pub use background::get_background_vertices;
 #[cfg(target_arch = "wasm32")]
-pub use batch::render_text_from_batch;
+pub use batch::render_text_from_cache;
 #[cfg(all(target_arch = "wasm32", feature = "wasm"))]
-pub use batch::render_text_from_batch_webgpu;
+pub use batch::render_text_from_cache_webgpu;
 #[cfg(target_arch = "wasm32")]
 pub use fills::get_fill_vertices;
 #[cfg(all(target_arch = "wasm32", feature = "wasm"))]

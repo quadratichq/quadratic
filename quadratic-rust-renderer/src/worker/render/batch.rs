@@ -22,6 +22,7 @@ use crate::renderers::WebGPUContext;
 /// * `effective_scale` - Effective scale (scale * dpr)
 /// * `atlas_font_size` - The font size the atlas was generated at
 /// * `distance_range` - MSDF distance range
+#[allow(dead_code)]
 pub fn render_text_from_batch(
     gl: &WebGLContext,
     batch: &RenderBatch,
@@ -31,6 +32,23 @@ pub fn render_text_from_batch(
     distance_range: f32,
 ) {
     for hash_data in &batch.hashes {
+        render_hash_text(gl, hash_data, matrix, effective_scale, atlas_font_size, distance_range);
+        render_hash_emoji_sprites(gl, hash_data, matrix);
+    }
+}
+
+/// Render text from cached hash data (WebGL)
+///
+/// This renders from the BatchCache's accumulated hash data.
+pub fn render_text_from_cache(
+    gl: &WebGLContext,
+    hashes: &[&HashRenderData],
+    matrix: &[f32; 16],
+    effective_scale: f32,
+    atlas_font_size: f32,
+    distance_range: f32,
+) {
+    for hash_data in hashes {
         render_hash_text(gl, hash_data, matrix, effective_scale, atlas_font_size, distance_range);
         render_hash_emoji_sprites(gl, hash_data, matrix);
     }
@@ -146,6 +164,33 @@ pub fn render_text_from_batch_webgpu(
     distance_range: f32,
 ) {
     for hash_data in &batch.hashes {
+        render_hash_text_webgpu(
+            gpu,
+            pass,
+            hash_data,
+            matrix,
+            effective_scale,
+            atlas_font_size,
+            distance_range,
+        );
+        render_hash_emoji_sprites_webgpu(gpu, pass, hash_data, matrix);
+    }
+}
+
+/// Render text from cached hash data (WebGPU)
+///
+/// This renders from the BatchCache's accumulated hash data.
+#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
+pub fn render_text_from_cache_webgpu(
+    gpu: &mut WebGPUContext,
+    pass: &mut wgpu::RenderPass<'_>,
+    hashes: &[&HashRenderData],
+    matrix: &[f32; 16],
+    effective_scale: f32,
+    atlas_font_size: f32,
+    distance_range: f32,
+) {
+    for hash_data in hashes {
         render_hash_text_webgpu(
             gpu,
             pass,

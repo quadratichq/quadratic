@@ -168,7 +168,6 @@ impl CellLabel {
 
         // Calculate font scale
         let font_scale = self.font_size / font.size;
-        let font_index = fonts.font_index(&font.font).unwrap_or(0);
 
         // Layout text
         let y = self.cell_y + CELL_PADDING_TOP + (font.line_height * font_scale);
@@ -218,19 +217,21 @@ impl CellLabel {
 
                 let glyph_x = x + glyph.x_offset * font_scale;
                 let glyph_y = y + glyph.y_offset * font_scale - font.line_height * font_scale;
-                let glyph_w = glyph.width * font_scale;
-                let glyph_h = glyph.height * font_scale;
+                let glyph_w = glyph.frame.width * font_scale;
+                let glyph_h = glyph.frame.height * font_scale;
 
                 // Clip check
                 let glyph_right = glyph_x + glyph_w;
                 if glyph_right > clip_left && glyph_x < clip_right {
-                    // Calculate UVs
-                    let u0 = glyph.x / font.scale_w;
-                    let v0 = glyph.y / font.scale_h;
-                    let u1 = (glyph.x + glyph.width) / font.scale_w;
-                    let v1 = (glyph.y + glyph.height) / font.scale_h;
+                    // Use pre-computed UVs from font loader
+                    // uvs format: [u0, v0, u1, v0, u1, v1, u0, v1] (4 corners)
+                    let (u0, v0, u1, v1) = if glyph.uvs.len() >= 6 {
+                        (glyph.uvs[0], glyph.uvs[1], glyph.uvs[2], glyph.uvs[5])
+                    } else {
+                        (0.0, 0.0, 1.0, 1.0)
+                    };
 
-                    let texture_uid = font.texture_uid(font_index, glyph.page);
+                    let texture_uid = glyph.texture_uid;
                     let mesh = self.cached_meshes.get_or_create(texture_uid, self.font_size);
                     mesh.add_quad(glyph_x, glyph_y, glyph_w, glyph_h, u0, v0, u1, v1, self.color);
                 }
