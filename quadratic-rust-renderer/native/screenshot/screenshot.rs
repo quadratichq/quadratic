@@ -60,8 +60,8 @@ struct Args {
     #[arg(long, default_value = "true")]
     grid_lines: bool,
 
-    /// Fonts directory containing .fnt files (defaults to quadratic-rust-renderer/examples/fonts)
-    #[arg(long, default_value = "quadratic-rust-renderer/examples/fonts")]
+    /// Fonts directory containing .fnt files
+    #[arg(long, default_value = "quadratic-client/public/fonts/opensans")]
     fonts: PathBuf,
 
     /// Device pixel ratio for higher resolution rendering (default 2 for crisp text)
