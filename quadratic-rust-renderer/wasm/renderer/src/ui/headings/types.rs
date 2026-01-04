@@ -1,7 +1,6 @@
 //! Shared types and constants for grid headings
 
 /// Constants matching the TypeScript client (defaults, used when offsets not available)
-pub const CELL_WIDTH: f32 = 100.0;
 pub const CELL_HEIGHT: f32 = 21.0;
 
 /// Maximum percentage of cell width a label can occupy before skipping
@@ -10,10 +9,6 @@ pub const LABEL_MAXIMUM_HEIGHT_PERCENT: f32 = 0.5;
 
 /// Padding for row labels (in CSS pixels)
 pub const LABEL_PADDING_ROWS: f32 = 8.0;
-
-/// Row digit offset (matches TypeScript ROW_DIGIT_OFFSET)
-pub const ROW_DIGIT_OFFSET_X: f32 = 0.0;
-pub const ROW_DIGIT_OFFSET_Y: f32 = -1.0;
 
 /// Number of digits to use when calculating column label skip
 pub const LABEL_DIGITS_TO_CALCULATE_SKIP: usize = 3;

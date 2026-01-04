@@ -22,15 +22,12 @@ use std::collections::{HashMap, HashSet};
 use quadratic_core_shared::{RenderFill, SheetFill, SheetId, SheetOffsets};
 use quadratic_renderer_core::{get_hash_coords, hash_key};
 
-use crate::renderers::render_context::RenderContext;
-use crate::renderers::{Color, Rects};
+use quadratic_renderer_core::{RenderContext, Rects};
 use crate::viewport::Viewport;
 
 /// Number of hashes to load beyond the visible viewport (for preloading)
 const HASH_PADDING: i64 = 1;
 
-/// Grid background color (white)
-const GRID_BACKGROUND: Color = [1.0, 1.0, 1.0, 1.0];
 
 /// Manages all fills for a sheet
 pub struct CellsFills {
@@ -286,7 +283,7 @@ impl CellsFills {
                 continue;
             }
 
-            let color = parse_color_string(&fill.color);
+            let color = fill.color.to_f32_array();
 
             // Infinite sheet (no w or h)
             if fill.w.is_none() && fill.h.is_none() {
@@ -377,170 +374,5 @@ impl VisibleFillHashBounds {
             && hash_x <= self.max_hash_x
             && hash_y >= self.min_hash_y
             && hash_y <= self.max_hash_y
-    }
-}
-
-/// Parse a color string to RGBA array
-///
-/// Supports formats:
-/// - "blank" → grid background (white)
-/// - "#RGB" → 3-digit hex
-/// - "#RRGGBB" → 6-digit hex
-/// - "#RRGGBBAA" → 8-digit hex with alpha
-/// - "rgb(r,g,b)" → CSS rgb()
-/// - "rgba(r,g,b,a)" → CSS rgba()
-pub fn parse_color_string(color: &str) -> Color {
-    let color = color.trim();
-
-    // Handle "blank" as grid background
-    if color == "blank" {
-        return GRID_BACKGROUND;
-    }
-
-    // Handle hex colors
-    if let Some(hex) = color.strip_prefix('#') {
-        return parse_hex_color(hex);
-    }
-
-    // Handle rgb()/rgba()
-    if let Some(rgb) = color.strip_prefix("rgb(").and_then(|s| s.strip_suffix(')')) {
-        return parse_rgb_color(rgb, false);
-    }
-    if let Some(rgba) = color
-        .strip_prefix("rgba(")
-        .and_then(|s| s.strip_suffix(')'))
-    {
-        return parse_rgb_color(rgba, true);
-    }
-
-    // Default to black if parsing fails
-    [0.0, 0.0, 0.0, 1.0]
-}
-
-/// Parse hex color (3, 6, or 8 digits)
-fn parse_hex_color(hex: &str) -> Color {
-    let chars: Vec<char> = hex.chars().collect();
-
-    match chars.len() {
-        // #RGB
-        3 => {
-            let r = parse_hex_digit(chars[0]) as f32 / 15.0;
-            let g = parse_hex_digit(chars[1]) as f32 / 15.0;
-            let b = parse_hex_digit(chars[2]) as f32 / 15.0;
-            [r, g, b, 1.0]
-        }
-        // #RRGGBB
-        6 => {
-            let r = parse_hex_pair(&chars[0..2]) as f32 / 255.0;
-            let g = parse_hex_pair(&chars[2..4]) as f32 / 255.0;
-            let b = parse_hex_pair(&chars[4..6]) as f32 / 255.0;
-            [r, g, b, 1.0]
-        }
-        // #RRGGBBAA
-        8 => {
-            let r = parse_hex_pair(&chars[0..2]) as f32 / 255.0;
-            let g = parse_hex_pair(&chars[2..4]) as f32 / 255.0;
-            let b = parse_hex_pair(&chars[4..6]) as f32 / 255.0;
-            let a = parse_hex_pair(&chars[6..8]) as f32 / 255.0;
-            [r, g, b, a]
-        }
-        _ => [0.0, 0.0, 0.0, 1.0],
-    }
-}
-
-/// Parse a single hex digit
-fn parse_hex_digit(c: char) -> u8 {
-    match c {
-        '0'..='9' => c as u8 - b'0',
-        'a'..='f' => c as u8 - b'a' + 10,
-        'A'..='F' => c as u8 - b'A' + 10,
-        _ => 0,
-    }
-}
-
-/// Parse a hex pair (two digits)
-fn parse_hex_pair(chars: &[char]) -> u8 {
-    parse_hex_digit(chars[0]) * 16 + parse_hex_digit(chars[1])
-}
-
-/// Parse rgb() or rgba() color values
-fn parse_rgb_color(values: &str, has_alpha: bool) -> Color {
-    let parts: Vec<&str> = values.split(',').map(|s| s.trim()).collect();
-
-    let r = parts
-        .first()
-        .and_then(|s| s.parse::<f32>().ok())
-        .unwrap_or(0.0)
-        / 255.0;
-    let g = parts
-        .get(1)
-        .and_then(|s| s.parse::<f32>().ok())
-        .unwrap_or(0.0)
-        / 255.0;
-    let b = parts
-        .get(2)
-        .and_then(|s| s.parse::<f32>().ok())
-        .unwrap_or(0.0)
-        / 255.0;
-    let a = if has_alpha {
-        parts
-            .get(3)
-            .and_then(|s| s.parse::<f32>().ok())
-            .unwrap_or(1.0)
-    } else {
-        1.0
-    };
-
-    [
-        r.clamp(0.0, 1.0),
-        g.clamp(0.0, 1.0),
-        b.clamp(0.0, 1.0),
-        a.clamp(0.0, 1.0),
-    ]
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_color_blank() {
-        assert_eq!(parse_color_string("blank"), GRID_BACKGROUND);
-    }
-
-    #[test]
-    fn test_parse_color_hex() {
-        // 3-digit hex
-        let color = parse_color_string("#f00");
-        assert!((color[0] - 1.0).abs() < 0.01);
-        assert!((color[1] - 0.0).abs() < 0.01);
-        assert!((color[2] - 0.0).abs() < 0.01);
-
-        // 6-digit hex
-        let color = parse_color_string("#ff0000");
-        assert!((color[0] - 1.0).abs() < 0.01);
-        assert!((color[1] - 0.0).abs() < 0.01);
-        assert!((color[2] - 0.0).abs() < 0.01);
-
-        // 8-digit hex with alpha
-        let color = parse_color_string("#ff000080");
-        assert!((color[0] - 1.0).abs() < 0.01);
-        assert!((color[3] - 0.5).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_parse_color_rgb() {
-        let color = parse_color_string("rgb(255, 0, 0)");
-        assert!((color[0] - 1.0).abs() < 0.01);
-        assert!((color[1] - 0.0).abs() < 0.01);
-        assert!((color[2] - 0.0).abs() < 0.01);
-        assert!((color[3] - 1.0).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_parse_color_rgba() {
-        let color = parse_color_string("rgba(255, 0, 0, 0.5)");
-        assert!((color[0] - 1.0).abs() < 0.01);
-        assert!((color[3] - 0.5).abs() < 0.01);
     }
 }

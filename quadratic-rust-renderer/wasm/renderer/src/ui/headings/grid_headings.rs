@@ -8,9 +8,8 @@
 use quadratic_core_shared::SheetOffsets;
 
 use super::super::grid_lines::calculate_grid_alpha;
-use crate::renderers::render_context::RenderContext;
-use crate::renderers::{NativeLines, Rects};
 use crate::sheets::text::{BitmapFonts, LabelMesh};
+use quadratic_renderer_core::{NativeLines, Rects, RenderContext};
 
 use super::column_headings::ColumnHeadings;
 use super::row_headings::RowHeadings;
@@ -380,7 +379,7 @@ impl GridHeadings {
         // Merge row meshes into column meshes
         for (texture_uid, mesh) in self.rows.get_meshes(fonts) {
             if let Some(existing) = all_meshes.get_mut(&texture_uid) {
-                let offset = (existing.vertices.len() / 4) as u16;
+                let offset = (existing.vertices.len() / 4) as u32;
                 existing.vertices.extend(mesh.vertices.iter().cloned());
                 for idx in &mesh.indices {
                     existing.indices.push(idx + offset * 4);
@@ -495,14 +494,13 @@ impl GridHeadings {
                 continue;
             }
             let vertices = mesh.get_vertex_data();
-            let indices: Vec<u32> = mesh.get_index_data().iter().map(|&i| i as u32).collect();
 
             // Calculate the correct font_scale for this mesh's font size
             let font_scale = mesh.font_size / atlas_font_size;
 
             ctx.draw_text(
                 &vertices,
-                &indices,
+                mesh.get_index_data(),
                 mesh.texture_uid,
                 matrix,
                 1.0,
@@ -510,5 +508,100 @@ impl GridHeadings {
                 distance_range,
             );
         }
+    }
+
+    /// Get pre-extracted render data for use with command buffering
+    ///
+    /// Returns (background_vertices, line_vertices, text_meshes)
+    /// where text_meshes is Vec<(vertices, indices, texture_uid, font_size)>
+    pub fn get_render_data(
+        &mut self,
+        fonts: &BitmapFonts,
+        _atlas_font_size: f32,
+        _distance_range: f32,
+        offsets: &SheetOffsets,
+    ) -> (Vec<f32>, Vec<f32>, Vec<(Vec<f32>, Vec<u32>, u32, f32)>) {
+        // 1. Background vertices
+        let mut bg_vertices = Vec::new();
+        let (col_rect, row_rect, corner_rect) = self.get_background_rects();
+
+        // Helper to add rect vertices
+        let add_rect = |vertices: &mut Vec<f32>, rect: [f32; 4], color: [f32; 4]| {
+            let x = rect[0];
+            let y = rect[1];
+            let w = rect[2];
+            let h = rect[3];
+            let x2 = x + w;
+            let y2 = y + h;
+            // Two triangles
+            vertices.extend_from_slice(&[
+                x, y, color[0], color[1], color[2], color[3], x2, y, color[0], color[1], color[2],
+                color[3], x2, y2, color[0], color[1], color[2], color[3], x, y, color[0], color[1],
+                color[2], color[3], x2, y2, color[0], color[1], color[2], color[3], x, y2,
+                color[0], color[1], color[2], color[3],
+            ]);
+        };
+
+        add_rect(&mut bg_vertices, col_rect, self.colors.background);
+        add_rect(&mut bg_vertices, row_rect, self.colors.background);
+        add_rect(&mut bg_vertices, corner_rect, self.colors.corner_background);
+
+        // Selection highlights
+        let selection_color = [
+            self.colors.selection[0],
+            self.colors.selection[1],
+            self.colors.selection[2],
+            self.colors.selection_alpha,
+        ];
+        for rect in self.get_selection_rects(offsets) {
+            add_rect(&mut bg_vertices, rect, selection_color);
+        }
+
+        // 2. Grid line vertices
+        let mut line_vertices = Vec::new();
+        let grid_line_coords = self.get_grid_lines(offsets);
+        let alpha = calculate_grid_alpha(self.last_scale);
+        let grid_line_color = [
+            self.colors.grid_line[0],
+            self.colors.grid_line[1],
+            self.colors.grid_line[2],
+            self.colors.grid_line[3] * alpha,
+        ];
+
+        for chunk in grid_line_coords.chunks(4) {
+            if chunk.len() == 4 {
+                line_vertices.extend_from_slice(&[
+                    chunk[0],
+                    chunk[1],
+                    grid_line_color[0],
+                    grid_line_color[1],
+                    grid_line_color[2],
+                    grid_line_color[3],
+                    chunk[2],
+                    chunk[3],
+                    grid_line_color[0],
+                    grid_line_color[1],
+                    grid_line_color[2],
+                    grid_line_color[3],
+                ]);
+            }
+        }
+
+        // 3. Text meshes
+        let meshes = self.get_meshes(fonts);
+        let text_meshes: Vec<_> = meshes
+            .iter()
+            .filter(|m| !m.is_empty())
+            .map(|mesh| {
+                (
+                    mesh.get_vertex_data().to_vec(),
+                    mesh.get_index_data().to_vec(),
+                    mesh.texture_uid,
+                    mesh.font_size,
+                )
+            })
+            .collect();
+
+        (bg_vertices, line_vertices, text_meshes)
     }
 }

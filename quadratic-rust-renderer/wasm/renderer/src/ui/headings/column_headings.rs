@@ -4,11 +4,11 @@ use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
 
-use crate::sheets::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel, column_to_a1};
+use crate::sheets::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel, column_name};
 
 use super::types::{
-    HeadingColors, HeadingSize, LABEL_DIGITS_TO_CALCULATE_SKIP,
-    LABEL_MAXIMUM_WIDTH_PERCENT, LABEL_PADDING_ROWS, ViewportState,
+    HeadingColors, HeadingSize, LABEL_DIGITS_TO_CALCULATE_SKIP, LABEL_MAXIMUM_WIDTH_PERCENT,
+    LABEL_PADDING_ROWS, ViewportState,
 };
 
 /// Column headings renderer
@@ -42,11 +42,6 @@ impl ColumnHeadings {
         } else {
             false
         }
-    }
-
-    /// Get the current column skip interval
-    pub fn col_mod(&self) -> i64 {
-        self.col_mod
     }
 
     /// Check if a column is selected
@@ -136,7 +131,7 @@ impl ColumnHeadings {
 
                 // Only add if inside visible area
                 if screen_x >= heading_size.width && screen_x <= viewport.canvas_width {
-                    let text = column_to_a1(col);
+                    let text = column_name(col);
                     let char_count = text.len() as f32;
 
                     // For overlap detection
@@ -284,7 +279,7 @@ impl ColumnHeadings {
         for label in &mut self.labels {
             for mesh in label.get_meshes(fonts) {
                 if let Some(existing) = meshes.get_mut(&mesh.texture_uid) {
-                    let offset = (existing.vertices.len() / 4) as u16;
+                    let offset = (existing.vertices.len() / 4) as u32;
                     existing.vertices.extend(mesh.vertices.iter().cloned());
                     for idx in &mesh.indices {
                         existing.indices.push(idx + offset * 4);

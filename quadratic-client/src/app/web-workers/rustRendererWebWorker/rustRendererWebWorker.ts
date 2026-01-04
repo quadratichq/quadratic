@@ -379,6 +379,10 @@ class RustRendererWebWorker {
         buffer: this.viewportSharedBuffer,
       });
     }
+
+    // Also send to layout worker (RustLayoutWebWorker will queue if not ready)
+    console.log('[rustRendererWebWorker] Sending external viewport buffer to layout worker');
+    rustLayoutWebWorker.setViewportBuffer(buffer);
   }
 
   /**

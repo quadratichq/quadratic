@@ -58,6 +58,11 @@ class RustLayoutClient {
         });
         return;
 
+      case 'clientRustLayoutViewportBuffer':
+        console.log('[rustLayoutClient] Received new viewport buffer');
+        rustLayoutWasm.setViewportBuffer(e.data.viewportBuffer);
+        return;
+
       default:
         // Ignore messages from react dev tools
         if (!(e.data as any)?.source) {

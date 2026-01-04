@@ -5,6 +5,7 @@ pub mod util;
 
 pub mod a1;
 mod array_size;
+mod borders;
 mod bounds;
 mod cell_labels;
 pub mod color;
@@ -26,6 +27,7 @@ mod viewport;
 
 pub use a1::*;
 pub use array_size::*;
+pub use borders::*;
 pub use bounds::*;
 pub use cell_labels::*;
 pub use color::*;

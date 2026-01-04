@@ -4,8 +4,7 @@
 
 use quadratic_core_shared::{A1Selection, CellRefRange, Pos, Rect, SheetOffsets};
 
-use crate::renderers::render_context::RenderContext;
-use crate::renderers::{Color, LineScaling, Lines, Rects};
+use quadratic_renderer_core::{RenderContext, Color, LineScaling, Lines, Rects};
 use crate::viewport::Viewport;
 
 /// Cursor selection color (blue with transparency)
@@ -68,7 +67,7 @@ impl Cursor {
             dirty: true,
             visible: true,
             rects: Rects::new(),
-            lines: Lines::with_thickness(2.0, LineScaling::Pixel),
+            lines: Lines::with_thickness(2.0, LineScaling::ScreenPixel),
         }
     }
 
@@ -137,10 +136,12 @@ impl Cursor {
     }
 
     /// Update cursor based on current viewport and sheet offsets
-    pub fn update(&mut self, _viewport: &Viewport, offsets: &SheetOffsets) {
+    pub fn update(&mut self, viewport: &Viewport, offsets: &SheetOffsets) {
         if !self.dirty {
             return;
         }
+
+        let scale = viewport.effective_scale();
 
         // Calculate cursor rectangle using sheet offsets for accurate positioning
         if let Some((start_col, start_row, end_col, end_row)) = self.selection {
@@ -197,10 +198,10 @@ impl Cursor {
         let x2 = self.rect.x + self.rect.width;
         let y2 = self.rect.y + self.rect.height;
 
-        self.lines.add(x1, y1, x2, y1, self.border_color); // Top
-        self.lines.add(x2, y1, x2, y2, self.border_color); // Right
-        self.lines.add(x2, y2, x1, y2, self.border_color); // Bottom
-        self.lines.add(x1, y2, x1, y1, self.border_color); // Left
+        self.lines.add(x1, y1, x2, y1, self.border_color, scale); // Top
+        self.lines.add(x2, y1, x2, y2, self.border_color, scale); // Right
+        self.lines.add(x2, y2, x1, y2, self.border_color, scale); // Bottom
+        self.lines.add(x1, y2, x1, y1, self.border_color, scale); // Left
     }
 
     /// Mark as clean after rendering
@@ -218,9 +219,9 @@ impl Cursor {
     }
 
     /// Get border line vertices (must specify viewport_scale for pixel-scaled lines)
-    pub fn get_border_vertices(&mut self, viewport_scale: f32) -> Option<&[f32]> {
+    pub fn get_border_vertices(&self, _viewport_scale: f32) -> Option<&[f32]> {
         if self.visible && !self.lines.is_empty() {
-            Some(self.lines.get_vertices(viewport_scale))
+            Some(self.lines.vertices())
         } else {
             None
         }
@@ -241,7 +242,9 @@ impl Cursor {
         self.rects.render(ctx, matrix);
 
         // Draw border on top (lines rendered as triangles with pixel scaling)
-        self.lines.render(ctx, matrix, viewport_scale);
+        // Note: scale is now applied at add time, not render time
+        let _ = viewport_scale;
+        self.lines.render(ctx, matrix);
     }
 }
 

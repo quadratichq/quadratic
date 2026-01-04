@@ -60,6 +60,18 @@ class RustLayoutWasm {
   }
 
   /**
+   * Set a new viewport buffer (when ViewportControls provides its buffer).
+   */
+  setViewportBuffer(buffer: SharedArrayBuffer): void {
+    if (!this.worker || !this.initialized) {
+      console.warn('[rustLayoutWasm] Cannot set viewport buffer - not initialized');
+      return;
+    }
+    console.log('[rustLayoutWasm] Setting new viewport buffer');
+    this.worker.set_viewport_buffer(buffer);
+  }
+
+  /**
    * Sync viewport state from SharedArrayBuffer.
    */
   syncViewport(): boolean {

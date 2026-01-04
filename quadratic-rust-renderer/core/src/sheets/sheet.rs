@@ -11,7 +11,8 @@ use std::collections::{HashMap, HashSet};
 use quadratic_core_shared::{GridBounds, SheetId, SheetOffsets};
 
 use super::fills::CellsFills;
-use super::hash::{hash_key, TextHash, HASH_HEIGHT, HASH_WIDTH};
+use super::hash::{hash_key, HASH_HEIGHT, HASH_WIDTH};
+use super::text::TextHash;
 use super::text::CellsText;
 
 /// Data for a single sheet
@@ -191,7 +192,7 @@ impl Sheet {
     pub fn get_column_max_width(&self, column: i64) -> f32 {
         self.text_hashes
             .values()
-            .map(|hash| hash.column_max_width(column))
+            .map(|hash| hash.get_column_max_width(column))
             .fold(0.0f32, |a, b| a.max(b))
     }
 
@@ -199,7 +200,7 @@ impl Sheet {
     pub fn get_row_max_height(&self, row: i64) -> f32 {
         self.text_hashes
             .values()
-            .map(|hash| hash.row_max_height(row))
+            .map(|hash| hash.get_row_max_height(row))
             .fold(0.0f32, |a, b| a.max(b))
     }
 

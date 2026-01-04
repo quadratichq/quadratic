@@ -159,6 +159,17 @@ class RustLayoutWebWorker {
   }
 
   /**
+   * Set the viewport buffer (when ViewportControls provides its buffer).
+   * This updates the buffer the layout worker uses for viewport sync.
+   */
+  setViewportBuffer(buffer: SharedArrayBuffer) {
+    this.send({
+      type: 'clientRustLayoutViewportBuffer',
+      viewportBuffer: buffer,
+    });
+  }
+
+  /**
    * Check if the layout worker is ready
    */
   get ready(): boolean {

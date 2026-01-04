@@ -148,6 +148,28 @@ impl Rgba {
             alpha: (rgba & 0xFF) as u8,
         }
     }
+
+    /// Convert to an array of f32 values in range [0.0, 1.0]
+    #[inline]
+    pub fn to_f32_array(&self) -> [f32; 4] {
+        [
+            self.red as f32 / 255.0,
+            self.green as f32 / 255.0,
+            self.blue as f32 / 255.0,
+            self.alpha as f32 / 255.0,
+        ]
+    }
+
+    /// Create from an array of f32 values in range [0.0, 1.0]
+    #[inline]
+    pub fn from_f32_array(rgba: [f32; 4]) -> Self {
+        Self {
+            red: (rgba[0] * 255.0).clamp(0.0, 255.0) as u8,
+            green: (rgba[1] * 255.0).clamp(0.0, 255.0) as u8,
+            blue: (rgba[2] * 255.0).clamp(0.0, 255.0) as u8,
+            alpha: (rgba[3] * 255.0).clamp(0.0, 255.0) as u8,
+        }
+    }
 }
 
 /// Error parsing a color from a string.

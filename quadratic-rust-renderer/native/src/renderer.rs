@@ -5,126 +5,14 @@ use std::collections::HashMap;
 use glam::Mat4;
 use wgpu::*;
 
-use quadratic_renderer_core::sheets::text::BitmapFonts;
+use quadratic_renderer_core::sheets::text::{BitmapFonts, CellLabel, LabelMesh};
 use quadratic_renderer_core::types::{FillBuffer, LineBuffer};
-use quadratic_renderer_core::WgpuRenderer;
+use quadratic_renderer_core::{
+    calculate_clip_bounds, GridLines, SheetBordersRender, WgpuRenderer, GRID_LINE_COLOR,
+};
 
 use crate::image_export::ImageFormat;
-use crate::request::{CellText, RenderRequest};
-
-/// Default font size
-const DEFAULT_FONT_SIZE: f32 = 14.0;
-
-/// Cell padding
-const CELL_PADDING_LEFT: f32 = 3.0;
-const CELL_PADDING_TOP: f32 = 1.0;
-
-/// Text geometry for a single texture
-struct TextMesh {
-    vertices: Vec<f32>,
-    indices: Vec<u32>,
-    vertex_count: u32,
-}
-
-impl TextMesh {
-    fn new() -> Self {
-        Self {
-            vertices: Vec::new(),
-            indices: Vec::new(),
-            vertex_count: 0,
-        }
-    }
-
-    /// Add a character quad
-    /// Vertices: [x, y, u, v, r, g, b, a] per vertex
-    fn add_quad(
-        &mut self,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        u0: f32,
-        v0: f32,
-        u1: f32,
-        v1: f32,
-        color: [f32; 4],
-    ) {
-        let base = self.vertex_count;
-
-        // Four vertices: top-left, top-right, bottom-right, bottom-left
-        // Vertex format: [x, y, u, v, r, g, b, a]
-        self.vertices.extend_from_slice(&[
-            x,
-            y,
-            u0,
-            v0,
-            color[0],
-            color[1],
-            color[2],
-            color[3], // TL
-            x + w,
-            y,
-            u1,
-            v0,
-            color[0],
-            color[1],
-            color[2],
-            color[3], // TR
-            x + w,
-            y + h,
-            u1,
-            v1,
-            color[0],
-            color[1],
-            color[2],
-            color[3], // BR
-            x,
-            y + h,
-            u0,
-            v1,
-            color[0],
-            color[1],
-            color[2],
-            color[3], // BL
-        ]);
-
-        // Two triangles: TL-TR-BR and TL-BR-BL
-        self.indices
-            .extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
-
-        self.vertex_count += 4;
-    }
-}
-
-/// Text geometry organized by texture
-struct TextGeometry {
-    meshes: HashMap<u32, TextMesh>,
-    /// Atlas font size (size the font was generated at)
-    atlas_font_size: f32,
-    /// Target font size for rendering
-    target_font_size: f32,
-    distance_range: f32,
-}
-
-impl TextGeometry {
-    fn new(atlas_font_size: f32, target_font_size: f32, distance_range: f32) -> Self {
-        Self {
-            meshes: HashMap::new(),
-            atlas_font_size,
-            target_font_size,
-            distance_range,
-        }
-    }
-
-    /// Get font_scale ratio for the shader
-    fn font_scale(&self) -> f32 {
-        self.target_font_size / self.atlas_font_size
-    }
-
-    fn get_or_create(&mut self, texture_uid: u32) -> &mut TextMesh {
-        self.meshes.entry(texture_uid).or_insert_with(TextMesh::new)
-    }
-}
+use crate::request::RenderRequest;
 
 /// Native headless renderer
 ///
@@ -383,32 +271,35 @@ impl NativeRenderer {
             }
 
             // Draw text
-            if !request.text.is_empty() && !self.fonts.is_empty() {
-                let text_geometry = self.create_text_geometry(request, scale);
+            if !request.cells.is_empty() && !self.fonts.is_empty() {
+                let (meshes, atlas_font_size, distance_range) = self.create_text_meshes(request);
                 log::info!(
-                    "Text geometry: {} meshes, font_scale={}, distance_range={}, viewport_scale={}",
-                    text_geometry.meshes.len(),
-                    text_geometry.font_scale(),
-                    text_geometry.distance_range,
+                    "Text geometry: {} meshes, atlas_font_size={}, distance_range={}, viewport_scale={}",
+                    meshes.len(),
+                    atlas_font_size,
+                    distance_range,
                     scale
                 );
-                for (texture_uid, mesh) in &text_geometry.meshes {
-                    if !mesh.vertices.is_empty() {
+                for mesh in &meshes {
+                    if !mesh.is_empty() {
+                        let vertices = mesh.get_vertex_data();
+                        let font_scale = mesh.font_size / atlas_font_size;
                         log::debug!(
-                            "Drawing text mesh: texture_uid={}, vertices={}, indices={}",
-                            texture_uid,
-                            mesh.vertices.len(),
+                            "Drawing text mesh: texture_uid={}, font_scale={}, vertices={}, indices={}",
+                            mesh.texture_uid,
+                            font_scale,
+                            vertices.len(),
                             mesh.indices.len()
                         );
                         self.wgpu.draw_text(
                             &mut pass,
-                            &mesh.vertices,
+                            &vertices,
                             &mesh.indices,
-                            *texture_uid,
+                            mesh.texture_uid,
                             &matrix,
                             scale,
-                            text_geometry.font_scale(),
-                            text_geometry.distance_range,
+                            font_scale,
+                            distance_range,
                         );
                     }
                 }
@@ -535,15 +426,31 @@ impl NativeRenderer {
         buffer.reserve(request.fills.len());
 
         for fill in &request.fills {
-            let (x, w) = request.offsets.column_position_size(fill.col);
-            let (y, h) = request.offsets.row_position_size(fill.row);
-            buffer.add_rect(x as f32, y as f32, w as f32, h as f32, fill.color);
+            // Get screen rectangle from cell coordinates
+            let (x, _) = request.offsets.column_position_size(fill.x);
+            let (y, _) = request.offsets.row_position_size(fill.y);
+
+            // Calculate width and height by getting the end position
+            let (x_end, w_end) = request
+                .offsets
+                .column_position_size(fill.x + fill.w as i64 - 1);
+            let (y_end, h_end) = request
+                .offsets
+                .row_position_size(fill.y + fill.h as i64 - 1);
+
+            let width = (x_end + w_end - x) as f32;
+            let height = (y_end + h_end - y) as f32;
+
+            buffer.add_rect(x as f32, y as f32, width, height, fill.color.to_f32_array());
         }
 
         buffer
     }
 
     /// Create grid lines for visible area
+    ///
+    /// Uses core's GridLines::generate_for_bounds() and adds selection-edge handling
+    /// to ensure boundary lines are visible at viewport edges.
     fn create_grid_lines(
         &self,
         request: &RenderRequest,
@@ -551,9 +458,6 @@ impl NativeRenderer {
         viewport_y: f32,
         scale: f32,
     ) -> LineBuffer {
-        let mut buffer = LineBuffer::new();
-        let color = [0.9, 0.9, 0.9, 1.0]; // Light gray
-
         // Calculate visible bounds from viewport
         let visible_width = self.width as f32 / scale;
         let visible_height = self.height as f32 / scale;
@@ -562,68 +466,40 @@ impl NativeRenderer {
         let right = left + visible_width;
         let bottom = top + visible_height;
 
-        // Get column range from viewport
-        let (min_col, _) = request.offsets.column_from_x(left.max(0.0) as f64);
-        let (max_col, _) = request.offsets.column_from_x(right.max(0.0) as f64);
+        // Generate base grid lines from core
+        let mut buffer = GridLines::generate_for_bounds(left, top, right, bottom, &request.offsets);
 
-        // Get row range from viewport
-        let (min_row, _) = request.offsets.row_from_y(top.max(0.0) as f64);
-        let (max_row, _) = request.offsets.row_from_y(bottom.max(0.0) as f64);
-
-        // Always draw the left edge line at the selection boundary
-        // Add 0.5 pixel offset so the line is fully visible (not half-clipped at edge)
+        // Selection boundary handling for screenshots:
+        // When the selection edge is at the viewport edge, we need to offset by 0.5px
+        // so the line is fully visible (not half-clipped)
         let (sel_left, _) = request
             .offsets
             .column_position_size(request.selection.start_col);
         let sel_left = sel_left as f32;
-        let sel_left_draw = if sel_left == left {
-            sel_left + 0.5
-        } else {
-            sel_left
-        };
-        if sel_left >= left && sel_left <= right {
-            buffer.add_line(sel_left_draw, top.max(0.0), sel_left_draw, bottom, color);
-        }
 
-        // Always draw the top edge line at the selection boundary
-        // Add 0.5 pixel offset so the line is fully visible (not half-clipped at edge)
         let (sel_top, _) = request
             .offsets
             .row_position_size(request.selection.start_row);
         let sel_top = sel_top as f32;
-        let sel_top_draw = if sel_top == top {
-            sel_top + 0.5
-        } else {
-            sel_top
-        };
-        if sel_top >= top && sel_top <= bottom {
-            buffer.add_line(left.max(0.0), sel_top_draw, right, sel_top_draw, color);
-        }
 
-        // Vertical lines (column boundaries)
-        for col in min_col..=max_col + 1 {
-            let (x, _) = request.offsets.column_position_size(col);
-            let x = x as f32;
-            // Skip if this is the same as the selection left edge (already drawn)
-            if (x - sel_left).abs() < 0.01 {
-                continue;
-            }
-            if x >= left && x <= right {
-                buffer.add_line(x, top.max(0.0), x, bottom, color);
-            }
+        // Add offset lines at selection boundaries if they're at viewport edges
+        if (sel_left - left).abs() < 0.01 && sel_left >= left && sel_left <= right {
+            buffer.add_line(
+                sel_left + 0.5,
+                top.max(0.0),
+                sel_left + 0.5,
+                bottom,
+                GRID_LINE_COLOR,
+            );
         }
-
-        // Horizontal lines (row boundaries)
-        for row in min_row..=max_row + 1 {
-            let (y, _) = request.offsets.row_position_size(row);
-            let y = y as f32;
-            // Skip if this is the same as the selection top edge (already drawn)
-            if (y - sel_top).abs() < 0.01 {
-                continue;
-            }
-            if y >= top && y <= bottom {
-                buffer.add_line(left.max(0.0), y, right, y, color);
-            }
+        if (sel_top - top).abs() < 0.01 && sel_top >= top && sel_top <= bottom {
+            buffer.add_line(
+                left.max(0.0),
+                sel_top + 0.5,
+                right,
+                sel_top + 0.5,
+                GRID_LINE_COLOR,
+            );
         }
 
         buffer
@@ -634,94 +510,66 @@ impl NativeRenderer {
         (self.width, self.height)
     }
 
-    /// Create text geometry from request
-    fn create_text_geometry(&self, request: &RenderRequest, _scale: f32) -> TextGeometry {
+    /// Create text meshes from request using CellLabel from core
+    ///
+    /// Returns (meshes, atlas_font_size, distance_range) for MSDF rendering.
+    fn create_text_meshes(&self, request: &RenderRequest) -> (Vec<LabelMesh>, f32, f32) {
         let default_font = self.fonts.default_font();
         let Some(font) = default_font else {
-            return TextGeometry::new(DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE, 4.0);
+            return (Vec::new(), 14.0, 4.0);
         };
 
-        let distance_range = font.distance_range;
         let atlas_font_size = font.size;
-        // Use the default font size for rendering (individual cells may override)
-        let mut geometry = TextGeometry::new(atlas_font_size, DEFAULT_FONT_SIZE, distance_range);
+        let distance_range = font.distance_range;
 
-        for cell_text in &request.text {
-            self.layout_cell_text(cell_text, request, &mut geometry);
+        // First pass: Create and layout all labels
+        let mut labels: Vec<CellLabel> = Vec::with_capacity(request.cells.len());
+
+        for cell in &request.cells {
+            // Skip empty cells
+            if cell.value.is_empty() {
+                continue;
+            }
+
+            // Create CellLabel from RenderCell (handles all styling)
+            let mut label = CellLabel::from_render_cell(cell);
+
+            // Set cell bounds from offsets
+            label.update_bounds(&request.offsets);
+
+            // Layout the text (computes glyph positions and overflow values)
+            label.layout(&self.fonts);
+
+            labels.push(label);
         }
 
-        geometry
-    }
+        // Second pass: Calculate clip bounds for text overflow
+        // This ensures overflowing text is clipped by neighboring cell content
+        calculate_clip_bounds(&mut labels);
 
-    /// Layout a single cell's text
-    fn layout_cell_text(
-        &self,
-        cell_text: &CellText,
-        request: &RenderRequest,
-        geometry: &mut TextGeometry,
-    ) {
-        // Get the appropriate font
-        let font = self
-            .fonts
-            .get(&BitmapFonts::get_font_name(
-                cell_text.bold,
-                cell_text.italic,
-            ))
-            .or_else(|| self.fonts.default_font());
+        // Third pass: Generate meshes from clipped labels
+        let mut mesh_map: HashMap<u32, LabelMesh> = HashMap::new();
 
-        let Some(font) = font else {
-            return;
-        };
-
-        // Get cell bounds
-        let (cell_x, cell_w) = request.offsets.column_position_size(cell_text.col);
-        let (cell_y, _cell_h) = request.offsets.row_position_size(cell_text.row);
-
-        let cell_x = cell_x as f32;
-        let cell_y = cell_y as f32;
-        let _cell_w = cell_w as f32;
-
-        // Calculate font scale
-        let font_size = cell_text.font_size;
-        let font_scale = font_size / font.size;
-
-        // Starting position
-        let mut x = cell_x + CELL_PADDING_LEFT;
-        let y = cell_y + CELL_PADDING_TOP + (font.line_height * font_scale);
-
-        let color = cell_text.color;
-        let mut prev_char: Option<u32> = None;
-
-        // Layout each character
-        for c in cell_text.text.chars() {
-            let char_code = c as u32;
-
-            if let Some(glyph) = font.get_char(char_code) {
-                // Apply kerning
-                if let Some(prev) = prev_char {
-                    x += font.get_kerning(prev, char_code) * font_scale;
-                }
-
-                // Calculate glyph position
-                let glyph_x = x + glyph.x_offset * font_scale;
-                let glyph_y = y + glyph.y_offset * font_scale - font.line_height * font_scale;
-                let glyph_w = glyph.frame.width * font_scale;
-                let glyph_h = glyph.frame.height * font_scale;
-
-                // Get UVs from the glyph
-                let (u0, v0, u1, v1) = if glyph.uvs.len() >= 6 {
-                    (glyph.uvs[0], glyph.uvs[1], glyph.uvs[2], glyph.uvs[5])
+        for mut label in labels {
+            // Merge meshes by texture_uid
+            for mesh in label.get_meshes(&self.fonts) {
+                if let Some(existing) = mesh_map.get_mut(&mesh.texture_uid) {
+                    // Merge vertices and indices
+                    let offset = existing.vertices.len() as u32;
+                    existing.vertices.extend(mesh.vertices.iter().cloned());
+                    for &idx in &mesh.indices {
+                        existing.indices.push(idx + offset);
+                    }
                 } else {
-                    (0.0, 0.0, 1.0, 1.0)
-                };
-
-                // Add quad to appropriate texture mesh
-                let mesh = geometry.get_or_create(glyph.texture_uid);
-                mesh.add_quad(glyph_x, glyph_y, glyph_w, glyph_h, u0, v0, u1, v1, color);
-
-                x += glyph.x_advance * font_scale;
-                prev_char = Some(char_code);
+                    mesh_map.insert(mesh.texture_uid, mesh.clone());
+                }
             }
         }
+
+        (
+            mesh_map.into_values().collect(),
+            atlas_font_size,
+            distance_range,
+        )
     }
 }

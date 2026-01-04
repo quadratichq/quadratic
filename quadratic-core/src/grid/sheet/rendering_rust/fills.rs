@@ -4,7 +4,13 @@
 //! `quadratic-core-shared` directly, eliminating conversion overhead.
 
 use crate::{Pos, Rect, grid::Sheet};
-use quadratic_core_shared::{RenderFill, SheetFill};
+use quadratic_core_shared::{RenderFill, Rgba, SheetFill};
+
+/// Parse a CSS color string to Rgba.
+/// Supports hex (#RGB, #RRGGBB, #RRGGBBAA) and rgb()/rgba() formats.
+fn parse_color(color: &str) -> Rgba {
+    Rgba::from_css(color).unwrap_or(Rgba::TRANSPARENT)
+}
 
 impl Sheet {
     /// Returns finite fills that intersect with the given rect (Rust-native version).
@@ -21,7 +27,7 @@ impl Sheet {
                             y: y0,
                             w: (x1 - x0 + 1) as u32,
                             h: (y1 - y0 + 1) as u32,
-                            color,
+                            color: parse_color(&color),
                         })
                     } else {
                         None
@@ -73,7 +79,7 @@ impl Sheet {
                                                         y,
                                                         w: (x1 - x + 1) as u32,
                                                         h: 1,
-                                                        color: color.clone(),
+                                                        color: parse_color(&color),
                                                     });
                                                 }
                                             }
@@ -92,7 +98,7 @@ impl Sheet {
                                                     y,
                                                     w: (x1 - x + 1) as u32,
                                                     h: (y1 - y + 1) as u32,
-                                                    color,
+                                                    color: parse_color(&color),
                                                 });
                                             }
                                         };
@@ -122,7 +128,7 @@ impl Sheet {
                         y: y0 as u32,
                         w: x1.map(|x1| (x1 - x0 + 1) as u32),
                         h: y1.map(|y1| (y1 - y0 + 1) as u32),
-                        color,
+                        color: parse_color(&color),
                     })
                 }
             })
@@ -150,7 +156,7 @@ mod tests {
                 y,
                 w,
                 h,
-                color: color.to_string()
+                color: parse_color(color),
             }
         );
     }
@@ -188,7 +194,7 @@ mod tests {
                 y: 3,
                 w: Some(3),
                 h: None,
-                color: "red".to_string(),
+                color: parse_color("red"),
             }
         );
         assert_eq!(
@@ -198,7 +204,7 @@ mod tests {
                 y: 2,
                 w: None,
                 h: Some(1),
-                color: "blue".to_string(),
+                color: parse_color("blue"),
             }
         );
     }

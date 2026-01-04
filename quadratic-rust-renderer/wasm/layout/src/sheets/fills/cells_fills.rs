@@ -6,7 +6,6 @@ use quadratic_core_shared::{RenderFill, SheetFill, SheetOffsets};
 use quadratic_renderer_core::{hash_key, FillBuffer};
 
 use super::CellsFillsHash;
-use crate::utils::color::parse_color_string;
 use crate::viewport::Viewport;
 
 /// Manages all fills for a sheet
@@ -120,7 +119,7 @@ impl CellsFills {
         let mut buffer = FillBuffer::new();
 
         for fill in &self.meta_fills {
-            let color = parse_color_string(&fill.color);
+            let color = fill.color.to_f32_array();
 
             // SheetFill uses x, y, w, h format
             // w=None means full width, h=None means full height

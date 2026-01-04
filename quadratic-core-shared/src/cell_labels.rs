@@ -5,7 +5,7 @@
 
 use bincode::{Decode, Encode};
 
-use crate::CodeCellLanguage;
+use crate::{CodeCellLanguage, Rgba};
 
 // =============================================================================
 // Alignment & Wrap Enums
@@ -99,7 +99,7 @@ pub struct RenderCellLinkSpan {
 
 /// A formatting span within a cell for RichText inline styling.
 /// These override the cell-level formatting for the specified character range.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Default, Encode, Decode)]
 pub struct RenderCellFormatSpan {
     /// Start character index (inclusive).
     pub start: u32,
@@ -113,8 +113,8 @@ pub struct RenderCellFormatSpan {
     pub underline: Option<bool>,
     /// Strike-through override (None means use cell default).
     pub strike_through: Option<bool>,
-    /// Text color override (None means use cell default).
-    pub text_color: Option<String>,
+    /// Text color override (None means use cell default, uses Rgba for efficiency).
+    pub text_color: Option<Rgba>,
     /// Hyperlink URL (None means no link).
     pub link: Option<String>,
 }
@@ -127,7 +127,7 @@ pub struct RenderCellFormatSpan {
 ///
 /// This contains all information needed to render cell text, including
 /// the display value, formatting, alignment, and RichText spans.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Default, Encode, Decode)]
 pub struct RenderCell {
     /// Cell column position (1-indexed).
     pub x: i64,
@@ -155,8 +155,8 @@ pub struct RenderCell {
     pub underline: Option<bool>,
     /// Strike-through text.
     pub strike_through: Option<bool>,
-    /// Text color (CSS color string, e.g., "#ff0000" or "rgb(255,0,0)").
-    pub text_color: Option<String>,
+    /// Text color (uses Rgba for efficient renderer communication).
+    pub text_color: Option<Rgba>,
     /// Font size in points (default is 14).
     pub font_size: Option<i16>,
 

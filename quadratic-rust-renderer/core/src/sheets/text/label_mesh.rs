@@ -54,7 +54,7 @@ pub struct LabelMesh {
     pub vertices: Vec<TextVertex>,
 
     /// Indices (6 per glyph - two triangles)
-    pub indices: Vec<u16>,
+    pub indices: Vec<u32>,
 }
 
 impl LabelMesh {
@@ -79,7 +79,7 @@ impl LabelMesh {
         uvs: &[f32; 8],
         color: [f32; 4],
     ) {
-        let base_index = self.vertices.len() as u16;
+        let base_index = self.vertices.len() as u32;
 
         // Add 4 vertices (top-left, top-right, bottom-right, bottom-left)
         self.vertices
@@ -115,7 +115,7 @@ impl LabelMesh {
     }
 
     /// Get index data
-    pub fn get_index_data(&self) -> &[u16] {
+    pub fn get_index_data(&self) -> &[u32] {
         &self.indices
     }
 
@@ -128,5 +128,28 @@ impl LabelMesh {
     pub fn clear(&mut self) {
         self.vertices.clear();
         self.indices.clear();
+    }
+
+    /// Get number of glyphs
+    pub fn glyph_count(&self) -> usize {
+        self.vertices.len() / 4
+    }
+}
+
+impl Default for LabelMesh {
+    fn default() -> Self {
+        Self::new(String::new(), 14.0, 0)
+    }
+}
+
+impl LabelMesh {
+    /// Convert to TextBuffer for serialization/transfer
+    pub fn to_text_buffer(&self) -> crate::types::TextBuffer {
+        crate::types::TextBuffer {
+            texture_uid: self.texture_uid,
+            font_size: self.font_size,
+            vertices: self.get_vertex_data(),
+            indices: self.indices.clone(),
+        }
     }
 }

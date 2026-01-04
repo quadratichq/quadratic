@@ -3,7 +3,6 @@
 use quadratic_core_shared::{RenderFill, SheetOffsets};
 use quadratic_renderer_core::{FillBuffer, HASH_HEIGHT, HASH_WIDTH};
 
-use crate::utils::color::parse_color_string;
 
 /// A spatial hash containing fills for a hash region
 pub struct CellsFillsHash {
@@ -102,9 +101,8 @@ impl CellsFillsHash {
             let width = (x_end + w_end - x) as f32;
             let height = (y_end + h_end - y) as f32;
 
-            let color = parse_color_string(&fill.color);
             self.cached_buffer
-                .add_rect(x as f32, y as f32, width, height, color);
+                .add_rect(x as f32, y as f32, width, height, fill.color.to_f32_array());
         }
 
         self.dirty = false;

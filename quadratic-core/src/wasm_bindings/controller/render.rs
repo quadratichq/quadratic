@@ -84,7 +84,7 @@ impl GridController {
     /// Send meta fills (row/column/sheet fills) to the rust renderer.
     #[wasm_bindgen(js_name = "sendSheetMetaFillsToRustRenderer")]
     pub fn send_sheet_meta_fills_to_rust_renderer(&self, sheet_id: String) {
-        use quadratic_core_shared::{CoreToRenderer, SheetFill, serialization};
+        use quadratic_core_shared::{CoreToRenderer, serialization};
 
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return;
@@ -93,22 +93,11 @@ impl GridController {
             return;
         };
 
-        let fills = sheet.get_all_sheet_fills();
-
-        // Convert to shared types
-        let shared_fills: Vec<SheetFill> = fills
-            .iter()
-            .map(|f| SheetFill {
-                x: f.x,
-                y: f.y,
-                w: f.w,
-                h: f.h,
-                color: f.color.clone(),
-            })
-            .collect();
+        // Use Rust-native rendering function directly - returns SheetFill with Rgba
+        let fills = sheet.get_rust_all_sheet_fills();
 
         // Serialize the fills
-        let Ok(fills_bytes) = serialization::serialize(&shared_fills) else {
+        let Ok(fills_bytes) = serialization::serialize(&fills) else {
             return;
         };
 

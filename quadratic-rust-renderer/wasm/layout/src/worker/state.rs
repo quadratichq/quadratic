@@ -5,9 +5,11 @@ use std::collections::HashSet;
 use quadratic_core_shared::{
     GridBounds, Pos, RenderCell, RenderCodeCell, RenderFill, SheetFill, SheetId, SheetOffsets,
 };
-use quadratic_renderer_core::{hash_key, RenderBatch};
+use quadratic_renderer_core::{
+    calculate_clip_updates, hash_key, LabelOverflowInfo, RenderBatch,
+};
 
-use crate::sheets::text::{BitmapFonts, CellLabel, CellsTextHash};
+use crate::sheets::text::{BitmapFonts, CellLabel, TextHash};
 use crate::sheets::Sheets;
 use crate::ui::UILayout;
 use crate::viewport::Viewport;
@@ -139,7 +141,7 @@ impl LayoutState {
         }
 
         // Create new hash
-        let mut hash = CellsTextHash::new(hash_x, hash_y, &offsets);
+        let mut hash = TextHash::new(hash_x, hash_y, &offsets);
 
         for cell in &cells {
             if cell.value.is_empty() && cell.special.is_none() {
@@ -238,211 +240,102 @@ impl LayoutState {
     // =========================================================================
 
     /// Update clip bounds for all visible hashes.
-    /// Similar to TypeScript's checkClip method in CellsTextHash.
     ///
-    /// For each label:
-    /// - Find neighbor to the left: if they have right overflow, clip them at our left edge
-    /// - Find neighbor to the right: if they have left overflow, clip them at our right edge
-    /// - If we have left overflow extending into neighbor, clip ourselves at neighbor's right edge
-    /// - If we have right overflow extending into neighbor, clip ourselves at neighbor's left edge
+    /// Uses shared clip bounds logic from core to ensure consistency
+    /// with native renderer.
     ///
     /// This is only run when there are dirty hashes that need processing.
     fn update_clip_bounds(&mut self) {
-        // Only run clip bounds calculation if there are dirty hashes
-        // This prevents running every frame when nothing has changed
-        let has_dirty_hashes = self.sheets.current_sheet().map_or(false, |sheet| {
-            sheet.hashes.values().any(|h| h.is_dirty())
+        use quadratic_renderer_core::get_hash_coords;
+
+        // Get visible hash bounds first - we only apply updates to visible hashes
+        let offsets = self.sheets.current_sheet_offsets();
+        let visible_bounds = self.viewport.visible_hash_bounds(&offsets);
+
+        // Only run clip bounds calculation if there are dirty hashes in visible area
+        let has_dirty_visible_hashes = self.sheets.current_sheet().map_or(false, |sheet| {
+            sheet.hashes.iter().any(|(_, h)| {
+                h.is_dirty() && visible_bounds.contains(h.hash_x, h.hash_y)
+            })
         });
-        if !has_dirty_hashes {
+        if !has_dirty_visible_hashes {
             return;
         }
-        use quadratic_renderer_core::get_hash_coords;
 
         let Some(sheet) = self.sheets.current_sheet_mut() else {
             return;
         };
 
-        let offsets = sheet.sheet_offsets.clone();
-        let hash_bounds = self.viewport.visible_hash_bounds(&offsets);
+        // Collect label overflow info from visible hashes only.
+        // This prevents marking non-visible hashes dirty (which would never get cleared).
+        let mut label_infos: Vec<LabelOverflowInfo> = Vec::new();
 
-        // We need multiple passes to handle cross-hash clipping:
-        // 1. First, collect all label data from visible hashes
-        // 2. Then calculate clip updates
-        // 3. Finally, apply updates
-
-        struct LabelInfo {
-            hash_key: u64,
-            col: i64,
-            row: i64,
-            cell_left: f32,
-            cell_right: f32,
-            overflow_left: f32,
-            overflow_right: f32,
-        }
-
-        struct ClipUpdate {
-            hash_key: u64,
-            col: i64,
-            row: i64,
-            clip_left: Option<f32>,
-            clip_right: Option<f32>,
-        }
-
-        // Collect label info from all visible hashes
-        let mut label_infos: Vec<LabelInfo> = Vec::new();
-
-        for (hx, hy) in hash_bounds.iter() {
-            let key = hash_key(hx, hy);
-            if let Some(hash) = sheet.hashes.get(&key) {
-                for (_, label) in hash.labels_iter() {
-                    let overflow_right = label.overflow_right();
-                    let overflow_left = label.overflow_left();
-
-                    // Log labels with overflow
-                    if overflow_right > 0.0 || overflow_left > 0.0 {
-                        log::debug!(
-                            "[update_clip_bounds] Label ({}, {}): overflow_left={:.1}, overflow_right={:.1}, cell_left={:.1}, cell_right={:.1}",
-                            label.col(),
-                            label.row(),
-                            overflow_left,
-                            overflow_right,
-                            label.cell_left(),
-                            label.cell_right()
-                        );
-                    }
-
-                    label_infos.push(LabelInfo {
-                        hash_key: key,
-                        col: label.col(),
-                        row: label.row(),
-                        cell_left: label.cell_left(),
-                        cell_right: label.cell_right(),
-                        overflow_left,
-                        overflow_right,
-                    });
-                }
+        for hash in sheet.hashes.values() {
+            // Only collect from visible hashes
+            if !visible_bounds.contains(hash.hash_x, hash.hash_y) {
+                continue;
             }
-        }
-
-        // Calculate clip updates
-        let mut updates: Vec<ClipUpdate> = Vec::new();
-
-        for info in &label_infos {
-            let mut clip_left: Option<f32> = None;
-            let mut clip_right: Option<f32> = None;
-
-            // Check neighbor to the LEFT
-            if let Some(neighbor_col) = sheet.find_content_left(info.col, info.row) {
-                let (neighbor_hash_x, neighbor_hash_y) = get_hash_coords(neighbor_col, info.row);
-                let neighbor_key = hash_key(neighbor_hash_x, neighbor_hash_y);
-
-                if let Some(neighbor_hash) = sheet.hashes.get(&neighbor_key) {
-                    if let Some(neighbor_label) = neighbor_hash.get_label(neighbor_col, info.row) {
-                        let neighbor_cell_right = neighbor_label.cell_right();
-                        let neighbor_overflow_right = neighbor_label.overflow_right();
-
-                        // If neighbor has right overflow extending into our cell, clip them
-                        if neighbor_overflow_right > 0.0 {
-                            let neighbor_text_right = neighbor_cell_right + neighbor_overflow_right;
-                            if neighbor_text_right > info.cell_left {
-                                updates.push(ClipUpdate {
-                                    hash_key: neighbor_key,
-                                    col: neighbor_col,
-                                    row: info.row,
-                                    clip_left: None,
-                                    clip_right: Some(info.cell_left),
-                                });
-                            }
-                        }
-
-                        // If WE have left overflow extending into neighbor, clip ourselves
-                        if info.overflow_left > 0.0 {
-                            let text_left = info.cell_left - info.overflow_left;
-                            if text_left < neighbor_cell_right {
-                                clip_left = Some(neighbor_cell_right);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Check neighbor to the RIGHT
-            if let Some(neighbor_col) = sheet.find_content_right(info.col, info.row) {
-                let (neighbor_hash_x, neighbor_hash_y) = get_hash_coords(neighbor_col, info.row);
-                let neighbor_key = hash_key(neighbor_hash_x, neighbor_hash_y);
-
-                if let Some(neighbor_hash) = sheet.hashes.get(&neighbor_key) {
-                    if let Some(neighbor_label) = neighbor_hash.get_label(neighbor_col, info.row) {
-                        let neighbor_cell_left = neighbor_label.cell_left();
-                        let neighbor_overflow_left = neighbor_label.overflow_left();
-
-                        // If neighbor has left overflow extending into our cell, clip them
-                        if neighbor_overflow_left > 0.0 {
-                            let neighbor_text_left = neighbor_cell_left - neighbor_overflow_left;
-                            if neighbor_text_left < info.cell_right {
-                                updates.push(ClipUpdate {
-                                    hash_key: neighbor_key,
-                                    col: neighbor_col,
-                                    row: info.row,
-                                    clip_left: Some(info.cell_right),
-                                    clip_right: None,
-                                });
-                            }
-                        }
-
-                        // If WE have right overflow extending into neighbor, clip ourselves
-                        if info.overflow_right > 0.0 {
-                            let text_right = info.cell_right + info.overflow_right;
-                            if text_right > neighbor_cell_left {
-                                clip_right = Some(neighbor_cell_left);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add our own update if we need clipping
-            if clip_left.is_some() || clip_right.is_some() {
-                updates.push(ClipUpdate {
-                    hash_key: info.hash_key,
-                    col: info.col,
-                    row: info.row,
-                    clip_left,
-                    clip_right,
+            for (_, label) in hash.labels_iter() {
+                label_infos.push(LabelOverflowInfo {
+                    col: label.col(),
+                    row: label.row(),
+                    cell_left: label.cell_left(),
+                    cell_right: label.cell_right(),
+                    overflow_left: label.overflow_left(),
+                    overflow_right: label.overflow_right(),
                 });
             }
         }
 
-        // Apply all updates - only mark hash dirty if clips actually changed
+        // Use shared clip bounds calculation from core
+        let updates = calculate_clip_updates(
+            &label_infos,
+            |col, row| sheet.find_content_left(col, row),
+            |col, row| sheet.find_content_right(col, row),
+            |col, row| {
+                let (neighbor_hash_x, neighbor_hash_y) = get_hash_coords(col, row);
+                let neighbor_key = hash_key(neighbor_hash_x, neighbor_hash_y);
+                sheet
+                    .hashes
+                    .get(&neighbor_key)
+                    .and_then(|h| h.get_label(col, row))
+                    .map(|label| LabelOverflowInfo {
+                        col,
+                        row,
+                        cell_left: label.cell_left(),
+                        cell_right: label.cell_right(),
+                        overflow_left: label.overflow_left(),
+                        overflow_right: label.overflow_right(),
+                    })
+            },
+        );
+
+        // Apply clip updates to labels
         for update in updates {
-            if let Some(hash) = sheet.hashes.get_mut(&update.hash_key) {
+            let (update_hash_x, update_hash_y) = get_hash_coords(update.col, update.row);
+            let update_key = hash_key(update_hash_x, update_hash_y);
+
+            if let Some(hash) = sheet.hashes.get_mut(&update_key) {
                 let mut hash_needs_rebuild = false;
                 if let Some(label) = hash.get_label_mut(update.col, update.row) {
-                    // Check if clip_left would change
+                    // Apply clip_left if changed
                     if let Some(cl) = update.clip_left {
                         if label.clip_left() != Some(cl) {
-                            log::debug!(
-                                "[update_clip_bounds] Setting clip_left={:.1} on label ({}, {})",
-                                cl, update.col, update.row
-                            );
                             label.set_clip_left(cl);
                             hash_needs_rebuild = true;
                         }
                     }
-                    // Check if clip_right would change
+                    // Apply clip_right if changed
                     if let Some(cr) = update.clip_right {
                         if label.clip_right() != Some(cr) {
-                            log::debug!(
-                                "[update_clip_bounds] Setting clip_right={:.1} on label ({}, {})",
-                                cr, update.col, update.row
-                            );
                             label.set_clip_right(cr);
                             hash_needs_rebuild = true;
                         }
                     }
                 }
-                // Mark hash as dirty so it gets rebuilt with the new clip bounds
-                if hash_needs_rebuild {
+                // Only mark visible hashes dirty to avoid infinite loops
+                // (non-visible dirty hashes never get rebuilt)
+                if hash_needs_rebuild && visible_bounds.contains(update_hash_x, update_hash_y) {
                     hash.mark_dirty();
                 }
             }
@@ -483,14 +376,12 @@ impl LayoutState {
 
         // Grid lines - only include if dirty
         if let Some(buffer) = self.ui.grid_lines.take_buffer() {
-            log::debug!("[generate_render_batch] Including grid lines buffer");
             batch.grid_lines = Some(buffer);
             has_dirty_content = true;
         }
 
         // Cursor - only include if dirty
         if let Some(data) = self.ui.cursor.take_render_data() {
-            log::debug!("[generate_render_batch] Including cursor data");
             batch.cursor = Some(data);
             has_dirty_content = true;
         }
@@ -505,10 +396,6 @@ impl LayoutState {
                 // Text hashes - ONLY include if dirty
                 if let Some(hash) = sheet.hashes.get_mut(&key) {
                     if hash.is_dirty() {
-                        log::info!(
-                            "[generate_render_batch] Rebuilding dirty hash ({}, {}) with {} labels",
-                            hash_x, hash_y, hash.label_count()
-                        );
                         // Rebuild and add to batch
                         let render_data = hash.rebuild(&self.fonts);
                         batch.hashes.push(render_data);

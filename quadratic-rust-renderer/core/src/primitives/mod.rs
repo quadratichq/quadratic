@@ -13,5 +13,5 @@ pub use color::{
     parse_opt as parse_color_opt, Color, DEFAULT_COLOR,
 };
 pub use rects::{Rect, Rects};
-pub use lines::{Lines, NativeLines};
+pub use lines::{Lines, LineScaling, NativeLines};
 pub use texture::{TextureId, TextureInfo, TextureRegistry};

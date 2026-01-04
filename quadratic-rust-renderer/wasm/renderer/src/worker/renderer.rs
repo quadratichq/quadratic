@@ -18,10 +18,10 @@
 use js_sys::SharedArrayBuffer;
 use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
-use web_sys::{HtmlImageElement, OffscreenCanvas};
+use web_sys::OffscreenCanvas;
 
 #[cfg(target_arch = "wasm32")]
-use crate::renderers::render_context::RenderContext;
+use quadratic_renderer_core::RenderContext;
 #[cfg(target_arch = "wasm32")]
 use crate::sheets::text::BitmapFont;
 use crate::viewport::ViewportBuffer;
@@ -105,29 +105,17 @@ impl WorkerRenderer {
         RenderBackend::is_webgpu_available()
     }
 
-    /// Create a new WebGL renderer from a transferred OffscreenCanvas (sync)
-    #[wasm_bindgen(constructor)]
-    pub fn new(canvas: OffscreenCanvas) -> Result<WorkerRenderer, JsValue> {
-        let width = canvas.width();
-        let height = canvas.height();
-
-        let backend = RenderBackend::create_webgl(canvas)?;
-        let state = RendererState::new(width as f32, height as f32);
-
-        Ok(Self {
-            backend,
-            state,
-            shared_viewport: None,
-        })
-    }
-
-    /// Create a new WebGPU renderer from a transferred OffscreenCanvas (async)
+    /// Create a new renderer from a transferred OffscreenCanvas (async)
+    ///
+    /// Automatically selects WebGPU if available, falling back to WebGL2.
+    /// Note: This replaces the old sync `new()` and `new_webgpu()` methods.
+    /// JavaScript should now always use: `await WorkerRenderer.create(canvas)`
     #[wasm_bindgen]
-    pub async fn new_webgpu(canvas: OffscreenCanvas) -> Result<WorkerRenderer, JsValue> {
+    pub async fn create(canvas: OffscreenCanvas) -> Result<WorkerRenderer, JsValue> {
         let width = canvas.width();
         let height = canvas.height();
 
-        let backend = RenderBackend::create_webgpu(canvas).await?;
+        let backend = RenderBackend::create(canvas).await?;
         let state = RendererState::new(width as f32, height as f32);
 
         Ok(Self {
@@ -140,10 +128,7 @@ impl WorkerRenderer {
     /// Get the backend type name
     #[wasm_bindgen]
     pub fn backend_name(&self) -> String {
-        match self.backend.backend_type() {
-            super::BackendType::WebGL => "WebGL".to_string(),
-            super::BackendType::WebGPU => "WebGPU".to_string(),
-        }
+        self.backend.backend_name().to_string()
     }
 
     // =========================================================================
@@ -375,24 +360,9 @@ impl WorkerRenderer {
     // Fonts
     // =========================================================================
 
-    /// Upload a font texture from an HtmlImageElement (WebGL only)
-    #[wasm_bindgen]
-    pub fn upload_font_texture(
-        &mut self,
-        texture_uid: u32,
-        image: &HtmlImageElement,
-    ) -> Result<(), JsValue> {
-        match &mut self.backend {
-            RenderBackend::WebGL(gl) => gl.upload_font_texture(texture_uid, image),
-            RenderBackend::WebGPU(_) => Err(JsValue::from_str(
-                "upload_font_texture not supported on WebGPU, use upload_font_texture_from_data",
-            )),
-        }
-    }
-
     /// Upload a font texture from raw RGBA pixel data
     #[wasm_bindgen]
-    pub fn upload_font_texture_from_data(
+    pub fn upload_font_texture(
         &mut self,
         texture_uid: u32,
         width: u32,
@@ -400,7 +370,7 @@ impl WorkerRenderer {
         data: &[u8],
     ) -> Result<(), JsValue> {
         self.backend
-            .upload_font_texture_from_data(texture_uid, width, height, data)?;
+            .upload_font_texture(texture_uid, width, height, data)?;
         // Mark headings dirty so they render now that textures are available
         self.state.set_headings_dirty();
         Ok(())
@@ -493,7 +463,7 @@ impl WorkerRenderer {
 
         // Upload the texture (reuse font texture mechanism)
         self.backend
-            .upload_font_texture_from_data(texture_uid, width, height, data)?;
+            .upload_font_texture(texture_uid, width, height, data)?;
 
         // Mark page as loaded
         self.state.emoji_sprites.mark_page_loaded(page);
@@ -869,14 +839,8 @@ impl WorkerRenderer {
             return false;
         }
 
-        // Dispatch to backend-specific rendering
-        // Pass None for batch - rendering now uses the persistent cache
-        let is_webgl = matches!(&self.backend, RenderBackend::WebGL(_));
-        let rendered = if is_webgl {
-            self.frame_webgl_with_batch(elapsed, None)
-        } else {
-            self.frame_webgpu_with_batch(elapsed, None)
-        };
+        // Render using unified wgpu backend (handles both WebGPU and WebGL2)
+        let rendered = self.frame_impl(elapsed);
 
         if rendered {
             // Mark everything as clean after rendering
@@ -957,12 +921,11 @@ impl WorkerRenderer {
         true
     }
 
-    /// Render a frame using WebGL with cached batch data
-    fn frame_webgl_with_batch(
-        &mut self,
-        _elapsed: f32,
-        _batch: Option<quadratic_renderer_core::RenderBatch>,
-    ) -> bool {
+    /// Unified frame rendering using RenderContext API
+    ///
+    /// This method uses core's RenderContext trait which works with both
+    /// WebGPU and WebGL2 backends via wgpu.
+    fn frame_impl(&mut self, _elapsed: f32) -> bool {
         // Pre-extract all values we need before borrowing backend
         let fonts_ready = self.fonts_ready();
         let (heading_width, heading_height) = self.state.get_heading_dimensions();
@@ -977,161 +940,12 @@ impl WorkerRenderer {
         let content_y = heading_height as i32;
         let content_width = (canvas_width as i32) - content_x;
         let content_height = (canvas_height as i32) - content_y;
-        let offsets = self.state.get_sheet_offsets().clone();
-        let (atlas_font_size, distance_range) = self.state.get_text_params();
-        let viewport_scale = self.state.viewport.effective_scale();
-        let show_headings = self.state.show_headings;
-        let _debug_show_text_updates = self.state.debug_show_text_updates;
         let _scale = self.state.viewport.scale();
-        let screen_matrix = self
-            .state
-            .create_screen_space_matrix(canvas_width, canvas_height);
-        let (heading_atlas_font_size, heading_distance_range) =
-            self.state.get_heading_text_params();
-
-        // Background vertices
-        let bg_vertices = render::get_background_vertices(&self.state.viewport);
-
-        // Pre-extract cached hash data for text rendering
-        let cached_hashes = self.state.batch_cache.get_hashes_vec();
-
-        // Now borrow backend
-        let gl = match &mut self.backend {
-            RenderBackend::WebGL(gl) => gl,
-            _ => return false,
-        };
-
-        // Begin frame
-        gl.begin_frame();
-
-        // Clear with out-of-bounds background color
-        let oob_gray = 253.0 / 255.0;
-        gl.clear(oob_gray, oob_gray, oob_gray, 1.0);
-
-        // Set viewport to content area (after headings)
-        gl.set_viewport(
-            content_x,
-            content_y,
-            content_width.max(0),
-            content_height.max(0),
-        );
-        gl.set_scissor(
-            content_x,
-            content_y,
-            content_width.max(0),
-            content_height.max(0),
-        );
-
-        // 1. Background
-        if let Some(_vertices) = bg_vertices {
-            let mut rects = crate::renderers::primitives::Rects::new();
-            // The vertices contain position and color, but we just need a simple white rect
-            let bounds = self.state.viewport.visible_bounds();
-            let x = bounds.left.max(0.0);
-            let y = bounds.top.max(0.0);
-            let width = bounds.right - x;
-            let height = bounds.bottom - y;
-            rects.add(x, y, width, height, [1.0, 1.0, 1.0, 1.0]);
-            rects.render(gl, &matrix_array);
-        }
-
-        // 2. Cell fills
-        if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-            sheet
-                .fills
-                .render(gl, &matrix_array, &self.state.viewport, &offsets);
-        }
-
-        // 3. Grid lines
-        self.state.ui.grid_lines.render(gl, &matrix_array);
-
-        // 4. Cell text - render from cached hash data
-        if fonts_ready && !cached_hashes.is_empty() {
-            render::render_text_from_cache(
-                gl,
-                &cached_hashes,
-                &matrix_array,
-                viewport_scale,
-                atlas_font_size,
-                distance_range,
-            );
-        }
-
-        // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
-        if fonts_ready {
-            if let Some(sheet) = self.state.sheets.current_sheet_mut() {
-                render::render_table_headers(
-                    gl,
-                    sheet,
-                    &self.state.viewport,
-                    &offsets,
-                    &self.state.fonts,
-                    &matrix_array,
-                    viewport_scale,
-                    atlas_font_size,
-                    distance_range,
-                    heading_width,
-                    heading_height,
-                    self.state.viewport.dpr,
-                );
-            }
-        }
-
-        // 7. Cursor
-        self.state
-            .ui
-            .cursor
-            .render(gl, &matrix_array, viewport_scale);
-
-        // Reset viewport for headings
-        gl.reset_viewport();
-        gl.disable_scissor();
-
-        // 8. Headings (screen space)
-        if show_headings && fonts_ready {
-            self.state.ui.headings.layout(&self.state.fonts);
-            self.state.ui.headings.render(
-                gl,
-                &screen_matrix,
-                &self.state.fonts,
-                heading_atlas_font_size,
-                heading_distance_range,
-                &offsets,
-            );
-        }
-
-        // Execute all buffered draw commands
-        gl.end_frame();
-
-        true
-    }
-
-    /// Render a frame using WebGPU with optional pre-computed batch
-    fn frame_webgpu_with_batch(
-        &mut self,
-        _elapsed: f32,
-        _batch: Option<quadratic_renderer_core::RenderBatch>,
-    ) -> bool {
-        // Pre-extract all values we need before complex borrows
-        let fonts_ready = self.fonts_ready();
-        let (heading_width, heading_height) = self.state.get_heading_dimensions();
-        let matrix = self
-            .state
-            .viewport
-            .view_projection_matrix_with_offset(heading_width, heading_height);
-        let matrix_array: [f32; 16] = matrix.to_cols_array();
-        let canvas_width = self.state.viewport.width();
-        let canvas_height = self.state.viewport.height();
-        let content_x = heading_width as u32;
-        let content_y = heading_height as u32;
-        let content_width = (canvas_width as u32).saturating_sub(content_x);
-        let content_height = (canvas_height as u32).saturating_sub(content_y);
-        let scale = self.state.viewport.scale();
         let effective_scale = self.state.viewport.effective_scale();
         let (atlas_font_size, distance_range) = self.state.get_text_params();
         let show_headings = self.state.show_headings;
         let offsets = self.state.get_sheet_offsets().clone();
-        let screen_matrix = self
+        let screen_matrix_array = self
             .state
             .create_screen_space_matrix(canvas_width, canvas_height);
         let (heading_atlas_font_size, heading_distance_range) =
@@ -1140,7 +954,7 @@ impl WorkerRenderer {
         // Pre-extract background vertices
         let bg_vertices = render::get_background_vertices(&self.state.viewport);
 
-        // Pre-extract fill vertices (mutable access needed to rebuild caches)
+        // Pre-extract fill vertices
         let (meta_fill_vertices, hash_fill_vertices) =
             if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                 render::get_fill_vertices(sheet, &self.state.viewport)
@@ -1148,7 +962,7 @@ impl WorkerRenderer {
                 (None, Vec::new())
             };
 
-        // Pre-extract table vertices (backgrounds and text meshes)
+        // Pre-extract table vertices
         let (table_name_bg, table_col_bg, table_outlines, table_header_lines, table_text_meshes) = if fonts_ready {
             if let Some(sheet) = self.state.sheets.current_sheet_mut() {
                 render::get_table_vertices_for_webgpu(
@@ -1179,264 +993,146 @@ impl WorkerRenderer {
             .get_border_vertices(effective_scale)
             .map(|v| v.to_vec());
 
-        // Pre-extract viewport bounds for text culling
-        let bounds = self.state.viewport.visible_bounds();
-        let padding = 100.0;
-        let min_x = bounds.left - padding;
-        let max_x = bounds.left + bounds.width + padding;
-        let min_y = bounds.top - padding;
-        let max_y = bounds.top + bounds.height + padding;
-
-        // Check if we need sprite rendering (zoomed out)
-        use crate::sheets::text::SPRITE_SCALE_THRESHOLD;
-        let use_sprites = scale < SPRITE_SCALE_THRESHOLD;
-
         // Pre-extract cached hash data for text rendering
         let cached_hashes = self.state.batch_cache.get_hashes_vec();
 
-        // Now borrow backend
-        let gpu = match &mut self.backend {
-            RenderBackend::WebGPU(gpu) => gpu,
-            _ => return false,
-        };
-
-        // Note: Sprite caching and geometry computation is now handled by Layout Worker.
-        // The batch contains pre-computed text geometry ready for GPU upload.
-        // TODO: Implement batch-based rendering for WebGPU (similar to WebGL)
-
-        // Get surface texture
-        let output = match gpu.get_current_texture() {
-            Ok(t) => t,
-            Err(e) => {
-                log::error!("Failed to get surface texture: {:?}", e);
-                return false;
-            }
-        };
-
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = gpu
-            .device()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
-
-        // Clear with out-of-bounds background color
-        let oob_gray = 253.0 / 255.0;
-
-        {
-            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: oob_gray as f64,
-                            g: oob_gray as f64,
-                            b: oob_gray as f64,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            // Set viewport to content area
-            if content_width > 0 && content_height > 0 {
-                pass.set_viewport(
-                    content_x as f32,
-                    content_y as f32,
-                    content_width as f32,
-                    content_height as f32,
-                    0.0,
-                    1.0,
-                );
-            }
-
-            // 1. Background
-            if let Some(ref vertices) = bg_vertices {
-                gpu.draw_triangles(&mut pass, vertices, &matrix_array);
-            }
-
-            // 2. Fills
-            if let Some(ref vertices) = meta_fill_vertices {
-                gpu.draw_triangles(&mut pass, vertices, &matrix_array);
-            }
-            for vertices in &hash_fill_vertices {
-                gpu.draw_triangles(&mut pass, vertices, &matrix_array);
-            }
-
-            // 3. Grid lines
-            if let Some(ref line_vertices) = grid_line_vertices {
-                gpu.draw_lines(&mut pass, line_vertices, &matrix_array);
-            }
-
-            // 4. Text - render from cached hash data
-            if fonts_ready && !cached_hashes.is_empty() {
-                render::render_text_from_cache_webgpu(
-                    gpu,
-                    &mut pass,
-                    &cached_hashes,
-                    &matrix_array,
-                    effective_scale,
-                    atlas_font_size,
-                    distance_range,
-                );
-            }
-            // Silence unused variable warnings for removed code paths
-            let _ = (min_x, max_x, min_y, max_y, scale, use_sprites);
-
-            // 5. Table headers (backgrounds and text) - rendered ON TOP of cell text
-            if !table_name_bg.is_empty() {
-                gpu.draw_triangles(&mut pass, &table_name_bg, &matrix_array);
-            }
-            if !table_col_bg.is_empty() {
-                gpu.draw_triangles(&mut pass, &table_col_bg, &matrix_array);
-            }
-            if !table_outlines.is_empty() {
-                gpu.draw_lines(&mut pass, &table_outlines, &matrix_array);
-            }
-            if !table_header_lines.is_empty() {
-                gpu.draw_lines(&mut pass, &table_header_lines, &matrix_array);
-            }
-            for mesh in &table_text_meshes {
-                if mesh.is_empty() {
-                    continue;
-                }
-                let font_scale = mesh.font_size / atlas_font_size;
-                let indices_u32: Vec<u32> =
-                    mesh.get_index_data().iter().map(|&i| i as u32).collect();
-                gpu.draw_text(
-                    &mut pass,
-                    &mesh.get_vertex_data(),
-                    &indices_u32,
-                    mesh.texture_uid,
-                    &matrix_array,
-                    effective_scale,
-                    font_scale,
-                    distance_range,
-                );
-            }
-
-            // 7. Cursor
-            if let Some(ref fill_vertices) = cursor_fill_vertices {
-                gpu.draw_triangles(&mut pass, fill_vertices, &matrix_array);
-            }
-            if let Some(ref border_vertices) = cursor_border_vertices {
-                gpu.draw_triangles(&mut pass, border_vertices, &matrix_array);
-            }
-        }
-
-        // 8. Headings in a second pass (screen space)
-        if show_headings && fonts_ready {
+        // Pre-extract heading data if needed (before borrowing context)
+        let heading_data = if show_headings && fonts_ready {
             self.state.ui.headings.layout(&self.state.fonts);
-            let debug_label_bounds = self.state.ui.headings.debug_label_bounds;
-
-            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Headings Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            let tex_width = output.texture.width();
-            let tex_height = output.texture.height();
-            pass.set_viewport(0.0, 0.0, tex_width as f32, tex_height as f32, 0.0, 1.0);
-            pass.set_scissor_rect(0, 0, tex_width, tex_height);
-
-            render::render_headings_webgpu(
-                gpu,
-                &mut pass,
-                &mut self.state.ui.headings,
+            Some(self.state.ui.headings.get_render_data(
                 &self.state.fonts,
-                &screen_matrix,
                 heading_atlas_font_size,
                 heading_distance_range,
                 &offsets,
-                scale,
-                debug_label_bounds,
+            ))
+        } else {
+            None
+        };
+
+        // Get render context
+        let ctx = self.backend.context_mut();
+
+        // Begin frame
+        ctx.begin_frame();
+
+        // Clear with out-of-bounds background color
+        let oob_gray = 253.0 / 255.0;
+        ctx.clear(oob_gray, oob_gray, oob_gray, 1.0);
+
+        // Set viewport to content area (after headings)
+        ctx.set_viewport(content_x, content_y, content_width.max(0), content_height.max(0));
+        ctx.set_scissor(content_x, content_y, content_width.max(0), content_height.max(0));
+
+        // 1. Background
+        if let Some(ref vertices) = bg_vertices {
+            ctx.draw_triangles(vertices, &matrix_array);
+        }
+
+        // 2. Fills
+        if let Some(ref vertices) = meta_fill_vertices {
+            ctx.draw_triangles(vertices, &matrix_array);
+        }
+        for vertices in &hash_fill_vertices {
+            ctx.draw_triangles(vertices, &matrix_array);
+        }
+
+        // 3. Grid lines
+        if let Some(ref line_vertices) = grid_line_vertices {
+            ctx.draw_lines(line_vertices, &matrix_array);
+        }
+
+        // 4. Text - render from cached hash data
+        if fonts_ready && !cached_hashes.is_empty() {
+            for hash_data in &cached_hashes {
+                for buf in &hash_data.text_buffers {
+                    if buf.vertices.is_empty() {
+                        continue;
+                    }
+                    let font_scale = buf.font_size / atlas_font_size;
+                    ctx.draw_text(
+                        &buf.vertices,
+                        &buf.indices,
+                        buf.texture_uid,
+                        &matrix_array,
+                        effective_scale,
+                        font_scale,
+                        distance_range,
+                    );
+                }
+            }
+        }
+
+        // 5. Table headers
+        if !table_name_bg.is_empty() {
+            ctx.draw_triangles(&table_name_bg, &matrix_array);
+        }
+        if !table_col_bg.is_empty() {
+            ctx.draw_triangles(&table_col_bg, &matrix_array);
+        }
+        if !table_outlines.is_empty() {
+            ctx.draw_lines(&table_outlines, &matrix_array);
+        }
+        if !table_header_lines.is_empty() {
+            ctx.draw_lines(&table_header_lines, &matrix_array);
+        }
+        for mesh in &table_text_meshes {
+            if mesh.is_empty() {
+                continue;
+            }
+            let font_scale = mesh.font_size / atlas_font_size;
+            ctx.draw_text(
+                &mesh.get_vertex_data(),
+                mesh.get_index_data(),
+                mesh.texture_uid,
+                &matrix_array,
+                effective_scale,
+                font_scale,
+                distance_range,
             );
         }
 
-        // Submit
-        gpu.queue().submit(std::iter::once(encoder.finish()));
-        output.present();
+        // 7. Cursor
+        if let Some(ref fill_vertices) = cursor_fill_vertices {
+            ctx.draw_triangles(fill_vertices, &matrix_array);
+        }
+        if let Some(ref border_vertices) = cursor_border_vertices {
+            ctx.draw_triangles(border_vertices, &matrix_array);
+        }
+
+        // 8. Headings (screen space)
+        ctx.reset_viewport();
+        ctx.disable_scissor();
+
+        if let Some((bg_vertices, line_vertices, text_meshes)) = heading_data {
+            // Draw heading backgrounds
+            if !bg_vertices.is_empty() {
+                ctx.draw_triangles(&bg_vertices, &screen_matrix_array);
+            }
+            // Draw heading grid lines
+            if !line_vertices.is_empty() {
+                ctx.draw_lines(&line_vertices, &screen_matrix_array);
+            }
+            // Draw heading text
+            for (vertices, indices, texture_uid, font_size) in &text_meshes {
+                if vertices.is_empty() {
+                    continue;
+                }
+                let font_scale = font_size / heading_atlas_font_size;
+                ctx.draw_text(
+                    vertices,
+                    indices,
+                    *texture_uid,
+                    &screen_matrix_array,
+                    1.0,  // headings use screen space
+                    font_scale,
+                    heading_distance_range,
+                );
+            }
+        }
+
+        // Execute all buffered draw commands
+        ctx.end_frame();
 
         true
-    }
-
-    /// Render emoji sprites for a hash using WebGPU
-    fn render_emoji_sprites_webgpu(
-        gpu: &mut crate::renderers::WebGPUContext,
-        pass: &mut wgpu::RenderPass<'_>,
-        hash: &crate::sheets::text::CellsTextHash,
-        matrix: &[f32; 16],
-    ) {
-        let emoji_sprites = hash.get_emoji_sprites();
-        if emoji_sprites.is_empty() {
-            return;
-        }
-
-        // Render each texture group
-        for (&texture_uid, sprites) in emoji_sprites {
-            if sprites.is_empty() {
-                continue;
-            }
-
-            // Build vertex data for all sprites in this group
-            let mut vertices: Vec<f32> = Vec::with_capacity(sprites.len() * 32);
-            let mut indices: Vec<u32> = Vec::with_capacity(sprites.len() * 6);
-
-            for (i, sprite) in sprites.iter().enumerate() {
-                // sprite.x and sprite.y are CENTER positions (matching TypeScript's anchor=0.5)
-                // Convert to corner positions for rendering
-                let half_w = sprite.width / 2.0;
-                let half_h = sprite.height / 2.0;
-                let x = sprite.x - half_w;
-                let y = sprite.y - half_h;
-                let x2 = sprite.x + half_w;
-                let y2 = sprite.y + half_h;
-                let u1 = sprite.uvs[0];
-                let v1 = sprite.uvs[1];
-                let u2 = sprite.uvs[2];
-                let v2 = sprite.uvs[3];
-
-                let base_index = (i * 4) as u32;
-
-                // Top-left, top-right, bottom-right, bottom-left
-                // Format: x, y, u, v, r, g, b, a
-                vertices.extend_from_slice(&[
-                    x, y, u1, v1, 1.0, 1.0, 1.0, 1.0, // Top-left
-                    x2, y, u2, v1, 1.0, 1.0, 1.0, 1.0, // Top-right
-                    x2, y2, u2, v2, 1.0, 1.0, 1.0, 1.0, // Bottom-right
-                    x, y2, u1, v2, 1.0, 1.0, 1.0, 1.0, // Bottom-left
-                ]);
-
-                indices.extend_from_slice(&[
-                    base_index,
-                    base_index + 1,
-                    base_index + 2,
-                    base_index,
-                    base_index + 2,
-                    base_index + 3,
-                ]);
-            }
-
-            // Draw the emoji sprites
-            gpu.draw_emoji_sprites(pass, texture_uid, &vertices, &indices, matrix);
-        }
     }
 }

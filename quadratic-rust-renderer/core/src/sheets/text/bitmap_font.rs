@@ -124,7 +124,7 @@ impl BitmapFont {
 }
 
 /// Collection of bitmap fonts indexed by name
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BitmapFonts {
     fonts: HashMap<String, BitmapFont>,
 }
@@ -186,4 +186,27 @@ impl BitmapFonts {
         let separator = if bold || italic { "-" } else { "" };
         format!("OpenSans{separator}{bold_str}{italic_str}")
     }
+
+    /// Get a font matching the style
+    pub fn get_font_for_style(&self, bold: bool, italic: bool) -> Option<&BitmapFont> {
+        let name = Self::get_font_name(bold, italic);
+        self.fonts.get(&name).or_else(|| self.default_font())
+    }
+}
+
+// =============================================================================
+// Character utilities
+// =============================================================================
+
+/// Extract char code from a character
+pub fn extract_char_code(c: char) -> u32 {
+    c as u32
+}
+
+/// Split text into characters
+///
+/// For now this is simple char iteration. In the future this could
+/// handle grapheme clusters for proper emoji support.
+pub fn split_text_to_characters(text: &str) -> Vec<char> {
+    text.chars().collect()
 }

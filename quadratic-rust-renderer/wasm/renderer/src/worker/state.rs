@@ -13,8 +13,7 @@ use quadratic_core_shared::{
 };
 
 use crate::sheets::text::{
-    BitmapFont, BitmapFonts, CellsTextHash, EmojiSprites, VisibleHashBounds, hash_key,
-    HASH_HEIGHT, HASH_WIDTH,
+    BitmapFont, BitmapFonts, EmojiSprites, SpriteCacheManager, VisibleHashBounds, hash_key,
 };
 use crate::sheets::{Sheet, Sheets};
 use crate::ui::ui::UI;
@@ -37,6 +36,9 @@ pub struct RendererState {
 
     /// Emoji spritesheets for emoji rendering (shared across all sheets)
     pub emoji_sprites: EmojiSprites,
+
+    /// Sprite cache manager for zoomed-out rendering
+    pub sprite_cache: SpriteCacheManager,
 
     /// Whether the renderer is running
     pub running: bool,
@@ -63,6 +65,7 @@ impl RendererState {
             ui: UI::default(),
             fonts: BitmapFonts::default(),
             emoji_sprites: EmojiSprites::new(),
+            sprite_cache: SpriteCacheManager::new(),
             running: false,
             show_headings: true,
             debug_show_text_updates: false,
@@ -255,219 +258,30 @@ impl RendererState {
 
         // NOTE: The Layout Worker does all the heavy text layout and sends
         // pre-computed RenderBatch to us. The Render Worker only needs to:
-        // 1. Track content cache (which cells have content)
-        // 2. Track loaded hashes (to avoid re-requesting)
+        // 1. Track loaded hashes (to avoid re-requesting)
+        // 2. Track label count (for stats)
         //
         // We intentionally skip:
         // - CellLabel creation and layout (Layout Worker handles this)
         // - Emoji page loading (Layout Worker handles this)
         // - Clip bounds calculation (Layout Worker handles this)
+        // - Content cache for overflow clipping (Layout Worker handles this)
 
         if let Some(sheet) = self.sheets.current_sheet_mut() {
-            let key = hash_key(hash_x, hash_y);
-
-            // Clear content cache for this hash region
-            sheet.clear_content_for_hash(hash_x, hash_y);
-
-            // Remove existing hash (if any)
-            if let Some(old_hash) = sheet.hashes.remove(&key) {
-                sheet.label_count = sheet.label_count.saturating_sub(old_hash.label_count());
-            }
-
-            // Track content for each cell (lightweight - just coordinates)
-            let content_cells: Vec<(i64, i64)> = cells
+            // Count cells with content (for stats)
+            let cell_count = cells
                 .iter()
                 .filter(|cell| !cell.value.is_empty() || cell.special.is_some())
-                .map(|cell| (cell.x, cell.y))
-                .collect();
+                .count();
 
-            // Add cells to content cache
-            for (x, y) in &content_cells {
-                sheet.add_content(*x, *y);
-            }
-
-            // Create empty hash to mark as loaded (prevents re-requesting)
-            // We don't populate with labels since rendering uses batch_cache
-            let hash = CellsTextHash::new(hash_x, hash_y, &sheet.sheet_offsets);
-            sheet.label_count += content_cells.len();
-            sheet.hashes.insert(key, hash);
+            // Mark hash as loaded (prevents re-requesting)
+            // Rendering uses batch_cache, not stored labels
+            sheet.mark_hash_loaded(hash_x, hash_y);
+            sheet.label_count += cell_count;
         }
 
         // Mark viewport dirty to trigger re-render with new data from batch_cache
         self.viewport.dirty = true;
-    }
-
-    /// Update clip bounds for all labels in a hash based on neighbor content
-    /// Similar to TypeScript's checkClip method
-    ///
-    /// The logic is: for each label in this hash, check neighbors to the left and right.
-    /// - If a neighbor exists to the left with right overflow, clip them at our left edge
-    /// - If we have left overflow, clip ourselves at that neighbor's right edge
-    /// - Similar logic for the right direction
-    fn update_clip_bounds_for_hash(&mut self, hash_x: i64, hash_y: i64) {
-        use crate::sheets::text::cells_text_hash::get_hash_coords;
-
-        let Some(sheet) = self.sheets.current_sheet_mut() else {
-            return;
-        };
-
-        let key = hash_key(hash_x, hash_y);
-        let Some(hash) = sheet.hashes.get(&key) else {
-            return;
-        };
-
-        // Collect label positions and their clip info to update
-        // We need to do this in multiple passes to avoid borrow conflicts
-        struct ClipUpdate {
-            col: i64,
-            row: i64,
-            clip_left: Option<f32>,
-            clip_right: Option<f32>,
-        }
-
-        let mut updates: Vec<ClipUpdate> = Vec::new();
-        let mut neighbor_updates: Vec<(i64, i64, ClipUpdate)> = Vec::new(); // (hash_x, hash_y, update)
-
-        // Get all labels in this hash with their data
-        let label_data: Vec<(i64, i64, f32, f32, f32, f32)> = hash
-            .labels_iter()
-            .map(|(_, l)| {
-                (
-                    l.col(),
-                    l.row(),
-                    l.cell_left(),
-                    l.cell_right(),
-                    l.overflow_left(),
-                    l.overflow_right(),
-                )
-            })
-            .collect();
-
-        for (col, row, cell_left, cell_right, overflow_left, overflow_right) in label_data {
-            let mut update = ClipUpdate {
-                col,
-                row,
-                clip_left: None,
-                clip_right: None,
-            };
-
-            // Check neighbors to the LEFT
-            // Even if this cell doesn't overflow left, we need to check if a neighbor
-            // overflows right INTO this cell and should be clipped
-            if let Some(neighbor_col) = sheet.find_content_left(col, row) {
-                let (neighbor_hash_x, neighbor_hash_y) = get_hash_coords(neighbor_col, row);
-                let neighbor_key = hash_key(neighbor_hash_x, neighbor_hash_y);
-
-                if let Some(neighbor_hash) = sheet.hashes.get(&neighbor_key) {
-                    if let Some(neighbor_label) = neighbor_hash.get_label(neighbor_col, row) {
-                        let neighbor_cell_right = neighbor_label.cell_right();
-                        let neighbor_overflow_right = neighbor_label.overflow_right();
-
-                        // If the neighbor has right overflow that extends to or past our cell,
-                        // clip them at our left edge
-                        if neighbor_overflow_right > 0.0 {
-                            let neighbor_text_right = neighbor_cell_right + neighbor_overflow_right;
-                            if neighbor_text_right > cell_left {
-                                neighbor_updates.push((
-                                    neighbor_hash_x,
-                                    neighbor_hash_y,
-                                    ClipUpdate {
-                                        col: neighbor_col,
-                                        row,
-                                        clip_left: None,
-                                        clip_right: Some(cell_left),
-                                    },
-                                ));
-                            }
-                        }
-
-                        // If THIS cell has left overflow, clip at the neighbor's right edge
-                        if overflow_left > 0.0 {
-                            let text_left = cell_left - overflow_left;
-                            if text_left < neighbor_cell_right {
-                                update.clip_left = Some(neighbor_cell_right);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Check neighbors to the RIGHT
-            // Even if this cell doesn't overflow right, we need to check if a neighbor
-            // overflows left INTO this cell and should be clipped
-            if let Some(neighbor_col) = sheet.find_content_right(col, row) {
-                let (neighbor_hash_x, neighbor_hash_y) = get_hash_coords(neighbor_col, row);
-                let neighbor_key = hash_key(neighbor_hash_x, neighbor_hash_y);
-
-                if let Some(neighbor_hash) = sheet.hashes.get(&neighbor_key) {
-                    if let Some(neighbor_label) = neighbor_hash.get_label(neighbor_col, row) {
-                        let neighbor_cell_left = neighbor_label.cell_left();
-                        let neighbor_overflow_left = neighbor_label.overflow_left();
-
-                        // If the neighbor has left overflow that extends to or past our cell,
-                        // clip them at our right edge
-                        if neighbor_overflow_left > 0.0 {
-                            let neighbor_text_left = neighbor_cell_left - neighbor_overflow_left;
-                            if neighbor_text_left < cell_right {
-                                neighbor_updates.push((
-                                    neighbor_hash_x,
-                                    neighbor_hash_y,
-                                    ClipUpdate {
-                                        col: neighbor_col,
-                                        row,
-                                        clip_left: Some(cell_right),
-                                        clip_right: None,
-                                    },
-                                ));
-                            }
-                        }
-
-                        // If THIS cell has right overflow, clip at the neighbor's left edge
-                        if overflow_right > 0.0 {
-                            let text_right = cell_right + overflow_right;
-                            if text_right > neighbor_cell_left {
-                                update.clip_right = Some(neighbor_cell_left);
-                            }
-                        }
-                    }
-                }
-            }
-
-            updates.push(update);
-        }
-
-        // Apply updates to labels in this hash
-        if let Some(hash) = sheet.hashes.get_mut(&key) {
-            for update in updates {
-                if let Some(label) = hash.get_label_mut(update.col, update.row) {
-                    if let Some(clip_left) = update.clip_left {
-                        label.set_clip_left(clip_left);
-                    }
-                    if let Some(clip_right) = update.clip_right {
-                        label.set_clip_right(clip_right);
-                    }
-                }
-            }
-            // Mark this hash as dirty since clip bounds may have changed
-            hash.mark_dirty();
-        }
-
-        // Apply updates to neighbor hashes
-        for (nh_x, nh_y, update) in neighbor_updates {
-            let neighbor_key = hash_key(nh_x, nh_y);
-            if let Some(neighbor_hash) = sheet.hashes.get_mut(&neighbor_key) {
-                if let Some(label) = neighbor_hash.get_label_mut(update.col, update.row) {
-                    if let Some(clip_left) = update.clip_left {
-                        label.set_clip_left(clip_left);
-                    }
-                    if let Some(clip_right) = update.clip_right {
-                        label.set_clip_right(clip_right);
-                    }
-                }
-                // Mark the neighbor hash as dirty since we modified its labels
-                neighbor_hash.mark_dirty();
-            }
-        }
     }
 
     // =========================================================================
@@ -481,7 +295,6 @@ impl RendererState {
             bounds.top,
             bounds.width,
             bounds.height,
-            self.viewport.scale(),
             self.current_sheet_offsets(),
         );
 
@@ -500,7 +313,6 @@ impl RendererState {
             bounds.top,
             bounds.width,
             bounds.height,
-            self.viewport.scale(),
             self.current_sheet_offsets(),
         );
 
@@ -509,7 +321,7 @@ impl RendererState {
         if let Some(sheet) = self.sheets.current_sheet() {
             for (hash_x, hash_y) in hash_bounds.iter() {
                 let key = hash_key(hash_x, hash_y);
-                if !sheet.hashes.contains_key(&key) {
+                if !sheet.loaded_hashes.contains(&key) {
                     needed.push(hash_x as i32);
                     needed.push(hash_y as i32);
                 }
@@ -523,28 +335,6 @@ impl RendererState {
     /// This prevents overwhelming the system when zoomed out very far
     const MAX_HASH_REQUEST_BATCH: usize = 20;
 
-    /// Check if a hash overlaps with the sheet's data bounds
-    fn hash_overlaps_bounds(hash_x: i64, hash_y: i64, bounds: &GridBounds) -> bool {
-        match bounds {
-            // Empty bounds means we don't know the bounds yet - allow all hashes
-            // This happens when sheet is created as placeholder before SheetInfo arrives
-            GridBounds::Empty => true,
-            GridBounds::NonEmpty(data_rect) => {
-                // Calculate the cell range for this hash (1-indexed)
-                let hash_start_col = hash_x * HASH_WIDTH + 1;
-                let hash_end_col = hash_start_col + HASH_WIDTH - 1;
-                let hash_start_row = hash_y * HASH_HEIGHT + 1;
-                let hash_end_row = hash_start_row + HASH_HEIGHT - 1;
-
-                // Check if hash cell range overlaps with data bounds
-                hash_end_col >= data_rect.min.x
-                    && hash_start_col <= data_rect.max.x
-                    && hash_end_row >= data_rect.min.y
-                    && hash_start_row <= data_rect.max.y
-            }
-        }
-    }
-
     /// Get needed hashes that haven't been requested yet (as Pos for requesting)
     pub fn get_unrequested_hashes(&mut self) -> Vec<Pos> {
         let bounds = self.viewport.visible_bounds();
@@ -553,7 +343,6 @@ impl RendererState {
             bounds.top,
             bounds.width,
             bounds.height,
-            self.viewport.scale(),
             self.current_sheet_offsets(),
         );
 
@@ -566,7 +355,7 @@ impl RendererState {
                 let key = hash_key(hash_x, hash_y);
 
                 // Track why we skip hashes
-                if sheet.hashes.contains_key(&key) {
+                if sheet.loaded_hashes.contains(&key) {
                     skipped_loaded += 1;
                     continue;
                 }
@@ -811,7 +600,7 @@ impl RendererState {
 
     pub fn clear_labels(&mut self) {
         if let Some(sheet) = self.sheets.current_sheet_mut() {
-            sheet.hashes.clear();
+            sheet.loaded_hashes.clear();
             sheet.label_count = 0;
         }
     }
@@ -836,13 +625,8 @@ impl RendererState {
         // Deprecated: use set_labels_for_hash with RenderCell data
     }
 
-    pub fn mark_labels_hash_dirty(&mut self, hash_x: i64, hash_y: i64) {
-        if let Some(sheet) = self.sheets.current_sheet_mut() {
-            let key = hash_key(hash_x, hash_y);
-            if let Some(hash) = sheet.hashes.get_mut(&key) {
-                hash.mark_dirty();
-            }
-        }
+    pub fn mark_labels_hash_dirty(&mut self, _hash_x: i64, _hash_y: i64) {
+        // No-op: Layout worker handles dirty tracking, renderer receives pre-built data via BatchCache
     }
 
     pub fn get_offscreen_label_hashes(&self) -> Vec<i32> {

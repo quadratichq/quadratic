@@ -9,10 +9,26 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-use crate::renderers::primitives::UVRect;
+/// UV coordinate rectangle for texture mapping
+#[derive(Debug, Clone, Copy, Default)]
+pub struct UVRect {
+    /// Left edge (0.0-1.0)
+    pub u1: f32,
+    /// Top edge (0.0-1.0)
+    pub v1: f32,
+    /// Right edge (0.0-1.0)
+    pub u2: f32,
+    /// Bottom edge (0.0-1.0)
+    pub v2: f32,
+}
+
+impl UVRect {
+    pub fn new(u1: f32, v1: f32, u2: f32, v2: f32) -> Self {
+        Self { u1, v1, u2, v2 }
+    }
+}
 
 /// Constants matching the spritesheet generator
-pub const EMOJI_PAGE_SIZE: f32 = 1024.0;
 pub const EMOJI_CHARACTER_SIZE: f32 = 125.0;
 pub const EMOJI_SCALE: f32 = 0.81;
 
@@ -294,44 +310,18 @@ impl EmojiSprites {
     }
 }
 
-/// Check if a character is likely an emoji (basic heuristic)
-///
-/// This is a fast check to avoid HashMap lookups for regular ASCII characters.
-/// Returns true if the character *might* be an emoji (requires further lookup).
-pub fn is_potential_emoji(c: char) -> bool {
-    let code = c as u32;
+// Re-export is_potential_emoji from core for convenience
+pub use quadratic_renderer_core::is_potential_emoji;
 
-    // Most emojis are in these ranges:
-    // - Miscellaneous Symbols and Pictographs: U+1F300–U+1F5FF
-    // - Emoticons: U+1F600–U+1F64F
-    // - Transport and Map Symbols: U+1F680–U+1F6FF
-    // - Supplemental Symbols and Pictographs: U+1F900–U+1F9FF
-    // - Symbols and Pictographs Extended-A: U+1FA00–U+1FAFF
-    // - Dingbats: U+2700–U+27BF
-    // - Miscellaneous Symbols: U+2600–U+26FF
-    // - Regional Indicator Symbols: U+1F1E0–U+1F1FF
-    // - Skin tone modifiers: U+1F3FB–U+1F3FF
+// Implement the EmojiLookup trait from core for EmojiSprites
+impl quadratic_renderer_core::EmojiLookup for EmojiSprites {
+    fn is_potential_emoji(&self, c: char) -> bool {
+        is_potential_emoji(c)
+    }
 
-    matches!(
-        code,
-        0x1F300..=0x1F5FF  // Misc Symbols & Pictographs (includes skin tones)
-            | 0x1F600..=0x1F64F  // Emoticons
-            | 0x1F680..=0x1F6FF  // Transport & Map
-            | 0x1F900..=0x1F9FF  // Supplemental Symbols
-            | 0x1FA00..=0x1FAFF  // Extended-A
-            | 0x2600..=0x27BF    // Misc Symbols + Dingbats
-            | 0x1F1E0..=0x1F1FF  // Regional Indicators (flags)
-            | 0x2190..=0x21FF    // Arrows
-            | 0x2200..=0x22FF    // Math operators
-            | 0x25A0..=0x25FF    // Geometric shapes
-            | 0x00A9            // ©
-            | 0x00AE            // ®
-            | 0x2122            // ™
-            | 0x203C            // ‼
-            | 0x2049            // ⁉
-            | 0xFE0F            // Variation selector (emoji presentation)
-            | 0x200D            // Zero-width joiner (for ZWJ sequences)
-    )
+    fn has_emoji(&self, emoji: &str) -> bool {
+        self.has_emoji(emoji)
+    }
 }
 
 #[cfg(test)]

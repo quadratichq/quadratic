@@ -10,7 +10,6 @@
 //! deceleration) is handled in TypeScript.
 
 mod viewport;
-mod viewport_buffer;
 
 // Re-export core types from core-shared
 pub use quadratic_core_shared::VisibleBounds;

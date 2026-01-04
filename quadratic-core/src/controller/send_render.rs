@@ -136,18 +136,8 @@ impl GridController {
 
             validation_warnings.extend(sheet.get_validation_warnings_in_rect(rect, true));
 
-            // Get fills for this hash for rust renderer
-            let fills = sheet.get_render_fills_in_rect(rect);
-            let shared_fills: Vec<quadratic_core_shared::RenderFill> = fills
-                .iter()
-                .map(|f| quadratic_core_shared::RenderFill {
-                    x: f.x,
-                    y: f.y,
-                    w: f.w,
-                    h: f.h,
-                    color: f.color.clone(),
-                })
-                .collect();
+            // Get fills for this hash for rust renderer (using Rust-native function directly)
+            let fills = sheet.get_rust_render_fills_in_rect(rect);
 
             // Convert sheet_id for rust renderer
             if let Ok(shared_sheet_id) =
@@ -157,7 +147,7 @@ impl GridController {
                     sheet_id: shared_sheet_id,
                     hash_pos: quadratic_core_shared::Pos::new(hash.x, hash.y),
                     cells: Vec::new(), // TODO: Convert cells to MessageRenderCell format
-                    fills: shared_fills,
+                    fills,
                 });
             }
         }
@@ -615,13 +605,13 @@ impl GridController {
                 }
             }
 
-            // Send sheet meta fills (infinite fills) for the sheet
+            // Send sheet meta fills (infinite fills) for the sheet to JS client
             let sheet_fills = sheet.get_all_sheet_fills();
             if let Ok(sheet_fills_json) = serde_json::to_vec(&sheet_fills) {
                 crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills_json);
             }
             // Also send meta fills to rust renderer
-            self.send_meta_fills_to_rust_renderer(sheet_id, &sheet_fills);
+            self.send_meta_fills_to_rust_renderer(sheet_id);
             meta_fills_sent.insert(sheet_id);
         }
 
@@ -632,6 +622,7 @@ impl GridController {
                     continue;
                 };
 
+                // Send to JS client
                 let sheet_fills = sheet.get_all_sheet_fills();
                 if let Ok(sheet_fills_json) = serde_json::to_vec(&sheet_fills) {
                     crate::wasm_bindings::js::jsSheetMetaFills(
@@ -640,7 +631,7 @@ impl GridController {
                     );
                 }
                 // Also send meta fills to rust renderer
-                self.send_meta_fills_to_rust_renderer(sheet_id, &sheet_fills);
+                self.send_meta_fills_to_rust_renderer(sheet_id);
             }
         }
 
@@ -674,12 +665,12 @@ impl GridController {
     }
 
     /// Send meta fills (infinite row/column/sheet fills) to the rust renderer.
-    fn send_meta_fills_to_rust_renderer(
-        &self,
-        sheet_id: SheetId,
-        fills: &[crate::grid::js_types::JsSheetFill],
-    ) {
+    fn send_meta_fills_to_rust_renderer(&self, sheet_id: SheetId) {
         use std::str::FromStr;
+
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return;
+        };
 
         // Convert to shared SheetId
         let Ok(shared_sheet_id) = quadratic_core_shared::SheetId::from_str(&sheet_id.to_string())
@@ -687,20 +678,11 @@ impl GridController {
             return;
         };
 
-        // Convert fills to shared SheetFill type
-        let shared_fills: Vec<quadratic_core_shared::SheetFill> = fills
-            .iter()
-            .map(|f| quadratic_core_shared::SheetFill {
-                x: f.x,
-                y: f.y,
-                w: f.w,
-                h: f.h,
-                color: f.color.clone(),
-            })
-            .collect();
+        // Use Rust-native function directly - returns SheetFill with Rgba
+        let fills = sheet.get_rust_all_sheet_fills();
 
         // Serialize the fills to bincode
-        let Ok(fills_bytes) = quadratic_core_shared::serialization::serialize(&shared_fills) else {
+        let Ok(fills_bytes) = quadratic_core_shared::serialization::serialize(&fills) else {
             return;
         };
 

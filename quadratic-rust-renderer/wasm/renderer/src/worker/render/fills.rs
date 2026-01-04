@@ -1,22 +1,9 @@
 //! Cell fills (background colors) rendering
 
-use crate::renderers::WebGLContext;
 use crate::sheets::Sheet;
 use crate::viewport::Viewport;
-use quadratic_core_shared::SheetOffsets;
 
-/// Render cell fills (background colors) using WebGL
-pub fn render_fills(
-    gl: &mut WebGLContext,
-    sheet: &mut Sheet,
-    viewport: &Viewport,
-    offsets: &SheetOffsets,
-    matrix: &[f32; 16],
-) {
-    sheet.fills.render(gl, matrix, viewport, offsets);
-}
-
-/// Get fill vertices for WebGPU rendering
+/// Get fill vertices for rendering
 /// Note: This requires mutable access to rebuild dirty caches
 pub fn get_fill_vertices(
     sheet: &mut Sheet,

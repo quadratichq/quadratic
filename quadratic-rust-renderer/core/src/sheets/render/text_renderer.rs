@@ -3,8 +3,9 @@
 //! Renders TextHash content using the platform-agnostic RenderContext trait.
 
 use crate::render_context::RenderContext;
-use crate::sheets::hash::TextHash;
+use crate::sheets::text::TextHash;
 use crate::sheets::text::{lines_to_vertices, HorizontalLine, TextCache};
+use crate::types::{FillBuffer, TextBuffer};
 
 /// Render all cached text from a TextHash
 ///
@@ -26,10 +27,10 @@ pub fn render_text_hash(
     atlas_font_size: f32,
     distance_range: f32,
 ) {
-    // Render text meshes
-    render_text_cache(
+    // Render text meshes from TextBuffers
+    render_text_buffers(
         ctx,
-        hash.cached_text(),
+        hash.cached_text_buffers(),
         matrix,
         viewport_scale,
         atlas_font_size,
@@ -37,10 +38,52 @@ pub fn render_text_hash(
     );
 
     // Render horizontal lines (underline/strikethrough)
-    render_horizontal_lines(ctx, hash.cached_lines(), matrix);
+    if let Some(lines_buffer) = hash.cached_horizontal_lines_buffer() {
+        render_fill_buffer(ctx, lines_buffer, matrix);
+    }
 }
 
-/// Render text from a TextCache
+/// Render text from TextBuffer slices
+///
+/// # Arguments
+/// * `ctx` - Render context
+/// * `buffers` - TextBuffer slice with vertex/index data grouped by (texture_uid, font_size)
+/// * `matrix` - View-projection matrix
+/// * `viewport_scale` - Current viewport scale
+/// * `atlas_font_size` - Font size the atlas was generated at
+/// * `distance_range` - MSDF distance range
+pub fn render_text_buffers(
+    ctx: &mut impl RenderContext,
+    buffers: &[TextBuffer],
+    matrix: &[f32; 16],
+    viewport_scale: f32,
+    atlas_font_size: f32,
+    distance_range: f32,
+) {
+    for buf in buffers {
+        if buf.is_empty() {
+            continue;
+        }
+        if !ctx.has_font_texture(buf.texture_uid) {
+            continue;
+        }
+
+        // Calculate font_scale for this buffer's font size
+        let font_scale = buf.font_size / atlas_font_size;
+
+        ctx.draw_text(
+            &buf.vertices,
+            &buf.indices,
+            buf.texture_uid,
+            matrix,
+            viewport_scale,
+            font_scale,
+            distance_range,
+        );
+    }
+}
+
+/// Render text from a TextCache (legacy API)
 ///
 /// # Arguments
 /// * `ctx` - Render context
@@ -77,6 +120,13 @@ pub fn render_text_cache(
             font_scale,
             distance_range,
         );
+    }
+}
+
+/// Render a FillBuffer (triangles) directly
+pub fn render_fill_buffer(ctx: &mut impl RenderContext, buffer: &FillBuffer, matrix: &[f32; 16]) {
+    if !buffer.is_empty() {
+        ctx.draw_triangles(&buffer.vertices, matrix);
     }
 }
 

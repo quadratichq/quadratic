@@ -33,7 +33,7 @@ mod request;
 
 pub use image_export::ImageFormat;
 pub use renderer::NativeRenderer;
-pub use request::{CellFill, CellText, RenderRequest, SelectionRange};
+pub use request::{RenderRequest, SelectionRange};
 
 // Re-export core types that users might need
 pub use quadratic_renderer_core::{

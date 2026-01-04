@@ -3,7 +3,7 @@
 //! Unlike CellLabel which handles cell-specific logic (wrapping, alignment within cells),
 //! TextLabel is a simpler primitive for rendering text at a specific position.
 
-use super::bitmap_font::{BitmapFonts, extract_char_code, split_text_to_characters};
+use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
 use super::label_mesh::LabelMesh;
 
 /// Default font size for headings
@@ -342,5 +342,26 @@ impl TextLabel {
         }
 
         meshes.into_values().collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_text_anchor_multipliers() {
+        assert_eq!(TextAnchor::TopLeft.offset_multipliers(), (0.0, 0.0));
+        assert_eq!(TextAnchor::Center.offset_multipliers(), (0.5, 0.5));
+        assert_eq!(TextAnchor::BottomRight.offset_multipliers(), (1.0, 1.0));
+    }
+
+    #[test]
+    fn test_text_label_new() {
+        let label = TextLabel::new("Test".to_string(), 100.0, 50.0);
+        assert_eq!(label.text, "Test");
+        assert_eq!(label.x, 100.0);
+        assert_eq!(label.y, 50.0);
+        assert_eq!(label.font_size, HEADING_FONT_SIZE);
     }
 }

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../../quadratic-client/src/app/web-workers/rustRendererWebWorker/layout-pkg --weak-refs",
-    "build:dev": "CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../../quadratic-client/src/app/web-workers/rustRendererWebWorker/layout-pkg --weak-refs",
+    "build": "CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../../quadratic-client/src/app/web-workers/rustRendererWebWorker/layout-pkg --weak-refs -- --target-dir target",
+    "build:dev": "CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../../quadratic-client/src/app/web-workers/rustRendererWebWorker/layout-pkg --weak-refs -- --target-dir target",
     "watch": "cargo watch -s 'npm run build:dev'"
   },
   "devDependencies": {}

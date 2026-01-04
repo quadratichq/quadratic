@@ -9,7 +9,7 @@ mod grid_lines;
 mod headings;
 
 pub use cursor::Cursor;
-pub use grid_lines::GridLines;
+pub use grid_lines::{GridLines, GRID_LINE_COLOR};
 pub use headings::Headings;
 
 /// UI manager containing all UI elements

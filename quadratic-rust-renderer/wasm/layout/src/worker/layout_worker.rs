@@ -161,6 +161,7 @@ impl LayoutWorker {
     pub fn sync_viewport(&mut self) -> bool {
         if let Some(ref mut shared) = self.shared_viewport {
             let changed = shared.sync();
+
             if changed {
                 self.state.set_viewport(shared.x(), shared.y(), shared.scale());
                 self.state.resize_viewport(shared.width(), shared.height(), shared.dpr());

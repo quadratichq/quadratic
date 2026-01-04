@@ -1,6 +1,6 @@
 //! Render request types
 
-use quadratic_core_shared::SheetOffsets;
+use quadratic_core_shared::{RenderCell, RenderFill, SheetOffsets};
 use quadratic_renderer_core::{SheetBorders, TableOutlines};
 
 /// A range of cells to render (1-indexed, inclusive)
@@ -84,10 +84,10 @@ pub struct RenderRequest {
     pub offsets: SheetOffsets,
 
     /// Cell fills to render
-    pub fills: Vec<CellFill>,
+    pub fills: Vec<RenderFill>,
 
     /// Cell text to render
-    pub text: Vec<CellText>,
+    pub cells: Vec<RenderCell>,
 
     /// Cell borders to render
     pub borders: SheetBorders,
@@ -112,7 +112,7 @@ impl RenderRequest {
             scale: None,
             offsets: SheetOffsets::default(),
             fills: Vec::new(),
-            text: Vec::new(),
+            cells: Vec::new(),
             borders: SheetBorders::new(),
             table_outlines: TableOutlines::new(),
             background_color: None,
@@ -139,75 +139,5 @@ impl RenderRequest {
     /// Get background color (default white)
     pub fn background(&self) -> [f32; 4] {
         self.background_color.unwrap_or([1.0, 1.0, 1.0, 1.0])
-    }
-}
-
-/// A cell fill (background color)
-#[derive(Debug, Clone)]
-pub struct CellFill {
-    /// Column (1-indexed)
-    pub col: i64,
-    /// Row (1-indexed)
-    pub row: i64,
-    /// Fill color [r, g, b, a]
-    pub color: [f32; 4],
-}
-
-impl CellFill {
-    pub fn new(col: i64, row: i64, color: [f32; 4]) -> Self {
-        Self { col, row, color }
-    }
-}
-
-/// Cell text content
-#[derive(Debug, Clone)]
-pub struct CellText {
-    /// Column (1-indexed)
-    pub col: i64,
-    /// Row (1-indexed)
-    pub row: i64,
-    /// Text content
-    pub text: String,
-    /// Text color [r, g, b, a]
-    pub color: [f32; 4],
-    /// Font size (default 14.0)
-    pub font_size: f32,
-    /// Bold
-    pub bold: bool,
-    /// Italic
-    pub italic: bool,
-}
-
-impl CellText {
-    pub fn new(col: i64, row: i64, text: impl Into<String>) -> Self {
-        Self {
-            col,
-            row,
-            text: text.into(),
-            color: [0.0, 0.0, 0.0, 1.0], // Black
-            font_size: 14.0,
-            bold: false,
-            italic: false,
-        }
-    }
-
-    pub fn with_color(mut self, color: [f32; 4]) -> Self {
-        self.color = color;
-        self
-    }
-
-    pub fn with_font_size(mut self, size: f32) -> Self {
-        self.font_size = size;
-        self
-    }
-
-    pub fn bold(mut self) -> Self {
-        self.bold = true;
-        self
-    }
-
-    pub fn italic(mut self) -> Self {
-        self.italic = true;
-        self
     }
 }

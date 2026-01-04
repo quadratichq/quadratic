@@ -9,4 +9,4 @@ mod table_rendering;
 
 pub use table_cache::TableCache;
 pub use table_render_data::TableRenderData;
-pub use table_rendering::{TableRenderOutput, build_table_meshes, render_tables};
+pub use table_rendering::{build_table_meshes, render_tables};

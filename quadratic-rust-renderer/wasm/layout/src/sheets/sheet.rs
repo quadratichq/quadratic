@@ -6,7 +6,7 @@ use quadratic_core_shared::{GridBounds, SheetId, SheetOffsets};
 use quadratic_renderer_core::hash_key;
 
 use super::fills::CellsFills;
-use super::text::CellsTextHash;
+use super::text::TextHash;
 
 /// A single sheet's layout data
 pub struct Sheet {
@@ -15,7 +15,7 @@ pub struct Sheet {
     pub bounds: GridBounds,
 
     /// Text hashes (spatial partitioning for text labels)
-    pub hashes: HashMap<u64, CellsTextHash>,
+    pub hashes: HashMap<u64, TextHash>,
 
     /// Fill data
     pub fills: CellsFills,

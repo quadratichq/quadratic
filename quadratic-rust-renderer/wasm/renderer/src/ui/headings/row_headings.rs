@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
 
-use crate::sheets::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel, row_to_a1};
+use crate::sheets::text::{row_name, BitmapFonts, LabelMesh, TextAnchor, TextLabel};
 
 use super::types::{
     HeadingColors, HeadingSize, LABEL_MAXIMUM_HEIGHT_PERCENT, LABEL_PADDING_ROWS,
@@ -44,11 +44,6 @@ impl RowHeadings {
         }
     }
 
-    /// Get the current row skip interval
-    pub fn row_mod(&self) -> i64 {
-        self.row_mod
-    }
-
     /// Check if a row is selected
     fn is_selected(&self, row: i64) -> bool {
         self.selected
@@ -86,7 +81,7 @@ impl RowHeadings {
     /// Calculate row header width based on visible row numbers
     /// Returns width in screen pixels
     pub fn calculate_width(max_row: i64, scale: f32, viewport: &ViewportState) -> f32 {
-        let digit_count = row_to_a1(max_row).len();
+        let digit_count = row_name(max_row).len();
         let padding = LABEL_PADDING_ROWS;
         let width = (digit_count as f32 * viewport.char_width) / scale + (padding / scale) * 2.0;
         // Minimum width is the header height
@@ -167,7 +162,7 @@ impl RowHeadings {
 
                 // Only add if inside visible area
                 if screen_y >= header_height && screen_y <= viewport.canvas_height {
-                    let text = row_to_a1(row);
+                    let text = row_name(row);
 
                     // For overlap detection
                     let label_height = viewport.char_height;
@@ -314,7 +309,7 @@ impl RowHeadings {
         for label in &mut self.labels {
             for mesh in label.get_meshes(fonts) {
                 if let Some(existing) = meshes.get_mut(&mesh.texture_uid) {
-                    let offset = (existing.vertices.len() / 4) as u16;
+                    let offset = (existing.vertices.len() / 4) as u32;
                     existing.vertices.extend(mesh.vertices.iter().cloned());
                     for idx in &mesh.indices {
                         existing.indices.push(idx + offset * 4);

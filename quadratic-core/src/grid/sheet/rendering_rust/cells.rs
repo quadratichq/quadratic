@@ -10,8 +10,14 @@ use crate::{
 };
 use quadratic_core_shared::{
     CellAlign, CellVerticalAlign, CellWrap as SharedCellWrap, NumericFormat, NumericFormatKind,
-    RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial, RenderNumber,
+    RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial, RenderNumber, Rgba,
 };
+
+/// Parse a CSS color string to Rgba.
+/// Supports hex (#RGB, #RRGGBB, #RRGGBBAA) and rgb()/rgba() formats.
+fn parse_color(color: &str) -> Rgba {
+    Rgba::from_css(color).unwrap_or(Rgba::TRANSPARENT)
+}
 
 /// Convert core CellAlign to shared CellAlign
 fn convert_align(align: crate::grid::CellAlign) -> CellAlign {
@@ -149,7 +155,7 @@ impl Sheet {
                         italic: span.italic,
                         underline: span.underline,
                         strike_through: span.strike_through,
-                        text_color: span.text_color.clone(),
+                        text_color: span.text_color.as_ref().map(|c| parse_color(c)),
                         link: span.link.clone(),
                     });
                 }
@@ -185,7 +191,7 @@ impl Sheet {
             italic: format.italic,
             underline: format.underline,
             strike_through: format.strike_through,
-            text_color: format.text_color,
+            text_color: format.text_color.as_ref().map(|c| parse_color(c)),
             font_size: format.font_size,
             special,
             number,

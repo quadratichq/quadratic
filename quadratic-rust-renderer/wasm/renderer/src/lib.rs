@@ -5,7 +5,9 @@
 //!
 //! ## Architecture
 //!
-//! - `renderers`: Graphics backends (WebGL2 and WebGPU)
+//! Uses `quadratic-renderer-core` for platform-agnostic rendering via wgpu.
+//! The wgpu backend supports both WebGPU (preferred) and WebGL2 (fallback).
+//!
 //! - `sheets`: Sheet data (cells, fills, text hashes)
 //! - `ui`: UI elements (grid lines, cursor, headings)
 //! - `viewport`: Camera/viewport state and math
@@ -14,22 +16,16 @@
 //! ## Usage (Browser)
 //!
 //! 1. Transfer an OffscreenCanvas to the worker
-//! 2. Check WebGPU availability and create appropriate renderer
+//! 2. Create the renderer (async, auto-selects best backend)
 //! 3. Call frame() on each animation frame
 //!
 //! ```javascript
-//! // Recommended: Use unified WorkerRenderer
-//! if (WorkerRenderer.is_webgpu_available()) {
-//!     const renderer = await WorkerRenderer.new_webgpu(canvas);
-//! } else {
-//!     const renderer = new WorkerRenderer(canvas);
-//! }
+//! const renderer = await WorkerRenderer.create(canvas);
 //! ```
 
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
 
 // Platform-agnostic modules
-mod renderers;
 mod sheets;
 mod tables;
 mod ui;

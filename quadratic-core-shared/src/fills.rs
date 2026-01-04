@@ -1,6 +1,6 @@
 use bincode::{Decode, Encode};
 
-use crate::{Pos, SheetId};
+use crate::{Pos, Rgba, SheetId};
 
 /// Hash render fills - used for communication between core and client
 /// Note: Uses serde only (not bincode) due to SheetId/Pos dependencies
@@ -20,7 +20,19 @@ pub struct RenderFill {
     pub w: u32,
     pub h: u32,
 
-    pub color: String,
+    pub color: Rgba,
+}
+
+impl RenderFill {
+    /// Create a new render fill
+    pub fn new(x: i64, y: i64, w: u32, h: u32, color: Rgba) -> Self {
+        Self { x, y, w, h, color }
+    }
+
+    /// Create a single-cell fill
+    pub fn single(x: i64, y: i64, color: Rgba) -> Self {
+        Self::new(x, y, 1, 1, color)
+    }
 }
 
 /// A sheet-level fill (infinite row/column/sheet background)
@@ -31,5 +43,5 @@ pub struct SheetFill {
     pub y: u32,
     pub w: Option<u32>,
     pub h: Option<u32>,
-    pub color: String,
+    pub color: Rgba,
 }

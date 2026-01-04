@@ -7,7 +7,7 @@
 
 use quadratic_core_shared::SheetOffsets;
 
-use crate::renderers::{Color, NativeLines, Rects};
+use quadratic_renderer_core::{Color, NativeLines, Rects};
 use crate::sheets::text::{BitmapFonts, LabelMesh, TextAnchor, TextLabel};
 use crate::viewport::Viewport;
 

@@ -1,22 +1,33 @@
-//! CellsTextHash - spatial hash for text layout
+//! TextHash - spatial hash for text layout
+//!
+//! Groups cells into HASH_WIDTH × HASH_HEIGHT regions for efficient layout and rendering.
+//! This is the canonical implementation used by the layout worker to produce HashRenderData.
 
 use std::collections::HashMap;
 
 use quadratic_core_shared::SheetOffsets;
-use quadratic_renderer_core::{FillBuffer, HashRenderData, TextBuffer, HASH_HEIGHT, HASH_WIDTH};
 
-use super::{BitmapFonts, CellLabel, HorizontalLine};
+use super::bitmap_font::BitmapFonts;
+use super::cell_label::CellLabel;
+use super::horizontal_line::HorizontalLine;
+use crate::types::{FillBuffer, HashRenderData, TextBuffer};
 
-/// A spatial hash containing text labels for a hash region
-pub struct CellsTextHash {
-    /// Hash coordinates
+/// Hash dimensions (matches client: CellsTypes.ts and core: renderer_constants.rs)
+pub const HASH_WIDTH: i64 = 50;
+pub const HASH_HEIGHT: i64 = 100;
+
+/// A spatial hash containing text labels for a region
+///
+/// Stores CellLabels and produces HashRenderData when rebuilt.
+pub struct TextHash {
+    /// Hash coordinates (not pixel coordinates)
     pub hash_x: i64,
     pub hash_y: i64,
 
     /// Labels indexed by (col, row)
     labels: HashMap<(i64, i64), CellLabel>,
 
-    /// World bounds
+    /// World bounds (computed from offsets)
     pub world_x: f32,
     pub world_y: f32,
     pub world_width: f32,
@@ -33,7 +44,8 @@ pub struct CellsTextHash {
     cached_render_data: Option<HashRenderData>,
 }
 
-impl CellsTextHash {
+impl TextHash {
+    /// Create a new text hash for the given coordinates
     pub fn new(hash_x: i64, hash_y: i64, offsets: &SheetOffsets) -> Self {
         // Calculate the cell range for this hash (1-indexed)
         let start_col = hash_x * HASH_WIDTH + 1;
@@ -62,18 +74,27 @@ impl CellsTextHash {
         }
     }
 
-    /// Add a label
+    /// Add a label at the given cell position
     pub fn add_label(&mut self, col: i64, row: i64, label: CellLabel) {
         self.labels.insert((col, row), label);
         self.dirty = true;
     }
 
-    /// Get a label
+    /// Remove a label at the given cell position
+    pub fn remove_label(&mut self, col: i64, row: i64) -> Option<CellLabel> {
+        let result = self.labels.remove(&(col, row));
+        if result.is_some() {
+            self.dirty = true;
+        }
+        result
+    }
+
+    /// Get a label at the given cell position
     pub fn get_label(&self, col: i64, row: i64) -> Option<&CellLabel> {
         self.labels.get(&(col, row))
     }
 
-    /// Get a label mutably
+    /// Get a mutable label at the given cell position
     pub fn get_label_mut(&mut self, col: i64, row: i64) -> Option<&mut CellLabel> {
         self.labels.get_mut(&(col, row))
     }
@@ -83,20 +104,34 @@ impl CellsTextHash {
         self.labels.iter()
     }
 
+    /// Iterate over all labels mutably
+    pub fn labels_iter_mut(&mut self) -> impl Iterator<Item = (&(i64, i64), &mut CellLabel)> {
+        self.labels.iter_mut()
+    }
+
+    /// Check if this hash has any labels
     pub fn is_empty(&self) -> bool {
         self.labels.is_empty()
     }
 
+    /// Get the number of labels in this hash
     pub fn label_count(&self) -> usize {
         self.labels.len()
     }
 
+    /// Mark this hash as dirty (needs rebuild)
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
     }
 
+    /// Check if this hash is dirty
     pub fn is_dirty(&self) -> bool {
         self.dirty
+    }
+
+    /// Clear the dirty flag without rebuilding
+    pub fn clear_dirty(&mut self) {
+        self.dirty = false;
     }
 
     /// Check if hash intersects viewport bounds
@@ -108,6 +143,9 @@ impl CellsTextHash {
     }
 
     /// Rebuild all labels and generate render data
+    ///
+    /// This layouts all labels, collects their meshes, and produces HashRenderData
+    /// that can be sent to the renderer.
     pub fn rebuild(&mut self, fonts: &BitmapFonts) -> HashRenderData {
         // Clear auto-size caches
         self.columns_max_cache.clear();
@@ -118,16 +156,16 @@ impl CellsTextHash {
             label.layout(fonts);
         }
 
-        // Collect all text buffers
+        // Collect all text buffers and horizontal lines
         let mut all_buffers: Vec<TextBuffer> = Vec::new();
         let mut all_lines: Vec<HorizontalLine> = Vec::new();
 
-        for label in self.labels.values() {
-            // Collect text buffers
-            all_buffers.extend(label.get_text_buffers());
+        for label in self.labels.values_mut() {
+            // Collect text buffers (requires mutable access to build meshes)
+            all_buffers.extend(label.get_text_buffers(fonts));
 
             // Collect horizontal lines
-            all_lines.extend(label.get_horizontal_lines().iter().cloned());
+            all_lines.extend(label.get_horizontal_lines(fonts).iter().cloned());
 
             // Update auto-size caches
             let col = label.col();
@@ -176,15 +214,19 @@ impl CellsTextHash {
             sprite_dirty: true,
         };
 
-        // Cache the render data for subsequent frames
+        // Cache the render data
         self.cached_render_data = Some(render_data.clone());
 
         render_data
     }
 
-    /// Get cached render data without rebuilding.
-    /// Returns None if no cached data exists.
-    pub fn get_cached_render_data(&self) -> Option<HashRenderData> {
+    /// Get cached render data without rebuilding
+    pub fn get_cached_render_data(&self) -> Option<&HashRenderData> {
+        self.cached_render_data.as_ref()
+    }
+
+    /// Get cached render data, cloned
+    pub fn clone_cached_render_data(&self) -> Option<HashRenderData> {
         self.cached_render_data.clone()
     }
 
@@ -196,6 +238,60 @@ impl CellsTextHash {
     /// Get row max height (for auto-size)
     pub fn get_row_max_height(&self, row: i64) -> f32 {
         self.rows_max_cache.get(&row).copied().unwrap_or(0.0)
+    }
+
+    /// Get all column max widths
+    pub fn get_all_column_max_widths(&self) -> &HashMap<i64, f32> {
+        &self.columns_max_cache
+    }
+
+    /// Get all row max heights
+    pub fn get_all_row_max_heights(&self) -> &HashMap<i64, f32> {
+        &self.rows_max_cache
+    }
+
+    /// Clear all labels
+    pub fn clear(&mut self) {
+        self.labels.clear();
+        self.columns_max_cache.clear();
+        self.rows_max_cache.clear();
+        self.cached_render_data = None;
+        self.dirty = true;
+    }
+
+    /// Update bounds when offsets change
+    pub fn update_bounds(&mut self, offsets: &SheetOffsets) {
+        // Calculate the cell range for this hash (1-indexed)
+        let start_col = self.hash_x * HASH_WIDTH + 1;
+        let end_col = start_col + HASH_WIDTH - 1;
+        let start_row = self.hash_y * HASH_HEIGHT + 1;
+        let end_row = start_row + HASH_HEIGHT - 1;
+
+        // Get world bounds from offsets
+        let (x_start, _) = offsets.column_position_size(start_col);
+        let (x_end, width_end) = offsets.column_position_size(end_col);
+        let (y_start, _) = offsets.row_position_size(start_row);
+        let (y_end, height_end) = offsets.row_position_size(end_row);
+
+        self.world_x = x_start as f32;
+        self.world_y = y_start as f32;
+        self.world_width = (x_end + width_end - x_start) as f32;
+        self.world_height = (y_end + height_end - y_start) as f32;
+    }
+
+    /// Get cached text buffers for rendering
+    pub fn cached_text_buffers(&self) -> &[TextBuffer] {
+        self.cached_render_data
+            .as_ref()
+            .map(|data| data.text_buffers.as_slice())
+            .unwrap_or(&[])
+    }
+
+    /// Get cached horizontal lines buffer for rendering
+    pub fn cached_horizontal_lines_buffer(&self) -> Option<&FillBuffer> {
+        self.cached_render_data
+            .as_ref()
+            .and_then(|data| data.horizontal_lines.as_ref())
     }
 }
 
@@ -219,4 +315,35 @@ fn merge_text_buffers(buffers: Vec<TextBuffer>) -> Vec<TextBuffer> {
     }
 
     merged.into_values().collect()
+}
+
+/// Compute hash coordinates for a cell position
+#[inline]
+pub fn hash_coords(col: i64, row: i64) -> (i64, i64) {
+    let hash_x = (col - 1) / HASH_WIDTH;
+    let hash_y = (row - 1) / HASH_HEIGHT;
+    (hash_x, hash_y)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hash_coords() {
+        // First cell (1, 1) is in hash (0, 0)
+        assert_eq!(hash_coords(1, 1), (0, 0));
+
+        // Cell at HASH_WIDTH is still in hash (0, 0)
+        assert_eq!(hash_coords(HASH_WIDTH, 1), (0, 0));
+
+        // Cell at HASH_WIDTH + 1 is in hash (1, 0)
+        assert_eq!(hash_coords(HASH_WIDTH + 1, 1), (1, 0));
+
+        // Cell at HASH_HEIGHT is still in hash (0, 0)
+        assert_eq!(hash_coords(1, HASH_HEIGHT), (0, 0));
+
+        // Cell at HASH_HEIGHT + 1 is in hash (0, 1)
+        assert_eq!(hash_coords(1, HASH_HEIGHT + 1), (0, 1));
+    }
 }

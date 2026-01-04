@@ -21,10 +21,11 @@ use clap::Parser;
 use quadratic_core::grid::file::import;
 use quadratic_core_shared::{Pos, Rect};
 use quadratic_renderer_core::font_loader::load_fonts_from_directory;
-use quadratic_renderer_core::{from_rgba, parse_color};
+use quadratic_core_shared::Rgba;
+use quadratic_renderer_core::from_rgba;
 use quadratic_renderer_native::{
-    BorderLineStyle, CellFill, CellText, NativeRenderer, RenderRequest, SelectionRange,
-    SheetBorders, TableOutline, TableOutlines,
+    BorderLineStyle, NativeRenderer, RenderRequest, SelectionRange, SheetBorders, TableOutline,
+    TableOutlines,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -150,67 +151,31 @@ fn main() -> anyhow::Result<()> {
         },
     );
 
-    let fills = sheet.get_render_fills_in_rect(render_rect);
-    request.fills = fills
-        .into_iter()
-        .flat_map(|fill| {
-            // Convert JsRenderFill (which is a rect) to individual cell fills
-            let color = parse_color(&fill.color);
-            let mut cells = Vec::new();
-            for dx in 0..fill.w {
-                for dy in 0..fill.h {
-                    cells.push(CellFill::new(fill.x + dx as i64, fill.y + dy as i64, color));
-                }
-            }
-            cells
-        })
-        .collect();
+    // Get fills using the Rust-native version (returns RenderFill with Rgba)
+    request.fills = sheet.get_rust_render_fills_in_rect(render_rect);
 
-    println!("Found {} cell fills", request.fills.len());
+    println!("Found {} fills", request.fills.len());
 
-    // Get text cells from the sheet
+    // Get cells using the Rust-native version (returns RenderCell with Rgba)
     let a1_context = grid.expensive_make_a1_context();
-    let js_render_cells = sheet.get_render_cells(render_rect, &a1_context);
+    let mut cells = sheet.get_rust_render_cells(render_rect, &a1_context);
 
     // Table header text colors (matching TS renderer)
-    const TABLE_NAME_TEXT_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0]; // White on colored bg
-    const COLUMN_HEADER_TEXT_COLOR: [f32; 4] = [0.008, 0.031, 0.090, 1.0]; // Dark on white bg
+    const TABLE_NAME_TEXT_COLOR: Rgba = Rgba::rgb(255, 255, 255); // White on colored bg
+    const COLUMN_HEADER_TEXT_COLOR: Rgba = Rgba::rgb(2, 8, 23); // Dark on white bg
 
-    request.text = js_render_cells
-        .into_iter()
-        .filter(|cell| !cell.value.is_empty())
-        .map(|cell| {
-            let mut text = CellText::new(cell.x, cell.y, &cell.value);
+    // Apply table header colors (these override cell colors for visibility)
+    for cell in &mut cells {
+        if cell.table_name == Some(true) {
+            cell.text_color = Some(TABLE_NAME_TEXT_COLOR);
+        } else if cell.column_header == Some(true) {
+            cell.text_color = Some(COLUMN_HEADER_TEXT_COLOR);
+        }
+    }
 
-            // Apply text color based on cell type
-            if cell.table_name == Some(true) {
-                // Table name row: white text on colored background
-                text = text.with_color(TABLE_NAME_TEXT_COLOR);
-            } else if cell.column_header == Some(true) {
-                // Column header row: dark text on white background
-                text = text.with_color(COLUMN_HEADER_TEXT_COLOR);
-            } else if let Some(ref color_str) = cell.text_color {
-                text = text.with_color(parse_color(color_str));
-            }
+    request.cells = cells;
 
-            // Apply font size
-            if let Some(size) = cell.font_size {
-                text = text.with_font_size(size as f32);
-            }
-
-            // Apply bold/italic
-            if cell.bold == Some(true) {
-                text = text.bold();
-            }
-            if cell.italic == Some(true) {
-                text = text.italic();
-            }
-
-            text
-        })
-        .collect();
-
-    println!("Found {} text cells", request.text.len());
+    println!("Found {} cells", request.cells.len());
 
     // Get borders from the sheet
     let js_borders = sheet.borders_in_sheet();

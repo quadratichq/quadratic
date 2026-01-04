@@ -1,14 +1,39 @@
 //! Sheet - manages a single sheet's data
 //!
-//! Each sheet owns its own fills, labels, spatial hashes, and table cache.
+//! Each sheet owns its own fills, loaded hash tracking, and table cache.
+//!
+//! Note: Cell labels, text layout, and overflow clipping are handled by the Layout Worker.
+//! The renderer receives pre-computed HashRenderData via BatchCache.
+//! This Sheet struct only tracks which hashes have been loaded.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use quadratic_core_shared::{GridBounds, SheetId, SheetOffsets};
 
 use super::fills::CellsFills;
-use super::text::{hash_key, CellsTextHash};
+use super::text::hash_key;
+use super::text::LabelMesh;
 use crate::tables::TableCache;
+
+/// Cached table render output to avoid regenerating vertices every frame
+#[derive(Default)]
+pub struct CachedTableRenderOutput {
+    /// Table name background vertices
+    pub name_bg_vertices: Vec<f32>,
+    /// Column background vertices
+    pub col_bg_vertices: Vec<f32>,
+    /// Outline line vertices
+    pub outline_vertices: Vec<f32>,
+    /// Header line vertices
+    pub header_line_vertices: Vec<f32>,
+    /// Text meshes for table names and column headers
+    pub text_meshes: Vec<LabelMesh>,
+    /// Whether this cache is valid
+    pub valid: bool,
+    /// Viewport bounds when cache was generated (left, top, right, bottom)
+    /// Used to detect when viewport expands to show potentially new tables
+    pub viewport_bounds: (f32, f32, f32, f32),
+}
 
 /// Manages data for a single sheet
 pub struct Sheet {
@@ -21,9 +46,9 @@ pub struct Sheet {
     /// Bounds of all data in the sheet (for limiting hash requests)
     pub bounds: GridBounds,
 
-    /// Spatial hashes containing cell labels
-    /// Key is computed from (hash_x, hash_y) coordinates
-    pub hashes: HashMap<u64, CellsTextHash>,
+    /// Set of loaded hash keys (hash_x, hash_y encoded as u64)
+    /// Used to track which hashes have been requested from the core worker
+    pub loaded_hashes: HashSet<u64>,
 
     /// Cell fills (background colors)
     pub fills: CellsFills,
@@ -31,13 +56,11 @@ pub struct Sheet {
     /// Table cache for rendering table headers
     pub tables: TableCache,
 
+    /// Cached table render output (vertices and meshes)
+    pub cached_table_output: CachedTableRenderOutput,
+
     /// Total label count (cached for stats)
     pub label_count: usize,
-
-    /// Content cache - tracks which cells have content for overflow clipping
-    /// Key is (column, row) - used to determine if a neighbor cell has content
-    /// that should cause text to be clipped
-    pub content_cache: HashSet<(i64, i64)>,
 }
 
 impl Sheet {
@@ -48,10 +71,10 @@ impl Sheet {
             sheet_offsets: SheetOffsets::default(),
             bounds: GridBounds::Empty,
             fills: CellsFills::new(sheet_id),
-            hashes: HashMap::new(),
+            loaded_hashes: HashSet::new(),
             tables: TableCache::new(),
+            cached_table_output: CachedTableRenderOutput::default(),
             label_count: 0,
-            content_cache: HashSet::new(),
         }
     }
 
@@ -62,38 +85,11 @@ impl Sheet {
             sheet_offsets: offsets,
             bounds,
             fills: CellsFills::new(sheet_id),
-            hashes: HashMap::new(),
+            loaded_hashes: HashSet::new(),
             tables: TableCache::new(),
+            cached_table_output: CachedTableRenderOutput::default(),
             label_count: 0,
-            content_cache: HashSet::new(),
         }
-    }
-
-    /// Check if a cell has content (for overflow clipping)
-    pub fn has_content(&self, col: i64, row: i64) -> bool {
-        self.content_cache.contains(&(col, row))
-    }
-
-    /// Add a cell to the content cache
-    pub fn add_content(&mut self, col: i64, row: i64) {
-        self.content_cache.insert((col, row));
-    }
-
-    /// Remove a cell from the content cache
-    pub fn remove_content(&mut self, col: i64, row: i64) {
-        self.content_cache.remove(&(col, row));
-    }
-
-    /// Clear content cache for a hash region
-    pub fn clear_content_for_hash(&mut self, hash_x: i64, hash_y: i64) {
-        use super::text::{HASH_WIDTH, HASH_HEIGHT};
-        let start_col = hash_x * HASH_WIDTH + 1;
-        let end_col = start_col + HASH_WIDTH;
-        let start_row = hash_y * HASH_HEIGHT + 1;
-        let end_row = start_row + HASH_HEIGHT;
-
-        self.content_cache
-            .retain(|(col, row)| !(*col >= start_col && *col < end_col && *row >= start_row && *row < end_row));
     }
 
     /// Update sheet offsets and bounds
@@ -104,71 +100,40 @@ impl Sheet {
         self.tables.update_bounds(&self.sheet_offsets);
     }
 
-    /// Get a mutable reference to a hash, creating it if needed
-    pub fn get_or_create_hash(&mut self, hash_x: i64, hash_y: i64) -> &mut CellsTextHash {
+    /// Mark a hash as loaded
+    pub fn mark_hash_loaded(&mut self, hash_x: i64, hash_y: i64) {
         let key = hash_key(hash_x, hash_y);
-        self.hashes
-            .entry(key)
-            .or_insert_with(|| CellsTextHash::new(hash_x, hash_y, &self.sheet_offsets))
+        self.loaded_hashes.insert(key);
     }
 
-    /// Check if a hash exists
+    /// Check if a hash is loaded
     pub fn has_hash(&self, hash_x: i64, hash_y: i64) -> bool {
         let key = hash_key(hash_x, hash_y);
-        self.hashes.contains_key(&key)
+        self.loaded_hashes.contains(&key)
     }
 
-    /// Remove a hash
+    /// Remove a hash from loaded set
     pub fn remove_hash(&mut self, hash_x: i64, hash_y: i64) {
         let key = hash_key(hash_x, hash_y);
-        if let Some(hash) = self.hashes.remove(&key) {
-            self.label_count = self.label_count.saturating_sub(hash.label_count());
-        }
+        self.loaded_hashes.remove(&key);
     }
 
     /// Get number of loaded hashes
     pub fn hash_count(&self) -> usize {
-        self.hashes.len()
+        self.loaded_hashes.len()
     }
 
     /// Clear all data (for sheet switch)
     pub fn clear(&mut self) {
-        self.hashes.clear();
+        self.loaded_hashes.clear();
         self.label_count = 0;
         self.fills = CellsFills::new(self.sheet_id.clone());
         self.tables.clear();
-        self.content_cache.clear();
+        self.cached_table_output = CachedTableRenderOutput::default();
     }
 
-    /// Find the next cell with content to the left of the given column on the same row
-    /// Returns the column index if found, None otherwise
-    pub fn find_content_left(&self, col: i64, row: i64) -> Option<i64> {
-        // Start from col-1 and search left
-        let mut search_col = col - 1;
-        // Limit search to avoid scanning too far (100 columns max)
-        let min_col = (col - 100).max(1);
-        while search_col >= min_col {
-            if self.content_cache.contains(&(search_col, row)) {
-                return Some(search_col);
-            }
-            search_col -= 1;
-        }
-        None
-    }
-
-    /// Find the next cell with content to the right of the given column on the same row
-    /// Returns the column index if found, None otherwise
-    pub fn find_content_right(&self, col: i64, row: i64) -> Option<i64> {
-        // Start from col+1 and search right
-        let mut search_col = col + 1;
-        // Limit search to avoid scanning too far (100 columns max)
-        let max_col = col + 100;
-        while search_col <= max_col {
-            if self.content_cache.contains(&(search_col, row)) {
-                return Some(search_col);
-            }
-            search_col += 1;
-        }
-        None
+    /// Invalidate the cached table render output
+    pub fn invalidate_table_cache(&mut self) {
+        self.cached_table_output.valid = false;
     }
 }

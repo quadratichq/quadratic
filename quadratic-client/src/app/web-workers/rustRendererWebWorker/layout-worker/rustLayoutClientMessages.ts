@@ -41,6 +41,10 @@ export type ClientRustLayoutMessage =
   | {
       type: 'clientRustLayoutPing';
       timestamp: number;
+    }
+  | {
+      type: 'clientRustLayoutViewportBuffer';
+      viewportBuffer: SharedArrayBuffer;
     };
 
 /**

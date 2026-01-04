@@ -5,15 +5,8 @@
 
 use quadratic_core_shared::SheetOffsets;
 
-use crate::renderers::render_context::RenderContext;
-use crate::renderers::NativeLines;
+use quadratic_renderer_core::{RenderContext, NativeLines};
 use crate::viewport::{Viewport, VisibleBounds};
-
-/// Default column width in pixels (used as fallback)
-pub const DEFAULT_COLUMN_WIDTH: f32 = 100.0;
-
-/// Default row height in pixels (used as fallback)
-pub const DEFAULT_ROW_HEIGHT: f32 = 21.0;
 
 /// Grid line base color (dark blue-gray, matches client's 0x233143)
 /// RGB: (35, 49, 67) normalized
@@ -198,7 +191,7 @@ impl GridLines {
     /// Returns None if grid lines are not visible
     pub fn get_vertices(&mut self) -> Option<&[f32]> {
         if self.visible && !self.lines.is_empty() {
-            Some(self.lines.get_vertices())
+            Some(self.lines.vertices())
         } else {
             None
         }

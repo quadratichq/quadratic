@@ -53,8 +53,8 @@ pub mod console_logger;
 // Core rendering
 pub use render_context::{CommandBuffer, DrawCommand, RenderContext, RenderError, TextureId};
 pub use primitives::{
-    colors, from_hex, from_rgba, parse_color, parse_color_opt, Color, Lines, NativeLines, Rect,
-    Rects, TextureInfo, TextureRegistry, DEFAULT_COLOR,
+    colors, from_hex, from_rgba, parse_color, parse_color_opt, Color, Lines, LineScaling,
+    NativeLines, Rect, Rects, TextureInfo, TextureRegistry, DEFAULT_COLOR,
 };
 
 // Sheets and hashing
@@ -64,8 +64,24 @@ pub use sheets::{
 };
 pub use sheets::hash::{get_hash_coords, hash_key, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH, SPRITE_SCALE_THRESHOLD};
 
+// Cell label layout
+pub use sheets::text::{
+    is_potential_emoji, CellLabel, EmojiCharData, EmojiLookup, LabelMesh, NoEmoji, TextVertex,
+    CELL_TEXT_MARGIN_LEFT, CELL_VERTICAL_PADDING, DEFAULT_CELL_HEIGHT, DEFAULT_FONT_SIZE,
+    LINE_HEIGHT, OPEN_SANS_FIX_X, OPEN_SANS_FIX_Y,
+};
+
+// Text label (UI text)
+pub use sheets::text::{TextAnchor, TextLabel, HEADING_FONT_SIZE};
+
+// Text hash (spatial hashing for text layout)
+pub use sheets::text::hash_coords;
+
 // Layout and state
-pub use layout::LayoutEngine;
+pub use layout::{
+    calculate_clip_bounds, calculate_clip_updates, ClipBoundsUpdate, LabelOverflowInfo,
+    LayoutEngine,
+};
 pub use render::CoreState;
 
 // Tables
@@ -78,11 +94,11 @@ pub use tables::{
 pub use types::{
     BorderLineStyle, CursorRenderData, EmojiSpriteData, FillBuffer,
     HashRenderData, HeadingsRenderData, HorizontalBorder, HorizontalLineData, LineBuffer,
-    RenderBatch, SheetBorders, TableRenderData, TextBuffer, VerticalBorder,
+    RenderBatch, SheetBorders, SheetBordersRender, TableRenderData, TextBuffer, VerticalBorder,
 };
 
 // UI and viewport
-pub use ui::UI;
+pub use ui::{GridLines, GRID_LINE_COLOR, UI};
 pub use viewport::Viewport;
 
 #[cfg(feature = "wgpu")]

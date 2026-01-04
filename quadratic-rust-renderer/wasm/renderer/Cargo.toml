@@ -122,7 +122,8 @@ log = "0.4"
 quadratic-core-shared = { path = "../../../quadratic-core-shared", default-features = false }
 
 # Core library (shared types for layout/render worker communication)
-quadratic-renderer-core = { path = "../../core", features = ["js"] }
+# Enable wgpu-wasm for WebGPU + WebGL2 rendering via wgpu
+quadratic-renderer-core = { path = "../../core", features = ["js", "wgpu-wasm"] }
 
 # Required for WASM support (used by uuid in quadratic-core-shared)
 getrandom = { version = "0.3", features = ["wasm_js"] }
