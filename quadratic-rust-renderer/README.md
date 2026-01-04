@@ -1,85 +1,90 @@
 # Quadratic Rust Renderer
 
-A GPU-accelerated renderer for the Quadratic spreadsheet application, designed to run in a Web Worker for browser rendering.
+A GPU-accelerated renderer for the Quadratic spreadsheet application, supporting both browser (WASM) and server-side (native) rendering.
 
 ## Overview
 
-This project replaces the TypeScript/Pixi.js-based renderer with a Rust implementation supporting both WebGPU (preferred) and WebGL2 (fallback) backends. The benefits include:
+This project provides a unified rendering solution with multiple targets:
+
+- **Browser Rendering**: WASM-compiled renderer running in Web Workers with WebGPU (preferred) or WebGL2 (fallback)
+- **Server-Side Rendering**: Native Rust binary for generating screenshots and thumbnails in cloud environments
+- **Shared Core**: Platform-agnostic rendering logic shared between all targets
+
+### Key Benefits
 
 - **Performance**: Native code compiled to WASM with GPU acceleration
 - **Memory Safety**: Rust's ownership model prevents common graphics bugs
 - **Dual Backend**: WebGPU for modern browsers with WebGL2 fallback
-- **Shared Viewport**: Uses SharedArrayBuffer for zero-copy viewport synchronization with the main thread
+- **Shared Viewport**: Uses SharedArrayBuffer for zero-copy viewport synchronization
+- **Server-Side Support**: Generate PNGs from grid files without a browser
 
-## Architecture
-
-The renderer is organized into platform-agnostic modules with a browser-specific worker entry point:
+## Project Structure
 
 ```
-src/
-├── lib.rs                  # WASM entry point and exports
-├── renderers/              # Graphics backends
-│   ├── primitives/         # Shared rendering primitives
-│   │   ├── color.rs        # Color types and conversions
-│   │   ├── font.rs         # Font texture ID management
-│   │   ├── line.rs         # Line primitives
-│   │   ├── rect.rs         # Rectangle primitives
-│   │   ├── sprite.rs       # Sprite rendering
-│   │   └── texture.rs      # Texture management
-│   ├── webgl/              # WebGL2 backend
-│   │   ├── context/        # WebGL context, draw calls, textures
-│   │   ├── shaders/        # GLSL shaders (basic, msdf, sprite)
-│   │   ├── font_manager.rs # WebGL font texture management
-│   │   └── text.rs         # WebGL text rendering
-│   └── webgpu/             # WebGPU backend
-│       ├── context/        # WebGPU context, draw calls, viewport
-│       ├── shaders/        # WGSL shaders (basic, instanced, msdf, sprite)
-│       ├── font_manager.rs # WebGPU font texture management
-│       └── render_target.rs
-├── sheets/                 # Sheet data management
-│   ├── sheet.rs            # Individual sheet state
-│   ├── sheets.rs           # Multi-sheet container
-│   ├── fills/              # Cell background fills (hash-based)
-│   │   └── cells_fills_hash.rs
-│   └── text/               # Text/label rendering
-│       ├── bitmap_font.rs  # Bitmap font data structures
-│       ├── cell_label.rs   # Individual cell label
-│       ├── cells_text_hash.rs  # Spatial hash for text
-│       ├── emoji_sprites.rs    # Emoji spritesheet handling
-│       ├── label_mesh.rs   # Text mesh generation
-│       └── a1_notation.rs  # A1-style cell reference parsing
-├── tables/                 # Data table rendering
-│   ├── table_cache.rs      # Table geometry caching
-│   ├── table_render_data.rs # Table render data structures
-│   └── table_rendering.rs  # Table header/outline rendering
-├── ui/                     # Global UI elements
-│   ├── ui.rs               # UI container
-│   ├── cursor.rs           # Cursor and selection rendering
-│   ├── grid_lines.rs       # Grid line rendering
-│   └── headings/           # Row/column headings
-│       ├── column_headings.rs
-│       ├── row_headings.rs
-│       └── grid_headings.rs
-├── viewport/               # Camera/viewport management
-│   ├── viewport.rs         # Viewport state and transforms
-│   └── viewport_buffer.rs  # SharedArrayBuffer integration
-├── utils/                  # Utilities
-│   ├── color.rs            # Color conversions
-│   ├── console_logger.rs   # WASM console logging
-│   └── math.rs             # Math helpers
-└── worker/                 # Web Worker entry point (browser only)
-    ├── renderer.rs         # WorkerRenderer - main JS API
-    ├── state.rs            # RendererState - core state management
-    ├── backend.rs          # RenderBackend enum (WebGL/WebGPU)
-    ├── message_handler.rs  # Core message handling
-    ├── batch_receiver.rs   # Layout batch processing
-    └── render/             # Per-element rendering helpers
-        ├── background.rs
-        ├── cursor.rs
-        ├── fills.rs
-        ├── headings.rs
-        ├── tables.rs
-        └── text.rs
+quadratic-rust-renderer/
+├── core/                   # Shared platform-agnostic library
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── console_logger.rs   # WASM console logging
+│   │   ├── font_loader.rs      # Font loading (WASM + native)
+│   │   ├── types/              # Shared types
+│   │   │   ├── buffer_types.rs # TextBuffer, FillBuffer, LineBuffer
+│   │   │   ├── render_batch.rs # RenderBatch, HashRenderData
+│   │   │   ├── constants.rs    # HASH_WIDTH, HASH_HEIGHT, etc.
+│   │   │   └── hash_coords.rs  # Hash coordinate utilities
+│   │   ├── tables/             # Table rendering
+│   │   │   └── table_outline.rs
+│   │   └── wgpu_backend/       # Shared wgpu renderer
+│   │       ├── renderer.rs     # WgpuRenderer
+│   │       ├── pipelines.rs    # Render pipelines
+│   │       ├── shaders.rs      # WGSL shaders
+│   │       └── texture_manager.rs
+│   └── Cargo.toml
+│
+├── renderer/               # WASM renderer worker (browser)
+│   ├── src/
+│   │   ├── lib.rs              # WASM entry point
+│   │   ├── renderers/          # Graphics backends
+│   │   │   ├── primitives/     # Color, font, line, rect, sprite
+│   │   │   ├── webgl/          # WebGL2 backend
+│   │   │   └── webgpu/         # WebGPU backend
+│   │   ├── sheets/             # Sheet data management
+│   │   │   ├── fills/          # Cell background fills
+│   │   │   └── text/           # Text/label rendering
+│   │   ├── tables/             # Data table rendering
+│   │   ├── ui/                 # Cursor, grid lines, headings
+│   │   ├── viewport/           # Camera/viewport management
+│   │   └── worker/             # Web Worker entry point
+│   │       ├── renderer.rs     # WorkerRenderer - main JS API
+│   │       ├── state.rs        # RendererState
+│   │       ├── message_handler.rs
+│   │       └── render/         # Per-element rendering
+│   └── Cargo.toml
+│
+├── layout/                 # WASM layout worker (browser)
+│   ├── src/
+│   │   ├── lib.rs              # WASM entry point
+│   │   ├── sheets/             # Sheet layout data
+│   │   │   ├── fills/          # Fill layout
+│   │   │   └── text/           # Text layout, label mesh generation
+│   │   ├── tables/             # Table layout
+│   │   ├── ui/                 # UI layout (cursor, headings)
+│   │   ├── viewport/           # Viewport calculations
+│   │   └── worker/             # Layout worker entry point
+│   │       ├── layout_worker.rs
+│   │       ├── state.rs
+│   │       └── message_handler.rs
+│   └── Cargo.toml
+│
+└── native/                 # Native renderer (server-side)
+    ├── src/
+    │   ├── lib.rs
+    │   ├── renderer.rs         # NativeRenderer using wgpu
+    │   ├── request.rs          # RenderRequest
+    │   └── image_export.rs     # PNG export
+    ├── screenshot/
+    │   └── screenshot.rs       # CLI screenshot tool
+    └── Cargo.toml
 ```
 
 ## Building
@@ -88,95 +93,83 @@ src/
 
 - Rust nightly (see `rust-toolchain.toml`)
 - wasm-pack: `cargo install wasm-pack`
-- cargo-watch (optional, for development): `cargo install cargo-watch`
+- cargo-watch (optional): `cargo install cargo-watch`
 
-### Development
-
-```bash
-# Watch mode with auto-rebuild (WASM)
-npm run start
-
-# Or with local dev server
-npm run dev
-
-# Manual build for development
-npm run build:dev
-```
-
-### Production
+### WASM Builds (from repo root)
 
 ```bash
-# Build WASM package
-npm run build
+# Build renderer WASM
+npm run build:wasm:rust-renderer
 
-# Build native (for cloud rendering)
-npm run build:native
+# Build layout worker WASM
+npm run build:wasm:rust-layout
+
+# Watch mode
+npm run watch:wasm:rust-renderer
+npm run watch:wasm:rust-layout
 ```
 
-### Testing
+### Native Build
 
 ```bash
-# Native tests
-npm run test
+# Build native screenshot tool
+cargo build -p quadratic-renderer-native --example screenshot
 
-# WASM tests (requires Chrome)
-npm run test:wasm
-
-# Linting
-npm run lint
-npm run lint:wasm
+# Run screenshot tool
+npm run screenshot -- --file path/to/grid.grid --selection A1:Z100 --output screenshot.png
 ```
 
-## Usage
+## Screenshot Tool
 
-The renderer runs in a Web Worker and communicates with the main thread via SharedArrayBuffer for viewport state.
+Generate PNG screenshots from grid files:
 
-```javascript
-import init, { WorkerRenderer } from './pkg/quadratic_rust_renderer';
-
-async function main() {
-  await init();
-
-  // Transfer an OffscreenCanvas to the worker
-  const canvas = document.getElementById('canvas').transferControlToOffscreen();
-
-  // Create renderer - auto-selects WebGPU or WebGL
-  let renderer;
-  if (WorkerRenderer.is_webgpu_available()) {
-    renderer = await WorkerRenderer.new_webgpu(canvas);
-  } else {
-    renderer = new WorkerRenderer(canvas); // WebGL fallback
-  }
-
-  console.log(`Using ${renderer.backend_name()} backend`);
-
-  // Set up shared viewport buffer from main thread
-  renderer.set_viewport_buffer(sharedViewportBuffer);
-
-  // Start rendering
-  renderer.start();
-
-  // Render loop
-  function frame(timestamp) {
-    const elapsed = timestamp - lastTime;
-    renderer.frame(elapsed);
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
+```bash
+npm run screenshot -- \
+  --file path/to/file.grid \
+  --selection A1:Z50 \
+  --width 1200 \
+  --output screenshot.png \
+  --dpr 2
 ```
 
-## Key Differences from Pixi.js
+Options:
+- `--file`: Path to .grid file (required)
+- `--selection`: A1 notation range to render (required)
+- `--width` or `--height`: Output dimension (other calculated from aspect ratio)
+- `--output`: Output PNG path (default: output.png)
+- `--dpr`: Device pixel ratio for crisp text (default: 2)
+- `--fonts`: Font directory (default: quadratic-client/public/fonts/opensans)
+- `--grid-lines`: Show grid lines (default: true)
 
-| Pixi.js | Rust Renderer |
-|---------|---------------|
-| Container hierarchy | Flat render order with explicit passes |
-| Sprites/Graphics | Vertex buffers with custom shaders |
-| BitmapText | MSDF text rendering with bitmap fonts |
-| WebGL 1/2 | WebGPU (preferred) + WebGL2 (fallback) |
-| requestAnimationFrame | wasm-bindgen-futures async loop |
-| Main thread rendering | Web Worker with OffscreenCanvas |
-| Direct viewport control | SharedArrayBuffer viewport sync |
+## Architecture
+
+### Two-Worker Model (Browser)
+
+The browser renderer uses a two-worker architecture for optimal performance:
+
+1. **Layout Worker** (`layout/`): Computes text layout, generates meshes, produces `RenderBatch`
+2. **Render Worker** (`renderer/`): Receives batches, uploads to GPU, renders frames
+
+Communication uses `SharedArrayBuffer` for viewport state and `MessagePort` for batch transfer.
+
+### Core Library
+
+The `core/` crate contains platform-agnostic code shared between all targets:
+
+- **Types**: `RenderBatch`, `TextBuffer`, `FillBuffer`, `LineBuffer`
+- **Constants**: Hash dimensions, padding values
+- **Font Loading**: Unified font loader for WASM and native
+- **Table Outlines**: Table border rendering logic
+- **wgpu Backend**: Shared GPU rendering code for WebGPU and native
+
+### Native Renderer
+
+The `native/` crate provides headless rendering for server-side use:
+
+- Uses wgpu with native backends (Vulkan, Metal, DX12)
+- Loads grid files via `quadratic-core`
+- Generates PNG output
+- Used for thumbnails, exports, and cloud rendering
 
 ## Communication with Core
 
@@ -185,29 +178,26 @@ The renderer communicates with `quadratic-core` via bincode-encoded messages:
 - **RendererToCore**: Requests for hash data (fills, labels)
 - **CoreToRenderer**: Sheet data, cell data, table data, offsets
 
-Data is organized in spatial hashes for efficient viewport-based loading and unloading.
+Data is organized in spatial hashes (100x100 cells) for efficient viewport-based loading.
 
 ## Current Status
 
 ✅ **Implemented**:
-
-- [x] WASM initialization and Web Worker integration
-- [x] WebGPU context setup with WebGL2 fallback
-- [x] SharedArrayBuffer viewport synchronization
-- [x] Grid lines rendering
-- [x] Cell background fills (with spatial hashing)
-- [x] MSDF text rendering with bitmap fonts
-- [x] Emoji sprite rendering (lazy-loaded pages)
-- [x] Viewport pan/zoom (via shared buffer)
-- [x] Cursor and selection rendering
-- [x] Row/column headings
-- [x] Data tables (headers, outlines, column names)
-- [x] Multi-sheet support
-- [x] Text overflow clipping
+- WASM initialization and Web Worker integration
+- WebGPU context with WebGL2 fallback
+- SharedArrayBuffer viewport synchronization
+- Grid lines, cell fills, MSDF text rendering
+- Emoji sprites (lazy-loaded)
+- Cursor and selection rendering
+- Row/column headings
+- Data tables (headers, outlines)
+- Multi-sheet support
+- Text overflow clipping
+- Native headless rendering
+- PNG screenshot generation
 
 🚧 **In Progress / Planned**:
-
-- [ ] Images
-- [ ] Validations
-- [ ] Code cell decorations
-- [ ] Performance optimizations
+- Images
+- Validations
+- Code cell decorations
+- Performance optimizations
