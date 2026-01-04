@@ -56,6 +56,10 @@ export const CoreToRendererType = {
   SheetOffsets: 6,
   SheetDeleted: 7,
   ClearSheet: 8,
+  SheetMetaFills: 9,
+  CodeCells: 10,
+  CodeCellUpdate: 11,
+  ActiveTable: 12,
 } as const;
 
 export const RendererToCoreType = {

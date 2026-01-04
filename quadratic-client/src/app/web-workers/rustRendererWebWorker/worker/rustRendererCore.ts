@@ -6,7 +6,10 @@
  */
 
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { getCoreToRendererTypeName } from '@/app/web-workers/rustRendererWebWorker/rustRendererCoreMessages';
+import {
+  CoreToRendererType,
+  getCoreToRendererTypeName,
+} from '@/app/web-workers/rustRendererWebWorker/rustRendererCoreMessages';
 import { rustRendererWasm } from './rustRendererWasm';
 
 declare var self: WorkerGlobalScope &
@@ -41,6 +44,24 @@ class RustRendererCore {
     } else {
       console.error('[rustRendererCore] Unexpected message type:', typeof e.data);
       return;
+    }
+
+    // Filter out hash-related messages - Layout Worker handles these exclusively
+    // and sends pre-computed RenderBatch to us
+    if (data.length > 0) {
+      const messageType = data[0];
+      if (
+        messageType === CoreToRendererType.InitSheet ||
+        messageType === CoreToRendererType.HashCells ||
+        messageType === CoreToRendererType.DirtyHashes
+      ) {
+        // Layout Worker handles these - skip in Render Worker
+        if (debugFlag('debugWebWorkersMessages')) {
+          const typeName = getCoreToRendererTypeName(data);
+          console.log(`[rustRendererCore] skipping ${typeName} (handled by Layout Worker)`);
+        }
+        return;
+      }
     }
 
     if (debugFlag('debugWebWorkersMessages')) {

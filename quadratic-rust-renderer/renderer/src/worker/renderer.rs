@@ -851,15 +851,8 @@ impl WorkerRenderer {
             false
         };
 
-        // Check for needed hashes and request them from core
-        if viewport_changed {
-            if let Some(sheet_id) = self.state.current_sheet_id() {
-                let needed = self.state.get_unrequested_hashes();
-                if !needed.is_empty() {
-                    self.request_hashes(sheet_id, needed);
-                }
-            }
-        }
+        // NOTE: Hash requests are now handled exclusively by the Layout Worker.
+        // The Render Worker receives pre-computed RenderBatch from Layout Worker.
 
         // Update UI content based on viewport (grid lines, cursor, headings)
         self.state.update_content();

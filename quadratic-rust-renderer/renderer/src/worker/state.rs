@@ -13,7 +13,7 @@ use quadratic_core_shared::{
 };
 
 use crate::sheets::text::{
-    BitmapFont, BitmapFonts, CellLabel, CellsTextHash, EmojiSprites, VisibleHashBounds, hash_key,
+    BitmapFont, BitmapFonts, CellsTextHash, EmojiSprites, VisibleHashBounds, hash_key,
     HASH_HEIGHT, HASH_WIDTH,
 };
 use crate::sheets::{Sheet, Sheets};
@@ -253,78 +253,47 @@ impl RendererState {
         // Clear pending request status for this hash
         self.clear_pending_hash(hash_x, hash_y);
 
+        // NOTE: The Layout Worker does all the heavy text layout and sends
+        // pre-computed RenderBatch to us. The Render Worker only needs to:
+        // 1. Track content cache (which cells have content)
+        // 2. Track loaded hashes (to avoid re-requesting)
+        //
+        // We intentionally skip:
+        // - CellLabel creation and layout (Layout Worker handles this)
+        // - Emoji page loading (Layout Worker handles this)
+        // - Clip bounds calculation (Layout Worker handles this)
+
         if let Some(sheet) = self.sheets.current_sheet_mut() {
             let key = hash_key(hash_x, hash_y);
 
-            // Clear content cache for this hash region before removing
+            // Clear content cache for this hash region
             sheet.clear_content_for_hash(hash_x, hash_y);
 
-            // Remove existing hash
+            // Remove existing hash (if any)
             if let Some(old_hash) = sheet.hashes.remove(&key) {
                 sheet.label_count = sheet.label_count.saturating_sub(old_hash.label_count());
             }
 
-            // Clone offsets to avoid borrow conflict
-            let offsets = sheet.sheet_offsets.clone();
-            let fonts = &self.fonts;
-            let emoji_sprites = if self.emoji_sprites.is_loaded() {
-                Some(&self.emoji_sprites)
-            } else {
-                None
-            };
-
-            let labels: Vec<(i64, i64, CellLabel)> = cells
+            // Track content for each cell (lightweight - just coordinates)
+            let content_cells: Vec<(i64, i64)> = cells
                 .iter()
                 .filter(|cell| !cell.value.is_empty() || cell.special.is_some())
-                .map(|cell| {
-                    let mut label = CellLabel::from_render_cell(cell);
-                    label.update_bounds(&offsets);
-                    label.layout_with_emojis(fonts, emoji_sprites);
-                    (cell.x, cell.y, label)
-                })
+                .map(|cell| (cell.x, cell.y))
                 .collect();
 
-            // Collect emoji strings that need their pages loaded
-            let emoji_strings: Vec<String> = labels
-                .iter()
-                .flat_map(|(_, _, label)| label.get_emoji_strings())
-                .map(|s| s.to_string())
-                .collect();
-
-            // Re-borrow sheet mutably for content cache updates
-            if let Some(sheet) = self.sheets.current_sheet_mut() {
-                // Add cells to content cache
-                for (x, y, _) in &labels {
-                    sheet.add_content(*x, *y);
-                }
-
-                // Create new hash
-                let mut hash = CellsTextHash::new(hash_x, hash_y, &sheet.sheet_offsets);
-                for (x, y, label) in labels {
-                    hash.add_label(x, y, label);
-                    sheet.label_count += 1;
-                }
-
-                // Always insert the hash, even if empty, to mark it as loaded
-                // and prevent re-requesting the same empty region repeatedly
-                sheet.hashes.insert(key, hash);
+            // Add cells to content cache
+            for (x, y) in &content_cells {
+                sheet.add_content(*x, *y);
             }
 
-            // Mark emoji pages as needed (after borrowing fonts/emoji_sprites is done)
-            for emoji in emoji_strings {
-                if let Some(page) = self.emoji_sprites.get_emoji_page(&emoji) {
-                    if !self.emoji_sprites.is_page_loaded(page) {
-                        self.emoji_sprites.mark_page_needed(page);
-                    }
-                }
-            }
+            // Create empty hash to mark as loaded (prevents re-requesting)
+            // We don't populate with labels since rendering uses batch_cache
+            let hash = CellsTextHash::new(hash_x, hash_y, &sheet.sheet_offsets);
+            sheet.label_count += content_cells.len();
+            sheet.hashes.insert(key, hash);
         }
 
-        // Now check neighbors and set clip bounds
-        // This is done after inserting the hash so we can look up neighbors
-        self.update_clip_bounds_for_hash(hash_x, hash_y);
-
-        // Mark viewport dirty to trigger re-render with new label data
+        // Mark viewport dirty to trigger re-render with new data from batch_cache
         self.viewport.dirty = true;
     }
 
@@ -589,12 +558,10 @@ impl RendererState {
         );
 
         let mut needed: Vec<Pos> = Vec::new();
-        let mut skipped_bounds = 0;
         let mut skipped_loaded = 0;
         let mut skipped_pending = 0;
 
         if let Some(sheet) = self.sheets.current_sheet() {
-            let sheet_bounds = &sheet.bounds;
             for (hash_x, hash_y) in hash_bounds.iter() {
                 let key = hash_key(hash_x, hash_y);
 
@@ -607,10 +574,9 @@ impl RendererState {
                     skipped_pending += 1;
                     continue;
                 }
-                if !Self::hash_overlaps_bounds(hash_x, hash_y, sheet_bounds) {
-                    skipped_bounds += 1;
-                    continue;
-                }
+                // NOTE: Removed bounds check - it was causing hashes beyond reported bounds
+                // to be skipped (e.g., row 200+ when bounds.max.y was incorrect).
+                // The Layout Worker handles hash requests without this restriction.
 
                 needed.push(Pos::new(hash_x, hash_y));
                 // Mark as pending
@@ -623,14 +589,12 @@ impl RendererState {
             }
 
             // Log filtering stats
-            if !needed.is_empty() || skipped_bounds > 0 {
+            if !needed.is_empty() {
                 log::info!(
-                    "[rust_renderer] get_unrequested_hashes: requesting {} hashes, skipped {} (outside bounds), {} (loaded), {} (pending), sheet_bounds: {:?}",
+                    "[rust_renderer] get_unrequested_hashes: requesting {} hashes, skipped {} (loaded), {} (pending)",
                     needed.len(),
-                    skipped_bounds,
                     skipped_loaded,
                     skipped_pending,
-                    sheet_bounds
                 );
             }
         }

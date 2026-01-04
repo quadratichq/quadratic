@@ -130,15 +130,28 @@ impl CellLabel {
         self.text_height
     }
 
-    /// Set clip bounds
+    /// Set clip bounds - only marks dirty if value actually changed
     pub fn set_clip_left(&mut self, x: f32) {
-        self.clip_left = Some(x);
-        self.dirty = true;
+        if self.clip_left != Some(x) {
+            self.clip_left = Some(x);
+            self.dirty = true;
+        }
     }
 
     pub fn set_clip_right(&mut self, x: f32) {
-        self.clip_right = Some(x);
-        self.dirty = true;
+        if self.clip_right != Some(x) {
+            self.clip_right = Some(x);
+            self.dirty = true;
+        }
+    }
+
+    /// Get current clip bounds (for checking if update needed)
+    pub fn clip_left(&self) -> Option<f32> {
+        self.clip_left
+    }
+
+    pub fn clip_right(&self) -> Option<f32> {
+        self.clip_right
     }
 
     /// Update cell bounds from sheet offsets
@@ -163,6 +176,10 @@ impl CellLabel {
         self.cached_lines.clear();
 
         let Some(font) = self.get_font(fonts) else {
+            log::warn!(
+                "[CellLabel] layout() skipped for ({}, {}) - font not found",
+                self.col, self.row
+            );
             return;
         };
 
@@ -198,13 +215,34 @@ impl CellLabel {
             CellAlign::Right => self.cell_x + self.cell_width - CELL_PADDING_RIGHT - total_width,
         };
 
-        // Calculate overflow
-        self.overflow_left = (self.cell_x - x).max(0.0);
-        self.overflow_right = ((x + total_width) - (self.cell_x + self.cell_width)).max(0.0);
+        // Calculate overflow (only relevant for Overflow wrap mode)
+        // For Clip mode, text is clipped to cell bounds so no overflow
+        if self.wrap == CellWrap::Overflow {
+            self.overflow_left = (self.cell_x - x).max(0.0);
+            self.overflow_right = ((x + total_width) - (self.cell_x + self.cell_width)).max(0.0);
+
+            // Log overflow for debugging
+            if self.overflow_left > 0.0 || self.overflow_right > 0.0 {
+                log::debug!(
+                    "[CellLabel] layout ({}, {}): text_width={:.1}, cell_width={:.1}, overflow_left={:.1}, overflow_right={:.1}",
+                    self.col, self.row, total_width, self.cell_width, self.overflow_left, self.overflow_right
+                );
+            }
+        } else {
+            self.overflow_left = 0.0;
+            self.overflow_right = 0.0;
+        }
 
         // Get effective clip bounds
-        let clip_left = self.clip_left.unwrap_or(f32::NEG_INFINITY);
-        let clip_right = self.clip_right.unwrap_or(f32::INFINITY);
+        // For Clip mode: always clip to cell bounds
+        // For Overflow mode: clip to neighbor content boundaries if set
+        let (clip_left, clip_right) = if self.wrap == CellWrap::Clip {
+            (self.cell_x, self.cell_x + self.cell_width)
+        } else {
+            let left = self.clip_left.unwrap_or(f32::NEG_INFINITY);
+            let right = self.clip_right.unwrap_or(f32::INFINITY);
+            (left, right)
+        };
 
         // Second pass: generate geometry
         prev_char = None;
@@ -220,21 +258,28 @@ impl CellLabel {
                 let glyph_w = glyph.frame.width * font_scale;
                 let glyph_h = glyph.frame.height * font_scale;
 
-                // Clip check
+                // Clip check - skip glyphs that extend past clip boundaries
+                // This matches TypeScript CellLabel behavior: clip if glyph extends past either edge
                 let glyph_right = glyph_x + glyph_w;
-                if glyph_right > clip_left && glyph_x < clip_right {
-                    // Use pre-computed UVs from font loader
-                    // uvs format: [u0, v0, u1, v0, u1, v1, u0, v1] (4 corners)
-                    let (u0, v0, u1, v1) = if glyph.uvs.len() >= 6 {
-                        (glyph.uvs[0], glyph.uvs[1], glyph.uvs[2], glyph.uvs[5])
-                    } else {
-                        (0.0, 0.0, 1.0, 1.0)
-                    };
-
-                    let texture_uid = glyph.texture_uid;
-                    let mesh = self.cached_meshes.get_or_create(texture_uid, self.font_size);
-                    mesh.add_quad(glyph_x, glyph_y, glyph_w, glyph_h, u0, v0, u1, v1, self.color);
+                if glyph_x < clip_left || glyph_right > clip_right {
+                    // Glyph is clipped, skip rendering
+                    x += glyph.x_advance * font_scale;
+                    prev_char = Some(char_code);
+                    continue;
                 }
+
+                // Glyph is within bounds, render it
+                // Use pre-computed UVs from font loader
+                // uvs format: [u0, v0, u1, v0, u1, v1, u0, v1] (4 corners)
+                let (u0, v0, u1, v1) = if glyph.uvs.len() >= 6 {
+                    (glyph.uvs[0], glyph.uvs[1], glyph.uvs[2], glyph.uvs[5])
+                } else {
+                    (0.0, 0.0, 1.0, 1.0)
+                };
+
+                let texture_uid = glyph.texture_uid;
+                let mesh = self.cached_meshes.get_or_create(texture_uid, self.font_size);
+                mesh.add_quad(glyph_x, glyph_y, glyph_w, glyph_h, u0, v0, u1, v1, self.color);
 
                 x += glyph.x_advance * font_scale;
                 prev_char = Some(char_code);
