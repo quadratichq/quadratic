@@ -1,10 +1,21 @@
 //! Table (code cell output) rendering
 //!
 //! Tables are code cell outputs that display data in a grid format.
-//! This module handles table header rendering, outlines, and layout.
+//! This module handles:
+//! - Table data structures (bounds, render data)
+//! - Table caching for efficient lookup
+//! - Platform-agnostic rendering via RenderContext
 
+mod bounds;
+mod cache;
+mod render;
+mod table_data;
 mod table_outline;
 
+pub use bounds::TableBounds;
+pub use cache::TableCache;
+pub use render::{build_table_render_output, TableRenderOutput};
+pub use table_data::TableData;
 pub use table_outline::{TableOutline, TableOutlines};
 
 // Table colors (matches CSS theme)

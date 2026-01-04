@@ -41,6 +41,7 @@ mod format_summary;
 pub mod formats;
 pub mod rendering;
 pub mod rendering_date_time;
+pub mod rendering_rust;
 pub mod row_resize;
 pub mod search;
 pub mod summarize;

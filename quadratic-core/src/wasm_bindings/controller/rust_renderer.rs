@@ -2,6 +2,10 @@
 //!
 //! These functions handle bidirectional bincode communication between
 //! the core worker and the rust renderer worker.
+//!
+//! This module uses the Rust-native rendering functions from `rendering_rust/`
+//! which produce `RenderCell`, `RenderFill`, and `RenderCodeCell` directly,
+//! eliminating conversion overhead.
 
 use std::str::FromStr;
 
@@ -10,132 +14,9 @@ use crate::Rect;
 use crate::grid::SheetId;
 use crate::wasm_bindings::js::log;
 use quadratic_core_shared::{
-    CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, CoreToRenderer, HashCells, NumericFormatKind, RenderCell,
-    RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial, RenderCodeCell,
-    RenderCodeCellState, RenderColumnHeader, RenderNumber, RendererToCore, SheetFill, SheetInfo,
+    CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH, CoreToRenderer, HashCells, RendererToCore, SheetInfo,
     serialization,
 };
-
-use crate::grid::{
-    formatting::{
-        CellAlign, CellVerticalAlign, CellWrap, NumericFormatKind as CoreNumericFormatKind,
-    },
-    js_types::{
-        JsDataTableColumnHeader, JsNumber, JsRenderCellFormatSpan, JsRenderCellLinkSpan,
-        JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
-    },
-};
-
-fn convert_align(align: CellAlign) -> quadratic_core_shared::CellAlign {
-    match align {
-        CellAlign::Left => quadratic_core_shared::CellAlign::Left,
-        CellAlign::Center => quadratic_core_shared::CellAlign::Center,
-        CellAlign::Right => quadratic_core_shared::CellAlign::Right,
-    }
-}
-
-fn convert_vertical_align(align: CellVerticalAlign) -> quadratic_core_shared::CellVerticalAlign {
-    match align {
-        CellVerticalAlign::Top => quadratic_core_shared::CellVerticalAlign::Top,
-        CellVerticalAlign::Middle => quadratic_core_shared::CellVerticalAlign::Middle,
-        CellVerticalAlign::Bottom => quadratic_core_shared::CellVerticalAlign::Bottom,
-    }
-}
-
-fn convert_wrap(wrap: CellWrap) -> quadratic_core_shared::CellWrap {
-    match wrap {
-        CellWrap::Wrap => quadratic_core_shared::CellWrap::Wrap,
-        CellWrap::Clip => quadratic_core_shared::CellWrap::Clip,
-        CellWrap::Overflow => quadratic_core_shared::CellWrap::Overflow,
-    }
-}
-
-fn convert_special(special: JsRenderCellSpecial) -> RenderCellSpecial {
-    match special {
-        JsRenderCellSpecial::Chart => RenderCellSpecial::Chart,
-        JsRenderCellSpecial::SpillError => RenderCellSpecial::SpillError,
-        JsRenderCellSpecial::RunError => RenderCellSpecial::RunError,
-        JsRenderCellSpecial::Logical => RenderCellSpecial::Logical,
-        JsRenderCellSpecial::Checkbox => RenderCellSpecial::Checkbox,
-        JsRenderCellSpecial::List => RenderCellSpecial::List,
-    }
-}
-
-fn convert_number(num: JsNumber) -> RenderNumber {
-    RenderNumber {
-        decimals: num.decimals,
-        commas: num.commas,
-        format: num.format.map(|f| quadratic_core_shared::NumericFormat {
-            kind: match f.kind {
-                CoreNumericFormatKind::Number => NumericFormatKind::Number,
-                CoreNumericFormatKind::Currency => NumericFormatKind::Currency,
-                CoreNumericFormatKind::Percentage => NumericFormatKind::Percentage,
-                CoreNumericFormatKind::Exponential => NumericFormatKind::Exponential,
-            },
-            symbol: f.symbol.clone(),
-        }),
-    }
-}
-
-fn convert_link_span(span: JsRenderCellLinkSpan) -> RenderCellLinkSpan {
-    RenderCellLinkSpan {
-        start: span.start,
-        end: span.end,
-        url: span.url,
-    }
-}
-
-fn convert_format_span(span: JsRenderCellFormatSpan) -> RenderCellFormatSpan {
-    RenderCellFormatSpan {
-        start: span.start,
-        end: span.end,
-        bold: span.bold,
-        italic: span.italic,
-        underline: span.underline,
-        strike_through: span.strike_through,
-        text_color: span.text_color,
-        link: span.link,
-    }
-}
-
-fn convert_code_cell_state(state: JsRenderCodeCellState) -> RenderCodeCellState {
-    match state {
-        JsRenderCodeCellState::NotYetRun => RenderCodeCellState::NotYetRun,
-        JsRenderCodeCellState::RunError => RenderCodeCellState::RunError,
-        JsRenderCodeCellState::SpillError => RenderCodeCellState::SpillError,
-        JsRenderCodeCellState::Success => RenderCodeCellState::Success,
-        JsRenderCodeCellState::HTML => RenderCodeCellState::Html,
-        JsRenderCodeCellState::Image => RenderCodeCellState::Image,
-    }
-}
-
-fn convert_column_header(column: JsDataTableColumnHeader) -> RenderColumnHeader {
-    RenderColumnHeader {
-        name: column.name,
-        display: column.display,
-        value_index: column.value_index,
-    }
-}
-
-fn convert_code_cell(cell: JsRenderCodeCell) -> RenderCodeCell {
-    RenderCodeCell {
-        x: cell.x,
-        y: cell.y,
-        w: cell.w,
-        h: cell.h,
-        language: cell.language,
-        state: convert_code_cell_state(cell.state),
-        name: cell.name,
-        columns: cell.columns.into_iter().map(convert_column_header).collect(),
-        first_row_header: cell.first_row_header,
-        show_name: cell.show_name,
-        show_columns: cell.show_columns,
-        is_code: cell.is_code,
-        is_html: cell.is_html,
-        is_html_image: cell.is_html_image,
-        alternating_colors: cell.alternating_colors,
-    }
-}
 
 impl GridController {
     /// Internal: Send complete sheet info (metadata + offsets) to the rust renderer.
@@ -319,6 +200,7 @@ impl GridController {
     }
 
     /// Send meta fills for a sheet to the rust renderer.
+    /// Uses Rust-native rendering functions directly - no conversion needed.
     fn send_meta_fills_to_rust_renderer_by_id(&self, sheet_id: SheetId) -> Result<(), String> {
         let sheet = self
             .try_sheet(sheet_id)
@@ -327,21 +209,10 @@ impl GridController {
         let shared_sheet_id = quadratic_core_shared::SheetId::from_str(&sheet_id.to_string())
             .map_err(|e| format!("Invalid sheet_id: {e}"))?;
 
-        let fills = sheet.get_all_sheet_fills();
+        // Use Rust-native rendering function - returns SheetFill directly!
+        let fills = sheet.get_rust_all_sheet_fills();
 
-        // Convert to shared types
-        let shared_fills: Vec<SheetFill> = fills
-            .iter()
-            .map(|f| SheetFill {
-                x: f.x,
-                y: f.y,
-                w: f.w,
-                h: f.h,
-                color: f.color.clone(),
-            })
-            .collect();
-
-        let fills_bytes = serialization::serialize(&shared_fills)
+        let fills_bytes = serialization::serialize(&fills)
             .map_err(|e| format!("Failed to serialize fills: {e}"))?;
 
         let message = CoreToRenderer::SheetMetaFills {
@@ -354,7 +225,7 @@ impl GridController {
 
         log(&format!(
             "[rust_renderer] Sending {} meta fills ({} bytes)",
-            shared_fills.len(),
+            fills.len(),
             bytes.len()
         ));
 
@@ -364,6 +235,7 @@ impl GridController {
     }
 
     /// Send code cells (tables) for a sheet to the rust renderer.
+    /// Uses Rust-native rendering functions directly - no conversion needed.
     fn send_code_cells_to_rust_renderer(&self, sheet_id: SheetId) -> Result<(), String> {
         let sheet = self
             .try_sheet(sheet_id)
@@ -372,17 +244,8 @@ impl GridController {
         let shared_sheet_id = quadratic_core_shared::SheetId::from_str(&sheet_id.to_string())
             .map_err(|e| format!("Invalid sheet_id: {e}"))?;
 
-        // Collect all code cells/tables from the sheet
-        let code_cells: Vec<RenderCodeCell> = sheet
-            .data_tables
-            .expensive_iter()
-            .filter_map(|(pos, _data_table)| {
-                // Use the existing render_code_cell method via get_render_code_cell
-                sheet
-                    .get_render_code_cell(*pos)
-                    .map(|js_cell| convert_code_cell(js_cell))
-            })
-            .collect();
+        // Use Rust-native rendering function - returns RenderCodeCell directly!
+        let code_cells = sheet.get_rust_all_render_code_cells();
 
         if code_cells.is_empty() {
             log(&format!(
@@ -422,6 +285,8 @@ impl GridController {
     }
 
     /// Send hash cells for specific hashes to the rust renderer.
+    /// Uses Rust-native rendering functions that produce RenderCell/RenderFill directly,
+    /// eliminating conversion overhead.
     fn send_hashes_to_rust_renderer(
         &self,
         sheet_id: SheetId,
@@ -435,6 +300,7 @@ impl GridController {
             .map_err(|e| format!("Invalid sheet_id: {e}"))?;
 
         let mut hash_cells_vec = Vec::new();
+        let a1_context = self.a1_context();
 
         for hash in hashes {
             let rect = Rect::from_numbers(
@@ -444,56 +310,15 @@ impl GridController {
                 CELL_SHEET_HEIGHT as i64,
             );
 
-            // Get fills for this hash
-            let fills = sheet.get_render_fills_in_rect(rect);
-            let shared_fills: Vec<quadratic_core_shared::RenderFill> = fills
-                .iter()
-                .map(|f| quadratic_core_shared::RenderFill {
-                    x: f.x,
-                    y: f.y,
-                    w: f.w,
-                    h: f.h,
-                    color: f.color.clone(),
-                })
-                .collect();
-
-            // Get cells and convert to RenderCell format
-            let a1_context = self.a1_context();
-            let js_render_cells = sheet.get_render_cells(rect, &a1_context);
-            let cells: Vec<RenderCell> = js_render_cells
-                .into_iter()
-                .map(|cell| RenderCell {
-                    x: cell.x,
-                    y: cell.y,
-                    value: cell.value,
-                    language: cell.language,
-                    align: cell.align.map(convert_align),
-                    vertical_align: cell.vertical_align.map(convert_vertical_align),
-                    wrap: cell.wrap.map(convert_wrap),
-                    bold: cell.bold,
-                    italic: cell.italic,
-                    underline: cell.underline,
-                    strike_through: cell.strike_through,
-                    text_color: cell.text_color,
-                    font_size: cell.font_size,
-                    special: cell.special.map(convert_special),
-                    number: cell.number.map(convert_number),
-                    table_name: cell.table_name,
-                    column_header: cell.column_header,
-                    link_spans: cell.link_spans.into_iter().map(convert_link_span).collect(),
-                    format_spans: cell
-                        .format_spans
-                        .into_iter()
-                        .map(convert_format_span)
-                        .collect(),
-                })
-                .collect();
+            // Use Rust-native rendering functions directly - no conversion needed!
+            let fills = sheet.get_rust_render_fills_in_rect(rect);
+            let cells = sheet.get_rust_render_cells(rect, &a1_context);
 
             hash_cells_vec.push(HashCells {
                 sheet_id: shared_sheet_id.clone(),
                 hash_pos: *hash,
                 cells,
-                fills: shared_fills,
+                fills,
             });
         }
 

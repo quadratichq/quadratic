@@ -45,8 +45,10 @@ native = [
     "wgpu-native",
 ]
 
-# wgpu for WASM (WebGPU backend)
-wgpu-wasm = ["wgpu/webgpu", "wgpu/wgsl"]
+# wgpu for WASM - WebGPU with WebGL2 fallback (via wgpu abstraction)
+# webgpu: Modern WebGPU API (Chrome 113+, Firefox 127+, Safari 18+)
+# webgl: WebGL2 fallback for older browsers
+wgpu-wasm = ["wgpu/webgpu", "wgpu/webgl", "wgpu/wgsl"]
 
 # wgpu for native platforms (Vulkan, Metal, DX12 backends)
 # vulkan-portability enables MoltenVK on macOS and other portability layers
@@ -117,10 +119,10 @@ log = "0.4"
 
 # Quadratic shared types (no wasm-export - rust-renderer has its own wasm bindings)
 # Enable js feature when building for wasm to get ViewportBuffer
-quadratic-core-shared = { path = "../../quadratic-core-shared", default-features = false }
+quadratic-core-shared = { path = "../../../quadratic-core-shared", default-features = false }
 
 # Core library (shared types for layout/render worker communication)
-quadratic-renderer-core = { path = "../core", features = ["js"] }
+quadratic-renderer-core = { path = "../../core", features = ["js"] }
 
 # Required for WASM support (used by uuid in quadratic-core-shared)
 getrandom = { version = "0.3", features = ["wasm_js"] }

@@ -24,17 +24,9 @@
 //! } else {
 //!     const renderer = new WorkerRenderer(canvas);
 //! }
-//!
-//! // Legacy: WorkerRendererGPU still works for backwards compatibility
-//! if (WorkerRendererGPU.is_available()) {
-//!     const renderer = await WorkerRendererGPU.new(canvas);
-//! } else {
-//!     const renderer = new WorkerRenderer(canvas);
-//! }
 //! ```
 
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
-#![allow(dead_code)] // POC - many things are scaffolded but not yet used
 
 // Platform-agnostic modules
 mod renderers;

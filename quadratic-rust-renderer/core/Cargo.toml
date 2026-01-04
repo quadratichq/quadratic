@@ -19,8 +19,10 @@ js = [
 # Full WASM target (js + wasm-specific features)
 wasm = ["js", "dep:wasm-bindgen-futures", "dep:console_error_panic_hook"]
 
-# wgpu for WASM WebGPU backend
-wgpu-wasm = ["wgpu", "wgpu/webgpu"]
+# wgpu for WASM - WebGPU with WebGL2 fallback
+# webgpu: Modern WebGPU API (Chrome 113+, Firefox 127+, Safari 18+)
+# webgl: WebGL2 fallback for older browsers
+wgpu-wasm = ["wgpu", "wgpu/webgpu", "wgpu/webgl"]
 
 # wgpu for native platforms (Vulkan, Metal, DX12)
 wgpu-native = ["wgpu", "wgpu/vulkan-portability", "wgpu/metal", "wgpu/dx12"]

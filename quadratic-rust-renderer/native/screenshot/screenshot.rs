@@ -21,6 +21,7 @@ use clap::Parser;
 use quadratic_core::grid::file::import;
 use quadratic_core_shared::{Pos, Rect};
 use quadratic_renderer_core::font_loader::load_fonts_from_directory;
+use quadratic_renderer_core::{from_rgba, parse_color};
 use quadratic_renderer_native::{
     BorderLineStyle, CellFill, CellText, NativeRenderer, RenderRequest, SelectionRange,
     SheetBorders, TableOutline, TableOutlines,
@@ -218,7 +219,7 @@ fn main() -> anyhow::Result<()> {
     // Convert horizontal borders
     if let Some(h_borders) = js_borders.horizontal {
         for border in h_borders {
-            let color = rgba_to_color(&border.color);
+            let color = from_rgba(&border.color);
             let line_style = cell_border_line_to_style(&border.line);
             borders.add_horizontal(border.x, border.y, border.width, color, line_style);
         }
@@ -227,7 +228,7 @@ fn main() -> anyhow::Result<()> {
     // Convert vertical borders
     if let Some(v_borders) = js_borders.vertical {
         for border in v_borders {
-            let color = rgba_to_color(&border.color);
+            let color = from_rgba(&border.color);
             let line_style = cell_border_line_to_style(&border.line);
             borders.add_vertical(border.x, border.y, border.height, color, line_style);
         }
@@ -272,7 +273,8 @@ fn main() -> anyhow::Result<()> {
 
         // Only show name/columns if the top of the table is visible
         let show_name = code_cell.show_name && table_y >= selection.start_row;
-        let show_columns = code_cell.show_columns && (table_y + if show_name { 1 } else { 0 }) >= selection.start_row;
+        let show_columns = code_cell.show_columns
+            && (table_y + if show_name { 1 } else { 0 }) >= selection.start_row;
 
         let mut table = TableOutline::new(clipped_x, clipped_y, clipped_w, clipped_h)
             .with_show_columns(show_columns)
@@ -287,7 +289,10 @@ fn main() -> anyhow::Result<()> {
         table_outlines.add(table);
     }
     request.table_outlines = table_outlines;
-    println!("Found {} table outlines", request.table_outlines.tables.len());
+    println!(
+        "Found {} table outlines",
+        request.table_outlines.tables.len()
+    );
 
     // Create renderer and render
     println!(
@@ -328,7 +333,10 @@ fn main() -> anyhow::Result<()> {
         // Set fonts on renderer
         renderer.set_fonts(fonts);
     } else {
-        println!("Warning: Fonts directory {:?} not found, text will not render", font_dir);
+        println!(
+            "Warning: Fonts directory {:?} not found, text will not render",
+            font_dir
+        );
     }
 
     println!("Rendering...");
@@ -341,97 +349,10 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Parse a color string (hex or named) to RGBA
-fn parse_color(color: &str) -> [f32; 4] {
-    // Handle hex colors
-    if color.starts_with('#') {
-        let hex = color.trim_start_matches('#');
-        if hex.len() == 6 {
-            if let (Ok(r), Ok(g), Ok(b)) = (
-                u8::from_str_radix(&hex[0..2], 16),
-                u8::from_str_radix(&hex[2..4], 16),
-                u8::from_str_radix(&hex[4..6], 16),
-            ) {
-                return [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0];
-            }
-        } else if hex.len() == 8 {
-            if let (Ok(r), Ok(g), Ok(b), Ok(a)) = (
-                u8::from_str_radix(&hex[0..2], 16),
-                u8::from_str_radix(&hex[2..4], 16),
-                u8::from_str_radix(&hex[4..6], 16),
-                u8::from_str_radix(&hex[6..8], 16),
-            ) {
-                return [
-                    r as f32 / 255.0,
-                    g as f32 / 255.0,
-                    b as f32 / 255.0,
-                    a as f32 / 255.0,
-                ];
-            }
-        }
-    }
-
-    // Handle rgba() format
-    if color.starts_with("rgba(") {
-        let inner = color.trim_start_matches("rgba(").trim_end_matches(')');
-        let parts: Vec<&str> = inner.split(',').collect();
-        if parts.len() == 4 {
-            if let (Ok(r), Ok(g), Ok(b), Ok(a)) = (
-                parts[0].trim().parse::<f32>(),
-                parts[1].trim().parse::<f32>(),
-                parts[2].trim().parse::<f32>(),
-                parts[3].trim().parse::<f32>(),
-            ) {
-                return [r / 255.0, g / 255.0, b / 255.0, a];
-            }
-        }
-    }
-
-    // Handle rgb() format
-    if color.starts_with("rgb(") {
-        let inner = color.trim_start_matches("rgb(").trim_end_matches(')');
-        let parts: Vec<&str> = inner.split(',').collect();
-        if parts.len() == 3 {
-            if let (Ok(r), Ok(g), Ok(b)) = (
-                parts[0].trim().parse::<f32>(),
-                parts[1].trim().parse::<f32>(),
-                parts[2].trim().parse::<f32>(),
-            ) {
-                return [r / 255.0, g / 255.0, b / 255.0, 1.0];
-            }
-        }
-    }
-
-    // Handle named colors
-    match color.to_lowercase().as_str() {
-        "red" => [1.0, 0.0, 0.0, 1.0],
-        "green" => [0.0, 1.0, 0.0, 1.0],
-        "blue" => [0.0, 0.0, 1.0, 1.0],
-        "yellow" => [1.0, 1.0, 0.0, 1.0],
-        "cyan" => [0.0, 1.0, 1.0, 1.0],
-        "magenta" => [1.0, 0.0, 1.0, 1.0],
-        "white" => [1.0, 1.0, 1.0, 1.0],
-        "black" => [0.0, 0.0, 0.0, 1.0],
-        "gray" | "grey" => [0.5, 0.5, 0.5, 1.0],
-        "orange" => [1.0, 0.647, 0.0, 1.0],
-        "pink" => [1.0, 0.753, 0.796, 1.0],
-        "purple" => [0.5, 0.0, 0.5, 1.0],
-        _ => [0.8, 0.8, 0.8, 1.0], // Default light gray
-    }
-}
-
-/// Convert Rgba to [f32; 4]
-fn rgba_to_color(rgba: &quadratic_core_shared::Rgba) -> [f32; 4] {
-    [
-        rgba.red as f32 / 255.0,
-        rgba.green as f32 / 255.0,
-        rgba.blue as f32 / 255.0,
-        rgba.alpha as f32 / 255.0,
-    ]
-}
-
 /// Convert CellBorderLine to BorderLineStyle
-fn cell_border_line_to_style(line: &quadratic_core::grid::sheet::borders::CellBorderLine) -> BorderLineStyle {
+fn cell_border_line_to_style(
+    line: &quadratic_core::grid::sheet::borders::CellBorderLine,
+) -> BorderLineStyle {
     use quadratic_core::grid::sheet::borders::CellBorderLine;
     match line {
         CellBorderLine::Line1 => BorderLineStyle::Line1,

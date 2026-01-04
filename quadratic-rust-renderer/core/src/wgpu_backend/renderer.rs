@@ -155,4 +155,9 @@ impl WgpuRenderer {
     pub fn has_texture(&self, id: u32) -> bool {
         self.textures.has(id)
     }
+
+    /// Remove a texture
+    pub fn remove_texture(&mut self, id: u32) {
+        self.textures.remove(id);
+    }
 }

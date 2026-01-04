@@ -48,7 +48,7 @@ pub struct RenderBatch {
 }
 
 /// Pre-computed render data for a single hash region
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct HashRenderData {
     pub hash_x: i64,
     pub hash_y: i64,
