@@ -45,22 +45,16 @@ async fn main() -> Result<()> {
         errors.push(WorkerError::ShutdownWorker(e.to_string()));
     }
 
-    // Successfully shutdown the worker
-    let success = run_result.is_ok() && shutdown_result.is_ok();
-
-    if success {
-        info!("Worker completed successfully for file: {file_id}");
-    } else {
+    // Return the first error if any failed
+    if let Some(error) = errors.first().cloned() {
         error!(
             "Worker failed to complete for file: {file_id}: {:?}",
             errors
         );
+        return Err(error);
     }
 
-    // Return the first error if any failed
-    if let Some(error) = errors.first() {
-        return Err(error.clone());
-    }
+    info!("Worker completed successfully for file: {file_id}");
 
     Ok(())
 }
