@@ -25,43 +25,36 @@ async fn main() -> Result<()> {
 
     info!("Starting worker for file: {}", file_id);
 
-    let worker = Worker::new(config).await;
+    let mut worker = Worker::new(config).await?;
     let mut errors = Vec::new();
 
+    // Always shutdown, even if run() fails
+    let run_result = worker.run().await;
+
     // An error occurred, just log it so we can still shutdown the worker
-    if let Err(e) = &worker {
-        errors.push(WorkerError::CreateWorker(e.to_string()));
+    if let Err(e) = &run_result {
+        errors.push(WorkerError::RunWorker(e.to_string()));
     }
 
-    if let Ok(mut worker) = worker {
-        // Always shutdown, even if run() fails
-        let run_result = worker.run().await;
+    info!("Worker run completed for file: {file_id}, initiating shutdown...");
 
-        // An error occurred, just log it so we can still shutdown the worker
-        if let Err(e) = &run_result {
-            errors.push(WorkerError::RunWorker(e.to_string()));
-        }
+    let shutdown_result = worker.shutdown().await;
 
-        info!("Worker run completed for file: {file_id}, initiating shutdown...");
+    // An error occurred, just log it so we can still shutdown the worker
+    if let Err(e) = &shutdown_result {
+        errors.push(WorkerError::ShutdownWorker(e.to_string()));
+    }
 
-        let shutdown_result = worker.shutdown().await;
+    // Successfully shutdown the worker
+    let success = run_result.is_ok() && shutdown_result.is_ok();
 
-        // An error occurred, just log it so we can still shutdown the worker
-        if let Err(e) = &shutdown_result {
-            errors.push(WorkerError::ShutdownWorker(e.to_string()));
-        }
-
-        // Successfully shutdown the worker
-        let success = run_result.is_ok() && shutdown_result.is_ok();
-
-        if success {
-            info!("Worker completed successfully for file: {file_id}");
-        } else {
-            error!(
-                "Worker failed to complete for file: {file_id}: {:?}",
-                errors
-            );
-        }
+    if success {
+        info!("Worker completed successfully for file: {file_id}");
+    } else {
+        error!(
+            "Worker failed to complete for file: {file_id}: {:?}",
+            errors
+        );
     }
 
     // Return the first error if any failed
