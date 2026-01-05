@@ -5,7 +5,7 @@ import { getRightPanelsWidth } from '@/app/ui/menus/CodeEditor/panels/getRightPa
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export type PanelPosition = 'bottom' | 'left';
@@ -78,6 +78,18 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
   const [bottomHidden, setBottomHidden] = useLocalStorage('codeEditorPanelBottom', false);
 
+  // Refs to track current values for use in event handlers (avoids stale closures)
+  const editorWidthRef = useRef(editorWidth);
+  const panelWidthRef = useRef(panelWidth);
+  const panelPositionRef = useRef(panelPosition);
+
+  // Keep refs in sync with state (useLayoutEffect ensures sync before any other effects/callbacks)
+  useLayoutEffect(() => {
+    editorWidthRef.current = editorWidth;
+    panelWidthRef.current = panelWidth;
+    panelPositionRef.current = panelPosition;
+  }, [editorWidth, panelWidth, panelPosition]);
+
   // attempts to adjust percentages of panel to match the new value
   const adjustPanelPercentage = useCallback(
     (index: number, newValue: number) => {
@@ -87,21 +99,25 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   );
 
   // Whenever we change the position of the panel to be left-to-right, make sure
-  // there's enough width for the editor and the panel
+  // there's enough width for the editor and the panel.
+  // Only depends on panelPosition to avoid loops when setting width values.
   useEffect(() => {
     if (panelPosition === 'left') {
       // Use setTimeout to ensure DOM has updated before querying element positions
       const timeoutId = setTimeout(() => {
         const rightPanelsWidth = getRightPanelsWidth();
         const availableWidth = window.innerWidth - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
-        if (editorWidth + panelWidth > availableWidth) {
-          window.localStorage.setItem(CODE_EDITOR_PANEL_WIDTH_KEY, JSON.stringify(MIN_WIDTH_PANEL));
-          window.localStorage.setItem(CODE_EDITOR_KEY, JSON.stringify(availableWidth - MIN_WIDTH_PANEL));
+        // Read current values from refs to avoid stale closures
+        const currentEditorWidth = editorWidthRef.current;
+        const currentPanelWidth = panelWidthRef.current;
+        if (currentEditorWidth + currentPanelWidth > availableWidth) {
+          setPanelWidth(MIN_WIDTH_PANEL);
+          setEditorWidth(availableWidth - MIN_WIDTH_PANEL);
         }
       }, 0);
       return () => clearTimeout(timeoutId);
     }
-  }, [editorWidth, panelPosition, panelWidth]);
+  }, [panelPosition, setEditorWidth, setPanelWidth]);
 
   // When the window resizes, recalculate the appropriate proportions for
   // the editor and the panel. Debounced to wait for resize to settle and DOM to stabilize.
@@ -115,33 +131,38 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
         clearTimeout(debounceTimeoutId);
       }
 
-      // Debounce: wait for resize events to settle, then read fresh values
+      // Debounce: wait for resize events to settle, then read fresh values from refs
       debounceTimeoutId = setTimeout(() => {
         // Read fresh window width at execution time (not from stale event)
         const width = window.innerWidth;
 
         if (width < MAX_WIDTH) return;
 
+        // Read current values from refs (always up-to-date, avoids stale closures)
+        const currentEditorWidth = editorWidthRef.current;
+        const currentPanelWidth = panelWidthRef.current;
+        const currentPanelPosition = panelPositionRef.current;
+
         // DOM should be stable now after debounce delay
         const rightPanelsWidth = getRightPanelsWidth();
         const availableWidth = width - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
 
-        if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
-          const totalOldWidth = editorWidth + panelWidth;
+        if (currentPanelPosition === 'left' && currentPanelWidth + currentEditorWidth > availableWidth) {
+          const totalOldWidth = currentEditorWidth + currentPanelWidth;
 
-          setEditorWidth((oldEditorWidth) => {
-            const editorPercentage = oldEditorWidth / totalOldWidth;
+          setEditorWidth(() => {
+            const editorPercentage = currentEditorWidth / totalOldWidth;
             return availableWidth * editorPercentage;
           });
 
-          setPanelWidth((oldPanelWidth) => {
-            const panelPercentage = oldPanelWidth / totalOldWidth;
+          setPanelWidth(() => {
+            const panelPercentage = currentPanelWidth / totalOldWidth;
             return availableWidth * panelPercentage;
           });
-        } else if (panelPosition === 'bottom' && editorWidth > availableWidth) {
-          const totalOldWidth = editorWidth;
-          setEditorWidth((oldEditorWidth) => {
-            const editorPercentage = oldEditorWidth / totalOldWidth;
+        } else if (currentPanelPosition === 'bottom' && currentEditorWidth > availableWidth) {
+          const totalOldWidth = currentEditorWidth;
+          setEditorWidth(() => {
+            const editorPercentage = currentEditorWidth / totalOldWidth;
             return availableWidth * editorPercentage;
           });
         }
@@ -157,7 +178,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
         clearTimeout(debounceTimeoutId);
       }
     };
-  }, [editorWidth, panelPosition, panelWidth, setBottomHidden, setEditorWidth, setPanelWidth]);
+  }, [setBottomHidden, setEditorWidth, setPanelWidth]);
 
   return useMemo(() => {
     return {
