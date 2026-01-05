@@ -428,7 +428,7 @@ impl Worker {
         current_sequence_num: u64,
     ) -> Result<()> {
         if let Some(sender) = self.websocket_sender.as_ref().cloned() {
-            get_transactions(sender, file_id, session_id, current_sequence_num + 1).await?;
+            get_transactions(sender, file_id, session_id, current_sequence_num).await?;
         }
 
         Ok(())
