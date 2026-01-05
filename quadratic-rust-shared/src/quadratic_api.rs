@@ -293,6 +293,7 @@ pub fn can_edit(role: &[FilePermRole]) -> bool {
 #[serde(rename_all = "camelCase")]
 pub struct GetFileInitDataResponse {
     pub team_id: Uuid,
+    pub email: String,
     pub sequence_number: u32,
     pub presigned_url: String,
     pub timezone: Option<String>,

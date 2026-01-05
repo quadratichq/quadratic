@@ -4,6 +4,7 @@
   "dependencies": {},
   "devDependencies": {},
   "scripts": {
+    "generate-keys": "bash generate-keys.sh",
     "start": "RUST_LOG=info cargo run",
     "build": "cargo build",
     "dev": "RUST_LOG=info cargo watch -x 'run'",
