@@ -1,6 +1,7 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
+import { getRightPanelsWidth } from '@/app/ui/menus/CodeEditor/panels/getRightPanelsWidth';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import type { Dispatch, SetStateAction } from 'react';
@@ -89,58 +90,72 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   // there's enough width for the editor and the panel
   useEffect(() => {
     if (panelPosition === 'left') {
-      // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
-      const codeEditorElement = document.getElementById('QuadraticCodeEditorID')?.parentElement;
-      const codeEditorRect = codeEditorElement?.getBoundingClientRect();
-      const rightPanelsWidth = codeEditorRect ? window.innerWidth - codeEditorRect.right : 0;
-
-      const availableWidth = window.innerWidth - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
-      if (editorWidth + panelWidth > availableWidth) {
-        window.localStorage.setItem(CODE_EDITOR_PANEL_WIDTH_KEY, JSON.stringify(MIN_WIDTH_PANEL));
-        window.localStorage.setItem(CODE_EDITOR_KEY, JSON.stringify(availableWidth - MIN_WIDTH_PANEL));
-      }
+      // Use setTimeout to ensure DOM has updated before querying element positions
+      const timeoutId = setTimeout(() => {
+        const rightPanelsWidth = getRightPanelsWidth();
+        const availableWidth = window.innerWidth - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
+        if (editorWidth + panelWidth > availableWidth) {
+          window.localStorage.setItem(CODE_EDITOR_PANEL_WIDTH_KEY, JSON.stringify(MIN_WIDTH_PANEL));
+          window.localStorage.setItem(CODE_EDITOR_KEY, JSON.stringify(availableWidth - MIN_WIDTH_PANEL));
+        }
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [editorWidth, panelPosition, panelWidth]);
 
   // When the window resizes, recalculate the appropriate proportions for
-  // the editor and the panel
+  // the editor and the panel. Debounced to wait for resize to settle and DOM to stabilize.
   useEffect(() => {
-    const handleResize = (event: any) => {
-      const width = event.target.innerWidth;
+    let debounceTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    const DEBOUNCE_DELAY = 100; // ms to wait after last resize event
 
-      if (width < MAX_WIDTH) return;
-
-      // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
-      const codeEditorElement = document.getElementById('QuadraticCodeEditorID')?.parentElement;
-      const codeEditorRect = codeEditorElement?.getBoundingClientRect();
-      const rightPanelsWidth = codeEditorRect ? width - codeEditorRect.right : 0;
-
-      const availableWidth = width - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
-      if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
-        const totalOldWidth = editorWidth + panelWidth;
-
-        setEditorWidth((oldEditorWidth) => {
-          const editorPercentage = oldEditorWidth / totalOldWidth;
-          return availableWidth * editorPercentage;
-        });
-
-        setPanelWidth((oldPanelWidth) => {
-          const panelPercentage = oldPanelWidth / totalOldWidth;
-          return availableWidth * panelPercentage;
-        });
-      } else if (panelPosition === 'bottom' && editorWidth > availableWidth) {
-        const totalOldWidth = editorWidth;
-        setEditorWidth((oldEditorWidth) => {
-          const editorPercentage = oldEditorWidth / totalOldWidth;
-          return availableWidth * editorPercentage;
-        });
+    const handleResize = () => {
+      // Clear any pending debounced call
+      if (debounceTimeoutId !== null) {
+        clearTimeout(debounceTimeoutId);
       }
-      setBottomHidden(false);
+
+      // Debounce: wait for resize events to settle, then read fresh values
+      debounceTimeoutId = setTimeout(() => {
+        // Read fresh window width at execution time (not from stale event)
+        const width = window.innerWidth;
+
+        if (width < MAX_WIDTH) return;
+
+        // DOM should be stable now after debounce delay
+        const rightPanelsWidth = getRightPanelsWidth();
+        const availableWidth = width - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
+
+        if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
+          const totalOldWidth = editorWidth + panelWidth;
+
+          setEditorWidth((oldEditorWidth) => {
+            const editorPercentage = oldEditorWidth / totalOldWidth;
+            return availableWidth * editorPercentage;
+          });
+
+          setPanelWidth((oldPanelWidth) => {
+            const panelPercentage = oldPanelWidth / totalOldWidth;
+            return availableWidth * panelPercentage;
+          });
+        } else if (panelPosition === 'bottom' && editorWidth > availableWidth) {
+          const totalOldWidth = editorWidth;
+          setEditorWidth((oldEditorWidth) => {
+            const editorPercentage = oldEditorWidth / totalOldWidth;
+            return availableWidth * editorPercentage;
+          });
+        }
+        setBottomHidden(false);
+        debounceTimeoutId = null;
+      }, DEBOUNCE_DELAY);
     };
 
     window.addEventListener('resize', handleResize, true);
     return () => {
       window.removeEventListener('resize', handleResize, true);
+      if (debounceTimeoutId !== null) {
+        clearTimeout(debounceTimeoutId);
+      }
     };
   }, [editorWidth, panelPosition, panelWidth, setBottomHidden, setEditorWidth, setPanelWidth]);
 

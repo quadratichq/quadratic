@@ -1,6 +1,7 @@
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { getRightPanelsWidth } from '@/app/ui/menus/CodeEditor/panels/getRightPanelsWidth';
 import {
   MIN_WIDTH_PANEL,
   MIN_WIDTH_VISIBLE_GRID,
@@ -49,10 +50,7 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
           <ResizeControl
             style={{ left: `0px` }}
             setState={(mouseEvent) => {
-              // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
-              const codeEditorRect = codeEditorRef.current?.getBoundingClientRect();
-              const rightPanelsWidth = codeEditorRect ? window.innerWidth - codeEditorRect.right : 0;
-
+              const rightPanelsWidth = getRightPanelsWidth(codeEditorRef);
               const offsetFromRight = window.innerWidth - mouseEvent.x - rightPanelsWidth;
               const min = MIN_WIDTH_PANEL + MIN_WIDTH_EDITOR;
               const max =
@@ -103,10 +101,7 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
           <ResizeControl
             style={{ left: '0px' }}
             setState={(mouseEvent) => {
-              // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
-              const codeEditorRect = codeEditorRef.current?.getBoundingClientRect();
-              const rightPanelsWidth = codeEditorRect ? window.innerWidth - codeEditorRect.right : 0;
-
+              const rightPanelsWidth = getRightPanelsWidth(codeEditorRef);
               const offsetFromRight = window.innerWidth - mouseEvent.x - rightPanelsWidth;
               const min = MIN_WIDTH_EDITOR;
               const max =
