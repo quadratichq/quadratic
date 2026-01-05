@@ -3,11 +3,58 @@ use itertools::Itertools;
 use rust_decimal::prelude::*;
 
 use super::{CellValue, Duration, IsBlank, Value};
+use crate::number::decimal_from_str;
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
-const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
-
 const DECIMAL_PRECISION: u32 = 14; // just enough to not lose information
+
+/// Parses a text string as a number.
+pub fn parse_value_text(s: &str) -> Option<f64> {
+    let s = s.trim();
+
+    if s.is_empty() {
+        return Some(0.0);
+    }
+
+    if let Ok(n) = s.parse::<f64>() {
+        return Some(n);
+    }
+
+    if s.ends_with('%') {
+        let num_part = s.trim_end_matches('%').trim();
+        if let Ok(n) = num_part.parse::<f64>() {
+            return Some(n / 100.0);
+        }
+        let cleaned: String = num_part.chars().filter(|&c| c != ',').collect();
+        if let Ok(n) = cleaned.parse::<f64>() {
+            return Some(n / 100.0);
+        }
+    }
+
+    let cleaned: String = s
+        .chars()
+        .filter(|&c| c.is_ascii_digit() || c == '.' || c == '-' || c == '+')
+        .collect();
+
+    if let Ok(n) = cleaned.parse::<f64>() {
+        if s.starts_with('(') && s.ends_with(')') {
+            return Some(-n);
+        }
+        if (s.starts_with('-') || s.contains("-$") || s.contains("-€"))
+            && n > 0.0
+            && !cleaned.starts_with('-')
+        {
+            return Some(-n);
+        }
+        return Some(n);
+    }
+
+    if let Ok(d) = decimal_from_str(s) {
+        return d.to_f64();
+    }
+
+    None
+}
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -148,17 +195,12 @@ impl<'a> TryFrom<&'a CellValue> for Decimal {
         match value {
             CellValue::Blank => Ok(Decimal::zero()),
             CellValue::Text(s) => {
-                let mut s = s.trim();
-                if s.is_empty() {
-                    return Ok(Decimal::zero());
-                }
-                if let Some(rest) = s.strip_prefix(CURRENCY_PREFIXES) {
-                    s = rest;
-                }
-                s.parse().map_err(|_| RunErrorMsg::Expected {
-                    expected: "number".into(),
-                    got: Some(value.type_name().into()),
-                })
+                parse_value_text(s)
+                    .and_then(Decimal::from_f64)
+                    .ok_or_else(|| RunErrorMsg::Expected {
+                        expected: "number".into(),
+                        got: Some(value.type_name().into()),
+                    })
             }
             // todo: this may be wrong
             CellValue::Number(n) => Ok(*n),

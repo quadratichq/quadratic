@@ -2715,11 +2715,7 @@ fn ets_statistic(
             let fitted = ets_fitted_values(y_values, alpha, beta, gamma, season);
 
             // Calculate errors: actual - fitted
-            let errors: Vec<f64> = y_values
-                .iter()
-                .zip(&fitted)
-                .map(|(y, f)| y - f)
-                .collect();
+            let errors: Vec<f64> = y_values.iter().zip(&fitted).map(|(y, f)| y - f).collect();
             let abs_errors: Vec<f64> = errors.iter().map(|e| e.abs()).collect();
 
             match stat_type {
@@ -2812,7 +2808,11 @@ fn ets_fitted_values(
 
     for i in 0..n {
         // Forecast for this period (before updating state)
-        let seasonal_component = if season > 1 { seasonal[i % season] } else { 0.0 };
+        let seasonal_component = if season > 1 {
+            seasonal[i % season]
+        } else {
+            0.0
+        };
         let forecast = level + trend + seasonal_component;
         fitted.push(forecast);
 
@@ -2942,7 +2942,11 @@ fn ets_sse(
 
     for i in 0..n {
         // Forecast for this period
-        let seasonal_component = if season > 1 { seasonal[i % season] } else { 0.0 };
+        let seasonal_component = if season > 1 {
+            seasonal[i % season]
+        } else {
+            0.0
+        };
         let forecast = level + trend + seasonal_component;
 
         // Error
@@ -2981,7 +2985,11 @@ fn run_ets(
     let mut seasonal = initial_seasonal.to_vec();
 
     for i in 0..n {
-        let seasonal_component = if season > 1 { seasonal[i % season] } else { 0.0 };
+        let seasonal_component = if season > 1 {
+            seasonal[i % season]
+        } else {
+            0.0
+        };
 
         // Update states using Holt-Winters additive method
         let old_level = level;
@@ -3135,4 +3143,548 @@ where
         .unwrap_or(0);
 
     simplex[best_idx].clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ========================================================================
+    // compute_variance tests
+    // ========================================================================
+
+    #[test]
+    fn test_compute_variance_population() {
+        // Population variance of [2, 4, 4, 4, 5, 5, 7, 9]
+        // Mean = 5, Sum of squared diffs = 32, Variance = 32/8 = 4
+        let values = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        let variance = compute_variance(&values, true);
+        assert!((variance - 4.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_variance_sample() {
+        // Sample variance of [2, 4, 4, 4, 5, 5, 7, 9]
+        // Mean = 5, Sum of squared diffs = 32, Variance = 32/7 ≈ 4.571
+        let values = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        let variance = compute_variance(&values, false);
+        assert!((variance - 32.0 / 7.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_variance_empty() {
+        let values: Vec<f64> = vec![];
+        let variance = compute_variance(&values, true);
+        assert!(variance.is_nan());
+    }
+
+    #[test]
+    fn test_compute_variance_single_value_population() {
+        // Population variance of single value is 0
+        let values = vec![5.0];
+        let variance = compute_variance(&values, true);
+        assert!((variance - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_variance_single_value_sample() {
+        // Sample variance needs at least 2 values
+        let values = vec![5.0];
+        let variance = compute_variance(&values, false);
+        assert!(variance.is_nan());
+    }
+
+    #[test]
+    fn test_compute_variance_identical_values() {
+        let values = vec![5.0, 5.0, 5.0, 5.0];
+        let variance_pop = compute_variance(&values, true);
+        let variance_sample = compute_variance(&values, false);
+        assert!((variance_pop - 0.0).abs() < 1e-10);
+        assert!((variance_sample - 0.0).abs() < 1e-10);
+    }
+
+    // ========================================================================
+    // compute_stdev tests
+    // ========================================================================
+
+    #[test]
+    fn test_compute_stdev_population() {
+        // Population stdev of [2, 4, 4, 4, 5, 5, 7, 9]
+        // Variance = 4, Stdev = 2
+        let values = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        let stdev = compute_stdev(&values, true);
+        assert!((stdev - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_stdev_sample() {
+        // Sample stdev of [2, 4, 4, 4, 5, 5, 7, 9]
+        let values = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        let stdev = compute_stdev(&values, false);
+        let expected = (32.0 / 7.0_f64).sqrt();
+        assert!((stdev - expected).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_stdev_empty() {
+        let values: Vec<f64> = vec![];
+        let stdev = compute_stdev(&values, true);
+        assert!(stdev.is_nan());
+    }
+
+    // ========================================================================
+    // compute_covariance tests
+    // ========================================================================
+
+    #[test]
+    fn test_compute_covariance_population() {
+        // Perfect positive correlation: x and y are same values
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let cov = compute_covariance(&x, &y, true);
+        // Variance of [1,2,3,4,5] population = 2.0
+        assert!((cov.unwrap() - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_covariance_sample() {
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let cov = compute_covariance(&x, &y, false);
+        // Sample variance of [1,2,3,4,5] = 2.5
+        assert!((cov.unwrap() - 2.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_covariance_negative() {
+        // Negative correlation
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![5.0, 4.0, 3.0, 2.0, 1.0];
+        let cov = compute_covariance(&x, &y, true);
+        assert!((cov.unwrap() - (-2.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_covariance_different_lengths() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0];
+        let cov = compute_covariance(&x, &y, true);
+        assert!(cov.is_none());
+    }
+
+    #[test]
+    fn test_compute_covariance_empty() {
+        let x: Vec<f64> = vec![];
+        let y: Vec<f64> = vec![];
+        let cov = compute_covariance(&x, &y, true);
+        assert!(cov.is_none());
+    }
+
+    #[test]
+    fn test_compute_covariance_single_value_sample() {
+        let x = vec![5.0];
+        let y = vec![10.0];
+        let cov = compute_covariance(&x, &y, false);
+        assert!(cov.is_none());
+    }
+
+    // ========================================================================
+    // compute_correlation tests
+    // ========================================================================
+
+    #[test]
+    fn test_compute_correlation_perfect_positive() {
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![2.0, 4.0, 6.0, 8.0, 10.0];
+        let corr = compute_correlation(&x, &y);
+        assert!((corr.unwrap() - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_correlation_perfect_negative() {
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![10.0, 8.0, 6.0, 4.0, 2.0];
+        let corr = compute_correlation(&x, &y);
+        assert!((corr.unwrap() - (-1.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_correlation_no_correlation() {
+        // Orthogonal data
+        let x = vec![1.0, 0.0, -1.0, 0.0];
+        let y = vec![0.0, 1.0, 0.0, -1.0];
+        let corr = compute_correlation(&x, &y);
+        assert!((corr.unwrap() - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_correlation_different_lengths() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0];
+        let corr = compute_correlation(&x, &y);
+        assert!(corr.is_none());
+    }
+
+    #[test]
+    fn test_compute_correlation_single_value() {
+        let x = vec![5.0];
+        let y = vec![10.0];
+        let corr = compute_correlation(&x, &y);
+        assert!(corr.is_none());
+    }
+
+    #[test]
+    fn test_compute_correlation_constant_values() {
+        // All same values -> denominator is zero
+        let x = vec![5.0, 5.0, 5.0, 5.0];
+        let y = vec![3.0, 3.0, 3.0, 3.0];
+        let corr = compute_correlation(&x, &y);
+        assert!(corr.is_none());
+    }
+
+    // ========================================================================
+    // compute_linear_regression tests
+    // ========================================================================
+
+    #[test]
+    fn test_compute_linear_regression_simple() {
+        // y = 2x + 1
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
+        let result = compute_linear_regression(&x, &y);
+        let (slope, intercept) = result.unwrap();
+        assert!((slope - 2.0).abs() < 1e-10);
+        assert!((intercept - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_linear_regression_negative_slope() {
+        // y = -3x + 10
+        let x = vec![1.0, 2.0, 3.0, 4.0];
+        let y = vec![7.0, 4.0, 1.0, -2.0];
+        let result = compute_linear_regression(&x, &y);
+        let (slope, intercept) = result.unwrap();
+        assert!((slope - (-3.0)).abs() < 1e-10);
+        assert!((intercept - 10.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_linear_regression_horizontal_line() {
+        // y = 5 (constant)
+        let x = vec![1.0, 2.0, 3.0, 4.0];
+        let y = vec![5.0, 5.0, 5.0, 5.0];
+        let result = compute_linear_regression(&x, &y);
+        let (slope, intercept) = result.unwrap();
+        assert!((slope - 0.0).abs() < 1e-10);
+        assert!((intercept - 5.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_linear_regression_different_lengths() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0];
+        let result = compute_linear_regression(&x, &y);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_compute_linear_regression_single_value() {
+        let x = vec![5.0];
+        let y = vec![10.0];
+        let result = compute_linear_regression(&x, &y);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_compute_linear_regression_constant_x() {
+        // All x values are same -> sum_x2 is zero
+        let x = vec![5.0, 5.0, 5.0, 5.0];
+        let y = vec![1.0, 2.0, 3.0, 4.0];
+        let result = compute_linear_regression(&x, &y);
+        assert!(result.is_none());
+    }
+
+    // ========================================================================
+    // compute_percentile tests
+    // ========================================================================
+
+    #[test]
+    fn test_compute_percentile_inclusive_median() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let result = compute_percentile(&mut values, 0.5, false);
+        assert!((result.unwrap() - 3.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_percentile_inclusive_min() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let result = compute_percentile(&mut values, 0.0, false);
+        assert!((result.unwrap() - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_percentile_inclusive_max() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let result = compute_percentile(&mut values, 1.0, false);
+        assert!((result.unwrap() - 5.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_percentile_inclusive_25th() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let result = compute_percentile(&mut values, 0.25, false);
+        // Position = 0.25 * 4 = 1.0, so value at index 1 = 2.0
+        assert!((result.unwrap() - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_percentile_exclusive_median() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let result = compute_percentile(&mut values, 0.5, true);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_compute_percentile_exclusive_at_boundary_low() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        // k=0 is invalid for exclusive
+        let result = compute_percentile(&mut values, 0.0, true);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_compute_percentile_exclusive_at_boundary_high() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        // k=1 is invalid for exclusive
+        let result = compute_percentile(&mut values, 1.0, true);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_compute_percentile_empty() {
+        let mut values: Vec<f64> = vec![];
+        let result = compute_percentile(&mut values, 0.5, false);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_compute_percentile_unsorted_input() {
+        let mut values = vec![5.0, 1.0, 4.0, 2.0, 3.0];
+        let result = compute_percentile(&mut values, 0.5, false);
+        assert!((result.unwrap() - 3.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_percentile_out_of_range() {
+        let mut values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        assert!(compute_percentile(&mut values, 1.5, false).is_none());
+        assert!(compute_percentile(&mut values, -0.5, false).is_none());
+    }
+
+    // ========================================================================
+    // detect_seasonality tests
+    // ========================================================================
+
+    #[test]
+    fn test_detect_seasonality_not_enough_data() {
+        let values = vec![1.0, 2.0, 3.0, 4.0, 5.0]; // Less than 6 values
+        let result = detect_seasonality(&values);
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn test_detect_seasonality_constant_values() {
+        let values = vec![5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0];
+        let result = detect_seasonality(&values);
+        assert_eq!(result, 1); // Zero variance returns 1
+    }
+
+    #[test]
+    fn test_detect_seasonality_period_2() {
+        // Clear period-2 pattern: alternating high/low
+        let values = vec![10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0];
+        let result = detect_seasonality(&values);
+        assert_eq!(result, 2);
+    }
+
+    #[test]
+    fn test_detect_seasonality_period_4() {
+        // Clear period-4 pattern
+        let values = vec![1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0];
+        let result = detect_seasonality(&values);
+        assert_eq!(result, 4);
+    }
+
+    // ========================================================================
+    // ets_fitted_values tests
+    // ========================================================================
+
+    #[test]
+    fn test_ets_fitted_values_simple() {
+        let y_values = vec![100.0, 102.0, 104.0, 106.0, 108.0];
+        let alpha = 0.5;
+        let beta = 0.1;
+        let gamma = 0.0;
+        let season = 1;
+
+        let fitted = ets_fitted_values(&y_values, alpha, beta, gamma, season);
+        assert_eq!(fitted.len(), y_values.len());
+        // First fitted value should be based on initial level and trend
+        assert!(fitted[0].is_finite());
+    }
+
+    #[test]
+    fn test_ets_fitted_values_with_seasonality() {
+        let y_values = vec![10.0, 20.0, 15.0, 25.0, 12.0, 22.0, 17.0, 27.0];
+        let alpha = 0.3;
+        let beta = 0.1;
+        let gamma = 0.2;
+        let season = 4;
+
+        let fitted = ets_fitted_values(&y_values, alpha, beta, gamma, season);
+        assert_eq!(fitted.len(), y_values.len());
+        // All fitted values should be finite
+        assert!(fitted.iter().all(|f| f.is_finite()));
+    }
+
+    // ========================================================================
+    // ets_sse tests
+    // ========================================================================
+
+    #[test]
+    fn test_ets_sse_zero_for_perfect_fit() {
+        // For very simple data, SSE should approach zero with good parameters
+        let y_values = vec![100.0, 100.0, 100.0, 100.0];
+        let initial_level = 100.0;
+        let initial_trend = 0.0;
+        let initial_seasonal = vec![0.0];
+
+        let sse = ets_sse(
+            &y_values,
+            0.5,
+            0.5,
+            0.0,
+            initial_level,
+            initial_trend,
+            &initial_seasonal,
+            1,
+        );
+        assert!((sse - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_ets_sse_positive() {
+        let y_values = vec![100.0, 110.0, 105.0, 115.0, 120.0];
+        let initial_level = 100.0;
+        let initial_trend = 2.0;
+        let initial_seasonal = vec![0.0];
+
+        let sse = ets_sse(
+            &y_values,
+            0.5,
+            0.5,
+            0.0,
+            initial_level,
+            initial_trend,
+            &initial_seasonal,
+            1,
+        );
+        assert!(sse >= 0.0);
+    }
+
+    // ========================================================================
+    // run_ets tests
+    // ========================================================================
+
+    #[test]
+    fn test_run_ets_returns_final_states() {
+        let y_values = vec![100.0, 105.0, 110.0, 115.0, 120.0];
+        let alpha = 0.5;
+        let beta = 0.1;
+        let gamma = 0.0;
+        let initial_level = 100.0;
+        let initial_trend = 5.0;
+        let initial_seasonal = vec![0.0];
+
+        let (final_level, final_trend, final_seasonal) = run_ets(
+            &y_values,
+            alpha,
+            beta,
+            gamma,
+            initial_level,
+            initial_trend,
+            &initial_seasonal,
+            1,
+        );
+
+        assert!(final_level.is_finite());
+        assert!(final_trend.is_finite());
+        assert_eq!(final_seasonal.len(), 1);
+    }
+
+    #[test]
+    fn test_run_ets_with_seasonal() {
+        let y_values = vec![10.0, 20.0, 15.0, 25.0, 12.0, 22.0, 17.0, 27.0];
+        let alpha = 0.3;
+        let beta = 0.1;
+        let gamma = 0.2;
+        let initial_level = 17.5;
+        let initial_trend = 0.5;
+        let initial_seasonal = vec![0.0, 0.0, 0.0, 0.0];
+
+        let (final_level, final_trend, final_seasonal) = run_ets(
+            &y_values,
+            alpha,
+            beta,
+            gamma,
+            initial_level,
+            initial_trend,
+            &initial_seasonal,
+            4,
+        );
+
+        assert!(final_level.is_finite());
+        assert!(final_trend.is_finite());
+        assert_eq!(final_seasonal.len(), 4);
+    }
+
+    // ========================================================================
+    // nelder_mead_optimize tests
+    // ========================================================================
+
+    #[test]
+    fn test_nelder_mead_optimize_simple_quadratic() {
+        // Minimize (x - 0.5)^2 -> should converge close to x = 0.5
+        let objective = |params: &[f64]| -> f64 { (params[0] - 0.5).powi(2) };
+        let result = nelder_mead_optimize(&[0.1], &objective, 100);
+        // Use a tolerance appropriate for the algorithm's convergence behavior
+        assert!((result[0] - 0.5).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_nelder_mead_optimize_2d() {
+        // Minimize (x - 0.3)^2 + (y - 0.7)^2
+        let objective =
+            |params: &[f64]| -> f64 { (params[0] - 0.3).powi(2) + (params[1] - 0.7).powi(2) };
+        let result = nelder_mead_optimize(&[0.1, 0.1], &objective, 200);
+        assert!((result[0] - 0.3).abs() < 0.05);
+        assert!((result[1] - 0.7).abs() < 0.05);
+    }
+
+    #[test]
+    fn test_nelder_mead_optimize_respects_bounds() {
+        // Minimum is at x = 2.0, but should be clamped to [0, 1]
+        let objective = |params: &[f64]| -> f64 { (params[0] - 2.0).powi(2) };
+        let result = nelder_mead_optimize(&[0.5], &objective, 100);
+        // Result should be clamped to 1.0 (upper bound)
+        assert!(result[0] >= 0.0 && result[0] <= 1.0);
+    }
+
+    #[test]
+    fn test_nelder_mead_optimize_already_optimal() {
+        // Start at optimal point
+        let objective = |params: &[f64]| -> f64 { (params[0] - 0.5).powi(2) };
+        let result = nelder_mead_optimize(&[0.5], &objective, 100);
+        assert!((result[0] - 0.5).abs() < 0.1);
+    }
 }

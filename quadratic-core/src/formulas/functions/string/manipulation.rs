@@ -751,4 +751,206 @@ mod tests {
             )
         );
     }
+
+    // ===== Helper function tests =====
+
+    mod helper_tests {
+        use super::super::{filter_xml_content, get_element_text, parse_element_index};
+
+        #[test]
+        fn test_parse_element_index_no_index() {
+            assert_eq!(parse_element_index("item"), ("item", None));
+            assert_eq!(parse_element_index("root"), ("root", None));
+            assert_eq!(parse_element_index("element"), ("element", None));
+        }
+
+        #[test]
+        fn test_parse_element_index_with_index() {
+            assert_eq!(parse_element_index("item[1]"), ("item", Some(1)));
+            assert_eq!(parse_element_index("item[2]"), ("item", Some(2)));
+            assert_eq!(parse_element_index("item[10]"), ("item", Some(10)));
+            assert_eq!(parse_element_index("element[5]"), ("element", Some(5)));
+        }
+
+        #[test]
+        fn test_parse_element_index_invalid_index() {
+            // Invalid indices should return None
+            assert_eq!(parse_element_index("item[]"), ("item[]", None));
+            assert_eq!(parse_element_index("item[abc]"), ("item[abc]", None));
+            assert_eq!(parse_element_index("item[-1]"), ("item[-1]", None));
+        }
+
+        #[test]
+        fn test_parse_element_index_malformed() {
+            // Missing closing bracket
+            assert_eq!(parse_element_index("item[1"), ("item[1", None));
+            // Only opening bracket
+            assert_eq!(parse_element_index("item["), ("item[", None));
+        }
+
+        #[test]
+        fn test_get_element_text_simple() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root>hello</root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "hello");
+        }
+
+        #[test]
+        fn test_get_element_text_nested() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root><a>hello</a><b>world</b></root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "helloworld");
+        }
+
+        #[test]
+        fn test_get_element_text_empty() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root></root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "");
+        }
+
+        #[test]
+        fn test_get_element_text_mixed_content() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root>before<child>middle</child>after</root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "beforemiddleafter");
+        }
+
+        #[test]
+        fn test_get_element_text_deeply_nested() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root><a><b><c>deep</c></b></a></root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "deep");
+        }
+
+        #[test]
+        fn test_filter_xml_content_basic_path() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/item"),
+                Ok("value".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_nested_path() {
+            let xml = "<root><parent><child>nested</child></parent></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/parent/child"),
+                Ok("nested".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_attribute() {
+            let xml = "<root><item id='123'>text</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/item/@id"),
+                Ok("123".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_descendant() {
+            let xml = "<root><a><b><c>deep</c></b></a></root>";
+            assert_eq!(filter_xml_content(xml, "//c"), Ok("deep".to_string()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_descendant_with_index() {
+            let xml = "<root><item>first</item><item>second</item><item>third</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "//item[1]"),
+                Ok("first".to_string())
+            );
+            assert_eq!(
+                filter_xml_content(xml, "//item[2]"),
+                Ok("second".to_string())
+            );
+            assert_eq!(
+                filter_xml_content(xml, "//item[3]"),
+                Ok("third".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_path_with_index() {
+            let xml = "<root><item>first</item><item>second</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/item[1]"),
+                Ok("first".to_string())
+            );
+            assert_eq!(
+                filter_xml_content(xml, "/root/item[2]"),
+                Ok("second".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_invalid_xml() {
+            let xml = "<root><unclosed>";
+            assert_eq!(filter_xml_content(xml, "/root"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_nonexistent_element() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(filter_xml_content(xml, "/root/missing"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_nonexistent_attribute() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(filter_xml_content(xml, "/root/item/@missing"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_wrong_root() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(filter_xml_content(xml, "/wrong/item"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_index_out_of_bounds() {
+            let xml = "<root><item>first</item><item>second</item></root>";
+            assert_eq!(filter_xml_content(xml, "/root/item[5]"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_descendant_attribute() {
+            let xml = "<root><a><b attr='value'>text</b></a></root>";
+            assert_eq!(
+                filter_xml_content(xml, "//b/@attr"),
+                Ok("value".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_whitespace_in_xpath() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "  /root/item  "),
+                Ok("value".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_root_only() {
+            let xml = "<root>text</root>";
+            assert_eq!(filter_xml_content(xml, "/root"), Ok("text".to_string()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_root_with_index() {
+            let xml = "<root>text</root>";
+            assert_eq!(filter_xml_content(xml, "/root[1]"), Ok("text".to_string()));
+            // Only one root, so index 2 should fail
+            assert_eq!(filter_xml_content(xml, "/root[2]"), Err(()));
+        }
+    }
 }

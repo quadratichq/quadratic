@@ -282,3 +282,278 @@ pub(crate) fn days_between(start: NaiveDate, end: NaiveDate, basis: i64) -> f64 
         _ => days_30_360_us(start, end) as f64,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ========================================================================
+    // Loan calculation helpers
+    // ========================================================================
+
+    #[test]
+    fn test_calculate_pmt() {
+        // Zero interest rate
+        let pmt = calculate_pmt(0.0, 12.0, 1200.0, 0.0, 0.0);
+        assert!((pmt - (-100.0)).abs() < 0.01);
+
+        // Standard loan: $10,000 at 5% annual for 12 months
+        let rate = 0.05 / 12.0;
+        let pmt = calculate_pmt(rate, 12.0, 10000.0, 0.0, 0.0);
+        assert!((pmt - (-856.07)).abs() < 0.01);
+
+        // With future value
+        let pmt = calculate_pmt(rate, 12.0, 10000.0, -5000.0, 0.0);
+        assert!(pmt < 0.0); // Still a payment
+
+        // Beginning of period (payment_type = 1)
+        let pmt_end = calculate_pmt(rate, 12.0, 10000.0, 0.0, 0.0);
+        let pmt_begin = calculate_pmt(rate, 12.0, 10000.0, 0.0, 1.0);
+        assert!(pmt_begin.abs() < pmt_end.abs()); // Beginning payments are smaller
+    }
+
+    #[test]
+    fn test_calculate_fv() {
+        // Zero interest rate
+        let fv = calculate_fv(0.0, 12.0, -100.0, -1000.0, 0.0);
+        assert!((fv - 2200.0).abs() < 0.01);
+
+        // Standard investment: $100/month at 5% annual for 12 months
+        let rate = 0.05 / 12.0;
+        let fv = calculate_fv(rate, 12.0, -100.0, 0.0, 0.0);
+        assert!(fv > 1200.0); // Should be more than sum of payments due to interest
+    }
+
+    #[test]
+    fn test_calculate_pv() {
+        // Zero interest rate
+        let pv = calculate_pv(0.0, 12.0, -100.0, 0.0, 0.0);
+        assert!((pv - 1200.0).abs() < 0.01);
+
+        // Standard calculation
+        let rate = 0.05 / 12.0;
+        let pv = calculate_pv(rate, 12.0, -856.07, 0.0, 0.0);
+        assert!((pv - 10000.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_normalize_payment_type() {
+        assert_eq!(normalize_payment_type(None), 0.0);
+        assert_eq!(normalize_payment_type(Some(0.0)), 0.0);
+        assert_eq!(normalize_payment_type(Some(1.0)), 1.0);
+        assert_eq!(normalize_payment_type(Some(0.5)), 1.0);
+        assert_eq!(normalize_payment_type(Some(-1.0)), 1.0);
+        assert_eq!(normalize_payment_type(Some(100.0)), 1.0);
+    }
+
+    // ========================================================================
+    // Bond/coupon helpers
+    // ========================================================================
+
+    #[test]
+    fn test_frequency_to_months() {
+        assert_eq!(frequency_to_months(1), Some(12)); // Annual
+        assert_eq!(frequency_to_months(2), Some(6)); // Semi-annual
+        assert_eq!(frequency_to_months(4), Some(3)); // Quarterly
+        assert_eq!(frequency_to_months(0), None);
+        assert_eq!(frequency_to_months(3), None);
+        assert_eq!(frequency_to_months(12), None);
+    }
+
+    #[test]
+    fn test_is_valid_basis() {
+        assert!(is_valid_basis(0));
+        assert!(is_valid_basis(1));
+        assert!(is_valid_basis(2));
+        assert!(is_valid_basis(3));
+        assert!(is_valid_basis(4));
+        assert!(!is_valid_basis(-1));
+        assert!(!is_valid_basis(5));
+    }
+
+    #[test]
+    fn test_last_day_of_month() {
+        // 31-day months
+        assert_eq!(last_day_of_month(2024, 1), 31);
+        assert_eq!(last_day_of_month(2024, 3), 31);
+        assert_eq!(last_day_of_month(2024, 12), 31);
+
+        // 30-day months
+        assert_eq!(last_day_of_month(2024, 4), 30);
+        assert_eq!(last_day_of_month(2024, 6), 30);
+        assert_eq!(last_day_of_month(2024, 11), 30);
+
+        // February leap year
+        assert_eq!(last_day_of_month(2024, 2), 29);
+        assert_eq!(last_day_of_month(2000, 2), 29);
+
+        // February non-leap year
+        assert_eq!(last_day_of_month(2023, 2), 28);
+        assert_eq!(last_day_of_month(1900, 2), 28);
+    }
+
+    #[test]
+    fn test_adjust_day_to_match() {
+        let maturity = NaiveDate::from_ymd_opt(2025, 3, 31).unwrap();
+
+        // Target month has 31 days - exact match
+        let result = adjust_day_to_match(2024, 1, maturity);
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 31).unwrap());
+
+        // Target month has 30 days - clamped
+        let result = adjust_day_to_match(2024, 4, maturity);
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 4, 30).unwrap());
+
+        // February leap year - clamped to 29
+        let result = adjust_day_to_match(2024, 2, maturity);
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 2, 29).unwrap());
+
+        // February non-leap year - clamped to 28
+        let result = adjust_day_to_match(2023, 2, maturity);
+        assert_eq!(result, NaiveDate::from_ymd_opt(2023, 2, 28).unwrap());
+    }
+
+    #[test]
+    fn test_find_previous_coupon_date() {
+        let maturity = NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
+
+        // Semi-annual (frequency = 2)
+        let settlement = NaiveDate::from_ymd_opt(2024, 8, 1).unwrap();
+        let prev = find_previous_coupon_date(settlement, maturity, 2).unwrap();
+        assert_eq!(prev, NaiveDate::from_ymd_opt(2024, 6, 15).unwrap());
+
+        // Quarterly (frequency = 4)
+        let prev = find_previous_coupon_date(settlement, maturity, 4).unwrap();
+        assert_eq!(prev, NaiveDate::from_ymd_opt(2024, 6, 15).unwrap());
+
+        // Settlement equals maturity - returns None
+        assert!(find_previous_coupon_date(maturity, maturity, 2).is_none());
+
+        // Invalid frequency
+        assert!(find_previous_coupon_date(settlement, maturity, 3).is_none());
+    }
+
+    #[test]
+    fn test_find_next_coupon_date() {
+        let maturity = NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
+
+        // Semi-annual
+        let settlement = NaiveDate::from_ymd_opt(2024, 8, 1).unwrap();
+        let next = find_next_coupon_date(settlement, maturity, 2).unwrap();
+        assert_eq!(next, NaiveDate::from_ymd_opt(2024, 12, 15).unwrap());
+
+        // Quarterly
+        let next = find_next_coupon_date(settlement, maturity, 4).unwrap();
+        assert_eq!(next, NaiveDate::from_ymd_opt(2024, 9, 15).unwrap());
+    }
+
+    #[test]
+    fn test_count_coupons() {
+        let maturity = NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
+
+        // Settlement early in 2024, semi-annual
+        let settlement = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let count = count_coupons(settlement, maturity, 2).unwrap();
+        assert_eq!(count, 3); // Jun 2024, Dec 2024, Jun 2025
+
+        // Settlement past maturity
+        let future_settlement = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        assert!(count_coupons(future_settlement, maturity, 2).is_none());
+    }
+
+    // ========================================================================
+    // Day count conventions
+    // ========================================================================
+
+    #[test]
+    fn test_days_30_360_us() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 7, 1).unwrap();
+        assert_eq!(days_30_360_us(start, end), 180);
+
+        // Day 31 handling
+        let start = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 2, 28).unwrap();
+        let days = days_30_360_us(start, end);
+        assert_eq!(days, 28); // 30 - 30 + 28 = 28
+
+        // End of February handling
+        let start = NaiveDate::from_ymd_opt(2024, 2, 29).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 3, 31).unwrap();
+        let days = days_30_360_us(start, end);
+        assert_eq!(days, 31);
+    }
+
+    #[test]
+    fn test_days_30_360_eu() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 7, 1).unwrap();
+        assert_eq!(days_30_360_eu(start, end), 180);
+
+        // Day 31 is always adjusted to 30
+        let start = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 3, 31).unwrap();
+        let days = days_30_360_eu(start, end);
+        assert_eq!(days, 60); // 2 months * 30 days
+    }
+
+    #[test]
+    fn test_days_actual() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+        assert_eq!(days_actual(start, end), 30);
+
+        let end = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
+        assert_eq!(days_actual(start, end), 366); // 2024 is leap year
+    }
+
+    #[test]
+    fn test_coupon_days_in_period() {
+        let prev = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+        let next = NaiveDate::from_ymd_opt(2024, 7, 15).unwrap();
+
+        // Basis 0: 30/360 US
+        assert_eq!(coupon_days_in_period(prev, next, 2, 0), 180.0);
+
+        // Basis 1: Actual/Actual
+        assert_eq!(coupon_days_in_period(prev, next, 2, 1), 182.0);
+
+        // Basis 3: Actual/365
+        assert_eq!(coupon_days_in_period(prev, next, 2, 3), 182.5);
+    }
+
+    #[test]
+    fn test_coupon_days_from_start() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+        let date = NaiveDate::from_ymd_opt(2024, 4, 15).unwrap();
+
+        // Basis 0: 30/360 US
+        assert_eq!(coupon_days_from_start(start, date, 0), 90.0);
+
+        // Basis 1: Actual
+        assert_eq!(coupon_days_from_start(start, date, 1), 91.0); // 16+29+31+15
+
+        // Basis 4: 30/360 EU
+        assert_eq!(coupon_days_from_start(start, date, 4), 90.0);
+    }
+
+    #[test]
+    fn test_annual_basis() {
+        assert_eq!(annual_basis(0), 360.0);
+        assert_eq!(annual_basis(1), 365.0);
+        assert_eq!(annual_basis(2), 360.0);
+        assert_eq!(annual_basis(3), 365.0);
+        assert_eq!(annual_basis(4), 360.0);
+        assert_eq!(annual_basis(99), 360.0); // default
+    }
+
+    #[test]
+    fn test_days_between() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 7, 1).unwrap();
+
+        assert_eq!(days_between(start, end, 0), 180.0); // 30/360 US
+        assert_eq!(days_between(start, end, 1), 182.0); // Actual
+        assert_eq!(days_between(start, end, 4), 180.0); // 30/360 EU
+    }
+}

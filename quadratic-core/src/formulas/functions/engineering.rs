@@ -1341,4 +1341,268 @@ mod tests {
         let result: f64 = eval_to_string(&g, "BESSELK(1.5, 1)").parse().unwrap();
         assert!((result - 0.277388).abs() < 0.001);
     }
+
+    // ===== HELPER FUNCTION TESTS =====
+
+    mod helper_tests {
+        use super::super::*;
+
+        #[test]
+        fn test_parse_complex_standard_forms() {
+            let span = Span::empty(0);
+
+            // Standard form: a+bi
+            assert_eq!(parse_complex("3+4i", span).unwrap(), (3.0, 4.0));
+            assert_eq!(parse_complex("3-4i", span).unwrap(), (3.0, -4.0));
+            assert_eq!(parse_complex("-3+4i", span).unwrap(), (-3.0, 4.0));
+            assert_eq!(parse_complex("-3-4i", span).unwrap(), (-3.0, -4.0));
+
+            // With j suffix
+            assert_eq!(parse_complex("3+4j", span).unwrap(), (3.0, 4.0));
+            assert_eq!(parse_complex("3-4j", span).unwrap(), (3.0, -4.0));
+        }
+
+        #[test]
+        fn test_parse_complex_pure_real() {
+            let span = Span::empty(0);
+
+            assert_eq!(parse_complex("5", span).unwrap(), (5.0, 0.0));
+            assert_eq!(parse_complex("-5", span).unwrap(), (-5.0, 0.0));
+            assert_eq!(parse_complex("3.14", span).unwrap(), (3.14, 0.0));
+            assert_eq!(parse_complex("-3.14", span).unwrap(), (-3.14, 0.0));
+            assert_eq!(parse_complex("0", span).unwrap(), (0.0, 0.0));
+        }
+
+        #[test]
+        fn test_parse_complex_pure_imaginary() {
+            let span = Span::empty(0);
+
+            assert_eq!(parse_complex("4i", span).unwrap(), (0.0, 4.0));
+            assert_eq!(parse_complex("-4i", span).unwrap(), (0.0, -4.0));
+            assert_eq!(parse_complex("i", span).unwrap(), (0.0, 1.0));
+            assert_eq!(parse_complex("-i", span).unwrap(), (0.0, -1.0));
+            assert_eq!(parse_complex("+i", span).unwrap(), (0.0, 1.0));
+
+            // With j suffix
+            assert_eq!(parse_complex("4j", span).unwrap(), (0.0, 4.0));
+            assert_eq!(parse_complex("j", span).unwrap(), (0.0, 1.0));
+            assert_eq!(parse_complex("-j", span).unwrap(), (0.0, -1.0));
+        }
+
+        #[test]
+        fn test_parse_complex_with_decimals() {
+            let span = Span::empty(0);
+
+            assert_eq!(parse_complex("1.5+2.5i", span).unwrap(), (1.5, 2.5));
+            assert_eq!(parse_complex("0.5i", span).unwrap(), (0.0, 0.5));
+            assert_eq!(parse_complex("3.14-2.71i", span).unwrap(), (3.14, -2.71));
+        }
+
+        #[test]
+        fn test_parse_complex_with_whitespace() {
+            let span = Span::empty(0);
+
+            assert_eq!(parse_complex("  3+4i  ", span).unwrap(), (3.0, 4.0));
+            assert_eq!(parse_complex("  5  ", span).unwrap(), (5.0, 0.0));
+        }
+
+        #[test]
+        fn test_parse_complex_unit_coefficients() {
+            let span = Span::empty(0);
+
+            // Implicit +1i
+            assert_eq!(parse_complex("3+i", span).unwrap(), (3.0, 1.0));
+            // Implicit -1i
+            assert_eq!(parse_complex("3-i", span).unwrap(), (3.0, -1.0));
+        }
+
+        #[test]
+        fn test_parse_complex_errors() {
+            let span = Span::empty(0);
+
+            // Empty string
+            assert!(parse_complex("", span).is_err());
+            // Mixed i and j
+            assert!(parse_complex("3+4ij", span).is_err());
+            // Invalid format
+            assert!(parse_complex("abc", span).is_err());
+        }
+
+        #[test]
+        fn test_get_complex_suffix() {
+            assert_eq!(get_complex_suffix("3+4i"), "i");
+            assert_eq!(get_complex_suffix("3+4j"), "j");
+            assert_eq!(get_complex_suffix("5"), "i"); // Default to i
+            assert_eq!(get_complex_suffix(""), "i"); // Default to i
+        }
+
+        #[test]
+        fn test_format_complex_standard() {
+            assert_eq!(format_complex(3.0, 4.0, "i"), "3+4i");
+            assert_eq!(format_complex(3.0, -4.0, "i"), "3-4i");
+            assert_eq!(format_complex(-3.0, 4.0, "i"), "-3+4i");
+            assert_eq!(format_complex(-3.0, -4.0, "i"), "-3-4i");
+        }
+
+        #[test]
+        fn test_format_complex_pure_real() {
+            assert_eq!(format_complex(5.0, 0.0, "i"), "5");
+            assert_eq!(format_complex(-5.0, 0.0, "i"), "-5");
+            assert_eq!(format_complex(3.14, 0.0, "i"), "3.14");
+        }
+
+        #[test]
+        fn test_format_complex_pure_imaginary() {
+            assert_eq!(format_complex(0.0, 4.0, "i"), "4i");
+            assert_eq!(format_complex(0.0, -4.0, "i"), "-4i");
+            assert_eq!(format_complex(0.0, 1.0, "i"), "i");
+            assert_eq!(format_complex(0.0, -1.0, "i"), "-i");
+        }
+
+        #[test]
+        fn test_format_complex_unit_imaginary() {
+            // +1i should display as +i
+            assert_eq!(format_complex(3.0, 1.0, "i"), "3+i");
+            // -1i should display as -i
+            assert_eq!(format_complex(3.0, -1.0, "i"), "3-i");
+        }
+
+        #[test]
+        fn test_format_complex_zero() {
+            assert_eq!(format_complex(0.0, 0.0, "i"), "0");
+            // Near-zero values
+            assert_eq!(format_complex(1e-11, 1e-11, "i"), "0");
+        }
+
+        #[test]
+        fn test_format_complex_with_j_suffix() {
+            assert_eq!(format_complex(3.0, 4.0, "j"), "3+4j");
+            assert_eq!(format_complex(0.0, 1.0, "j"), "j");
+            assert_eq!(format_complex(0.0, -1.0, "j"), "-j");
+        }
+
+        #[test]
+        fn test_format_number_integers() {
+            assert_eq!(format_number(5.0), "5");
+            assert_eq!(format_number(-5.0), "-5");
+            assert_eq!(format_number(0.0), "0");
+            assert_eq!(format_number(123456.0), "123456");
+        }
+
+        #[test]
+        fn test_format_number_decimals() {
+            assert_eq!(format_number(3.14), "3.14");
+            assert_eq!(format_number(-3.14), "-3.14");
+            // Trailing zeros should be removed
+            assert_eq!(format_number(3.1400000000), "3.14");
+        }
+
+        #[test]
+        fn test_format_number_large_integers() {
+            // Very large numbers that are still within integer display threshold
+            assert_eq!(format_number(1e14), "100000000000000");
+            // The implementation formats large integers with floor check
+            let result = format_number(1e15);
+            // 1e15 is exactly representable and equals its floor
+            assert!(result.len() > 10); // Should produce a long number string
+        }
+
+        #[test]
+        fn test_bessel_i0() {
+            // I_0(0) = 1
+            assert!((bessel_i0(0.0) - 1.0).abs() < 1e-10);
+            // I_0(1) ≈ 1.2660658777520082
+            assert!((bessel_i0(1.0) - 1.2660658777520082).abs() < 1e-6);
+            // I_0(2) ≈ 2.2795853023360673
+            assert!((bessel_i0(2.0) - 2.2795853023360673).abs() < 1e-6);
+            // Test negative x (should be same as positive due to symmetry)
+            assert!((bessel_i0(-1.0) - bessel_i0(1.0)).abs() < 1e-10);
+        }
+
+        #[test]
+        fn test_bessel_i1() {
+            // I_1(0) = 0
+            assert!((bessel_i1(0.0)).abs() < 1e-10);
+            // I_1(1) ≈ 0.5651591039924851
+            assert!((bessel_i1(1.0) - 0.5651591039924851).abs() < 1e-6);
+            // I_1(2) ≈ 1.5906368546373291
+            assert!((bessel_i1(2.0) - 1.5906368546373291).abs() < 1e-6);
+        }
+
+        #[test]
+        fn test_bessel_j0() {
+            // J_0(0) ≈ 1 (implementation uses polynomial approximation)
+            assert!((bessel_j0(0.0) - 1.0).abs() < 1e-8);
+            // J_0(1) ≈ 0.7651976865579666
+            assert!((bessel_j0(1.0) - 0.7651976865579666).abs() < 1e-6);
+            // J_0(2.4048) ≈ 0 (first zero)
+            assert!(bessel_j0(2.4048).abs() < 0.001);
+        }
+
+        #[test]
+        fn test_bessel_j1() {
+            // J_1(0) = 0
+            assert!(bessel_j1(0.0).abs() < 1e-10);
+            // J_1(1) ≈ 0.44005058574493355
+            assert!((bessel_j1(1.0) - 0.44005058574493355).abs() < 1e-6);
+            // J_1(3.8317) ≈ 0 (first zero)
+            assert!(bessel_j1(3.8317).abs() < 0.001);
+        }
+
+        #[test]
+        fn test_bessel_k0() {
+            // K_0(1) ≈ 0.42102443824070834
+            assert!((bessel_k0(1.0) - 0.42102443824070834).abs() < 1e-6);
+            // K_0(2) ≈ 0.11389387274953343
+            assert!((bessel_k0(2.0) - 0.11389387274953343).abs() < 1e-6);
+        }
+
+        #[test]
+        fn test_bessel_k1() {
+            // K_1(1) ≈ 0.6019072301972346
+            assert!((bessel_k1(1.0) - 0.6019072301972346).abs() < 1e-6);
+            // K_1(2) ≈ 0.13986588181652243
+            assert!((bessel_k1(2.0) - 0.13986588181652243).abs() < 1e-6);
+        }
+
+        #[test]
+        fn test_bessel_y0() {
+            // Y_0(1) ≈ 0.08825696421567696
+            assert!((bessel_y0(1.0) - 0.08825696421567696).abs() < 1e-6);
+            // Y_0(2) ≈ 0.5103756726497451
+            assert!((bessel_y0(2.0) - 0.5103756726497451).abs() < 1e-6);
+        }
+
+        #[test]
+        fn test_bessel_y1() {
+            // Y_1(1) ≈ -0.7812 (implementation uses polynomial approximation)
+            assert!((bessel_y1(1.0) - (-0.7812128213002887)).abs() < 1e-3);
+            // Y_1(2) ≈ -0.1070 (implementation uses polynomial approximation)
+            assert!((bessel_y1(2.0) - (-0.10703243154093755)).abs() < 1e-3);
+        }
+
+        #[test]
+        fn test_bessel_k_higher_order() {
+            // K_2(1) ≈ 1.6248 (uses recurrence relation)
+            assert!((bessel_k(1.0, 2) - 1.6248388986351774).abs() < 1e-3);
+            // K_3(2) ≈ 0.6474 (uses recurrence relation)
+            assert!((bessel_k(2.0, 3) - 0.6473853909486342).abs() < 1e-3);
+        }
+
+        #[test]
+        fn test_bessel_y_higher_order() {
+            // Y_2(1) ≈ -1.6507 (uses recurrence relation)
+            assert!((bessel_y(1.0, 2) - (-1.6506826068162546)).abs() < 1e-3);
+            // Y_3(2) ≈ -1.1278 (uses recurrence relation)
+            assert!((bessel_y(2.0, 3) - (-1.1277837768404277)).abs() < 1e-3);
+        }
+
+        #[test]
+        fn test_bessel_at_zero() {
+            // I_0(0) = 1, I_n(0) = 0 for n > 0
+            assert!((bessel_i(0.0, 0) - 1.0).abs() < 1e-10);
+            // J_0(0) = 1, J_n(0) = 0 for n > 0
+            assert!((bessel_j(0.0, 0) - 1.0).abs() < 1e-8);
+        }
+    }
 }

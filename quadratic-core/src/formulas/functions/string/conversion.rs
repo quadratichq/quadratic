@@ -815,4 +815,251 @@ mod tests {
             eval_to_string(&g, "ENCODEURL(\"中文\")")
         );
     }
+
+    // ===== HELPER FUNCTION TESTS =====
+
+    mod helper_tests {
+        use super::super::*;
+        use rust_decimal::prelude::*;
+
+        #[test]
+        fn test_url_encode_basic() {
+            // Alphanumeric characters should not be encoded
+            assert_eq!(url_encode("abc"), "abc");
+            assert_eq!(url_encode("ABC"), "ABC");
+            assert_eq!(url_encode("123"), "123");
+            assert_eq!(url_encode("abc123XYZ"), "abc123XYZ");
+        }
+
+        #[test]
+        fn test_url_encode_unreserved_chars() {
+            // RFC 3986 unreserved characters should not be encoded
+            assert_eq!(url_encode("-"), "-");
+            assert_eq!(url_encode("_"), "_");
+            assert_eq!(url_encode("."), ".");
+            assert_eq!(url_encode("~"), "~");
+            assert_eq!(url_encode("-_.~"), "-_.~");
+        }
+
+        #[test]
+        fn test_url_encode_reserved_chars() {
+            // Reserved characters should be percent-encoded
+            assert_eq!(url_encode(" "), "%20");
+            assert_eq!(url_encode("!"), "%21");
+            assert_eq!(url_encode("@"), "%40");
+            assert_eq!(url_encode("#"), "%23");
+            assert_eq!(url_encode("$"), "%24");
+            assert_eq!(url_encode("&"), "%26");
+            assert_eq!(url_encode("="), "%3D");
+            assert_eq!(url_encode("?"), "%3F");
+            assert_eq!(url_encode("/"), "%2F");
+        }
+
+        #[test]
+        fn test_url_encode_unicode() {
+            // UTF-8 multibyte characters
+            assert_eq!(url_encode("中"), "%E4%B8%AD");
+            assert_eq!(url_encode("文"), "%E6%96%87");
+            assert_eq!(url_encode("中文"), "%E4%B8%AD%E6%96%87");
+            assert_eq!(url_encode("é"), "%C3%A9");
+            assert_eq!(url_encode("ñ"), "%C3%B1");
+        }
+
+        #[test]
+        fn test_url_encode_mixed() {
+            assert_eq!(url_encode("Hello World"), "Hello%20World");
+            assert_eq!(url_encode("a=1&b=2"), "a%3D1%26b%3D2");
+            assert_eq!(url_encode("test@example.com"), "test%40example.com");
+        }
+
+        #[test]
+        fn test_url_encode_empty() {
+            assert_eq!(url_encode(""), "");
+        }
+
+        #[test]
+        fn test_add_thousands_separator_basic() {
+            assert_eq!(add_thousands_separator("1"), "1");
+            assert_eq!(add_thousands_separator("12"), "12");
+            assert_eq!(add_thousands_separator("123"), "123");
+            assert_eq!(add_thousands_separator("1234"), "1,234");
+            assert_eq!(add_thousands_separator("12345"), "12,345");
+            assert_eq!(add_thousands_separator("123456"), "123,456");
+            assert_eq!(add_thousands_separator("1234567"), "1,234,567");
+        }
+
+        #[test]
+        fn test_add_thousands_separator_with_decimals() {
+            assert_eq!(add_thousands_separator("1234.56"), "1,234.56");
+            assert_eq!(add_thousands_separator("1234567.89"), "1,234,567.89");
+            assert_eq!(add_thousands_separator("123.456789"), "123.456789");
+        }
+
+        #[test]
+        fn test_add_thousands_separator_negative() {
+            assert_eq!(add_thousands_separator("-1234"), "-1,234");
+            assert_eq!(add_thousands_separator("-1234567"), "-1,234,567");
+            assert_eq!(add_thousands_separator("-1234.56"), "-1,234.56");
+        }
+
+        #[test]
+        fn test_add_thousands_separator_edge_cases() {
+            assert_eq!(add_thousands_separator("0"), "0");
+            assert_eq!(add_thousands_separator("0.00"), "0.00");
+            assert_eq!(add_thousands_separator("-0"), "-0");
+        }
+
+        #[test]
+        fn test_format_fixed_text_basic() {
+            assert_eq!(format_fixed_text(1234.567, 2, true), "1,234.57");
+            assert_eq!(format_fixed_text(1234.567, 1, true), "1,234.6");
+            assert_eq!(format_fixed_text(1234.567, 0, true), "1,235");
+            assert_eq!(format_fixed_text(1234.567, 3, true), "1,234.567");
+        }
+
+        #[test]
+        fn test_format_fixed_text_no_commas() {
+            assert_eq!(format_fixed_text(1234.567, 2, false), "1234.57");
+            assert_eq!(format_fixed_text(1234567.89, 2, false), "1234567.89");
+        }
+
+        #[test]
+        fn test_format_fixed_text_negative_decimals() {
+            assert_eq!(format_fixed_text(1234.567, -1, true), "1,230");
+            assert_eq!(format_fixed_text(1234.567, -2, true), "1,200");
+            assert_eq!(format_fixed_text(1234.567, -3, true), "1,000");
+        }
+
+        #[test]
+        fn test_format_fixed_text_rounding() {
+            // Standard rounding behavior (round half away from zero)
+            assert_eq!(format_fixed_text(1.555, 2, false), "1.56");
+            assert_eq!(format_fixed_text(1.545, 2, false), "1.55");
+            assert_eq!(format_fixed_text(1.5, 0, false), "2");
+            assert_eq!(format_fixed_text(2.5, 0, false), "3");
+        }
+
+        #[test]
+        fn test_format_fixed_text_negative_numbers() {
+            assert_eq!(format_fixed_text(-1234.567, 2, true), "-1,234.57");
+            assert_eq!(format_fixed_text(-1234.567, 2, false), "-1234.57");
+        }
+
+        #[test]
+        fn test_format_fixed_text_zero() {
+            assert_eq!(format_fixed_text(0.0, 2, true), "0.00");
+            assert_eq!(format_fixed_text(0.0, 0, true), "0");
+        }
+
+        #[test]
+        fn test_format_currency_text_basic() {
+            assert_eq!(format_currency_text(1234.567, 2, "$"), "$1,234.57");
+            assert_eq!(format_currency_text(1234.567, 1, "$"), "$1,234.6");
+            assert_eq!(format_currency_text(1234.567, 0, "$"), "$1,235");
+        }
+
+        #[test]
+        fn test_format_currency_text_negative() {
+            assert_eq!(format_currency_text(-1234.567, 2, "$"), "-$1,234.57");
+            assert_eq!(format_currency_text(-1234.567, 0, "$"), "-$1,235");
+        }
+
+        #[test]
+        fn test_format_currency_text_other_symbols() {
+            assert_eq!(format_currency_text(1234.567, 2, "€"), "€1,234.57");
+            assert_eq!(format_currency_text(1234.567, 2, "£"), "£1,234.57");
+            assert_eq!(format_currency_text(1234.567, 2, "¥"), "¥1,234.57");
+        }
+
+        #[test]
+        fn test_format_currency_text_zero() {
+            assert_eq!(format_currency_text(0.0, 2, "$"), "$0.00");
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_percentage() {
+            let value = CellValue::Number(Decimal::from_str("0.25").unwrap());
+            assert_eq!(format_value_with_pattern(&value, "0%").unwrap(), "25%");
+
+            let value = CellValue::Number(Decimal::from_str("0.256").unwrap());
+            assert_eq!(format_value_with_pattern(&value, "0.0%").unwrap(), "25.6%");
+
+            let value = CellValue::Number(Decimal::from_str("0.2567").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "0.00%").unwrap(),
+                "25.67%"
+            );
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_scientific() {
+            // Scientific notation format - decimals count includes all 0s and #s
+            let value = CellValue::Number(Decimal::from_str("1234.567").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "0.00E+00").unwrap(),
+                "1.2346E3"
+            );
+
+            let value = CellValue::Number(Decimal::from_str("0.001234").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "0.00E+00").unwrap(),
+                "1.2340E-3"
+            );
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_number_format() {
+            let value = CellValue::Number(Decimal::from_str("1234.567").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "#,##0.00").unwrap(),
+                "1,234.57"
+            );
+
+            let value = CellValue::Number(Decimal::from_str("1234.567").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "$#,##0.00").unwrap(),
+                "$1,234.57"
+            );
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_negative_numbers() {
+            let value = CellValue::Number(Decimal::from_str("-1234.567").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "#,##0.00").unwrap(),
+                "-1,234.57"
+            );
+
+            let value = CellValue::Number(Decimal::from_str("-1234.567").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "$#,##0.00").unwrap(),
+                "-$1,234.57"
+            );
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_no_pattern_match() {
+            let value = CellValue::Number(Decimal::from_str("123.456").unwrap());
+            // Pattern without # or 0 should just return the number as string
+            assert_eq!(format_value_with_pattern(&value, "").unwrap(), "123.456");
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_text_value() {
+            let value = CellValue::Text("Hello".to_string());
+            assert_eq!(
+                format_value_with_pattern(&value, "#,##0.00").unwrap(),
+                "Hello"
+            );
+        }
+
+        #[test]
+        fn test_format_value_with_pattern_prefix_suffix() {
+            let value = CellValue::Number(Decimal::from_str("1234.56").unwrap());
+            assert_eq!(
+                format_value_with_pattern(&value, "$#,##0.00 USD").unwrap(),
+                "$1,234.56 USD"
+            );
+        }
+    }
 }

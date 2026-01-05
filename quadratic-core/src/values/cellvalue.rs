@@ -1598,4 +1598,32 @@ mod test {
         let (cell_value, _) = CellValue::string_to_cell_value(value, false);
         assert_eq!(cell_value.to_string(), value.to_string());
     }
+
+    #[test]
+    fn test_to_number() {
+        // Number values return the f64 equivalent
+        let cv = CellValue::Number(decimal_from_str("123.456").unwrap());
+        assert_eq!(cv.to_number(), Some(123.456));
+
+        let cv = CellValue::Number(decimal_from_str("-99.5").unwrap());
+        assert_eq!(cv.to_number(), Some(-99.5));
+
+        let cv = CellValue::Number(decimal_from_str("0").unwrap());
+        assert_eq!(cv.to_number(), Some(0.0));
+
+        // Logical true returns 1.0
+        let cv = CellValue::Logical(true);
+        assert_eq!(cv.to_number(), Some(1.0));
+
+        // Logical false returns 0.0
+        let cv = CellValue::Logical(false);
+        assert_eq!(cv.to_number(), Some(0.0));
+
+        // Other types return None
+        let cv = CellValue::Text(String::from("hello"));
+        assert_eq!(cv.to_number(), None);
+
+        let cv = CellValue::Blank;
+        assert_eq!(cv.to_number(), None);
+    }
 }

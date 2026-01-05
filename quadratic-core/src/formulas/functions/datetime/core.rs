@@ -1,9 +1,49 @@
 //! Core date and time functions: constructors and extractors.
 
-use chrono::{Datelike, Timelike};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use rust_decimal::prelude::*;
 
 use super::*;
+
+/// Extracts a NaiveDate from a text string, trying datetime first, then date-only.
+fn extract_date_from_text(s: &str) -> Option<NaiveDate> {
+    if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+        Some(dt.date())
+    } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
+        Some(d)
+    } else {
+        None
+    }
+}
+
+/// Result of extracting time components from text.
+enum TimeExtraction {
+    Time(NaiveTime),
+    DateTime(NaiveDateTime),
+    DateOnly,
+    None,
+}
+
+/// Extracts time components from a text string.
+/// Returns the most appropriate parsed value for time extraction:
+/// - Time if it's a time-only string
+/// - DateOnly if it's a date-only string (caller should return 0)
+/// - DateTime if it contains both date and time
+/// - None if parsing fails
+fn extract_time_from_text(s: &str) -> TimeExtraction {
+    // Check time first (most specific for time extraction)
+    if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
+        TimeExtraction::Time(t)
+    // Check date-only before datetime (date-only should return 0)
+    } else if CellValue::unpack_date(s).is_some() {
+        TimeExtraction::DateOnly
+    // Check datetime last (has both date and time components)
+    } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+        TimeExtraction::DateTime(dt)
+    } else {
+        TimeExtraction::None
+    }
+}
 
 pub fn get_functions() -> Vec<FormulaFunction> {
     vec![
@@ -218,17 +258,13 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => d.years(),
                     CellValue::Text(s) => {
-                        if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
-                            dt.year()
-                        } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
-                            d.year()
-                        } else {
-                            return Err(RunErrorMsg::Expected {
+                        extract_date_from_text(s).map(|d| d.year()).ok_or_else(|| {
+                            RunErrorMsg::Expected {
                                 expected: "date or duration".into(),
                                 got: Some(date.inner.type_name().into()),
                             }
-                            .with_span(date.span));
-                        }
+                            .with_span(date.span)
+                        })?
                     }
                     _ => {
                         return Err(RunErrorMsg::Expected {
@@ -272,17 +308,15 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => d.subyear_months() as u32,
                     CellValue::Text(s) => {
-                        if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
-                            dt.month()
-                        } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
-                            d.month()
-                        } else {
-                            return Err(RunErrorMsg::Expected {
-                                expected: "date or duration".into(),
-                                got: Some(date.inner.type_name().into()),
-                            }
-                            .with_span(date.span));
-                        }
+                        extract_date_from_text(s)
+                            .map(|d| d.month())
+                            .ok_or_else(|| {
+                                RunErrorMsg::Expected {
+                                    expected: "date or duration".into(),
+                                    got: Some(date.inner.type_name().into()),
+                                }
+                                .with_span(date.span)
+                            })?
                     }
                     _ => {
                         return Err(RunErrorMsg::Expected {
@@ -330,19 +364,15 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(d) => d.day() as i64,
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => d.days(),
-                    CellValue::Text(s) => {
-                        if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
-                            dt.day() as i64
-                        } else if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
-                            d.day() as i64
-                        } else {
-                            return Err(RunErrorMsg::Expected {
+                    CellValue::Text(s) => extract_date_from_text(s)
+                        .map(|d| d.day() as i64)
+                        .ok_or_else(|| {
+                            RunErrorMsg::Expected {
                                 expected: "date, duration, or number".into(),
                                 got: Some(date.inner.type_name().into()),
                             }
-                            .with_span(date.span));
-                        }
-                    }
+                            .with_span(date.span)
+                        })?,
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "date, duration, or number".into(),
@@ -392,25 +422,18 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => t.hour(),
                     CellValue::Duration(d) => d.subday_hours() as u32,
-                    CellValue::Text(s) => {
-                        // Check time first (most specific for time extraction)
-                        if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
-                            t.hour()
-                        // Check date-only before datetime (date-only should return 0)
-                        } else if let Some(CellValue::Date(_)) = CellValue::unpack_date(s) {
-                            0
-                        // Check datetime last (has both date and time components)
-                        } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s)
-                        {
-                            dt.hour()
-                        } else {
+                    CellValue::Text(s) => match extract_time_from_text(s) {
+                        TimeExtraction::Time(t) => t.hour(),
+                        TimeExtraction::DateOnly => 0,
+                        TimeExtraction::DateTime(dt) => dt.hour(),
+                        TimeExtraction::None => {
                             return Err(RunErrorMsg::Expected {
                                 expected: "time, duration, or number".into(),
                                 got: Some(time.inner.type_name().into()),
                             }
                             .with_span(time.span));
                         }
-                    }
+                    },
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "time, duration, or number".into(),
@@ -460,25 +483,18 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => t.minute(),
                     CellValue::Duration(d) => d.subhour_minutes() as u32,
-                    CellValue::Text(s) => {
-                        // Check time first (most specific for time extraction)
-                        if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
-                            t.minute()
-                        // Check date-only before datetime (date-only should return 0)
-                        } else if let Some(CellValue::Date(_)) = CellValue::unpack_date(s) {
-                            0
-                        // Check datetime last (has both date and time components)
-                        } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s)
-                        {
-                            dt.minute()
-                        } else {
+                    CellValue::Text(s) => match extract_time_from_text(s) {
+                        TimeExtraction::Time(t) => t.minute(),
+                        TimeExtraction::DateOnly => 0,
+                        TimeExtraction::DateTime(dt) => dt.minute(),
+                        TimeExtraction::None => {
                             return Err(RunErrorMsg::Expected {
                                 expected: "time, duration, or number".into(),
                                 got: Some(time.inner.type_name().into()),
                             }
                             .with_span(time.span));
                         }
-                    }
+                    },
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "time, duration, or number".into(),
@@ -528,25 +544,18 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => t.second(),
                     CellValue::Duration(d) => d.subminute_seconds() as u32,
-                    CellValue::Text(s) => {
-                        // Check time first (most specific for time extraction)
-                        if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
-                            t.second()
-                        // Check date-only before datetime (date-only should return 0)
-                        } else if let Some(CellValue::Date(_)) = CellValue::unpack_date(s) {
-                            0
-                        // Check datetime last (has both date and time components)
-                        } else if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s)
-                        {
-                            dt.second()
-                        } else {
+                    CellValue::Text(s) => match extract_time_from_text(s) {
+                        TimeExtraction::Time(t) => t.second(),
+                        TimeExtraction::DateOnly => 0,
+                        TimeExtraction::DateTime(dt) => dt.second(),
+                        TimeExtraction::None => {
                             return Err(RunErrorMsg::Expected {
                                 expected: "time, duration, or number".into(),
                                 got: Some(time.inner.type_name().into()),
                             }
                             .with_span(time.span));
                         }
-                    }
+                    },
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "time, duration, or number".into(),

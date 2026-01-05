@@ -2068,4 +2068,122 @@ mod tests {
             .unwrap();
         assert!(approx_eq(result, 0.6929, 1e-3));
     }
+
+    // ===== HELPER FUNCTION TESTS =====
+
+    #[test]
+    fn test_binomial_coeff() {
+        use super::binomial_coeff;
+
+        // C(5, 0) = 1
+        assert!(approx_eq(binomial_coeff(5, 0), 1.0, 1e-10));
+
+        // C(5, 5) = 1
+        assert!(approx_eq(binomial_coeff(5, 5), 1.0, 1e-10));
+
+        // C(5, 2) = 10
+        assert!(approx_eq(binomial_coeff(5, 2), 10.0, 1e-10));
+
+        // C(10, 3) = 120
+        assert!(approx_eq(binomial_coeff(10, 3), 120.0, 1e-10));
+
+        // C(10, 7) = 120 (symmetric property)
+        assert!(approx_eq(binomial_coeff(10, 7), 120.0, 1e-10));
+
+        // C(20, 10) = 184756
+        assert!(approx_eq(binomial_coeff(20, 10), 184756.0, 1e-6));
+
+        // C(n, k) where k > n = 0
+        assert!(approx_eq(binomial_coeff(5, 10), 0.0, 1e-10));
+
+        // C(0, 0) = 1
+        assert!(approx_eq(binomial_coeff(0, 0), 1.0, 1e-10));
+    }
+
+    #[test]
+    fn test_ln_binomial() {
+        use super::ln_binomial;
+
+        // ln(C(5, 2)) = ln(10)
+        assert!(approx_eq(ln_binomial(5, 2), 10.0_f64.ln(), 1e-10));
+
+        // ln(C(10, 3)) = ln(120)
+        assert!(approx_eq(ln_binomial(10, 3), 120.0_f64.ln(), 1e-10));
+
+        // ln(C(20, 10)) = ln(184756)
+        assert!(approx_eq(ln_binomial(20, 10), 184756.0_f64.ln(), 1e-6));
+
+        // ln(C(n, 0)) = ln(1) = 0
+        assert!(approx_eq(ln_binomial(10, 0), 0.0, 1e-10));
+
+        // ln(C(n, n)) = ln(1) = 0
+        assert!(approx_eq(ln_binomial(10, 10), 0.0, 1e-10));
+
+        // C(n, k) where k > n returns -infinity
+        assert!(ln_binomial(5, 10).is_infinite());
+        assert!(ln_binomial(5, 10).is_sign_negative());
+    }
+
+    #[test]
+    fn test_neg_binom_pmf() {
+        use super::neg_binom_pmf;
+
+        // P(3 failures before 5 successes) with p=0.5
+        // This equals C(7,3) * 0.5^5 * 0.5^3 = 35 * 0.5^8 = 35/256 ≈ 0.1367
+        let result = neg_binom_pmf(3, 5, 0.5);
+        assert!(approx_eq(result, 35.0 / 256.0, 1e-6));
+
+        // P(0 failures before 1 success) with p=0.6
+        // This equals C(0,0) * 0.6^1 * 0.4^0 = 1 * 0.6 * 1 = 0.6
+        let result = neg_binom_pmf(0, 1, 0.6);
+        assert!(approx_eq(result, 0.6, 1e-10));
+
+        // P(2 failures before 3 successes) with p=0.3
+        // This equals C(4,2) * 0.3^3 * 0.7^2 = 6 * 0.027 * 0.49 = 0.07938
+        let result = neg_binom_pmf(2, 3, 0.3);
+        assert!(approx_eq(result, 6.0 * 0.027 * 0.49, 1e-6));
+
+        // Edge case: f=0, s=1 (first trial is a success)
+        // C(0,0) * p^1 * (1-p)^0 = p
+        let result = neg_binom_pmf(0, 1, 0.25);
+        assert!(approx_eq(result, 0.25, 1e-10));
+    }
+
+    #[test]
+    fn test_hypergeom_pmf() {
+        use super::hypergeom_pmf;
+
+        // Classic example: Drawing cards without replacement
+        // Population of 20, 8 successes in population
+        // Draw 4, probability of exactly 1 success
+        // C(8,1) * C(12,3) / C(20,4) = 8 * 220 / 4845 ≈ 0.3633
+        let result = hypergeom_pmf(1, 4, 8, 20).unwrap();
+        assert!(approx_eq(result, 8.0 * 220.0 / 4845.0, 1e-4));
+
+        // P(X=0) when drawing 2 from population of 10 with 3 successes
+        // C(3,0) * C(7,2) / C(10,2) = 1 * 21 / 45 ≈ 0.4667
+        let result = hypergeom_pmf(0, 2, 3, 10).unwrap();
+        assert!(approx_eq(result, 21.0 / 45.0, 1e-4));
+
+        // Impossible case: x > k (more successes than exist)
+        let result = hypergeom_pmf(5, 4, 3, 20).unwrap();
+        assert!(approx_eq(result, 0.0, 1e-10));
+
+        // Impossible case: x > n (more successes than draws)
+        let result = hypergeom_pmf(5, 3, 10, 20).unwrap();
+        assert!(approx_eq(result, 0.0, 1e-10));
+
+        // Impossible case: (n - x) > (m - k) (not enough failures in population)
+        let result = hypergeom_pmf(0, 5, 3, 6).unwrap();
+        assert!(approx_eq(result, 0.0, 1e-10));
+
+        // Negative x returns 0
+        let result = hypergeom_pmf(-1, 4, 8, 20).unwrap();
+        assert!(approx_eq(result, 0.0, 1e-10));
+
+        // Edge case: drawing all successes
+        // C(5,5) * C(5,0) / C(10,5) = 1 * 1 / 252 ≈ 0.00397
+        let result = hypergeom_pmf(5, 5, 5, 10).unwrap();
+        assert!(approx_eq(result, 1.0 / 252.0, 1e-5));
+    }
 }

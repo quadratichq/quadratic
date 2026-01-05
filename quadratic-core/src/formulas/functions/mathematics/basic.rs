@@ -728,4 +728,138 @@ mod tests {
             eval_to_err(&g, "PERCENTOF(10, {5,-5})").msg,
         );
     }
+
+    // ============================================================================
+    // Tests for roman_to_arabic helper function
+    // ============================================================================
+
+    #[test]
+    fn test_roman_to_arabic_single_numerals() {
+        use super::roman_to_arabic;
+
+        // Test each individual Roman numeral
+        assert_eq!(roman_to_arabic("I"), Some(1));
+        assert_eq!(roman_to_arabic("V"), Some(5));
+        assert_eq!(roman_to_arabic("X"), Some(10));
+        assert_eq!(roman_to_arabic("L"), Some(50));
+        assert_eq!(roman_to_arabic("C"), Some(100));
+        assert_eq!(roman_to_arabic("D"), Some(500));
+        assert_eq!(roman_to_arabic("M"), Some(1000));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_case_insensitive() {
+        use super::roman_to_arabic;
+
+        // Lowercase
+        assert_eq!(roman_to_arabic("i"), Some(1));
+        assert_eq!(roman_to_arabic("v"), Some(5));
+        assert_eq!(roman_to_arabic("x"), Some(10));
+        assert_eq!(roman_to_arabic("l"), Some(50));
+        assert_eq!(roman_to_arabic("c"), Some(100));
+        assert_eq!(roman_to_arabic("d"), Some(500));
+        assert_eq!(roman_to_arabic("m"), Some(1000));
+
+        // Mixed case
+        assert_eq!(roman_to_arabic("McM"), Some(1900));
+        assert_eq!(roman_to_arabic("xIv"), Some(14));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_subtractive_notation() {
+        use super::roman_to_arabic;
+
+        // Subtractive combinations
+        assert_eq!(roman_to_arabic("IV"), Some(4));
+        assert_eq!(roman_to_arabic("IX"), Some(9));
+        assert_eq!(roman_to_arabic("XL"), Some(40));
+        assert_eq!(roman_to_arabic("XC"), Some(90));
+        assert_eq!(roman_to_arabic("CD"), Some(400));
+        assert_eq!(roman_to_arabic("CM"), Some(900));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_additive_notation() {
+        use super::roman_to_arabic;
+
+        // Simple additive combinations
+        assert_eq!(roman_to_arabic("II"), Some(2));
+        assert_eq!(roman_to_arabic("III"), Some(3));
+        assert_eq!(roman_to_arabic("VI"), Some(6));
+        assert_eq!(roman_to_arabic("VII"), Some(7));
+        assert_eq!(roman_to_arabic("VIII"), Some(8));
+        assert_eq!(roman_to_arabic("XI"), Some(11));
+        assert_eq!(roman_to_arabic("XX"), Some(20));
+        assert_eq!(roman_to_arabic("XXX"), Some(30));
+        assert_eq!(roman_to_arabic("CC"), Some(200));
+        assert_eq!(roman_to_arabic("MM"), Some(2000));
+        assert_eq!(roman_to_arabic("MMM"), Some(3000));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_complex_numbers() {
+        use super::roman_to_arabic;
+
+        // Complex numbers combining additive and subtractive
+        assert_eq!(roman_to_arabic("XIV"), Some(14));
+        assert_eq!(roman_to_arabic("XIX"), Some(19));
+        assert_eq!(roman_to_arabic("XLIV"), Some(44));
+        assert_eq!(roman_to_arabic("XCIX"), Some(99));
+        assert_eq!(roman_to_arabic("CDXLIX"), Some(449));
+        assert_eq!(roman_to_arabic("MCMXCIV"), Some(1994));
+        assert_eq!(roman_to_arabic("MMXXIV"), Some(2024));
+        assert_eq!(roman_to_arabic("MMMCMXCIX"), Some(3999));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_edge_cases() {
+        use super::roman_to_arabic;
+
+        // Empty string
+        assert_eq!(roman_to_arabic(""), Some(0));
+
+        // Whitespace handling
+        assert_eq!(roman_to_arabic("  "), Some(0));
+        assert_eq!(roman_to_arabic("  XIV  "), Some(14));
+        assert_eq!(roman_to_arabic("\tXIV\n"), Some(14));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_invalid_characters() {
+        use super::roman_to_arabic;
+
+        // Invalid characters should return None
+        assert_eq!(roman_to_arabic("A"), None);
+        assert_eq!(roman_to_arabic("B"), None);
+        assert_eq!(roman_to_arabic("E"), None);
+        assert_eq!(roman_to_arabic("Z"), None);
+        assert_eq!(roman_to_arabic("1"), None);
+        assert_eq!(roman_to_arabic("XIZ"), None);
+        assert_eq!(roman_to_arabic("XIV2"), None);
+        assert_eq!(roman_to_arabic("X I V"), None); // spaces in the middle
+    }
+
+    #[test]
+    fn test_roman_to_arabic_large_values() {
+        use super::roman_to_arabic;
+
+        // Large values
+        assert_eq!(roman_to_arabic("MMMM"), Some(4000));
+        assert_eq!(roman_to_arabic("MMMMM"), Some(5000));
+        assert_eq!(roman_to_arabic("MMMMMMMMMM"), Some(10000)); // 10 Ms
+
+        // Combination of many numerals
+        assert_eq!(roman_to_arabic("MDCLXVI"), Some(1666)); // 1000 + 500 + 100 + 50 + 10 + 5 + 1
+    }
+
+    #[test]
+    fn test_roman_to_arabic_historical_years() {
+        use super::roman_to_arabic;
+
+        // Historical years
+        assert_eq!(roman_to_arabic("MDCCLXXVI"), Some(1776)); // US independence
+        assert_eq!(roman_to_arabic("MCMLXIX"), Some(1969)); // Moon landing
+        assert_eq!(roman_to_arabic("MM"), Some(2000)); // Y2K
+        assert_eq!(roman_to_arabic("MMXXI"), Some(2021));
+    }
 }

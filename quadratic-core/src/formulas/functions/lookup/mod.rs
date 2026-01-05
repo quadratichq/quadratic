@@ -213,3 +213,655 @@ impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Span;
+
+    // ============================================================================
+    // Tests for LookupMatchMode
+    // ============================================================================
+
+    #[test]
+    fn test_lookup_match_mode_try_from_none() {
+        let result = LookupMatchMode::try_from(None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupMatchMode::Exact);
+    }
+
+    #[test]
+    fn test_lookup_match_mode_try_from_valid_values() {
+        let span = Span::empty(0);
+
+        // 0 = Exact
+        let result = LookupMatchMode::try_from(Some(Spanned { span, inner: 0 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupMatchMode::Exact);
+
+        // -1 = NextSmaller
+        let result = LookupMatchMode::try_from(Some(Spanned { span, inner: -1 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupMatchMode::NextSmaller);
+
+        // 1 = NextLarger
+        let result = LookupMatchMode::try_from(Some(Spanned { span, inner: 1 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupMatchMode::NextLarger);
+
+        // 2 = Wildcard
+        let result = LookupMatchMode::try_from(Some(Spanned { span, inner: 2 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupMatchMode::Wildcard);
+    }
+
+    #[test]
+    fn test_lookup_match_mode_try_from_invalid_values() {
+        let span = Span::empty(0);
+
+        for invalid in [-2, 3, 10, -10, 100] {
+            let result = LookupMatchMode::try_from(Some(Spanned {
+                span,
+                inner: invalid,
+            }));
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().msg, RunErrorMsg::InvalidArgument);
+        }
+    }
+
+    // ============================================================================
+    // Tests for LookupSearchMode
+    // ============================================================================
+
+    #[test]
+    fn test_lookup_search_mode_try_from_none() {
+        let result = LookupSearchMode::try_from(None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupSearchMode::LinearForward);
+    }
+
+    #[test]
+    fn test_lookup_search_mode_try_from_valid_values() {
+        let span = Span::empty(0);
+
+        // 1 = LinearForward
+        let result = LookupSearchMode::try_from(Some(Spanned { span, inner: 1 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupSearchMode::LinearForward);
+
+        // -1 = LinearReverse
+        let result = LookupSearchMode::try_from(Some(Spanned { span, inner: -1 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupSearchMode::LinearReverse);
+
+        // 2 = BinaryAscending
+        let result = LookupSearchMode::try_from(Some(Spanned { span, inner: 2 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupSearchMode::BinaryAscending);
+
+        // -2 = BinaryDescending
+        let result = LookupSearchMode::try_from(Some(Spanned { span, inner: -2 }));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), LookupSearchMode::BinaryDescending);
+    }
+
+    #[test]
+    fn test_lookup_search_mode_try_from_invalid_values() {
+        let span = Span::empty(0);
+
+        for invalid in [0, 3, -3, 10, -10, 100] {
+            let result = LookupSearchMode::try_from(Some(Spanned {
+                span,
+                inner: invalid,
+            }));
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().msg, RunErrorMsg::InvalidArgument);
+        }
+    }
+
+    #[test]
+    fn test_lookup_search_mode_from_is_sorted() {
+        // None or Some(false) -> LinearForward
+        assert_eq!(
+            LookupSearchMode::from_is_sorted(None),
+            LookupSearchMode::LinearForward
+        );
+        assert_eq!(
+            LookupSearchMode::from_is_sorted(Some(false)),
+            LookupSearchMode::LinearForward
+        );
+
+        // Some(true) -> BinaryAscending
+        assert_eq!(
+            LookupSearchMode::from_is_sorted(Some(true)),
+            LookupSearchMode::BinaryAscending
+        );
+    }
+
+    // ============================================================================
+    // Tests for lookup() function
+    // ============================================================================
+
+    #[test]
+    fn test_lookup_exact_match_numbers() {
+        let haystack: Vec<CellValue> = vec![1.into(), 2.into(), 3.into(), 4.into(), 5.into()];
+
+        // Exact match found
+        let result = lookup(
+            &CellValue::from(3),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(2));
+
+        // Exact match not found
+        let result = lookup(
+            &CellValue::from(6),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_exact_match_strings() {
+        let haystack: Vec<CellValue> = vec![
+            "apple".into(),
+            "banana".into(),
+            "cherry".into(),
+            "date".into(),
+        ];
+
+        // Exact match found (case-insensitive)
+        let result = lookup(
+            &CellValue::from("BANANA"),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(1));
+
+        // Not found
+        let result = lookup(
+            &CellValue::from("elderberry"),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_next_smaller() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into(), 40.into(), 50.into()];
+
+        // Exact match returns that index
+        let result = lookup(
+            &CellValue::from(30),
+            &haystack,
+            LookupMatchMode::NextSmaller,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(2));
+
+        // Between values returns smaller
+        let result = lookup(
+            &CellValue::from(25),
+            &haystack,
+            LookupMatchMode::NextSmaller,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(1)); // 20
+
+        // Greater than all returns last
+        let result = lookup(
+            &CellValue::from(100),
+            &haystack,
+            LookupMatchMode::NextSmaller,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(4)); // 50
+
+        // Smaller than all returns None
+        let result = lookup(
+            &CellValue::from(5),
+            &haystack,
+            LookupMatchMode::NextSmaller,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_next_larger() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into(), 40.into(), 50.into()];
+
+        // Exact match returns that index
+        let result = lookup(
+            &CellValue::from(30),
+            &haystack,
+            LookupMatchMode::NextLarger,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(2));
+
+        // Between values returns larger
+        let result = lookup(
+            &CellValue::from(25),
+            &haystack,
+            LookupMatchMode::NextLarger,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(2)); // 30
+
+        // Smaller than all returns first
+        let result = lookup(
+            &CellValue::from(5),
+            &haystack,
+            LookupMatchMode::NextLarger,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(0)); // 10
+
+        // Greater than all returns None
+        let result = lookup(
+            &CellValue::from(100),
+            &haystack,
+            LookupMatchMode::NextLarger,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_wildcard() {
+        let haystack: Vec<CellValue> = vec![
+            "apple".into(),
+            "banana".into(),
+            "blueberry".into(),
+            "cherry".into(),
+        ];
+
+        // Wildcard with *
+        let result = lookup(
+            &CellValue::from("b*"),
+            &haystack,
+            LookupMatchMode::Wildcard,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(1)); // banana
+
+        // Wildcard with ?
+        let result = lookup(
+            &CellValue::from("?pple"),
+            &haystack,
+            LookupMatchMode::Wildcard,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(0)); // apple
+
+        // Wildcard not found
+        let result = lookup(
+            &CellValue::from("z*"),
+            &haystack,
+            LookupMatchMode::Wildcard,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_wildcard_reverse() {
+        let haystack: Vec<CellValue> = vec![
+            "apple".into(),
+            "banana".into(),
+            "blueberry".into(),
+            "cherry".into(),
+        ];
+
+        // Forward should find banana (first match)
+        let result = lookup(
+            &CellValue::from("b*"),
+            &haystack,
+            LookupMatchMode::Wildcard,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(1)); // banana
+
+        // Reverse should find blueberry (last match that starts with b)
+        let result = lookup(
+            &CellValue::from("b*"),
+            &haystack,
+            LookupMatchMode::Wildcard,
+            LookupSearchMode::LinearReverse,
+        );
+        assert_eq!(result.unwrap(), Some(2)); // blueberry
+    }
+
+    #[test]
+    fn test_lookup_linear_forward_vs_reverse() {
+        let haystack: Vec<CellValue> = vec![1.into(), 2.into(), 3.into(), 2.into(), 1.into()];
+
+        // Forward should find first occurrence
+        let result = lookup(
+            &CellValue::from(2),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(1));
+
+        // Reverse should find last occurrence
+        let result = lookup(
+            &CellValue::from(2),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearReverse,
+        );
+        assert_eq!(result.unwrap(), Some(3));
+    }
+
+    #[test]
+    fn test_lookup_binary_ascending() {
+        // Sorted ascending
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into(), 40.into(), 50.into()];
+
+        // Exact match
+        let result = lookup(
+            &CellValue::from(30),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::BinaryAscending,
+        );
+        assert_eq!(result.unwrap(), Some(2));
+
+        // Not found
+        let result = lookup(
+            &CellValue::from(25),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::BinaryAscending,
+        );
+        assert_eq!(result.unwrap(), None);
+
+        // NextSmaller with binary search
+        let result = lookup(
+            &CellValue::from(25),
+            &haystack,
+            LookupMatchMode::NextSmaller,
+            LookupSearchMode::BinaryAscending,
+        );
+        assert_eq!(result.unwrap(), Some(1)); // 20
+    }
+
+    #[test]
+    fn test_lookup_binary_descending() {
+        // Sorted descending
+        let haystack: Vec<CellValue> = vec![50.into(), 40.into(), 30.into(), 20.into(), 10.into()];
+
+        // Exact match
+        let result = lookup(
+            &CellValue::from(30),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::BinaryDescending,
+        );
+        assert_eq!(result.unwrap(), Some(2));
+
+        // Not found
+        let result = lookup(
+            &CellValue::from(25),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::BinaryDescending,
+        );
+        assert_eq!(result.unwrap(), None);
+
+        // NextLarger with binary descending
+        let result = lookup(
+            &CellValue::from(25),
+            &haystack,
+            LookupMatchMode::NextLarger,
+            LookupSearchMode::BinaryDescending,
+        );
+        assert_eq!(result.unwrap(), Some(2)); // 30
+    }
+
+    #[test]
+    fn test_lookup_type_mismatch_returns_none() {
+        let haystack: Vec<CellValue> = vec![1.into(), 2.into(), 3.into()];
+
+        // Looking for a string in a numeric array should return None
+        let result = lookup(
+            &CellValue::from("hello"),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_empty_haystack() {
+        let haystack: Vec<CellValue> = vec![];
+
+        let result = lookup(
+            &CellValue::from(1),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_single_element() {
+        let haystack: Vec<CellValue> = vec![42.into()];
+
+        // Match
+        let result = lookup(
+            &CellValue::from(42),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(0));
+
+        // No match
+        let result = lookup(
+            &CellValue::from(99),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_lookup_with_blanks() {
+        let haystack: Vec<CellValue> = vec![CellValue::Blank, 1.into(), CellValue::Blank, 2.into()];
+
+        // Looking for blank
+        let result = lookup(
+            &CellValue::Blank,
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(0));
+
+        // Looking for a value should skip blanks
+        let result = lookup(
+            &CellValue::from(2),
+            &haystack,
+            LookupMatchMode::Exact,
+            LookupSearchMode::LinearForward,
+        );
+        assert_eq!(result.unwrap(), Some(3));
+    }
+
+    // ============================================================================
+    // Tests for lookup_regex() helper
+    // ============================================================================
+
+    #[test]
+    fn test_lookup_regex_basic() {
+        let haystack: Vec<String> = vec![
+            "apple".to_string(),
+            "banana".to_string(),
+            "cherry".to_string(),
+        ];
+
+        let regex = Regex::new("^b").unwrap();
+        let result = lookup_regex(regex, &haystack);
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn test_lookup_regex_not_found() {
+        let haystack: Vec<String> = vec![
+            "apple".to_string(),
+            "banana".to_string(),
+            "cherry".to_string(),
+        ];
+
+        let regex = Regex::new("^z").unwrap();
+        let result = lookup_regex(regex, &haystack);
+        assert_eq!(result, None);
+    }
+
+    // ============================================================================
+    // Tests for lookup_linear_search() helper
+    // ============================================================================
+
+    #[test]
+    fn test_lookup_linear_search_exact() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into()];
+
+        let result =
+            lookup_linear_search(&CellValue::from(20), &haystack, std::cmp::Ordering::Equal);
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn test_lookup_linear_search_prefer_less() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into()];
+
+        // Looking for 25 with preference for less should return 20 (index 1)
+        let result =
+            lookup_linear_search(&CellValue::from(25), &haystack, std::cmp::Ordering::Less);
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn test_lookup_linear_search_prefer_greater() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into()];
+
+        // Looking for 25 with preference for greater should return 30 (index 2)
+        let result =
+            lookup_linear_search(&CellValue::from(25), &haystack, std::cmp::Ordering::Greater);
+        assert_eq!(result, Some(2));
+    }
+
+    // ============================================================================
+    // Tests for lookup_binary_search() helper
+    // ============================================================================
+
+    #[test]
+    fn test_lookup_binary_search_exact_match() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into(), 40.into(), 50.into()];
+
+        let result = lookup_binary_search(
+            &CellValue::from(30),
+            &haystack,
+            std::cmp::Ordering::Equal,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, Some(2));
+    }
+
+    #[test]
+    fn test_lookup_binary_search_prefer_less() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into(), 40.into(), 50.into()];
+
+        // 25 not found, prefer less -> return 20 (index 1)
+        let result = lookup_binary_search(
+            &CellValue::from(25),
+            &haystack,
+            std::cmp::Ordering::Less,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn test_lookup_binary_search_prefer_greater() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into(), 40.into(), 50.into()];
+
+        // 25 not found, prefer greater -> return 30 (index 2)
+        let result = lookup_binary_search(
+            &CellValue::from(25),
+            &haystack,
+            std::cmp::Ordering::Greater,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, Some(2));
+    }
+
+    #[test]
+    fn test_lookup_binary_search_no_match() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into()];
+
+        // Looking for 5 (smaller than all) with exact match preference
+        let result = lookup_binary_search(
+            &CellValue::from(5),
+            &haystack,
+            std::cmp::Ordering::Equal,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, None);
+
+        // Looking for 5 with Less preference should return None (nothing smaller)
+        let result = lookup_binary_search(
+            &CellValue::from(5),
+            &haystack,
+            std::cmp::Ordering::Less,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, None);
+
+        // Looking for 5 with Greater preference should return first element
+        let result = lookup_binary_search(
+            &CellValue::from(5),
+            &haystack,
+            std::cmp::Ordering::Greater,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, Some(0));
+    }
+
+    #[test]
+    fn test_lookup_binary_search_beyond_range() {
+        let haystack: Vec<CellValue> = vec![10.into(), 20.into(), 30.into()];
+
+        // Looking for 100 (greater than all) with Greater preference
+        let result = lookup_binary_search(
+            &CellValue::from(100),
+            &haystack,
+            std::cmp::Ordering::Greater,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, None);
+
+        // Looking for 100 with Less preference should return last element
+        let result = lookup_binary_search(
+            &CellValue::from(100),
+            &haystack,
+            std::cmp::Ordering::Less,
+            |a, b| a.partial_cmp(b),
+        );
+        assert_eq!(result, Some(2));
+    }
+}

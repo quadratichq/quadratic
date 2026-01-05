@@ -586,3 +586,138 @@ impl AstNode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::a1::{CellRefCoord, CellRefRangeEnd};
+
+    /// Helper to create a column-only reference bounds (e.g., "X" = column 24)
+    fn column_ref_bounds(col: i64) -> RefRangeBounds {
+        RefRangeBounds {
+            start: CellRefRangeEnd {
+                col: CellRefCoord::new_rel(col),
+                row: CellRefCoord::new_rel(1),
+            },
+            end: CellRefRangeEnd {
+                col: CellRefCoord::new_rel(col),
+                row: CellRefCoord::REL_UNBOUNDED,
+            },
+        }
+    }
+
+    #[test]
+    fn test_try_as_identifier_column_reference() {
+        // Column A (1) should return "A"
+        let node = AstNodeContents::CellRef(None, column_ref_bounds(1));
+        assert_eq!(node.try_as_identifier(), Some("A".to_string()));
+
+        // Column X (24) should return "X"
+        let node = AstNodeContents::CellRef(None, column_ref_bounds(24));
+        assert_eq!(node.try_as_identifier(), Some("X".to_string()));
+
+        // Column Z (26) should return "Z"
+        let node = AstNodeContents::CellRef(None, column_ref_bounds(26));
+        assert_eq!(node.try_as_identifier(), Some("Z".to_string()));
+
+        // Column AA (27) should return "AA"
+        let node = AstNodeContents::CellRef(None, column_ref_bounds(27));
+        assert_eq!(node.try_as_identifier(), Some("AA".to_string()));
+    }
+
+    #[test]
+    fn test_try_as_identifier_string_literal() {
+        // String literals should return the string
+        let node = AstNodeContents::String("myVar".to_string());
+        assert_eq!(node.try_as_identifier(), Some("myVar".to_string()));
+
+        let node = AstNodeContents::String("".to_string());
+        assert_eq!(node.try_as_identifier(), Some("".to_string()));
+
+        let node = AstNodeContents::String("hello_world".to_string());
+        assert_eq!(node.try_as_identifier(), Some("hello_world".to_string()));
+    }
+
+    #[test]
+    fn test_try_as_identifier_cell_ref_with_sheet_id() {
+        // CellRef with a sheet ID should return None
+        let sheet_id = crate::grid::SheetId::TEST;
+        let node = AstNodeContents::CellRef(Some(sheet_id), column_ref_bounds(1));
+        assert_eq!(node.try_as_identifier(), None);
+    }
+
+    #[test]
+    fn test_try_as_identifier_non_column_ref() {
+        // Cell reference like A1 (specific cell, not column-only)
+        let bounds = RefRangeBounds {
+            start: CellRefRangeEnd::new_relative_xy(1, 1),
+            end: CellRefRangeEnd::new_relative_xy(1, 1),
+        };
+        let node = AstNodeContents::CellRef(None, bounds);
+        assert_eq!(node.try_as_identifier(), None);
+
+        // Range like A1:B5
+        let bounds = RefRangeBounds {
+            start: CellRefRangeEnd::new_relative_xy(1, 1),
+            end: CellRefRangeEnd::new_relative_xy(2, 5),
+        };
+        let node = AstNodeContents::CellRef(None, bounds);
+        assert_eq!(node.try_as_identifier(), None);
+
+        // Column range like A:C (multiple columns)
+        let bounds = RefRangeBounds {
+            start: CellRefRangeEnd {
+                col: CellRefCoord::new_rel(1),
+                row: CellRefCoord::new_rel(1),
+            },
+            end: CellRefRangeEnd {
+                col: CellRefCoord::new_rel(3),
+                row: CellRefCoord::REL_UNBOUNDED,
+            },
+        };
+        let node = AstNodeContents::CellRef(None, bounds);
+        assert_eq!(node.try_as_identifier(), None);
+
+        // Row reference like 1:1
+        let bounds = RefRangeBounds {
+            start: CellRefRangeEnd {
+                col: CellRefCoord::new_rel(1),
+                row: CellRefCoord::new_rel(1),
+            },
+            end: CellRefRangeEnd {
+                col: CellRefCoord::REL_UNBOUNDED,
+                row: CellRefCoord::new_rel(1),
+            },
+        };
+        let node = AstNodeContents::CellRef(None, bounds);
+        assert_eq!(node.try_as_identifier(), None);
+
+        // Unbounded column reference
+        let bounds = RefRangeBounds {
+            start: CellRefRangeEnd {
+                col: CellRefCoord::REL_UNBOUNDED,
+                row: CellRefCoord::new_rel(1),
+            },
+            end: CellRefRangeEnd {
+                col: CellRefCoord::REL_UNBOUNDED,
+                row: CellRefCoord::REL_UNBOUNDED,
+            },
+        };
+        let node = AstNodeContents::CellRef(None, bounds);
+        assert_eq!(node.try_as_identifier(), None);
+    }
+
+    #[test]
+    fn test_try_as_identifier_other_node_types() {
+        // Other node types should return None
+        assert_eq!(AstNodeContents::Empty.try_as_identifier(), None);
+        assert_eq!(AstNodeContents::Number(42.0).try_as_identifier(), None);
+        assert_eq!(AstNodeContents::Bool(true).try_as_identifier(), None);
+        assert_eq!(
+            AstNodeContents::Error(RunErrorMsg::DivideByZero).try_as_identifier(),
+            None
+        );
+        assert_eq!(AstNodeContents::Paren(vec![]).try_as_identifier(), None);
+        assert_eq!(AstNodeContents::Array(vec![]).try_as_identifier(), None);
+    }
+}
