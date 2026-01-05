@@ -16,54 +16,27 @@ path = "src/bin/render.rs"
 required-features = ["native"]
 
 [features]
-default = ["wasm"]
-
-# JS interop dependencies (shared between wasm targets)
-# Used for SharedArrayBuffer, ViewportBuffer, etc.
-js = [
-    "wasm-bindgen",
-    "js-sys",
-    "web-sys",
-    "quadratic-core-shared/js",
-]
-
-# WASM/browser target - supports WebGPU (preferred) with WebGL2 fallback
-# Runtime detection chooses the best available backend
-wasm = [
-    "js",
-    "wasm-bindgen-futures",
-    "console_error_panic_hook",
-    "wgpu-wasm",
-    "image",
-]
-
 # Native target - supports wgpu with native backends + software fallback
 native = [
     "tiny-skia",
     "env_logger",
-    "image",
     "wgpu-native",
 ]
-
-# wgpu for WASM - WebGPU with WebGL2 fallback (via wgpu abstraction)
-# webgpu: Modern WebGPU API (Chrome 113+, Firefox 127+, Safari 18+)
-# webgl: WebGL2 fallback for older browsers
-wgpu-wasm = ["wgpu/webgpu", "wgpu/webgl", "wgpu/wgsl"]
 
 # wgpu for native platforms (Vulkan, Metal, DX12 backends)
 # vulkan-portability enables MoltenVK on macOS and other portability layers
 wgpu-native = ["wgpu/vulkan-portability", "wgpu/metal", "wgpu/dx12", "wgpu/wgsl"]
 
 [dependencies]
-# WASM-only dependencies
-wasm-bindgen = { version = "0.2", optional = true }
-wasm-bindgen-futures = { version = "0.4", optional = true }
-js-sys = { version = "0.3", optional = true }
-console_error_panic_hook = { version = "0.1.7", optional = true }
+# WASM dependencies
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+console_error_panic_hook = "0.1.7"
 
-# Web APIs (WASM only) - WebGL2 for rendering
+# Web APIs - WebGL2 for rendering
 # WebGPU detection uses js-sys::Reflect instead of typed web-sys bindings
-web-sys = { version = "0.3", optional = true, features = [
+web-sys = { version = "0.3", features = [
     "console",
     "Window",
     "Document",
@@ -94,18 +67,18 @@ web-sys = { version = "0.3", optional = true, features = [
     "ImageData",
 ] }
 
-# WebGPU via wgpu crate (cross-platform, stable API)
-# This provides WebGPU on web and native via a unified abstraction
-# Features are configured via wgpu-wasm and wgpu-native feature flags
+# WebGPU via wgpu crate - WebGPU with WebGL2 fallback
+# webgpu: Modern WebGPU API (Chrome 113+, Firefox 127+, Safari 18+)
+# webgl: WebGL2 fallback for older browsers
 # NOTE: v23.0+ has SurfaceTarget::OffscreenCanvas variant (web worker support)
-wgpu = { version = "23.0", optional = true, default-features = false }
+wgpu = { version = "23.0", default-features = false, features = ["webgpu", "webgl", "wgsl"] }
 
 # Native-only dependencies (software rendering)
 tiny-skia = { version = "0.11", optional = true }
 env_logger = { version = "0.11", optional = true }
 
-# PNG decoding for emoji spritesheets (used by both wasm and native)
-image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
+# PNG decoding for emoji spritesheets
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 # Error handling
 anyhow = "1.0"
@@ -118,8 +91,7 @@ bincode = { version = "2.0.0", features = ["serde"] }
 log = "0.4"
 
 # Quadratic shared types (no wasm-export - rust-renderer has its own wasm bindings)
-# Enable js feature when building for wasm to get ViewportBuffer
-quadratic-core-shared = { path = "../../../quadratic-core-shared", default-features = false }
+quadratic-core-shared = { path = "../../../quadratic-core-shared", default-features = false, features = ["js"] }
 
 # Core library (shared types for layout/render worker communication)
 # Enable wgpu-wasm for WebGPU + WebGL2 rendering via wgpu
@@ -156,3 +128,6 @@ wasm-opt = false
 debug-js-glue = true
 demangle-name-section = true
 dwarf-debug-info = false
+
+[build]
+target = "wasm32-unknown-unknown"

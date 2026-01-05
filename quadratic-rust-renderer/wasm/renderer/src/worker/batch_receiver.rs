@@ -142,7 +142,14 @@ impl BatchCache {
 
     /// Clear hashes that are outside the given bounds
     /// (call this when viewport changes significantly)
-    pub fn evict_distant_hashes(&mut self, min_hash_x: i64, max_hash_x: i64, min_hash_y: i64, max_hash_y: i64, margin: i64) {
+    pub fn evict_distant_hashes(
+        &mut self,
+        min_hash_x: i64,
+        max_hash_x: i64,
+        min_hash_y: i64,
+        max_hash_y: i64,
+        margin: i64,
+    ) {
         let expanded_min_x = min_hash_x - margin;
         let expanded_max_x = max_hash_x + margin;
         let expanded_min_y = min_hash_y - margin;
@@ -159,20 +166,6 @@ impl BatchCache {
         self.grid_lines = None;
         self.cursor = None;
         self.has_new_data = false;
-    }
-
-    // Legacy compatibility - these methods support the old batch-based rendering
-    // TODO: Remove once rendering is fully updated to use the cache
-
-    /// Take the current batch for rendering (legacy - returns None now)
-    pub fn take(&mut self) -> Option<RenderBatch> {
-        // No longer returns a batch - data is accessed via get_hashes() etc.
-        None
-    }
-
-    /// Check if there's a new batch to render (legacy)
-    pub fn has_batch(&self) -> bool {
-        self.has_new_data
     }
 }
 

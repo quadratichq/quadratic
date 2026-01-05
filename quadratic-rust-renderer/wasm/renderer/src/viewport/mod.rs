@@ -14,8 +14,5 @@ mod viewport;
 // Re-export core types from core-shared
 pub use quadratic_core_shared::VisibleBounds;
 
-#[cfg(feature = "js")]
-pub use quadratic_core_shared::ViewportBuffer;
-
 // Renderer-specific types
 pub use viewport::Viewport;

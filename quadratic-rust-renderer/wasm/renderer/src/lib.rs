@@ -29,35 +29,25 @@
 mod sheets;
 mod tables;
 mod ui;
-mod utils;
 mod viewport;
 
 // Worker module (browser-only entry point)
-#[cfg(feature = "wasm")]
 pub mod worker;
 
 // Re-export main types
 pub use viewport::Viewport;
 
-#[cfg(feature = "wasm")]
 pub use worker::WorkerRenderer;
 
+use quadratic_renderer_core::console_logger;
+
 /// Initialize the renderer (WASM entry point)
-#[cfg(feature = "wasm")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn init_wasm() {
-    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    let _ = log::set_logger(&utils::console_logger::RENDER_LOGGER);
+    let _ = log::set_logger(&console_logger::RENDER_LOGGER);
     log::set_max_level(log::LevelFilter::Debug);
 
     log::info!("Quadratic Rust Renderer (WASM Worker) initialized");
-}
-
-/// Initialize the renderer (native entry point)
-#[cfg(feature = "native")]
-pub fn init_native() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    log::info!("Quadratic Rust Renderer (native) initialized");
 }

@@ -11,6 +11,7 @@ use web_sys::OffscreenCanvas;
 
 use quadratic_renderer_core::RenderContext;
 use quadratic_renderer_core::wgpu_backend::{WgpuBackend, WgpuRenderContext};
+use wgpu::SurfaceTarget;
 
 /// Which rendering backend is active
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +87,7 @@ impl RenderBackend {
 
         // Create surface from OffscreenCanvas
         let surface = instance
-            .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas))
+            .create_surface(SurfaceTarget::OffscreenCanvas(canvas))
             .map_err(|e| JsValue::from_str(&format!("Failed to create surface: {:?}", e)))?;
 
         // Request adapter
