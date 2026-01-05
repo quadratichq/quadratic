@@ -275,5 +275,34 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body.team.settings.aiRules).toBeNull();
         });
     });
+
+    it('only returns PENDING invites, not DELETED or ACCEPTED', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+
+      // Create invites with different statuses
+      await dbClient.teamInvite.createMany({
+        data: [
+          { email: 'pending@test.com', teamId: team.id, role: 'EDITOR', status: 'PENDING' },
+          { email: 'deleted@test.com', teamId: team.id, role: 'EDITOR', status: 'DELETED' },
+          { email: 'accepted@test.com', teamId: team.id, role: 'EDITOR', status: 'ACCEPTED' },
+        ],
+      });
+
+      const res = await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200);
+
+      const inviteEmails = res.body.invites.map((i: { email: string }) => i.email);
+
+      // Should include PENDING invite
+      expect(inviteEmails).toContain('pending@test.com');
+
+      // Should NOT include DELETED or ACCEPTED invites
+      expect(inviteEmails).not.toContain('deleted@test.com');
+      expect(inviteEmails).not.toContain('accepted@test.com');
+    });
   });
 });

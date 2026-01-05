@@ -173,4 +173,59 @@ describe('POST /v0/files/:uuid/invites', () => {
       await invite({ email: 'USEREDITOR@test.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
   });
+
+  describe('re-inviting someone whose invite was deleted or accepted', () => {
+    it('re-activates a deleted invite with 200', async () => {
+      // First, mark the existing invite as deleted
+      await dbClient.fileInvite.updateMany({
+        where: { email: 'invite@test.com' },
+        data: { status: 'DELETED' },
+      });
+
+      // Re-invite should succeed and return 200 (reactivating, not creating new)
+      await invite({ email: 'invite@test.com', role: 'VIEWER' }, 'userOwner').expect(200).expect(expectInvite);
+
+      // Verify status is back to PENDING
+      const reactivatedInvite = await dbClient.fileInvite.findFirst({
+        where: { email: 'invite@test.com' },
+      });
+      expect(reactivatedInvite?.status).toBe('PENDING');
+    });
+
+    it('rejects re-inviting someone who already accepted', async () => {
+      await dbClient.fileInvite.updateMany({
+        where: { email: 'invite@test.com' },
+        data: { status: 'ACCEPTED' },
+      });
+
+      await invite({ email: 'invite@test.com', role: 'VIEWER' }, 'userOwner').expect(400).expect(expectError);
+    });
+
+    it('tracks invitedByUserId when creating an invite', async () => {
+      await invite({ email: 'newperson@test.com', role: 'EDITOR' }, 'userOwner').expect(201);
+
+      const createdInvite = await dbClient.fileInvite.findFirst({
+        where: { email: 'newperson@test.com' },
+        include: { invitedBy: true },
+      });
+      expect(createdInvite?.invitedBy?.auth0Id).toBe('userOwner');
+    });
+
+    it('updates invitedByUserId when re-inviting after deletion', async () => {
+      // Delete existing invite
+      await dbClient.fileInvite.updateMany({
+        where: { email: 'invite@test.com' },
+        data: { status: 'DELETED' },
+      });
+
+      // Re-invite as a different user (editor)
+      await invite({ email: 'invite@test.com', role: 'VIEWER' }, 'userEditor').expect(200);
+
+      const reactivatedInvite = await dbClient.fileInvite.findFirst({
+        where: { email: 'invite@test.com' },
+        include: { invitedBy: true },
+      });
+      expect(reactivatedInvite?.invitedBy?.auth0Id).toBe('userEditor');
+    });
+  });
 });

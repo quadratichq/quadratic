@@ -53,41 +53,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'You cannot invite someone to a role higher than their own.');
   }
 
-  // Check if an invite already exists
-  const existingInvite = await dbClient.teamInvite.findUnique({
-    where: {
-      email_teamId: {
-        email,
-        teamId,
-      },
-    },
-  });
-
-  if (existingInvite) {
-    if (existingInvite.status === 'PENDING') {
-      throw new ApiError(409, 'An invite with this email already exists.');
-    }
-
-    if (existingInvite.status === 'ACCEPTED') {
-      throw new ApiError(400, 'This user has already accepted this invite.');
-    }
-
-    // status === 'DELETED' - re-invite by updating the existing record
-    if (existingInvite.status === 'DELETED') {
-      const updatedInvite = await dbClient.teamInvite.update({
-        where: { id: existingInvite.id },
-        data: {
-          status: 'PENDING',
-          role,
-          invitedByUserId: userMakingRequestId,
-        },
-      });
-
-      await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
-      return res.status(200).json({ email: updatedInvite.email, role: updatedInvite.role, id: updatedInvite.id });
-    }
-  }
-
   // Get the auth0 info (email/name) for the user making the request
   const resultsById = await getUsers([
     { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id, email: userMakingRequestEmail },
@@ -116,6 +81,40 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
     return dbInvite;
   };
+
+  // Check if an invite already exists
+  const existingInvite = await dbClient.teamInvite.findUnique({
+    where: {
+      email_teamId: {
+        email,
+        teamId,
+      },
+    },
+  });
+  if (existingInvite) {
+    if (existingInvite.status === 'PENDING') {
+      throw new ApiError(409, 'An invite with this email already exists.');
+    }
+
+    if (existingInvite.status === 'ACCEPTED') {
+      throw new ApiError(400, 'This user has already accepted this invite.');
+    }
+
+    // status === 'DELETED' - re-invite by updating the existing record
+    if (existingInvite.status === 'DELETED') {
+      const updatedInvite = await dbClient.teamInvite.update({
+        where: { id: existingInvite.id },
+        data: {
+          status: 'PENDING',
+          role,
+          invitedByUserId: userMakingRequestId,
+        },
+      });
+
+      await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
+      return res.status(200).json({ email: updatedInvite.email, role: updatedInvite.role, id: updatedInvite.id });
+    }
+  }
 
   // Look up the invited user by email in our database and then 1 of 2 things will happen:
   const invitedUser = await dbClient.user.findUnique({

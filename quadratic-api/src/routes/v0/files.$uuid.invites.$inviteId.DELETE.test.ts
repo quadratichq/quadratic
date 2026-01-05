@@ -254,4 +254,56 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
       });
     });
   });
+
+  describe('soft delete behavior', () => {
+    it('sets status to DELETED instead of removing the record', async () => {
+      const inviteId = await getInviteIdByEmail('fileeditor@test.com');
+      await request(app)
+        .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      // Invite should still exist with DELETED status
+      const invite = await dbClient.fileInvite.findUnique({
+        where: { id: inviteId },
+      });
+      expect(invite).not.toBeNull();
+      expect(invite?.status).toBe('DELETED');
+    });
+
+    it('rejects deleting an already deleted invite with 400', async () => {
+      const inviteId = await getInviteIdByEmail('fileeditor@test.com');
+      // Soft delete it first
+      await dbClient.fileInvite.update({
+        where: { id: inviteId },
+        data: { status: 'DELETED' },
+      });
+
+      await request(app)
+        .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectError);
+    });
+
+    it('rejects deleting an accepted invite with 400', async () => {
+      const inviteId = await getInviteIdByEmail('fileeditor@test.com');
+      await dbClient.fileInvite.update({
+        where: { id: inviteId },
+        data: { status: 'ACCEPTED' },
+      });
+
+      await request(app)
+        .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectError);
+    });
+  });
 });

@@ -92,4 +92,50 @@ describe('DELETE /v0/teams/:uuid/invites/:inviteId', () => {
         .expect(200);
     });
   });
+
+  describe('soft delete behavior', () => {
+    it('sets status to DELETED instead of removing the record', async () => {
+      const inviteId = await getInviteIdByEmail('editor@test.com');
+      await request(app)
+        .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(200);
+
+      // Invite should still exist with DELETED status
+      const invite = await dbClient.teamInvite.findUnique({
+        where: { id: inviteId },
+      });
+      expect(invite).not.toBeNull();
+      expect(invite?.status).toBe('DELETED');
+    });
+
+    it('rejects deleting an already deleted invite with 400', async () => {
+      const inviteId = await getInviteIdByEmail('editor@test.com');
+      // Soft delete it first
+      await dbClient.teamInvite.update({
+        where: { id: inviteId },
+        data: { status: 'DELETED' },
+      });
+
+      await request(app)
+        .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(400)
+        .expect(expectError);
+    });
+
+    it('rejects deleting an accepted invite with 400', async () => {
+      const inviteId = await getInviteIdByEmail('editor@test.com');
+      await dbClient.teamInvite.update({
+        where: { id: inviteId },
+        data: { status: 'ACCEPTED' },
+      });
+
+      await request(app)
+        .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(400)
+        .expect(expectError);
+    });
+  });
 });

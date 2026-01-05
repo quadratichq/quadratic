@@ -18,6 +18,7 @@ jest.mock('@workos-inc/node', () =>
 
 import request from 'supertest';
 import { app } from '../../app';
+import dbClient from '../../dbClient';
 import { clearDb, createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
@@ -165,6 +166,39 @@ describe('GET /v0/files/:uuid/sharing', () => {
         .set('Authorization', `Bearer ValidToken user1`)
         .expect(200)
         .expect(expectSharingData);
+    });
+  });
+
+  describe('invite status filtering', () => {
+    it('only returns PENDING invites, not DELETED or ACCEPTED', async () => {
+      // Get the file's ID for creating invites
+      const file = await dbClient.file.findUnique({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+
+      // Create invites with different statuses
+      await dbClient.fileInvite.createMany({
+        data: [
+          { email: 'pending@test.com', fileId: file!.id, role: 'EDITOR', status: 'PENDING' },
+          { email: 'deleted@test.com', fileId: file!.id, role: 'EDITOR', status: 'DELETED' },
+          { email: 'accepted@test.com', fileId: file!.id, role: 'EDITOR', status: 'ACCEPTED' },
+        ],
+      });
+
+      const res = await request(app)
+        .get('/v0/files/00000000-0000-4000-8000-000000000001/sharing')
+        .set('Authorization', `Bearer ValidToken user1`)
+        .expect(200);
+
+      const inviteEmails = res.body.invites.map((i: { email: string }) => i.email);
+
+      // Should include the original PENDING invite and the new PENDING one
+      expect(inviteEmails).toContain('usernotinystemyet@test.com');
+      expect(inviteEmails).toContain('pending@test.com');
+
+      // Should NOT include DELETED or ACCEPTED invites
+      expect(inviteEmails).not.toContain('deleted@test.com');
+      expect(inviteEmails).not.toContain('accepted@test.com');
     });
   });
 });
