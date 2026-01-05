@@ -49,9 +49,17 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
           <ResizeControl
             style={{ left: `0px` }}
             setState={(mouseEvent) => {
-              const offsetFromRight = window.innerWidth - mouseEvent.x;
+              // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
+              const codeEditorRect = codeEditorRef.current?.getBoundingClientRect();
+              const rightPanelsWidth = codeEditorRect ? window.innerWidth - codeEditorRect.right : 0;
+
+              const offsetFromRight = window.innerWidth - mouseEvent.x - rightPanelsWidth;
               const min = MIN_WIDTH_PANEL + MIN_WIDTH_EDITOR;
-              const max = window.innerWidth - (showAIAnalyst ? aiAnalystPanelWidth : 0) - MIN_WIDTH_VISIBLE_GRID;
+              const max =
+                window.innerWidth -
+                (showAIAnalyst ? aiAnalystPanelWidth : 0) -
+                MIN_WIDTH_VISIBLE_GRID -
+                rightPanelsWidth;
 
               if (offsetFromRight > min && offsetFromRight < max) {
                 // change only the editor width
@@ -95,9 +103,17 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
           <ResizeControl
             style={{ left: '0px' }}
             setState={(mouseEvent) => {
-              const offsetFromRight = window.innerWidth - mouseEvent.x;
+              // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
+              const codeEditorRect = codeEditorRef.current?.getBoundingClientRect();
+              const rightPanelsWidth = codeEditorRect ? window.innerWidth - codeEditorRect.right : 0;
+
+              const offsetFromRight = window.innerWidth - mouseEvent.x - rightPanelsWidth;
               const min = MIN_WIDTH_EDITOR;
-              const max = window.innerWidth - (showAIAnalyst ? aiAnalystPanelWidth : 0) - MIN_WIDTH_VISIBLE_GRID;
+              const max =
+                window.innerWidth -
+                (showAIAnalyst ? aiAnalystPanelWidth : 0) -
+                MIN_WIDTH_VISIBLE_GRID -
+                rightPanelsWidth;
               const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
               codeEditorPanelData.setEditorWidth(newValue);
             }}

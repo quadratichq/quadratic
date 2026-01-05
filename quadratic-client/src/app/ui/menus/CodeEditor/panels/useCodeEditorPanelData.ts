@@ -89,12 +89,15 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   // there's enough width for the editor and the panel
   useEffect(() => {
     if (panelPosition === 'left') {
-      if (editorWidth + panelWidth > window.innerWidth - MIN_WIDTH_VISIBLE_GRID) {
+      // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
+      const codeEditorElement = document.getElementById('QuadraticCodeEditorID')?.parentElement;
+      const codeEditorRect = codeEditorElement?.getBoundingClientRect();
+      const rightPanelsWidth = codeEditorRect ? window.innerWidth - codeEditorRect.right : 0;
+
+      const availableWidth = window.innerWidth - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
+      if (editorWidth + panelWidth > availableWidth) {
         window.localStorage.setItem(CODE_EDITOR_PANEL_WIDTH_KEY, JSON.stringify(MIN_WIDTH_PANEL));
-        window.localStorage.setItem(
-          CODE_EDITOR_KEY,
-          JSON.stringify(window.innerWidth - MIN_WIDTH_PANEL - MIN_WIDTH_VISIBLE_GRID)
-        );
+        window.localStorage.setItem(CODE_EDITOR_KEY, JSON.stringify(availableWidth - MIN_WIDTH_PANEL));
       }
     }
   }, [editorWidth, panelPosition, panelWidth]);
@@ -107,7 +110,12 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
 
       if (width < MAX_WIDTH) return;
 
-      const availableWidth = width - MIN_WIDTH_VISIBLE_GRID;
+      // Calculate width of panels to the right of the code editor (e.g., ScheduledTasks, ValidationPanel)
+      const codeEditorElement = document.getElementById('QuadraticCodeEditorID')?.parentElement;
+      const codeEditorRect = codeEditorElement?.getBoundingClientRect();
+      const rightPanelsWidth = codeEditorRect ? width - codeEditorRect.right : 0;
+
+      const availableWidth = width - MIN_WIDTH_VISIBLE_GRID - rightPanelsWidth;
       if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
         const totalOldWidth = editorWidth + panelWidth;
 
