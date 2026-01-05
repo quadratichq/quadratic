@@ -10,7 +10,6 @@ impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    #[function_timer::function_timer]
     pub fn copy_to_clipboard(
         &self,
         selection: &A1Selection,

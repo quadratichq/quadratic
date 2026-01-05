@@ -504,15 +504,20 @@ impl GridController {
                 if let Some(code_run) = &adjusted_code_run
                     && should_rerun
                 {
-                    // Use SetComputeCode for all languages when we need to rerun
-                    // SetComputeCode handles both sync (Formula) and async (Python, JS, Connection)
+                    // Use SetComputeCode to re-execute the code and get fresh results.
+                    // SetComputeCode internally creates an empty data table (via finalize_data_table)
+                    // then triggers execution. We intentionally don't use SetDataTable here
+                    // because we want new output, not the cached results from the clipboard.
                     ops.push(Operation::SetComputeCode {
                         sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                         language: code_run.language.clone(),
                         code: code_run.code.clone(),
+                        template: None,
                     });
                 } else {
-                    // If we shouldn't rerun, just set the data table without computing
+                    // When should_rerun is false (or this isn't a code cell), preserve the
+                    // existing data table with its cached results. For code cells, this means
+                    // the output won't change even though the code isn't re-executed.
                     ops.push(Operation::SetDataTable {
                         sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                         data_table: Some(data_table),

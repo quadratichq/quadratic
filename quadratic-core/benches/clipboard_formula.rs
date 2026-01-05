@@ -26,7 +26,7 @@ use quadratic_rust_shared::test::benchmark::single_test_or_benchmark;
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
-const SINGLE_TEST: bool = true;
+const SINGLE_TEST: bool = false;
 
 /// Setup the grid with values in column A
 fn setup_grid(size: i64) -> (GridController, quadratic_core::grid::SheetId) {

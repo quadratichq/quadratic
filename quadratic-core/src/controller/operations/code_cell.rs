@@ -242,6 +242,7 @@ impl GridController {
                         sheet_pos,
                         language: CodeCellLanguage::Formula,
                         code: adjusted_code,
+                        template: None,
                     });
                 }
             }

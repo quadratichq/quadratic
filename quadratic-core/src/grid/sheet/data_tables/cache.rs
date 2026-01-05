@@ -90,7 +90,7 @@ impl SheetDataTablesCache {
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
     pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
-        if self.single_cell_tables.get(pos).is_some() {
+        if self.single_cell_tables.get(pos) {
             Some(pos)
         } else {
             self.multi_cell_tables.get(pos)
@@ -100,7 +100,7 @@ impl SheetDataTablesCache {
     /// Returns true if the cell has content, ignoring blank cells within a
     /// multi-cell data table.
     pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
-        self.single_cell_tables.get(pos).is_some()
+        self.single_cell_tables.get(pos)
             || self
                 .multi_cell_tables
                 .get(pos)

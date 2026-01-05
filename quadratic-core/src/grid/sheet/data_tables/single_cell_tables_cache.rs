@@ -1,21 +1,23 @@
-//! Cache for single-cell data tables using HashSet for O(1) point lookups
-//! and R-tree for O(log n) spatial queries.
+//! Cache for single-cell data tables using HashSet for O(1) point lookups,
+//! R-tree for O(log n) spatial queries, and BTreeMap index for O(log n)
+//! column min/max queries. Note, for row min/max queries, there is no lookups
+//! and it is O(n) where n is the number of columns of data (usually small).
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use crate::{Pos, Rect, a1::RefRangeBounds};
 
 use rstar::{RTree, RTreeObject, primitives::GeomWithData};
 use serde::{Deserialize, Serialize};
 
-/// Cache for single-cell data tables using HashSet for O(1) point lookups
-/// and R-tree for O(log n) spatial queries.
 #[derive(Debug, Clone, Default)]
 pub struct SingleCellTablesCache {
     /// HashSet for O(1) point operations (get, insert, remove)
     tables: HashSet<Pos>,
     /// R-tree for O(log n) spatial queries (intersects, nondefault_rects_in_rect)
     spatial_index: RTree<GeomWithData<Rect, Pos>>,
+    /// Index by column for O(log n) col_min/col_max: column -> sorted set of rows
+    col_index: BTreeMap<i64, BTreeSet<i64>>,
 }
 
 impl SingleCellTablesCache {
@@ -23,70 +25,76 @@ impl SingleCellTablesCache {
         Self {
             tables: HashSet::new(),
             spatial_index: RTree::new(),
+            col_index: BTreeMap::new(),
         }
     }
 
     /// Sets or removes a single-cell table at the given position.
-    /// If value is Some, adds the position. If None, removes it.
-    pub fn set(&mut self, pos: Pos, value: Option<bool>) {
-        if value.is_some() {
+    /// If has_value is true, adds the position. If false, removes it.
+    pub fn set(&mut self, pos: Pos, has_value: bool) {
+        if has_value {
             if self.tables.insert(pos) {
-                // Only update R-tree if this is a new entry
+                // Only update indexes if this is a new entry
                 self.spatial_index
                     .insert(GeomWithData::new(Rect::single_pos(pos), pos));
+                self.col_index.entry(pos.x).or_default().insert(pos.y);
             }
         } else if self.tables.remove(&pos) {
-            // Only update R-tree if we actually removed something
+            // Only update indexes if we actually removed something
             self.spatial_index
                 .remove(&GeomWithData::new(Rect::single_pos(pos), pos));
+
+            // Remove from col_index
+            if let Some(rows) = self.col_index.get_mut(&pos.x) {
+                rows.remove(&pos.y);
+                if rows.is_empty() {
+                    self.col_index.remove(&pos.x);
+                }
+            }
         }
     }
 
     /// Returns Some(true) if there's a single-cell table at this position.
-    pub fn get(&self, pos: Pos) -> Option<bool> {
-        if self.tables.contains(&pos) {
-            Some(true)
-        } else {
-            None
-        }
+    pub fn get(&self, pos: Pos) -> bool {
+        self.tables.contains(&pos)
     }
 
     /// Returns the minimum row index in the given column, or 0 if none.
+    /// O(log C) where C = number of columns with data.
     pub fn col_min(&self, column: i64) -> i64 {
-        self.tables
-            .iter()
-            .filter(|p| p.x == column)
-            .map(|p| p.y)
-            .min()
+        self.col_index
+            .get(&column)
+            .and_then(|rows| rows.first().copied())
             .unwrap_or(0)
     }
 
     /// Returns the maximum row index in the given column, or 0 if none.
+    /// O(log C) where C = number of columns with data.
     pub fn col_max(&self, column: i64) -> i64 {
-        self.tables
-            .iter()
-            .filter(|p| p.x == column)
-            .map(|p| p.y)
-            .max()
+        self.col_index
+            .get(&column)
+            .and_then(|rows| rows.last().copied())
             .unwrap_or(0)
     }
 
     /// Returns the minimum column index in the given row, or 0 if none.
+    /// O(C) where C = number of columns with data (typically small).
     pub fn row_min(&self, row: i64) -> i64 {
-        self.tables
+        self.col_index
             .iter()
-            .filter(|p| p.y == row)
-            .map(|p| p.x)
+            .filter(|(_, rows)| rows.contains(&row))
+            .map(|(col, _)| *col)
             .min()
             .unwrap_or(0)
     }
 
     /// Returns the maximum column index in the given row, or 0 if none.
+    /// O(C) where C = number of columns with data (typically small).
     pub fn row_max(&self, row: i64) -> i64 {
-        self.tables
+        self.col_index
             .iter()
-            .filter(|p| p.y == row)
-            .map(|p| p.x)
+            .filter(|(_, rows)| rows.contains(&row))
+            .map(|(col, _)| *col)
             .max()
             .unwrap_or(0)
     }
@@ -172,7 +180,7 @@ impl<'de> Deserialize<'de> for SingleCellTablesCache {
         let positions = Vec::<Pos>::deserialize(deserializer)?;
         let mut cache = Self::new();
         for pos in positions {
-            cache.set(pos, Some(true));
+            cache.set(pos, true);
         }
         Ok(cache)
     }
@@ -186,11 +194,11 @@ mod tests {
         let mut cache = SingleCellTablesCache::new();
         // Add some test positions:
         // (1,1), (1,5), (3,2), (5,5), (10,10)
-        cache.set(Pos::new(1, 1), Some(true));
-        cache.set(Pos::new(1, 5), Some(true));
-        cache.set(Pos::new(3, 2), Some(true));
-        cache.set(Pos::new(5, 5), Some(true));
-        cache.set(Pos::new(10, 10), Some(true));
+        cache.set(Pos::new(1, 1), true);
+        cache.set(Pos::new(1, 5), true);
+        cache.set(Pos::new(3, 2), true);
+        cache.set(Pos::new(5, 5), true);
+        cache.set(Pos::new(10, 10), true);
         cache
     }
 
@@ -205,23 +213,23 @@ mod tests {
         let mut cache = SingleCellTablesCache::new();
 
         // Test adding
-        cache.set(Pos::new(1, 1), Some(true));
-        assert_eq!(cache.get(Pos::new(1, 1)), Some(true));
-        assert_eq!(cache.get(Pos::new(2, 2)), None);
+        cache.set(Pos::new(1, 1), true);
+        assert!(cache.get(Pos::new(1, 1)));
+        assert!(!cache.get(Pos::new(2, 2)));
 
         // Test removing
-        cache.set(Pos::new(1, 1), None);
-        assert_eq!(cache.get(Pos::new(1, 1)), None);
+        cache.set(Pos::new(1, 1), false);
+        assert!(!cache.get(Pos::new(1, 1)));
 
         // Test double add (should be idempotent)
-        cache.set(Pos::new(3, 3), Some(true));
-        cache.set(Pos::new(3, 3), Some(true));
-        assert_eq!(cache.get(Pos::new(3, 3)), Some(true));
+        cache.set(Pos::new(3, 3), true);
+        cache.set(Pos::new(3, 3), true);
+        assert!(cache.get(Pos::new(3, 3)));
 
         // Test double remove (should be idempotent)
-        cache.set(Pos::new(3, 3), None);
-        cache.set(Pos::new(3, 3), None);
-        assert_eq!(cache.get(Pos::new(3, 3)), None);
+        cache.set(Pos::new(3, 3), false);
+        cache.set(Pos::new(3, 3), false);
+        assert!(!cache.get(Pos::new(3, 3)));
     }
 
     #[test]
@@ -368,7 +376,7 @@ mod tests {
 
         // Verify that spatial queries still work after deserialization
         assert!(deserialized.intersects(Rect::new(1, 1, 2, 2)));
-        assert_eq!(deserialized.get(Pos::new(1, 1)), Some(true));
+        assert!(deserialized.get(Pos::new(1, 1)));
     }
 
     #[test]
@@ -379,7 +387,7 @@ mod tests {
         assert_eq!(cache1, cache2);
 
         let mut cache3 = create_test_cache();
-        cache3.set(Pos::new(100, 100), Some(true));
+        cache3.set(Pos::new(100, 100), true);
         assert_ne!(cache1, cache3);
     }
 
@@ -388,22 +396,51 @@ mod tests {
         let mut cache = SingleCellTablesCache::new();
 
         // Add positions
-        cache.set(Pos::new(1, 1), Some(true));
-        cache.set(Pos::new(2, 2), Some(true));
+        cache.set(Pos::new(1, 1), true);
+        cache.set(Pos::new(2, 2), true);
 
         // Verify R-tree is consistent with HashSet
         assert!(cache.intersects(Rect::new(1, 1, 1, 1)));
         assert!(cache.intersects(Rect::new(2, 2, 2, 2)));
 
         // Remove one position
-        cache.set(Pos::new(1, 1), None);
+        cache.set(Pos::new(1, 1), false);
 
         // R-tree should be updated
         assert!(!cache.intersects(Rect::new(1, 1, 1, 1)));
         assert!(cache.intersects(Rect::new(2, 2, 2, 2)));
 
         // Add the same position again
-        cache.set(Pos::new(1, 1), Some(true));
+        cache.set(Pos::new(1, 1), true);
         assert!(cache.intersects(Rect::new(1, 1, 1, 1)));
+    }
+
+    #[test]
+    fn test_col_index_consistency() {
+        let mut cache = SingleCellTablesCache::new();
+
+        // Add positions in column 5
+        cache.set(Pos::new(5, 10), true);
+        cache.set(Pos::new(5, 20), true);
+        cache.set(Pos::new(5, 15), true);
+
+        // col_min/col_max should use the BTreeSet index
+        assert_eq!(cache.col_min(5), 10);
+        assert_eq!(cache.col_max(5), 20);
+
+        // Remove the min
+        cache.set(Pos::new(5, 10), false);
+        assert_eq!(cache.col_min(5), 15);
+        assert_eq!(cache.col_max(5), 20);
+
+        // Remove the max
+        cache.set(Pos::new(5, 20), false);
+        assert_eq!(cache.col_min(5), 15);
+        assert_eq!(cache.col_max(5), 15);
+
+        // Remove the last one
+        cache.set(Pos::new(5, 15), false);
+        assert_eq!(cache.col_min(5), 0);
+        assert_eq!(cache.col_max(5), 0);
     }
 }

@@ -98,7 +98,7 @@ impl SheetDataTables {
         // remove data table from cache
         if let Some(old_spilled_output_rect) = old_output_rect {
             if old_spilled_output_rect.len() == 1 {
-                self.cache.single_cell_tables.set(pos, None);
+                self.cache.single_cell_tables.set(pos, false);
             } else {
                 let rects = self
                     .cache
@@ -139,7 +139,7 @@ impl SheetDataTables {
 
             let new_spilled_output_rect = data_table.output_rect(pos, false);
             if new_spilled_output_rect.len() == 1 {
-                self.cache.single_cell_tables.set(pos, Some(true));
+                self.cache.single_cell_tables.set(pos, true);
             } else {
                 self.cache.multi_cell_tables.set_rect(
                     new_spilled_output_rect.min.x,

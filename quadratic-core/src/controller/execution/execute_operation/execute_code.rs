@@ -5,7 +5,7 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, data_table::DataTableTemplate},
     util::now,
     wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
@@ -270,6 +270,7 @@ impl GridController {
             sheet_pos,
             language,
             code,
+            template,
         } = op
         {
             if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
@@ -284,9 +285,9 @@ impl GridController {
             // Execute based on language
             match language {
                 CodeCellLanguage::Python => {
-                    // Set up empty data table first, then trigger async execution
+                    // Set up data table first, then trigger async execution
                     let data_table =
-                        Self::create_empty_code_data_table(language.clone(), code.clone());
+                        Self::create_code_data_table(language, code.clone(), template.as_ref());
                     self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
                     self.run_python(transaction, sheet_pos, code);
                     self.notify_code_running_state(
@@ -296,12 +297,15 @@ impl GridController {
                 }
                 CodeCellLanguage::Formula => {
                     // Formulas execute synchronously - run_formula handles everything
-                    self.run_formula(transaction, sheet_pos, code);
+                    self.run_formula_with_template(transaction, sheet_pos, code, template.as_ref());
                 }
                 CodeCellLanguage::Connection { ref kind, ref id } => {
-                    // Set up empty data table first, then trigger async execution
-                    let data_table =
-                        Self::create_empty_code_data_table(language.clone(), code.clone());
+                    // Set up data table first, then trigger async execution
+                    let data_table = Self::create_code_data_table(
+                        language.clone(),
+                        code.clone(),
+                        template.as_ref(),
+                    );
                     self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
                     self.notify_code_running_state(
                         transaction,
@@ -310,9 +314,9 @@ impl GridController {
                     self.run_connection(transaction, sheet_pos, code, *kind, id.clone());
                 }
                 CodeCellLanguage::Javascript => {
-                    // Set up empty data table first, then trigger async execution
+                    // Set up data table first, then trigger async execution
                     let data_table =
-                        Self::create_empty_code_data_table(language.clone(), code.clone());
+                        Self::create_code_data_table(language, code.clone(), template.as_ref());
                     self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
                     self.run_javascript(transaction, sheet_pos, code);
                     self.notify_code_running_state(
@@ -328,10 +332,40 @@ impl GridController {
         }
     }
 
-    /// Creates an empty data table for a code cell (used by SetComputeCode for async languages)
-    fn create_empty_code_data_table(language: CodeCellLanguage, code: String) -> DataTable {
-        // Use the same naming convention as set_code_cell_operations
-        let name = format!("{}1", language.as_string());
+    /// Creates a data table for a code cell, optionally copying presentation
+    /// properties from a template (used by SetComputeCode for async languages)
+    fn create_code_data_table(
+        language: CodeCellLanguage,
+        code: String,
+        template: Option<&DataTableTemplate>,
+    ) -> DataTable {
+        // Use the same naming convention as set_code_cell_operations.
+        // finalize_data_table will fix the name if it conflicts with an
+        // existing table and we don't want to call that twice (once here and
+        // once in finalize) because it is an expensive operation.
+        let name = language.default_table_name();
+
+        // Apply template properties if provided, otherwise use defaults
+        let (
+            show_name,
+            show_columns,
+            alternating_colors,
+            header_is_first_row,
+            chart_output,
+            chart_pixel_output,
+        ) = if let Some(t) = template {
+            (
+                t.show_name,
+                t.show_columns,
+                t.alternating_colors,
+                t.header_is_first_row,
+                t.chart_output,
+                t.chart_pixel_output,
+            )
+        } else {
+            (None, None, true, false, None, None)
+        };
+
         DataTable {
             kind: DataTableKind::CodeRun(CodeRun {
                 language,
@@ -339,9 +373,9 @@ impl GridController {
                 ..Default::default()
             }),
             name: CellValue::Text(name),
-            header_is_first_row: false,
-            show_name: None,
-            show_columns: None,
+            header_is_first_row,
+            show_name,
+            show_columns,
             column_headers: None,
             sort: None,
             sort_dirty: false,
@@ -350,11 +384,11 @@ impl GridController {
             spill_value: false,
             spill_data_table: false,
             last_modified: now(),
-            alternating_colors: true,
+            alternating_colors,
             formats: None,
             borders: None,
-            chart_pixel_output: None,
-            chart_output: None,
+            chart_pixel_output,
+            chart_output,
         }
     }
 
@@ -385,7 +419,8 @@ impl GridController {
                         });
                 }
             } else {
-                // Recompute all code cells in all sheets
+                // Recompute all code cells in all sheets. Note, the iter_mut is
+                // necessary because finite_bounds may mutate its cache.
                 for (sheet_id, sheet) in self.grid.sheets.iter_mut() {
                     if let Some(bounds) = sheet.data_tables.finite_bounds() {
                         sheet

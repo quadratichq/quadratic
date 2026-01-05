@@ -68,7 +68,6 @@ fn execute_autocomplete(
     sheet_id: quadratic_core::grid::SheetId,
     size: i64,
 ) {
-    let start = std::time::Instant::now();
     let selected = Rect::new(2, 1, 2, 1); // B1
     let range = Rect::new(2, 1, 2, size); // B1:B{size}
     gc.autocomplete(sheet_id, selected, range, None, false)
