@@ -287,12 +287,17 @@ impl CellRefRangeEnd {
 
             // Parse the number (may have leading minus for relative refs)
             let mut num_str = String::new();
-            if !is_absolute && chars.peek() == Some(&'-') {
-                num_str.push(chars.next().unwrap());
+            if !is_absolute
+                && chars.peek() == Some(&'-')
+                && let Some(c) = chars.next()
+            {
+                num_str.push(c);
             }
             while let Some(&c) = chars.peek() {
                 if c.is_ascii_digit() {
-                    num_str.push(chars.next().unwrap());
+                    if let Some(c) = chars.next() {
+                        num_str.push(c);
+                    }
                 } else {
                     break;
                 }

@@ -73,7 +73,9 @@ export const SetFormulaCellValue = memo(
             diffEditorContent: { editorContent: formulaString, isApplied: false },
             waitingForEditorClose: {
               codeCell: {
-                sheetId: sheets.current,
+                sheetId: toolArgs?.data?.sheet_name
+                  ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+                  : sheets.current,
                 pos: codeCellPos,
                 language: 'Formula' as const,
                 lastModified: 0,
@@ -94,7 +96,9 @@ export const SetFormulaCellValue = memo(
         }
 
         quadraticCore.setCodeCellValue({
-          sheetId: sheets.current,
+          sheetId: toolArgs?.data?.sheet_name
+            ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+            : sheets.current,
           x: codeCellPos.x,
           y: codeCellPos.y,
           codeString: formulaString,

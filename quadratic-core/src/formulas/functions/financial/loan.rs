@@ -154,6 +154,9 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let pmt = calculate_pmt(rate, nper, pv, fv, payment_type);
                 let mut balance = pv;
 
+                if !per.is_finite() || per > i64::MAX as f64 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
                 for _ in 1..per as i64 {
                     if payment_type == 1.0 {
                         balance += pmt;
@@ -188,6 +191,9 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let fv = fv.unwrap_or(0.0);
                 let payment_type = normalize_payment_type(payment_type);
 
+                if !per.is_finite() || per > i64::MAX as f64 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                }
                 if per < 1.0 || per > nper {
                     return Err(RunErrorMsg::InvalidArgument.with_span(span));
                 }
