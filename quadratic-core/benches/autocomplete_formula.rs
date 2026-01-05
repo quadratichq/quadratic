@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 //! Benchmark for autocomplete formula performance
 //!
 //! usage:

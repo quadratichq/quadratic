@@ -341,14 +341,13 @@ impl MultiCellTablesCache {
                 .set_rect(x1, y1, Some(x2), Some(y2), None);
 
             // Mark bounds as dirty if removal touches the edge of current bounds
-            if let Some(bounds) = &self.cached_bounds {
-                if new_rect.min.x <= bounds.min.x
+            if let Some(bounds) = &self.cached_bounds
+                && (new_rect.min.x <= bounds.min.x
                     || new_rect.max.x >= bounds.max.x
                     || new_rect.min.y <= bounds.min.y
-                    || new_rect.max.y >= bounds.max.y
-                {
-                    self.bounds_dirty = true;
-                }
+                    || new_rect.max.y >= bounds.max.y)
+            {
+                self.bounds_dirty = true;
             }
         }
     }

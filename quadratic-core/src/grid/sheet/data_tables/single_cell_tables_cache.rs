@@ -101,11 +101,14 @@ impl SingleCellTablesCache {
 
     /// Returns the bounding rectangle of all single-cell tables, or None if empty.
     /// Uses the R-tree's cached envelope for O(1) performance.
+    ///
+    /// Note: After element removals, the returned bounds may be larger than the
+    /// actual tight bounds. R-trees don't automatically shrink their envelope.
+    /// If tight bounds are required, iterate over the tables instead.
     pub fn finite_bounds(&self) -> Option<Rect> {
         if self.tables.is_empty() {
             return None;
         }
-        // The R-tree root envelope contains the bounding box of all elements - O(1)
         let envelope = self.spatial_index.root().envelope();
         Some(Rect::new(
             envelope.lower().x,

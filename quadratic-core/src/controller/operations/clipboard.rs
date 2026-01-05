@@ -508,11 +508,13 @@ impl GridController {
                     // SetComputeCode internally creates an empty data table (via finalize_data_table)
                     // then triggers execution. We intentionally don't use SetDataTable here
                     // because we want new output, not the cached results from the clipboard.
+                    // Pass the template to preserve presentation properties (show_name, show_columns,
+                    // alternating_colors, etc.) from the original data table, consistent with autocomplete.
                     ops.push(Operation::SetComputeCode {
                         sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                         language: code_run.language.clone(),
                         code: code_run.code.clone(),
-                        template: None,
+                        template: Some((&data_table).into()),
                     });
                 } else {
                     // When should_rerun is false (or this isn't a code cell), preserve the
