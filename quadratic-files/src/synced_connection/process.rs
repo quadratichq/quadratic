@@ -147,7 +147,7 @@ pub(crate) async fn process_synced_connection<
         // for other connections, we can use the to_client method
         _ => {
             connection
-                .to_client(state.settings.environment.clone())
+                .to_client(state.settings.environment)
                 .await?
         }
     };
