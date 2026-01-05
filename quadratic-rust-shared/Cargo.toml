@@ -140,7 +140,7 @@ net = [
 ]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
-quadratic-api = ["bincode", "reqwest", "tracing", "urlencoding"]
+quadratic-api = ["bincode", "reqwest", "urlencoding"]
 quadratic-cloud = ["base64", "bincode", "quadratic-api"]
 record-request-mock = []
 sql = [
@@ -179,7 +179,6 @@ synced = [
   "rustls",
   "tokio",
   "tokio-stream",
-  "tracing",
   "url",
   "yup-oauth2"
 ]

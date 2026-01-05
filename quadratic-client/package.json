@@ -152,6 +152,10 @@
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.12.0"
   },
+  "overrides": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5"
+  },
   "browserslist": {
     "production": [
       "defaults and supports es6-module"
