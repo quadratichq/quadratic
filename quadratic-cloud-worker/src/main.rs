@@ -25,34 +25,49 @@ async fn main() -> Result<()> {
 
     info!("Starting worker for file: {}", file_id);
 
-    let mut worker = Worker::new(config)
-        .await
-        .map_err(|e| WorkerError::CreateWorker(e.to_string()))?;
+    let worker = Worker::new(config).await;
+    let mut errors = Vec::new();
 
-    // Always shutdown, even if run() fails
-    let run_result = worker.run().await;
-
-    info!("Worker run completed for file: {file_id}, initiating shutdown...");
-
-    let shutdown_result = worker.shutdown().await;
-
-    // Log the results
-    match (&run_result, &shutdown_result) {
-        (Ok(_), Ok(_)) => info!("Worker completed successfully for file: {file_id}"),
-        (Err(e), Ok(_)) => {
-            info!("Worker run failed but shutdown succeeded: {e} for file: {file_id}")
-        }
-        (Ok(_), Err(e)) => {
-            info!("Worker run succeeded but shutdown failed: {e} for file: {file_id}")
-        }
-        (Err(e1), Err(e2)) => info!(
-            "Both worker run and shutdown failed: run={e1}, shutdown={e2} for file: {file_id}"
-        ),
+    // An error occurred, just log it so we can still shutdown the worker
+    if let Err(e) = &worker {
+        errors.push(WorkerError::CreateWorker(e.to_string()));
     }
 
-    // Return the first error if either failed
-    run_result?;
-    shutdown_result?;
+    if let Ok(mut worker) = worker {
+        // Always shutdown, even if run() fails
+        let run_result = worker.run().await;
+
+        // An error occurred, just log it so we can still shutdown the worker
+        if let Err(e) = &run_result {
+            errors.push(WorkerError::RunWorker(e.to_string()));
+        }
+
+        info!("Worker run completed for file: {file_id}, initiating shutdown...");
+
+        let shutdown_result = worker.shutdown().await;
+
+        // An error occurred, just log it so we can still shutdown the worker
+        if let Err(e) = &shutdown_result {
+            errors.push(WorkerError::ShutdownWorker(e.to_string()));
+        }
+
+        // Successfully shutdown the worker
+        let success = run_result.is_ok() && shutdown_result.is_ok();
+
+        if success {
+            info!("Worker completed successfully for file: {file_id}");
+        } else {
+            error!(
+                "Worker failed to complete for file: {file_id}: {:?}",
+                errors
+            );
+        }
+    }
+
+    // Return the first error if any failed
+    if let Some(error) = errors.first() {
+        return Err(error.clone());
+    }
 
     Ok(())
 }
