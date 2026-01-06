@@ -110,10 +110,16 @@ export const Component = () => {
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const dragCounterRef = useRef(0);
 
-  // Focus prompt textarea on mount
+  // Focus prompt textarea on mount and place cursor at end
   useEffect(() => {
     setTimeout(() => {
-      promptTextareaRef.current?.focus();
+      const textarea = promptTextareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        // Place cursor at the end of the text
+        const length = textarea.value.length;
+        textarea.setSelectionRange(length, length);
+      }
     }, 100);
   }, []);
 
