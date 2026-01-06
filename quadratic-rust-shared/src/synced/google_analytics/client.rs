@@ -37,7 +37,7 @@ pub struct GoogleAnalyticsConfig {
 pub struct GoogleAnalyticsConnection {
     pub property_id: String,
     pub service_account_configuration: String,
-    pub start_date: String,
+    pub start_date: NaiveDate,
 }
 
 #[async_trait]
@@ -51,7 +51,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     fn start_date(&self) -> NaiveDate {
-        NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap_or_else(|_| today())
+        self.start_date.clone()
     }
 
     fn streams(&self) -> Vec<&'static str> {
@@ -62,7 +62,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
         let client = GoogleAnalyticsClient::new(
             self.service_account_configuration.clone(),
             self.property_id.clone(),
-            self.start_date.clone(),
+            self.start_date.format(DATE_FORMAT).to_string(),
         )
         .await?;
 
