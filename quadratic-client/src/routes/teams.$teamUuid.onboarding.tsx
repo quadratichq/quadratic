@@ -210,14 +210,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   // A/B test: 10% original AI flow, 10% simple AI flow, 80% go directly to a new file
   const randomValue = Math.random();
-  let flow: 'startWithAi' | 'startWithAiSimple' | 'newFile';
+  let flow: 'startWithAi' | 'startWithAi2' | 'newFile';
   let newFilePath: string;
 
   if (randomValue < 0.1) {
     flow = 'startWithAi';
     newFilePath = ROUTES.TEAM_FILES_CREATE_AI(teamUuid);
   } else if (randomValue < 0.2) {
-    flow = 'startWithAiSimple';
+    flow = 'startWithAi2';
     newFilePath = ROUTES.TEAM_FILES_CREATE_AI_SIMPLE(teamUuid);
   } else {
     flow = 'newFile';
