@@ -405,7 +405,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'azure-openai:gpt-5',
+    backupModelKey: 'azure-openai:gpt-5.2',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -422,7 +422,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'azure-openai:gpt-5',
+    backupModelKey: 'azure-openai:gpt-5.2',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 1,
