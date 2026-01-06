@@ -1,6 +1,5 @@
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Card, CardContent } from '@/shared/shadcn/ui/card';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
 import { useCallback, useState } from 'react';
@@ -48,19 +47,19 @@ export const HyperlinkPopup = () => {
   });
 
   // Prevent keyboard events from reaching the grid (safety net for any events that bubble up)
-  const handleCardKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDownWrapper = useCallback((e: React.KeyboardEvent) => {
     e.stopPropagation();
   }, []);
 
-  const handleCardKeyUp = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyUpWrapper = useCallback((e: React.KeyboardEvent) => {
     e.stopPropagation();
   }, []);
 
   return (
-    <Card
+    <div
       ref={ref}
       className={cn(
-        'absolute z-50 min-w-64 max-w-80 transition-opacity duration-150 ease-in-out',
+        'absolute z-50 min-w-48 max-w-80 rounded-md border bg-popover p-3 text-popover-foreground shadow-md outline-none transition-opacity duration-150 ease-in-out',
         isVisible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
       )}
       style={{
@@ -73,34 +72,33 @@ export const HyperlinkPopup = () => {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onWheel={handleWheel}
-      onKeyDown={handleCardKeyDown}
-      onKeyUp={handleCardKeyUp}
+      onKeyDown={handleKeyDownWrapper}
+      onKeyUp={handleKeyUpWrapper}
     >
-      <CardContent className="p-3">
-        {mode === 'view' ? (
-          <HyperlinkPopupView
-            url={linkData?.url ?? ''}
-            linkTitle={linkData?.linkText || pageTitle}
-            isFormula={linkData?.isFormula ?? false}
-            onOpen={handleOpenLink}
-            onCopy={handleCopyLink}
-            onEdit={handleEditMode}
-            onRemove={handleRemoveLink}
-          />
-        ) : (
-          <HyperlinkPopupEdit
-            editText={editText}
-            editUrl={editUrl}
-            hideTextField={hideTextField}
-            onTextChange={setEditText}
-            onUrlChange={setEditUrl}
-            onKeyDown={handleKeyDown}
-            onKeyUp={handleKeyUp}
-            onSave={handleSaveEdit}
-            onCancel={handleCancelEdit}
-          />
-        )}
-      </CardContent>
-    </Card>
+      {mode === 'view' ? (
+        <HyperlinkPopupView
+          url={linkData?.url ?? ''}
+          linkTitle={pageTitle || linkData?.linkText}
+          isFormula={linkData?.isFormula ?? false}
+          isNakedUrl={linkData?.isNakedUrl ?? false}
+          onOpen={handleOpenLink}
+          onCopy={handleCopyLink}
+          onEdit={handleEditMode}
+          onRemove={handleRemoveLink}
+        />
+      ) : (
+        <HyperlinkPopupEdit
+          editText={editText}
+          editUrl={editUrl}
+          hideTextField={hideTextField}
+          onTextChange={setEditText}
+          onUrlChange={setEditUrl}
+          onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
+      )}
+    </div>
   );
 };

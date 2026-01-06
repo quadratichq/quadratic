@@ -316,6 +316,7 @@ export class CellsTextHash {
             textRectangle: linkRect.rect,
             url: linkRect.url,
             linkText: linkRect.linkText,
+            isNakedUrl: linkRect.isNakedUrl,
           });
         }
       }

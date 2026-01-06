@@ -28,6 +28,8 @@ export interface LinkData {
   hasSelection?: boolean;
   // For partial hyperlinks: the text of the link span
   linkText?: string;
+  // True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink)
+  isNakedUrl?: boolean;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -269,7 +271,14 @@ export function useHyperlinkPopup() {
   // 3. Leaving link without going to popup → popup fades out (hoverLink undefined)
   // 4. Leaving popup → popup fades out (handleMouseLeave sets timeout, hoverLink doesn't interfere)
   useEffect(() => {
-    const handleHoverLink = (link?: { x: number; y: number; url: string; rect: Rectangle; linkText?: string }) => {
+    const handleHoverLink = (link?: {
+      x: number;
+      y: number;
+      url: string;
+      rect: Rectangle;
+      linkText?: string;
+      isNakedUrl?: boolean;
+    }) => {
       const v = visibilityRef.current;
       if (v.isEditMode()) return;
       if (v.isJustClosed()) return;
@@ -298,6 +307,7 @@ export function useHyperlinkPopup() {
             source: 'hover',
             isFormula,
             linkText: link.linkText,
+            isNakedUrl: link.isNakedUrl,
           });
           setMode('view');
           setEditUrl(link.url);
@@ -458,10 +468,39 @@ export function useHyperlinkPopup() {
   const handleRemoveLink = useCallback(async () => {
     if (!linkData) return;
 
-    // Replace with the display value (only called for non-formula hyperlinks)
-    const displayValue = await quadraticCore.getDisplayCell(sheets.current, linkData.x, linkData.y);
-    if (displayValue) {
-      quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, displayValue, false);
+    if (linkData.source === 'inline') {
+      // Remove hyperlink from inline editor's span tracking
+      inlineEditorSpans.removeHyperlinkAtCursor();
+      inlineEditorMonaco.focus();
+      closePopup(true);
+      return;
+    }
+
+    // Get the current cell value to access its spans
+    const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
+
+    if (cellValue?.kind === 'RichText' && cellValue.spans) {
+      // Find the span with the matching link URL and remove the link property
+      const modifiedSpans = cellValue.spans.map((span) => {
+        if (span.link === linkData.url) {
+          // Set link to null to remove the hyperlink, keep everything else
+          // Ensure all required TextSpan fields are present
+          return {
+            text: span.text,
+            link: null,
+            bold: span.bold ?? null,
+            italic: span.italic ?? null,
+            underline: span.underline ?? null,
+            strike_through: span.strike_through ?? null,
+            text_color: span.text_color ?? null,
+            font_size: span.font_size ?? null,
+          };
+        }
+        return span;
+      });
+
+      // Save the modified spans back as RichText
+      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, modifiedSpans);
     }
 
     closePopup(true);
@@ -473,13 +512,17 @@ export function useHyperlinkPopup() {
 
     const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
     const text = editText.trim() || normalizedUrl;
+    const hasCustomTitle = text !== normalizedUrl;
 
     if (linkData.source === 'inline') {
       // Save to inline editor's hyperlink tracking
       inlineEditorSpans.completePendingHyperlink(normalizedUrl, text);
       inlineEditorMonaco.focus();
+    } else if (linkData.isNakedUrl && !hasCustomTitle) {
+      // For naked URLs without a custom title, keep as plain text
+      quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
     } else {
-      // Save directly to cell
+      // Save as RichText hyperlink (for RichText hyperlinks or naked URLs with custom title)
       quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
         {
           text,

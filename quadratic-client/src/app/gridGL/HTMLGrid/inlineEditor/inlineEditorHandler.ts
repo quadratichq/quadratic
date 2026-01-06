@@ -825,6 +825,9 @@ class InlineEditorHandler {
           }
           return false;
         } else {
+          // Check for URLs at cursor position and auto-convert to hyperlinks
+          inlineEditorSpans.checkAutoLinkOnClose();
+
           const trimmedValue = value.trim();
           // Check if we have formatted spans (e.g., hyperlinks) that require RichText
           if (inlineEditorSpans.isActive() && inlineEditorSpans.hasFormattedSpans()) {

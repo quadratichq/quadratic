@@ -456,6 +456,11 @@ class InlineEditorSpans {
 
       // Check if the word is a URL
       if (URL_REGEX.test(word)) {
+        // Don't auto-link if the entire cell content is just a URL (naked URL)
+        // This keeps it as plain text so it's detected as a naked URL instead of RichText
+        const textWithoutTrailingSpace = fullText.slice(0, -1); // Remove the trailing space we just typed
+        if (URL_REGEX.test(textWithoutTrailingSpace.trim())) continue;
+
         // Check if this range is already a hyperlink
         const existingSpan = this.spans.find((span) => span.link && span.start <= wordStart && span.end >= spaceOffset);
         if (existingSpan) continue;
@@ -463,6 +468,54 @@ class InlineEditorSpans {
         // Add the hyperlink span
         this.addHyperlinkSpan(wordStart, spaceOffset, word);
       }
+    }
+  }
+
+  /**
+   * Check for URLs at the cursor position and auto-convert them to hyperlinks.
+   * Called when the editor is about to close (e.g., pressing Enter).
+   */
+  checkAutoLinkOnClose() {
+    const editor = inlineEditorMonaco.editor;
+    if (!editor) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const fullText = model.getValue();
+    if (!fullText) return;
+
+    // Don't auto-link if the entire cell content is just a URL (naked URL)
+    // This keeps it as plain text so it's detected as a naked URL instead of RichText
+    if (URL_REGEX.test(fullText.trim())) return;
+
+    // Get the cursor position offset
+    const position = inlineEditorMonaco.getPosition();
+    const cursorOffset = this.positionToOffset(position);
+    if (cursorOffset === null) return;
+
+    // Find the start of the word at/before the cursor
+    // Look backwards from cursorOffset to find word boundary
+    let wordStart = cursorOffset;
+    while (wordStart > 0 && !/\s/.test(fullText[wordStart - 1])) {
+      wordStart--;
+    }
+
+    // Find the end of the word at/after the cursor
+    let wordEnd = cursorOffset;
+    while (wordEnd < fullText.length && !/\s/.test(fullText[wordEnd])) {
+      wordEnd++;
+    }
+
+    const word = fullText.slice(wordStart, wordEnd);
+
+    if (URL_REGEX.test(word)) {
+      // Check if this range is already a hyperlink
+      const existingSpan = this.spans.find((span) => span.link && span.start <= wordStart && span.end >= wordEnd);
+      if (existingSpan) return;
+
+      // Add the hyperlink span
+      this.addHyperlinkSpan(wordStart, wordEnd, word);
     }
   }
 
@@ -526,6 +579,40 @@ class InlineEditorSpans {
     // Sort spans by start position
     this.spans = newSpans.sort((a, b) => a.start - b.start);
     this.updateDecorations();
+  }
+
+  /**
+   * Remove the hyperlink from a span at the current cursor position.
+   * Returns true if a hyperlink was removed, false otherwise.
+   */
+  removeHyperlinkAtCursor(): boolean {
+    if (!this.active) return false;
+
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return false;
+
+    // Find the span with a hyperlink at the current position
+    for (let i = 0; i < this.spans.length; i++) {
+      const span = this.spans[i];
+      if (span.link && offset >= span.start && offset <= span.end) {
+        // Remove the link property from the span
+        const { link: _link, ...rest } = span;
+        // Check if the span has any other formatting
+        const hasOtherFormatting = rest.bold || rest.italic || rest.underline || rest.strikeThrough || rest.textColor;
+        if (hasOtherFormatting) {
+          // Keep the span but without the link
+          this.spans[i] = rest as TrackedSpan;
+        } else {
+          // Remove the span entirely since it has no formatting
+          this.spans.splice(i, 1);
+        }
+        this.updateDecorations();
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

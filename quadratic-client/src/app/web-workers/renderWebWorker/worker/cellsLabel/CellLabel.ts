@@ -148,12 +148,14 @@ export class CellLabel {
   private italic: boolean;
 
   link: boolean;
+  /** True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink). */
+  isNakedUrl: boolean;
   /** Link spans with character ranges and URLs (for RichText hyperlinks). */
   linkSpans: Array<{ start: number; end: number; url: string }>;
   /** Format spans with character ranges and style overrides (from RichText). */
   private formatSpans: FormatSpan[];
   /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
-  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number; linkText: string }>;
+  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number; linkText: string; isNakedUrl?: boolean }>;
   private underline: boolean;
   private strikeThrough: boolean;
 
@@ -238,6 +240,7 @@ export class CellLabel {
     this.linkSpans = [];
     this.formatSpans = [];
     this.linkRectangles = [];
+    this.isNakedUrl = false;
     this.link = this.isLink(cell);
     this.initFormatSpans(cell);
     this.fontSize = cell.fontSize ?? DEFAULT_FONT_SIZE;
@@ -398,6 +401,7 @@ export class CellLabel {
       new URL(cell.value);
       // Treat entire text as a single link span
       this.linkSpans = [{ start: 0, end: cell.value.length, url: cell.value }];
+      this.isNakedUrl = true;
       return true;
     } catch (e) {
       return false;
@@ -1232,6 +1236,7 @@ export class CellLabel {
           url: span.url,
           underlineY,
           linkText,
+          isNakedUrl: this.isNakedUrl,
         });
       }
     }

@@ -8,6 +8,8 @@ export interface Link {
   url?: string;
   /** The text of the hyperlink span. */
   linkText?: string;
+  /** True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink). */
+  isNakedUrl?: boolean;
 }
 
 /** A hyperlink span within a cell, with character range and URL. */

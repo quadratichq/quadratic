@@ -7,6 +7,7 @@ interface HyperlinkPopupViewProps {
   url: string;
   linkTitle: string | undefined;
   isFormula: boolean;
+  isNakedUrl: boolean;
   onOpen: () => void;
   onCopy: () => void;
   onEdit: () => void;
@@ -17,11 +18,17 @@ export const HyperlinkPopupView = ({
   url,
   linkTitle,
   isFormula,
+  isNakedUrl,
   onOpen,
   onCopy,
   onEdit,
   onRemove,
 }: HyperlinkPopupViewProps) => {
+  // Show Edit for non-formulas (including naked URLs)
+  // Show Remove only for RichText hyperlinks (not formulas, not naked URLs)
+  const showEdit = !isFormula;
+  const showRemove = !isFormula && !isNakedUrl;
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -51,11 +58,13 @@ export const HyperlinkPopupView = ({
           <CopyIcon className="mr-1 h-3.5 w-3.5" />
           Copy
         </Button>
-        <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 px-2">
-          <Pencil1Icon className="mr-1 h-3.5 w-3.5" />
-          Edit
-        </Button>
-        {!isFormula && (
+        {showEdit && (
+          <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 px-2">
+            <Pencil1Icon className="mr-1 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        )}
+        {showRemove && (
           <Button
             variant="ghost"
             size="sm"
