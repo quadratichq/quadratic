@@ -91,6 +91,10 @@ export const router = createBrowserRouter(
         {/* Team-based AI creation routes */}
         <Route path="teams/:teamUuid/files/create/ai" lazy={() => import('./routes/teams.$teamUuid.files.create.ai')} />
         <Route
+          path="teams/:teamUuid/files/create/ai/simple"
+          lazy={() => import('./routes/teams.$teamUuid.files.create.ai.simple')}
+        />
+        <Route
           path="teams/:teamUuid/files/create/ai/prompt"
           lazy={() => import('./routes/teams.$teamUuid.files.create.ai')}
         />

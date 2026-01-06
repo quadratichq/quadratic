@@ -23,6 +23,7 @@ export const ROUTES = {
   FILES_CREATE_AI: '/files/create/ai',
   // Team-based AI creation routes (these are the actual routes)
   TEAM_FILES_CREATE_AI: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai`,
+  TEAM_FILES_CREATE_AI_SIMPLE: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/simple`,
   TEAM_FILES_CREATE_AI_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/file`,
   TEAM_FILES_CREATE_AI_PROMPT: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/prompt`,
   TEAM_FILES_CREATE_AI_PDF: (teamUuid: string) => `/teams/${teamUuid}/files/create/ai/pdf`,
