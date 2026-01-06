@@ -123,6 +123,11 @@ impl Sheet {
             transaction.add_fill_cells_from_columns(self, column);
         }
 
+        // update meta fills if there are any infinite fills (column/row/sheet fills)
+        if self.formats.has_meta_fills() {
+            transaction.add_sheet_meta_fills(self.id);
+        }
+
         // remove the column's borders from the sheet
         self.borders.remove_column(column);
         transaction.sheet_borders.insert(self.id);
@@ -364,6 +369,81 @@ mod tests {
                 y: 0
             }),
             "hash for shifted fill should be marked dirty"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is marked when deleting a column with column fills (infinite y).
+    #[test]
+    fn test_delete_column_meta_fills_column_fill() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set a column fill (infinite in y direction) on column C
+        sheet
+            .formats
+            .fill_color
+            .set_rect(3, 1, Some(3), None, Some("red".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that sheet_meta_fills is marked dirty
+        assert!(
+            transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should be marked when there are column fills"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is marked when deleting a column with row fills (infinite x).
+    #[test]
+    fn test_delete_column_meta_fills_row_fill() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set a row fill (infinite in x direction) on row 1
+        sheet
+            .formats
+            .fill_color
+            .set_rect(1, 1, None, Some(1), Some("blue".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that sheet_meta_fills is marked dirty
+        assert!(
+            transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should be marked when there are row fills"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is NOT marked when deleting a column with only finite fills.
+    #[test]
+    fn test_delete_column_no_meta_fills_for_finite_fills() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set a finite fill (not infinite in any direction)
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C1], Some("green".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that sheet_meta_fills is NOT marked dirty for finite fills
+        assert!(
+            !transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should NOT be marked for finite fills only"
         );
     }
 }
