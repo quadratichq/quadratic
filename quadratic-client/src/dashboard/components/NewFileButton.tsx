@@ -51,7 +51,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           navigate(`${ROUTES.TEAM_FILES_CREATE_AI_SIMPLE(teamUuid)}${isPrivate ? '?private=true' : ''}`);
         }}
       >
-        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
+        Start with AI
       </Button>
       <Button
         variant="outline"

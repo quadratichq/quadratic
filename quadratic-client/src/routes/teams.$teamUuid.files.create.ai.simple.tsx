@@ -447,13 +447,7 @@ export const Component = () => {
           </div>
 
           {/* Main prompt input */}
-          <div
-            className={cn(
-              'relative overflow-hidden rounded-lg border bg-background transition-all duration-300',
-              'border-border shadow-lg',
-              'focus-within:border-border focus-within:shadow-xl'
-            )}
-          >
+          <div className={cn('relative overflow-hidden rounded-lg border bg-background', 'border-border shadow-lg')}>
             {/* Context chips - files and connections inside the chat box */}
             {hasContext && (
               <div className="flex flex-wrap items-center gap-2 px-5 pt-4">
@@ -562,11 +556,11 @@ export const Component = () => {
               <Button
                 onClick={() => handleSubmit(prompt)}
                 disabled={!prompt.trim() || isSubmitting}
-                className="h-9 gap-2 rounded-md bg-foreground px-5 text-background hover:bg-foreground/90"
+                className="h-9 gap-2 rounded-md px-5"
               >
                 {isSubmitting ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-background/30 border-t-background" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
                     Creating...
                   </>
                 ) : (
