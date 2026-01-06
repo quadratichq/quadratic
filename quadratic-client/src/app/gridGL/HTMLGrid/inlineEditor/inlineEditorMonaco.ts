@@ -83,7 +83,7 @@ class InlineEditorMonaco {
     return this.editor.getValue();
   };
 
-  // Sets the value of the inline editor and moves the cursor to the end.
+  // Sets the value of the inline editor and moves the cursor to the end of the entire text.
   set(s: string, select?: boolean | number) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setValue');
@@ -93,10 +93,13 @@ class InlineEditorMonaco {
     // set the edited value on the div for playwright
     document.querySelector('#cell-edit')?.setAttribute('data-test-value', s);
 
-    this.setColumn(s.length + 1);
+    // Move cursor to the end of the last line (handles multiline content)
+    const model = this.getModel();
+    const lineCount = model.getLineCount();
+    const lastLineMaxColumn = model.getLineMaxColumn(lineCount);
+    this.editor.setPosition({ lineNumber: lineCount, column: lastLineMaxColumn });
+
     if (select !== undefined && select !== false) {
-      const model = this.getModel();
-      const lineCount = model.getLineCount();
       const maxColumns = model.getLineMaxColumn(lineCount);
       const range = new monaco.Range(1, select !== true ? select : 1, lineCount, maxColumns);
       this.editor.setSelection(range);
@@ -196,19 +199,27 @@ class InlineEditorMonaco {
     const fontFamily = this.editor.getOption(monaco.editor.EditorOption.fontFamily);
 
     // Measure the actual text width using canvas for accuracy
+    // For multiline content, find the longest line and measure that
     const text = this.editor.getValue();
+    const lines = text.split('\n');
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (context) {
       context.font = `${fontSize}px ${fontFamily}`;
-      const metrics = context.measureText(text);
-      const measuredWidth = metrics.width;
+      // Find the width of the longest line
+      let maxLineWidth = 0;
+      for (const line of lines) {
+        const lineWidth = context.measureText(line).width;
+        if (lineWidth > maxLineWidth) {
+          maxLineWidth = lineWidth;
+        }
+      }
 
       // Add padding that scales linearly with font size
       const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
 
-      width = textWrap !== 'overflow' ? width : Math.max(width, measuredWidth + scaledPadding);
+      width = textWrap !== 'overflow' ? width : Math.max(width, maxLineWidth + scaledPadding);
     } else {
       // Fallback to scrollWidth if canvas is not available
       const scrollWidth = textarea.scrollWidth;
