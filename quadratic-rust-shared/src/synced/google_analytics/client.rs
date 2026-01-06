@@ -40,7 +40,7 @@ pub struct GoogleAnalyticsConfig {
 pub struct GoogleAnalyticsConnection {
     pub property_id: String,
     pub service_account_configuration: String,
-    pub start_date: String,
+    pub start_date: NaiveDate,
 }
 
 #[async_trait]
@@ -54,7 +54,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     fn start_date(&self) -> NaiveDate {
-        NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap_or_else(|_| today())
+        self.start_date.to_owned()
     }
 
     fn streams(&self) -> Vec<&'static str> {
@@ -65,7 +65,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
         let client = GoogleAnalyticsClient::new(
             self.service_account_configuration.clone(),
             self.property_id.clone(),
-            self.start_date.clone(),
+            self.start_date.format(DATE_FORMAT).to_string(),
         )
         .await?;
 
@@ -77,7 +77,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
 pub struct GoogleAnalyticsClient {
     pub property_id: String,
     pub analytics: AnalyticsData<HttpsConnector<HttpConnector>>,
-    pub start_date: String,
+    pub start_date: NaiveDate,
 }
 
 #[async_trait]
@@ -150,6 +150,9 @@ impl GoogleAnalyticsClient {
         // Install default crypto provider for rustls if not already installed
         // Ignore error if already installed (happens in tests when multiple connections are created)
         let _ = default_provider().install_default();
+
+        let start_date = NaiveDate::parse_from_str(&start_date, DATE_FORMAT)
+            .map_err(|e| SharedError::Synced(format!("Failed to parse start_date: {}", e)))?;
 
         // Validate property_id format
         if !property_id.starts_with("properties/") {

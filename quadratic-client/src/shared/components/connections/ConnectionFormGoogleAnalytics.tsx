@@ -67,7 +67,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="property_id"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Measurement ID</FormLabel>
+                <FormLabel>Property ID</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
