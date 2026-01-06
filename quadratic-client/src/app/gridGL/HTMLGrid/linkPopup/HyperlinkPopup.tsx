@@ -81,6 +81,7 @@ export const HyperlinkPopup = () => {
           <HyperlinkPopupView
             url={linkData?.url ?? ''}
             linkTitle={linkData?.linkText || pageTitle}
+            isFormula={linkData?.isFormula ?? false}
             onOpen={handleOpenLink}
             onCopy={handleCopyLink}
             onEdit={handleEditMode}

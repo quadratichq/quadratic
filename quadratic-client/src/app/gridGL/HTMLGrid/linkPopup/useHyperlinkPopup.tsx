@@ -5,6 +5,7 @@ import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -14,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLinkMetadata } from './useLinkMetadata';
 import { FADE_OUT_DELAY, type PopupMode, usePopupVisibility } from './usePopupVisibility';
 
-const HOVER_DELAY = 300;
+const HOVER_DELAY = 500;
 
 export interface LinkData {
   x: number;
@@ -84,7 +85,7 @@ export function useHyperlinkPopup() {
   }, [mode]);
 
   // Register cursor recheck after cooldown
-  const checkCursorRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const checkCursorRef = useRef<(() => void) | undefined>(undefined);
   useEffect(() => {
     visibilityRef.current.setAfterCooldown(() => {
       setMode('view');
@@ -103,41 +104,62 @@ export function useHyperlinkPopup() {
 
   // Handle cursor position changes
   useEffect(() => {
-    const checkCursorForHyperlink = async () => {
-      if (visibilityRef.current.isEditMode()) return;
-      if (visibilityRef.current.isJustClosed()) return;
+    const checkCursorForHyperlink = () => {
+      const v = visibilityRef.current;
+      if (v.isEditMode()) return;
+      if (v.isJustClosed()) return;
       if (inlineEditorHandler.isOpen()) return;
 
       const sheet = sheets.sheet;
       const cursor = sheet.cursor;
-      if (cursor.isMultiCursor()) return;
+      if (cursor.isMultiCursor()) {
+        v.clearTimeouts();
+        return;
+      }
 
       const { x, y } = cursor.position;
-      const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
 
-      if (cellValue?.kind === 'RichText' && cellValue.spans) {
-        // Only show popup from cursor if the entire cell is a single hyperlink span.
-        // For partial hyperlinks (multiple spans with only some having links),
-        // rely on hover detection which knows the exact mouse position.
-        const linkSpan = cellValue.spans.length === 1 ? cellValue.spans[0] : undefined;
-        const linkUrl = linkSpan?.link;
-        if (linkSpan && linkUrl) {
-          const offsets = sheet.getCellOffsets(x, y);
-          const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
-          const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
-          const isFormula = codeCell?.language === 'Formula';
+      // Clear any existing timeout and set a new one with delay
+      v.clearTimeouts();
+      v.setHoverTimeout(async () => {
+        // Re-check conditions after delay
+        if (v.isEditMode()) return;
+        if (v.isJustClosed()) return;
+        if (inlineEditorHandler.isOpen()) return;
 
-          setLinkData({ x, y, url: linkUrl, rect, source: 'cursor', isFormula, linkText: linkSpan.text });
-          setMode('view');
-          setEditUrl(linkUrl);
+        // Verify cursor is still at the same position
+        const currentCursor = sheets.sheet.cursor;
+        if (currentCursor.isMultiCursor()) return;
+        const currentPos = currentCursor.position;
+        if (currentPos.x !== x || currentPos.y !== y) return;
+
+        const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
+
+        if (cellValue?.kind === 'RichText' && cellValue.spans) {
+          // Only show popup from cursor if the entire cell is a single hyperlink span.
+          // For partial hyperlinks (multiple spans with only some having links),
+          // rely on hover detection which knows the exact mouse position.
+          const linkSpan = cellValue.spans.length === 1 ? cellValue.spans[0] : undefined;
+          const linkUrl = linkSpan?.link;
+          if (linkSpan && linkUrl) {
+            const offsets = sheet.getCellOffsets(x, y);
+            const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+            const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
+            const isFormula = codeCell?.language === 'Formula';
+
+            setLinkData({ x, y, url: linkUrl, rect, source: 'cursor', isFormula, linkText: linkSpan.text });
+            setMode('view');
+            setEditUrl(linkUrl);
+          }
         }
-      }
+      }, HOVER_DELAY);
     };
 
     checkCursorRef.current = checkCursorForHyperlink;
     events.on('cursorPosition', checkCursorForHyperlink);
     return () => {
       events.off('cursorPosition', checkCursorForHyperlink);
+      visibilityRef.current.clearTimeouts();
     };
   }, []); // No dependencies - use visibilityRef
 
@@ -252,6 +274,7 @@ export function useHyperlinkPopup() {
       if (v.isEditMode()) return;
       if (v.isJustClosed()) return;
       if (v.isHovering()) return;
+      if (inlineEditorHandler.isOpen()) return;
 
       if (link) {
         // Clear timeouts when hovering a new link
@@ -281,6 +304,9 @@ export function useHyperlinkPopup() {
         }, HOVER_DELAY);
       } else {
         // Mouse left link area (hoverLink event with undefined)
+        // Always clear hover timeout to prevent popup from showing after mouse left
+        v.clearTimeouts();
+
         const source = linkDataRef.current?.source;
 
         // Don't hide popups from cursor or inline sources via hoverLink events
@@ -401,8 +427,11 @@ export function useHyperlinkPopup() {
           Copied link to clipboard.
         </span>
       );
+      closePopup(true);
+      // Focus grid after a short delay to ensure the popup is closed
+      focusGrid();
     }
-  }, [linkData, addGlobalSnackbar]);
+  }, [linkData, addGlobalSnackbar, closePopup]);
 
   const handleEditMode = useCallback(async () => {
     if (!linkData) return;
@@ -426,17 +455,18 @@ export function useHyperlinkPopup() {
     setMode('edit');
   }, [linkData, closePopup]);
 
-  const handleRemoveLink = useCallback(() => {
+  const handleRemoveLink = useCallback(async () => {
     if (!linkData) return;
 
-    quadraticCore.getDisplayCell(sheets.current, linkData.x, linkData.y).then((displayValue) => {
-      if (displayValue) {
-        quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, displayValue, false);
-      }
-      setLinkData(undefined);
-      setMode('view');
-    });
-  }, [linkData]);
+    // Replace with the display value (only called for non-formula hyperlinks)
+    const displayValue = await quadraticCore.getDisplayCell(sheets.current, linkData.x, linkData.y);
+    if (displayValue) {
+      quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, displayValue, false);
+    }
+
+    closePopup(true);
+    focusGrid();
+  }, [linkData, closePopup]);
 
   const handleSaveEdit = useCallback(() => {
     if (!linkData || !editUrl.trim()) return;

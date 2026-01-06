@@ -6,13 +6,22 @@ import { getDomainFromUrl } from './useLinkMetadata';
 interface HyperlinkPopupViewProps {
   url: string;
   linkTitle: string | undefined;
+  isFormula: boolean;
   onOpen: () => void;
   onCopy: () => void;
   onEdit: () => void;
   onRemove: () => void;
 }
 
-export const HyperlinkPopupView = ({ url, linkTitle, onOpen, onCopy, onEdit, onRemove }: HyperlinkPopupViewProps) => {
+export const HyperlinkPopupView = ({
+  url,
+  linkTitle,
+  isFormula,
+  onOpen,
+  onCopy,
+  onEdit,
+  onRemove,
+}: HyperlinkPopupViewProps) => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -46,15 +55,17 @@ export const HyperlinkPopupView = ({ url, linkTitle, onOpen, onCopy, onEdit, onR
           <Pencil1Icon className="mr-1 h-3.5 w-3.5" />
           Edit
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-7 px-2 text-destructive hover:text-destructive"
-        >
-          <TrashIcon className="mr-1 h-3.5 w-3.5" />
-          Remove
-        </Button>
+        {!isFormula && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-7 px-2 text-destructive hover:text-destructive"
+          >
+            <TrashIcon className="mr-1 h-3.5 w-3.5" />
+            Remove
+          </Button>
+        )}
       </div>
     </div>
   );
