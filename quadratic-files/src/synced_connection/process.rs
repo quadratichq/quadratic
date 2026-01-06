@@ -328,7 +328,7 @@ pub(crate) async fn process_synced_connection<
     // Only log and decrement if we actually started processing
     if connection_started {
         tracing::info!(
-            "Fnished processing {} streams with {} files for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
+            "Finished processing {} streams with {} files for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
             streams_len,
             total_files_processed,
             connection_id,
