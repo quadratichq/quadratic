@@ -211,6 +211,8 @@ export const Component = () => {
         const data = await response.json();
         if (data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
           setSuggestions(data.suggestions);
+          // Auto-populate the prompt with the first suggestion
+          setPrompt(data.suggestions[0].prompt);
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -446,6 +448,61 @@ export const Component = () => {
             </h1>
           </div>
 
+          {/* Import buttons above chat box */}
+          <div className="mb-3 flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-9 gap-2 rounded-md border-border px-4 text-foreground"
+              onClick={() => handleFileUpload(ALL_FILE_TYPES)}
+              disabled={isSubmitting}
+            >
+              <AttachFileIcon size="sm" />
+              <span>Import file (CSV, XLSX, PDF)</span>
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-9 gap-2 rounded-md border-border px-4 text-foreground"
+                  disabled={isSubmitting}
+                >
+                  <DatabaseIcon size="sm" />
+                  <span className="hidden sm:inline">Add connection</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {connections.length > 0 ? (
+                  connections.map((connection) => (
+                    <DropdownMenuItem
+                      key={connection.uuid}
+                      onClick={() => {
+                        trackEvent('[StartWithAISimple].addConnection', { connectionType: connection.type });
+                        setSelectedConnection({
+                          uuid: connection.uuid,
+                          name: connection.name,
+                          type: connection.type,
+                        });
+                      }}
+                    >
+                      <LanguageIcon language={connection.type} className="mr-2" />
+                      {connection.name}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-2">
+                      <DatabaseIcon size="sm" />
+                      Create connection
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {/* Main prompt input */}
           <div className={cn('relative overflow-hidden rounded-lg border bg-background', 'border-border shadow-lg')}>
             {/* Context chips - files and connections inside the chat box */}
@@ -485,74 +542,28 @@ export const Component = () => {
               </div>
             )}
 
-            <Textarea
-              ref={promptTextareaRef}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className={cn(
-                'min-h-24 resize-none !border-none bg-transparent px-6 text-lg !shadow-none focus-visible:ring-0',
-                hasContext ? 'pb-5 pt-3' : 'py-5'
-              )}
-              disabled={isSubmitting}
-            />
-
-            {/* Input actions */}
-            <div className="flex items-center justify-between px-5 pb-5 pt-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="h-9 gap-2 rounded-md border-border px-4 text-foreground"
-                  onClick={() => handleFileUpload(ALL_FILE_TYPES)}
-                  disabled={isSubmitting}
-                >
-                  <AttachFileIcon size="sm" />
-                  <span>Import file (CSV, XLSX, PDF)</span>
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="h-9 gap-2 rounded-md border-border px-4 text-foreground"
-                      disabled={isSubmitting}
-                    >
-                      <DatabaseIcon size="sm" />
-                      <span className="hidden sm:inline">Add connection</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {connections.length > 0 ? (
-                      connections.map((connection) => (
-                        <DropdownMenuItem
-                          key={connection.uuid}
-                          onClick={() => {
-                            trackEvent('[StartWithAISimple].addConnection', { connectionType: connection.type });
-                            setSelectedConnection({
-                              uuid: connection.uuid,
-                              name: connection.name,
-                              type: connection.type,
-                            });
-                          }}
-                        >
-                          <LanguageIcon language={connection.type} className="mr-2" />
-                          {connection.name}
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <DropdownMenuItem asChild>
-                        <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-2">
-                          <DatabaseIcon size="sm" />
-                          Create connection
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            {isLoadingSuggestions && hasContext ? (
+              <div className="flex min-h-24 items-center gap-3 px-6 py-5">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <span className="text-muted-foreground">Generating suggestion...</span>
               </div>
+            ) : (
+              <Textarea
+                ref={promptTextareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
+                autoHeight
+                className={cn(
+                  'min-h-24 resize-none !border-none bg-transparent px-6 text-lg !shadow-none focus-visible:ring-0',
+                  hasContext ? 'pb-5 pt-3' : 'py-5'
+                )}
+                disabled={isSubmitting}
+              />
+            )}
 
+            {/* Create button */}
+            <div className="flex items-center justify-end px-5 pb-5 pt-3">
               <Button
                 onClick={() => handleSubmit(prompt)}
                 disabled={!prompt.trim() || isSubmitting}
