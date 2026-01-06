@@ -31,11 +31,41 @@ impl Worker {
     ///
     /// This will create a new worker and connect to the multiplayer server.
     /// It will then enter the room and get the catchup transactions.
+    /// If an error occurs, the worker will be shutdown and the error will be returned.
     ///
     /// * `config` - The configuration for the worker.
     ///
     /// Returns a new worker.
+    ///
     pub(crate) async fn new(config: Config) -> Result<Self> {
+        let file_id = config.file_id;
+        let controller_url = config.controller_url.clone();
+        let container_id = config.container_id;
+        let jwt = config.jwt.clone();
+
+        match Self::new_worker(config).await {
+            Ok(worker) => Ok(worker),
+            Err(e) => {
+                if let Err(shutdown_err) =
+                    worker_shutdown(&controller_url, container_id, file_id, &jwt).await
+                {
+                    error!("Failed to shutdown worker: {}", shutdown_err);
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// Internally create a new worker.
+    ///
+    /// This will create a new worker and connect to the multiplayer server.
+    /// It will then enter the room and get the catchup transactions.
+    ///
+    /// * `config` - The configuration for the worker.
+    ///
+    /// Returns a new worker.
+    ///
+    async fn new_worker(config: Config) -> Result<Self> {
         let file_id = config.file_id.to_owned();
         let container_id = config.container_id.to_owned();
         let worker_init_data = config.worker_init_data;
