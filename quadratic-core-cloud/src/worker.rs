@@ -211,15 +211,16 @@ impl Worker {
 
             let heartbeat_handle = tokio::spawn(async move {
                 loop {
-                    if let Err(e) =
-                        send_heartbeat(&mut *sender.lock().await, session_id, file_id).await
-                    {
-                        tracing::error!("Error sending heartbeat: {e}");
+                    let heartbeat = send_heartbeat(Arc::clone(&sender), session_id, file_id).await;
+
+                    if let Err(e) = heartbeat {
+                        tracing::warn!("Error sending heartbeat: {e}");
                         break; // Exit if we can't send heartbeat
                     }
                     tokio::time::sleep(Duration::from_secs(10)).await;
                 }
             });
+
             worker.heartbeat_handle = Some(heartbeat_handle);
         }
 
@@ -409,9 +410,9 @@ impl Worker {
     /// given file.
     /// Returns true if the worker is new, false if it already exists.
     async fn enter_room(&mut self, file_id: Uuid) -> Result<()> {
-        if let Some(sender) = self.websocket_sender.as_mut() {
+        if let Some(sender) = self.websocket_sender.as_ref().cloned() {
             let user_id = Uuid::new_v4();
-            enter_room(&mut *sender.lock().await, user_id, file_id, self.session_id).await?;
+            enter_room(sender, user_id, file_id, self.session_id).await?;
 
             tracing::trace!("Entered room {file_id}");
         }
@@ -424,16 +425,10 @@ impl Worker {
         &mut self,
         file_id: Uuid,
         session_id: Uuid,
-        min_sequence_num: u64,
+        current_sequence_num: u64,
     ) -> Result<()> {
-        if let Some(sender) = self.websocket_sender.as_mut() {
-            get_transactions(
-                &mut *sender.lock().await,
-                file_id,
-                session_id,
-                min_sequence_num + 1,
-            )
-            .await?;
+        if let Some(sender) = self.websocket_sender.as_ref().cloned() {
+            get_transactions(sender, file_id, session_id, current_sequence_num).await?;
         }
 
         Ok(())
@@ -480,9 +475,9 @@ impl Worker {
             forward_transaction.operations.to_owned()
         };
 
-        if let Some(sender) = self.websocket_sender.as_mut() {
+        if let Some(sender) = self.websocket_sender.as_ref().cloned() {
             send_transaction(
-                &mut *sender.lock().await,
+                sender,
                 transaction_id,
                 self.file_id,
                 self.session_id,
@@ -506,11 +501,9 @@ impl Worker {
         }
 
         // Then send the leave room message and close the connection
-        if let Some(sender) = self.websocket_sender.as_mut() {
-            let mut sender_lock = sender.lock().await;
-
+        if let Some(sender) = self.websocket_sender.as_ref().cloned() {
             // Send leave room message - log errors but don't fail
-            match leave_room(&mut sender_lock, self.session_id, self.file_id).await {
+            match leave_room(Arc::clone(&sender), self.session_id, self.file_id).await {
                 Ok(_) => {
                     tracing::trace!("[Worker] Leave room message sent successfully");
                     // Give the server a moment to process the leave room message
@@ -522,7 +515,7 @@ impl Worker {
             }
 
             // Close the WebSocket connection gracefully
-            match sender_lock.close().await {
+            match sender.lock().await.close().await {
                 Ok(_) => tracing::trace!("[Worker] WebSocket connection closed gracefully"),
                 Err(e) => {
                     // Suppress benign shutdown errors
