@@ -181,11 +181,25 @@ impl<'de> Deserialize<'de> for SingleCellTablesCache {
         D: serde::Deserializer<'de>,
     {
         let positions = Vec::<Pos>::deserialize(deserializer)?;
-        let mut cache = Self::new();
-        for pos in positions {
-            cache.set(pos, true);
+        let tables: HashSet<Pos> = positions.iter().copied().collect();
+        let spatial_index = RTree::bulk_load(
+            positions
+                .iter()
+                .map(|&pos| GeomWithData::new(Rect::single_pos(pos), pos))
+                .collect(),
+        );
+
+        // Build col_index
+        let mut col_index: BTreeMap<i64, BTreeSet<i64>> = BTreeMap::new();
+        for pos in &positions {
+            col_index.entry(pos.x).or_default().insert(pos.y);
         }
-        Ok(cache)
+
+        Ok(Self {
+            tables,
+            spatial_index,
+            col_index,
+        })
     }
 }
 
