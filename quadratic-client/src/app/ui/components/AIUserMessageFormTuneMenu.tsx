@@ -3,20 +3,22 @@ import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { CodeIcon, EditIcon, EnhancePromptIcon, SpinnerIcon, TuneIcon } from '@/shared/components/Icons';
 import { useUserAILanguages, type AILanguages } from '@/shared/hooks/useUserAILanguages';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuPortal,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Switch } from '@/shared/shadcn/ui/switch';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 interface AIUserMessageFormTuneMenuProps {
   disabled: boolean;
@@ -77,6 +79,33 @@ export const AIUserMessageFormTuneMenu = memo(
       [saveAILanguages, aiLanguages]
     );
 
+    const options = useMemo(() => {
+      // If the specified language is enabled _and_ it's the only enabled one,
+      // don't allow it to be disabled
+      const isDisabled = (language: keyof AILanguages) =>
+        aiLanguages[language] && Object.entries(aiLanguages).filter(([_, value]) => value === true).length === 1;
+      return [
+        {
+          language: 'formulas',
+          label: 'Formulas',
+          enabled: aiLanguages.formulas,
+          disabled: isDisabled('formulas'),
+        },
+        {
+          language: 'python',
+          label: 'Python',
+          enabled: aiLanguages.python,
+          disabled: isDisabled('python'),
+        },
+        {
+          language: 'javascript',
+          label: 'JavaScript',
+          enabled: aiLanguages.javascript,
+          disabled: isDisabled('javascript'),
+        },
+      ] as const;
+    }, [aiLanguages]);
+
     return (
       <DropdownMenu>
         <TooltipPopover label="More options" fastMode={true}>
@@ -94,47 +123,42 @@ export const AIUserMessageFormTuneMenu = memo(
 
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48">
           <DropdownMenuItem onClick={handleOptimize} disabled={isOptimizing} className="gap-3">
-            {isOptimizing ? (
-              <SpinnerIcon className="flex-shrink-0 text-muted-foreground" />
-            ) : (
-              <EnhancePromptIcon className="flex-shrink-0 text-muted-foreground" />
-            )}
+            <EnhancePromptIcon className="flex-shrink-0" />
+
             <span>Enhance prompt</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleOpenAIRules} className="gap-3">
-            <EditIcon className="flex-shrink-0 text-muted-foreground" />
+            <EditIcon className="flex-shrink-0" />
             <span>AI rules</span>
           </DropdownMenuItem>
 
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="gap-3">
-              <CodeIcon className="flex-shrink-0 text-muted-foreground" />
+              <CodeIcon className="flex-shrink-0" />
               <span>Languages</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
-              <DropdownMenuSubContent
-                className="p-2"
-                onPointerDownOutside={(e) => e.preventDefault()}
-                onInteractOutside={(e) => e.preventDefault()}
-              >
-                <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <Checkbox checked={aiLanguages.formulas} onCheckedChange={() => handleToggleLanguage('formulas')} />
-                    <span className="text-sm">Formulas</span>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <Checkbox checked={aiLanguages.python} onCheckedChange={() => handleToggleLanguage('python')} />
-                    <span className="text-sm">Python</span>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <Checkbox
-                      checked={aiLanguages.javascript}
-                      onCheckedChange={() => handleToggleLanguage('javascript')}
-                    />
-                    <span className="text-sm">JavaScript</span>
-                  </label>
-                </div>
+              <DropdownMenuSubContent className="w-48 p-2">
+                {options.map(({ language, enabled, disabled }) => (
+                  <DropdownMenuItem
+                    className="flex items-center justify-between"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (disabled) return;
+                      handleToggleLanguage(language);
+                    }}
+                  >
+                    {language.charAt(0).toUpperCase() + language.slice(1)}
+                    <Switch checked={enabled} disabled={disabled} />
+                  </DropdownMenuItem>
+                ))}
+
+                <DropdownMenuSeparator className="!block" />
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  Selected languages may be used in AI responses.
+                </DropdownMenuLabel>
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
