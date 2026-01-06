@@ -160,11 +160,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
             return availableWidth * panelPercentage;
           });
         } else if (currentPanelPosition === 'bottom' && currentEditorWidth > availableWidth) {
-          const totalOldWidth = currentEditorWidth;
-          setEditorWidth(() => {
-            const editorPercentage = currentEditorWidth / totalOldWidth;
-            return availableWidth * editorPercentage;
-          });
+          setEditorWidth(availableWidth);
         }
         setBottomHidden(false);
         debounceTimeoutId = null;
