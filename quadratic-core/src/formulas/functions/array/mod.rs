@@ -71,19 +71,13 @@ pub(crate) fn eval_by_slice(
 
     let results = apply_lambda_to_slices(ctx, &array, &lambda, axis, span)?;
 
-    let result_array = match axis {
-        Axis::Y => {
-            let size = ArraySize::new(1, results.len() as u32)
-                .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
-            Array::new_row_major(size, results)?
-        }
-        Axis::X => {
-            let size = ArraySize::new(results.len() as u32, 1)
-                .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
-            Array::new_row_major(size, results)?
-        }
-    };
+    let size = match axis {
+        Axis::Y => ArraySize::new(1, results.len() as u32),
+        Axis::X => ArraySize::new(results.len() as u32, 1),
+    }
+    .ok_or_else(|| RunErrorMsg::ArrayTooBig.with_span(span))?;
 
+    let result_array = Array::new_row_major(size, results)?;
     Ok(Value::from(result_array))
 }
 

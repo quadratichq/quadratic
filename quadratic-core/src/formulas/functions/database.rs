@@ -102,6 +102,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                 criteria: (Spanned<Array>),
             ) {
                 let values = extract_matching_values(&database, &field, &criteria, span)?;
+                if values.is_empty() {
+                    return Err(RunErrorMsg::NoMatch.with_span(span));
+                }
                 values.into_iter().fold(f64::NEG_INFINITY, f64::max)
             }
         ),
@@ -115,6 +118,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                 criteria: (Spanned<Array>),
             ) {
                 let values = extract_matching_values(&database, &field, &criteria, span)?;
+                if values.is_empty() {
+                    return Err(RunErrorMsg::NoMatch.with_span(span));
+                }
                 values.into_iter().fold(f64::INFINITY, f64::min)
             }
         ),
@@ -1434,6 +1440,8 @@ mod tests {
 
     #[test]
     fn test_dmax_dmin() {
+        use crate::RunErrorMsg;
+
         let mut g = GridController::new();
         let sheet_id = g.sheet_ids()[0];
 
@@ -1450,12 +1458,26 @@ mod tests {
         g.set_cell_value(pos![sheet_id!A4], "A".to_string(), None, false);
         g.set_cell_value(pos![sheet_id!B4], "30".to_string(), None, false);
 
-        // Criteria
+        // Criteria for matching records (Type = "A")
         g.set_cell_value(pos![sheet_id!D1], "Type".to_string(), None, false);
         g.set_cell_value(pos![sheet_id!D2], "A".to_string(), None, false);
 
         assert_eq!("50", eval_to_string(&g, "DMAX(A1:B4, \"Value\", D1:D2)"));
         assert_eq!("10", eval_to_string(&g, "DMIN(A1:B4, \"Value\", D1:D2)"));
+
+        // Criteria for no matching records (Type = "Z")
+        g.set_cell_value(pos![sheet_id!E1], "Type".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!E2], "Z".to_string(), None, false);
+
+        // No match should return NoMatch error
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "DMAX(A1:B4, \"Value\", E1:E2)").msg
+        );
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "DMIN(A1:B4, \"Value\", E1:E2)").msg
+        );
     }
 
     #[test]

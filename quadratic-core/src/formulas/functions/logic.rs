@@ -398,15 +398,13 @@ fn get_functions() -> Vec<FormulaFunction> {
                     Some(_arr) => {
                         // Get the position of the referenced cell from cells_accessed
                         let a1_context = ctx.grid_controller.a1_context();
+                        let cells_accessed = ctx.cells_accessed();
                         let ref_info =
-                            ctx.cells_accessed
-                                .cells
-                                .iter()
-                                .find_map(|(&sheet_id, ranges)| {
-                                    ranges.iter().find_map(|range| {
-                                        range.to_rect(a1_context).map(|rect| (sheet_id, rect))
-                                    })
-                                });
+                            cells_accessed.cells.iter().find_map(|(&sheet_id, ranges)| {
+                                ranges.iter().find_map(|range| {
+                                    range.to_rect(a1_context).map(|rect| (sheet_id, rect))
+                                })
+                            });
 
                         match ref_info {
                             Some((sheet_id, rect)) => {
@@ -445,7 +443,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 match value {
                     Some(_) => {
                         // Check if there are any cells accessed - if so, the argument was a reference
-                        !ctx.cells_accessed.cells.is_empty()
+                        !ctx.cells_accessed().cells.is_empty()
                     }
                     None => {
                         // No value provided means no reference
@@ -469,7 +467,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let sheet_id_to_find = match reference {
                     Some(_) => {
                         // Get the sheet from cells_accessed
-                        ctx.cells_accessed
+                        ctx.cells_accessed()
                             .cells
                             .keys()
                             .next()
@@ -544,15 +542,13 @@ fn get_functions() -> Vec<FormulaFunction> {
                     Some(_arr) => {
                         // Get the position of the referenced cell from cells_accessed
                         let a1_context = ctx.grid_controller.a1_context();
+                        let cells_accessed = ctx.cells_accessed();
                         let ref_info =
-                            ctx.cells_accessed
-                                .cells
-                                .iter()
-                                .find_map(|(&sheet_id, ranges)| {
-                                    ranges.iter().find_map(|range| {
-                                        range.to_rect(a1_context).map(|rect| (sheet_id, rect))
-                                    })
-                                });
+                            cells_accessed.cells.iter().find_map(|(&sheet_id, ranges)| {
+                                ranges.iter().find_map(|range| {
+                                    range.to_rect(a1_context).map(|rect| (sheet_id, rect))
+                                })
+                            });
 
                         match ref_info {
                             Some((sheet_id, rect)) => {
@@ -600,15 +596,12 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 // Get the position of the referenced cell
                 let a1_context = ctx.grid_controller.a1_context();
-                let ref_info = ctx
-                    .cells_accessed
-                    .cells
-                    .iter()
-                    .find_map(|(&sheet_id, ranges)| {
-                        ranges.iter().find_map(|range| {
-                            range.to_rect(a1_context).map(|rect| (sheet_id, rect))
-                        })
-                    });
+                let cells_accessed = ctx.cells_accessed();
+                let ref_info = cells_accessed.cells.iter().find_map(|(&sheet_id, ranges)| {
+                    ranges
+                        .iter()
+                        .find_map(|range| range.to_rect(a1_context).map(|rect| (sheet_id, rect)))
+                });
 
                 match info_lower.as_str() {
                     "address" => match ref_info {

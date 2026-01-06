@@ -86,7 +86,7 @@ export const SetFormulaCellValue = memo(
             },
           }));
         },
-      [codeCellPos]
+      [codeCellPos, toolArgs]
     );
 
     const saveAndRun = useRecoilCallback(
@@ -106,7 +106,7 @@ export const SetFormulaCellValue = memo(
           isAi: false,
         });
       },
-      [codeCellPos]
+      [codeCellPos, toolArgs]
     );
 
     const formulaCount = toolArgs?.success ? toolArgs.data.formulas.length : 0;

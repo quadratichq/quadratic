@@ -55,7 +55,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 let include: Vec<bool> = include
                     .try_as_linear_array()?
                     .iter()
-                    .map(|v| bool::try_from(v.clone()).map_err(|e| e.with_span(include_span)))
+                    .map(|v| bool::try_from(v.to_owned()).map_err(|e| e.with_span(include_span)))
                     .try_collect()?;
 
                 match axis {
@@ -1309,5 +1309,77 @@ mod tests {
         );
         // Result should be a pivot table
         assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_formula_byrow() {
+        let g = GridController::new();
+
+        // Basic BYROW - sum each row
+        // {1, 2; 3, 4} -> row 1: 1+2=3, row 2: 3+4=7
+        assert_eq!(
+            "{3; 7}",
+            eval_to_string(&g, "BYROW({1, 2; 3, 4}, LAMBDA(row, SUM(row)))")
+        );
+
+        // BYROW with AVERAGE
+        assert_eq!(
+            "{1.5; 3.5}",
+            eval_to_string(&g, "BYROW({1, 2; 3, 4}, LAMBDA(row, AVERAGE(row)))")
+        );
+
+        // BYROW with MAX
+        assert_eq!(
+            "{2; 4}",
+            eval_to_string(&g, "BYROW({1, 2; 3, 4}, LAMBDA(row, MAX(row)))")
+        );
+
+        // BYROW with single column array
+        assert_eq!(
+            "{1; 2; 3}",
+            eval_to_string(&g, "BYROW({1; 2; 3}, LAMBDA(row, SUM(row)))")
+        );
+
+        // BYROW with single row array
+        assert_eq!(
+            "{6}",
+            eval_to_string(&g, "BYROW({1, 2, 3}, LAMBDA(row, SUM(row)))")
+        );
+    }
+
+    #[test]
+    fn test_formula_bycol() {
+        let g = GridController::new();
+
+        // Basic BYCOL - sum each column
+        // {1, 2; 3, 4} -> col 1: 1+3=4, col 2: 2+4=6
+        assert_eq!(
+            "{4, 6}",
+            eval_to_string(&g, "BYCOL({1, 2; 3, 4}, LAMBDA(col, SUM(col)))")
+        );
+
+        // BYCOL with AVERAGE
+        assert_eq!(
+            "{2, 3}",
+            eval_to_string(&g, "BYCOL({1, 2; 3, 4}, LAMBDA(col, AVERAGE(col)))")
+        );
+
+        // BYCOL with MIN
+        assert_eq!(
+            "{1, 2}",
+            eval_to_string(&g, "BYCOL({1, 2; 3, 4}, LAMBDA(col, MIN(col)))")
+        );
+
+        // BYCOL with single row array
+        assert_eq!(
+            "{1, 2, 3}",
+            eval_to_string(&g, "BYCOL({1, 2, 3}, LAMBDA(col, SUM(col)))")
+        );
+
+        // BYCOL with single column array
+        assert_eq!(
+            "{6}",
+            eval_to_string(&g, "BYCOL({1; 2; 3}, LAMBDA(col, SUM(col)))")
+        );
     }
 }

@@ -290,6 +290,10 @@ impl AstNode {
                         }
 
                         // Evaluate the call arguments
+                        // TODO: consider lazy evaluation for LAMBDA args - currently all
+                        // arguments are eagerly evaluated even if unused (e.g., with
+                        // ISOMITTED or conditional logic), which may cause performance
+                        // issues with expensive unused arguments
                         let arg_values: Vec<Value> = call_args
                             .iter()
                             .map(|arg| arg.eval(&mut *ctx).inner)
@@ -339,7 +343,40 @@ impl AstNode {
                         (f.eval)(&mut *ctx, args)?
                     }
                     None => {
-                        if functions::excel::is_valid_excel_function(func_name) {
+                        // Check if func_name is a variable containing a lambda
+                        if let Some(Value::Lambda(lambda)) = ctx.lookup_variable(func_name).cloned()
+                        {
+                            // Check argument count
+                            if args.len() > lambda.param_count() {
+                                return Err(RunErrorMsg::TooManyArguments {
+                                    func_name: "LAMBDA".into(),
+                                    max_arg_count: lambda.param_count(),
+                                }
+                                .with_span(self.span));
+                            }
+
+                            // Evaluate the call arguments
+                            // TODO: consider lazy evaluation for LAMBDA args (see other TODO above)
+                            let arg_values: Vec<Value> =
+                                args.iter().map(|arg| arg.eval(&mut *ctx).inner).collect();
+
+                            // Create bindings from parameters to argument values
+                            let mut bindings: Vec<(String, Value)> = Vec::new();
+                            let mut omitted: Vec<String> = Vec::new();
+
+                            for (i, param) in lambda.params.iter().enumerate() {
+                                if let Some(value) = arg_values.get(i) {
+                                    bindings.push((param.clone(), value.clone()));
+                                } else {
+                                    bindings.push((param.clone(), Value::Single(CellValue::Blank)));
+                                    omitted.push(param.clone());
+                                }
+                            }
+
+                            // Create child context and evaluate lambda body
+                            let mut child_ctx = ctx.with_bindings_and_omitted(&bindings, &omitted);
+                            lambda.body.eval(&mut child_ctx).inner
+                        } else if functions::excel::is_valid_excel_function(func_name) {
                             return Err(RunErrorMsg::Unimplemented(func_name.clone().into())
                                 .with_span(func.span));
                         } else {

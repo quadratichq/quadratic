@@ -1368,8 +1368,8 @@ mod tests {
 
             assert_eq!(parse_complex("5", span).unwrap(), (5.0, 0.0));
             assert_eq!(parse_complex("-5", span).unwrap(), (-5.0, 0.0));
-            assert_eq!(parse_complex("3.14", span).unwrap(), (3.14, 0.0));
-            assert_eq!(parse_complex("-3.14", span).unwrap(), (-3.14, 0.0));
+            assert_eq!(parse_complex("3.15", span).unwrap(), (3.15, 0.0));
+            assert_eq!(parse_complex("-3.15", span).unwrap(), (-3.15, 0.0));
             assert_eq!(parse_complex("0", span).unwrap(), (0.0, 0.0));
         }
 
@@ -1395,7 +1395,7 @@ mod tests {
 
             assert_eq!(parse_complex("1.5+2.5i", span).unwrap(), (1.5, 2.5));
             assert_eq!(parse_complex("0.5i", span).unwrap(), (0.0, 0.5));
-            assert_eq!(parse_complex("3.14-2.71i", span).unwrap(), (3.14, -2.71));
+            assert_eq!(parse_complex("3.15-2.71i", span).unwrap(), (3.15, -2.71));
         }
 
         #[test]
@@ -1448,7 +1448,7 @@ mod tests {
         fn test_format_complex_pure_real() {
             assert_eq!(format_complex(5.0, 0.0, "i"), "5");
             assert_eq!(format_complex(-5.0, 0.0, "i"), "-5");
-            assert_eq!(format_complex(3.14, 0.0, "i"), "3.14");
+            assert_eq!(format_complex(3.15, 0.0, "i"), "3.15");
         }
 
         #[test]
@@ -1491,8 +1491,8 @@ mod tests {
 
         #[test]
         fn test_format_number_decimals() {
-            assert_eq!(format_number(3.14), "3.14");
-            assert_eq!(format_number(-3.14), "-3.14");
+            assert_eq!(format_number(3.15), "3.15");
+            assert_eq!(format_number(-3.15), "-3.15");
             // Trailing zeros should be removed
             assert_eq!(format_number(3.1400000000), "3.14");
         }
@@ -1526,7 +1526,7 @@ mod tests {
             // I_1(1) ≈ 0.5651591039924851
             assert!((bessel_i1(1.0) - 0.5651591039924851).abs() < 1e-6);
             // I_1(2) ≈ 1.5906368546373291
-            assert!((bessel_i1(2.0) - 1.5906368546373291).abs() < 1e-6);
+            assert!((bessel_i1(2.0) - 1.590_636_854_637_329).abs() < 1e-6);
         }
 
         #[test]

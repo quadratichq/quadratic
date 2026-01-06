@@ -21,13 +21,11 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
                         // Get the row of the referenced cell from cells_accessed
                         // to_rect returns 1-indexed coordinates
                         let a1_context = ctx.grid_controller.a1_context();
+                        let cells_accessed = ctx.cells_accessed();
                         let ref_pos =
-                            ctx.cells_accessed
-                                .cells
-                                .iter()
-                                .find_map(|(_sheet_id, ranges)| {
-                                    ranges.iter().find_map(|range| range.to_rect(a1_context))
-                                });
+                            cells_accessed.cells.iter().find_map(|(_sheet_id, ranges)| {
+                                ranges.iter().find_map(|range| range.to_rect(a1_context))
+                            });
                         match ref_pos {
                             Some(rect) => rect.min.y,
                             None => {
@@ -53,13 +51,11 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
                         // Get the column of the referenced cell from cells_accessed
                         // to_rect returns 1-indexed coordinates
                         let a1_context = ctx.grid_controller.a1_context();
+                        let cells_accessed = ctx.cells_accessed();
                         let ref_pos =
-                            ctx.cells_accessed
-                                .cells
-                                .iter()
-                                .find_map(|(_sheet_id, ranges)| {
-                                    ranges.iter().find_map(|range| range.to_rect(a1_context))
-                                });
+                            cells_accessed.cells.iter().find_map(|(_sheet_id, ranges)| {
+                                ranges.iter().find_map(|range| range.to_rect(a1_context))
+                            });
                         match ref_pos {
                             Some(rect) => rect.min.x,
                             None => {
@@ -270,20 +266,23 @@ pub(super) fn get_functions() -> Vec<FormulaFunction> {
                 // Get the position of the referenced cell from cells_accessed
                 // The reference was just evaluated, so the accessed cells should contain it
                 let a1_context = ctx.grid_controller.a1_context();
-                let mut ref_pos: Option<(i64, i64)> = None;
-
-                for (_sheet_id, ranges) in ctx.cells_accessed.cells.iter() {
-                    for range in ranges.iter() {
-                        if let Some(rect) = range.to_rect(a1_context) {
-                            // Use the top-left corner of the range as the base position
-                            ref_pos = Some((rect.min.x, rect.min.y));
+                let ref_pos = {
+                    let cells_accessed = ctx.cells_accessed();
+                    let mut ref_pos: Option<(i64, i64)> = None;
+                    for (_sheet_id, ranges) in cells_accessed.cells.iter() {
+                        for range in ranges.iter() {
+                            if let Some(rect) = range.to_rect(a1_context) {
+                                // Use the top-left corner of the range as the base position
+                                ref_pos = Some((rect.min.x, rect.min.y));
+                                break;
+                            }
+                        }
+                        if ref_pos.is_some() {
                             break;
                         }
                     }
-                    if ref_pos.is_some() {
-                        break;
-                    }
-                }
+                    ref_pos
+                };
 
                 let (base_x, base_y) =
                     ref_pos.ok_or_else(|| RunErrorMsg::BadCellReference.with_span(span))?;
