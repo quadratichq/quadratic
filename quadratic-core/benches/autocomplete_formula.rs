@@ -10,13 +10,7 @@
 
 use criterion::{Criterion, criterion_group, criterion_main};
 
-use quadratic_core::{
-    Rect, SheetPos,
-    a1::A1Selection,
-    controller::GridController,
-    controller::operations::clipboard::{ClipboardOperation, PasteSpecial},
-    grid::CodeCellLanguage,
-};
+use quadratic_core::{Rect, SheetPos, controller::GridController, grid::CodeCellLanguage};
 use quadratic_rust_shared::test::benchmark::single_test_or_benchmark;
 
 criterion_group!(benches, criterion_benchmark);
