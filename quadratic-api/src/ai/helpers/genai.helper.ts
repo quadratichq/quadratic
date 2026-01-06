@@ -102,9 +102,10 @@ export function getGenAIApiArgs(
             functionCall: {
               name: toolCall.name,
               args: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
-              // Include thoughtSignature for Gemini 3 thinking models - required for function calling
-              ...(toolCall.thoughtSignature && { thoughtSignature: toolCall.thoughtSignature }),
             },
+            // Include thoughtSignature for Gemini 3 thinking models - required for function calling
+            // thoughtSignature must be at the Part level, not inside functionCall
+            ...(toolCall.thoughtSignature && { thoughtSignature: toolCall.thoughtSignature }),
           })),
         ],
       };
@@ -345,7 +346,8 @@ export async function parseGenAIStream(
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
             // Capture thoughtSignature for Gemini 3 thinking models - required for function calling
-            thoughtSignature: (part.functionCall as any).thoughtSignature,
+            // thoughtSignature is at the Part level, not inside functionCall
+            thoughtSignature: part.thoughtSignature,
           });
         }
       }
@@ -413,7 +415,8 @@ export function parseGenAIResponse(
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,
         // Capture thoughtSignature for Gemini 3 thinking models - required for function calling
-        thoughtSignature: (message.functionCall as any).thoughtSignature,
+        // thoughtSignature is at the Part level, not inside functionCall
+        thoughtSignature: message.thoughtSignature,
       });
     }
   });
