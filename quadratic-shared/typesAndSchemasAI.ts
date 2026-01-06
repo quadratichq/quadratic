@@ -447,6 +447,7 @@ const AIToolCallSchema = z.object({
   name: z.string(),
   arguments: z.string(),
   loading: z.boolean(),
+  thoughtSignature: z.string().optional(), // Required for Gemini 3 thinking models with function calls
 });
 export type AIToolCall = z.infer<typeof AIToolCallSchema>;
 

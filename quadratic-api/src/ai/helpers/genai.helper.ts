@@ -102,6 +102,8 @@ export function getGenAIApiArgs(
             functionCall: {
               name: toolCall.name,
               args: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
+              // Include thoughtSignature for Gemini 3 thinking models - required for function calling
+              ...(toolCall.thoughtSignature && { thoughtSignature: toolCall.thoughtSignature }),
             },
           })),
         ],
@@ -342,6 +344,8 @@ export async function parseGenAIStream(
             name: part.functionCall.name,
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
+            // Capture thoughtSignature for Gemini 3 thinking models - required for function calling
+            thoughtSignature: (part.functionCall as any).thoughtSignature,
           });
         }
       }
@@ -408,6 +412,8 @@ export function parseGenAIResponse(
         name: message.functionCall.name,
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,
+        // Capture thoughtSignature for Gemini 3 thinking models - required for function calling
+        thoughtSignature: (message.functionCall as any).thoughtSignature,
       });
     }
   });
