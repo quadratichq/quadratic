@@ -341,14 +341,6 @@ async fn extract_response_body(response: Response) -> String {
         .unwrap_or_else(|_| "Unable to read response body".to_string())
 }
 
-/// Extract the response body from a response.
-async fn extract_response_body(response: Response) -> String {
-    response
-        .text()
-        .await
-        .unwrap_or_else(|_| "Unable to read response body".to_string())
-}
-
 /// Handle a response from the quadratic API server.
 async fn handle_response(response: Response) -> Result<Response> {
     let status = response.status();
