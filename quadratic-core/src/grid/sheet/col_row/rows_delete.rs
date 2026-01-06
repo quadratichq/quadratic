@@ -113,15 +113,15 @@ impl Sheet {
 
         self.delete_row_offset(transaction, row);
 
+        // remove the row's formats from the sheet
+        self.formats.remove_row(row);
+
+        // mark fills dirty AFTER removing the row so the shifted rows are correctly marked
         // todo: this can be optimized by adding a fn that checks if there are
         // any fills beyond the deleted row
-
         if self.formats.has_fills() {
             transaction.add_fill_cells_from_rows(self, row);
         }
-
-        // remove the row's formats from the sheet
-        self.formats.remove_row(row);
 
         // remove the row's borders from the sheet
         self.borders.remove_row(row);
@@ -198,7 +198,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use crate::{CellValue, DEFAULT_ROW_HEIGHT, grid::CellWrap};
+    use crate::{CellValue, DEFAULT_ROW_HEIGHT, grid::CellWrap, renderer_constants::CELL_SHEET_HEIGHT};
 
     use super::*;
 
@@ -311,5 +311,96 @@ mod test {
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
         assert_eq!(sheet.offsets.row_height(3), 400.0);
+    }
+
+    /// Tests that fill_cells are marked dirty AFTER the row is deleted.
+    /// This ensures that the correct hashes (for the shifted rows) are marked dirty.
+    #[test]
+    fn test_delete_row_fills_marked_dirty() {
+        let mut sheet = Sheet::test();
+
+        // Set up values in rows 1-4 to create bounds
+        sheet.test_set_values(1, 1, 1, 4, vec!["A", "B", "C", "D"]);
+
+        // Set fills on rows 2 and 4
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A2], Some("red".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A4], Some("blue".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        // Delete row 1 - this should shift rows 2-4 up to become 1-3
+        sheet.delete_row(&mut transaction, 1, &a1_context);
+
+        // Verify that fill_cells contains the correct hashes AFTER deletion
+        // The fills that were at rows 2 and 4 (now at 1 and 3) should have their
+        // hashes marked dirty based on the new row positions
+        let fill_cells = transaction.fill_cells.get(&sheet.id);
+        assert!(fill_cells.is_some(), "fill_cells should be marked dirty");
+
+        let fill_cells = fill_cells.unwrap();
+        // Hash (0, 0) should be marked dirty since row 1 (hash 0) has fills
+        assert!(
+            fill_cells.contains(&Pos { x: 0, y: 0 }),
+            "hash (0, 0) should be marked dirty for shifted fills"
+        );
+
+        // Verify the fills themselves shifted correctly
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("red".to_string()),
+            "fill should have shifted from A2 to A1"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A3]),
+            Some("blue".to_string()),
+            "fill should have shifted from A4 to A3"
+        );
+    }
+
+    /// Tests that deleting a row with fills spanning multiple hashes marks all relevant hashes dirty.
+    #[test]
+    fn test_delete_row_fills_multiple_hashes() {
+        let mut sheet = Sheet::test();
+
+        // Set values to create bounds spanning multiple hashes
+        // CELL_SHEET_HEIGHT = 30, so row 31+ is in hash y=1
+        sheet.set_value(pos![A1], "A".to_string());
+        sheet.set_value(Pos { x: 1, y: 40 }, "B".to_string()); // In hash y=1
+
+        // Set a fill in a row that will be in the second hash after deletion
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 1, y: 40 }, Some("green".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        // Delete row 1
+        sheet.delete_row(&mut transaction, 1, &a1_context);
+
+        // The fill at row 40 shifted to row 39, which is in hash y=1 (39/30 = 1)
+        let fill_cells = transaction.fill_cells.get(&sheet.id);
+        assert!(fill_cells.is_some(), "fill_cells should be marked dirty");
+
+        let fill_cells = fill_cells.unwrap();
+        // Hash containing row 39 (hash y=1) should be marked dirty
+        let expected_hash_y = (CELL_SHEET_HEIGHT as i64 - 1) / CELL_SHEET_HEIGHT as i64; // Row 39 maps to hash 1
+        assert!(
+            fill_cells.contains(&Pos {
+                x: 0,
+                y: expected_hash_y
+            }),
+            "hash for shifted fill should be marked dirty"
+        );
     }
 }
