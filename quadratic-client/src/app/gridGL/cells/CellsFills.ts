@@ -138,6 +138,8 @@ export class CellsFills extends Container {
           const key = `${hash.x},${hash.y}`;
           // Clear the loaded flag so we'll request it when it enters viewport
           this.loadedHashes.delete(key);
+          // Clear stale data to prevent rendering outdated fills
+          this.fillsByHash.delete(key);
         }
       }
     }

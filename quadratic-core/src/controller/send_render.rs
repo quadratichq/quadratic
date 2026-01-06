@@ -587,12 +587,14 @@ impl GridController {
                 }
             }
 
-            // Send sheet meta fills (infinite fills) for the sheet
-            let sheet_fills = sheet.get_all_sheet_fills();
-            if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
-                crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+            // Only send meta fills if they were explicitly marked dirty
+            if sheet_meta_fills.contains(&sheet_id) {
+                let sheet_fills = sheet.get_all_sheet_fills();
+                if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
+                    crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+                }
+                meta_fills_sent.insert(sheet_id);
             }
-            meta_fills_sent.insert(sheet_id);
         }
 
         // Send meta fills for sheets that only have meta fill changes (no finite fill changes)

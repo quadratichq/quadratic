@@ -54,21 +54,13 @@ impl GridController {
                             (None, None) => {
                                 transaction.add_fill_cells_from_rows(sheet, 1);
                             }
-                            // Row fill - mark hashes from this row
-                            (None, Some(y2)) => {
+                            // Row fill - mark hashes from this row to end of bounds
+                            (None, Some(_)) => {
                                 transaction.add_fill_cells_from_rows(sheet, y1);
-                                // Also need to mark rows up to y2 if it's a range
-                                if y2 > y1 {
-                                    transaction.add_fill_cells_from_rows(sheet, y2);
-                                }
                             }
-                            // Column fill - mark hashes from this column
-                            (Some(x2), None) => {
+                            // Column fill - mark hashes from this column to end of bounds
+                            (Some(_), None) => {
                                 transaction.add_fill_cells_from_columns(sheet, x1);
-                                // Also need to mark columns up to x2 if it's a range
-                                if x2 > x1 {
-                                    transaction.add_fill_cells_from_columns(sheet, x2);
-                                }
                             }
                             // Finite fill - already handled by fill_bounds
                             (Some(_), Some(_)) => {}

@@ -971,7 +971,6 @@ mod tests {
         sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
-        // Start from column 15, which is hash x=1
         transaction.add_fill_cells_from_columns(&sheet, 15);
 
         let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
@@ -998,7 +997,6 @@ mod tests {
         sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
-        // Start from row 30, which is hash y=1
         transaction.add_fill_cells_from_rows(&sheet, 30);
 
         let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
