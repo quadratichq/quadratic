@@ -49,11 +49,11 @@ const hourMinuteUTCToTimezone = (hour: number, minute: number, timezone: string)
     timeZone: timezone,
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
   });
 
   const parts = formatter.formatToParts(utcDate);
-  const hourInTz = parseInt(parts.find((p) => p.type === 'hour')?.value || '0');
+  const hourInTz = parseInt(parts.find((p) => p.type === 'hour')?.value || '0') % 24;
   const minuteInTz = parseInt(parts.find((p) => p.type === 'minute')?.value || '0');
 
   return { hour: hourInTz, minute: minuteInTz };
@@ -61,24 +61,32 @@ const hourMinuteUTCToTimezone = (hour: number, minute: number, timezone: string)
 
 const hourMinuteTimezoneToUTC = (hour: number, minute: number, timezone: string): { hour: number; minute: number } => {
   // To convert from a timezone to UTC, we need to calculate the timezone offset
-  // We use a reference point (noon UTC on Jan 1, 2000) to determine the offset
+  // We use a reference point (noon UTC on Jan 15, 2000) to determine the offset
+  // Using mid-month avoids month boundary issues for extreme timezones
 
-  const refUtc = new Date(Date.UTC(2000, 0, 1, 12, 0, 0)); // noon UTC
+  const refUtc = new Date(Date.UTC(2000, 0, 15, 12, 0, 0)); // Jan 15, noon UTC
 
-  // Get what time noon UTC appears as in the target timezone
+  // Get what time noon UTC appears as in the target timezone, including the day
+  // to handle extreme timezones (UTC+13, UTC+14, UTC-11, UTC-12) where
+  // the reference time may land on a different calendar day
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
+    day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
   });
   const parts = formatter.formatToParts(refUtc);
-  const tzHour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0');
+  const tzDay = parseInt(parts.find((p) => p.type === 'day')?.value || '15');
+  const tzHour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0') % 24;
   const tzMinute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0');
 
-  // Calculate offset in minutes: (timezone time) - (UTC time)
-  // E.g., if noon UTC appears as 04:00 in PST, offset = (4*60) - (12*60) = -480 minutes
-  const offsetMinutes = tzHour * 60 + tzMinute - 12 * 60;
+  // Calculate offset in minutes, accounting for day difference
+  // Reference in UTC: day 15, hour 12, minute 0
+  // E.g., UTC+14: Jan 15 12:00 UTC = Jan 16 02:00 local
+  //       dayDiff = 1, offset = 1*1440 + 120 - 720 = 840 min = +14 hours
+  const dayDiff = tzDay - 15;
+  const offsetMinutes = dayDiff * 24 * 60 + (tzHour * 60 + tzMinute) - 12 * 60;
 
   // To convert FROM timezone TO UTC, subtract the offset
   // E.g., if local is 10:00 (600 min) and offset is -480, UTC = 600 - (-480) = 1080 min = 18:00
@@ -86,8 +94,8 @@ const hourMinuteTimezoneToUTC = (hour: number, minute: number, timezone: string)
   let utcMinutes = localMinutes - offsetMinutes;
 
   // Handle day boundary wraparound
-  if (utcMinutes < 0) utcMinutes += 24 * 60;
-  if (utcMinutes >= 24 * 60) utcMinutes -= 24 * 60;
+  while (utcMinutes < 0) utcMinutes += 24 * 60;
+  while (utcMinutes >= 24 * 60) utcMinutes -= 24 * 60;
 
   return {
     hour: Math.floor(utcMinutes / 60),
