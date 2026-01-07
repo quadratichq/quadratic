@@ -1,8 +1,14 @@
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
-import { AILanguagePreferencesSchema, allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AILanguagePreferences,
+  AIModelKey,
+  AISource,
+  ChatMessage,
+  CodeCellType,
+} from 'quadratic-shared/typesAndSchemasAI';
+import { allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
 
 import { A1Docs } from '../docs/A1Docs';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
@@ -12,7 +18,16 @@ import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
 import { ValidationDocs } from '../docs/ValidationDocs';
 
-export const getQuadraticContext = (source: AISource, language?: CodeCellType): ChatMessage[] => [
+/**
+ * By default, the AI will respond with Python + Formulas, which is why we
+ * include them in the context. Additionally, if the user has expressed a
+ * preference for Javascript, we will include the Javascript docs in the context
+ */
+export const getQuadraticContext = (
+  source: AISource,
+  language?: CodeCellType,
+  prefersJavascript?: boolean
+): ChatMessage[] => [
   {
     role: 'user',
     content: [
@@ -31,7 +46,7 @@ Be proactive. When the user makes a request, use your tools to solve it.
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
 ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
-${language === 'Javascript' ? JavascriptDocs : ''}\n
+${language === 'Javascript' || prefersJavascript ? JavascriptDocs : ''}\n
 ${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
 ${language === 'Connection' ? ConnectionDocs : ''}\n
 ${
@@ -149,16 +164,8 @@ ${rules.join('\n\n')}
   ];
 };
 
-export const getAILanguagesContext = (aiLanguages: string[] | undefined): ChatMessage[] => {
-  // Filter to only valid AI code languages
-  const enabledLanguagePreferences = AILanguagePreferencesSchema.parse(aiLanguages ?? []);
-
-  // If there's no preference, don't add any context
-  if (enabledLanguagePreferences.length === 0) {
-    return [];
-  }
-
-  // Otherwise, tell the AI about the language preferences
+export const getAILanguagesContext = (enabledLanguagePreferences: AILanguagePreferences): ChatMessage[] => {
+  // Tell the AI about the enabled/disabled language preferences
   const disabledLanguagePreferences = allAILanguagePreferences.filter(
     (lang) => !enabledLanguagePreferences.includes(lang)
   );

@@ -9,7 +9,7 @@ import {
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { AILanguagePreferencesSchema, type AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import {
@@ -148,8 +148,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...toolUseContext, ...args.messages];
   }
 
+  // Get the user's preferred AI response language(s)
+  const result = AILanguagePreferencesSchema.safeParse(user?.aiLanguages);
+  const userAiLanguagePreferences = result.success ? result.data : [];
+
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(source, args.language);
+    const quadraticContext = getQuadraticContext(
+      source,
+      args.language,
+      userAiLanguagePreferences.includes('Javascript')
+    );
     args.messages = [...quadraticContext, ...args.messages];
   }
 
@@ -160,8 +168,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   // Add AI language preferences context
-  const aiLanguagesContext = getAILanguagesContext(user?.aiLanguages);
-  if (aiLanguagesContext.length > 0) {
+  if (userAiLanguagePreferences.length > 0) {
+    const aiLanguagesContext = getAILanguagesContext(userAiLanguagePreferences);
     args.messages = [...aiLanguagesContext, ...args.messages];
   }
 
