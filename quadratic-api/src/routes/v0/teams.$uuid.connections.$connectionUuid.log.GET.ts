@@ -8,7 +8,6 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getSyncedConnectionLogs } from '../../utils/connections';
-import { decryptFromEnv } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -46,8 +45,6 @@ async function handler(
   if (!teamPermissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'You do not have permission to view this connection');
   }
-
-  const typeDetails = JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8')));
 
   return res.status(200).json(logs);
 }

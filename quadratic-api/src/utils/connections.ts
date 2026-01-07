@@ -48,7 +48,7 @@ export async function getConnection(connectionId: number): Promise<ConnectionRes
   });
 
   if (!connection) {
-    throw new ApiError(500, `Connection ${connectionId} not found`);
+    throw new ApiError(404, `Connection ${connectionId} not found`);
   }
 
   return {
@@ -63,7 +63,7 @@ export async function getConnection(connectionId: number): Promise<ConnectionRes
 export async function getConnectionBySyncedConnectionId(syncedConnectionId: number): Promise<ConnectionResponse[0]> {
   const syncedConnection = await dbClient.syncedConnection.findUnique({ where: { id: syncedConnectionId } });
   if (!syncedConnection) {
-    throw new ApiError(500, `Synced connection ${syncedConnectionId} not found`);
+    throw new ApiError(404, `Synced connection ${syncedConnectionId} not found`);
   }
   return await getConnection(syncedConnection.connectionId);
 }
@@ -127,7 +127,7 @@ export async function getSyncedConnection(syncedConnectionId: number): Promise<S
   const result = await dbClient.syncedConnection.findUnique({ where: { id: syncedConnectionId } });
 
   if (!result) {
-    throw new ApiError(500, `Synced connection ${syncedConnectionId} not found`);
+    throw new ApiError(404, `Synced connection ${syncedConnectionId} not found`);
   }
 
   return resultToSyncedConnectionResponse(result);
@@ -276,7 +276,7 @@ export async function getSyncedConnectionLog(syncedConnectionLogId: number): Pro
   const result = await dbClient.syncedConnectionLog.findUnique({ where: { id: syncedConnectionLogId } });
 
   if (!result) {
-    throw new ApiError(500, `Synced connection log ${syncedConnectionLogId} not found`);
+    throw new ApiError(404, `Synced connection log ${syncedConnectionLogId} not found`);
   }
 
   return resultToSyncedConnectionLogResponse(result);
