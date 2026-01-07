@@ -16,6 +16,8 @@ import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
+// label and prompt are identical here, but the type requires both fields
+// for compatibility with AI-generated suggestions which may have different values
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
     label: 'What can you help me with in Quadratic?',
@@ -155,8 +157,8 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         <div className="flex flex-col items-center gap-3">
           <h2 className="text-lg font-medium">Or start with a suggested prompt</h2>
           <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
-            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }) => (
-              <div key={prompt}>
+            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
+              <div key={`${index}-${prompt}`}>
                 <Button
                   disabled={loading}
                   variant="ghost"
