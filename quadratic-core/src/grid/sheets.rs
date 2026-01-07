@@ -381,4 +381,35 @@ mod test {
             format!("{}1(1)", SHEET_NAME.to_owned())
         );
     }
+
+    #[test]
+    fn test_try_sheet_from_name_trims_whitespace() {
+        let mut grid = Grid::new();
+
+        // Simulate Excel import with whitespace in sheet name
+        grid.sheets[0].name = "  Sales  ".to_string();
+
+        // All of these should find the sheet
+        assert!(grid.try_sheet_from_name("Sales").is_some());
+        assert!(grid.try_sheet_from_name("  Sales  ").is_some());
+        assert!(grid.try_sheet_from_name("sales").is_some()); // case insensitive
+        assert!(grid.try_sheet_from_name("  SALES  ").is_some());
+
+        // Mutable version should also work
+        assert!(grid.try_sheet_mut_from_name("Sales").is_some());
+    }
+
+    #[test]
+    fn test_unique_sheet_name_trims_whitespace() {
+        let mut grid = Grid::new();
+        grid.sheets[0].name = "  Data  ".to_string();
+
+        // Should detect collision even with trimmed input
+        let unique = grid.unique_sheet_name("Data");
+        assert_eq!(unique, "Data(1)");
+
+        // And with whitespace input
+        let unique2 = grid.unique_sheet_name("  Data  ");
+        assert_eq!(unique2, "Data(1)");
+    }
 }
