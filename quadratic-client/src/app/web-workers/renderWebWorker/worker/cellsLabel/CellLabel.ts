@@ -497,7 +497,10 @@ export class CellLabel {
     }
 
     // Calculate available space for vertical positioning
-    const availableSpace = this.AABB.height - this.textHeight;
+    // Use glyphHeight when it's larger than textHeight (e.g., for emojis with baseline offset)
+    // to ensure the content fits within the cell
+    const effectiveTextHeight = Math.max(this.textHeight, this.glyphHeight);
+    const availableSpace = this.AABB.height - effectiveTextHeight;
 
     // The default extra space in a cell (constant regardless of font size).
     // When cells auto-grow with font size, they maintain this same extra space.
@@ -512,7 +515,7 @@ export class CellLabel {
     } else {
       // Apply vertical alignment with constant padding from edges
       if (this.verticalAlign === 'bottom') {
-        const actualTop = this.AABB.bottom - this.textHeight - CELL_VERTICAL_PADDING;
+        const actualTop = this.AABB.bottom - effectiveTextHeight - CELL_VERTICAL_PADDING;
         this.position.y = actualTop;
         this.actualTop = actualTop;
       } else if (this.verticalAlign === 'middle') {
@@ -526,7 +529,7 @@ export class CellLabel {
         this.actualTop = actualTop;
       }
     }
-    this.actualBottom = Math.min(this.AABB.bottom, this.position.y + this.textHeight);
+    this.actualBottom = Math.min(this.AABB.bottom, this.position.y + effectiveTextHeight);
   };
 
   updateText = (labelMeshes: LabelMeshes): void => {
@@ -679,9 +682,9 @@ export class CellLabel {
 
         if (isEmoji) {
           const emojiSize = this.lineHeight / scale;
-          // Approximate baseline offset: for most fonts, baseline is ~80% down from top
-          // This aligns emoji bottom roughly with text baseline
-          const baselineOffset = baseData.lineHeight * 0.2;
+          // Small offset to align emoji with text. We use 15% (not 20%) to balance
+          // alignment with avoiding clipping issues from the AABB timing problem.
+          const baselineOffset = baseData.lineHeight * 0.15;
           charData = {
             specialEmoji: emojiToRender,
             textureUid: 0,
@@ -1126,7 +1129,14 @@ export class CellLabel {
         // floating point issues that could cause emojis to oscillate between visible and clipped
         const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + CLIP_EPSILON;
         const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
-        if (horizontallyClipped || verticallyClipped) {
+
+        // Don't clip emojis vertically. The row will resize based on textHeightWithDescenders,
+        // but AABB is set before that calculation completes. Skipping vertical clipping for
+        // emojis prevents them from flickering between visible and clipped during resize.
+        const isEmoji = char.charData.specialEmoji !== undefined;
+        const shouldClip = isEmoji ? horizontallyClipped : horizontallyClipped || verticallyClipped;
+
+        if (shouldClip) {
           // this removes extra characters from the mesh after a clip
           buffer.reduceSize(6);
 
