@@ -20,8 +20,8 @@ import type { SheetPosTS } from '@/app/shared/types/size';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
+import { LINE_HEIGHT, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { CELL_HEIGHT, DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import BigNumber from 'bignumber.js';
@@ -673,10 +673,17 @@ class InlineEditorHandler {
     const cellContentWidth = width - cellOutlineOffset * 2;
     const cellContentHeight = height - cellOutlineOffset * 2;
     const align = this.formatSummary?.align ?? 'left';
-    const verticalAlign = this.formatSummary?.verticalAlign ?? 'bottom';
+    let verticalAlign = this.formatSummary?.verticalAlign ?? 'bottom';
     const wrap = this.formatSummary?.wrap ?? (this.codeCell ? 'clip' : 'overflow');
     const underline = this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
     const strikeThrough = this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;
+
+    // For default-sized cells, override vertical alignment to 'middle' to match
+    // the centering behavior in CellLabel.ts for rendered text.
+    const defaultExtraSpace = CELL_HEIGHT - LINE_HEIGHT;
+    if (height - LINE_HEIGHT <= defaultExtraSpace) {
+      verticalAlign = 'middle';
+    }
 
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
       cellContentWidth,
