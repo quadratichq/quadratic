@@ -32,14 +32,14 @@ export const ScheduledTask = () => {
     const cloned = cronRange.range?.clone();
     const operations = scheduledTaskEncode(cloned);
     const isCreate = !currentTask;
-    
+
     trackEvent(`[ScheduledTasks].${isCreate ? 'create' : 'update'}`, {
       cronExpression: cronInterval.cron,
       cronType: cronInterval.cronType,
       taskType: cronRange.task,
       taskUuid: currentTask?.uuid,
     });
-    
+
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cronInterval.cron,
