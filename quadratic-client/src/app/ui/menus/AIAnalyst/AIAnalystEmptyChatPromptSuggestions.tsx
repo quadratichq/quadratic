@@ -147,8 +147,16 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
               onClick={handleImportExcel}
             />
             <ImportButton icon={<PDFIcon className="!text-red-500" />} label="PDF" onClick={handleImportPdf} />
-            <ImportButton icon={<FileIcon className="!text-muted-foreground" />} label="CSV, PQT, other files" onClick={handleImportCsv} />
-            <ImportButton icon={<DatabaseIcon className="!text-muted-foreground" />} label="Connections" onClick={handleOpenConnections} />
+            <ImportButton
+              icon={<FileIcon className="!text-muted-foreground" />}
+              label="CSV, PQT, other files"
+              onClick={handleImportCsv}
+            />
+            <ImportButton
+              icon={<DatabaseIcon className="!text-muted-foreground" />}
+              label="Connections"
+              onClick={handleOpenConnections}
+            />
           </div>
         </div>
 
@@ -157,7 +165,13 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           <h2 className="text-lg font-medium">Or start with a suggested prompt</h2>
           <div className="flex max-w-lg flex-col">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
-              <div key={`${index}-${prompt}`} className={cn(index > 0 && 'border-t border-border pt-1.5', index > 0 && index < (promptSuggestions ?? defaultPromptSuggestions).length && 'pb-1.5')}>
+              <div
+                key={`${index}-${prompt}`}
+                className={cn(
+                  index > 0 && 'border-t border-border pt-1.5',
+                  index > 0 && index < (promptSuggestions ?? defaultPromptSuggestions).length && 'pb-1.5'
+                )}
+              >
                 <Button
                   disabled={loading}
                   variant="ghost"
