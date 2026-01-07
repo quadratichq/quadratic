@@ -18,7 +18,6 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ArrowRightIcon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
@@ -356,50 +355,12 @@ export const Component = () => {
 
   return (
     <div
-      className="relative flex min-h-screen flex-col overflow-hidden"
-      style={{
-        background: `
-          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120, 119, 198, 0.15), transparent),
-          radial-gradient(ellipse 60% 40% at 100% 50%, rgba(255, 107, 107, 0.08), transparent),
-          radial-gradient(ellipse 60% 40% at 0% 80%, rgba(79, 172, 254, 0.08), transparent),
-          linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%)
-        `,
-      }}
+      className="relative flex min-h-screen flex-col overflow-hidden bg-background"
       onDrop={handleDrop}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      {/* Subtle grid pattern overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.015]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      {/* Animated floating orbs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -left-32 top-1/4 h-96 w-96 rounded-full opacity-30 blur-3xl"
-          style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            animation: 'float 20s ease-in-out infinite',
-          }}
-        />
-        <div
-          className="absolute -right-32 top-2/3 h-80 w-80 rounded-full opacity-20 blur-3xl"
-          style={{
-            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            animation: 'float 25s ease-in-out infinite reverse',
-          }}
-        />
-      </div>
-
       {/* Drag overlay */}
       {dragOver && (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
@@ -566,24 +527,17 @@ export const Component = () => {
           </div>
 
           {/* Main prompt input */}
-          <div className={cn('relative overflow-hidden rounded-lg border bg-background', 'border-border shadow-lg')}>
-            {isLoadingSuggestions && hasContext ? (
-              <div className="flex min-h-24 items-center gap-3 px-6 py-5">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <span className="text-muted-foreground">Generating suggestion...</span>
-              </div>
-            ) : (
-              <Textarea
-                ref={promptTextareaRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={handleKeyDown}
-                autoHeight
-                placeholder="Create a spreadsheet that..."
-                className="min-h-24 resize-none !border-none bg-transparent px-6 py-5 text-lg !shadow-none focus-visible:ring-0"
-                disabled={isSubmitting}
-              />
-            )}
+          <div className="relative overflow-hidden rounded-lg border border-border bg-background shadow-lg">
+            <Textarea
+              ref={promptTextareaRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoHeight
+              placeholder="Create a spreadsheet that..."
+              className="min-h-24 resize-none !border-none bg-transparent px-6 py-5 text-lg !shadow-none focus-visible:ring-0"
+              disabled={isSubmitting}
+            />
 
             {/* Create button */}
             <div className="flex items-center justify-end px-5 pb-5 pt-3">
@@ -609,15 +563,6 @@ export const Component = () => {
         </div>
       </main>
 
-      {/* CSS Animation for floating orbs */}
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          25% { transform: translateY(-20px) translateX(10px); }
-          50% { transform: translateY(0) translateX(20px); }
-          75% { transform: translateY(20px) translateX(10px); }
-        }
-      `}</style>
     </div>
   );
 };
