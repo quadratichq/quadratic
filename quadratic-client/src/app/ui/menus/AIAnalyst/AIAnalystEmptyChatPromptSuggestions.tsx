@@ -69,7 +69,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       };
 
       // Initial check (deferred to effect to ensure sheets singleton is initialized)
-      setSheetHasData(fileHasData());
+      checkSheetData();
 
       events.on('hashContentChanged', checkSheetData);
       return () => {
@@ -79,8 +79,6 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, []);
 
     useEffect(() => {
-      // Abort previous request when dependencies change
-      abortControllerRef.current?.abort();
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
