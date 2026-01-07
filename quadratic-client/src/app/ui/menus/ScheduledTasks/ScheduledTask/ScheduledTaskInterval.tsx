@@ -15,13 +15,14 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { cn } from '@/shared/shadcn/utils';
-import { useMemo } from 'react';
 
 // Note: This must be a function called at runtime (not module load time) because
 // debug flags are loaded asynchronously from localforage when ?debug is in the URL.
+// We call this directly on each render (no useMemo) so that when debug flags finish
+// loading from localforage, the next render will pick up the correct options.
 const getEveryOptions = (): { value: ScheduledTaskIntervalType; label: string }[] => {
   const entries: [ScheduledTaskIntervalType, string][] = [
-    ...(debugFlag('debug') ? [['minute', 'Every minute'] as [ScheduledTaskIntervalType, string]] : []),
+    ...(debugFlag('debug') ? [['minute', 'Every 15 minutes'] as [ScheduledTaskIntervalType, string]] : []),
     ['hour', 'Every hour'],
     ['days', 'Every day'],
     ['custom', 'Custom cron'],
@@ -47,7 +48,7 @@ export const ScheduledTaskInterval = (props: Props) => {
   const timezoneAbbr = getTimeZoneAbbreviation(timezone);
 
   // Get interval options at render time (debug flags are loaded async)
-  const everyOptions = useMemo(() => getEveryOptions(), []);
+  const everyOptions = getEveryOptions();
 
   const {
     cronType,
