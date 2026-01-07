@@ -49,6 +49,14 @@ impl std::fmt::Debug for PlaidClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
+            "PlaidClient {{ client_id: [REDACTED], secret: [REDACTED], environment: {:?}, access_token: {:?} }}",
+            self.environment, 
+            self.access_token.as_ref().map(|_| "[REDACTED]")
+        )
+    }
+}
+        write!(
+            f,
             "PlaidClient {{ client_id: {}, secret: {}, environment: {:?}, access_token: {:?} }}",
             self.client_id, self.secret, self.environment, self.access_token
         )
