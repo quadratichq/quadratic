@@ -183,7 +183,8 @@ export const getAILanguagesContext = (enabledLanguagePreferences: AILanguagePref
       role: 'user',
       content: [
         createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
-The user only wants to use ${enabledText} and NOT ${disabledText} unless they explicitly ask for the disabled language.${chartException}
+The user only wants to use ${enabledText} and NOT ${disabledText} unless they explicitly ask for the disabled language.${chartException}\n\n
+However, if the user is working with a connection, it’s ok to use SQL for the connection.
 `),
       ],
       contextType: 'aiLanguages',
@@ -194,7 +195,7 @@ The user only wants to use ${enabledText} and NOT ${disabledText} unless they ex
         createTextContent(
           `I understand. I will only use ${enabledText} in my responses unless you explicitly ask me to use ${disabledText}.${
             chartException ? ' I will use Python for charts.' : ''
-          }`
+          }. And if the user is working with a connection, it’s ok to use SQL for the connection.`
         ),
       ],
       contextType: 'aiLanguages',
