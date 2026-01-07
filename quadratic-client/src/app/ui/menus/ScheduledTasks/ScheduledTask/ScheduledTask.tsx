@@ -9,6 +9,7 @@ import { UseCronInterval } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { useCronRange } from '@/app/ui/menus/ScheduledTasks/useCronRange';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ROUTES } from '@/shared/constants/routes';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback } from 'react';
@@ -30,6 +31,15 @@ export const ScheduledTask = () => {
     if (!cronInterval.cron || cronInterval.cronError || cronRange.rangeError) return;
     const cloned = cronRange.range?.clone();
     const operations = scheduledTaskEncode(cloned);
+    const isCreate = !currentTask;
+    
+    trackEvent(`[ScheduledTasks].${isCreate ? 'create' : 'update'}`, {
+      cronExpression: cronInterval.cron,
+      cronType: cronInterval.cronType,
+      taskType: cronRange.task,
+      taskUuid: currentTask?.uuid,
+    });
+    
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cronInterval.cron,
@@ -39,8 +49,10 @@ export const ScheduledTask = () => {
   }, [
     cronInterval.cron,
     cronInterval.cronError,
+    cronInterval.cronType,
     cronRange.rangeError,
     cronRange.range,
+    cronRange.task,
     saveScheduledTask,
     currentTask?.uuid,
     showScheduledTasks,
