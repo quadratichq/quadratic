@@ -6,29 +6,35 @@ import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
+import { uploadFile } from '@/app/helpers/files';
 import { Button } from '@/shared/shadcn/ui/button';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
+// label and prompt are identical here, but the type requires both fields
+// for compatibility with AI-generated suggestions which may have different values
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
-    label: 'Introduce Quadratic',
+    label: 'What can you help me with in Quadratic?',
     prompt: 'What can you help me with in Quadratic?',
   },
   {
-    label: 'Make a chart',
-    prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet, add sample data and plot it.',
+    label: 'Help me build a chart in Quadratic. If there is no data, add some sample data and then plot it.',
+    prompt: 'Help me build a chart in Quadratic. If there is no data, add some sample data and then plot it.',
   },
   {
-    label: 'Search for data',
-    prompt: 'Search the web for the top 10 tech companies and add them to my sheet.',
+    label: 'Search the web for the top 10 tech companies by market cap and add them to my sheet.',
+    prompt: 'Search the web for the top 10 tech companies by market cap and add them to my sheet.',
   },
 ];
+
+// All file types supported by the AI Analyst for import
+const ALL_IMPORT_FILE_TYPES = ['image/*', '.pdf', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
 
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
@@ -50,6 +56,14 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     getEmptyChatPromptSuggestionsRef.current = getEmptyChatPromptSuggestions;
 
     // Listen for sheet content changes to update suggestions when data is added/removed
+    const handleChooseFile = useCallback(async () => {
+      trackEvent('[AIAnalyst].chooseFile');
+      const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
+      if (selectedFiles.length > 0) {
+        events.emit('aiAnalystDroppedFiles', selectedFiles);
+      }
+    }, []);
+
     useEffect(() => {
       let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -125,31 +139,46 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading]);
 
     return (
-      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-4 px-2">
-        <h2 className="text-xl font-medium">What would you like to do?</h2>
-        <div className="flex flex-row flex-wrap justify-center gap-2">
-          {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
-            <HoverCard key={`${index}-${label}-card`}>
-              <HoverCardTrigger asChild>
+      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
+        {/* Import Data Section */}
+        <div className="flex w-full max-w-lg flex-col items-center gap-3">
+          <h2 className="text-xl font-semibold">Start by importing data</h2>
+          <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
+            <div className="flex items-center justify-center gap-4">
+              <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
+              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+            </div>
+            <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
+            <p className="text-sm text-muted-foreground">
+              Drag and drop, or{' '}
+              <button onClick={handleChooseFile} className="underline hover:text-foreground">
+                choose a file
+              </button>
+            </p>
+          </div>
+        </div>
+
+        {/* Prompt Suggestions */}
+        <div className="flex flex-col items-center gap-3">
+          <h2 className="text-xl font-semibold">Or start with a suggested prompt</h2>
+          <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
+            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
+              <div key={`${index}-${prompt}`}>
                 <Button
                   disabled={loading}
-                  variant="secondary"
-                  size="sm"
-                  className="relative flex h-6 items-center px-2 text-sm font-normal hover:underline"
+                  variant="ghost"
+                  className="relative h-auto w-full justify-start whitespace-normal px-3 py-2 text-left text-sm font-normal text-foreground hover:text-foreground"
                   onClick={() => {
                     trackEvent('[AIAnalyst].submitExamplePrompt');
                     submit(prompt);
                   }}
                 >
                   {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
-                  <span className={cn(loading && 'opacity-0')}>{label}</span>
+                  <span className={cn(loading && 'opacity-0')}>{prompt}</span>
                 </Button>
-              </HoverCardTrigger>
-              <HoverCardContent side="top" align="start">
-                <p className="text-sm">{prompt}</p>
-              </HoverCardContent>
-            </HoverCard>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
