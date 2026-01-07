@@ -4,29 +4,52 @@ import {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { uploadFile } from '@/app/helpers/files';
+import { DatabaseIcon, FileIcon, PDFIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
-    label: 'Introduce Quadratic',
+    label: 'What can you help me with in Quadratic?',
     prompt: 'What can you help me with in Quadratic?',
   },
   {
-    label: 'Make a chart',
-    prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet, add sample data and plot it.',
+    label: 'Help me build a chart in Quadratic. If there is no data, add some sample data and then plot it.',
+    prompt: 'Help me build a chart in Quadratic. If there is no data, add some sample data and then plot it.',
   },
   {
-    label: 'Search for data',
-    prompt: 'Search the web for the top 10 tech companies and add them to my sheet.',
+    label: 'Search the web for the top 10 tech companies by market cap and add them to my sheet.',
+    prompt: 'Search the web for the top 10 tech companies by market cap and add them to my sheet.',
   },
 ];
+
+const EXCEL_FILE_TYPES = ['.xlsx', '.xls'];
+const CSV_FILE_TYPES = ['.csv', '.parquet', '.parq', '.pqt'];
+const PDF_FILE_TYPES = ['.pdf'];
+
+interface ImportButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}
+
+const ImportButton = ({ icon, label, onClick }: ImportButtonProps) => (
+  <button
+    onClick={onClick}
+    className="flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 transition-all hover:bg-accent"
+  >
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center leading-none">{icon}</span>
+    <span className="text-sm">{label}</span>
+  </button>
+);
 
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
@@ -40,7 +63,33 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const [loading, setLoading] = useState(false);
     const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+    const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
+
+    const handleImportFile = useCallback(async (fileTypes: string[], eventName: string) => {
+      trackEvent(eventName);
+      const selectedFiles = await uploadFile(fileTypes);
+      if (selectedFiles.length > 0) {
+        events.emit('aiAnalystDroppedFiles', selectedFiles);
+      }
+    }, []);
+
+    const handleImportExcel = useCallback(() => {
+      handleImportFile(EXCEL_FILE_TYPES, '[AIAnalyst].importExcel');
+    }, [handleImportFile]);
+
+    const handleImportCsv = useCallback(() => {
+      handleImportFile(CSV_FILE_TYPES, '[AIAnalyst].importCsv');
+    }, [handleImportFile]);
+
+    const handleImportPdf = useCallback(() => {
+      handleImportFile(PDF_FILE_TYPES, '[AIAnalyst].importPdf');
+    }, [handleImportFile]);
+
+    const handleOpenConnections = useCallback(() => {
+      trackEvent('[AIAnalyst].openConnections');
+      setShowConnectionsMenu(true);
+    }, [setShowConnectionsMenu]);
 
     useEffect(() => {
       const updatePromptSuggestions = async () => {
@@ -87,32 +136,43 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading, abortController]);
 
     return (
-      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-4 px-2">
-        <h2 className="text-xl font-medium">What would you like to do?</h2>
-        <div className="flex flex-row flex-wrap justify-center gap-2">
-          {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
-            <HoverCard key={`${index}-${label}-card`}>
-              <HoverCardTrigger asChild>
+      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-6 px-4">
+        {/* Import Data Section */}
+        <div className="flex flex-col items-center gap-3">
+          <h2 className="text-lg font-medium">Start by importing your data</h2>
+          <div className="flex flex-wrap justify-center gap-2">
+            <ImportButton
+              icon={<img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />}
+              label="Excel"
+              onClick={handleImportExcel}
+            />
+            <ImportButton icon={<PDFIcon className="!text-red-500" />} label="PDF" onClick={handleImportPdf} />
+            <ImportButton icon={<FileIcon className="!text-muted-foreground" />} label="CSV, PQT, other files" onClick={handleImportCsv} />
+            <ImportButton icon={<DatabaseIcon className="!text-muted-foreground" />} label="Connections" onClick={handleOpenConnections} />
+          </div>
+        </div>
+
+        {/* Prompt Suggestions */}
+        <div className="flex flex-col items-center gap-3">
+          <h2 className="text-lg font-medium">Or start with a suggested prompt</h2>
+          <div className="flex max-w-lg flex-col">
+            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
+              <div key={`${index}-${prompt}`} className={cn(index > 0 && 'border-t border-border pt-1.5', index > 0 && index < (promptSuggestions ?? defaultPromptSuggestions).length && 'pb-1.5')}>
                 <Button
-                  key={`${index}-${label}`}
                   disabled={loading}
-                  variant="secondary"
-                  size="sm"
-                  className="relative flex h-6 items-center px-2 text-sm font-normal hover:underline"
+                  variant="ghost"
+                  className="relative h-auto w-full justify-start whitespace-normal px-3 py-2 text-left text-sm font-normal text-foreground hover:text-foreground"
                   onClick={() => {
                     trackEvent('[AIAnalyst].submitExamplePrompt');
                     submit(prompt);
                   }}
                 >
                   {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
-                  <span className={cn(loading && 'opacity-0')}>{label}</span>
+                  <span className={cn(loading && 'opacity-0')}>{prompt}</span>
                 </Button>
-              </HoverCardTrigger>
-              <HoverCardContent side="top" align="start">
-                <p className="text-sm">{prompt}</p>
-              </HoverCardContent>
-            </HoverCard>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
