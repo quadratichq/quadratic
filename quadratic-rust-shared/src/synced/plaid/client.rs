@@ -55,13 +55,6 @@ impl std::fmt::Debug for PlaidClient {
         )
     }
 }
-        write!(
-            f,
-            "PlaidClient {{ client_id: {}, secret: {}, environment: {:?}, access_token: {:?} }}",
-            self.client_id, self.secret, self.environment, self.access_token
-        )
-    }
-}
 
 impl From<Environment> for PlaidEnvironment {
     fn from(environment: Environment) -> Self {
