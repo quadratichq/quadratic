@@ -41,9 +41,13 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | undefined>(undefined);
-    const [sheetHasData, setSheetHasData] = useState(fileHasData());
+    // Initialize to false to avoid calling fileHasData() during render (sheets may not be initialized)
+    const [sheetHasData, setSheetHasData] = useState(false);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
+    // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
+    const getEmptyChatPromptSuggestionsRef = useRef(getEmptyChatPromptSuggestions);
+    getEmptyChatPromptSuggestionsRef.current = getEmptyChatPromptSuggestions;
 
     // Listen for sheet content changes to update suggestions when data is added/removed
     useEffect(() => {
@@ -64,6 +68,9 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         }, 100);
       };
 
+      // Initial check (deferred to effect to ensure sheets singleton is initialized)
+      setSheetHasData(fileHasData());
+
       events.on('hashContentChanged', checkSheetData);
       return () => {
         events.off('hashContentChanged', checkSheetData);
@@ -81,7 +88,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         setLoading(true);
 
         try {
-          const promptSuggestions = await getEmptyChatPromptSuggestions({
+          const promptSuggestions = await getEmptyChatPromptSuggestionsRef.current({
             context,
             files,
             importFiles,
@@ -111,7 +118,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       return () => {
         abortController.abort();
       };
-    }, [context, files, importFiles, sheetHasData, getEmptyChatPromptSuggestions]);
+    }, [context, files, importFiles, sheetHasData]);
 
     useEffect(() => {
       if (aiAnalystLoading) {
