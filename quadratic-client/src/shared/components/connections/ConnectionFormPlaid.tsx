@@ -84,18 +84,13 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
     const channel = new BroadcastChannel('plaid_link');
 
     const handleMessage = async (event: MessageEvent) => {
-      console.log('Received BroadcastChannel message:', event.data);
-
       if (event.data.type === 'PLAID_SUCCESS') {
-        console.log('Plaid success! Exchanging token...');
         const { publicToken, metadata } = event.data;
         try {
           const data = await apiClient.connections.plaid.exchangeToken({
             teamUuid,
             publicToken,
           });
-
-          console.log('Token exchange successful:', data);
 
           // Set the access token in the form
           form.setValue('access_token', data.accessToken);
@@ -109,14 +104,11 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           if (!form.getValues('name')) {
             form.setValue('name', `${metadata.institution?.name || 'Bank'} Connection`);
           }
-
-          console.log('Form updated with access token');
         } catch (error) {
           console.error('Error exchanging token:', error);
           // TODO: Show error to user
         }
       } else if (event.data.type === 'PLAID_EXIT') {
-        console.log('Plaid exit');
         if (event.data.error) {
           console.error('Plaid Link error:', event.data.error);
           // TODO: Show error to user
@@ -130,14 +122,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
       channel.close();
     };
   }, [teamUuid, form]);
-
-  // Auto-fetch link token if editing existing connection
-  useEffect(() => {
-    if (connection) {
-      // For editing, we don't auto-open the popup
-      // User can click "Connect Bank Account" to relink if needed
-    }
-  }, [connection]);
 
   const hasAccessToken = !!form.watch('access_token');
 

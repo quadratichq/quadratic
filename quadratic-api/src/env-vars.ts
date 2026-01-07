@@ -54,10 +54,7 @@ export const AUTH_TYPE = process.env.AUTH_TYPE as string;
 export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 export const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID as string;
 export const PLAID_SECRET = process.env.PLAID_SECRET as string;
-export const PLAID_ENVIRONMENT = (process.env.PLAID_ENVIRONMENT || 'sandbox') as
-  | 'sandbox'
-  | 'development'
-  | 'production';
+export const PLAID_ENVIRONMENT = process.env.PLAID_ENVIRONMENT as 'sandbox' | 'development' | 'production';
 [
   'STRIPE_SECRET_KEY',
   'ENCRYPTION_KEY',

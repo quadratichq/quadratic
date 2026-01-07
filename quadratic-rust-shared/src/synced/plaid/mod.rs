@@ -22,7 +22,7 @@ pub struct PlaidConnection {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub institution_name: Option<String>,
 
-    /// Optional values, set them fromenvironment variables    
+    /// Optional values, set them from environment variables    
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

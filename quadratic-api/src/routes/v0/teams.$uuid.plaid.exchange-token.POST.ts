@@ -37,7 +37,6 @@ async function handler(req: RequestWithUser, res: Response<{ accessToken: string
   } = parseRequest(req, schema);
 
   const {
-    team: { id: teamId },
     userMakingRequest: { permissions },
   } = await getTeam({ uuid, userId });
 

@@ -62,14 +62,13 @@
     <div class="loading">Loading Plaid Link...</div>
     <div id="status">
       <p class="success">✓ Bank account connected successfully!</p>
-      <p style="color: #666; font-size: 14px; margin-bottom: 0;">You can close this window and return to the main page.</p>
+      <p style="color: #666; font-size: 14px; margin-bottom: 0;">You can close this window and return to the main page.
+      </p>
       <button class="close-btn" onclick="window.close()">Close Window</button>
     </div>
   </div>
 
   <script>
-    console.log('Plaid popup loaded');
-
     // Use BroadcastChannel for cross-window communication (works without window.opener)
     const channel = new BroadcastChannel('plaid_link');
 
@@ -77,7 +76,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const linkToken = urlParams.get('linkToken');
 
-    console.log('Link token:', linkToken ? 'Found' : 'Not found');
 
     if (!linkToken) {
       document.querySelector('.loading').textContent = 'Error: No link token provided';
@@ -86,40 +84,30 @@
       const handler = Plaid.create({
         token: linkToken,
         onSuccess: (publicToken, metadata) => {
-          console.log('Plaid onSuccess called');
-          console.log('Public token:', publicToken);
-          console.log('Metadata:', metadata);
-          
           // Hide loading, show success message
           document.querySelector('.loading').style.display = 'none';
           document.getElementById('status').style.display = 'block';
-          
+
           // Send success message via BroadcastChannel
-          console.log('Sending message via BroadcastChannel');
           channel.postMessage({
             type: 'PLAID_SUCCESS',
             publicToken,
             metadata
           });
-          
+
           // Try to auto-close, but if blocked, user can click button
           setTimeout(() => {
-            console.log('Attempting to close popup');
             window.close();
           }, 1000);
         },
         onExit: (err, metadata) => {
-          console.log('Plaid onExit called');
-          console.log('Error:', err);
-          console.log('Metadata:', metadata);
-          
           // Send exit message via BroadcastChannel
           channel.postMessage({
             type: 'PLAID_EXIT',
             error: err,
             metadata
           });
-          
+
           // Close on exit
           setTimeout(() => {
             window.close();
@@ -128,7 +116,6 @@
       });
 
       // Automatically open Plaid Link
-      console.log('Opening Plaid Link handler');
       handler.open();
     }
   </script>
