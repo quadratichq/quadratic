@@ -217,6 +217,100 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_set_formats_a1() {
+        let mut sheet = Sheet::test();
+
+        // Add some data to create non-empty bounds
+        sheet.set_value(pos![A1], CellValue::Text("test".to_string()));
+        sheet.set_value(pos![C3], CellValue::Text("test".to_string()));
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        // Create format updates with bold and fill_color
+        let mut formats = SheetFormatUpdates::default();
+
+        let mut bold = Contiguous2D::new();
+        bold.set_rect(1, 1, Some(3), Some(3), Some(ClearOption::Some(true)));
+        formats.bold = Some(bold);
+
+        let mut fill_color = Contiguous2D::new();
+        fill_color.set_rect(
+            1,
+            1,
+            Some(3),
+            Some(3),
+            Some(ClearOption::Some("rgb(255, 0, 0)".to_string())),
+        );
+        formats.fill_color = Some(fill_color);
+
+        // Apply formats
+        let (reverse_ops, dirty_hashes, rows_to_resize, fills_changed) =
+            sheet.set_formats_a1(&formats);
+
+        // Verify reverse operation
+        assert_eq!(reverse_ops.len(), 1);
+        let reverse_op = &reverse_ops[0];
+        match reverse_op {
+            Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: reverse_formats,
+            } => {
+                assert_eq!(*sheet_id, sheet.id);
+                // Reverse formats should have None values (clearing the formats we set)
+                assert!(reverse_formats.bold.is_some());
+                assert!(reverse_formats.fill_color.is_some());
+            }
+            _ => panic!("Expected SetCellFormatsA1 operation"),
+        }
+
+        // Verify dirty hashes contains the affected quadrant
+        assert!(!dirty_hashes.is_empty());
+        assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
+
+        // Verify rows_to_resize contains rows with content (bold triggers resize)
+        assert!(rows_to_resize.contains(&1));
+        assert!(rows_to_resize.contains(&3));
+
+        // Verify fills_changed is true
+        assert!(fills_changed);
+
+        // Verify formats were actually applied
+        assert_eq!(sheet.formats.bold.get(pos![A1]), Some(true));
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("rgb(255, 0, 0)".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_formats_a1_no_fill_color() {
+        let mut sheet = Sheet::test();
+
+        // Add some data
+        sheet.set_value(pos![A1], CellValue::Text("test".to_string()));
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        // Create format updates with only alignment (no fill)
+        let mut formats = SheetFormatUpdates::default();
+        let mut align = Contiguous2D::new();
+        align.set_rect(
+            1,
+            1,
+            Some(1),
+            Some(1),
+            Some(ClearOption::Some(CellAlign::Center)),
+        );
+        formats.align = Some(align);
+
+        // Apply formats
+        let (_, _, _, fills_changed) = sheet.set_formats_a1(&formats);
+
+        // Verify fills_changed is false
+        assert!(!fills_changed);
+    }
+
+    #[test]
     fn test_formats_transaction_changes() {
         let mut sheet = Sheet::test();
 
