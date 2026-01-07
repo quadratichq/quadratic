@@ -12,8 +12,7 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useRef, useState } from 'react';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 // label and prompt are identical here, but the type requires both fields
@@ -140,27 +139,31 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
-        {/* Import Data Section */}
-        <div className="flex w-full max-w-lg flex-col items-center gap-3">
-          <h2 className="text-xl font-semibold">Start by importing data</h2>
-          <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
-            <div className="flex items-center justify-center gap-4">
-              <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
-              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+        {/* Import Data Section - only shown when sheet is empty */}
+        {!sheetHasData && (
+          <div className="flex w-full max-w-lg flex-col items-center gap-3">
+            <h2 className="text-xl font-semibold">Start by importing data</h2>
+            <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
+              <div className="flex items-center justify-center gap-4">
+                <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
+                <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+              </div>
+              <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
+              <p className="text-sm text-muted-foreground">
+                Drag and drop, or{' '}
+                <button onClick={handleChooseFile} className="underline hover:text-foreground">
+                  choose a file
+                </button>
+              </p>
             </div>
-            <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
-            <p className="text-sm text-muted-foreground">
-              Drag and drop, or{' '}
-              <button onClick={handleChooseFile} className="underline hover:text-foreground">
-                choose a file
-              </button>
-            </p>
           </div>
-        </div>
+        )}
 
         {/* Prompt Suggestions */}
         <div className="flex flex-col items-center gap-3">
-          <h2 className="text-xl font-semibold">Or start with a suggested prompt</h2>
+          <h2 className="text-xl font-semibold">
+            {sheetHasData ? 'Suggested prompts' : 'Or start with a suggested prompt'}
+          </h2>
           <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
               <div key={`${index}-${prompt}`}>
