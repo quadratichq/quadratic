@@ -70,6 +70,7 @@ export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
 type ConnectionTypeData<T extends ConnectionFormValues> = {
   name: string;
   Logo: typeof MysqlLogo;
+  uiCategory?: 'Databases' | 'SaaS Services';
 
   ConnectionForm: ConnectionFormComponent<T>;
   useConnectionForm: UseConnectionForm<T>;
@@ -83,66 +84,77 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
   POSTGRES: {
     name: 'Postgres',
     Logo: PostgresLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Postgres.ConnectionForm,
     useConnectionForm: Postgres.useConnectionForm,
   },
   MYSQL: {
     name: 'MySQL',
     Logo: MysqlLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Mysql.ConnectionForm,
     useConnectionForm: Mysql.useConnectionForm,
   },
   MSSQL: {
     name: 'MS SQL Server',
     Logo: MssqlLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Mssql.ConnectionForm,
     useConnectionForm: Mssql.useConnectionForm,
   },
   SNOWFLAKE: {
     name: 'Snowflake',
     Logo: SnowflakeLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Snowflake.ConnectionForm,
     useConnectionForm: Snowflake.useConnectionForm,
   },
   BIGQUERY: {
     name: 'BigQuery',
     Logo: BigqueryLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Bigquery.ConnectionForm,
     useConnectionForm: Bigquery.useConnectionForm,
   },
   COCKROACHDB: {
     name: 'CockroachDB',
     Logo: CockroachdbLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Cockroachdb.ConnectionForm,
     useConnectionForm: Cockroachdb.useConnectionForm,
   },
   MARIADB: {
     name: 'MariaDB',
     Logo: MariadbLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Mariadb.ConnectionForm,
     useConnectionForm: Mariadb.useConnectionForm,
   },
   SUPABASE: {
     name: 'Supabase',
     Logo: SupabaseLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Supabase.ConnectionForm,
     useConnectionForm: Supabase.useConnectionForm,
   },
   NEON: {
     name: 'Neon',
     Logo: NeonLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Neon.ConnectionForm,
     useConnectionForm: Neon.useConnectionForm,
   },
   MIXPANEL: {
     name: 'Mixpanel',
     Logo: MixpanelLogo,
+    uiCategory: 'SaaS Services',
     ConnectionForm: Mixpanel.ConnectionForm,
     useConnectionForm: Mixpanel.useConnectionForm,
   },
   GOOGLE_ANALYTICS: {
     name: 'Google Analytics',
     Logo: GoogleAnalyticsLogo,
+    uiCategory: 'SaaS Services',
     ConnectionForm: GoogleAnalytics.ConnectionForm,
     useConnectionForm: GoogleAnalytics.useConnectionForm,
   },
