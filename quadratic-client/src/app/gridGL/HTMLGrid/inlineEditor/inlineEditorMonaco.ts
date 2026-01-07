@@ -175,21 +175,6 @@ class InlineEditorMonaco {
       paddingTop = Math.max(height - contentHeight, 0);
     }
 
-    // set text wrap and padding for vertical text alignment
-    // For 'clip' mode, use 'auto' scrollbar with zero size to enable scrolling without visible scrollbar
-    this.editor.updateOptions({
-      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
-      padding: { top: paddingTop, bottom: 0 },
-      scrollbar: {
-        horizontal: textWrap === 'clip' ? 'auto' : 'hidden',
-        vertical: 'hidden',
-        alwaysConsumeMouseWheel: false,
-        verticalScrollbarSize: 0,
-        horizontalScrollbarSize: 0,
-      },
-      scrollBeyondLastColumn: textWrap === 'clip' ? 5 : 0,
-    });
-
     // Calculate padding that scales with font size
     // Get the actual font size being used
     const fontSize = this.editor.getOption(monaco.editor.EditorOption.fontSize);
@@ -199,22 +184,48 @@ class InlineEditorMonaco {
     const text = this.editor.getValue();
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    const fontScale = fontSize / DEFAULT_FONT_SIZE;
+    const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
+    let measuredWidth = 0;
+
     if (context) {
       context.font = `${fontSize}px ${fontFamily}`;
       const metrics = context.measureText(text);
-      const measuredWidth = metrics.width;
-
-      // Add padding that scales linearly with font size
-      const fontScale = fontSize / DEFAULT_FONT_SIZE;
-      const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
-
-      width = textWrap !== 'overflow' ? width : Math.max(width, measuredWidth + scaledPadding);
+      measuredWidth = metrics.width + scaledPadding;
     } else {
       // Fallback to scrollWidth if canvas is not available
-      const scrollWidth = textarea.scrollWidth;
-      const fontScale = fontSize / DEFAULT_FONT_SIZE;
-      const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
-      width = textWrap !== 'overflow' ? width : Math.max(width, scrollWidth + scaledPadding);
+      measuredWidth = textarea.scrollWidth + scaledPadding;
+    }
+
+    // For clip mode, only enable horizontal scrolling if content overflows the cell
+    // This allows CSS text-align to work for short content while still supporting
+    // scrolling for long content
+    const contentOverflows = textWrap === 'clip' && measuredWidth > width;
+
+    // set text wrap and padding for vertical text alignment
+    this.editor.updateOptions({
+      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+      padding: { top: paddingTop, bottom: 0 },
+      scrollbar: {
+        horizontal: contentOverflows ? 'auto' : 'hidden',
+        vertical: 'hidden',
+        alwaysConsumeMouseWheel: false,
+        verticalScrollbarSize: 0,
+        horizontalScrollbarSize: 0,
+      },
+      scrollBeyondLastColumn: contentOverflows ? 5 : 0,
+    });
+
+    // When content overflows in clip mode, disable CSS text-align as it conflicts with scrolling
+    if (contentOverflows) {
+      domNode.dataset.clipOverflow = 'true';
+    } else {
+      delete domNode.dataset.clipOverflow;
+    }
+
+    // Only expand width for 'overflow' mode
+    if (textWrap === 'overflow') {
+      width = Math.max(width, measuredWidth);
     }
     height = Math.max(contentHeight, height);
 
@@ -236,14 +247,6 @@ class InlineEditorMonaco {
 
     // set final width and height
     this.editor.layout({ width, height });
-
-    // For clip mode, ensure the cursor is visible by scrolling to it
-    if (textWrap === 'clip') {
-      const position = this.editor.getPosition();
-      if (position) {
-        this.editor.revealPosition(position, monaco.editor.ScrollType.Immediate);
-      }
-    }
 
     return { width, height };
   };
