@@ -4,17 +4,17 @@ import {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { uploadFile } from '@/app/helpers/files';
-import { DatabaseIcon, FileIcon, PDFIcon } from '@/shared/components/Icons';
+import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
+import { FileIcon, PDFIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
@@ -54,16 +54,16 @@ const ImportButton = ({ icon, label, onClick }: ImportButtonProps) => (
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
   context: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   importFiles: ImportFile[];
 }
 export const AIAnalystEmptyChatPromptSuggestions = memo(
-  ({ submit, context, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
+  ({ submit, context, setContext, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
-    const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
 
     const handleImportFile = useCallback(async (fileTypes: string[], eventName: string) => {
@@ -85,11 +85,6 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const handleImportPdf = useCallback(() => {
       handleImportFile(PDF_FILE_TYPES, '[AIAnalyst].importPdf');
     }, [handleImportFile]);
-
-    const handleOpenConnections = useCallback(() => {
-      trackEvent('[AIAnalyst].openConnections');
-      setShowConnectionsMenu(true);
-    }, [setShowConnectionsMenu]);
 
     useEffect(() => {
       const updatePromptSuggestions = async () => {
@@ -152,11 +147,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
               label="CSV, PQT, other files"
               onClick={handleImportCsv}
             />
-            <ImportButton
-              icon={<DatabaseIcon className="!text-muted-foreground" />}
-              label="Connections"
-              onClick={handleOpenConnections}
-            />
+            <AIUserMessageFormConnectionsButton context={context} setContext={setContext} variant="empty-state" />
           </div>
         </div>
 
@@ -165,13 +156,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           <h2 className="text-lg font-medium">Or start with a suggested prompt</h2>
           <div className="flex max-w-lg flex-col">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
-              <div
-                key={`${index}-${prompt}`}
-                className={cn(
-                  index > 0 && 'border-t border-border pt-1.5',
-                  index > 0 && index < (promptSuggestions ?? defaultPromptSuggestions).length && 'pb-1.5'
-                )}
-              >
+              <div key={`${index}-${prompt}`} className={cn(index > 0 && 'border-t border-border')}>
                 <Button
                   disabled={loading}
                   variant="ghost"

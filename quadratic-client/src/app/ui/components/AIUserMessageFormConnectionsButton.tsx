@@ -21,13 +21,20 @@ import { memo, useCallback } from 'react';
 import { useRecoilCallback, useSetRecoilState } from 'recoil';
 
 interface AIUserMessageFormConnectionsButtonProps {
-  disabled: boolean;
+  disabled?: boolean;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  variant?: 'default' | 'empty-state';
 }
 export const AIUserMessageFormConnectionsButton = memo(
-  ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
+  ({
+    disabled = false,
+    context,
+    setContext,
+    textareaRef,
+    variant = 'default',
+  }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
     const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
@@ -37,8 +44,10 @@ export const AIUserMessageFormConnectionsButton = memo(
 
     const handleAutoClose = useCallback(
       (e: Event) => {
-        e.preventDefault();
-        textareaRef.current?.focus();
+        if (textareaRef?.current) {
+          e.preventDefault();
+          textareaRef.current.focus();
+        }
       },
       [textareaRef]
     );
@@ -81,8 +90,21 @@ export const AIUserMessageFormConnectionsButton = memo(
       [connections, context.connection, setContext, setAIAnalystActiveSchemaConnectionUuid]
     );
 
-    return (
-      <DropdownMenu>
+    const triggerButton =
+      variant === 'empty-state' ? (
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 transition-all hover:bg-accent"
+            disabled={disabled}
+            onClick={handleOnClickButton}
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center leading-none">
+              <DatabaseIcon className="!text-muted-foreground" />
+            </span>
+            <span className="text-sm">Connections</span>
+          </button>
+        </DropdownMenuTrigger>
+      ) : (
         <TooltipPopover label="Chat with a connected data source" fastMode={true}>
           <DropdownMenuTrigger asChild>
             <Button
@@ -97,8 +119,18 @@ export const AIUserMessageFormConnectionsButton = memo(
             </Button>
           </DropdownMenuTrigger>
         </TooltipPopover>
+      );
 
-        <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
+    return (
+      <DropdownMenu>
+        {triggerButton}
+
+        <DropdownMenuContent
+          side={variant === 'empty-state' ? 'bottom' : 'top'}
+          align="start"
+          onCloseAutoFocus={handleAutoClose}
+          className="min-w-48 max-w-xs"
+        >
           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Connections</DropdownMenuLabel>
           <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
             <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
