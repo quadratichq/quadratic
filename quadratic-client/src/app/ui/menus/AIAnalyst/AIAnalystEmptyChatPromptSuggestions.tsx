@@ -151,9 +151,13 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
               <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
               <p className="text-sm text-muted-foreground">
                 Drag and drop, or{' '}
-                <button onClick={handleChooseFile} className="underline hover:text-foreground">
+                <Button
+                  variant="link"
+                  onClick={handleChooseFile}
+                  className="h-auto p-0 text-sm text-muted-foreground underline hover:text-foreground"
+                >
                   choose a file
-                </button>
+                </Button>
               </p>
             </div>
           </div>
