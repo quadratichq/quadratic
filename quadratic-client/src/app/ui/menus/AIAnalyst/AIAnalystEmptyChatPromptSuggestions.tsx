@@ -40,8 +40,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
   ({ submit, context, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
-    const isLoadingRef = useRef(false);
-    const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
+    const abortControllerRef = useRef<AbortController | undefined>(undefined);
     const [sheetHasData, setSheetHasData] = useState(fileHasData());
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
@@ -73,20 +72,15 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, []);
 
     useEffect(() => {
+      // Abort previous request when dependencies change
+      abortControllerRef.current?.abort();
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
       const updatePromptSuggestions = async () => {
-        // Use ref for synchronous check to prevent concurrent requests
-        if (isLoadingRef.current) {
-          return;
-        }
-        isLoadingRef.current = true;
         setLoading(true);
 
-        const abortController = new AbortController();
         try {
-          setAbortController((prev) => {
-            prev?.abort();
-            return abortController;
-          });
           const promptSuggestions = await getEmptyChatPromptSuggestions({
             context,
             files,
@@ -94,27 +88,36 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             sheetHasData,
             abortController,
           });
-          setPromptSuggestions(promptSuggestions);
-        } catch (error) {
-          setPromptSuggestions(undefined);
+          // Only update state if this request wasn't aborted
           if (!abortController.signal.aborted) {
-            abortController.abort();
+            setPromptSuggestions(promptSuggestions);
+          }
+        } catch (error) {
+          if (!abortController.signal.aborted) {
+            setPromptSuggestions(undefined);
             console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
           }
         }
 
-        isLoadingRef.current = false;
-        setLoading(false);
+        // Only update loading state if this request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       };
 
       updatePromptSuggestions();
+
+      // Cleanup: abort on unmount or when dependencies change
+      return () => {
+        abortController.abort();
+      };
     }, [context, files, importFiles, sheetHasData, getEmptyChatPromptSuggestions]);
 
     useEffect(() => {
       if (aiAnalystLoading) {
-        abortController?.abort();
+        abortControllerRef.current?.abort();
       }
-    }, [aiAnalystLoading, abortController]);
+    }, [aiAnalystLoading]);
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-4 px-2">
