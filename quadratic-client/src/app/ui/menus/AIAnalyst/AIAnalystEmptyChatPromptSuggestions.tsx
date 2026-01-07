@@ -12,7 +12,7 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
@@ -40,6 +40,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
   ({ submit, context, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
+    const isLoadingRef = useRef(false);
     const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
     const [sheetHasData, setSheetHasData] = useState(fileHasData());
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
@@ -47,33 +48,38 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     // Listen for sheet content changes to update suggestions when data is added/removed
     useEffect(() => {
+      let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
+
       const checkSheetData = () => {
-        const hasData = fileHasData();
-        setSheetHasData((prev) => {
-          // Only trigger update if the data presence changed
-          if (prev !== hasData) {
-            return hasData;
-          }
-          return prev;
-        });
+        // Debounce to avoid frequent fileHasData() calls on rapid hash changes
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          const hasData = fileHasData();
+          setSheetHasData((prev) => {
+            // Only trigger update if the data presence changed
+            if (prev !== hasData) {
+              return hasData;
+            }
+            return prev;
+          });
+        }, 100);
       };
 
       events.on('hashContentChanged', checkSheetData);
       return () => {
         events.off('hashContentChanged', checkSheetData);
+        clearTimeout(debounceTimeout);
       };
     }, []);
 
     useEffect(() => {
       const updatePromptSuggestions = async () => {
-        let prevLoading;
-        setLoading((prev) => {
-          prevLoading = prev;
-          return true;
-        });
-        if (prevLoading) {
+        // Use ref for synchronous check to prevent concurrent requests
+        if (isLoadingRef.current) {
           return;
         }
+        isLoadingRef.current = true;
+        setLoading(true);
 
         const abortController = new AbortController();
         try {
@@ -85,6 +91,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             context,
             files,
             importFiles,
+            sheetHasData,
             abortController,
           });
           setPromptSuggestions(promptSuggestions);
@@ -96,6 +103,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           }
         }
 
+        isLoadingRef.current = false;
         setLoading(false);
       };
 
@@ -116,7 +124,6 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             <HoverCard key={`${index}-${label}-card`}>
               <HoverCardTrigger asChild>
                 <Button
-                  key={`${index}-${label}`}
                   disabled={loading}
                   variant="secondary"
                   size="sm"

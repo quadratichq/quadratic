@@ -4,7 +4,6 @@ import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessa
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -29,11 +28,13 @@ export const useGetEmptyChatPromptSuggestions = () => {
         context,
         files,
         importFiles,
+        sheetHasData,
         abortController,
       }: {
         context: Context;
         files: FileContent[];
         importFiles: ImportFile[];
+        sheetHasData: boolean;
         abortController: AbortController;
       }): Promise<EmptyChatPromptSuggestions | undefined> => {
         try {
@@ -42,7 +43,6 @@ export const useGetEmptyChatPromptSuggestions = () => {
           }
 
           const connection = connections.find((connection) => connection.uuid === context.connection?.id);
-          const sheetHasData = fileHasData();
 
           // Return early only if there's no connection, no attached files, no import files, AND no data on the sheet
           if (!connection && files.length === 0 && importFiles.length === 0 && !sheetHasData) {

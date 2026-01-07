@@ -541,7 +541,6 @@ const PromptSuggestions = memo(() => {
         <HoverCard key={`${index}-${suggestion.label}-card`}>
           <HoverCardTrigger asChild>
             <div
-              key={`${index}-${suggestion.label}`}
               className="flex h-7 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
               onClick={() => handleClick(suggestion.prompt)}
             >
