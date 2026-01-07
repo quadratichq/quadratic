@@ -18,7 +18,9 @@ export const getTimeZoneAbbreviation = (timezone: string): string => {
   );
 };
 
-const isDebug = debugFlag('debug');
+// Note: isDebug must be called at runtime (not module load time) because debug
+// flags are loaded asynchronously from localforage when ?debug is in the URL.
+const isDebug = () => debugFlag('debug');
 
 export interface CronInterval {
   cron: string;
@@ -173,7 +175,7 @@ export const UseCronInterval = (initialCron?: string, timezone?: string): CronIn
         const parsed = CronExpressionParser.parse(input);
 
         // In production, check if cron runs more frequently than once per hour
-        if (!isDebug) {
+        if (!isDebug()) {
           const interval1 = parsed.next();
           const interval2 = parsed.next();
           const diffMs = interval2.getTime() - interval1.getTime();
@@ -218,7 +220,7 @@ export const UseCronInterval = (initialCron?: string, timezone?: string): CronIn
 
   const changeInterval = useCallback(
     (every: string) => {
-      if (!isDebug && every === 'minute') {
+      if (!isDebug() && every === 'minute') {
         setCronError(CRON_ERROR_TOO_FREQUENT);
         return;
       }
