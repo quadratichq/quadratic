@@ -160,9 +160,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   // Add AI language preferences context
-  const aiLanguagesContext = getAILanguagesContext(
-    user?.aiLanguages as { formulas: boolean; python: boolean; javascript: boolean } | null
-  );
+  const aiLanguagesContext = getAILanguagesContext(user?.aiLanguages);
   if (aiLanguagesContext.length > 0) {
     args.messages = [...aiLanguagesContext, ...args.messages];
   }

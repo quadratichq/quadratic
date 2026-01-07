@@ -1,21 +1,10 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, getDefaultStore, useAtom } from 'jotai';
+import { type AILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
-export interface AILanguages {
-  formulas: boolean;
-  python: boolean;
-  javascript: boolean;
-}
-
-export const defaultAILanguages: AILanguages = {
-  formulas: true,
-  python: true,
-  javascript: false,
-};
-
 // Atom for the AI languages state
-export const aiLanguagesAtom = atom<AILanguages>(defaultAILanguages);
+export const aiLanguagesAtom = atom<AILanguagePreferences>([]);
 
 // Atom for loading state
 export const aiLanguagesLoadingAtom = atom<boolean>(false);
@@ -36,7 +25,8 @@ export function preloadUserAILanguages() {
   apiClient.user.aiLanguages
     .get()
     .then((response) => {
-      store.set(aiLanguagesAtom, response.aiLanguages ?? defaultAILanguages);
+      // Store the actual value from the API (empty array = no preference)
+      store.set(aiLanguagesAtom, response.aiLanguages);
     })
     .catch((error) => {
       console.error('Failed to preload AI languages:', error);
@@ -59,7 +49,7 @@ export function useUserAILanguages() {
   }
 
   const saveAILanguages = useCallback(
-    async (newLanguages: AILanguages): Promise<boolean> => {
+    async (newLanguages: AILanguagePreferences): Promise<boolean> => {
       // Optimistically update
       const previousValue = aiLanguages;
       setAILanguages(newLanguages);

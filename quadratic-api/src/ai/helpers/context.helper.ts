@@ -2,6 +2,8 @@ import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import { AILanguagePreferencesSchema, allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
+
 import { A1Docs } from '../docs/A1Docs';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
@@ -147,51 +149,27 @@ ${rules.join('\n\n')}
   ];
 };
 
-export interface AILanguages {
-  formulas: boolean;
-  python: boolean;
-  javascript: boolean;
-}
+export const getAILanguagesContext = (aiLanguages: string[] | undefined): ChatMessage[] => {
+  // Filter to only valid AI code languages
+  const enabledLanguagePreferences = AILanguagePreferencesSchema.parse(aiLanguages ?? []);
 
-export const getAILanguagesContext = (aiLanguages: AILanguages | null): ChatMessage[] => {
-  // If no preferences set, or all languages are enabled, no context needed
-  if (!aiLanguages || (aiLanguages.formulas && aiLanguages.python && aiLanguages.javascript)) {
+  // If there's no preference, don't add any context
+  if (enabledLanguagePreferences.length === 0) {
     return [];
   }
 
-  const enabledLanguages: string[] = [];
-  const disabledLanguages: string[] = [];
+  // Otherwise, tell the AI about the language preferences
+  const disabledLanguagePreferences = allAILanguagePreferences.filter(
+    (lang) => !enabledLanguagePreferences.includes(lang)
+  );
+  const enabledText = enabledLanguagePreferences.join(' and ');
+  const disabledText = disabledLanguagePreferences.join(' and ');
 
-  if (aiLanguages.formulas) {
-    enabledLanguages.push('Formulas');
-  } else {
-    disabledLanguages.push('Formulas');
-  }
-
-  if (aiLanguages.python) {
-    enabledLanguages.push('Python');
-  } else {
-    disabledLanguages.push('Python');
-  }
-
-  if (aiLanguages.javascript) {
-    enabledLanguages.push('JavaScript');
-  } else {
-    disabledLanguages.push('JavaScript');
-  }
-
-  // If no languages are enabled, don't add any context (fallback to default behavior)
-  if (enabledLanguages.length === 0) {
-    return [];
-  }
-
-  const enabledText = enabledLanguages.join(' and ');
-  const disabledText = disabledLanguages.join(' and ');
-
-  // Add exception for charts when Python is disabled
-  const chartException = !aiLanguages.python
-    ? ' Exception: If the user asks for a chart, use Python even though it is disabled.'
-    : '';
+  // If it's formulas only, allow charts in python
+  const chartException =
+    enabledLanguagePreferences.includes('Formula') && enabledLanguagePreferences.length === 1
+      ? ' Exception: If the user asks for a chart, use Python even though it is disabled.'
+      : '';
 
   return [
     {

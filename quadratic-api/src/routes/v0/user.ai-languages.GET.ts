@@ -1,11 +1,13 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { AILanguagePreferencesSchema } from 'quadratic-shared/typesAndSchemasAI';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -23,10 +25,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user/ai
   });
 
   if (!user) {
-    throw new Error('User not found');
+    throw new ApiError(404, 'User not found');
   }
 
   return res.status(200).json({
-    aiLanguages: user.aiLanguages as ApiTypes['/v0/user/ai-languages.GET.response']['aiLanguages'],
+    aiLanguages: AILanguagePreferencesSchema.parse(user.aiLanguages),
   });
 }

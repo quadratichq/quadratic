@@ -22,12 +22,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user/ai
     user: { id: userId },
   } = req;
 
-  const updatedUser = await dbClient.user.update({
+  await dbClient.user.update({
     where: { id: userId },
     data: { aiLanguages },
   });
 
   return res.status(200).json({
-    aiLanguages: updatedUser.aiLanguages as ApiTypes['/v0/user/ai-languages.PATCH.response']['aiLanguages'],
+    aiLanguages,
   });
 }
