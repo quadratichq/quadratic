@@ -154,9 +154,9 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         {/* Prompt Suggestions */}
         <div className="flex flex-col items-center gap-3">
           <h2 className="text-lg font-medium">Or start with a suggested prompt</h2>
-          <div className="flex max-w-lg flex-col">
-            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
-              <div key={`${index}-${prompt}`} className={cn(index > 0 && 'border-t border-border')}>
+          <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
+            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }) => (
+              <div key={prompt}>
                 <Button
                   disabled={loading}
                   variant="ghost"
