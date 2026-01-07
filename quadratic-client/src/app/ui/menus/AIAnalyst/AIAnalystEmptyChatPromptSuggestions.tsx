@@ -33,9 +33,8 @@ const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   },
 ];
 
-const EXCEL_FILE_TYPES = ['.xlsx', '.xls'];
-const CSV_FILE_TYPES = ['.csv', '.parquet', '.parq', '.pqt'];
-const PDF_FILE_TYPES = ['.pdf'];
+// All file types supported by the AI Analyst for import
+const ALL_IMPORT_FILE_TYPES = ['image/*', '.pdf', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
 
 interface ImportButtonProps {
   icon: React.ReactNode;
@@ -68,24 +67,24 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
 
-    const handleImportFile = useCallback(async (fileTypes: string[], eventName: string) => {
+    const handleImportFile = useCallback(async (eventName: string) => {
       trackEvent(eventName);
-      const selectedFiles = await uploadFile(fileTypes);
+      const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
       if (selectedFiles.length > 0) {
         events.emit('aiAnalystDroppedFiles', selectedFiles);
       }
     }, []);
 
     const handleImportExcel = useCallback(() => {
-      handleImportFile(EXCEL_FILE_TYPES, '[AIAnalyst].importExcel');
+      handleImportFile('[AIAnalyst].importExcel');
     }, [handleImportFile]);
 
     const handleImportCsv = useCallback(() => {
-      handleImportFile(CSV_FILE_TYPES, '[AIAnalyst].importCsv');
+      handleImportFile('[AIAnalyst].importCsv');
     }, [handleImportFile]);
 
     const handleImportPdf = useCallback(() => {
-      handleImportFile(PDF_FILE_TYPES, '[AIAnalyst].importPdf');
+      handleImportFile('[AIAnalyst].importPdf');
     }, [handleImportFile]);
 
     useEffect(() => {
