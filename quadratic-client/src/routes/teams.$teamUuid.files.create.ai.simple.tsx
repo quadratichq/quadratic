@@ -20,7 +20,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { ArrowRightIcon, Cross2Icon, UploadIcon } from '@radix-ui/react-icons';
+import { ArrowRightIcon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Link, redirect, useLoaderData, useNavigate, useSearchParams } from 'react-router';
@@ -98,7 +98,7 @@ export const Component = () => {
     trackEvent('[StartWithAISimple].loaded', { step: 'prompt' });
   }, []);
 
-  const [prompt, setPrompt] = useState(DEFAULT_SUGGESTIONS[0].prompt);
+  const [prompt, setPrompt] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<SelectedConnection | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -110,16 +110,10 @@ export const Component = () => {
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const dragCounterRef = useRef(0);
 
-  // Focus prompt textarea on mount and place cursor at end
+  // Focus prompt textarea on mount
   useEffect(() => {
     setTimeout(() => {
-      const textarea = promptTextareaRef.current;
-      if (textarea) {
-        textarea.focus();
-        // Place cursor at the end of the text
-        const length = textarea.value.length;
-        textarea.setSelectionRange(length, length);
-      }
+      promptTextareaRef.current?.focus();
     }, 100);
   }, []);
 
@@ -211,8 +205,6 @@ export const Component = () => {
         const data = await response.json();
         if (data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
           setSuggestions(data.suggestions);
-          // Auto-populate the prompt with the first suggestion
-          setPrompt(data.suggestions[0].prompt);
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -448,100 +440,133 @@ export const Component = () => {
             </h1>
           </div>
 
-          {/* Import buttons above chat box */}
-          <div className="mb-3 flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="h-9 gap-2 rounded-md border-border px-4 text-foreground"
-              onClick={() => handleFileUpload(ALL_FILE_TYPES)}
-              disabled={isSubmitting}
-            >
-              <AttachFileIcon size="sm" />
-              <span>Import file (CSV, XLSX, PDF)</span>
-            </Button>
+          {/* Data section */}
+          <div className="mb-6 space-y-3">
+            <h3 className="text-base font-medium text-foreground">Start with your data</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {uploadedFiles.map((file, index) => (
+                <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-3 text-sm">
+                  {file.name.endsWith('.pdf') ? (
+                    <PDFIcon size="sm" className="text-red-400" />
+                  ) : (
+                    <FileIcon size="sm" className="text-blue-400" />
+                  )}
+                  <span className="max-w-32 truncate">{file.name}</span>
+                  <button
+                    onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {selectedConnection && (
+                <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-3 text-sm">
+                  <LanguageIcon language={selectedConnection.type} />
+                  <span className="max-w-32 truncate">{selectedConnection.name}</span>
+                  <button
+                    onClick={() => setSelectedConnection(null)}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-9 gap-2 rounded-md border-border px-4 text-foreground"
-                  disabled={isSubmitting}
-                >
-                  <DatabaseIcon size="sm" />
-                  <span className="hidden sm:inline">Add connection</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {connections.length > 0 ? (
-                  connections.map((connection) => (
-                    <DropdownMenuItem
-                      key={connection.uuid}
-                      onClick={() => {
-                        trackEvent('[StartWithAISimple].addConnection', { connectionType: connection.type });
-                        setSelectedConnection({
-                          uuid: connection.uuid,
-                          name: connection.name,
-                          type: connection.type,
-                        });
-                      }}
-                    >
-                      <LanguageIcon language={connection.type} className="mr-2" />
-                      {connection.name}
+              <Button
+                variant="outline"
+                className="h-10 gap-2 bg-background px-4"
+                onClick={() => handleFileUpload(ALL_FILE_TYPES)}
+                disabled={isSubmitting}
+              >
+                <AttachFileIcon size="sm" />
+                Import file (Excel, CSV, PDF, PQT, Image)
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10 gap-2 bg-background px-4" disabled={isSubmitting}>
+                    <DatabaseIcon size="sm" />
+                    Add connection
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {connections.length > 0 ? (
+                    connections.map((connection) => (
+                      <DropdownMenuItem
+                        key={connection.uuid}
+                        onClick={() => {
+                          trackEvent('[StartWithAISimple].addConnection', { connectionType: connection.type });
+                          setSelectedConnection({
+                            uuid: connection.uuid,
+                            name: connection.name,
+                            type: connection.type,
+                          });
+                        }}
+                      >
+                        <LanguageIcon language={connection.type} className="mr-2" />
+                        {connection.name}
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <DropdownMenuItem asChild>
+                      <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-2">
+                        <DatabaseIcon size="sm" />
+                        Create connection
+                      </Link>
                     </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Suggestions */}
+          <div className="mb-6 space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-medium text-foreground">
+                {hasContext ? 'Suggestions based on your data' : 'Or start with a suggested prompt'}
+              </h3>
+              {isLoadingSuggestions && (
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#7877c6] border-t-transparent" />
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {isLoadingSuggestions
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="animate-pulse rounded-md border border-border bg-background p-4">
+                      <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
+                      <div className="h-3 w-full rounded bg-muted" />
+                    </div>
                   ))
-                ) : (
-                  <DropdownMenuItem asChild>
-                    <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-2">
-                      <DatabaseIcon size="sm" />
-                      Create connection
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                : suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      className="group relative overflow-hidden rounded-md border border-border bg-background p-4 text-left transition-all hover:border-[#7877c6]"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      disabled={isSubmitting}
+                    >
+                      {/* Hover gradient */}
+                      <div
+                        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.02) 100%)',
+                        }}
+                      />
+                      <h4 className="relative mb-1 text-sm font-semibold transition-colors group-hover:text-foreground">
+                        {suggestion.title}
+                      </h4>
+                      <p className="relative text-xs text-muted-foreground">{suggestion.description}</p>
+                    </button>
+                  ))}
+            </div>
           </div>
 
           {/* Main prompt input */}
           <div className={cn('relative overflow-hidden rounded-lg border bg-background', 'border-border shadow-lg')}>
-            {/* Context chips - files and connections inside the chat box */}
-            {hasContext && (
-              <div className="flex flex-wrap items-center gap-2 px-5 pt-4">
-                {uploadedFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="group flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm transition-all hover:border-[#7877c6]"
-                  >
-                    {file.name.endsWith('.pdf') ? (
-                      <PDFIcon size="sm" className="text-red-400" />
-                    ) : (
-                      <FileIcon size="sm" className="text-blue-400" />
-                    )}
-                    <span className="max-w-40 truncate">{file.name}</span>
-                    <button
-                      onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
-                      className="ml-1 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                    >
-                      <Cross2Icon className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-                {selectedConnection && (
-                  <div className="group flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm transition-all hover:border-[#7877c6]">
-                    <LanguageIcon language={selectedConnection.type} />
-                    <span className="max-w-40 truncate">{selectedConnection.name}</span>
-                    <button
-                      onClick={() => setSelectedConnection(null)}
-                      className="ml-1 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                    >
-                      <Cross2Icon className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
             {isLoadingSuggestions && hasContext ? (
               <div className="flex min-h-24 items-center gap-3 px-6 py-5">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -554,10 +579,8 @@ export const Component = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoHeight
-                className={cn(
-                  'min-h-24 resize-none !border-none bg-transparent px-6 text-lg !shadow-none focus-visible:ring-0',
-                  hasContext ? 'pb-5 pt-3' : 'py-5'
-                )}
+                placeholder="Create a spreadsheet that..."
+                className="min-h-24 resize-none !border-none bg-transparent px-6 py-5 text-lg !shadow-none focus-visible:ring-0"
                 disabled={isSubmitting}
               />
             )}
@@ -581,48 +604,6 @@ export const Component = () => {
                   </>
                 )}
               </Button>
-            </div>
-          </div>
-
-          {/* Suggestions */}
-          <div className="mt-10">
-            <div className="mb-5 flex items-center gap-2">
-              <h3 className="text-base font-medium text-foreground">
-                {hasContext ? 'Suggestions based on your data' : 'Or explore some common use-cases for Quadratic'}
-              </h3>
-              {isLoadingSuggestions && (
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#7877c6] border-t-transparent" />
-              )}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {isLoadingSuggestions
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="animate-pulse rounded-md border border-border bg-background/50 p-4">
-                      <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
-                      <div className="h-3 w-full rounded bg-muted" />
-                    </div>
-                  ))
-                : suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      className="group relative overflow-hidden rounded-md border border-border bg-background/50 p-4 text-left backdrop-blur-sm transition-all hover:border-[#7877c6] hover:bg-background"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      disabled={isSubmitting}
-                    >
-                      {/* Hover gradient */}
-                      <div
-                        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
-                        style={{
-                          background:
-                            'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.02) 100%)',
-                        }}
-                      />
-                      <h4 className="relative mb-1 text-sm font-semibold transition-colors group-hover:text-foreground">
-                        {suggestion.title}
-                      </h4>
-                      <p className="relative text-xs text-muted-foreground">{suggestion.description}</p>
-                    </button>
-                  ))}
             </div>
           </div>
         </div>
