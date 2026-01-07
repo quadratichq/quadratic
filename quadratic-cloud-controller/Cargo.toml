@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-cloud-controller"
-version = "0.22.1"
+version = "0.23.1"
 edition = "2024"
 authors = ["Quadratic"]
 description = "Kubernetes controller for file workers in Quadratic Cloud Kubernetes cluster"
@@ -9,6 +9,7 @@ description = "Kubernetes controller for file workers in Quadratic Cloud Kuberne
 anyhow = "1.0"
 axum = { version = "0.8.1", features = ["json"] }
 chrono = { version = "=0.4.39", features = ["serde"] }
+dashmap = "6"
 dotenv = "0.15.0"
 envy = "0.4.2"
 futures = "0.3.29"

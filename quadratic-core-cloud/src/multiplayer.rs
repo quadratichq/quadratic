@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use http::Response;
 use prost::Message;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use quadratic_core::controller::{operations::operation::Operation, transaction::Transaction};
@@ -14,12 +17,14 @@ use quadratic_rust_shared::{
 
 use crate::error::Result;
 
+type AsyncWebsocketSender = Arc<Mutex<WebSocketSender>>;
+
 /// Connect to the Multiplayer server
 pub(crate) async fn connect(
     multiplayer_url: &str,
-    m2m_auth_token: &str,
+    jwt: &str,
 ) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
-    let headers = vec![("authorization".into(), format!("Bearer {}", m2m_auth_token))];
+    let headers = vec![("authorization".into(), format!("Bearer {}", jwt))];
     let websocket = WebsocketClient::connect_with_headers(multiplayer_url, headers).await?;
 
     Ok(websocket)
@@ -27,18 +32,22 @@ pub(crate) async fn connect(
 
 /// Send a message to the Multiplayer server.
 pub(crate) async fn send_message(
-    websocket: &mut WebSocketSender,
+    websocket: AsyncWebsocketSender,
     message: MessageRequest,
 ) -> Result<()> {
     let serialized_message = serde_json::to_string(&message)?;
-    websocket.send_text(&serialized_message).await?;
+    websocket
+        .lock()
+        .await
+        .send_text(&serialized_message)
+        .await?;
 
     Ok(())
 }
 
 /// Enter the room
 pub(crate) async fn enter_room(
-    websocket: &mut WebSocketSender,
+    websocket: AsyncWebsocketSender,
     user_id: Uuid,
     file_id: Uuid,
     session_id: Uuid,
@@ -49,7 +58,7 @@ pub(crate) async fn enter_room(
 
 /// Get transactions from the Multiplayer server.
 pub(crate) async fn get_transactions(
-    websocket: &mut WebSocketSender,
+    websocket: AsyncWebsocketSender,
     file_id: Uuid,
     session_id: Uuid,
     min_sequence_num: u64,
@@ -66,7 +75,7 @@ pub(crate) async fn get_transactions(
 /// Send a transaction to the Multiplayer server.
 /// Returns the id of the transaction.
 pub(crate) async fn send_transaction(
-    websocket: &mut WebSocketSender,
+    websocket: AsyncWebsocketSender,
     id: Uuid,
     file_id: Uuid,
     session_id: Uuid,
@@ -81,14 +90,18 @@ pub(crate) async fn send_transaction(
         operations: compressed_ops,
     };
     let protobuf_message = request.encode_to_vec();
-    websocket.send_binary(&protobuf_message).await?;
+    websocket
+        .lock()
+        .await
+        .send_binary(&protobuf_message)
+        .await?;
 
     Ok(id)
 }
 
 /// Send heartbeat to the Multiplayer server.
 pub(crate) async fn send_heartbeat(
-    websocket: &mut WebSocketSender,
+    websocket: AsyncWebsocketSender,
     session_id: Uuid,
     file_id: Uuid,
 ) -> Result<()> {
@@ -98,7 +111,7 @@ pub(crate) async fn send_heartbeat(
 
 /// Leave the room
 pub(crate) async fn leave_room(
-    websocket: &mut WebSocketSender,
+    websocket: AsyncWebsocketSender,
     session_id: Uuid,
     file_id: Uuid,
 ) -> Result<()> {
@@ -120,12 +133,11 @@ mod tests {
         let user_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let session_id = Uuid::new_v4();
-        let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
+        let jwt = "M2M_AUTH_TOKEN".to_string();
 
-        let (websocket, response) = connect("ws://localhost:3001/ws", &m2m_auth_token)
-            .await
-            .unwrap();
-        let (mut sender, mut receiver) = websocket.split();
+        let (websocket, response) = connect("ws://localhost:3001/ws", &jwt).await.unwrap();
+        let (sender, mut receiver) = websocket.split();
+        let async_sender = Arc::new(Mutex::new(sender));
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
 
         // listen for messages in a separate thread
@@ -136,7 +148,7 @@ mod tests {
         });
 
         // enter the room
-        enter_room(&mut sender, user_id, file_id, session_id)
+        enter_room(async_sender.clone(), user_id, file_id, session_id)
             .await
             .unwrap();
 
@@ -147,9 +159,15 @@ mod tests {
             values: CellValues::from(vec![vec![CellValue::Text("hello world".to_string())]]),
         }];
         let transaction_id = Uuid::new_v4();
-        let id = send_transaction(&mut sender, transaction_id, file_id, session_id, operations)
-            .await
-            .unwrap();
+        let id = send_transaction(
+            async_sender,
+            transaction_id,
+            file_id,
+            session_id,
+            operations,
+        )
+        .await
+        .unwrap();
 
         println!("transaction id: {:?}", id);
     }

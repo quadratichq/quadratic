@@ -1,23 +1,29 @@
 use quadratic_core_cloud::worker::Worker as Core;
 use quadratic_rust_shared::quadratic_api::TaskRun;
 use quadratic_rust_shared::quadratic_cloud::{
-    GetWorkerInitDataResponse, ack_tasks, get_tasks, worker_shutdown,
+    GetWorkerInitDataResponse, ack_tasks, get_tasks, get_token, worker_shutdown,
 };
 use std::time::Duration;
-use tracing::{error, info, trace};
+use tracing::{error, info, trace, warn};
 use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::{Result, WorkerError};
+
+/// Maximum number of retry attempts for token refresh
+const TOKEN_REFRESH_MAX_RETRIES: u32 = 3;
+/// Initial delay in milliseconds for token refresh retry (doubles each attempt)
+const TOKEN_REFRESH_INITIAL_DELAY_MS: u64 = 100;
 
 pub(crate) struct Worker {
     core: Core,
     container_id: Uuid,
     file_id: Uuid,
     worker_init_data: GetWorkerInitDataResponse,
-    m2m_auth_token: String,
     controller_url: String,
     tasks: Vec<(String, TaskRun)>,
+    /// Current JWT with JTI - used to authenticate with controller and rotated on each token request
+    current_jwt: String,
 }
 
 impl Worker {
@@ -25,23 +31,71 @@ impl Worker {
     ///
     /// This will create a new worker and connect to the multiplayer server.
     /// It will then enter the room and get the catchup transactions.
+    /// If an error occurs, the worker will be shutdown and the error will be returned.
     ///
     /// * `config` - The configuration for the worker.
     ///
     /// Returns a new worker.
+    ///
     pub(crate) async fn new(config: Config) -> Result<Self> {
+        let file_id = config.file_id;
+        let controller_url = config.controller_url.clone();
+        let container_id = config.container_id;
+        let jwt = config.jwt.clone();
+
+        match Self::new_worker(config).await {
+            Ok(worker) => Ok(worker),
+            Err(e) => {
+                if let Err(shutdown_err) =
+                    worker_shutdown(&controller_url, container_id, file_id, &jwt).await
+                {
+                    error!("Failed to shutdown worker: {}", shutdown_err);
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// Internally create a new worker.
+    ///
+    /// This will create a new worker and connect to the multiplayer server.
+    /// It will then enter the room and get the catchup transactions.
+    ///
+    /// * `config` - The configuration for the worker.
+    ///
+    /// Returns a new worker.
+    ///
+    async fn new_worker(config: Config) -> Result<Self> {
         let file_id = config.file_id.to_owned();
         let container_id = config.container_id.to_owned();
         let worker_init_data = config.worker_init_data;
-        let m2m_auth_token = config.m2m_auth_token.to_owned();
         let controller_url = config.controller_url.to_owned();
         let tasks = config.tasks;
 
+        // Rotate the token immediately to invalidate the environment JWT.
+        // This ensures the JWT passed via environment (visible in /proc/<pid>/environ)
+        // is consumed before any network operations, making it useless if leaked.
+        let current_jwt = get_token(&controller_url, file_id, &config.jwt)
+            .await
+            .map_err(|e| WorkerError::CreateWorker(format!("Failed to rotate initial JWT: {e}")))?;
+
+        // IMPORTANT: Core stores this JWT for the initial multiplayer connection but does NOT
+        // receive updates when tokens are rotated. This is safe ONLY because Core doesn't
+        // implement reconnection - if the websocket drops, the worker fails.
+        //
+        // If reconnection is ever added to Core, it would attempt to reconnect with an
+        // old/consumed JTI and fail silently. In that case, Core would need a callback or
+        // method to get the current JWT from the Worker instead of storing its own copy.
+        //
+        // Current safety relies on:
+        // 1. Workers are short-lived (process tasks and exit)
+        // 2. No reconnection means the stored JWT is used only once
+        // 3. Each task rotation updates self.current_jwt (not Core's copy)
         let core = Core::new(
             file_id,
             worker_init_data.sequence_number.to_owned() as u64,
             &worker_init_data.presigned_url.to_owned(),
-            config.m2m_auth_token.to_owned(),
+            current_jwt.clone(),
             config.multiplayer_url.to_owned(),
             config.connection_url.to_owned(),
         )
@@ -53,9 +107,9 @@ impl Worker {
             container_id,
             file_id,
             worker_init_data,
-            m2m_auth_token,
             controller_url,
             tasks,
+            current_jwt,
         })
     }
 
@@ -83,8 +137,60 @@ impl Worker {
 
             info!("Processing {} task(s) for file: {}", tasks.len(), file_id);
 
+            // Note: If token refresh fails mid-batch, any already-processed tasks won't be
+            // acknowledged and may be re-processed when the controller recreates the worker.
+            // This is acceptable because tasks should be idempotent - running a task twice
+            // should produce the same result as running it once.
             for (key, task) in tasks {
                 let task_start = std::time::Instant::now();
+
+                // Get a fresh JWT token by presenting our current JWT.
+                // The controller validates and consumes our current JTI,
+                // then issues a new JWT with a new JTI.
+                // Retry with exponential backoff for transient failures.
+                let jwt = {
+                    let mut last_error = None;
+                    let mut token = None;
+
+                    for attempt in 0..TOKEN_REFRESH_MAX_RETRIES {
+                        match get_token(&self.controller_url, self.file_id, &self.current_jwt).await
+                        {
+                            Ok(t) => {
+                                token = Some(t);
+                                break;
+                            }
+                            Err(e) => {
+                                let delay = TOKEN_REFRESH_INITIAL_DELAY_MS * 2_u64.pow(attempt);
+                                warn!(
+                                    "Token refresh attempt {}/{} failed for file {} (task {}): {}. Retrying in {}ms...",
+                                    attempt + 1,
+                                    TOKEN_REFRESH_MAX_RETRIES,
+                                    self.file_id,
+                                    key,
+                                    e,
+                                    delay
+                                );
+                                last_error = Some(e);
+                                tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+                            }
+                        }
+                    }
+
+                    match token {
+                        Some(t) => t,
+                        None => {
+                            let e = last_error.expect("last_error should be set if token is None");
+                            error!(
+                                "Failed to refresh JWT for file {} (task {}) after {} attempts: {}",
+                                self.file_id, key, TOKEN_REFRESH_MAX_RETRIES, e
+                            );
+                            return Err(WorkerError::GetToken(e.to_string()));
+                        }
+                    }
+                };
+
+                // Update our current JWT for the next request
+                self.current_jwt = jwt.clone();
 
                 info!(
                     "Starting task {} (run_id: {}, task_id: {})",
@@ -94,11 +200,7 @@ impl Worker {
                 // process the operations
                 match self
                     .core
-                    .process_operations(
-                        task.operations,
-                        team_id.to_owned(),
-                        self.m2m_auth_token.to_owned(),
-                    )
+                    .process_operations(task.operations, team_id.to_owned(), jwt)
                     .await
                 {
                     Ok(_) => {
@@ -160,6 +262,7 @@ impl Worker {
                 file_id,
                 successful_tasks,
                 failed_tasks,
+                &self.current_jwt,
             )
             .await
             .map_err(|e| WorkerError::AckTasks(e.to_string()));
@@ -176,7 +279,7 @@ impl Worker {
             // Check for more tasks before shutting down
             trace!("Checking for more tasks...");
 
-            match get_tasks(&controller_url, file_id).await {
+            match get_tasks(&controller_url, file_id, &self.current_jwt).await {
                 Ok(new_tasks) => {
                     if new_tasks.is_empty() {
                         info!("No more tasks available, ready to shutdown");
@@ -218,7 +321,14 @@ impl Worker {
         }
 
         // send worker shutdown request to the controller
-        match worker_shutdown(&self.controller_url, self.container_id, self.file_id).await {
+        match worker_shutdown(
+            &self.controller_url,
+            self.container_id,
+            self.file_id,
+            &self.current_jwt,
+        )
+        .await
+        {
             Ok(_) => info!("Successfully notified controller of shutdown"),
             Err(e) => {
                 error!("Error notifying controller of shutdown: {}", e);

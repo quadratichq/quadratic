@@ -136,6 +136,13 @@ export const ScheduledTaskInterval = (props: Props) => {
                   step="60"
                   value={localTimeString}
                   onChange={(e) => changeDaysTime(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Stop propagation to prevent grid shortcuts from interfering,
+                    // but allow Escape to bubble up to close the panel
+                    if (e.key !== 'Escape') {
+                      e.stopPropagation();
+                    }
+                  }}
                   className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                 />
                 <div className="text-sm">{timezoneAbbr}</div>
@@ -160,6 +167,11 @@ export const ScheduledTaskInterval = (props: Props) => {
                 onBlur={(e) => changeHoursMinute(e.target.value)}
                 className=""
                 onKeyDown={(e) => {
+                  // Stop propagation to prevent grid shortcuts from interfering,
+                  // but allow Escape to bubble up to close the panel
+                  if (e.key !== 'Escape') {
+                    e.stopPropagation();
+                  }
                   if (e.key === 'Enter') {
                     changeHoursMinute(e.currentTarget.value);
                   }
@@ -176,6 +188,13 @@ export const ScheduledTaskInterval = (props: Props) => {
                 id="custom-cron"
                 value={customCron}
                 onChange={(e) => changeCustomCron(e.target.value)}
+                onKeyDown={(e) => {
+                  // Stop propagation to prevent grid shortcuts from interfering,
+                  // but allow Escape to bubble up to close the panel
+                  if (e.key !== 'Escape') {
+                    e.stopPropagation();
+                  }
+                }}
                 className={cn(cronError && 'border-destructive')}
               />
               {cronError && <p className="text-xs text-destructive">{cronError}</p>}
