@@ -5,12 +5,14 @@ import {
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
+import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { uploadFile } from '@/app/helpers/files';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useEffect, useRef, useState } from 'react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -44,10 +46,16 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
   ({ submit, context, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
-    const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
+    const abortControllerRef = useRef<AbortController | undefined>(undefined);
+    // Initialize to false to avoid calling fileHasData() during render (sheets may not be initialized)
+    const [sheetHasData, setSheetHasData] = useState(false);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
+    // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
+    const getEmptyChatPromptSuggestionsRef = useRef(getEmptyChatPromptSuggestions);
+    getEmptyChatPromptSuggestionsRef.current = getEmptyChatPromptSuggestions;
 
+    // Listen for sheet content changes to update suggestions when data is added/removed
     const handleChooseFile = useCallback(async () => {
       trackEvent('[AIAnalyst].chooseFile');
       const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
@@ -57,48 +65,78 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, []);
 
     useEffect(() => {
-      const updatePromptSuggestions = async () => {
-        let prevLoading;
-        setLoading((prev) => {
-          prevLoading = prev;
-          return true;
-        });
-        if (prevLoading) {
-          return;
-        }
+      let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
-        const abortController = new AbortController();
-        try {
-          setAbortController((prev) => {
-            prev?.abort();
-            return abortController;
+      const checkSheetData = () => {
+        // Debounce to avoid frequent fileHasData() calls on rapid hash changes
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          const hasData = fileHasData();
+          setSheetHasData((prev) => {
+            // Only trigger update if the data presence changed
+            if (prev !== hasData) {
+              return hasData;
+            }
+            return prev;
           });
-          const promptSuggestions = await getEmptyChatPromptSuggestions({
+        }, 100);
+      };
+
+      // Initial check (deferred to effect to ensure sheets singleton is initialized)
+      checkSheetData();
+
+      events.on('hashContentChanged', checkSheetData);
+      return () => {
+        events.off('hashContentChanged', checkSheetData);
+        clearTimeout(debounceTimeout);
+      };
+    }, []);
+
+    useEffect(() => {
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      const updatePromptSuggestions = async () => {
+        setLoading(true);
+
+        try {
+          const promptSuggestions = await getEmptyChatPromptSuggestionsRef.current({
             context,
             files,
             importFiles,
+            sheetHasData,
             abortController,
           });
-          setPromptSuggestions(promptSuggestions);
-        } catch (error) {
-          setPromptSuggestions(undefined);
+          // Only update state if this request wasn't aborted
           if (!abortController.signal.aborted) {
-            abortController.abort();
+            setPromptSuggestions(promptSuggestions);
+          }
+        } catch (error) {
+          if (!abortController.signal.aborted) {
+            setPromptSuggestions(undefined);
             console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
           }
         }
 
-        setLoading(false);
+        // Only update loading state if this request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       };
 
       updatePromptSuggestions();
-    }, [context, files, importFiles, getEmptyChatPromptSuggestions]);
+
+      // Cleanup: abort on unmount or when dependencies change
+      return () => {
+        abortController.abort();
+      };
+    }, [context, files, importFiles, sheetHasData]);
 
     useEffect(() => {
       if (aiAnalystLoading) {
-        abortController?.abort();
+        abortControllerRef.current?.abort();
       }
-    }, [aiAnalystLoading, abortController]);
+    }, [aiAnalystLoading]);
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
