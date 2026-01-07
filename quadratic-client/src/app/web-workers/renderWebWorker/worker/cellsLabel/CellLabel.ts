@@ -936,6 +936,9 @@ export class CellLabel {
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
 
     const scale = this.fontSize / data.size;
+    // Scale the OPEN_SANS_FIX adjustments with font size to maintain proper centering
+    const fontScale = this.fontSize / DEFAULT_FONT_SIZE;
+    const scaledFixY = OPEN_SANS_FIX.y * fontScale;
     const hasPartialLinks = !this.link && this.linkSpans.length > 0;
     const hasFormatSpans = this.hasFormatSpans();
     // For partial hyperlinks or format spans, we need a default color for non-styled text
@@ -1038,7 +1041,7 @@ export class CellLabel {
         }
         const lineCenterY = (lineMinY + lineMaxY) / 2;
         const dotHeight = dotCharData.frame.height * scale;
-        const yPos = lineCenterY - dotHeight / 2 + OPEN_SANS_FIX.y;
+        const yPos = lineCenterY - dotHeight / 2 + scaledFixY;
 
         // Check if dot needs a separate mesh (different texture page)
         const needsSeparateMesh = char.charData.textureUid !== dotCharData.textureUid;
@@ -1113,7 +1116,7 @@ export class CellLabel {
           horizontalOffset = Math.round(horizontalOffset);
         }
         const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
-        const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
+        const yPos = this.position.y + char.position.y * scale + scaledFixY;
         const labelMesh = labelMeshes.get(char.labelMeshId);
         const textureFrame = char.charData.frame;
         const textureUvs = char.charData.uvs;
@@ -1188,14 +1191,14 @@ export class CellLabel {
     if (!hasVerticalClipping) {
       if (hasFormatSpans) {
         // Per-span underline/strikethrough
-        this.addSpanLines(scale, clipLeft, clipRight, clipTop, clipBottom);
+        this.addSpanLines(scale, scaledFixY, clipLeft, clipRight, clipTop, clipBottom);
       } else {
         // Cell-level underline/strikethrough
         if (this.underline) {
-          this.addLine(this.underlineOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
+          this.addLine(this.underlineOffset, clipLeft, clipRight, clipTop, clipBottom, scale, scaledFixY);
         }
         if (this.strikeThrough) {
-          this.addLine(this.strikeThroughOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
+          this.addLine(this.strikeThroughOffset, clipLeft, clipRight, clipTop, clipBottom, scale, scaledFixY);
         }
       }
     }
@@ -1207,6 +1210,10 @@ export class CellLabel {
   private calculateLinkRectangles = (scale: number) => {
     this.linkRectangles = [];
     if (this.linkSpans.length === 0 || this.chars.length === 0) return;
+
+    // Scale the OPEN_SANS_FIX adjustments with font size
+    const fontScale = this.fontSize / DEFAULT_FONT_SIZE;
+    const scaledFixY = OPEN_SANS_FIX.y * fontScale;
 
     for (const span of this.linkSpans) {
       let minX = Infinity;
@@ -1223,7 +1230,7 @@ export class CellLabel {
           const horizontalOffset =
             char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
           const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
-          const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
+          const yPos = this.position.y + char.position.y * scale + scaledFixY;
           const charRight = xPos + char.charData.frame.width * scale;
           const charBottom = yPos + char.charData.frame.height * scale;
 
@@ -1237,8 +1244,7 @@ export class CellLabel {
       // If we found characters for this span, create a rectangle
       if (minX < Infinity) {
         // Calculate underline y position using the same formula as addLine
-        const underlineY =
-          this.position.y + this.lineHeight * spanLine + this.underlineOffset * scale + OPEN_SANS_FIX.y;
+        const underlineY = this.position.y + this.lineHeight * spanLine + this.underlineOffset * scale + scaledFixY;
         // Get the link text from the original text
         const linkText = this.originalText.slice(span.start, span.end);
         this.linkRectangles.push({
@@ -1334,11 +1340,12 @@ export class CellLabel {
     clipRight: number,
     clipTop: number,
     clipBottom: number,
-    scale: number
+    scale: number,
+    scaledFixY: number
   ) => {
     this.lineWidths.forEach((lineWidth, line) => {
       const height = this.lineHeight * line + yOffset * scale;
-      const yPos = this.position.y + height + OPEN_SANS_FIX.y;
+      const yPos = this.position.y + height + scaledFixY;
       if (yPos < clipTop || yPos + HORIZONTAL_LINE_THICKNESS > clipBottom) return;
 
       let horizontalOffset = this.horizontalAlignOffsets[line];
@@ -1354,7 +1361,14 @@ export class CellLabel {
   };
 
   /** Add underline/strikethrough lines for format spans (per-character formatting). */
-  private addSpanLines = (scale: number, clipLeft: number, clipRight: number, clipTop: number, clipBottom: number) => {
+  private addSpanLines = (
+    scale: number,
+    scaledFixY: number,
+    clipLeft: number,
+    clipRight: number,
+    clipTop: number,
+    clipBottom: number
+  ) => {
     if (this.chars.length === 0) return;
 
     const baseData = this.cellsLabels.bitmapFonts[this.fontName];
@@ -1416,7 +1430,7 @@ export class CellLabel {
 
       const yOffset = run.type === 'underline' ? this.underlineOffset : this.strikeThroughOffset;
       const height = this.lineHeight * run.line + yOffset * scale;
-      const yPos = this.position.y + height + OPEN_SANS_FIX.y;
+      const yPos = this.position.y + height + scaledFixY;
 
       if (yPos < clipTop || yPos + HORIZONTAL_LINE_THICKNESS > clipBottom) continue;
 
