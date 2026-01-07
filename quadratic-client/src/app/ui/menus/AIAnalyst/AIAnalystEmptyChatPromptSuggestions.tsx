@@ -6,8 +6,6 @@ import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { uploadFile } from '@/app/helpers/files';
-import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
-import { FileIcon, PDFIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
@@ -36,56 +34,27 @@ const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
 // All file types supported by the AI Analyst for import
 const ALL_IMPORT_FILE_TYPES = ['image/*', '.pdf', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
 
-interface ImportButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}
-
-const ImportButton = ({ icon, label, onClick }: ImportButtonProps) => (
-  <button
-    onClick={onClick}
-    className="flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 transition-all hover:bg-accent"
-  >
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center leading-none">{icon}</span>
-    <span className="text-sm">{label}</span>
-  </button>
-);
-
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
   context: Context;
-  setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   importFiles: ImportFile[];
 }
 export const AIAnalystEmptyChatPromptSuggestions = memo(
-  ({ submit, context, setContext, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
+  ({ submit, context, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
 
-    const handleImportFile = useCallback(async (eventName: string) => {
-      trackEvent(eventName);
+    const handleChooseFile = useCallback(async () => {
+      trackEvent('[AIAnalyst].chooseFile');
       const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
       if (selectedFiles.length > 0) {
         events.emit('aiAnalystDroppedFiles', selectedFiles);
       }
     }, []);
-
-    const handleImportExcel = useCallback(() => {
-      handleImportFile('[AIAnalyst].importExcel');
-    }, [handleImportFile]);
-
-    const handleImportCsv = useCallback(() => {
-      handleImportFile('[AIAnalyst].importCsv');
-    }, [handleImportFile]);
-
-    const handleImportPdf = useCallback(() => {
-      handleImportFile('[AIAnalyst].importPdf');
-    }, [handleImportFile]);
 
     useEffect(() => {
       const updatePromptSuggestions = async () => {
@@ -132,29 +101,28 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading, abortController]);
 
     return (
-      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-6 px-4">
+      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
         {/* Import Data Section */}
-        <div className="flex flex-col items-center gap-3">
-          <h2 className="text-lg font-medium">Start by importing your data</h2>
-          <div className="flex flex-wrap justify-center gap-2">
-            <ImportButton
-              icon={<img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />}
-              label="Excel"
-              onClick={handleImportExcel}
-            />
-            <ImportButton icon={<PDFIcon className="!text-red-500" />} label="PDF" onClick={handleImportPdf} />
-            <ImportButton
-              icon={<FileIcon className="!text-muted-foreground" />}
-              label="CSV, PQT, other files"
-              onClick={handleImportCsv}
-            />
-            <AIUserMessageFormConnectionsButton context={context} setContext={setContext} variant="empty-state" />
+        <div className="flex w-full max-w-lg flex-col items-center gap-3">
+          <h2 className="text-xl font-semibold">Start by importing data</h2>
+          <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
+            <div className="flex items-center justify-center gap-4">
+              <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
+              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+            </div>
+            <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
+            <p className="text-sm text-muted-foreground">
+              Drag and drop, or{' '}
+              <button onClick={handleChooseFile} className="underline hover:text-foreground">
+                choose a file
+              </button>
+            </p>
           </div>
         </div>
 
         {/* Prompt Suggestions */}
         <div className="flex flex-col items-center gap-3">
-          <h2 className="text-lg font-medium">Or start with a suggested prompt</h2>
+          <h2 className="text-xl font-semibold">Or start with a suggested prompt</h2>
           <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
               <div key={`${index}-${prompt}`}>
