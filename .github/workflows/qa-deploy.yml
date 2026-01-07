@@ -38,11 +38,19 @@ jobs:
         run: |
           npm run client:download:pyodide
 
+      - name: Cache Pulumi ESC CLI
+        uses: useblacksmith/cache@v5
+        with:
+          path: ~/.pulumi
+          key: pulumi-esc-cli-v0.21.0
+
       - name: Pull Pulumi ESC Environment Variables
         id: pull-pulumi-esc-env-vars
         run: |
-          # Install Pulumi ESC CLI
-          curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+          # Install Pulumi ESC CLI (only if not cached)
+          if [ ! -f "$HOME/.pulumi/bin/esc" ]; then
+            curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+          fi
           export PATH="$HOME/.pulumi/bin:$PATH"
 
           # Login and get environment variables
@@ -68,20 +76,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR Cache URL
+        id: get-ecr-cache-url
+        run: |
+          REPO_NAME=quadratic-client-cache-development
+          # Try to get existing repo, or create if it doesn't exist
+          if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
+            echo "Creating ECR cache repository..."
+            aws ecr create-repository --repository-name $REPO_NAME --image-tag-mutability MUTABLE
+          fi
+          ECR_URL=$(aws ecr describe-repositories --repository-names $REPO_NAME --query 'repositories[0].repositoryUri' --output text)
+          echo "ECR_CACHE_URL=$ECR_URL" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             image=moby/buildkit:latest
             network=host
-
-      - name: Cache Docker layers
-        uses: useblacksmith/cache@v5
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
 
       - name: Build using Docker
         uses: docker/build-push-action@v6
@@ -91,8 +106,8 @@ jobs:
           push: false
           load: true
           tags: quadratic-client-development:local
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=registry,ref=${{ steps.get-ecr-cache-url.outputs.ECR_CACHE_URL }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.get-ecr-cache-url.outputs.ECR_CACHE_URL }}:buildcache
           build-args: |
             ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
           outputs: type=docker
@@ -175,14 +190,6 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Cache Docker layers
-        uses: useblacksmith/cache@v5
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -190,8 +197,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.get-ecr-url.outputs.ECR_URL }}:pr-qa
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=registry,ref=${{ steps.get-ecr-url.outputs.ECR_URL }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.get-ecr-url.outputs.ECR_URL }}:buildcache
 
   deploy_client:
     needs: [build_client, build_images]
