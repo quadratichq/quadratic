@@ -26,3 +26,23 @@ export const clickMoreFormattingIcon = async (page: Page) => {
     .filter({ has: page.locator('button[data-testid="horizontal-align"]') })
     .waitFor({ state: 'visible' });
 };
+
+/**
+ * Sets the horizontal alignment for the currently selected cell(s).
+ */
+export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Center' | 'Right') => {
+  await clickMoreFormattingIcon(page);
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator(`div[role="menuitem"] >> text=${alignment}`).click({ timeout: 60 * 1000 });
+};
+
+/**
+ * Sets the text wrap mode for the currently selected cell(s).
+ */
+export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip') => {
+  await clickMoreFormattingIcon(page);
+  await page.locator('button[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator(`[role="menuitem"] span:has-text("${wrap}")`).click({ timeout: 60 * 1000 });
+};

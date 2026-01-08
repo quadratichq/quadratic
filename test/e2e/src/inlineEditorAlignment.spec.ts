@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
-import { clickMoreFormattingIcon } from './helpers/format.helper';
+import { setHorizontalAlignment, setTextWrap } from './helpers/format.helper';
 import {
   assertInlineEditorAlignment,
   closeInlineEditor,
@@ -11,26 +11,6 @@ import {
   openCellForEditing,
 } from './helpers/inlineEditor.helper';
 import { gotoCells } from './helpers/sheet.helper';
-
-/**
- * Sets the horizontal alignment for the currently selected cell(s).
- */
-const setHorizontalAlignment = async (page: any, alignment: 'Left' | 'Center' | 'Right') => {
-  await clickMoreFormattingIcon(page);
-  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
-  await page.locator(`div[role="menuitem"] >> text=${alignment}`).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(500);
-};
-
-/**
- * Sets the text wrap mode for the currently selected cell(s).
- */
-const setTextWrap = async (page: any, wrap: 'Overflow' | 'Wrap' | 'Clip') => {
-  await clickMoreFormattingIcon(page);
-  await page.locator('button[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"] span:has-text("${wrap}")`).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(500);
-};
 
 test.describe('Inline Editor Text Alignment', () => {
   const fileName = 'Inline Editor Alignment Test';
