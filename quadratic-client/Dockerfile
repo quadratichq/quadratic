@@ -48,7 +48,7 @@ RUN echo 'wasm-pack version:' && wasm-pack --version
 FROM rust-toolchain-base AS cargo-deps-cache
 
 # Copy only Cargo files for dependency caching
-COPY --link Cargo.toml Cargo.lock ./
+COPY --link Cargo.toml ./
 COPY --link quadratic-core/Cargo.toml ./quadratic-core/
 COPY --link quadratic-rust-shared/Cargo.toml ./quadratic-rust-shared/
 
@@ -58,13 +58,8 @@ RUN mkdir -p quadratic-core/src quadratic-rust-shared/src && \
     echo "pub fn stub() {}" > quadratic-core/src/lib.rs && \
     echo "pub fn stub() {}" > quadratic-rust-shared/src/lib.rs
 
-# Download and compile dependencies (this layer is cached)
-RUN cargo fetch
-
-# Pre-build dependencies for both debug and release (creates cached dependency artifacts)
-ENV CARGO_TARGET_DIR=/quadratic/target-deps
-RUN cargo build --workspace --lib 2>/dev/null || true
-RUN CC=clang AR=llvm-ar cargo build --workspace --lib --release --target wasm32-unknown-unknown 2>/dev/null || true
+# Download dependencies (this layer is cached when Cargo.toml doesn't change)
+RUN cargo fetch || true
 
 
 ###########################################################################################
@@ -76,13 +71,12 @@ ARG CLIENT_DEV
 
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 
-# Copy cached dependencies
+# Copy cached Cargo registry from deps-cache stage
 COPY --from=cargo-deps-cache /root/.cargo/registry /root/.cargo/registry
 COPY --from=cargo-deps-cache /root/.cargo/git /root/.cargo/git
 
 # Copy required files for building core
 COPY --link package.json .
-COPY --link Cargo.toml Cargo.lock ./
 COPY --link ./quadratic-core/. ./quadratic-core/
 COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
@@ -102,13 +96,12 @@ FROM rust-toolchain-base AS ts-rust-types-builder
 
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
 
-# Copy cached dependencies
+# Copy cached Cargo registry from deps-cache stage
 COPY --from=cargo-deps-cache /root/.cargo/registry /root/.cargo/registry
 COPY --from=cargo-deps-cache /root/.cargo/git /root/.cargo/git
 
 # Copy required files for building ts/rust types
 COPY --link package.json .
-COPY --link Cargo.toml Cargo.lock ./
 COPY --link ./quadratic-core/. ./quadratic-core/
 COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
@@ -135,7 +128,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /quadratic
 
 # Copy only package files for dependency caching (this layer is cached if packages don't change)
-COPY --link package.json package-lock.json ./
+COPY --link package.json ./
 COPY --link ./quadratic-kernels/python-wasm/package.json ./quadratic-kernels/python-wasm/
 COPY --link ./quadratic-core/package.json ./quadratic-core/
 COPY --link ./quadratic-shared/package.json ./quadratic-shared/
