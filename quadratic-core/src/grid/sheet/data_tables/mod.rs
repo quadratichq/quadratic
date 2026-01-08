@@ -13,6 +13,8 @@ use crate::{
 use anyhow::{Result, anyhow};
 
 pub mod cache;
+mod single_cell_tables_cache;
+
 use cache::SheetDataTablesCache;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -82,6 +84,7 @@ impl SheetDataTables {
     /// This function only updates spill due to another data table, not due to cell values in columns.
     ///
     /// Returns set of dirty rectangle
+    #[function_timer::function_timer]
     fn update_spill_and_cache(
         &mut self,
         index: usize,
@@ -95,7 +98,7 @@ impl SheetDataTables {
         // remove data table from cache
         if let Some(old_spilled_output_rect) = old_output_rect {
             if old_spilled_output_rect.len() == 1 {
-                self.cache.single_cell_tables.set(pos, None);
+                self.cache.single_cell_tables.set(pos, false);
             } else {
                 let rects = self
                     .cache
@@ -136,7 +139,7 @@ impl SheetDataTables {
 
             let new_spilled_output_rect = data_table.output_rect(pos, false);
             if new_spilled_output_rect.len() == 1 {
-                self.cache.single_cell_tables.set(pos, Some(true));
+                self.cache.single_cell_tables.set(pos, true);
             } else {
                 self.cache.multi_cell_tables.set_rect(
                     new_spilled_output_rect.min.x,
@@ -167,17 +170,44 @@ impl SheetDataTables {
 
             let mut other_data_tables_to_update = Vec::new();
             if let Some(updated_rect) = updated_rect {
-                for (other_index, other_pos, other_data_table) in self
-                    .get_in_rect_sorted(updated_rect, true)
-                    .filter(|(_, other_pos, _)| *other_pos != pos)
-                {
-                    let other_old_output_rect =
-                        Some(other_data_table.output_rect(other_pos, false));
-                    other_data_tables_to_update.push((
-                        other_index,
-                        other_pos,
-                        other_old_output_rect,
-                    ));
+                // Optimization: For new single-cell formulas (old_rect=None, new_rect=1x1),
+                // we only need to check if this cell is inside another table's un-spilled output.
+                // This is faster than the general get_in_rect_sorted query.
+                let is_new_single_cell = old_rect.is_none() && updated_rect.len() == 1;
+
+                if is_new_single_cell {
+                    // Fast path: check only un_spilled_output_rects for overlapping tables
+                    for other_pos in self
+                        .un_spilled_output_rects
+                        .get_positions_associated_with_region(updated_rect)
+                    {
+                        if other_pos != pos
+                            && let Some((other_index, other_data_table)) =
+                                self.get_full_at(&other_pos)
+                        {
+                            let other_old_output_rect =
+                                Some(other_data_table.output_rect(other_pos, false));
+                            other_data_tables_to_update.push((
+                                other_index,
+                                other_pos,
+                                other_old_output_rect,
+                            ));
+                        }
+                    }
+                } else {
+                    // General path: check all tables in the updated rect
+                    for (other_index, other_pos, other_data_table) in self
+                        .get_in_rect_sorted(updated_rect, true)
+                        .filter(|(_, other_pos, _)| *other_pos != pos)
+                    {
+                        let other_old_output_rect =
+                            Some(other_data_table.output_rect(other_pos, false));
+                        other_data_tables_to_update.push((
+                            other_index,
+                            other_pos,
+                            other_old_output_rect,
+                        ));
+                    }
                 }
 
                 dirty_rects.insert(updated_rect);
@@ -379,6 +409,7 @@ impl SheetDataTables {
     }
 
     /// Inserts a data table before the given index, updating mutual spill and cache.
+    #[function_timer::function_timer]
     pub(crate) fn insert_before(
         &mut self,
         mut index: usize,
@@ -429,7 +460,7 @@ impl SheetDataTables {
     }
 
     /// Returns the finite bounds of the sheet data tables.
-    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&mut self) -> Option<Rect> {
         self.cache.finite_bounds()
     }
 

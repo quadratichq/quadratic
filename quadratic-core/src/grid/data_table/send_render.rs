@@ -30,7 +30,7 @@ impl DataTable {
         let data_table_rect = self.output_sheet_rect(data_table_sheet_pos, false);
 
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
-        self.add_dirty_fills_and_borders(transaction, sheet.id);
+        self.add_dirty_fills_and_borders(transaction, sheet.id, data_table_pos);
 
         if transaction.is_user_ai() {
             let rows_to_resize = sheet.get_rows_with_wrap_in_rect(data_table_rect.into(), true);
@@ -50,6 +50,7 @@ impl DataTable {
         &self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
+        pos: Pos,
     ) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return;
@@ -60,7 +61,8 @@ impl DataTable {
             .as_ref()
             .is_some_and(|formats| formats.has_fills())
         {
-            transaction.add_fill_cells(sheet_id);
+            let output_rect = self.output_rect(pos, false);
+            transaction.add_fill_cells(sheet_id, output_rect);
         }
         if !self
             .borders
@@ -294,7 +296,8 @@ impl DataTable {
             }
 
             if formats.fill_color.is_some() {
-                transaction.add_fill_cells(sheet_id);
+                let output_rect = self.output_rect(data_table_pos, false);
+                transaction.add_fill_cells(sheet_id, output_rect);
             }
         }
     }

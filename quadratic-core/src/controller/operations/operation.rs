@@ -7,8 +7,10 @@ use crate::{
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
-        DataTable, DataTableKind, Sheet, SheetId,
-        data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
+        CodeCellLanguage, DataTable, DataTableKind, Sheet, SheetId,
+        data_table::{
+            DataTableTemplate, column_header::DataTableColumnHeader, sort::DataTableSort,
+        },
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
@@ -197,6 +199,17 @@ pub enum Operation {
     /// Runs the code cell at a specific position.
     ComputeCode {
         sheet_pos: SheetPos,
+    },
+    /// Sets code and computes it in one operation (avoids double finalization).
+    /// Used by autocomplete for code cells.
+    SetComputeCode {
+        sheet_pos: SheetPos,
+        language: CodeCellLanguage,
+        code: String,
+        /// Optional template to copy presentation properties from
+        /// (show_name, show_columns, alternating_colors, etc.)
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        template: Option<DataTableTemplate>,
     },
 
     /// Runs the code cell at an A1Selection.

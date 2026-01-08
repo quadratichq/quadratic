@@ -123,6 +123,13 @@ impl CodeCellLanguage {
             CodeCellLanguage::Import => "Import".to_string(),
         }
     }
+
+    /// Returns the default table name for a code cell (e.g., "Python1", "Formula1").
+    /// The number suffix ensures `unique_data_table_name` will properly increment
+    /// if there's a conflict.
+    pub fn default_table_name(&self) -> String {
+        format!("{}1", self.as_string())
+    }
 }
 
 impl CodeCellLanguage {
