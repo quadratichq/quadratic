@@ -1,5 +1,6 @@
 import * as Bigquery from '@/shared/components/connections/ConnectionFormBigquery';
 import * as Cockroachdb from '@/shared/components/connections/ConnectionFormCockroachdb';
+import * as GoogleAnalytics from '@/shared/components/connections/ConnectionFormGoogleAnalytics';
 import * as Mariadb from '@/shared/components/connections/ConnectionFormMariadb';
 import * as Mixpanel from '@/shared/components/connections/ConnectionFormMixpanel';
 import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
@@ -52,12 +53,16 @@ export type ConnectionFormValues = {
 
 export type UseConnectionForm<T extends ConnectionFormValues> = (connection: Connection | undefined) => {
   form: UseFormReturn<T>;
+  percentCompleted?: number;
 };
 
 export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   form: UseFormReturn<T>;
   children: ReactNode;
   handleSubmitForm: SubmitHandler<ConnectionFormValues>;
+  percentCompleted?: number;
+  connection?: Connection;
+  teamUuid: string;
 }) => ReactNode;
 
 type ConnectionTypeData<T extends ConnectionFormValues> = {
@@ -133,6 +138,12 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     ConnectionForm: Mixpanel.ConnectionForm,
     useConnectionForm: Mixpanel.useConnectionForm,
   },
+  GOOGLE_ANALYTICS: {
+    name: 'Google Analytics',
+    Logo: GoogleAnalyticsLogo,
+    ConnectionForm: GoogleAnalytics.ConnectionForm,
+    useConnectionForm: GoogleAnalytics.useConnectionForm,
+  },
 };
 
 export type PotentialConnectionType =
@@ -153,7 +164,6 @@ export type PotentialConnectionType =
   | 'NETSUITE'
   | 'QUICKBOOKS'
   | 'SHOPIFY'
-  | 'GOOGLE_ANALYTICS'
   | 'OTHER';
 export const potentialConnectionsByType: Record<
   PotentialConnectionType,
@@ -229,10 +239,6 @@ export const potentialConnectionsByType: Record<
   SHOPIFY: {
     name: 'Shopify',
     Logo: ShopifyLogo,
-  },
-  GOOGLE_ANALYTICS: {
-    name: 'Google Analytics',
-    Logo: GoogleAnalyticsLogo,
   },
   OTHER: {
     name: 'Other',
