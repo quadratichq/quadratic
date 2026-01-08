@@ -51,6 +51,11 @@ async function getClient() {
   }
 }
 
+// Peek at redirect state without clearing it
+function peekRedirectState(): { redirectTo?: string; closeOnComplete?: boolean } | null {
+  return redirectState;
+}
+
 // Get and clear redirect state
 export function getAndClearRedirectState(): { redirectTo?: string; closeOnComplete?: boolean } | null {
   const state = redirectState;
@@ -121,8 +126,10 @@ export const workosClient: AuthClient = {
       }
 
       // Handle special case: if state includes closeOnComplete, close the window
-      const state = getAndClearRedirectState();
+      // Use peek here so the state is preserved for login-result.tsx to use for redirect
+      const state = peekRedirectState();
       if (state && 'closeOnComplete' in state && state.closeOnComplete) {
+        getAndClearRedirectState(); // Clear state before closing
         window.close();
         return;
       }
