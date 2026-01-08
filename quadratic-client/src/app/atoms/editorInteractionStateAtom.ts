@@ -21,12 +21,14 @@ export interface EditorInteractionState {
   showSearch: boolean | SearchOptions;
   showContextMenu: boolean;
   showValidation: boolean | string;
+  showLogs: boolean;
   annotationState?: AnnotationState;
   permissions: FilePermission[];
   settings: TeamSettings;
   user?: User;
   fileUuid: string;
   teamUuid: string;
+  connectionUuid: string;
   follow?: string;
   undo: boolean;
   redo: boolean;
@@ -45,6 +47,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
+  showLogs: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   settings: {
@@ -53,6 +56,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   user: undefined, // when we call <RecoilRoot> we initialize this with the value from the server
   fileUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   teamUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
+  connectionUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   follow: undefined,
   undo: false,
   redo: false,
@@ -178,6 +182,7 @@ export const editorInteractionStateShowShareFileMenuAtom = createSelector('showS
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
 export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
 export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
+export const editorInteractionStateShowLogsAtom = createSelector('showLogs');
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
@@ -185,6 +190,7 @@ export const editorInteractionStateSettingsAtom = createSelector('settings');
 export const editorInteractionStateUserAtom = createSelector('user');
 export const editorInteractionStateFileUuidAtom = createSelector('fileUuid');
 export const editorInteractionStateTeamUuidAtom = createSelector('teamUuid');
+export const editorInteractionStateConnectionUuidAtom = createSelector('connectionUuid');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateUndoAtom = createSelector('undo');
 export const editorInteractionStateRedoAtom = createSelector('redo');

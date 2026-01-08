@@ -223,6 +223,11 @@ impl SheetFormatting {
     pub fn has_fills(&self) -> bool {
         !self.fill_color.is_all_default()
     }
+
+    /// Returns true if there are any meta fills (infinite column/row/sheet fills).
+    pub fn has_meta_fills(&self) -> bool {
+        self.fill_color.has_infinite_non_default()
+    }
 }
 
 #[cfg(test)]
@@ -360,5 +365,38 @@ mod tests {
 
         formatting.fill_color.set(pos![A2], None);
         assert!(!formatting.has_fills());
+    }
+
+    #[test]
+    fn test_has_meta_fills() {
+        // Empty formatting has no meta fills
+        let formatting = SheetFormatting::default();
+        assert!(!formatting.has_meta_fills());
+
+        // Finite fill is not a meta fill
+        let mut formatting = SheetFormatting::default();
+        formatting.fill_color.set(pos![A1], Some("red".to_string()));
+        assert!(!formatting.has_meta_fills());
+
+        // Column fill (infinite in y) is a meta fill
+        let mut formatting = SheetFormatting::default();
+        formatting
+            .fill_color
+            .set_rect(1, 1, Some(3), None, Some("blue".to_string()));
+        assert!(formatting.has_meta_fills());
+
+        // Row fill (infinite in x) is a meta fill
+        let mut formatting = SheetFormatting::default();
+        formatting
+            .fill_color
+            .set_rect(1, 1, None, Some(3), Some("green".to_string()));
+        assert!(formatting.has_meta_fills());
+
+        // Sheet fill (infinite in both) is a meta fill
+        let mut formatting = SheetFormatting::default();
+        formatting
+            .fill_color
+            .set_rect(1, 1, None, None, Some("yellow".to_string()));
+        assert!(formatting.has_meta_fills());
     }
 }

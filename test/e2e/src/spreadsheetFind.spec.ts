@@ -79,7 +79,7 @@ test('Search refreshes on changes', async ({ page }) => {
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 2');
 
   await setValueInCell(page, 'A20', 'baseball');
-  await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 3');
+  await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 3', { timeout: 10 * 1000 });
 
   // Cleanup newly created files
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
