@@ -5,8 +5,11 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { getExtension, supportedFileTypesFromGrid } from '@/app/helpers/files';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
@@ -25,6 +28,7 @@ export const AIAnalyst = memo(() => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const handleFileImport = useFileImport();
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -57,14 +61,44 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      events.emit('aiAnalystDroppedFiles', files);
-    }
-  }, []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) return;
+
+      // Split files: direct import for spreadsheet files, AI for PDFs/images
+      const directImportFiles: File[] = [];
+      const aiFiles: File[] = [];
+
+      for (const file of files) {
+        const extension = `.${getExtension(file.name)}`;
+        if (supportedFileTypesFromGrid.includes(extension)) {
+          directImportFiles.push(file);
+        } else {
+          // PDFs and images need AI to extract data
+          aiFiles.push(file);
+        }
+      }
+
+      // Direct import spreadsheet files into the sheet at position (1,1)
+      if (directImportFiles.length > 0) {
+        handleFileImport({
+          files: directImportFiles,
+          sheetId: sheets.sheet.id,
+          insertAt: { x: 1, y: 1 },
+          cursor: sheets.sheet.cursor.position.toString(),
+        });
+      }
+
+      // Send PDFs/images to AI for processing
+      if (aiFiles.length > 0) {
+        events.emit('aiAnalystDroppedFiles', aiFiles);
+      }
+    },
+    [handleFileImport]
+  );
 
   if (!showAIAnalyst || presentationMode) {
     return null;

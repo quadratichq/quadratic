@@ -5,8 +5,10 @@ import {
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
-import { uploadFile } from '@/app/helpers/files';
+import { getExtension, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
+import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
@@ -53,15 +55,43 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
     const getEmptyChatPromptSuggestionsRef = useRef(getEmptyChatPromptSuggestions);
     getEmptyChatPromptSuggestionsRef.current = getEmptyChatPromptSuggestions;
+    const handleFileImport = useFileImport();
 
     // Listen for sheet content changes to update suggestions when data is added/removed
     const handleChooseFile = useCallback(async () => {
       trackEvent('[AIAnalyst].chooseFile');
       const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
-      if (selectedFiles.length > 0) {
-        events.emit('aiAnalystDroppedFiles', selectedFiles);
+      if (selectedFiles.length === 0) return;
+
+      // Split files: direct import for spreadsheet files, AI for PDFs/images
+      const directImportFiles: File[] = [];
+      const aiFiles: File[] = [];
+
+      for (const file of selectedFiles) {
+        const extension = `.${getExtension(file.name)}`;
+        if (supportedFileTypesFromGrid.includes(extension)) {
+          directImportFiles.push(file);
+        } else {
+          // PDFs and images need AI to extract data
+          aiFiles.push(file);
+        }
       }
-    }, []);
+
+      // Direct import spreadsheet files into the sheet at position (1,1)
+      if (directImportFiles.length > 0) {
+        handleFileImport({
+          files: directImportFiles,
+          sheetId: sheets.sheet.id,
+          insertAt: { x: 1, y: 1 },
+          cursor: sheets.sheet.cursor.position.toString(),
+        });
+      }
+
+      // Send PDFs/images to AI for processing
+      if (aiFiles.length > 0) {
+        events.emit('aiAnalystDroppedFiles', aiFiles);
+      }
+    }, [handleFileImport]);
 
     useEffect(() => {
       let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
