@@ -51,7 +51,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     fn start_date(&self) -> NaiveDate {
-        self.start_date.clone()
+        self.start_date
     }
 
     fn streams(&self) -> Vec<&'static str> {
