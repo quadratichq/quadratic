@@ -17,6 +17,10 @@ export const clickMoreFormattingIcon = async (page: Page) => {
     return;
   }
 
+  // Press Escape to close any existing menus/popovers before trying to open a new one
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+
   // Click the icon - the click will bubble up to the PopoverTrigger parent
   await moreIcon.click();
 
@@ -35,6 +39,9 @@ export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Ce
   await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator(`div[role="menuitem"] >> text=${alignment}`).click({ timeout: 60 * 1000 });
+  // Press Escape to close menus and wait for popover to close
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
 };
 
 /**
@@ -45,4 +52,7 @@ export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip'
   await page.locator('button[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("${wrap}")`).click({ timeout: 60 * 1000 });
+  // Press Escape to close menus and wait for popover to close
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
 };
