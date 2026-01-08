@@ -48,8 +48,8 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | undefined>(undefined);
-    // Initialize to false to avoid calling fileHasData() during render (sheets may not be initialized)
-    const [sheetHasData, setSheetHasData] = useState(false);
+    // Initialize to undefined to avoid flash - only show import section once we know sheet is empty
+    const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
     // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
@@ -96,27 +96,33 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     useEffect(() => {
       let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
-      const checkSheetData = () => {
+      const checkSheetData = (immediate = false) => {
         // Debounce to avoid frequent fileHasData() calls on rapid hash changes
+        // But allow immediate check for initial load
         clearTimeout(debounceTimeout);
-        debounceTimeout = setTimeout(() => {
-          const hasData = fileHasData();
-          setSheetHasData((prev) => {
-            // Only trigger update if the data presence changed
-            if (prev !== hasData) {
-              return hasData;
-            }
-            return prev;
-          });
-        }, 100);
+        if (immediate) {
+          setSheetHasData(fileHasData());
+        } else {
+          debounceTimeout = setTimeout(() => {
+            const hasData = fileHasData();
+            setSheetHasData((prev) => {
+              // Only trigger update if the data presence changed
+              if (prev !== hasData) {
+                return hasData;
+              }
+              return prev;
+            });
+          }, 100);
+        }
       };
 
-      // Initial check (deferred to effect to ensure sheets singleton is initialized)
-      checkSheetData();
+      // Initial check - immediate to avoid flash
+      checkSheetData(true);
 
-      events.on('hashContentChanged', checkSheetData);
+      const onHashContentChanged = () => checkSheetData(false);
+      events.on('hashContentChanged', onHashContentChanged);
       return () => {
-        events.off('hashContentChanged', checkSheetData);
+        events.off('hashContentChanged', onHashContentChanged);
         clearTimeout(debounceTimeout);
       };
     }, []);
@@ -133,7 +139,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             context,
             files,
             importFiles,
-            sheetHasData,
+            sheetHasData: sheetHasData ?? true, // Treat undefined as having data
             abortController,
           });
           // Only update state if this request wasn't aborted
@@ -169,8 +175,8 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
-        {/* Import Data Section - only shown when sheet is empty */}
-        {!sheetHasData && (
+        {/* Import Data Section - only shown when we explicitly know sheet is empty */}
+        {sheetHasData === false && (
           <div className="flex w-full max-w-lg flex-col items-center gap-3">
             <h2 className="text-xl font-semibold">Start by importing data</h2>
             <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
@@ -196,7 +202,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         {/* Prompt Suggestions */}
         <div className="flex flex-col items-center gap-3">
           <h2 className="text-xl font-semibold">
-            {sheetHasData ? 'Suggested prompts' : 'Or start with a suggested prompt'}
+            {sheetHasData !== false ? 'Suggested prompts' : 'Or start with a suggested prompt'}
           </h2>
           <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
