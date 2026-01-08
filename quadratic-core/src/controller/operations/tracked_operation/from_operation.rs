@@ -337,6 +337,10 @@ impl TrackedOperation {
                 ),
             }),
 
+            Operation::SetComputeCode { sheet_pos, .. } => Some(Self::ComputeCode {
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
+            }),
+
             Operation::MoveDataTable {
                 old_sheet_pos,
                 new_sheet_pos,

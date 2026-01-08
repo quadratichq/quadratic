@@ -121,7 +121,6 @@ impl GridController {
         &self,
         selection: A1Selection,
         code_string: String,
-        code_cell_name: Option<String>,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -212,15 +211,8 @@ impl GridController {
                         sheet_id: selection.sheet_id,
                     };
 
-                    let name = code_cell_name
-                        .clone()
-                        .unwrap_or_else(|| format!("{}1", CodeCellLanguage::Formula.as_string()));
-                    let mut code_run = CodeRun {
-                        language: CodeCellLanguage::Formula,
-                        code: code_string.clone(),
-                        ..Default::default()
-                    };
-                    if first_pos != sheet_pos {
+                    // Adjust formula references if this isn't the first position
+                    let adjusted_code = if first_pos != sheet_pos {
                         let ref_adjust = RefAdjust {
                             sheet_id: Some(first_pos.sheet_id),
                             relative_only: true,
@@ -229,39 +221,29 @@ impl GridController {
                             x_start: 0,
                             y_start: 0,
                         };
+                        let mut code_run = CodeRun {
+                            language: CodeCellLanguage::Formula,
+                            code: code_string.clone(),
+                            ..Default::default()
+                        };
                         code_run.adjust_references(
                             selection.sheet_id,
                             self.a1_context(),
                             sheet_pos,
                             ref_adjust,
                         );
-                    }
-                    ops.push(Operation::SetDataTable {
+                        code_run.code
+                    } else {
+                        code_string.clone()
+                    };
+
+                    // Use SetComputeCode to avoid double finalization
+                    ops.push(Operation::SetComputeCode {
                         sheet_pos,
-                        data_table: Some(DataTable {
-                            kind: DataTableKind::CodeRun(code_run),
-                            name: CellValue::Text(name),
-                            header_is_first_row: false,
-                            show_name: None,
-                            show_columns: None,
-                            column_headers: None,
-                            sort: None,
-                            sort_dirty: false,
-                            display_buffer: None,
-                            value: Value::Single(CellValue::Blank),
-                            spill_value: false,
-                            spill_data_table: false,
-                            last_modified: now(),
-                            alternating_colors: true,
-                            formats: None,
-                            borders: None,
-                            chart_pixel_output: None,
-                            chart_output: None,
-                        }),
-                        index: usize::MAX,
-                        ignore_old_data_table: false,
+                        language: CodeCellLanguage::Formula,
+                        code: adjusted_code,
+                        template: None,
                     });
-                    ops.push(Operation::ComputeCode { sheet_pos });
                 }
             }
         });
@@ -821,7 +803,7 @@ mod test {
         );
 
         // Should allow overwriting the anchor cell
-        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string());
         assert!(
             !ops.is_empty(),
             "Should allow overwriting formula anchor cell"
@@ -846,7 +828,7 @@ mod test {
         gc.rerun_all_code_cells(None, false);
 
         // Should allow overwriting the anchor cell with a formula
-        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string());
         assert!(
             !ops.is_empty(),
             "Should allow overwriting Python anchor cell"
@@ -871,7 +853,7 @@ mod test {
         gc.rerun_all_code_cells(None, false);
 
         // Should allow overwriting the anchor cell with a formula
-        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string());
         assert!(
             !ops.is_empty(),
             "Should allow overwriting Javascript anchor cell"
@@ -889,7 +871,7 @@ mod test {
 
         // Should block setting formula in output area (A2, which is not the anchor)
         // when the anchor is NOT being overwritten
-        let ops = gc.set_formula_operations(A1Selection::test_a1("A2"), "=1+1".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A2"), "=1+1".to_string());
         assert!(
             ops.is_empty(),
             "Should block setting formula in output area when anchor is not overwritten"
@@ -897,8 +879,7 @@ mod test {
 
         // Should allow if selection includes both anchor and output area
         // (overwriting the anchor allows writing to its output area)
-        let ops =
-            gc.set_formula_operations(A1Selection::test_a1("A1:A2"), "=1+1".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1:A2"), "=1+1".to_string());
         assert!(
             !ops.is_empty(),
             "Should allow if selection includes anchor and its output area"
@@ -914,7 +895,7 @@ mod test {
         gc.test_set_data_table(pos![sheet_id!A1], 2, 2, false, None, None);
 
         // Should block setting formula on import cell
-        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=1+1".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=1+1".to_string());
         assert!(
             ops.is_empty(),
             "Should block setting formula on import cell"
@@ -930,15 +911,14 @@ mod test {
         gc.test_set_data_table(pos![sheet_id!A1], 2, 2, false, None, None);
 
         // Should block setting formula in import output area
-        let ops = gc.set_formula_operations(A1Selection::test_a1("A2"), "=1+1".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A2"), "=1+1".to_string());
         assert!(
             ops.is_empty(),
             "Should block setting formula in import output area"
         );
 
         // Should also block if selection includes import anchor
-        let ops =
-            gc.set_formula_operations(A1Selection::test_a1("A1:A2"), "=1+1".to_string(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1:A2"), "=1+1".to_string());
         assert!(
             ops.is_empty(),
             "Should block if selection includes import cell"
