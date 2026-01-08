@@ -6,8 +6,8 @@ import { captureEvent } from '@sentry/react';
 import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
-// TODO(ddimaria): make this dynamic
-const CURRENT_FILE_VERSION = '1.6';
+// This should match the current version in quadratic-core/src/grid/file/mod.rs
+const FILE_VERSION = '1.12';
 
 export const apiClient = {
   teams: {
@@ -178,7 +178,7 @@ export const apiClient = {
       if (file === undefined) {
         file = {
           name: 'Untitled',
-          version: CURRENT_FILE_VERSION,
+          version: FILE_VERSION,
         };
       }
 
@@ -479,6 +479,23 @@ export const apiClient = {
         `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'DELETE' },
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.DELETE.response']
+      );
+    },
+    getLogs({
+      connectionUuid,
+      teamUuid,
+      pageNumber = 1,
+      pageSize = 10,
+    }: {
+      connectionUuid: string;
+      teamUuid: string;
+      pageNumber?: number;
+      pageSize?: number;
+    }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}/log?page=${pageNumber}&limit=${pageSize}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response']
       );
     },
   },

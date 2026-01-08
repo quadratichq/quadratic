@@ -1,6 +1,6 @@
 //! Interacting with the Quadratic API
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
@@ -79,6 +79,22 @@ pub fn get_client(url: &str, jwt: &str) -> RequestBuilder {
     }
 }
 
+/// Generic GET request to the quadratic API server.
+/// Returns a better error message if the resource is not found.
+pub async fn get<T: DeserializeOwned>(url: &str, jwt: &str, error_message: &str) -> Result<T> {
+    let client = get_client(url, jwt);
+    let response = client.send().await?;
+
+    // return a better error to the user
+    if response.status() == StatusCode::NOT_FOUND {
+        return Err(SharedError::QuadraticApi(error_message.into()));
+    }
+
+    let response = handle_response(response).await?;
+
+    Ok(response.json::<T>().await?)
+}
+
 /// Retrieve file perms from the quadratic API server.
 pub async fn get_file_perms(
     base_url: &str,
@@ -104,12 +120,8 @@ pub async fn get_user_file_perms(
     file_id: Uuid,
 ) -> Result<(Vec<FilePermRole>, u64)> {
     let file_url = format!("{base_url}/v0/files/{file_id}");
-    let client = get_client(&file_url, &jwt);
-    let response = client.send().await?;
-
-    let response = handle_response(response).await?;
-
-    let deserialized = response.json::<FilePermsPayload>().await?;
+    let error_message = format!("File {file_id} not found");
+    let deserialized = get::<FilePermsPayload>(&file_url, &jwt, &error_message).await?;
 
     Ok((
         deserialized.user_making_request.file_permissions,
@@ -124,12 +136,10 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
-    let client = get_client(&url, jwt);
-    let response = client.send().await?;
+    let error_message = format!("File checkpoint for {file_id} not found");
+    let checkpoint = get::<Checkpoint>(&url, jwt, &error_message).await?;
 
-    let response = handle_response(response).await?;
-
-    Ok(response.json::<Checkpoint>().await?.last_checkpoint)
+    Ok(checkpoint.last_checkpoint)
 }
 
 /// Set the file's checkpoint with the quadratic API server.
@@ -162,6 +172,19 @@ pub async fn set_file_checkpoint(
     let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
     Ok(deserialized)
 }
+
+/**************************************************
+ * Connections
+ **************************************************/
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ConnectionStatus {
+    ACTIVE,
+    INACTIVE,
+    DELETED,
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Connection<T> {
@@ -169,6 +192,49 @@ pub struct Connection<T> {
     pub name: String,
     pub r#type: String,
     pub type_details: T,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncedConnection<T> {
+    pub id: u64,
+    pub uuid: Uuid,
+    pub connection_id: u64,
+    pub percent_completed: u64,
+    pub status: ConnectionStatus,
+    pub updated_date: DateTime<Utc>,
+    pub type_details: T,
+    pub r#type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum SyncedConnectionLogStatus {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAILED,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncedConnectionLogRequest {
+    pub run_id: Uuid,
+    pub synced_dates: Vec<NaiveDate>,
+    pub status: SyncedConnectionLogStatus,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncedConnectionLogResponse {
+    pub id: u64,
+    pub synced_connection_id: u64,
+    pub run_id: Uuid,
+    pub synced_dates: Vec<NaiveDate>,
+    pub status: SyncedConnectionLogStatus,
+    pub error: Option<String>,
+    pub created_date: DateTime<Utc>,
 }
 
 /// Retrieve user's connection from the quadratic API server.
@@ -188,20 +254,9 @@ pub async fn get_connection<T: DeserializeOwned>(
             "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
         )
     };
+    let error_message = format!("Connection {connection_id} not found");
 
-    let client = get_client(&url, jwt);
-    let response = client.send().await?;
-
-    // return a better error to the user
-    if response.status() == StatusCode::NOT_FOUND {
-        return Err(SharedError::QuadraticApi(format!(
-            "Connection {connection_id} not found"
-        )));
-    }
-
-    let response = handle_response(response).await?;
-
-    Ok(response.json::<Connection<T>>().await?)
+    get::<Connection<T>>(&url, jwt, &error_message).await
 }
 
 /// Retrieve user's connection from the quadratic API server.
@@ -211,17 +266,56 @@ pub async fn get_connections_by_type<T: DeserializeOwned>(
     connection_type: &str,
 ) -> Result<Vec<Connection<T>>> {
     let url = format!("{base_url}/v0/internal/connection?type={connection_type}");
-    let client = get_client(&url, jwt);
-    let response = client.send().await?;
+    let error_message = format!("Connection {connection_type} not found");
 
-    // return a better error to the user
-    if response.status() == StatusCode::NOT_FOUND {
-        return Err(SharedError::QuadraticApi(format!(
-            "Connection {connection_type} not found"
-        )));
-    }
+    get::<Vec<Connection<T>>>(&url, jwt, &error_message).await
+}
 
-    Ok(response.json::<Vec<Connection<T>>>().await?)
+/// Retrieve all synced connections for a given type from the quadratic API server.
+pub async fn get_synced_connections_by_type<T: DeserializeOwned + Serialize>(
+    base_url: &str,
+    jwt: &str,
+    connection_type: &str,
+) -> Result<Vec<SyncedConnection<T>>> {
+    let url = format!("{base_url}/v0/internal/synced-connection?type={connection_type}");
+    let error_message = format!("Synced connection {connection_type} not found");
+
+    get::<Vec<SyncedConnection<T>>>(&url, jwt, &error_message).await
+}
+
+/// Create a synced connection log for a synced connection.
+pub async fn create_synced_connection_log(
+    base_url: &str,
+    jwt: &str,
+    run_id: Uuid,
+    synced_connection_id: u64,
+    synced_dates: Vec<NaiveDate>,
+    status: SyncedConnectionLogStatus,
+    error: Option<String>,
+) -> Result<SyncedConnectionLogResponse> {
+    tracing::info!(
+        "Creating synced connection log, run_id: {run_id}, synced_connection_id: {synced_connection_id}, status: {status:?}"
+    );
+
+    let url = format!("{base_url}/v0/internal/synced-connection/{synced_connection_id}/log");
+    let body = SyncedConnectionLogRequest {
+        run_id,
+        synced_dates,
+        status,
+        error,
+    };
+
+    let response = reqwest::Client::new()
+        .post(url)
+        .header("Authorization", format!("Bearer {jwt}"))
+        .json(&body)
+        .send()
+        .await?;
+
+    let response = handle_response(response).await?;
+    let synced_connection_log = response.json::<SyncedConnectionLogResponse>().await?;
+
+    Ok(synced_connection_log)
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -234,12 +328,9 @@ pub struct Team {
 pub async fn get_team(base_url: &str, jwt: &str, email: &str, team_id: &Uuid) -> Result<Team> {
     let encoded_email = encode(email);
     let url = format!("{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}");
-    let client = get_client(&url, jwt);
-    let response = client.send().await?;
+    let error_message = format!("Team {team_id} not found");
 
-    let response = handle_response(response).await?;
-
-    Ok(response.json::<Team>().await?)
+    get::<Team>(&url, jwt, &error_message).await
 }
 
 /// Extract the response body from a response.
@@ -293,6 +384,7 @@ pub fn can_edit(role: &[FilePermRole]) -> bool {
 #[serde(rename_all = "camelCase")]
 pub struct GetFileInitDataResponse {
     pub team_id: Uuid,
+    pub email: String,
     pub sequence_number: u32,
     pub presigned_url: String,
     pub timezone: Option<String>,

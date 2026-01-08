@@ -126,9 +126,7 @@ impl CellValue {
             9 => Self::from_js_date(&value),
             4 => CellValue::unpack_duration(&value).unwrap_or(CellValue::Text(value)),
             8 => CellValue::Image(value),
-            _ => CellValue::unpack_date_time(&value)
-                .or_else(|| CellValue::unpack_duration(&value))
-                .unwrap_or(CellValue::Text(value)),
+            _ => CellValue::unpack_date_time(&value).unwrap_or(CellValue::Text(value)),
         };
 
         Ok((cell_value, ops))

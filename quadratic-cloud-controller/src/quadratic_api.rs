@@ -180,6 +180,7 @@ mod tests {
                 .header("content-type", "application/json")
                 .json_body(serde_json::json!({
                     "teamId": "00000000-0000-0000-0000-000000000000",
+                    "email": "test@example.com",
                     "sequenceNumber": 0,
                     "presignedUrl": "https://example.com/file.grid",
                     "timezone": "UTC"
