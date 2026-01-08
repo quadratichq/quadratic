@@ -149,6 +149,7 @@ function ConnectionFormWrapper({
   return (
     <ConnectionForm
       handleSubmitForm={handleSubmitMiddleware}
+      handleCancelForm={props.handleCancelForm}
       form={form}
       teamUuid={teamUuid}
       connection={props.connection}

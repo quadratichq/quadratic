@@ -1,12 +1,15 @@
 import { apiClient } from '@/shared/api/apiClient';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { SpinnerIcon } from '@/shared/components/Icons';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -44,40 +47,42 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   form,
   children,
   handleSubmitForm,
+  handleCancelForm,
   connection,
   teamUuid,
 }) => {
-  const [isLoadingToken, setIsLoadingToken] = useState(false);
-  const [linkedInstitution, setLinkedInstitution] = useState<string | null>(
-    connection?.typeDetails?.institution_name || null
-  );
+  const [accessToken, setAccessToken] = useState<string | null>(connection?.typeDetails?.access_token || null);
+  const [, setLinkedInstitution] = useState<string | null>(connection?.typeDetails?.institution_name || null);
 
-  // Fetch link token from backend and automatically open Plaid Link
-  const fetchLinkTokenAndOpen = useCallback(async () => {
-    setIsLoadingToken(true);
-    try {
-      const data = await apiClient.connections.plaid.createLinkToken({
-        teamUuid,
-      });
+  // Auto-open Plaid when the component mounts and we don't have an access token
+  useEffect(() => {
+    const fetchLinkTokenAndOpen = async () => {
+      try {
+        const data = await apiClient.connections.plaid.createLinkToken({
+          teamUuid,
+        });
 
-      // Automatically open popup with the link token
-      const width = 500;
-      const height = 700;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
+        // Automatically open popup with the link token
+        const width = 500;
+        const height = 700;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
 
-      window.open(
-        `/plaid-link.html?linkToken=${encodeURIComponent(data.linkToken)}`,
-        'plaid-link',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
-    } catch (error) {
-      console.error('Error fetching link token:', error);
-      // TODO: Show error to user
-    } finally {
-      setIsLoadingToken(false);
+        window.open(
+          `/plaid-link.html?linkToken=${encodeURIComponent(data.linkToken)}`,
+          'plaid-link',
+          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        );
+      } catch (error) {
+        console.error('Error fetching link token:', error);
+        // TODO: Show error to user
+      }
+    };
+    if (!accessToken) {
+      console.log('No access token, opening Plaid Link');
+      fetchLinkTokenAndOpen();
     }
-  }, [teamUuid]);
+  }, [accessToken, teamUuid]);
 
   // Handle messages from Plaid popup via BroadcastChannel
   useEffect(() => {
@@ -92,7 +97,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             publicToken,
           });
 
-          // Set the access token in the form
+          // Set the access token in the form and state
+          setAccessToken(data.accessToken);
           form.setValue('access_token', data.accessToken);
 
           // Store institution name in form and state
@@ -111,8 +117,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
       } else if (event.data.type === 'PLAID_EXIT') {
         if (event.data.error) {
           console.error('Plaid Link error:', event.data.error);
-          // TODO: Show error to user
         }
+
+        handleCancelForm();
       }
     };
 
@@ -121,9 +128,28 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [teamUuid, form]);
+  }, [teamUuid, form, handleCancelForm]);
 
   const hasAccessToken = !!form.watch('access_token');
+
+  if (!hasAccessToken) {
+    return (
+      <div className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center">
+        <SpinnerIcon className="text-muted-foreground" size="lg" />
+        <h4 className="mt-3 text-lg font-medium">Connecting to Plaid…</h4>
+        <p className="text-center text-sm text-muted-foreground">
+          Follow the instructions in the pop-up window. If you’re having trouble connecting,{' '}
+          <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+            contact us
+          </a>
+          .
+        </p>
+        <Button variant="outline" className="mt-4" onClick={handleCancelForm}>
+          Cancel
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -142,84 +168,49 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           )}
         />
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-3">
-            <FormLabel>Bank Account Connection</FormLabel>
-            {hasAccessToken && linkedInstitution ? (
-              <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-green-900">✓ Connected to {linkedInstitution}</p>
-                    <p className="text-sm text-green-700">Access token obtained successfully</p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      form.setValue('access_token', '');
-                      form.setValue('institution_name', '');
-                      setLinkedInstitution(null);
-                    }}
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-2 space-y-2">
-                <Button
-                  type="button"
-                  onClick={fetchLinkTokenAndOpen}
-                  disabled={isLoadingToken}
-                  className="w-full"
-                  variant="outline"
-                >
-                  {isLoadingToken ? 'Opening Plaid Link...' : 'Connect Bank Account'}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Click to securely connect your bank account via Plaid. You'll be able to search for and select your
-                  financial institution.
-                </p>
-              </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="institution_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Institution</FormLabel>
+                <FormControl>
+                  <Input type="text" disabled {...field} />
+                </FormControl>
+              </FormItem>
             )}
-            <FormMessage />
-          </div>
-
+          />
           <FormField
             control={form.control}
             name="start_date"
             render={({ field }) => (
-              <FormItem className="col-span-3">
-                <FormLabel>Sync Start Date</FormLabel>
+              <FormItem>
+                <FormLabel>Sync start date</FormLabel>
                 <FormControl>
-                  <Input type="date" autoComplete="off" {...field} />
+                  <Input type="date" autoComplete="off" className="block" {...field} />
                 </FormControl>
                 <FormMessage />
-                <p className="text-xs text-muted-foreground">Transactions from this date forward will be synced</p>
               </FormItem>
             )}
           />
-
-          {/* Hidden fields */}
-          <FormField control={form.control} name="access_token" render={() => <input type="hidden" />} />
-          <FormField control={form.control} name="institution_name" render={() => <input type="hidden" />} />
-
-          <div className="col-span-3">
-            <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">
-              Data Sync Status
-            </label>
-            {connection && (
-              <p className="mb-4 mt-2 text-xs text-red-500">
-                <SyncedConnection
-                  connectionUuid={connection.uuid}
-                  teamUuid={teamUuid}
-                  createdDate={connection.createdDate}
-                />
-              </p>
-            )}
-          </div>
         </div>
+
+        {/* Hidden fields */}
+        <FormField control={form.control} name="access_token" render={() => <input type="hidden" />} />
+        <FormField control={form.control} name="institution_name" render={() => <input type="hidden" />} />
+
+        {connection && (
+          <div className="flex items-center gap-2 pt-3 text-sm">
+            <Badge>Status</Badge>
+            <SyncedConnection
+              connectionUuid={connection.uuid}
+              teamUuid={teamUuid}
+              createdDate={connection.createdDate}
+            />
+          </div>
+        )}
+
         {children}
       </form>
     </Form>
