@@ -559,7 +559,7 @@ export const AILanguagePreferenceSchema = z.enum(['Python', 'Javascript', 'Formu
 export type AILanguagePreference = z.infer<typeof AILanguagePreferenceSchema>;
 
 // All possible AI code languages (for iteration/validation)
-export const allAILanguagePreferences: AILanguagePreference[] = ['Python', 'Javascript', 'Formula'];
+export const allAILanguagePreferences: AILanguagePreference[] = ['Formula', 'Python', 'Javascript'];
 
 // Empty = no preference (backend defaults to: Python + Formula)
 // Non-empty = user's explicit choices

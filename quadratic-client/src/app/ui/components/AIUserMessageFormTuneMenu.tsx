@@ -22,10 +22,13 @@ import { allAILanguagePreferences, type AILanguagePreference } from 'quadratic-s
 import { memo, useCallback, useState } from 'react';
 
 const languageLabels: Record<AILanguagePreference, string> = {
+  Formula: 'Formulas',
   Python: 'Python',
   Javascript: 'JavaScript',
-  Formula: 'Formulas',
 };
+
+// Default languages to display when no preference is set (empty array)
+const defaultDisplayLanguages: AILanguagePreference[] = ['Python', 'Formula'];
 
 interface AIUserMessageFormTuneMenuProps {
   disabled: boolean;
@@ -74,14 +77,32 @@ export const AIUserMessageFormTuneMenu = memo(
       [textareaRef]
     );
 
+    // What to display in the UI: either actual preferences or defaults when no preference is set
+    const displayLanguages = aiLanguages.length === 0 ? defaultDisplayLanguages : aiLanguages;
+
     const toggleLanguage = useCallback(
       (language: AILanguagePreference) => {
-        const isEnabled = aiLanguages.includes(language);
-        const newLanguages = isEnabled ? aiLanguages.filter((l) => l !== language) : [...aiLanguages, language];
+        const isCurrentlyEnabled = displayLanguages.includes(language);
+
+        let newLanguages: AILanguagePreference[];
+
+        if (isCurrentlyEnabled) {
+          // Turning OFF a language
+          newLanguages = displayLanguages.filter((l) => l !== language);
+
+          // Prevent turning off all languages
+          if (newLanguages.length === 0) {
+            return;
+          }
+        } else {
+          // Turning ON a language
+          newLanguages = [...displayLanguages, language];
+        }
+
         saveAILanguages(newLanguages);
-        trackEvent('[AIAnalyst].toggleLanguage', { language, enabled: !isEnabled });
+        trackEvent('[AIAnalyst].toggleLanguage', { language, enabled: !isCurrentlyEnabled });
       },
-      [aiLanguages, saveAILanguages]
+      [displayLanguages, saveAILanguages]
     );
 
     return (
@@ -102,18 +123,18 @@ export const AIUserMessageFormTuneMenu = memo(
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48">
           <DropdownMenuItem onClick={handleOptimize} disabled={isOptimizing} className="gap-3">
             <EnhancePromptIcon className="flex-shrink-0" />
-            <span>Enhance prompt</span>
+            Enhance prompt
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleOpenAIRules} className="gap-3">
             <EditIcon className="flex-shrink-0" />
-            <span>AI rules</span>
+            AI rules
           </DropdownMenuItem>
 
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="gap-3">
+            <DropdownMenuSubTrigger className="gap-3" onClick={(e) => e.stopPropagation()}>
               <CodeIcon className="flex-shrink-0" />
-              <span>Languages</span>
+              Languages
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="w-56 p-2">
@@ -128,13 +149,17 @@ export const AIUserMessageFormTuneMenu = memo(
                     }}
                   >
                     {languageLabels[language]}
-                    <Switch checked={aiLanguages.includes(language)} />
+                    <Switch
+                      checked={displayLanguages.includes(language)}
+                      // Don't allow disabling when it's the only one enabled
+                      disabled={displayLanguages.length === 1 && displayLanguages[0] === language}
+                    />
                   </DropdownMenuItem>
                 ))}
 
                 <DropdownMenuSeparator className="!block" />
                 <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                  When enabled, AI responses will prefer the selected languages.
+                  AI responses will prefer the selected languages.
                 </DropdownMenuLabel>
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
