@@ -1,4 +1,3 @@
-import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { NavigateToCreatePotentialView, NavigateToCreateView } from '@/shared/components/connections/Connections';
 import {
   connectionsByType,
@@ -17,11 +16,6 @@ export const ConnectionsNew = ({
   handleNavigateToCreatePotentialView: NavigateToCreatePotentialView;
 }) => {
   const ignore: ConnectionType[] = [];
-
-  // TODO(ddimaria): remove once we want to show Mixpanel connections to the public
-  if (!debugFlag('debugEnableSyncedConnections')) {
-    ignore.push('MIXPANEL');
-  }
 
   return (
     <div className="grid grid-cols-2 gap-4">
