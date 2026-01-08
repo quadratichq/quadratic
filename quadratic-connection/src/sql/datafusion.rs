@@ -11,7 +11,7 @@ use quadratic_rust_shared::{
         tests::new_datafusion_connection as new_datafusion_test_connection,
     },
     synced::{
-        SyncedClient,
+        DATE_FORMAT, SyncedClient,
         google_analytics::client::{GoogleAnalyticsClient, GoogleAnalyticsConnection},
         mixpanel::{MixpanelConnection, client::MixpanelClient},
     },
@@ -43,7 +43,7 @@ pub(crate) async fn test_google_analytics(
     let client = GoogleAnalyticsClient::new(
         connection.service_account_configuration.clone(),
         connection.property_id.clone(),
-        connection.start_date.clone(),
+        connection.start_date.format(DATE_FORMAT).to_string(),
     )
     .await?;
 
