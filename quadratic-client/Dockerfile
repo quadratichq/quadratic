@@ -43,26 +43,6 @@ RUN echo 'wasm-pack version:' && wasm-pack --version
 
 
 ###########################################################################################
-# Dependency cache stage - download and cache Cargo dependencies as a layer
-###########################################################################################
-FROM rust-toolchain-base AS cargo-deps-cache
-
-# Copy only Cargo files for dependency caching
-COPY --link Cargo.toml ./
-COPY --link quadratic-core/Cargo.toml ./quadratic-core/
-COPY --link quadratic-rust-shared/Cargo.toml ./quadratic-rust-shared/
-
-# Create minimal stub source files to satisfy cargo
-RUN mkdir -p quadratic-core/src quadratic-rust-shared/src && \
-    echo "fn main() {}" > quadratic-core/src/main.rs && \
-    echo "pub fn stub() {}" > quadratic-core/src/lib.rs && \
-    echo "pub fn stub() {}" > quadratic-rust-shared/src/lib.rs
-
-# Download dependencies (this layer is cached when Cargo.toml doesn't change)
-RUN cargo fetch || true
-
-
-###########################################################################################
 # Builder 1 - Build core
 ###########################################################################################
 FROM rust-toolchain-base AS core-builder
@@ -70,10 +50,6 @@ FROM rust-toolchain-base AS core-builder
 ARG CLIENT_DEV
 
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
-
-# Copy cached Cargo registry from deps-cache stage
-COPY --from=cargo-deps-cache /root/.cargo/registry /root/.cargo/registry
-COPY --from=cargo-deps-cache /root/.cargo/git /root/.cargo/git
 
 # Copy required files for building core
 COPY --link package.json .
@@ -95,10 +71,6 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 FROM rust-toolchain-base AS ts-rust-types-builder
 
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
-
-# Copy cached Cargo registry from deps-cache stage
-COPY --from=cargo-deps-cache /root/.cargo/registry /root/.cargo/registry
-COPY --from=cargo-deps-cache /root/.cargo/git /root/.cargo/git
 
 # Copy required files for building ts/rust types
 COPY --link package.json .
