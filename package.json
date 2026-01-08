@@ -98,6 +98,7 @@
     "node": "24.x"
   },
   "dependencies": {
-    "jotai": "^2.13.1"
+    "jotai": "^2.13.1",
+    "xlsx": "^0.18.5"
   }
 }

@@ -92,8 +92,8 @@ const config: Config = {
           '100%': { transform: 'translateX(-20px)', opacity: '1' },
         },
         'slide-in-right': {
-          '0%': { transform: 'translateX(40px)', opacity: '0' },
-          '100%': { transform: 'translateX(0)', opacity: '1' },
+          '0%': { transform: 'translateX(20px) scale(0.98)', opacity: '0' },
+          '100%': { transform: 'translateX(0) scale(1)', opacity: '1' },
         },
         'fade-in': {
           '0%': { opacity: '0' },
@@ -107,7 +107,7 @@ const config: Config = {
         shimmer: 'shimmer 2.5s linear infinite',
         'badge-pop': 'badge-pop 0.5s ease-in-out 3',
         'slide-in-left': 'slide-in-left 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        'slide-in-right': 'slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-in-right': 'slide-in-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
         'fade-in': 'fade-in 0.3s ease-out forwards',
       },
     },

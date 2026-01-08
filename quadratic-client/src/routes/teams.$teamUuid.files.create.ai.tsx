@@ -467,251 +467,251 @@ export const Component = () => {
         >
           {/* Main content column */}
           <div className="w-full max-w-2xl">
-          {/* Connection Selection Page */}
-          {step === 'connection' && (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Select Connection</h1>
-                <p className="text-base text-muted-foreground">Choose a database connection to use</p>
-              </div>
+            {/* Connection Selection Page */}
+            {step === 'connection' && (
+              <>
+                <div className="mb-6 text-center">
+                  <h1 className="mb-2 text-3xl font-bold">Select Connection</h1>
+                  <p className="text-base text-muted-foreground">Choose a database connection to use</p>
+                </div>
 
-              <div className="space-y-3">
-                {connections.length > 0 ? (
-                  connections.map((connection) => (
-                    <Card
-                      key={connection.uuid}
-                      className="group cursor-pointer transition-all hover:border-primary hover:shadow-md"
-                      onClick={() => handleSelectConnection(connection)}
-                    >
-                      <CardHeader className="flex flex-row items-center gap-4 p-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-                          <LanguageIcon language={connection.type} />
-                        </div>
-                        <div>
-                          <CardTitle className="text-base group-hover:text-primary">{connection.name}</CardTitle>
-                          <CardDescription className="text-sm">{connection.type}</CardDescription>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-8">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                      <DatabaseIcon className="text-green-500" size="lg" />
-                    </div>
-                    <p className="mb-2 text-lg font-semibold">No connections available</p>
-                    <p className="mb-4 text-sm text-muted-foreground">Create a connection to get started</p>
-                    <Button onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))} className="gap-2">
-                      <DatabaseIcon size="sm" />
-                      Add Connection
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Step 2: Describe Your Spreadsheet */}
-          {step === 'describe' && (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="text-3xl font-bold">Let's build your spreadsheet</h1>
-              </div>
-
-              {/* Data section */}
-              <div className="mb-6 space-y-2">
-                <h3 className="text-base font-medium text-foreground">Start by importing your data</h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
-                    Import Excel
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
-                    Import PDF
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <FileIcon size="sm" />
-                    Import CSV
-                  </Button>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="h-10 gap-2 px-4">
+                <div className="space-y-3">
+                  {connections.length > 0 ? (
+                    connections.map((connection) => (
+                      <Card
+                        key={connection.uuid}
+                        className="group cursor-pointer transition-all hover:border-primary hover:shadow-md"
+                        onClick={() => handleSelectConnection(connection)}
+                      >
+                        <CardHeader className="flex flex-row items-center gap-4 p-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                            <LanguageIcon language={connection.type} />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base group-hover:text-primary">{connection.name}</CardTitle>
+                            <CardDescription className="text-sm">{connection.type}</CardDescription>
+                          </div>
+                        </CardHeader>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-8">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
+                        <DatabaseIcon className="text-green-500" size="lg" />
+                      </div>
+                      <p className="mb-2 text-lg font-semibold">No connections available</p>
+                      <p className="mb-4 text-sm text-muted-foreground">Create a connection to get started</p>
+                      <Button onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))} className="gap-2">
                         <DatabaseIcon size="sm" />
-                        Add connection
+                        Add Connection
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {connections.length > 0 ? (
-                        connections.map((connection) => (
-                          <DropdownMenuItem
-                            key={connection.uuid}
-                            onClick={() => {
-                              setSelectedConnection({
-                                uuid: connection.uuid,
-                                name: connection.name,
-                                type: connection.type,
-                              });
-                            }}
-                          >
-                            <LanguageIcon language={connection.type} className="mr-2" />
-                            {connection.name}
-                          </DropdownMenuItem>
-                        ))
-                      ) : (
-                        <DropdownMenuItem asChild>
-                          <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-4">
-                            Add Connection
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
-                  {uploadedFiles.map((file, index) => {
-                    const ext = file.name.toLowerCase();
-                    const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
-                    const isPdf = ext.endsWith('.pdf');
-                    return (
-                      <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
-                        {isExcel ? (
-                          <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
-                        ) : isPdf ? (
-                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
+            {/* Step 2: Describe Your Spreadsheet */}
+            {step === 'describe' && (
+              <>
+                <div className="mb-6 text-center">
+                  <h1 className="text-3xl font-bold">Let's build your spreadsheet</h1>
+                </div>
+
+                {/* Data section */}
+                <div className="mb-6 space-y-2">
+                  <h3 className="text-base font-medium text-foreground">Start by importing your data</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-10 gap-2 px-4"
+                      onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                    >
+                      <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
+                      Import Excel
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="h-10 gap-2 px-4"
+                      onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                    >
+                      <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
+                      Import PDF
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="h-10 gap-2 px-4"
+                      onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                    >
+                      <FileIcon size="sm" />
+                      Import CSV
+                    </Button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="h-10 gap-2 px-4">
+                          <DatabaseIcon size="sm" />
+                          Add connection
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {connections.length > 0 ? (
+                          connections.map((connection) => (
+                            <DropdownMenuItem
+                              key={connection.uuid}
+                              onClick={() => {
+                                setSelectedConnection({
+                                  uuid: connection.uuid,
+                                  name: connection.name,
+                                  type: connection.type,
+                                });
+                              }}
+                            >
+                              <LanguageIcon language={connection.type} className="mr-2" />
+                              {connection.name}
+                            </DropdownMenuItem>
+                          ))
                         ) : (
-                          <FileIcon size="sm" />
+                          <DropdownMenuItem asChild>
+                            <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-4">
+                              Add Connection
+                            </Link>
+                          </DropdownMenuItem>
                         )}
-                        <span className="max-w-32 truncate">{file.name}</span>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {uploadedFiles.map((file, index) => {
+                      const ext = file.name.toLowerCase();
+                      const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
+                      const isPdf = ext.endsWith('.pdf');
+                      return (
+                        <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                          {isExcel ? (
+                            <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
+                          ) : isPdf ? (
+                            <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
+                          ) : (
+                            <FileIcon size="sm" />
+                          )}
+                          <span className="max-w-32 truncate">{file.name}</span>
+                          <button
+                            onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {selectedConnection && (
+                      <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                        <LanguageIcon language={selectedConnection.type} />
+                        <span className="max-w-32 truncate">{selectedConnection.name}</span>
                         <button
-                          onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
+                          onClick={() => setSelectedConnection(null)}
                           className="ml-1 text-muted-foreground hover:text-foreground"
                         >
                           ×
                         </button>
                       </div>
-                    );
-                  })}
-                  {selectedConnection && (
-                    <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
-                      <LanguageIcon language={selectedConnection.type} />
-                      <span className="max-w-32 truncate">{selectedConnection.name}</span>
-                      <button
-                        onClick={() => setSelectedConnection(null)}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Suggestions - above the chat */}
-              <div className="mb-6 space-y-2">
-                {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
-                  <>
-                    <h3 className="text-base font-medium text-foreground">Example searches</h3>
-                    <div className="flex flex-col gap-2">
-                      {WEB_SEARCH_EXAMPLES.map((query, index) => (
-                        <button
-                          key={index}
-                          className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
-                          onClick={() => setPrompt(query)}
-                        >
-                          <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
-                          <span className="text-sm group-hover:text-primary">{query}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-medium text-foreground">
-                        {uploadedFiles.length > 0 || selectedConnection
-                          ? 'Suggestions based on your data'
-                          : 'Or start with a suggested prompt'}
-                      </h3>
-                      {isLoadingSuggestions && (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                      )}
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {isLoadingSuggestions
-                        ? Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
-                              <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
-                              <div className="h-3 w-full rounded bg-muted" />
-                            </div>
-                          ))
-                        : suggestions.map((suggestion, index) => (
-                            <button
-                              key={index}
-                              className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
-                              onClick={() => setPrompt(suggestion.prompt)}
-                            >
-                              <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
-                                {suggestion.title}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">{suggestion.description}</p>
-                            </button>
-                          ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Chat box */}
-              <div>
-                <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
-                  <Textarea
-                    ref={promptTextareaRef}
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="I want to create a spreadsheet that..."
-                    className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
-                  />
-
-                  <div className="flex items-center justify-end px-4 py-3">
-                    <Button
-                      onClick={handleBuildSpreadsheet}
-                      disabled={!prompt.trim() || isSubmitting}
-                      className="gap-2"
-                    >
-                      {isSubmitting ? 'Creating...' : 'Create'}
-                      <ArrowRightIcon className="h-4 w-4" />
-                    </Button>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Spacer to reduce scroll jumping during generation */}
-              <div className="h-24" />
-            </>
-          )}
+                {/* Suggestions - above the chat */}
+                <div className="mb-6 space-y-2">
+                  {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
+                    <>
+                      <h3 className="text-base font-medium text-foreground">Example searches</h3>
+                      <div className="flex flex-col gap-2">
+                        {WEB_SEARCH_EXAMPLES.map((query, index) => (
+                          <button
+                            key={index}
+                            className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
+                            onClick={() => setPrompt(query)}
+                          >
+                            <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
+                            <span className="text-sm group-hover:text-primary">{query}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium text-foreground">
+                          {uploadedFiles.length > 0 || selectedConnection
+                            ? 'Suggestions based on your data'
+                            : 'Or start with a suggested prompt'}
+                        </h3>
+                        {isLoadingSuggestions && (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        )}
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {isLoadingSuggestions
+                          ? Array.from({ length: 3 }).map((_, i) => (
+                              <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
+                                <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
+                                <div className="h-3 w-full rounded bg-muted" />
+                              </div>
+                            ))
+                          : suggestions.map((suggestion, index) => (
+                              <button
+                                key={index}
+                                className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
+                                onClick={() => setPrompt(suggestion.prompt)}
+                              >
+                                <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
+                                  {suggestion.title}
+                                </h3>
+                                <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                              </button>
+                            ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Chat box */}
+                <div>
+                  <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
+                    <Textarea
+                      ref={promptTextareaRef}
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="I want to create a spreadsheet that..."
+                      className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
+                    />
+
+                    <div className="flex items-center justify-end px-4 py-3">
+                      <Button
+                        onClick={handleBuildSpreadsheet}
+                        disabled={!prompt.trim() || isSubmitting}
+                        className="gap-2"
+                      >
+                        {isSubmitting ? 'Creating...' : 'Create'}
+                        <ArrowRightIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Spacer to reduce scroll jumping during generation */}
+                <div className="h-24" />
+              </>
+            )}
           </div>
 
-          {/* File Preview Panel - in its own column on the right, aligned with suggestions */}
+          {/* File Preview Panel - in its own column on the right, aligned with suggestion cards */}
           {hasPreviewableFile && previewableFile && step === 'describe' && (
-            <div className="hidden w-96 shrink-0 animate-slide-in-right pt-[136px] lg:block xl:w-[480px]">
+            <div className="animate-slide-in-right hidden w-96 shrink-0 pt-[235px] lg:block xl:w-[480px]">
               <FilePreview file={previewableFile} />
             </div>
           )}
