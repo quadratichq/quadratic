@@ -167,6 +167,29 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .all(move |columns_block| columns_block.value.is_all_default_in_range(y1, y2))
     }
 
+    /// Returns true if there are any non-default values in infinite blocks.
+    ///
+    /// An infinite block is one where either the x-range or y-range extends to
+    /// infinity (i.e., column fills, row fills, or sheet fills).
+    pub fn has_infinite_non_default(&self) -> bool {
+        let default = T::default();
+        self.0.iter().any(|x_block| {
+            // Skip if all values in this column range are default
+            if x_block.value.is_all_default() {
+                return false;
+            }
+            // Check if x is infinite (row fill or sheet fill)
+            if x_block.end == u64::MAX {
+                return true;
+            }
+            // Check if any y block within is infinite (column fill)
+            x_block
+                .value
+                .iter()
+                .any(|y_block| y_block.end == u64::MAX && y_block.value != default)
+        })
+    }
+
     /// Returns a set of unique values in a rect.
     pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<T>
     where
@@ -1346,5 +1369,55 @@ mod tests {
         assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, 5, 5)));
         c.set_rect(1, 1, Some(5), Some(5), 0); // set to default
         assert_eq!(c.bounding_rect(), None);
+    }
+
+    #[test]
+    fn test_has_infinite_non_default() {
+        // Empty/default has no infinite non-default values
+        let c = Contiguous2D::<u8>::new();
+        assert!(!c.has_infinite_non_default());
+
+        // Finite rectangle has no infinite values
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(5), Some(5), 42);
+        assert!(!c.has_infinite_non_default());
+
+        // Infinite in y (column fill) should return true
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(3), None, 42);
+        assert!(c.has_infinite_non_default());
+
+        // Infinite in x (row fill) should return true
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, None, Some(3), 42);
+        assert!(c.has_infinite_non_default());
+
+        // Infinite in both (sheet fill) should return true
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, None, None, 42);
+        assert!(c.has_infinite_non_default());
+
+        // Infinite block with default value should return false
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, None, None, 0); // default value
+        assert!(!c.has_infinite_non_default());
+
+        // Mixed finite and infinite - should return true
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(5), Some(5), 42);
+        c.set_rect(10, 1, Some(12), None, 99);
+        assert!(c.has_infinite_non_default());
+
+        // Test with Option type (like SheetFormattingType uses)
+        let c = Contiguous2D::<Option<String>>::new();
+        assert!(!c.has_infinite_non_default());
+
+        let mut c = Contiguous2D::<Option<String>>::new();
+        c.set_rect(1, 1, Some(3), None, Some("color".to_string()));
+        assert!(c.has_infinite_non_default());
+
+        let mut c = Contiguous2D::<Option<String>>::new();
+        c.set_rect(1, 1, None, Some(5), Some("color".to_string()));
+        assert!(c.has_infinite_non_default());
     }
 }
