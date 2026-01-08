@@ -18,7 +18,9 @@ export const getTimeZoneAbbreviation = (timezone: string): string => {
   );
 };
 
-const isDebug = debugFlag('debug');
+// Note: isDebug must be called at runtime (not module load time) because debug
+// flags are loaded asynchronously from localforage when ?debug is in the URL.
+const isDebug = () => debugFlag('debug');
 
 export interface CronInterval {
   cron: string;
@@ -108,7 +110,22 @@ const getMidnightInTimezoneAsUTC = (timezone: string): { hour: number; minute: n
   return hourMinuteTimezoneToUTC(0, 0, timezone);
 };
 
+// Check if the minute field matches the */15 pattern (every 15 minutes)
+const isEvery15MinPattern = (fields: CronFieldCollection): boolean => {
+  return (
+    fields.minute.values.length === 4 &&
+    fields.minute.values[0] === 0 &&
+    fields.minute.values[1] === 15 &&
+    fields.minute.values[2] === 30 &&
+    fields.minute.values[3] === 45 &&
+    fields.hour.isWildcard
+  );
+};
+
 const isCustomCron = (fields: CronFieldCollection): boolean => {
+  // Don't treat */15 * * * * as custom
+  if (isEvery15MinPattern(fields)) return false;
+
   return (
     !fields.dayOfMonth.isWildcard ||
     !fields.month.isWildcard ||
@@ -152,6 +169,7 @@ export const UseCronInterval = (initialCron?: string, timezone?: string): CronIn
       return 'custom';
     }
     if (!fields.hour.isWildcard && !fields.minute.isWildcard) return 'days';
+    if (isEvery15MinPattern(fields)) return 'minute';
     if (!fields.minute.isWildcard && fields.hour.isWildcard) return 'hour';
     return 'minute';
   }, [custom, fields]);
@@ -173,7 +191,7 @@ export const UseCronInterval = (initialCron?: string, timezone?: string): CronIn
         const parsed = CronExpressionParser.parse(input);
 
         // In production, check if cron runs more frequently than once per hour
-        if (!isDebug) {
+        if (!isDebug()) {
           const interval1 = parsed.next();
           const interval2 = parsed.next();
           const diffMs = interval2.getTime() - interval1.getTime();
@@ -218,7 +236,7 @@ export const UseCronInterval = (initialCron?: string, timezone?: string): CronIn
 
   const changeInterval = useCallback(
     (every: string) => {
-      if (!isDebug && every === 'minute') {
+      if (!isDebug() && every === 'minute') {
         setCronError(CRON_ERROR_TOO_FREQUENT);
         return;
       }
@@ -230,7 +248,7 @@ export const UseCronInterval = (initialCron?: string, timezone?: string): CronIn
         const { minute: convertedMinute } = hourMinuteTimezoneToUTC(0, 0, tz);
         setCron(`${convertedMinute} * * * *`);
       } else if (every === 'minute') {
-        setCron('* * * * *');
+        setCron('*/15 * * * *');
       }
 
       if (every === 'custom') {
@@ -372,6 +390,9 @@ export const getCronToListEntry = (cron: string, timezone?: string): string => {
     return `${days} at ${localTimeString} ${getTimeZoneAbbreviation(tz)}`;
   }
 
+  // Check for */15 pattern (every 15 minutes)
+  if (isEvery15MinPattern(fields)) return 'Every 15 minutes';
+
   // hourly
   if (!fields.minute.isWildcard && fields.hour.isWildcard) {
     const { minute } = hourMinuteUTCToTimezone(0, fields.minute.values[0], tz);
@@ -379,5 +400,5 @@ export const getCronToListEntry = (cron: string, timezone?: string): string => {
   }
 
   // minute
-  return 'Every minute';
+  return 'Every 15 minutes';
 };

@@ -453,7 +453,8 @@ impl GridController {
                 }
 
                 // adjust the code_runs if necessary
-                let data_table = if let Some(code_run) = data_table.code_run() {
+                let (data_table, adjusted_code_run) = if let Some(code_run) = data_table.code_run()
+                {
                     let mut adjusted_code_run = code_run.clone();
                     match clipboard.operation {
                         ClipboardOperation::Cut => adjusted_code_run.adjust_references(
@@ -480,23 +481,19 @@ impl GridController {
                     }
 
                     if &adjusted_code_run != code_run {
-                        DataTable {
-                            kind: DataTableKind::CodeRun(adjusted_code_run),
-                            ..data_table.clone()
-                        }
+                        (
+                            DataTable {
+                                kind: DataTableKind::CodeRun(adjusted_code_run.clone()),
+                                ..data_table.clone()
+                            },
+                            Some(adjusted_code_run),
+                        )
                     } else {
-                        data_table.to_owned()
+                        (data_table.to_owned(), Some(code_run.clone()))
                     }
                 } else {
-                    data_table.to_owned()
+                    (data_table.to_owned(), None)
                 };
-
-                ops.push(Operation::SetDataTable {
-                    sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
-                    data_table: Some(data_table),
-                    index: usize::MAX,
-                    ignore_old_data_table: true,
-                });
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
                 // with the data table's cells accessed or if the paste rectangle
@@ -504,9 +501,30 @@ impl GridController {
                 let should_rerun =
                     self.clipboard_code_operations_should_rerun(clipboard, source_pos, start_pos);
 
-                if should_rerun {
-                    ops.push(Operation::ComputeCode {
+                if let Some(code_run) = &adjusted_code_run
+                    && should_rerun
+                {
+                    // Use SetComputeCode to re-execute the code and get fresh results.
+                    // SetComputeCode internally creates an empty data table (via finalize_data_table)
+                    // then triggers execution. We intentionally don't use SetDataTable here
+                    // because we want new output, not the cached results from the clipboard.
+                    // Pass the template to preserve presentation properties (show_name, show_columns,
+                    // alternating_colors, etc.) from the original data table, consistent with autocomplete.
+                    ops.push(Operation::SetComputeCode {
                         sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                        language: code_run.language.clone(),
+                        code: code_run.code.clone(),
+                        template: Some((&data_table).into()),
+                    });
+                } else {
+                    // When should_rerun is false (or this isn't a code cell), preserve the
+                    // existing data table with its cached results. For code cells, this means
+                    // the output won't change even though the code isn't re-executed.
+                    ops.push(Operation::SetDataTable {
+                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                        data_table: Some(data_table),
+                        index: usize::MAX,
+                        ignore_old_data_table: true,
                     });
                 }
             }
@@ -920,6 +938,7 @@ impl GridController {
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
+    #[function_timer::function_timer]
     pub fn paste_html_operations(
         &mut self,
         insert_at: Pos,
