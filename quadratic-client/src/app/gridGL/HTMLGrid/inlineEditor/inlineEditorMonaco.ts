@@ -46,6 +46,7 @@ class InlineEditorMonaco {
   editor?: editor.IStandaloneCodeEditor;
   private suggestionWidgetShowing: boolean = false;
   private processingEmojiConversion = false;
+  private measureCanvas?: HTMLCanvasElement;
 
   // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
   autocompleteList?: string[];
@@ -182,7 +183,7 @@ class InlineEditorMonaco {
 
     // Measure the actual text width using canvas for accuracy
     const text = this.editor.getValue();
-    const canvas = document.createElement('canvas');
+    const canvas = (this.measureCanvas ??= document.createElement('canvas'));
     const context = canvas.getContext('2d');
     const fontScale = fontSize / DEFAULT_FONT_SIZE;
     // Only add padding for left-aligned text (gives room to type at the end)

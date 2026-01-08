@@ -87,13 +87,15 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
       if (!!showValidation) {
         setShowValidation(false);
       }
-      trackEvent('[ScheduledTasks].open', {
-        taskId: taskId ?? null,
-        hasExistingTasks: scheduledTasks.tasks.length > 0,
+      setScheduledTasks((prev) => {
+        trackEvent('[ScheduledTasks].open', {
+          taskId: taskId ?? null,
+          hasExistingTasks: prev.tasks.length > 0,
+        });
+        return { ...prev, show: true, currentTaskId: taskId ?? null };
       });
-      setScheduledTasks((prev) => ({ ...prev, show: true, currentTaskId: taskId ?? null }));
     },
-    [showValidation, scheduledTasks.tasks.length, setScheduledTasks, setShowValidation]
+    [showValidation, setShowValidation, setScheduledTasks]
   );
 
   const closeScheduledTasks = useCallback(() => {
@@ -142,15 +144,17 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
   const deleteScheduledTask = useCallback(
     async (taskId: string) => {
       if (!fileUuid) return;
-      const taskToDelete = scheduledTasks.tasks.find((task) => task.uuid === taskId);
       await scheduledTasksAPI.delete(fileUuid, taskId);
-      setScheduledTasks((prev) => ({ ...prev, tasks: prev.tasks.filter((task) => task.uuid !== taskId) }));
-      trackEvent('[ScheduledTasks].delete', {
-        taskUuid: taskId,
-        cronExpression: taskToDelete?.cronExpression,
+      setScheduledTasks((prev) => {
+        const taskToDelete = prev.tasks.find((task) => task.uuid === taskId);
+        trackEvent('[ScheduledTasks].delete', {
+          taskUuid: taskId,
+          cronExpression: taskToDelete?.cronExpression,
+        });
+        return { ...prev, tasks: prev.tasks.filter((task) => task.uuid !== taskId) };
       });
     },
-    [fileUuid, scheduledTasks.tasks, setScheduledTasks]
+    [fileUuid, setScheduledTasks]
   );
 
   const getHistory = useCallback(

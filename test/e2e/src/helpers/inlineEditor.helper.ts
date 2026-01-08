@@ -12,7 +12,10 @@ const parseA1Notation = (a1: string): { column: number; row: number } => {
   }
 
   const [, colStr, rowStr] = match;
-  const column = colStr.toUpperCase().charCodeAt(0) - 64; // 1-indexed (A=1, B=2, etc.)
+  const column = colStr
+    .toUpperCase()
+    .split('')
+    .reduce((acc, char) => acc * 26 + (char.charCodeAt(0) - 64), 0); // 1-indexed (A=1, ..., Z=26, AA=27, etc.)
   const row = parseInt(rowStr, 10); // 1-indexed
 
   return { column, row };

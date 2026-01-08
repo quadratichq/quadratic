@@ -27,21 +27,24 @@ export const ScheduledTask = () => {
   const cronInterval = UseCronInterval(currentTask?.cronExpression, timezone ?? undefined);
   const cronRange = useCronRange(currentTask?.operations);
 
+  // Extract values to avoid recreating callback when other currentTask properties change
+  const currentTaskUuid = currentTask?.uuid;
+  const isCreateMode = !currentTask;
+
   const onSave = useCallback(async () => {
     if (!cronInterval.cron || cronInterval.cronError || cronRange.rangeError) return;
     const cloned = cronRange.range?.clone();
     const operations = scheduledTaskEncode(cloned);
-    const isCreate = !currentTask;
 
-    trackEvent(`[ScheduledTasks].${isCreate ? 'create' : 'update'}`, {
+    trackEvent(`[ScheduledTasks].${isCreateMode ? 'create' : 'update'}`, {
       cronExpression: cronInterval.cron,
       cronType: cronInterval.cronType,
       taskType: cronRange.task,
-      taskUuid: currentTask?.uuid,
+      taskUuid: currentTaskUuid,
     });
 
     await saveScheduledTask({
-      uuid: currentTask?.uuid ?? CREATE_TASK_ID,
+      uuid: currentTaskUuid ?? CREATE_TASK_ID,
       cronExpression: cronInterval.cron,
       operations,
     });
@@ -53,7 +56,8 @@ export const ScheduledTask = () => {
     cronRange.rangeError,
     cronRange.range,
     cronRange.task,
-    currentTask,
+    currentTaskUuid,
+    isCreateMode,
     saveScheduledTask,
     showScheduledTasks,
   ]);
