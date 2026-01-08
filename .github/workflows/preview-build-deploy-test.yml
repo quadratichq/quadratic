@@ -113,7 +113,7 @@ jobs:
       matrix:
         include:
           - service: client
-            runner: blacksmith-8vcpu-ubuntu-2404
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
