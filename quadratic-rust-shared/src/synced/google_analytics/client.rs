@@ -54,11 +54,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     fn start_date(&self) -> NaiveDate {
-<<<<<<< HEAD
-        self.start_date.to_owned()
-=======
         self.start_date
->>>>>>> origin/google-analytics-connection
     }
 
     fn streams(&self) -> Vec<&'static str> {
