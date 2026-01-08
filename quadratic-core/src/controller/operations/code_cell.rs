@@ -947,4 +947,113 @@ mod test {
             "Should block if selection includes import cell"
         );
     }
+
+    #[test]
+    fn test_get_upstream_dependents_without_code_run() {
+        // Tests that get_upstream_dependents returns the position even when
+        // no code_run exists yet (e.g., when SetDataTable hasn't been executed).
+        // This prevents positions from being lost when order_code_cells rebuilds
+        // the operation queue.
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        // No code_run exists at this position
+        assert!(
+            gc.code_run_at(&sheet_pos).is_none(),
+            "Precondition: no code_run should exist at position"
+        );
+
+        let mut seen = HashSet::new();
+        let result = gc.get_upstream_dependents(&sheet_pos, &mut seen);
+
+        assert_eq!(
+            result,
+            vec![sheet_pos],
+            "Should return the position even without a code_run"
+        );
+        assert!(
+            seen.contains(&sheet_pos),
+            "Position should be marked as seen"
+        );
+    }
+
+    #[test]
+    fn test_order_code_cells_preserves_positions_without_code_runs() {
+        // Tests that order_code_cells preserves positions even when code_runs
+        // don't exist yet. This is important for scenarios like when SetDataTable
+        // hasn't been executed yet but we still need to track the position.
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let positions = vec![
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            SheetPos {
+                x: 2,
+                y: 2,
+                sheet_id,
+            },
+            SheetPos {
+                x: 3,
+                y: 3,
+                sheet_id,
+            },
+        ];
+
+        // None of these positions have code_runs
+        for pos in &positions {
+            assert!(
+                gc.code_run_at(pos).is_none(),
+                "Precondition: no code_run should exist at position {:?}",
+                pos
+            );
+        }
+
+        let ordered = gc.order_code_cells(positions.clone());
+
+        // All positions should be preserved in the output
+        assert_eq!(
+            ordered.len(),
+            positions.len(),
+            "All positions should be preserved even without code_runs"
+        );
+        for pos in &positions {
+            assert!(
+                ordered.contains(pos),
+                "Position {:?} should be in the ordered output",
+                pos
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_upstream_dependents_already_seen() {
+        // Tests that get_upstream_dependents returns empty when position
+        // has already been seen (cycle detection).
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        let mut seen = HashSet::new();
+        seen.insert(sheet_pos); // Pre-mark as seen
+
+        let result = gc.get_upstream_dependents(&sheet_pos, &mut seen);
+
+        assert!(
+            result.is_empty(),
+            "Should return empty when position was already seen"
+        );
+    }
 }
