@@ -19,11 +19,13 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ArrowRightIcon, ChevronLeftIcon, UploadIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Link, redirect, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { FilePreview } from './components/FilePreview';
 
 type Step = 'connection' | 'describe';
 
@@ -147,6 +149,16 @@ export const Component = () => {
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const dragCounterRef = useRef(0);
+
+  // Check if we have a previewable file (CSV or Excel)
+  const previewableFile = useMemo(() => {
+    return uploadedFiles.find((file) => {
+      const ext = file.name.toLowerCase();
+      return ext.endsWith('.csv') || ext.endsWith('.xlsx') || ext.endsWith('.xls');
+    });
+  }, [uploadedFiles]);
+
+  const hasPreviewableFile = !!previewableFile;
 
   // Generate contextual suggestions when files or connections change
   useEffect(() => {
@@ -446,8 +458,15 @@ export const Component = () => {
         </button>
       )}
 
-      <main className="flex flex-1 justify-center overflow-auto p-6 pt-16">
-        <div className="w-full max-w-2xl">
+      <main className="flex flex-1 overflow-auto p-6 pt-16">
+        <div
+          className={cn(
+            'mx-auto flex w-full gap-8 transition-all duration-500 ease-out',
+            hasPreviewableFile ? 'max-w-6xl' : 'max-w-2xl justify-center'
+          )}
+        >
+          {/* Main content column */}
+          <div className="w-full max-w-2xl">
           {/* Connection Selection Page */}
           {step === 'connection' && (
             <>
@@ -687,6 +706,14 @@ export const Component = () => {
               {/* Spacer to reduce scroll jumping during generation */}
               <div className="h-24" />
             </>
+          )}
+          </div>
+
+          {/* File Preview Panel - in its own column on the right, aligned with suggestions */}
+          {hasPreviewableFile && previewableFile && step === 'describe' && (
+            <div className="hidden w-96 shrink-0 animate-slide-in-right pt-[136px] lg:block xl:w-[480px]">
+              <FilePreview file={previewableFile} />
+            </div>
           )}
         </div>
       </main>
