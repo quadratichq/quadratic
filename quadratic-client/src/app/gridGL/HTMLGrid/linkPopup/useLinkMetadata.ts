@@ -1,30 +1,19 @@
+import { apiClient } from '@/shared/api/apiClient';
 import { useEffect, useRef, useState } from 'react';
 
 // Simple in-memory cache for metadata to avoid refetching
-const metadataCache = new Map<string, { title?: string; description?: string }>();
+const metadataCache = new Map<string, { title?: string }>();
 
 /**
- * Fetch metadata from microlink.io.
- * Note: we should pay for the api before shipping this feature.
+ * Fetch URL metadata (title) via our backend API.
  */
-async function fetchUrlMetadata(url: string): Promise<{ title?: string; description?: string }> {
+async function fetchUrlMetadata(url: string): Promise<{ title?: string }> {
   if (metadataCache.has(url)) {
     return metadataCache.get(url)!;
   }
 
   try {
-    const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`, {
-      signal: AbortSignal.timeout(3000),
-    });
-
-    if (!response.ok) return {};
-
-    const data = await response.json();
-    const result = {
-      title: data?.data?.title,
-      description: data?.data?.description,
-    };
-
+    const result = await apiClient.urlMetadata.get(url);
     metadataCache.set(url, result);
     return result;
   } catch {

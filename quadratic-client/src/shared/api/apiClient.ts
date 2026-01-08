@@ -508,6 +508,16 @@ export const apiClient = {
     );
   },
 
+  urlMetadata: {
+    get(url: string) {
+      return fetchFromApi(
+        `/v0/url-metadata?url=${encodeURIComponent(url)}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/url-metadata.GET.response']
+      );
+    },
+  },
+
   getApiUrl() {
     const url = import.meta.env.VITE_QUADRATIC_API_URL;
     if (!url) {
