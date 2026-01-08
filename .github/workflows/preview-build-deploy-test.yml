@@ -113,7 +113,7 @@ jobs:
       matrix:
         include:
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2404
+            runner: blacksmith-8vcpu-ubuntu-2404
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
@@ -196,8 +196,10 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-to: type=registry,mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,force-compression=true,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
+          build-args: |
+            SKIP_COMPRESSION=true
           cache-from: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
+          cache-to: type=registry,mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,force-compression=true,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
 
       - name: Find Build & Deploy Images Comment
         if: failure()

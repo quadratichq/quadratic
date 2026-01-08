@@ -1,9 +1,8 @@
+# syntax=docker/dockerfile:1.4
 ###########################################################################################
-# Builder 1 - Build core
+# Shared base stage for Rust toolchain - avoids duplicating apt-get and Rust installation
 ###########################################################################################
-FROM ubuntu:24.04 AS core-builder
-
-ARG CLIENT_DEV
+FROM ubuntu:24.04 AS rust-toolchain-base
 
 # Install Node.js 24, build tools, and other dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,7 +31,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # Set up Rust environment
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
 
@@ -42,6 +40,16 @@ RUN rustup show
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 RUN echo 'wasm-pack version:' && wasm-pack --version
+
+
+###########################################################################################
+# Builder 1 - Build core
+###########################################################################################
+FROM rust-toolchain-base AS core-builder
+
+ARG CLIENT_DEV
+
+ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 
 # Copy required files for building core
 COPY --link package.json .
@@ -49,56 +57,23 @@ COPY --link ./quadratic-core/. ./quadratic-core/
 COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
-# Build core
-RUN if [ "$CLIENT_DEV" = "true" ]; then \
-  echo 'Building core in dev mode...' && npm run build:dev --workspace=quadratic-core; \
-  else \
-  echo 'Building core...' && npm run build --workspace=quadratic-core; \
-  fi
+# Build core with Cargo cache mounts for faster rebuilds
+RUN --mount=type=cache,target=/quadratic/.cargo/registry,sharing=locked \
+    --mount=type=cache,target=/quadratic/.cargo/git,sharing=locked \
+    --mount=type=cache,target=/quadratic/target/quadratic-core,sharing=locked \
+    if [ "$CLIENT_DEV" = "true" ]; then \
+      echo 'Building core in dev mode...' && npm run build:dev --workspace=quadratic-core; \
+    else \
+      echo 'Building core...' && npm run build --workspace=quadratic-core; \
+    fi
 
 
 ###########################################################################################
 # Builder 2 - Build TS/Rust types
 ###########################################################################################
-FROM ubuntu:24.04 AS ts-rust-types-builder
+FROM rust-toolchain-base AS ts-rust-types-builder
 
-# Install Node.js 24, build tools, and other dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  curl \
-  ca-certificates \
-  gnupg \
-  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-  && apt-get install -y --no-install-recommends \
-  nodejs \
-  build-essential \
-  llvm \
-  clang \
-  protobuf-compiler \
-  libprotobuf-dev \
-  pkg-config \
-  libssl-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /quadratic
-
-# Copy rust-toolchain file first so rustup can read it
-COPY --link rust-toolchain.toml .
-
-# Install rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-# Set up Rust environment
-ENV PATH="/root/.cargo/bin:${PATH}"
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
-ENV CARGO_HOME=/quadratic/.cargo
-ENV CARGO_BUILD_JOBS=64
-
-# Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
-RUN rustup show
-
-# Install wasm-pack
-RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-RUN echo 'wasm-pack version:' && wasm-pack --version
 
 # Copy required files for building ts/rust types
 COPY --link package.json .
@@ -106,8 +81,11 @@ COPY --link ./quadratic-core/. ./quadratic-core/
 COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
-# Build TS/Rust types
-RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
+# Build TS/Rust types with Cargo cache mounts for faster rebuilds
+RUN --mount=type=cache,target=/quadratic/.cargo/registry,sharing=locked \
+    --mount=type=cache,target=/quadratic/.cargo/git,sharing=locked \
+    --mount=type=cache,target=/quadratic/target/quadratic-core-types,sharing=locked \
+    echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
 
 
 ###########################################################################################
@@ -142,8 +120,9 @@ COPY --link ./quadratic-core/package.json ./quadratic-core/
 COPY --link ./quadratic-shared/package.json ./quadratic-shared/
 COPY --link ./quadratic-client/package.json ./quadratic-client/
 
-# Install npm dependencies
-RUN npm install --no-audit --no-fund --ignore-scripts
+# Install npm dependencies with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --no-audit --no-fund --ignore-scripts
 
 # Copy remaining files
 COPY --link ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
@@ -156,6 +135,9 @@ RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 # Hash of the environment variables, as a cache buster
 # This is non empty when env variables are set in the github action
 ARG ENV_HASH
+
+# Skip compression for preview builds (set SKIP_COMPRESSION=true in build args)
+ARG SKIP_COMPRESSION
 
 # If ENV_HASH is set, copy the client.env, otherwise create default .env
 RUN if [ ! -z "$ENV_HASH" ]; then \
@@ -177,8 +159,9 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
 
 # Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
-# Compress files only when ENV_HASH is not set, i.e. when env variables are not set in the github action
-RUN if [ -z "$ENV_HASH" ]; then \
+# Skip compression when SKIP_COMPRESSION is set (for preview builds) or when ENV_HASH is set
+RUN if [ -z "$SKIP_COMPRESSION" ] && [ -z "$ENV_HASH" ]; then \
+  echo "Compressing build assets..." && \
   find /quadratic/build -type f \
   \( \
   -name "*.wasm" -o \
@@ -214,6 +197,8 @@ RUN if [ -z "$ENV_HASH" ]; then \
   pigz -9kf "{}" && \
   echo "Created: {}.br and {}.gz" \
   '; \
+  else \
+  echo "Skipping compression (SKIP_COMPRESSION=$SKIP_COMPRESSION, ENV_HASH=$ENV_HASH)"; \
   fi
 
 
