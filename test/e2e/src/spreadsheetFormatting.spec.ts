@@ -387,7 +387,7 @@ test.skip('Cell Formatting', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Code Cell Outlines', async ({ page }) => {
+test.only('Code Cell Outlines', async ({ page }) => {
   // Constants
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
