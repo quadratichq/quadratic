@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.23.0"
+version = "0.23.1"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -150,6 +150,16 @@ required-features = ["function-timer"]
 
 [[bench]]
 name = "import_csv"
+harness = false
+required-features = ["function-timer"]
+
+[[bench]]
+name = "autocomplete_formula"
+harness = false
+required-features = ["function-timer"]
+
+[[bench]]
+name = "clipboard_formula"
 harness = false
 required-features = ["function-timer"]
 

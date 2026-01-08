@@ -65,8 +65,6 @@ impl GridController {
                     drop(sheets_info);
 
                     grid.sheet_ids().iter().for_each(|sheet_id| {
-                        grid.send_all_fills(*sheet_id);
-
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
                             // sends SheetContentCache to the client
                             sheet.send_content_cache();

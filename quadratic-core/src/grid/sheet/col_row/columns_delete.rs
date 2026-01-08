@@ -113,16 +113,20 @@ impl Sheet {
 
         self.delete_column_offset(transaction, column);
 
-        // todo: this can be optimized by adding a fn that checks if there are
-        // any fills beyond the deleted column
-
-        // remove the column's data from the sheet
-        if self.formats.has_fills() {
-            transaction.add_fill_cells(self.id);
-        }
-
         // remove the column's formats from the sheet
         self.formats.remove_column(column);
+
+        // mark fills dirty AFTER removing the column so the shifted columns are correctly marked
+        // todo: this can be optimized by adding a fn that checks if there are
+        // any fills beyond the deleted column
+        if self.formats.has_fills() {
+            transaction.add_fill_cells_from_columns(self, column);
+        }
+
+        // update meta fills if there are any infinite fills (column/row/sheet fills)
+        if self.formats.has_meta_fills() {
+            transaction.add_sheet_meta_fills(self.id);
+        }
 
         // remove the column's borders from the sheet
         self.borders.remove_column(column);
@@ -189,11 +193,12 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        DEFAULT_COLUMN_WIDTH,
+        DEFAULT_COLUMN_WIDTH, Pos,
         a1::A1Selection,
         assert_cell_format_fill_color, assert_display_cell_value,
         controller::GridController,
         grid::{CellWrap, CodeCellLanguage},
+        renderer_constants::CELL_SHEET_WIDTH,
         test_util::{first_sheet_id, test_set_values},
     };
 
@@ -274,5 +279,171 @@ mod tests {
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 400.0);
+    }
+
+    /// Tests that fill_cells are marked dirty AFTER the column is deleted.
+    /// This ensures that the correct hashes (for the shifted columns) are marked dirty.
+    #[test]
+    fn test_delete_column_fills_marked_dirty() {
+        let mut sheet = Sheet::test();
+
+        // Set up values in columns 1-4 to create bounds
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set fills on columns 2 and 4
+        sheet
+            .formats
+            .fill_color
+            .set(pos![B1], Some("red".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![D1], Some("blue".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        // Delete column 1 - this should shift columns 2-4 left to become 1-3
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that fill_cells contains the correct hashes AFTER deletion
+        // The fills that were at columns 2 and 4 (now at 1 and 3) should have their
+        // hashes marked dirty based on the new column positions
+        let fill_cells = transaction.fill_cells.get(&sheet.id);
+        assert!(fill_cells.is_some(), "fill_cells should be marked dirty");
+
+        let fill_cells = fill_cells.unwrap();
+        // Hash (0, 0) should be marked dirty since column 1 (hash 0) has fills
+        assert!(
+            fill_cells.contains(&Pos { x: 0, y: 0 }),
+            "hash (0, 0) should be marked dirty for shifted fills"
+        );
+
+        // Verify the fills themselves shifted correctly
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("red".to_string()),
+            "fill should have shifted from B1 to A1"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![C1]),
+            Some("blue".to_string()),
+            "fill should have shifted from D1 to C1"
+        );
+    }
+
+    /// Tests that deleting a column with fills spanning multiple hashes marks all relevant hashes dirty.
+    #[test]
+    fn test_delete_column_fills_multiple_hashes() {
+        let mut sheet = Sheet::test();
+
+        // Set values to create bounds spanning multiple hashes
+        // CELL_SHEET_WIDTH = 15, so column 16+ is in hash x=1
+        sheet.set_value(pos![A1], "A".to_string());
+        sheet.set_value(Pos { x: 20, y: 1 }, "B".to_string()); // In hash x=1
+
+        // Set a fill in a column that will be in the second hash after deletion
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 20, y: 1 }, Some("green".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        // Delete column 1
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // The fill at column 20 shifted to column 19, which is in hash x=1 (19/15 = 1)
+        let fill_cells = transaction.fill_cells.get(&sheet.id);
+        assert!(fill_cells.is_some(), "fill_cells should be marked dirty");
+
+        let fill_cells = fill_cells.unwrap();
+        // Hash containing column 19 (hash x=1) should be marked dirty
+        let expected_hash_x = (CELL_SHEET_WIDTH as i64 - 1) / CELL_SHEET_WIDTH as i64; // Column 19 maps to hash 1
+        assert!(
+            fill_cells.contains(&Pos {
+                x: expected_hash_x,
+                y: 0
+            }),
+            "hash for shifted fill should be marked dirty"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is marked when deleting a column with column fills (infinite y).
+    #[test]
+    fn test_delete_column_meta_fills_column_fill() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set a column fill (infinite in y direction) on column C
+        sheet
+            .formats
+            .fill_color
+            .set_rect(3, 1, Some(3), None, Some("red".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that sheet_meta_fills is marked dirty
+        assert!(
+            transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should be marked when there are column fills"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is marked when deleting a column with row fills (infinite x).
+    #[test]
+    fn test_delete_column_meta_fills_row_fill() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set a row fill (infinite in x direction) on row 1
+        sheet
+            .formats
+            .fill_color
+            .set_rect(1, 1, None, Some(1), Some("blue".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that sheet_meta_fills is marked dirty
+        assert!(
+            transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should be marked when there are row fills"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is NOT marked when deleting a column with only finite fills.
+    #[test]
+    fn test_delete_column_no_meta_fills_for_finite_fills() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 4, 1, vec!["A", "B", "C", "D"]);
+
+        // Set a finite fill (not infinite in any direction)
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C1], Some("green".to_string()));
+
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Verify that sheet_meta_fills is NOT marked dirty for finite fills
+        assert!(
+            !transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should NOT be marked for finite fills only"
+        );
     }
 }
