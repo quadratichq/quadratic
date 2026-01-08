@@ -161,6 +161,14 @@ mod tests {
         assert_all_compare_ops_work("'ABC'", "'def'");
         assert_all_compare_ops_work("'abc'", "'DEF'");
         assert_all_compare_ops_work("'ABC'", "'DEF'");
+
+        // Test duration (using DURATION.YMD formula function)
+        assert_all_compare_ops_work("DURATION.YMD(0, 2, 0)", "DURATION.YMD(1, 0, 0)"); // 2 months < 1 year
+        assert_all_compare_ops_work("DURATION.YMD(0, 0, 300)", "DURATION.YMD(1, 0, 0)"); // 300 days < 1 year
+        assert_all_compare_ops_work("DURATION.YMD(0, 0, 300)", "DURATION.YMD(0, 0, 301)"); // 300 days < 301 days
+        // Any number of days is always considered less than one month. This is
+        // a little weird, but I don't know what else to do.
+        assert_all_compare_ops_work("DURATION.YMD(0, 0, 300)", "DURATION.YMD(0, 1, 0)"); // 300 days < 1 month
     }
 
     #[test]
