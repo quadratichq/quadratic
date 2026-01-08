@@ -1318,3 +1318,203 @@ test.skip('User can see other users multiplayer cursors', async ({ page: userPag
     maxDiffPixels: 1000,
   });
 });
+
+test.skip('Rich Text Formatting Sync', async ({ page: userPage1 }) => {
+  //--------------------------------
+  // Rich Text Formatting syncs between users
+  //--------------------------------
+
+  // Constants
+  const fileName = 'Rich_Text_Multiplayer_Sync';
+
+  // Use consistent viewport settings
+  const viewport = { width: 1280, height: 720 };
+
+  const user2Browser = await chromium.launch();
+  const user2Context = await user2Browser.newContext({ viewport });
+  const userPage2 = await user2Context.newPage();
+
+  // Login both users
+  const [, user2Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_rich_text_mp_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_rich_text_mp_2' }),
+  ]);
+
+  // First user creates a new team and file
+  await userPage1.bringToFront();
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName });
+
+  // Invite second user to the team
+  await inviteUserToTeam(userPage1, {
+    email: user2Email,
+    permission: 'Can edit',
+  });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
+  await closeExtraUI(userPage2);
+
+  // First user navigates into file
+  await userPage1.bringToFront();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
+  await closeExtraUI(userPage1);
+
+  //--------------------------------
+  // Test 1: Bold formatting syncs
+  //--------------------------------
+
+  // User 1 creates text with bold formatting
+  await userPage1.bringToFront();
+  await gotoCells(userPage1, { a1: 'A1' });
+  await userPage1.keyboard.press('Enter');
+  await userPage1.waitForTimeout(500);
+
+  await userPage1.keyboard.type('This text has bold words', { delay: 50 });
+  await userPage1.waitForTimeout(500);
+
+  // Select "bold" and make it bold
+  await userPage1.keyboard.press('Home');
+  for (let i = 0; i < 14; i++) {
+    await userPage1.keyboard.press('ArrowRight');
+  }
+  for (let i = 0; i < 4; i++) {
+    await userPage1.keyboard.press('Shift+ArrowRight');
+  }
+  await userPage1.keyboard.press('Control+b');
+  await userPage1.waitForTimeout(500);
+
+  // Exit edit mode
+  await userPage1.keyboard.press('Escape');
+  await userPage1.waitForTimeout(2000);
+
+  // User 2 should see the bold formatting
+  await userPage2.bringToFront();
+  await userPage2.waitForTimeout(2000);
+
+  // Take screenshot from User 2's perspective
+  await expect(userPage2.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-rich-text-bold-sync.png', {
+    maxDiffPixels: 1000,
+  });
+
+  //--------------------------------
+  // Test 2: Hyperlink syncs
+  //--------------------------------
+
+  // User 1 creates a hyperlink
+  await userPage1.bringToFront();
+  await gotoCells(userPage1, { a1: 'A2' });
+  await userPage1.keyboard.press('Enter');
+  await userPage1.waitForTimeout(500);
+
+  await userPage1.keyboard.type('Click this link here', { delay: 50 });
+  await userPage1.waitForTimeout(500);
+
+  // Select "link" and make it a hyperlink
+  await userPage1.keyboard.press('Home');
+  for (let i = 0; i < 11; i++) {
+    await userPage1.keyboard.press('ArrowRight');
+  }
+  for (let i = 0; i < 4; i++) {
+    await userPage1.keyboard.press('Shift+ArrowRight');
+  }
+  await userPage1.waitForTimeout(250);
+
+  // Open hyperlink dialog
+  await userPage1.keyboard.press('Alt+k');
+  await userPage1.waitForTimeout(1000);
+
+  const urlInput = userPage1.locator('#link-url');
+  await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+  await urlInput.fill('https://multiplayer-test.com');
+  await userPage1.getByRole('button', { name: 'Save' }).click();
+  await userPage1.waitForTimeout(1000);
+
+  // Exit edit mode
+  await userPage1.keyboard.press('Escape');
+  await userPage1.waitForTimeout(2000);
+
+  // User 2 should see the hyperlink
+  await userPage2.bringToFront();
+  await userPage2.waitForTimeout(2000);
+
+  // Take screenshot from User 2's perspective
+  await expect(userPage2.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-rich-text-hyperlink-sync.png', {
+    maxDiffPixels: 1000,
+  });
+
+  //--------------------------------
+  // Test 3: Multiple formatting types sync together
+  //--------------------------------
+
+  // User 1 creates cell with multiple formatting types
+  await userPage1.bringToFront();
+  await gotoCells(userPage1, { a1: 'A3' });
+  await userPage1.keyboard.press('Enter');
+  await userPage1.waitForTimeout(500);
+
+  await userPage1.keyboard.type('Bold italic underline', { delay: 50 });
+  await userPage1.waitForTimeout(500);
+
+  // Make "Bold" bold
+  await userPage1.keyboard.press('Home');
+  for (let i = 0; i < 4; i++) {
+    await userPage1.keyboard.press('Shift+ArrowRight');
+  }
+  await userPage1.keyboard.press('Control+b');
+  await userPage1.waitForTimeout(250);
+
+  // Make "italic" italic
+  await userPage1.keyboard.press('End');
+  await userPage1.keyboard.press('Home');
+  for (let i = 0; i < 5; i++) {
+    await userPage1.keyboard.press('ArrowRight');
+  }
+  for (let i = 0; i < 6; i++) {
+    await userPage1.keyboard.press('Shift+ArrowRight');
+  }
+  await userPage1.keyboard.press('Control+i');
+  await userPage1.waitForTimeout(250);
+
+  // Make "underline" underlined
+  await userPage1.keyboard.press('End');
+  await userPage1.keyboard.press('Home');
+  for (let i = 0; i < 12; i++) {
+    await userPage1.keyboard.press('ArrowRight');
+  }
+  for (let i = 0; i < 9; i++) {
+    await userPage1.keyboard.press('Shift+ArrowRight');
+  }
+  await userPage1.keyboard.press('Control+u');
+  await userPage1.waitForTimeout(500);
+
+  // Exit edit mode
+  await userPage1.keyboard.press('Escape');
+  await userPage1.waitForTimeout(2000);
+
+  // User 2 should see all formatting
+  await userPage2.bringToFront();
+  await userPage2.waitForTimeout(2000);
+
+  // Take screenshot from User 2's perspective
+  await expect(userPage2.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-rich-text-multi-format-sync.png', {
+    maxDiffPixels: 1000,
+  });
+
+  //--------------------------------
+  // Cleanup
+  //--------------------------------
+  await userPage1.bringToFront();
+  await userPage1.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await cleanUpFiles(userPage1, { fileName });
+
+  await user2Browser.close();
+});
