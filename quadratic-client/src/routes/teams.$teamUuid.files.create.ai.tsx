@@ -673,7 +673,11 @@ export const Component = () => {
                   />
 
                   <div className="flex items-center justify-end px-4 py-3">
-                    <Button onClick={handleBuildSpreadsheet} disabled={!prompt.trim() || isSubmitting} className="gap-2">
+                    <Button
+                      onClick={handleBuildSpreadsheet}
+                      disabled={!prompt.trim() || isSubmitting}
+                      className="gap-2"
+                    >
                       {isSubmitting ? 'Creating...' : 'Create'}
                       <ArrowRightIcon className="h-4 w-4" />
                     </Button>
@@ -687,7 +691,6 @@ export const Component = () => {
           )}
         </div>
       </main>
-
     </div>
   );
 };
