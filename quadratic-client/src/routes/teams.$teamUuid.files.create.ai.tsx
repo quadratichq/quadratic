@@ -527,7 +527,7 @@ export const Component = () => {
                     onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
                   >
                     <FileIcon size="sm" />
-                    Import CSV
+                    Import CSV / Others
                   </Button>
 
                   <DropdownMenu>
