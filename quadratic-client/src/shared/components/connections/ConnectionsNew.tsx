@@ -23,7 +23,7 @@ const plaidConnections = [
   },
   {
     name: 'Credit Cards',
-    logos: [DiscoverLogo, AffirmLogo, AmexLogo],
+    logos: [AffirmLogo, DiscoverLogo, AmexLogo],
   },
 ];
 

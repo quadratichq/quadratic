@@ -201,7 +201,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         <FormField control={form.control} name="institution_name" render={() => <input type="hidden" />} />
 
         {connection && (
-          <div className="flex items-center gap-2 pt-3 text-sm">
+          <div className="flex items-center gap-2 pt-2 text-sm">
             <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
