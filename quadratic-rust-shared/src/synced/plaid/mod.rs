@@ -74,9 +74,10 @@ impl SyncedConnection for PlaidConnection {
 
 // For testing only
 use std::sync::{LazyLock, Mutex};
-pub static PLAID_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
-    dotenv::from_filename(".env.test").unwrap();
-    let credentials = std::env::var("PLAID_CREDENTIALS").unwrap();
+pub static PLAID_CREDENTIALS: LazyLock<Mutex<Option<String>>> = LazyLock::new(|| {
+    // Try to load .env.test file, but don't fail if it doesn't exist
+    let _ = dotenv::from_filename(".env.test");
+    let credentials = std::env::var("PLAID_CREDENTIALS").ok();
 
     Mutex::new(credentials)
 });
@@ -97,8 +98,14 @@ async fn new_plaid_client_with_products(
     add_access_token: bool,
     products: Vec<plaid::model::Products>,
 ) -> PlaidClient {
-    let credentials = PLAID_CREDENTIALS.lock().unwrap().to_string();
-    let config = serde_json::from_str::<PlaidConfigFromEnv>(&credentials).unwrap();
+    let credentials = PLAID_CREDENTIALS
+        .lock()
+        .expect("PLAID_CREDENTIALS lock poisoned")
+        .as_ref()
+        .cloned()
+        .expect("PLAID_CREDENTIALS not set in .env.test");
+    let config = serde_json::from_str::<PlaidConfigFromEnv>(&credentials)
+        .expect("Failed to parse PLAID_CREDENTIALS JSON");
     let environment = PlaidEnvironment::Sandbox;
     let mut client = PlaidClient::new(&config.client_id, &config.secret, environment, None);
 

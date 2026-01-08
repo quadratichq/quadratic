@@ -15,7 +15,7 @@ use crate::error::Result;
 use crate::synced::{DATE_FORMAT, SyncedClient};
 use crate::utils::json::flatten_to_json;
 
-pub static PLAIV_VERSION: &str = "2020-09-14";
+pub static PLAID_VERSION: &str = "2020-09-14";
 
 #[derive(Debug, Clone, Copy, EnumString, Display, Serialize, Deserialize)]
 #[strum(serialize_all = "lowercase")]
@@ -49,9 +49,8 @@ impl std::fmt::Debug for PlaidClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PlaidClient {{ client_id: [REDACTED], secret: [REDACTED], environment: {:?}, access_token: {:?} }}",
-            self.environment, 
-            self.access_token.as_ref().map(|_| "[REDACTED]")
+            "PlaidClient {{ client_id: {}, secret: {}, environment: {:?}, access_token: {:?} }}",
+            self.client_id, self.secret, self.environment, self.access_token
         )
     }
 }
@@ -79,7 +78,7 @@ impl PlaidClient {
         let authentication = PlaidAuth::ClientId {
             client_id: client_id.to_string(),
             secret: secret.to_string(),
-            version: PLAIV_VERSION.into(),
+            version: PLAID_VERSION.into(),
         };
 
         // Create an HTTP client with the correct base URL for the environment
@@ -150,7 +149,7 @@ impl PlaidClient {
         let response = client
             .post(&url)
             .header("Content-Type", "application/json")
-            .header("Plaid-Version", PLAIV_VERSION)
+            .header("Plaid-Version", PLAID_VERSION)
             .json(&request_body)
             .send()
             .await
@@ -206,11 +205,11 @@ impl PlaidClient {
             // Merge extra options if provided
             if let Some(extra) = &extra_options
                 && let (Some(opts), Some(extra_obj)) = (options.as_object_mut(), extra.as_object())
-                {
-                    for (k, v) in extra_obj {
-                        opts.insert(k.clone(), v.clone());
-                    }
+            {
+                for (k, v) in extra_obj {
+                    opts.insert(k.clone(), v.clone());
                 }
+            }
 
             let response = self
                 .raw_request(
