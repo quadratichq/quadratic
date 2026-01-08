@@ -40,7 +40,7 @@ impl GridController {
         let ops = formulas
             .into_iter()
             .flat_map(|(selection, code_string)| {
-                self.set_formula_operations(selection, code_string, None)
+                self.set_formula_operations(selection, code_string)
             })
             .collect();
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, true)
