@@ -112,7 +112,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Duration, Pos, Rect, SheetPos,
+        CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
@@ -991,7 +991,10 @@ mod test {
             assert_eq!(stored_spans[0].text, "Visit ");
             assert!(stored_spans[0].link.is_none());
             assert_eq!(stored_spans[1].text, "Example");
-            assert_eq!(stored_spans[1].link, Some("https://example.com".to_string()));
+            assert_eq!(
+                stored_spans[1].link,
+                Some("https://example.com".to_string())
+            );
             assert_eq!(stored_spans[2].text, " for more info.");
         }
 

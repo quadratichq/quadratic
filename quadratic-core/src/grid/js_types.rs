@@ -308,6 +308,13 @@ pub struct JsHashesDirty {
     pub hashes: Vec<Pos>,
 }
 
+#[derive(Serialize, Debug, PartialEq, TS)]
+pub struct JsHashRenderFills {
+    pub sheet_id: SheetId,
+    pub hash: Pos,
+    pub fills: Vec<JsRenderFill>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderFill {
     pub x: i64,

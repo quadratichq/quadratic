@@ -37,6 +37,7 @@ use quadratic_core::grid::js_types::JsCoordinate;
 use quadratic_core::grid::js_types::JsDataTableContext;
 use quadratic_core::grid::js_types::JsGetAICellResult;
 use quadratic_core::grid::js_types::JsHashRenderCells;
+use quadratic_core::grid::js_types::JsHashRenderFills;
 use quadratic_core::grid::js_types::JsHashValidationWarnings;
 use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
@@ -164,6 +165,7 @@ fn main() {
         JsGetAICellResult,
         JsHashesDirty,
         JsHashRenderCells,
+        JsHashRenderFills,
         JsHashValidationWarnings,
         JsHtmlOutput,
         JsNumber,

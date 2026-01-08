@@ -622,9 +622,6 @@ impl CellValue {
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
     pub fn parse_from_str(value: &str) -> CellValue {
-        if let Some(duration) = CellValue::unpack_duration(value) {
-            return duration;
-        }
         if let Some(time) = CellValue::unpack_time(value) {
             return time;
         }
@@ -715,8 +712,6 @@ impl CellValue {
             date
         } else if let Some(date_time) = CellValue::unpack_date_time(value) {
             date_time
-        } else if let Some(duration) = CellValue::unpack_duration(value) {
-            duration
         } else {
             CellValue::Text(value.into())
         };
