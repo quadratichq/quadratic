@@ -4,9 +4,9 @@ module.exports = async () => {
     // Force close any remaining database connections
     const dbClient = require('./src/dbClient').default;
     await dbClient.$disconnect();
-    console.log('✅ Database connections closed successfully');
+    console.log('Database connections closed successfully');
   } catch (error) {
-    console.warn('⚠️  Warning: Error closing database connections:', error.message);
+    console.warn('Warning: Error closing database connections:', error.message);
   }
 
   // Small delay to ensure cleanup completes

@@ -4,17 +4,20 @@
 
 use chrono::NaiveDate;
 use quadratic_rust_shared::cache::{Cache as CacheTrait, memory::MemoryCache};
+use quadratic_rust_shared::synced::SyncedConnectionKind;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::synced_connection::{SyncedConnectionKind, SyncedConnectionStatus};
+use crate::synced_connection::{SyncKind, SyncedConnectionStatus};
 
+pub(crate) type SyncedConnectionCacheKind =
+    MemoryCache<Uuid, (SyncedConnectionKind, SyncKind, SyncedConnectionStatus)>;
+pub(crate) type SyncedConnectionDatesCacheKind = MemoryCache<(Uuid, String), Vec<NaiveDate>>;
 #[derive(Debug, Clone)]
 pub(crate) struct SyncedConnectionCache {
-    pub(crate) synced_connection:
-        Arc<Mutex<MemoryCache<Uuid, (SyncedConnectionKind, SyncedConnectionStatus)>>>,
-    pub(crate) synced_connection_dates: Arc<Mutex<MemoryCache<Uuid, Vec<NaiveDate>>>>,
+    pub(crate) synced_connection: Arc<Mutex<SyncedConnectionCacheKind>>,
+    pub(crate) synced_connection_dates: Arc<Mutex<SyncedConnectionDatesCacheKind>>,
 }
 
 impl SyncedConnectionCache {
@@ -31,7 +34,7 @@ impl SyncedConnectionCache {
     pub(crate) async fn get(
         &self,
         uuid: Uuid,
-    ) -> Option<(SyncedConnectionKind, SyncedConnectionStatus)> {
+    ) -> Option<(SyncedConnectionKind, SyncKind, SyncedConnectionStatus)> {
         (*self.synced_connection.lock().await)
             .get(&uuid)
             .await
@@ -43,10 +46,11 @@ impl SyncedConnectionCache {
         &self,
         uuid: Uuid,
         kind: SyncedConnectionKind,
+        sync_kind: SyncKind,
         status: SyncedConnectionStatus,
-    ) -> Option<(SyncedConnectionKind, SyncedConnectionStatus)> {
+    ) -> Option<(SyncedConnectionKind, SyncKind, SyncedConnectionStatus)> {
         (*self.synced_connection.lock().await)
-            .get_or_create(&uuid, (kind, status), None)
+            .get_or_create(&uuid, (kind, sync_kind, status), None)
             .await
             .cloned()
     }
@@ -56,10 +60,11 @@ impl SyncedConnectionCache {
         &self,
         uuid: Uuid,
         kind: SyncedConnectionKind,
+        sync_kind: SyncKind,
         status: SyncedConnectionStatus,
     ) {
         (*self.synced_connection.lock().await)
-            .create(&uuid, (kind, status), None)
+            .create(&uuid, (kind, sync_kind, status), None)
             .await;
     }
 
@@ -68,13 +73,16 @@ impl SyncedConnectionCache {
         &self,
         uuid: Uuid,
         kind: SyncedConnectionKind,
+        sync_kind: SyncKind,
         status: SyncedConnectionStatus,
     ) {
-        let existing = self.get_or_create(uuid, kind.clone(), status.clone()).await;
+        let existing = self
+            .get_or_create(uuid, kind.clone(), sync_kind.clone(), status.clone())
+            .await;
 
-        if let Some((existing_kind, _)) = existing {
+        if let Some((existing_kind, existing_sync_kind, _)) = existing {
             (*self.synced_connection.lock().await)
-                .update(&uuid, (existing_kind, status))
+                .update(&uuid, (existing_kind, existing_sync_kind, status))
                 .await;
         }
     }
@@ -83,13 +91,13 @@ impl SyncedConnectionCache {
     pub(crate) async fn delete(
         &self,
         uuid: Uuid,
-    ) -> Option<(SyncedConnectionKind, SyncedConnectionStatus)> {
+    ) -> Option<(SyncedConnectionKind, SyncKind, SyncedConnectionStatus)> {
         (*self.synced_connection.lock().await).delete(&uuid).await
     }
 
-    /// Add a date to the cache
-    pub(crate) async fn add_date(&self, uuid: Uuid, date: NaiveDate) {
-        let mut dates = self.get_dates(uuid).await;
+    /// Add a date to the cache for a specific stream
+    pub(crate) async fn add_date(&self, uuid: Uuid, stream: &str, date: NaiveDate) {
+        let mut dates = self.get_dates(uuid, stream).await;
 
         if dates.contains(&date) {
             return;
@@ -98,14 +106,14 @@ impl SyncedConnectionCache {
         dates.push(date);
 
         (*self.synced_connection_dates.lock().await)
-            .create(&uuid, dates, None)
+            .create(&(uuid, stream.to_string()), dates, None)
             .await;
     }
 
-    /// Get the dates from the cache
-    pub(crate) async fn get_dates(&self, uuid: Uuid) -> Vec<NaiveDate> {
+    /// Get the dates from the cache for a specific stream
+    pub(crate) async fn get_dates(&self, uuid: Uuid, stream: &str) -> Vec<NaiveDate> {
         (*self.synced_connection_dates.lock().await)
-            .get(&uuid)
+            .get(&(uuid, stream.to_string()))
             .await
             .cloned()
             .unwrap_or_default()
@@ -119,11 +127,17 @@ mod tests {
     use tokio::task::JoinSet;
 
     const KIND: SyncedConnectionKind = SyncedConnectionKind::Mixpanel;
+    const SYNC_KIND: SyncKind = SyncKind::Full;
     const STATUS: SyncedConnectionStatus = SyncedConnectionStatus::Setup;
     const STATUS_2: SyncedConnectionStatus = SyncedConnectionStatus::ApiRequest;
 
-    fn assert_matches(kind: SyncedConnectionKind, status: SyncedConnectionStatus) {
+    fn assert_matches(
+        kind: SyncedConnectionKind,
+        sync_kind: SyncKind,
+        status: SyncedConnectionStatus,
+    ) {
         assert!(matches!(kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(sync_kind, SyncKind::Full));
         assert!(matches!(status, SyncedConnectionStatus::Setup));
     }
 
@@ -136,13 +150,13 @@ mod tests {
         let result = cache.get(id).await;
         assert!(result.is_none(),);
 
-        cache.add(id, KIND, STATUS).await;
+        cache.add(id, KIND, SYNC_KIND, STATUS).await;
 
         let result = cache.get(id).await;
         assert!(result.is_some());
 
-        let (kind, status) = result.unwrap();
-        assert_matches(kind, status);
+        let (kind, sync_kind, status) = result.unwrap();
+        assert_matches(kind, sync_kind, status);
 
         let result = cache.get(non_existent_id).await;
         assert!(result.is_none());
@@ -153,23 +167,23 @@ mod tests {
         let cache = SyncedConnectionCache::new();
         let id = Uuid::new_v4();
 
-        let result = cache.get_or_create(id, KIND, STATUS).await;
+        let result = cache.get_or_create(id, KIND, SYNC_KIND, STATUS).await;
         assert!(result.is_some());
 
-        let (kind, status) = result.unwrap();
-        assert_matches(kind, status);
+        let (kind, sync_kind, status) = result.unwrap();
+        assert_matches(kind, sync_kind, status);
 
         let get_result = cache.get(id).await;
         assert!(get_result.is_some());
 
-        let (get_kind, get_status) = get_result.unwrap();
-        assert_matches(get_kind, get_status);
+        let (get_kind, get_sync_kind, get_status) = get_result.unwrap();
+        assert_matches(get_kind, get_sync_kind, get_status);
 
-        let result = cache.get_or_create(id, KIND, STATUS).await;
+        let result = cache.get_or_create(id, KIND, SYNC_KIND, STATUS).await;
         assert!(result.is_some());
 
-        let (existing_kind, existing_status) = result.unwrap();
-        assert_matches(existing_kind, existing_status);
+        let (existing_kind, existing_sync_kind, existing_status) = result.unwrap();
+        assert_matches(existing_kind, existing_sync_kind, existing_status);
     }
 
     #[tokio::test]
@@ -178,21 +192,21 @@ mod tests {
         let id_1 = Uuid::new_v4();
         let id_2 = Uuid::new_v4();
 
-        cache.add(id_1, KIND, STATUS).await;
+        cache.add(id_1, KIND, SYNC_KIND, STATUS).await;
 
         let result1 = cache.get(id_1).await;
         assert!(result1.is_some());
 
-        let (kind1, status1) = result1.unwrap();
-        assert_matches(kind1, status1);
+        let (kind1, sync_kind1, status1) = result1.unwrap();
+        assert_matches(kind1, sync_kind1, status1);
 
-        cache.add(id_2, KIND, STATUS).await;
+        cache.add(id_2, KIND, SYNC_KIND, STATUS).await;
 
         let result2 = cache.get(id_2).await;
         assert!(result2.is_some());
 
-        let (kind2, status2) = result2.unwrap();
-        assert_matches(kind2, status2);
+        let (kind2, sync_kind2, status2) = result2.unwrap();
+        assert_matches(kind2, sync_kind2, status2);
 
         let result1_again = cache.get(id_1).await;
         assert!(result1_again.is_some());
@@ -203,21 +217,22 @@ mod tests {
         let cache = SyncedConnectionCache::new();
         let id = Uuid::new_v4();
 
-        cache.add(id, KIND, STATUS).await;
+        cache.add(id, KIND, SYNC_KIND, STATUS).await;
 
         let initial_result = cache.get(id).await;
         assert!(initial_result.is_some());
 
-        let (_, initial_status) = initial_result.unwrap();
-        assert_matches(KIND, initial_status);
+        let (_, _, initial_status) = initial_result.unwrap();
+        assert_matches(KIND, SYNC_KIND, initial_status);
 
-        cache.update(id, KIND, STATUS_2).await;
+        cache.update(id, KIND, SYNC_KIND, STATUS_2).await;
 
         let updated_result = cache.get(id).await;
         assert!(updated_result.is_some());
 
-        let (updated_kind, updated_status) = updated_result.unwrap();
+        let (updated_kind, updated_sync_kind, updated_status) = updated_result.unwrap();
         assert!(matches!(updated_kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(updated_sync_kind, SyncKind::Full));
         assert!(matches!(updated_status, SyncedConnectionStatus::ApiRequest));
     }
 
@@ -230,7 +245,7 @@ mod tests {
         let empty_result = cache.delete(non_existent_id).await;
         assert!(empty_result.is_none());
 
-        cache.add(id, KIND, STATUS).await;
+        cache.add(id, KIND, SYNC_KIND, STATUS).await;
 
         let exists = cache.get(id).await;
         assert!(exists.is_some());
@@ -238,8 +253,9 @@ mod tests {
         let delete_result = cache.delete(id).await;
         assert!(delete_result.is_some());
 
-        let (deleted_kind, deleted_status) = delete_result.unwrap();
+        let (deleted_kind, deleted_sync_kind, deleted_status) = delete_result.unwrap();
         assert!(matches!(deleted_kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(deleted_sync_kind, SyncKind::Full));
         assert!(matches!(deleted_status, SyncedConnectionStatus::Setup));
 
         let after_delete = cache.get(id).await;
@@ -264,7 +280,7 @@ mod tests {
                 for _i in 0..operations_per_task {
                     let id: Uuid = Uuid::new_v4();
                     ids.push(id);
-                    cache_clone.add(id, KIND, STATUS).await;
+                    cache_clone.add(id, KIND, SYNC_KIND, STATUS).await;
                 }
 
                 for uuid in &ids {
@@ -274,7 +290,7 @@ mod tests {
 
                 for (i, uuid) in ids.iter().enumerate() {
                     if i % 2 == 0 {
-                        cache_clone.update(*uuid, KIND, STATUS_2).await;
+                        cache_clone.update(*uuid, KIND, SYNC_KIND, STATUS_2).await;
                     }
                 }
 
@@ -313,7 +329,8 @@ mod tests {
 
         for _ in 0..5 {
             let cache_clone = cache.clone();
-            join_set.spawn(async move { cache_clone.get_or_create(id, KIND, STATUS).await });
+            join_set
+                .spawn(async move { cache_clone.get_or_create(id, KIND, SYNC_KIND, STATUS).await });
         }
 
         let mut success_count = 0;
@@ -331,8 +348,9 @@ mod tests {
         let final_result = cache.get(id).await;
         assert!(final_result.is_some());
 
-        let (final_kind, final_status) = final_result.unwrap();
+        let (final_kind, final_sync_kind, final_status) = final_result.unwrap();
         assert!(matches!(final_kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(final_sync_kind, SyncKind::Full));
         assert!(matches!(final_status, SyncedConnectionStatus::Setup));
     }
 }
