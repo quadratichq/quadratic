@@ -175,34 +175,34 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
-        {/* Import Data Section - only shown when we explicitly know sheet is empty */}
-        {sheetHasData === false && (
-          <div className="flex w-full max-w-lg flex-col items-center gap-3">
-            <h2 className="text-xl font-semibold">Start by importing data</h2>
-            <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
-              <div className="flex items-center justify-center gap-4">
-                <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
-                <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
-              </div>
-              <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
-              <p className="text-sm text-muted-foreground">
-                Drag and drop, or{' '}
-                <Button
-                  variant="link"
-                  onClick={handleChooseFile}
-                  className="h-auto p-0 text-sm text-muted-foreground underline hover:text-foreground"
-                >
-                  choose a file
-                </Button>
-              </p>
+        {/* Import Data Section - always shown, with different text based on sheet content */}
+        <div className="flex w-full max-w-lg flex-col items-center gap-3">
+          <h2 className="text-xl font-semibold">
+            {sheetHasData === false ? 'Start by importing data' : 'Import data'}
+          </h2>
+          <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
+            <div className="flex items-center justify-center gap-4">
+              <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
+              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
             </div>
+            <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
+            <p className="text-sm text-muted-foreground">
+              Drag and drop, or{' '}
+              <Button
+                variant="link"
+                onClick={handleChooseFile}
+                className="h-auto p-0 text-sm text-muted-foreground underline hover:text-foreground"
+              >
+                choose a file
+              </Button>
+            </p>
           </div>
-        )}
+        </div>
 
         {/* Prompt Suggestions */}
         <div className="flex flex-col items-center gap-3">
           <h2 className="text-xl font-semibold">
-            {sheetHasData !== false ? 'Suggested prompts' : 'Or start with a suggested prompt'}
+            {sheetHasData === false ? 'Or start with a suggested prompt' : 'Suggested prompts'}
           </h2>
           <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (

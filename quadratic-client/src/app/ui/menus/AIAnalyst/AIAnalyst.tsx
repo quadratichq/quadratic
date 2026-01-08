@@ -17,7 +17,7 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = memo(() => {
@@ -29,6 +29,7 @@ export const AIAnalyst = memo(() => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
   const handleFileImport = useFileImport();
+  const [dragOver, setDragOver] = useState(false);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -61,10 +62,18 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
+  const handleDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(e.type !== 'dragleave');
+  }, []);
+
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
+      setDragOver(false);
+
       const files = Array.from(e.dataTransfer.files);
       if (files.length === 0) return;
 
@@ -115,9 +124,23 @@ export const AIAnalyst = memo(() => {
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
-        onDragOver={handleDrop}
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
+        onDragLeave={handleDrag}
         onDrop={handleDrop}
       >
+        {/* Drag overlay */}
+        {dragOver && (
+          <div className="absolute inset-2 z-20 flex flex-col items-center justify-center rounded bg-background opacity-90">
+            <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
+              <span className="text-sm font-bold">Drop files here</span>
+              <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
+                Excel, CSV, PDF, PQT, or Image supported
+              </span>
+            </div>
+          </div>
+        )}
+
         <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
         <div
