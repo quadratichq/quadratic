@@ -1,8 +1,11 @@
+use async_trait::async_trait;
 use bytes::Bytes;
 use chrono::NaiveDate;
+use futures_util::stream::{FuturesUnordered, TryStreamExt};
 use object_store::ObjectStore;
 use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc};
+use uuid::Uuid;
 
 use crate::{
     SharedError,
@@ -10,27 +13,106 @@ use crate::{
     error::Result,
 };
 
+pub mod google_analytics;
 pub mod mixpanel;
 
-const DATE_FORMAT: &str = "%Y-%m-%d";
+pub const DATE_FORMAT: &str = "%Y-%m-%d";
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum SyncedConnectionKind {
+    Mixpanel,
+    GoogleAnalytics,
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum SyncedConnectionTableKind {
+    TimeSeries,
+    SingleTable,
+}
+
+#[async_trait]
+pub trait SyncedConnection: Send + Sync {
+    fn name(&self) -> &str;
+    fn kind(&self) -> SyncedConnectionKind;
+    fn start_date(&self) -> NaiveDate;
+    fn streams(&self) -> Vec<&'static str>;
+    async fn to_client(&self) -> Result<Box<dyn SyncedClient>>;
+}
+
+#[async_trait]
+pub trait SyncedClient: Send + Sync {
+    fn streams() -> Vec<&'static str>
+    where
+        Self: Sized;
+
+    /// Process a single stream.
+    async fn process(
+        &self,
+        stream: &str,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, Bytes>>;
+
+    /// Process all streams in parallel and collect results in one pass.
+    async fn process_all(
+        &self,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, HashMap<String, Bytes>>>
+    where
+        Self: Sized,
+    {
+        Self::streams()
+            .into_iter()
+            .map(|stream| async move {
+                let result = self.process(stream, start_date, end_date).await?;
+                Ok::<(String, HashMap<String, Bytes>), SharedError>((stream.to_string(), result))
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect()
+            .await
+    }
+}
 
 /// Convert an error to a SharedError.
 fn synced_error(e: impl ToString) -> SharedError {
     SharedError::Synced(e.to_string())
 }
 
-/// Parse a date from a string.
+/// Get the current date.
+fn today() -> NaiveDate {
+    chrono::Utc::now().date_naive()
+}
+
+/// Convert a string to a date.
+fn string_to_date(string_date: &str) -> Result<NaiveDate> {
+    NaiveDate::parse_from_str(string_date, DATE_FORMAT).map_err(synced_error)
+}
+
+/// Valid file extensions for synced data
+const SYNCED_EXTENSIONS: [&str; 2] = [".parquet", ".synced"];
+
+/// Parse a date from a string, removing known extensions.
 fn parse_file_date(string_date: &str) -> Result<NaiveDate> {
-    // remove .parquet from the end of the string
-    let string_date = string_date.to_ascii_lowercase().replace(".parquet", "");
-    let date = NaiveDate::parse_from_str(&string_date, DATE_FORMAT).map_err(synced_error)?;
+    let mut clean_date = string_date.to_ascii_lowercase();
+    for ext in SYNCED_EXTENSIONS {
+        clean_date = clean_date.replace(ext, "");
+    }
+    let date = string_to_date(&clean_date)?;
+
     Ok(date)
 }
 
 /// Get the date from the location of the file.
+/// Recognizes both .parquet files (with data) and .synced marker files (no data).
 fn get_date_from_location(location: &str) -> Result<NaiveDate> {
-    if !location.to_ascii_lowercase().contains(".parquet") {
-        return Err(synced_error("Not a parquet file"));
+    let location_lower = location.to_ascii_lowercase();
+    let has_valid_extension = SYNCED_EXTENSIONS
+        .iter()
+        .any(|ext| location_lower.contains(ext));
+
+    if !has_valid_extension {
+        return Err(synced_error("Not a synced file"));
     }
 
     let parts = location.split('/').collect::<Vec<&str>>();
@@ -164,6 +246,55 @@ pub async fn get_missing_date_ranges(
     Ok(date_ranges)
 }
 
+/// Get the start and end dates for a connection from the object store.
+pub async fn dates_to_sync(
+    object_store: &Arc<dyn ObjectStore>,
+    connection_id: Uuid,
+    table_name: &str,
+    sync_start_date: NaiveDate,
+    dates_to_exclude: Vec<NaiveDate>,
+) -> Result<Vec<(NaiveDate, NaiveDate)>> {
+    let prefix = object_store_path(connection_id, table_name);
+    let end_date = today();
+
+    let missing_date_ranges = get_missing_date_ranges(
+        object_store,
+        Some(&prefix),
+        sync_start_date,
+        end_date,
+        dates_to_exclude,
+    )
+    .await?;
+
+    Ok(missing_date_ranges)
+}
+
+/// Split a date range into `chunk_size` chunks.
+pub fn chunk_date_range(
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    chunk_size: u32,
+) -> Vec<(NaiveDate, NaiveDate)> {
+    let mut chunks = Vec::new();
+    let mut current_start = start_date;
+
+    while current_start <= end_date {
+        let current_end = std::cmp::min(
+            current_start + chrono::Duration::days(chunk_size as i64 - 1),
+            end_date,
+        );
+        chunks.push((current_start, current_end));
+        current_start = current_end + chrono::Duration::days(1);
+    }
+
+    chunks
+}
+
+/// Get the object store path for a table
+pub fn object_store_path(connection_id: Uuid, table_name: &str) -> String {
+    format!("{}/{}", connection_id, table_name)
+}
+
 /// Upload multiple parquet files to S3 from pre-generated bytes
 ///
 /// Each key is a date, and the value is the parquet file bytes.
@@ -191,6 +322,35 @@ pub async fn upload(
     Ok(num_files)
 }
 
+/// Write marker files to S3 for dates that were synced but had no data.
+/// This prevents re-syncing these dates on subsequent runs.
+pub async fn write_synced_markers(
+    object_store: &Arc<dyn ObjectStore>,
+    prefix: &str,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> Result<()> {
+    let mut current_date = start_date;
+
+    while current_date <= end_date {
+        let file_name = format!("{}/{}.synced", prefix, current_date.format(DATE_FORMAT));
+
+        // Write an empty marker file
+        upload_multipart(object_store, &file_name, &Bytes::new())
+            .await
+            .map_err(|e| {
+                SharedError::Synced(format!(
+                    "Failed to write synced marker {} to S3: {}",
+                    file_name, e
+                ))
+            })?;
+
+        current_date += chrono::Duration::days(1);
+    }
+
+    Ok(())
+}
+
 pub fn deserialize_int_to_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -203,7 +363,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::arrow::object_store::new_filesystem_object_store;
     use bytes::Bytes;
@@ -211,14 +371,14 @@ mod tests {
     use std::{collections::HashMap, fs};
     use tempfile::TempDir;
 
-    fn create_temp_object_store() -> (TempDir, Arc<dyn ObjectStore>) {
+    pub fn create_temp_object_store() -> (TempDir, Arc<dyn ObjectStore>) {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let path = temp_dir.path().to_str().expect("Invalid temp path");
         let (store, _) = new_filesystem_object_store(path).expect("Failed to create object store");
         (temp_dir, store)
     }
 
-    fn create_test_parquet_files(temp_dir: &TempDir, dates: &[&str]) {
+    pub fn create_test_parquet_files(temp_dir: &TempDir, dates: &[&str]) {
         for date in dates {
             let file_path = temp_dir.path().join(format!("{}.parquet", date));
             fs::write(&file_path, b"fake parquet data").expect("Failed to write test file");
@@ -580,6 +740,112 @@ mod tests {
             (
                 NaiveDate::from_ymd_opt(2024, 1, 3).unwrap(),
                 NaiveDate::from_ymd_opt(2024, 1, 3).unwrap()
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn test_object_store_path() {
+        let connection_id = Uuid::new_v4();
+        let table_name = "events";
+        let path = object_store_path(connection_id, table_name);
+        let expected = format!("{}/{}", connection_id, table_name);
+
+        assert_eq!(path, expected);
+    }
+
+    // TODO(ddimaria): remove this ignore once we have parquet files mocked
+    #[tokio::test]
+    #[ignore]
+    async fn test_dates_returns_correct_range() {
+        let (_temp_dir, object_store) = create_temp_object_store();
+        let connection_id = Uuid::new_v4();
+        let table_name = "events";
+        let sync_start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let dates_to_exclude = vec![];
+        let chunks = dates_to_sync(
+            &object_store,
+            connection_id,
+            table_name,
+            sync_start_date,
+            dates_to_exclude,
+        )
+        .await
+        .unwrap();
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 14).unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn test_split_date_range_into_weeks() {
+        use chrono::NaiveDate;
+
+        // Test a simple 2-week range
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 14).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+        println!("chunks: {:?}", chunks);
+        assert_eq!(chunks.len(), 2);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 7).unwrap()
+            )
+        );
+        assert_eq!(
+            chunks[1],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 8).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 14).unwrap()
+            )
+        );
+
+        // Test a partial week
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 3).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 3).unwrap()
+            )
+        );
+
+        // Test single day
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
+            )
+        );
+
+        // Test exactly 7 days
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 7).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 7).unwrap()
             )
         );
     }

@@ -5,6 +5,7 @@ import {
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { atom, getDefaultStore, useAtom } from 'jotai';
 import type { ScheduledTask, ScheduledTaskLog } from 'quadratic-shared/typesAndSchemasScheduledTasks';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -86,6 +87,10 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
       if (!!showValidation) {
         setShowValidation(false);
       }
+      trackEvent('[ScheduledTasks].open', {
+        taskId: taskId ?? null,
+        hasExistingTasks: scheduledTasks.tasks.length > 0,
+      });
       setScheduledTasks((prev) => ({ ...prev, show: true, currentTaskId: taskId ?? null }));
     },
     [showValidation, setShowValidation, setScheduledTasks]
@@ -93,6 +98,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
 
   const closeScheduledTasks = useCallback(() => {
     setScheduledTasks((prev) => ({ ...prev, show: false }));
+    trackEvent('[ScheduledTasks].close');
   }, [setScheduledTasks]);
 
   const newScheduledTask = useCallback(() => {
@@ -136,8 +142,13 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
   const deleteScheduledTask = useCallback(
     async (taskId: string) => {
       if (!fileUuid) return;
+      const taskToDelete = scheduledTasks.tasks.find((task) => task.uuid === taskId);
       await scheduledTasksAPI.delete(fileUuid, taskId);
       setScheduledTasks((prev) => ({ ...prev, tasks: prev.tasks.filter((task) => task.uuid !== taskId) }));
+      trackEvent('[ScheduledTasks].delete', {
+        taskUuid: taskId,
+        cronExpression: taskToDelete?.cronExpression,
+      });
     },
     [fileUuid, setScheduledTasks]
   );
