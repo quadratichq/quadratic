@@ -504,7 +504,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-codex': {
     model: 'gpt-5-codex',
-    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
+    backupModelKey: 'vertexai:gemini-2.5-pro',
     displayName: 'GPT-5-Codex',
     displayProvider: 'OpenAI',
     temperature: 1,
@@ -525,7 +525,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5.2-2025-12-12': {
     model: 'gpt-5.2-2025-12-12',
-    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
+    backupModelKey: 'vertexai:gemini-2.5-pro',
     displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
