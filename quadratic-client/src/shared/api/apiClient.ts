@@ -481,6 +481,23 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.DELETE.response']
       );
     },
+    getLogs({
+      connectionUuid,
+      teamUuid,
+      pageNumber = 1,
+      pageSize = 10,
+    }: {
+      connectionUuid: string;
+      teamUuid: string;
+      pageNumber?: number;
+      pageSize?: number;
+    }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}/log?page=${pageNumber}&limit=${pageSize}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response']
+      );
+    },
   },
 
   ai: {
