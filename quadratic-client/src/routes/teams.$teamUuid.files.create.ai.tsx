@@ -503,46 +503,10 @@ export const Component = () => {
               <div className="mb-6 space-y-2">
                 <h3 className="text-base font-medium text-foreground">Start by importing your data</h3>
                 <div className="flex flex-wrap items-center gap-2">
-                  {uploadedFiles.map((file, index) => {
-                    const ext = file.name.toLowerCase();
-                    const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
-                    const isPdf = ext.endsWith('.pdf');
-                    return (
-                      <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
-                        {isExcel ? (
-                          <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
-                        ) : isPdf ? (
-                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
-                        ) : (
-                          <FileIcon size="sm" />
-                        )}
-                        <span className="max-w-32 truncate">{file.name}</span>
-                        <button
-                          onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
-                          className="ml-1 text-muted-foreground hover:text-foreground"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {selectedConnection && (
-                    <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
-                      <LanguageIcon language={selectedConnection.type} />
-                      <span className="max-w-32 truncate">{selectedConnection.name}</span>
-                      <button
-                        onClick={() => setSelectedConnection(null)}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
-
                   <Button
                     variant="outline"
                     className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload(['.xlsx', '.xls'], false)}
+                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
                   >
                     <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
                     Import Excel
@@ -551,7 +515,7 @@ export const Component = () => {
                   <Button
                     variant="outline"
                     className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload(['.pdf'], false)}
+                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
                   >
                     <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
                     Import PDF
@@ -560,7 +524,7 @@ export const Component = () => {
                   <Button
                     variant="outline"
                     className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload(['.csv'], false)}
+                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
                   >
                     <FileIcon size="sm" />
                     Import CSV
@@ -601,6 +565,42 @@ export const Component = () => {
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  {uploadedFiles.map((file, index) => {
+                    const ext = file.name.toLowerCase();
+                    const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
+                    const isPdf = ext.endsWith('.pdf');
+                    return (
+                      <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                        {isExcel ? (
+                          <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
+                        ) : isPdf ? (
+                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
+                        ) : (
+                          <FileIcon size="sm" />
+                        )}
+                        <span className="max-w-32 truncate">{file.name}</span>
+                        <button
+                          onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {selectedConnection && (
+                    <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                      <LanguageIcon language={selectedConnection.type} />
+                      <span className="max-w-32 truncate">{selectedConnection.name}</span>
+                      <button
+                        onClick={() => setSelectedConnection(null)}
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
