@@ -93,7 +93,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
       });
       setScheduledTasks((prev) => ({ ...prev, show: true, currentTaskId: taskId ?? null }));
     },
-    [showValidation, setShowValidation, setScheduledTasks]
+    [showValidation, scheduledTasks.tasks.length, setScheduledTasks, setShowValidation]
   );
 
   const closeScheduledTasks = useCallback(() => {
@@ -150,7 +150,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
         cronExpression: taskToDelete?.cronExpression,
       });
     },
-    [fileUuid, setScheduledTasks]
+    [fileUuid, scheduledTasks.tasks, setScheduledTasks]
   );
 
   const getHistory = useCallback(

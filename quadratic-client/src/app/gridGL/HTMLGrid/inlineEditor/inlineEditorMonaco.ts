@@ -185,7 +185,9 @@ class InlineEditorMonaco {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     const fontScale = fontSize / DEFAULT_FONT_SIZE;
-    const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
+    // Only add padding for left-aligned text (gives room to type at the end)
+    // For center/right-aligned text, padding would incorrectly shift the text position
+    const scaledPadding = textAlign === 'left' ? BASE_PADDING_FOR_WIDTH * fontScale : 0;
     let measuredWidth = 0;
 
     if (context) {
@@ -221,10 +223,12 @@ class InlineEditorMonaco {
       domNode.dataset.clipOverflow = 'true';
     } else {
       delete domNode.dataset.clipOverflow;
+      // Reset scroll position when content no longer overflows, so CSS text-align works correctly
+      this.editor.setScrollLeft(0);
     }
 
-    // Only expand width for 'overflow' mode
-    if (textWrap === 'overflow') {
+    // Expand width for 'overflow' mode, or for centered clip mode (so text appears centered over cell)
+    if (textWrap === 'overflow' || (textWrap === 'clip' && textAlign === 'center' && contentOverflows)) {
       width = Math.max(width, measuredWidth);
     }
     height = Math.max(contentHeight, height);

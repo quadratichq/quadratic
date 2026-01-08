@@ -9,9 +9,9 @@ import { UseCronInterval } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { useCronRange } from '@/app/ui/menus/ScheduledTasks/useCronRange';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ROUTES } from '@/shared/constants/routes';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback } from 'react';
 import { Link } from 'react-router';
 
@@ -53,8 +53,8 @@ export const ScheduledTask = () => {
     cronRange.rangeError,
     cronRange.range,
     cronRange.task,
+    currentTask,
     saveScheduledTask,
-    currentTask?.uuid,
     showScheduledTasks,
   ]);
 
