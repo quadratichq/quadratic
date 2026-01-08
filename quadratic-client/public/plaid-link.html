@@ -72,10 +72,23 @@
     // Use BroadcastChannel for cross-window communication (works without window.opener)
     const channel = new BroadcastChannel('plaid_link');
 
+    // Track if we've already sent a completion message (success or exit)
+    let hasCompleted = false;
+
+    // Send exit message when window is closed (handles user clicking X)
+    window.addEventListener('pagehide', () => {
+      if (!hasCompleted) {
+        channel.postMessage({
+          type: 'PLAID_EXIT',
+          error: null,
+          metadata: { reason: 'window_closed' }
+        });
+      }
+    });
+
     // Get link token from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
     const linkToken = urlParams.get('linkToken');
-
 
     if (!linkToken) {
       document.querySelector('.loading').textContent = 'Error: No link token provided';
@@ -84,6 +97,8 @@
       const handler = Plaid.create({
         token: linkToken,
         onSuccess: (publicToken, metadata) => {
+          hasCompleted = true;
+
           // Hide loading, show success message
           document.querySelector('.loading').style.display = 'none';
           document.getElementById('status').style.display = 'block';
@@ -101,6 +116,8 @@
           }, 1000);
         },
         onExit: (err, metadata) => {
+          hasCompleted = true;
+
           // Send exit message via BroadcastChannel
           channel.postMessage({
             type: 'PLAID_EXIT',
