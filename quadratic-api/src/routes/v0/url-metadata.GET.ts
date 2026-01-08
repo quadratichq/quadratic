@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import he from 'he';
+import { unfurl } from 'unfurl.js';
 import { z } from 'zod';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
@@ -10,7 +10,6 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Fetch configuration
 const FETCH_TIMEOUT_MS = 5000;
-const MAX_HTML_BYTES = 50 * 1024; // 50KB
 
 export default [validateAccessToken, validateSchema, handler];
 
@@ -82,50 +81,15 @@ async function handler(req: Request, res: Response) {
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-    const response = await fetch(url, {
-      signal: controller.signal,
+    const metadata = await unfurl(url, {
+      timeout: FETCH_TIMEOUT_MS,
       headers: {
         'User-Agent': 'Quadratic-Bot/1.0 (https://quadratichq.com)',
-        Accept: 'text/html',
       },
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const result = { title: undefined };
-      metadataCache.set(url, result);
-      return res.status(200).json(result);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      const result = { title: undefined };
-      metadataCache.set(url, result);
-      return res.status(200).json(result);
-    }
-
-    let html = '';
-    const decoder = new TextDecoder();
-    let bytesRead = 0;
-
-    while (bytesRead < MAX_HTML_BYTES) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      bytesRead += value.length;
-      html += decoder.decode(value, { stream: true });
-
-      // Check if we have enough to find a title
-      if (html.includes('</title>') || html.includes('</head>')) {
-        break;
-      }
-    }
-    reader.cancel();
-
-    const title = extractTitle(html);
+    // Prefer og:title, then twitter:title, then page title
+    const title = metadata.open_graph?.title ?? metadata.twitter_card?.title ?? metadata.title;
     const result = { title };
     metadataCache.set(url, result);
     return res.status(200).json(result);
@@ -135,29 +99,4 @@ async function handler(req: Request, res: Response) {
     metadataCache.set(url, result);
     return res.status(200).json(result);
   }
-}
-
-/**
- * Extract title from HTML, preferring og:title over <title>
- */
-function extractTitle(html: string): string | undefined {
-  // Try og:title first (more descriptive for shared links)
-  const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
-  if (ogTitleMatch?.[1]) {
-    return he.decode(ogTitleMatch[1].trim());
-  }
-
-  // Also check for content before property (attribute order can vary)
-  const ogTitleMatchAlt = html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i);
-  if (ogTitleMatchAlt?.[1]) {
-    return he.decode(ogTitleMatchAlt[1].trim());
-  }
-
-  // Fall back to <title> tag
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch?.[1]) {
-    return he.decode(titleMatch[1].trim());
-  }
-
-  return undefined;
 }
