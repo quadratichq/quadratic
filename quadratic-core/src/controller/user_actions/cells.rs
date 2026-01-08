@@ -112,7 +112,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Pos, Rect, SheetPos,
+        CellValue, Duration, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
