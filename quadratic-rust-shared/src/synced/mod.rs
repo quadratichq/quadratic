@@ -18,7 +18,7 @@ pub mod google_analytics;
 pub mod mixpanel;
 pub mod plaid;
 
-const DATE_FORMAT: &str = "%Y-%m-%d";
+pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum SyncedConnectionKind {

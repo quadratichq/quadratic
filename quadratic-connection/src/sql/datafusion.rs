@@ -11,7 +11,7 @@ use quadratic_rust_shared::{
         tests::new_datafusion_connection as new_datafusion_test_connection,
     },
     synced::{
-        SyncedClient, SyncedConnection,
+        DATE_FORMAT, SyncedClient, SyncedConnection,
         google_analytics::client::{GoogleAnalyticsClient, GoogleAnalyticsConnection},
         mixpanel::{MixpanelConnection, client::MixpanelClient},
         plaid::{PlaidConnection, client::PlaidClient},
