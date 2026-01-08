@@ -631,6 +631,9 @@ impl CellValue {
         if let Some(date_time) = CellValue::unpack_date_time(value) {
             return date_time;
         }
+        if let Some(duration) = CellValue::unpack_duration(value) {
+            return duration;
+        }
 
         // check for number
         let without_parentheses = CellValue::strip_parentheses(value);
