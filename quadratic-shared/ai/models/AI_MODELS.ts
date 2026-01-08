@@ -5,7 +5,7 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // used when `restrictedCountry` is true, in model router
-export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-5.2';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
@@ -405,7 +405,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'azure-openai:gpt-5',
+    backupModelKey: 'azure-openai:gpt-5.2',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -422,7 +422,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'azure-openai:gpt-5',
+    backupModelKey: 'azure-openai:gpt-5.2',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 1,
@@ -523,10 +523,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:gpt-5-2025-08-07': {
-    model: 'gpt-5-2025-08-07',
+  'openai:gpt-5.2-2025-12-12': {
+    model: 'gpt-5.2-2025-12-12',
     backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
-    displayName: 'GPT-5',
+    displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
@@ -621,10 +621,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
-  'azure-openai:gpt-5': {
-    model: 'gpt-5',
-    backupModelKey: 'openai:gpt-5-2025-08-07',
-    displayName: 'GPT-5',
+  'azure-openai:gpt-5.2': {
+    model: 'gpt-5.2',
+    backupModelKey: 'openai:gpt-5.2-2025-12-12',
+    displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
