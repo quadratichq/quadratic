@@ -31,16 +31,24 @@ impl Sheet {
             true,
             a1_context,
         )?;
-        values.iter().for_each(|(_pos, value)| match value {
-            CellValue::Number(n) => {
-                sum += n;
-                count += 1;
+        for (_pos, value) in values.iter() {
+            match value {
+                CellValue::Number(n) => {
+                    // Use checked_add to prevent overflow panic
+                    if let Some(new_sum) = sum.checked_add(*n) {
+                        sum = new_sum;
+                    } else {
+                        // Overflow occurred, return None to signal the summary can't be computed
+                        return None;
+                    }
+                    count += 1;
+                }
+                CellValue::Blank => {}
+                _ => {
+                    count += 1;
+                }
             }
-            CellValue::Blank => {}
-            _ => {
-                count += 1;
-            }
-        });
+        }
 
         if count <= 1 {
             return None;
@@ -113,6 +121,21 @@ mod tests {
             sheet.test_set_value_number(100, 100 + i, "1");
         }
         let a1_context = sheet.expensive_make_a1_context();
+        let result = sheet.summarize_selection(selection, 9, &a1_context);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn summary_overflow() {
+        let mut sheet = Sheet::test();
+
+        // Use very large numbers that would overflow when summed
+        // Decimal max is approximately 79,228,162,514,264,337,593,543,950,335
+        sheet.test_set_value_number(1, 1, "79228162514264337593543950335");
+        sheet.test_set_value_number(1, 2, "79228162514264337593543950335");
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 2, sheet.id));
+        let a1_context = sheet.expensive_make_a1_context();
+        // Should return None instead of panicking on overflow
         let result = sheet.summarize_selection(selection, 9, &a1_context);
         assert!(result.is_none());
     }
