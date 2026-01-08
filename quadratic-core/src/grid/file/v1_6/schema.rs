@@ -279,6 +279,8 @@ pub enum ConnectionKind {
     Supabase,
     Neon,
     Mixpanel,
+    #[serde(rename = "GOOGLE_ANALYTICS")]
+    GoogleAnalytics,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

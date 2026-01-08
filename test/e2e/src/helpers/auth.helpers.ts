@@ -112,7 +112,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   await page.waitForURL((url) => !url.pathname.startsWith('/password'), { timeout: 2 * 60 * 1000 });
   await page.locator(`[name="password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
-  await page.locator('button[value="password"]').click({ timeout: 60 * 1000 });
+  await page.getByRole('button', { name: 'Sign in' }).click({ timeout: 60 * 1000 });
 
   await handleHumanCheck(page);
 

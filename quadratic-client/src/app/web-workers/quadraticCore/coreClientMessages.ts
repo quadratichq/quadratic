@@ -312,6 +312,17 @@ export interface ClientCoreSetCellFillColor {
   isAi: boolean;
 }
 
+export interface ClientCoreGetRenderFillsForHashes {
+  type: 'clientCoreGetRenderFillsForHashes';
+  sheetId: string;
+  hashes: JsCoordinate[];
+}
+
+export interface ClientCoreGetSheetMetaFills {
+  type: 'clientCoreGetSheetMetaFills';
+  sheetId: string;
+}
+
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
@@ -485,10 +496,14 @@ export interface CoreClientSetCodeCellValue {
   error?: string;
 }
 
-export interface CoreClientSheetFills {
-  type: 'coreClientSheetFills';
-  sheetId: string;
-  fills: Uint8Array;
+export interface CoreClientHashRenderFills {
+  type: 'coreClientHashRenderFills';
+  hashRenderFills: Uint8Array;
+}
+
+export interface CoreClientHashesDirtyFills {
+  type: 'coreClientHashesDirtyFills';
+  dirtyHashes: Uint8Array;
 }
 
 export interface CoreClientSheetMetaFills {
@@ -1504,7 +1519,6 @@ export interface ClientCoreSetFormula {
   sheetId: string;
   selection: string;
   codeString: string;
-  codeCellName?: string;
   cursor: string;
 }
 
@@ -1543,6 +1557,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellItalic
   | ClientCoreSetCellFontSize
   | ClientCoreSetCellFillColor
+  | ClientCoreGetRenderFillsForHashes
+  | ClientCoreGetSheetMetaFills
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
   | ClientCoreSetCellStrikeThrough
@@ -1645,7 +1661,8 @@ export type CoreClientMessage =
   | CoreClientImportFile
   | CoreClientAddSheet
   | CoreClientSheetsInfo
-  | CoreClientSheetFills
+  | CoreClientHashRenderFills
+  | CoreClientHashesDirtyFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor

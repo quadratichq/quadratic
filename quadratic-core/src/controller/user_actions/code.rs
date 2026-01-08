@@ -25,10 +25,9 @@ impl GridController {
         &mut self,
         selection: A1Selection,
         code_string: String,
-        code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> String {
-        let ops = self.set_formula_operations(selection, code_string, code_cell_name);
+        let ops = self.set_formula_operations(selection, code_string);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, true)
     }
 
@@ -179,10 +178,10 @@ mod tests {
 
         test_set_values(&mut gc, sheet_id, pos![A1], 1, 5);
 
-        gc.set_formula(A1Selection::test_a1("B1:B5"), "=A1".to_owned(), None, None);
+        gc.set_formula(A1Selection::test_a1("B1:B5"), "=A1".to_owned(), None);
         assert_cell_value_col(&gc, sheet_id, 2, 1, 5, vec!["0", "1", "2", "3", "4"]);
 
-        gc.set_formula(A1Selection::test_a1("C1:C5"), "=A$1".to_owned(), None, None);
+        gc.set_formula(A1Selection::test_a1("C1:C5"), "=A$1".to_owned(), None);
         assert_cell_value_col(&gc, sheet_id, 3, 1, 5, vec!["0", "0", "0", "0", "0"]);
     }
 
@@ -193,12 +192,12 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 5, 5);
 
-        let ops = gc.set_formula_operations(A1Selection::test_a1("B1:B5"), "=A1".to_owned(), None);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("B1:B5"), "=A1".to_owned());
         assert!(ops.is_empty());
 
-        let ops =
-            gc.set_formula_operations(A1Selection::test_a1("A10:A11"), "=A1".to_owned(), None);
-        assert_eq!(ops.len(), 4);
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A10:A11"), "=A1".to_owned());
+        // 2 formulas × 1 SetComputeCode op each = 2 ops
+        assert_eq!(ops.len(), 2);
     }
 
     #[test]

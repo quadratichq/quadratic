@@ -22,6 +22,7 @@ import type {
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsResponse,
@@ -384,6 +385,31 @@ class Core {
       this.gridController.setFillColor(selection, fillColor, cursor, isAi);
     } catch (e) {
       this.handleCoreError('setFillColor', e);
+    }
+  }
+
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const hashesJson = JSON.stringify(hashes);
+      const fills = this.gridController.getRenderFillsForHashes(sheetId, hashesJson);
+      if (fills && fills.length > 0) {
+        coreClient.sendHashRenderFills(fills);
+      }
+    } catch (e) {
+      this.handleCoreError('getRenderFillsForHashes', e);
+    }
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const fills = this.gridController.getSheetMetaFills(sheetId);
+      if (fills) {
+        coreClient.sendSheetMetaFills(sheetId, fills);
+      }
+    } catch (e) {
+      this.handleCoreError('getSheetMetaFills', e);
     }
   }
 
@@ -1482,7 +1508,6 @@ class Core {
     sheetId: string,
     selection: string,
     codeString: string,
-    codeCellName: string | undefined,
     cursor: string
   ): string | { error: string } | undefined {
     try {
@@ -1490,7 +1515,7 @@ class Core {
       if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
         return { error: 'Error in set formula: Cannot add formula to a data table' };
       }
-      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
+      return this.gridController.setFormula(sheetId, selection, codeString, cursor);
     } catch (e) {
       this.handleCoreError('setFormula', e);
     }
