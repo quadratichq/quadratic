@@ -31,7 +31,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # Set up Rust environment
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_HOME=/quadratic/.cargo
+ENV CARGO_HOME=/root/.cargo
 ENV CARGO_BUILD_JOBS=64
 
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
@@ -43,6 +43,31 @@ RUN echo 'wasm-pack version:' && wasm-pack --version
 
 
 ###########################################################################################
+# Dependency cache stage - download and cache Cargo dependencies as a layer
+###########################################################################################
+FROM rust-toolchain-base AS cargo-deps-cache
+
+# Copy only Cargo files for dependency caching
+COPY --link Cargo.toml Cargo.lock ./
+COPY --link quadratic-core/Cargo.toml ./quadratic-core/
+COPY --link quadratic-rust-shared/Cargo.toml ./quadratic-rust-shared/
+
+# Create minimal stub source files to satisfy cargo
+RUN mkdir -p quadratic-core/src quadratic-rust-shared/src && \
+    echo "fn main() {}" > quadratic-core/src/main.rs && \
+    echo "pub fn stub() {}" > quadratic-core/src/lib.rs && \
+    echo "pub fn stub() {}" > quadratic-rust-shared/src/lib.rs
+
+# Download and compile dependencies (this layer is cached)
+RUN cargo fetch
+
+# Pre-build dependencies for both debug and release (creates cached dependency artifacts)
+ENV CARGO_TARGET_DIR=/quadratic/target-deps
+RUN cargo build --workspace --lib 2>/dev/null || true
+RUN CC=clang AR=llvm-ar cargo build --workspace --lib --release --target wasm32-unknown-unknown 2>/dev/null || true
+
+
+###########################################################################################
 # Builder 1 - Build core
 ###########################################################################################
 FROM rust-toolchain-base AS core-builder
@@ -51,17 +76,19 @@ ARG CLIENT_DEV
 
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 
+# Copy cached dependencies
+COPY --from=cargo-deps-cache /root/.cargo/registry /root/.cargo/registry
+COPY --from=cargo-deps-cache /root/.cargo/git /root/.cargo/git
+
 # Copy required files for building core
 COPY --link package.json .
+COPY --link Cargo.toml Cargo.lock ./
 COPY --link ./quadratic-core/. ./quadratic-core/
 COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
-# Build core with Cargo cache mounts for faster rebuilds
-RUN --mount=type=cache,target=/quadratic/.cargo/registry,sharing=locked \
-    --mount=type=cache,target=/quadratic/.cargo/git,sharing=locked \
-    --mount=type=cache,target=/quadratic/target/quadratic-core,sharing=locked \
-    if [ "$CLIENT_DEV" = "true" ]; then \
+# Build core
+RUN if [ "$CLIENT_DEV" = "true" ]; then \
       echo 'Building core in dev mode...' && npm run build:dev --workspace=quadratic-core; \
     else \
       echo 'Building core...' && npm run build --workspace=quadratic-core; \
@@ -75,17 +102,47 @@ FROM rust-toolchain-base AS ts-rust-types-builder
 
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
 
+# Copy cached dependencies
+COPY --from=cargo-deps-cache /root/.cargo/registry /root/.cargo/registry
+COPY --from=cargo-deps-cache /root/.cargo/git /root/.cargo/git
+
 # Copy required files for building ts/rust types
 COPY --link package.json .
+COPY --link Cargo.toml Cargo.lock ./
 COPY --link ./quadratic-core/. ./quadratic-core/
 COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
-# Build TS/Rust types with Cargo cache mounts for faster rebuilds
-RUN --mount=type=cache,target=/quadratic/.cargo/registry,sharing=locked \
-    --mount=type=cache,target=/quadratic/.cargo/git,sharing=locked \
-    --mount=type=cache,target=/quadratic/target/quadratic-core-types,sharing=locked \
-    echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
+# Build TS/Rust types
+RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
+
+
+###########################################################################################
+# npm dependency cache stage - cache npm install as a layer
+###########################################################################################
+FROM ubuntu:24.04 AS npm-deps-cache
+
+# Install Node.js 24
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /quadratic
+
+# Copy only package files for dependency caching (this layer is cached if packages don't change)
+COPY --link package.json package-lock.json ./
+COPY --link ./quadratic-kernels/python-wasm/package.json ./quadratic-kernels/python-wasm/
+COPY --link ./quadratic-core/package.json ./quadratic-core/
+COPY --link ./quadratic-shared/package.json ./quadratic-shared/
+COPY --link ./quadratic-client/package.json ./quadratic-client/
+
+# Install npm dependencies (this layer is cached)
+RUN npm install --no-audit --no-fund --ignore-scripts
 
 
 ###########################################################################################
@@ -109,20 +166,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /quadratic
 
+# Copy cached node_modules from npm-deps-cache stage
+COPY --from=npm-deps-cache /quadratic/node_modules ./node_modules
+
 # Copy files from core, ts/rust types, and rust client builders
 COPY --link --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
 COPY --link --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
 
-# Copy all package.json files
+# Copy all package.json files (needed for npm scripts)
 COPY --link package.json .
 COPY --link ./quadratic-kernels/python-wasm/package.json ./quadratic-kernels/python-wasm/
 COPY --link ./quadratic-core/package.json ./quadratic-core/
 COPY --link ./quadratic-shared/package.json ./quadratic-shared/
 COPY --link ./quadratic-client/package.json ./quadratic-client/
-
-# Install npm dependencies with cache mount for faster rebuilds
-RUN --mount=type=cache,target=/root/.npm \
-    npm install --no-audit --no-fund --ignore-scripts
 
 # Copy remaining files
 COPY --link ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
