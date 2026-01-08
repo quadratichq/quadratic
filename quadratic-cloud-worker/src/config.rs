@@ -46,7 +46,7 @@ pub(crate) struct Config {
     pub(crate) multiplayer_url: String,
     pub(crate) connection_url: String,
     pub(crate) file_id: Uuid,
-    pub(crate) m2m_auth_token: String,
+    pub(crate) jwt: String,
 
     #[serde(deserialize_with = "deserialize_tasks")]
     pub(crate) tasks: Vec<(String, TaskRun)>,
@@ -65,7 +65,7 @@ impl Config {
             std::env::remove_var("MULTIPLAYER_URL");
             std::env::remove_var("CONNECTION_URL");
             std::env::remove_var("FILE_ID");
-            std::env::remove_var("M2M_AUTH_TOKEN");
+            std::env::remove_var("JWT");
             std::env::remove_var("TASKS");
             std::env::remove_var("WORKER_INIT_DATA");
         }

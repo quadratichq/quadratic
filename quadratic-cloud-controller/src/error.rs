@@ -12,6 +12,9 @@ pub(crate) enum ControllerError {
     #[error("Error acknowledging tasks: {0}")]
     AckTasks(String),
 
+    #[error("Auth error: {0}")]
+    Auth(String),
+
     #[error("Client error: {0}")]
     Client(String),
 
@@ -24,8 +27,17 @@ pub(crate) enum ControllerError {
     #[error("Docker error: {0}")]
     Docker(String),
 
+    #[error("Missing or invalid file-id header")]
+    FileIdFromHeaders,
+
     #[error("Error getting tasks for worker: {0}")]
     GetTasksForWorker(String),
+
+    #[error("Invalid or expired ephemeral token")]
+    InvalidEphemeralToken,
+
+    #[error("Missing ephemeral token header")]
+    MissingEphemeralToken,
 
     #[error("PubSub error: {0}")]
     PubSub(String),
@@ -70,6 +82,9 @@ impl IntoResponse for ControllerError {
             ControllerError::GetTasksForWorker(error) => {
                 (StatusCode::BAD_REQUEST, clean_errors(error))
             }
+            ControllerError::InvalidEphemeralToken | ControllerError::MissingEphemeralToken => {
+                (StatusCode::UNAUTHORIZED, self.to_string())
+            }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 
@@ -105,6 +120,7 @@ impl From<SharedError> for ControllerError {
     fn from(error: SharedError) -> Self {
         match error {
             SharedError::PubSub(error) => ControllerError::PubSub(error),
+            SharedError::Auth(error) => ControllerError::Auth(error.to_string()),
             _ => ControllerError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }

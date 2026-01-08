@@ -299,7 +299,7 @@ jobs:
           - name: files
             url: "http://files.quadratichq.com/health"
           - name: cloud-controller
-            url: "https://cloud-controller.quadratichq.com/health"
+            url: "http://cloud-controller.quadratichq.com/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_client.outputs.version }}
