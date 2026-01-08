@@ -662,14 +662,14 @@ export const Component = () => {
 
               {/* Chat box */}
               <div>
-                <div className="rounded-lg border border-border bg-background shadow-lg">
+                <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
                   <Textarea
                     ref={promptTextareaRef}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="I want to create a spreadsheet that..."
-                    className="min-h-32 resize-none rounded-t-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
+                    className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
                   />
 
                   <div className="flex items-center justify-end px-4 py-3">
