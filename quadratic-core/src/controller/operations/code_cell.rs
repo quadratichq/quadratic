@@ -357,7 +357,10 @@ impl GridController {
         }
 
         let Some(code_run) = self.code_run_at(sheet_pos) else {
-            return vec![];
+            // Even if no code_run exists yet (e.g., SetDataTable not executed),
+            // we must still return this position so it's not lost when
+            // order_code_cells rebuilds the operation queue.
+            return vec![*sheet_pos];
         };
 
         let mut parent_nodes = Vec::new();
