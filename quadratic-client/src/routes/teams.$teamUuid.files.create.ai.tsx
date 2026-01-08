@@ -19,7 +19,6 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ArrowRightIcon, ChevronLeftIcon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
