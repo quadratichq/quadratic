@@ -233,6 +233,9 @@ class InlineEditorMonaco {
 
     // For formulas, always expand width with content (ignoring textWrap setting)
     // Also expand for 'overflow' mode, or for centered clip mode (so text appears centered over cell)
+    // Note: Centered text in clip mode cannot be both clipped AND centered while editing,
+    // because horizontal scrolling (needed for clipping) conflicts with centering.
+    // We prioritize centering over clipping for centered text while editing.
     const shouldExpandWidth =
       formula || textWrap === 'overflow' || (textWrap === 'clip' && textAlign === 'center' && contentOverflows);
     if (shouldExpandWidth) {
