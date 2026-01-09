@@ -3,7 +3,7 @@
 import { readFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { ensureUserExists } from './workos.helper.js';
+import { ensureUserExists, getExistingUserEmails } from './workos.helper.js';
 
 interface User {
   email: string;
@@ -15,10 +15,27 @@ interface UsersFile {
 }
 
 /**
+ * Parse command line arguments
+ */
+function parseArgs(): { skipExisting: boolean } {
+  const args = process.argv.slice(2);
+  return {
+    // Use --skip-existing to only process new users (requires fetching existing users from WorkOS)
+    skipExisting: args.includes('--skip-existing') || args.includes('-s'),
+  };
+}
+
+/**
  * Main function to ensure all E2E test users exist in WorkOS
  */
 async function main() {
+  const { skipExisting } = parseArgs();
+
   console.log('🚀 Starting user creation/verification process...\n');
+
+  if (skipExisting) {
+    console.log('⏭️  Skip-existing mode: will only process new users\n');
+  }
 
   try {
     // Read test/scripts/users.json file
@@ -30,7 +47,7 @@ async function main() {
     const usersData: UsersFile = JSON.parse(fileContent);
 
     const totalUsers = usersData.users.length;
-    console.log(`📋 Found ${totalUsers} users to process\n`);
+    console.log(`📋 Found ${totalUsers} users in configuration\n`);
 
     // Check if running in CI
     if (process.env.CI) {
@@ -38,14 +55,46 @@ async function main() {
       return;
     }
 
+    // Determine which users need to be processed
+    let usersToProcess: User[] = usersData.users;
+    let skippedCount = 0;
+
+    if (skipExisting) {
+      console.log('🔍 Fetching existing users from WorkOS...\n');
+      const existingEmails = await getExistingUserEmails();
+      console.log('');
+
+      const newUsers: User[] = [];
+      for (const user of usersData.users) {
+        if (existingEmails.has(user.email)) {
+          skippedCount++;
+        } else {
+          newUsers.push(user);
+        }
+      }
+
+      usersToProcess = newUsers;
+
+      if (skippedCount > 0) {
+        console.log(`⏭️  Skipped ${skippedCount} existing user(s)\n`);
+      }
+
+      if (usersToProcess.length === 0) {
+        console.log('\n✅ All users already exist! Nothing to do.\n');
+        return;
+      }
+
+      console.log(`📝 ${usersToProcess.length} new user(s) to create\n`);
+    }
+
     // Process users with progress tracking
     let successCount = 0;
     let failureCount = 0;
     const failures: Array<{ email: string; error: string }> = [];
 
-    for (let i = 0; i < usersData.users.length; i++) {
-      const user = usersData.users[i];
-      const progress = `[${i + 1}/${totalUsers}]`;
+    for (let i = 0; i < usersToProcess.length; i++) {
+      const user = usersToProcess[i];
+      const progress = `[${i + 1}/${usersToProcess.length}]`;
 
       try {
         console.log(`${progress} Processing: ${user.email}`);
@@ -68,7 +117,7 @@ async function main() {
       }
 
       // Add a small delay between requests to avoid rate limiting
-      if (i < usersData.users.length - 1) {
+      if (i < usersToProcess.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
@@ -77,7 +126,10 @@ async function main() {
     console.log('\n' + '='.repeat(60));
     console.log('📊 Summary:');
     console.log('='.repeat(60));
-    console.log(`Total users:      ${totalUsers}`);
+    console.log(`Total in config:  ${totalUsers}`);
+    if (skipExisting) {
+      console.log(`⏭️  Skipped:        ${skippedCount}`);
+    }
     console.log(`✓ Successful:     ${successCount}`);
     console.log(`✗ Failed:         ${failureCount}`);
     console.log('='.repeat(60));
