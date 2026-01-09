@@ -453,7 +453,8 @@ impl Sheet {
     }
 
     /// Returns the rows that need auto-resizing in a rect.
-    /// This includes rows with wrap formatting and rows with multi-line text (containing newlines).
+    /// This includes rows with wrap formatting, rows with multi-line text (containing newlines),
+    /// and rows with non-default font size.
     pub fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
         let mut rows: HashSet<i64> = HashSet::new();
 
@@ -474,6 +475,24 @@ impl Sheet {
                             ),
                     );
                 }
+            }
+        }
+
+        // Include rows with non-default font size formatting
+        for (font_size_rect, _) in self.formats.font_size.nondefault_rects_in_rect(rect) {
+            if include_blanks {
+                rows.extend(font_size_rect.y_range());
+            } else {
+                rows.extend(
+                    self.columns
+                        .get_nondefault_rects_in_rect(font_size_rect)
+                        .flat_map(|(r, _)| r.y_range())
+                        .chain(
+                            self.data_tables
+                                .get_nondefault_rects_in_rect(font_size_rect)
+                                .flat_map(|r| r.y_range()),
+                        ),
+                );
             }
         }
 
@@ -941,6 +960,40 @@ mod test {
         // Now should include row 1 (wrap) and rows 3, 4, 5 (multiline text)
         let rows = sheet.get_rows_with_wrap_in_rect(rect, false);
         assert_eq!(rows, vec![1, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_get_rows_with_font_size() {
+        let mut sheet = Sheet::test();
+
+        // Set values in some cells
+        sheet.set_value(pos![A1], "test");
+        sheet.set_value(pos![A3], "test");
+
+        let rect = Rect {
+            min: pos![A1],
+            max: pos![A4],
+        };
+
+        // Without font size formatting, no rows should need resizing
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_rect(rect, false),
+            Vec::<i64>::new()
+        );
+
+        // Set font size on rows 1-5 (includes both cells with and without content)
+        sheet
+            .formats
+            .font_size
+            .set_rect(1, 1, Some(1), Some(5), Some(24));
+
+        // Should only include rows with content (1 and 3) since include_blanks is false
+        let rows = sheet.get_rows_with_wrap_in_rect(rect, false);
+        assert_eq!(rows, vec![1, 3]);
+
+        // With include_blanks=true, should include all rows with font size formatting
+        let rows = sheet.get_rows_with_wrap_in_rect(rect, true);
+        assert_eq!(rows, vec![1, 2, 3, 4]);
     }
 
     #[test]

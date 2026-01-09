@@ -1,5 +1,4 @@
 import type { Page } from '@playwright/test';
-import type { FONT_SIZES } from '../../../../quadratic-client/src/shared/constants/gridConstants';
 import { gotoCells } from './sheet.helper';
 
 // This function clicks the "more formatting" icon in the formatting bar. This
@@ -127,7 +126,7 @@ export const clickFontSizeDecrease = async (page: Page) => {
   await clickFormattingButton(page, 'format_font_size_decrease');
 };
 
-type FontSize = (typeof FONT_SIZES)[number];
+type FontSize = number[];
 
 export const selectFontSize = async (page: Page, a1: string, size: FontSize) => {
   await gotoCells(page, { a1 });
