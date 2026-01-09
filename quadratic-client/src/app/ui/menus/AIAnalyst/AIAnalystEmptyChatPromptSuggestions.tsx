@@ -212,10 +212,10 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           <h2 className="text-xl font-semibold">
             {sheetHasData === false ? 'Start by importing data' : 'Import data'}
           </h2>
-          <div className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border px-8 py-6">
-            <div className="flex items-center justify-center gap-4">
+          <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-6">
+            <div className="mb-2 flex items-center justify-center gap-2">
               <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
-              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+              <img src="/images/icon-pdf.svg" alt="PDF" className="h-10 w-10" />
             </div>
             <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
             <p className="text-sm text-muted-foreground">
