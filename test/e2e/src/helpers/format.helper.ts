@@ -126,7 +126,8 @@ export const clickFontSizeDecrease = async (page: Page) => {
   await clickFormattingButton(page, 'format_font_size_decrease');
 };
 
-type FontSize = number[];
+// Available font sizes in the dropdown (user-facing values)
+type FontSize = 8 | 9 | 10 | 11 | 12 | 14 | 16 | 18 | 20 | 24 | 28 | 32 | 36 | 48 | 72 | 96;
 
 export const selectFontSize = async (page: Page, a1: string, size: FontSize) => {
   await gotoCells(page, { a1 });
