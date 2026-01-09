@@ -41,7 +41,7 @@ impl GridController {
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: eval_ctx.cells_accessed,
+                    cells_accessed: eval_ctx.take_cells_accessed(),
                     error: None,
                     return_type: None,
                     line_number: None,

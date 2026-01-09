@@ -35,11 +35,18 @@ function getFormattingItemsForEntry(entry: FormatEntry): FormatItem[] {
   return items;
 }
 
-export function getFormattingItems(data: SetTextFormatsResponse): FormatItem[] {
-  // Aggregate all formatting items from all entries (for grouped display)
+function getFormattingItems(data: SetTextFormatsResponse): FormatItem[] {
+  // Aggregate all formatting items from all entries (for grouped display), deduplicating by label+colorSwatch
+  const seen = new Set<string>();
   const items: FormatItem[] = [];
   for (const entry of data.formats) {
-    items.push(...getFormattingItemsForEntry(entry));
+    for (const item of getFormattingItemsForEntry(entry)) {
+      const key = item.colorSwatch ? `${item.label}:${item.colorSwatch}` : item.label;
+      if (!seen.has(key)) {
+        seen.add(key);
+        items.push(item);
+      }
+    }
   }
   return items;
 }

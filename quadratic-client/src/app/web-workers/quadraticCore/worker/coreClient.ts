@@ -864,6 +864,24 @@ class CoreClient {
         }
         return;
 
+      case 'clientCoreSetFormulas':
+        transactionId = core.setFormulas(e.data.sheetId, e.data.formulas, e.data.cursor);
+        if (typeof transactionId === 'object' && 'error' in transactionId) {
+          this.send({
+            type: 'coreClientSetFormulas',
+            id: e.data.id,
+            transactionId: undefined,
+            error: transactionId.error,
+          });
+        } else {
+          this.send({
+            type: 'coreClientSetFormulas',
+            id: e.data.id,
+            transactionId,
+          });
+        }
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

@@ -294,6 +294,7 @@ test('Open calendar', async ({ page }) => {
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).toBeVisible({ timeout: 10 * 1000 });
   await expect(page.locator('[data-testid="calendar-picker-time"]')).toBeVisible({ timeout: 10 * 1000 });
 
   // Change time to 1:23 pm

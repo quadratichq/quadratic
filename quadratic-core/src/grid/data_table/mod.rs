@@ -513,6 +513,7 @@ impl DataTable {
             Value::Single(value) => Ok(vec![value]),
             Value::Array(array) => Ok(array.cell_values_slice().iter().collect()),
             Value::Tuple(_) => bail!("Expected an array"),
+            Value::Lambda(_) => bail!("Expected an array"),
         }
     }
 
@@ -521,7 +522,7 @@ impl DataTable {
         match &self.value {
             Value::Single(_) => 1,
             Value::Array(array) => array.width() as usize,
-            Value::Tuple(_) => 0,
+            Value::Tuple(_) | Value::Lambda(_) => 0,
         }
     }
 
@@ -546,7 +547,7 @@ impl DataTable {
                         (array.height() as i64 + self.y_adjustment(true)) as usize
                     }
                 }
-                Value::Tuple(_) => 0,
+                Value::Tuple(_) | Value::Lambda(_) => 0,
             }
         }
     }
@@ -596,6 +597,7 @@ impl DataTable {
                         match &self.value {
                             Value::Array(_) => false,
                             Value::Tuple(_) => false,
+                            Value::Lambda(_) => false,
                             Value::Single(v) => {
                                 if let CellValue::Error(_) = v {
                                     true
@@ -653,9 +655,9 @@ impl DataTable {
                     _ => v.clone(),
                 },
                 Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
-                Value::Tuple(_) => CellValue::Error(Box::new(
+                Value::Tuple(_) | Value::Lambda(_) => CellValue::Error(Box::new(
                     // should never happen
-                    RunErrorMsg::InternalError("tuple saved as code run result".into())
+                    RunErrorMsg::InternalError("tuple or lambda saved as code run result".into())
                         .without_span(),
                 )),
             }
@@ -676,7 +678,7 @@ impl DataTable {
                         return false;
                     }
                 }
-                Value::Tuple(_) => {}
+                Value::Tuple(_) | Value::Lambda(_) => {}
             }
 
             return true;
@@ -717,7 +719,7 @@ impl DataTable {
 
                     size
                 }
-                Value::Single(_) | Value::Tuple(_) => {
+                Value::Single(_) | Value::Tuple(_) | Value::Lambda(_) => {
                     let mut height: u32 = 1;
                     height = height.saturating_add_signed(self.y_adjustment(true) as i32);
                     ArraySize::new(1, height).unwrap_or(ArraySize::_1X1)
@@ -828,7 +830,7 @@ impl DataTable {
         match &self.value {
             Value::Single(_) => true,
             Value::Array(a) => a.width() * a.height() < 2,
-            Value::Tuple(_) => false,
+            Value::Tuple(_) | Value::Lambda(_) => false,
         }
     }
 
