@@ -110,4 +110,9 @@ impl JsSelection {
             }
         }
     }
+
+    #[wasm_bindgen(js_name = "selectSheet")]
+    pub fn select_sheet(&mut self, sheet_id: String) -> Result<(), String> {
+        self.selection.select_sheet(sheet_id)
+    }
 }

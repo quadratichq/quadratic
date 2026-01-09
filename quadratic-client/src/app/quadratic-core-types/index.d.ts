@@ -56,7 +56,7 @@ export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
 export type ColumnRow = { column: number, row: number, };
-export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE" | "COCKROACHDB" | "BIGQUERY" | "MARIADB" | "SUPABASE" | "NEON" | "MIXPANEL";
+export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE" | "COCKROACHDB" | "BIGQUERY" | "MARIADB" | "SUPABASE" | "NEON" | "MIXPANEL" | "GOOGLE_ANALYTICS";
 export type DataTableSort = { column_index: number, direction: SortDirection, };
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
 export type Format = { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, font_size: number | null, };
@@ -92,6 +92,7 @@ export type JsFormulaParseResult = { parse_error_msg: string | null, parse_error
 export type JsGetAICellResult = { selection: string, page: number, total_pages: number, values: Array<JsCellValueRanges>, };
 export type JsHashesDirty = { sheet_id: SheetId, hashes: Array<Pos>, };
 export type JsHashRenderCells = { sheet_id: SheetId, hash: Pos, cells: Array<JsRenderCell>, };
+export type JsHashRenderFills = { sheet_id: SheetId, hash: Pos, fills: Array<JsRenderFill>, };
 export type JsHashValidationWarnings = { sheet_id: SheetId, hash: Pos | null, warnings: Array<JsValidationWarning>, };
 export type JsHtmlOutput = { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, };
 export type JsNumber = { decimals: number | null, commas: boolean | null, format: NumericFormat | null, };
@@ -100,7 +101,11 @@ export type JsRenderCell = { x: bigint, y: bigint, value: string,
 /**
  * Code language, set only for the top left cell of a code output.
  */
-language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, };
+language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, 
+/**
+ * Error text to display (e.g., "#N/A", "#DIV/0!", "#REF!")
+ */
+errorText: string | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, };
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
 export type JsRenderCodeCell = { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, is_code: boolean, is_html: boolean, is_html_image: boolean, show_name: boolean, show_columns: boolean, last_modified: bigint, };
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";
@@ -150,7 +155,7 @@ span: Span | null,
  * Type of error.
  */
 msg: RunErrorMsg, };
-export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity";
+export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity" | "FormulaTooComplex";
 export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, };
 export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetId = { id: string, };

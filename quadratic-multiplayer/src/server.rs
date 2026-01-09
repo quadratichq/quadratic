@@ -16,8 +16,15 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use quadratic_rust_shared::auth::jwt::{authorize, extract_m2m_token, get_jwks};
-use serde::{Deserialize, Serialize};
+use quadratic_rust_shared::{
+    ErrorLevel,
+    auth::jwt::{get_jwks, merge_jwks, parse_jwks, tests::TOKEN},
+    multiplayer::message::{
+        request::MessageRequest,
+        response::{MessageResponse, ResponseError},
+    },
+    net::websocket_server::{pre_connection::PreConnection, server::WebsocketServer},
+};
 use std::{net::SocketAddr, sync::Arc};
 use std::{ops::ControlFlow, time::Duration};
 use tokio::{sync::Mutex, time};
@@ -27,25 +34,17 @@ use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use crate::{
     background_worker,
     config::config,
-    error::{ErrorLevel, MpError, Result},
+    error::{MpError, Result},
     health::{full_healthcheck, healthcheck},
     message::{
         broadcast,
         handle::handle_message,
         proto::{request::decode_transaction, response::encode_message},
-        request::MessageRequest,
-        response::MessageResponse,
     },
-    state::{State, connection::PreConnection, user::UserSocket},
+    state::{State, user::UserSocket},
 };
 
 const STATS_INTERVAL_S: u64 = 60;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    email: String,
-    exp: usize,
-}
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -90,9 +89,13 @@ pub(crate) async fn serve() -> Result<()> {
 
     let config = config()?;
 
-    // TODO(ddimaria): we do this check for every WS connection.  Does this
-    // data change ofter or can it be cached?
-    let jwks = get_jwks(&config.jwks_uri).await?;
+    // Fetch JWKS from the remote URI (e.g., WorkOS)
+    let mut jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Merge the local JWKS with the remote JWKS
+    let local_jwks = parse_jwks(&config.quadratic_jwks)?;
+    jwks = merge_jwks(jwks, local_jwks);
+
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
 
@@ -162,62 +165,40 @@ async fn ws_handler(
     cookie: Option<TypedHeader<headers::Cookie>>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
-        user_agent.to_string()
-    });
-    let addr = addr.to_string();
+    let user_agent_str = user_agent
+        .as_ref()
+        .map(|ua| ua.to_string())
+        .unwrap_or_else(|| "unknown".to_string());
 
-    #[allow(unused)]
-    let mut jwt = None;
-
-    #[cfg(test)]
-    {
-        jwt = Some(crate::test_util::TOKEN.to_string());
-    }
-
-    if state.settings.authenticate_jwt {
-        let auth_error = |error: &str| MpError::Authentication(error.to_string());
-
-        // validate the JWT or ignore for anonymous users if it doesn't exist
-        let result = async {
-            let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
-            if let Some(token) = cookie.get("jwt") {
-                let jwks: jsonwebtoken::jwk::JwkSet = state
-                    .settings
-                    .jwks
-                    .clone()
-                    .ok_or_else(|| auth_error("No JWKS found"))?;
-
-                authorize::<Claims>(&jwks, token, false, true)?;
-
-                jwt = Some(token.to_owned());
-
-                Ok::<_, MpError>(())
-            } else {
-                // this is for anonymous users
-                Ok::<_, MpError>(())
-            }
-        }
-        .await;
-
-        if let Err(error) = result {
-            tracing::warn!("Error authorizing user: {:?}", error);
-            return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
-        }
-    }
-    // check if the connection is m2m service connection
-    // strip "Bearer " from the token
-    let m2m_token = extract_m2m_token(&headers);
-    let pre_connection = PreConnection::new(jwt, m2m_token);
-
-    tracing::info!(
-        "New connection {}, `{user_agent}` at {addr}",
-        pre_connection.id
+    let pre_connection = WebsocketServer::authenticate(
+        user_agent,
+        addr,
+        cookie,
+        headers,
+        state.settings.authenticate_jwt,
+        state.settings.jwks.clone(),
+        cfg!(test).then(|| TOKEN.to_string()),
     );
 
-    // upgrade the connection
-    let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
+    match pre_connection {
+        Ok(pre_connection) => {
+            tracing::info!(
+                "New connection {}, `{}` at {addr}",
+                pre_connection.id,
+                user_agent_str
+            );
+
+            // upgrade the connection
+            let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
+            ws.on_upgrade(move |socket| {
+                handle_socket(socket, state, addr.to_string(), pre_connection)
+            })
+        }
+        Err(error) => {
+            tracing::warn!("Error authorizing user: {:?}", error);
+            (StatusCode::BAD_REQUEST, "Invalid token").into_response()
+        }
+    }
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
@@ -245,11 +226,26 @@ async fn handle_socket(
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(error) => {
+                let should_break = matches!(
+                    error,
+                    MpError::Authentication(_)
+                        | MpError::UserNotFound(_, _)
+                        | MpError::FilePermissions(_)
+                        | MpError::RoomNotFound(_)
+                );
+
                 let error_level = ErrorLevel::from(&error);
                 error_level.log(&format!("Error processing message: {:?}", &error));
 
+                let response_error = match error {
+                    MpError::MissingTransactions(expected, got) => {
+                        ResponseError::MissingTransactions(expected, got)
+                    }
+                    _ => ResponseError::Unknown(error.to_string()),
+                };
+
                 if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
-                    error: error.to_owned(),
+                    error: response_error,
                     error_level,
                 }) {
                     // send error message to the client
@@ -264,17 +260,9 @@ async fn handle_socket(
                     }
                 }
 
-                match error {
-                    // kill the ws connection for certain errors
-                    MpError::Authentication(_)
-                    | MpError::UserNotFound(_, _)
-                    | MpError::FilePermissions(_)
-                    | MpError::RoomNotFound(_) => {
-                        break;
-                    }
-                    // noop
-                    _ => {}
-                };
+                if should_break {
+                    break;
+                }
             }
         }
     }
@@ -291,7 +279,7 @@ async fn handle_socket(
                 if let Ok(room) = state.get_room(&file_id).await {
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
-                    let message = MessageResponse::from((room.users, &state.settings.version));
+                    let message = room.to_users_in_room_response(&state.settings.version);
                     if let Err(error) = broadcast(
                         vec![connection.session_id],
                         file_id,
@@ -337,7 +325,12 @@ async fn process_message(
         // binary messages are protocol buffers
         Message::Binary(b) => {
             let transaction = decode_transaction(&b)?;
-            let message_request = MessageRequest::try_from(transaction)?;
+            let message_request = MessageRequest::BinaryTransaction {
+                id: transaction.id.parse()?,
+                session_id: transaction.session_id.parse()?,
+                file_id: transaction.file_id.parse()?,
+                operations: transaction.operations,
+            };
             let message_response =
                 handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
 
@@ -359,32 +352,18 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-pub(crate) async fn send_text(sender: UserSocket, message: MessageResponse) -> Result<()> {
-    let text = serde_json::to_string(&message)?;
-
-    (*sender.lock().await)
-        .send(Message::Text(text.into()))
-        .await
-        .map_err(|e| MpError::SendingMessage(e.to_string()))
-}
-
-pub(crate) async fn send_binary(sender: UserSocket, message: MessageResponse) -> Result<()> {
-    let binary = encode_message(message)?;
-
-    (*sender.lock().await)
-        .send(Message::Binary(binary.into()))
-        .await
-        .map_err(|e| MpError::SendingMessage(e.to_string()))
-}
-
 pub(crate) async fn send_response(
     sender: UserSocket,
     message: Option<MessageResponse>,
 ) -> Result<()> {
     if let Some(message) = message {
         return match message.is_binary() {
-            true => send_binary(sender, message).await,
-            false => send_text(sender, message).await,
+            true => WebsocketServer::send_binary(sender, encode_message(message)?.into())
+                .await
+                .map_err(MpError::from),
+            false => WebsocketServer::send_text(sender, message)
+                .await
+                .map_err(MpError::from),
         };
     }
 
@@ -394,11 +373,11 @@ pub(crate) async fn send_response(
 #[cfg(test)]
 pub(crate) mod tests {
 
-    use super::*;
-    use crate::message::response::MinVersion;
-    use crate::state::settings::version;
-    use crate::state::user::{User, UserStateUpdate};
+    use crate::state::user::User;
     use crate::test_util::{integration_test_send_and_receive, setup};
+    use quadratic_rust_shared::multiplayer::message::UserStateUpdate;
+    use quadratic_rust_shared::multiplayer::message::request::MessageRequest;
+    use quadratic_rust_shared::multiplayer::message::response::MessageResponse;
 
     use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
@@ -441,42 +420,6 @@ pub(crate) mod tests {
                 follow: None,
             },
         }
-    }
-
-    #[tokio::test]
-    async fn test_user_enters_a_room() {
-        // user_2 is created using the MessageRequest::EnterRoom message
-        let (_, state, _, file_id, _, _) = setup().await;
-
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 2);
-    }
-
-    #[tokio::test]
-    async fn user_leaves_a_room() {
-        let (socket, _, _, file_id, user_1, user_2) = setup().await;
-
-        // user_2 leaves the room
-        let request = MessageRequest::LeaveRoom {
-            session_id: user_2.session_id,
-            file_id,
-        };
-
-        // only the initial user is left in the room
-        let expected = MessageResponse::UsersInRoom {
-            users: vec![user_1.clone()],
-            version: version(),
-
-            // TODO: to be deleted after next version
-            min_version: MinVersion {
-                required_version: 5,
-                recommended_version: 5,
-            },
-        };
-
-        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
-
-        assert_eq!(response, Some(expected));
     }
 
     // flaky test which often gets stuck until timeout

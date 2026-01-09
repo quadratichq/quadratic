@@ -122,6 +122,10 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
             runner: blacksmith-4vcpu-ubuntu-2404
+          - service: cloud-controller
+            runner: blacksmith-4vcpu-ubuntu-2404
+          - service: cloud-worker
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -249,7 +253,7 @@ jobs:
       DEPLOY_TIME: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
-      MAX_ATTEMPTS: 50
+      MAX_ATTEMPTS: 80
     steps:
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
@@ -501,6 +505,8 @@ jobs:
             url: "https://connection.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
           - name: files
             url: "https://files.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
+          - name: cloud-controller
+            url: "https://cloud-controller.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
@@ -728,3 +734,21 @@ jobs:
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
+
+  # This job provides a single required status check for branch protection.
+  # It will fail if any e2e test shard fails, ensuring PRs cannot be merged
+  # with failing e2e tests.
+  test-e2e-status:
+    name: Tests-E2E Status
+    needs: [test-e2e-matrix-run]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && (github.head_ref != 'qa' || github.base_ref != 'main')
+    timeout-minutes: 5
+    steps:
+      - name: Check E2E test results
+        run: |
+          if [ "${{ needs.test-e2e-matrix-run.result }}" != "success" ]; then
+            echo "E2E tests failed or were cancelled. Result: ${{ needs.test-e2e-matrix-run.result }}"
+            exit 1
+          fi
+          echo "All E2E tests passed successfully!"

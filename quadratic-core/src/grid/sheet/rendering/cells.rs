@@ -42,6 +42,11 @@ impl Sheet {
                 } else {
                     JsRenderCellSpecial::RunError
                 }),
+                error_text: if spill_error {
+                    None
+                } else {
+                    Some(format!("{}", error.msg))
+                },
                 ..Default::default()
             };
         } else if let CellValue::Image(_) = value {
@@ -90,6 +95,7 @@ impl Sheet {
             text_color: format.text_color,
             vertical_align: format.vertical_align,
             special,
+            error_text: None,
             number,
             underline: format.underline,
             strike_through: format.strike_through,
@@ -478,6 +484,7 @@ mod tests {
                 x: 3,
                 y: 3,
                 special: Some(JsRenderCellSpecial::RunError),
+                error_text: Some("Array is too big".to_string()),
                 ..Default::default()
             },
         );
@@ -543,49 +550,6 @@ mod tests {
             }
             assert_eq!(rendering.special, Some(JsRenderCellSpecial::Logical));
         }
-    }
-
-    #[test]
-    fn render_cells_duration() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            (0, 0, sheet_id).into(),
-            "1 week, 3 days".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            (0, 1, sheet_id).into(),
-            "36 mo 500 ms".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            (0, 2, sheet_id).into(),
-            "1 min, 10 ms".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            (0, 3, sheet_id).into(),
-            "0.2 millisecond".to_string(),
-            None,
-            false,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        let rendering = sheet.get_render_cells(
-            Rect {
-                min: (0, 0).into(),
-                max: (0, 3).into(),
-            },
-            gc.a1_context(),
-        );
-        assert_eq!(rendering[0].value, "10d");
-        assert_eq!(rendering[1].value, "3y 0d 0h 0m 0.5s");
-        assert_eq!(rendering[2].value, "1m 0.01s");
-        assert_eq!(rendering[3].value, "200µs");
     }
 
     #[test]

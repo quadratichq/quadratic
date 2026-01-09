@@ -207,6 +207,17 @@ impl CellValue {
         }
     }
 
+    /// Returns the value as an f64 if it represents a number.
+    pub fn to_number(&self) -> Option<f64> {
+        use rust_decimal::prelude::ToPrimitive;
+        match self {
+            CellValue::Number(n) => n.to_f64(),
+            CellValue::Logical(true) => Some(1.0),
+            CellValue::Logical(false) => Some(0.0),
+            _ => None,
+        }
+    }
+
     pub fn to_number_display(
         &self,
         numeric_format: Option<NumericFormat>,
@@ -544,9 +555,6 @@ impl CellValue {
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
     pub fn parse_from_str(value: &str) -> CellValue {
-        if let Some(duration) = CellValue::unpack_duration(value) {
-            return duration;
-        }
         if let Some(time) = CellValue::unpack_time(value) {
             return time;
         }
@@ -637,8 +645,6 @@ impl CellValue {
             date
         } else if let Some(date_time) = CellValue::unpack_date_time(value) {
             date_time
-        } else if let Some(duration) = CellValue::unpack_duration(value) {
-            duration
         } else {
             CellValue::Text(value.into())
         };
@@ -1586,5 +1592,33 @@ mod test {
         let value = "980E92207901934";
         let (cell_value, _) = CellValue::string_to_cell_value(value, false);
         assert_eq!(cell_value.to_string(), value.to_string());
+    }
+
+    #[test]
+    fn test_to_number() {
+        // Number values return the f64 equivalent
+        let cv = CellValue::Number(decimal_from_str("123.456").unwrap());
+        assert_eq!(cv.to_number(), Some(123.456));
+
+        let cv = CellValue::Number(decimal_from_str("-99.5").unwrap());
+        assert_eq!(cv.to_number(), Some(-99.5));
+
+        let cv = CellValue::Number(decimal_from_str("0").unwrap());
+        assert_eq!(cv.to_number(), Some(0.0));
+
+        // Logical true returns 1.0
+        let cv = CellValue::Logical(true);
+        assert_eq!(cv.to_number(), Some(1.0));
+
+        // Logical false returns 0.0
+        let cv = CellValue::Logical(false);
+        assert_eq!(cv.to_number(), Some(0.0));
+
+        // Other types return None
+        let cv = CellValue::Text(String::from("hello"));
+        assert_eq!(cv.to_number(), None);
+
+        let cv = CellValue::Blank;
+        assert_eq!(cv.to_number(), None);
     }
 }

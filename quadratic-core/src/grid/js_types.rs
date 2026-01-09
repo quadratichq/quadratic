@@ -196,6 +196,9 @@ pub struct JsRenderCell {
     pub text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub special: Option<JsRenderCellSpecial>,
+    /// Error text to display (e.g., "#N/A", "#DIV/0!", "#REF!")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<JsNumber>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -255,6 +258,13 @@ pub struct JsHashRenderCells {
 pub struct JsHashesDirty {
     pub sheet_id: SheetId,
     pub hashes: Vec<Pos>,
+}
+
+#[derive(Serialize, Debug, PartialEq, TS)]
+pub struct JsHashRenderFills {
+    pub sheet_id: SheetId,
+    pub hash: Pos,
+    pub fills: Vec<JsRenderFill>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

@@ -22,10 +22,11 @@ mod time;
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
 pub use cellvalue::{CellValue, CellValueHash};
-pub use convert::CoerceInto;
+pub use convert::{CoerceInto, parse_value_text};
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};
 
+use crate::formulas::LambdaValue;
 use crate::{CodeResult, CodeResultExt, RunError, RunErrorMsg, SpannableIterExt, Spanned};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -34,6 +35,8 @@ pub enum Value {
     Single(CellValue),
     Array(Array),
     Tuple(Vec<Array>),
+    /// A lambda function that can be called with arguments.
+    Lambda(LambdaValue),
 }
 impl Default for Value {
     fn default() -> Self {
@@ -46,6 +49,7 @@ impl fmt::Display for Value {
             Value::Single(v) => write!(f, "{v}"),
             Value::Array(a) => write!(f, "{a}"),
             Value::Tuple(t) => write!(f, "({})", t.iter().join(", ")),
+            Value::Lambda(l) => write!(f, "LAMBDA({})", l.params.join(", ")),
         }
     }
 }
@@ -69,7 +73,7 @@ impl From<RunError> for Value {
 
 impl Value {
     /// Returns the cell value for a single value or an array. Returns an error
-    /// for an array with more than a single value, or for a tuple.
+    /// for an array with more than a single value, or for a tuple or lambda.
     pub fn as_cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -81,10 +85,14 @@ impl Value {
                 expected: "single value".into(),
                 got: Some("tuple".into()),
             }),
+            Value::Lambda(_) => Err(RunErrorMsg::Expected {
+                expected: "single value".into(),
+                got: Some("lambda".into()),
+            }),
         }
     }
     /// Returns the cell value for a single value or an array. Returns an error
-    /// for an array with more than a single value, or for a tuple.
+    /// for an array with more than a single value, or for a tuple or lambda.
     pub fn into_cell_value(self) -> Result<CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -96,9 +104,13 @@ impl Value {
                 expected: "single value".into(),
                 got: Some("tuple".into()),
             }),
+            Value::Lambda(_) => Err(RunErrorMsg::Expected {
+                expected: "single value".into(),
+                got: Some("lambda".into()),
+            }),
         }
     }
-    /// Returns an array for a single value or array, or an error for a tuple.
+    /// Returns an array for a single value or array, or an error for a tuple or lambda.
     pub fn into_array(self) -> Result<Array, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(Array::from(value)),
@@ -107,18 +119,23 @@ impl Value {
                 expected: "array".into(),
                 got: Some("tuple".into()),
             }),
+            Value::Lambda(_) => Err(RunErrorMsg::Expected {
+                expected: "array".into(),
+                got: Some("lambda".into()),
+            }),
         }
     }
-    /// Converts the value into one or more arrays.
+    /// Converts the value into one or more arrays. Lambdas become empty vectors.
     pub fn into_arrays(self) -> Vec<Array> {
         match self {
             Value::Single(value) => vec![Array::from(value)],
             Value::Array(array) => vec![array],
             Value::Tuple(tuple) => tuple,
+            Value::Lambda(_) => vec![],
         }
     }
     /// Returns a slice of values for a single value or an array. Returns an
-    /// error for a tuple.
+    /// error for a tuple or lambda.
     pub fn cell_values_slice(&self) -> Result<&[CellValue], RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(std::slice::from_ref(value)),
@@ -127,12 +144,16 @@ impl Value {
                 expected: "single value or array".into(),
                 got: Some("tuple".into()),
             }),
+            Value::Lambda(_) => Err(RunErrorMsg::Expected {
+                expected: "single value or array".into(),
+                got: Some("lambda".into()),
+            }),
         }
     }
 
     /// Returns the value from an array if this is an array value, or the single
     /// value itself otherwise. If the array index is out of bounds, returns an
-    /// internal error. Also returns an error for a tuple.
+    /// internal error. Also returns an error for a tuple or lambda.
     pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -144,6 +165,10 @@ impl Value {
                     got: Some("empty tuple".into()),
                 }),
             },
+            Value::Lambda(_) => Err(RunErrorMsg::Expected {
+                expected: "single value or array".into(),
+                got: Some("lambda".into()),
+            }),
         }
     }
 
@@ -153,6 +178,9 @@ impl Value {
             Value::Single(value) => value.repr(),
             Value::Array(array) => array.repr(),
             Value::Tuple(tuple) => format!("({})", tuple.iter().map(|a| a.repr()).join(", ")),
+            Value::Lambda(lambda) => {
+                format!("LAMBDA({})", lambda.params.join(", "))
+            }
         }
     }
 
@@ -172,7 +200,7 @@ impl Value {
         })
     }
 
-    /// Returns the size of the value.
+    /// Returns the size of the value. Lambdas have size 1x1.
     pub fn size(&self) -> ArraySize {
         match self {
             Value::Single(_) => ArraySize::_1X1,
@@ -181,6 +209,7 @@ impl Value {
                 .first()
                 .unwrap_or(&Array::new_empty(ArraySize::_1X1))
                 .size(),
+            Value::Lambda(_) => ArraySize::_1X1,
         }
     }
 
@@ -200,6 +229,7 @@ impl Value {
             Value::Single(v) => v.error().into_iter().collect(),
             Value::Array(a) => a.errors().collect(),
             Value::Tuple(t) => t.iter().flat_map(|a| a.errors()).collect(),
+            Value::Lambda(_) => vec![],
         }
     }
 }
@@ -210,8 +240,8 @@ impl Spanned<Value> {
     pub fn into_cell_value(self) -> CodeResult<Spanned<CellValue>> {
         self.inner.into_cell_value().with_span(self.span)
     }
-    /// Returns an array, or `None` if the value is only a single cell or a
-    /// tuple.
+    /// Returns an array, or `None` if the value is only a single cell,
+    /// tuple, or lambda.
     fn as_array(&self) -> Option<Spanned<&Array>> {
         match &self.inner {
             Value::Single(_) => None,
@@ -223,6 +253,7 @@ impl Spanned<Value> {
                 span: self.span,
                 inner: arrays.first()?,
             }),
+            Value::Lambda(_) => None,
         }
     }
     /// Returns an array for a single value or array, or an error for a tuple.
@@ -238,7 +269,7 @@ impl Spanned<Value> {
     }
 
     /// Iterates over an array, converting values to a particular type. If a
-    /// value cannot be converted, it is ignored.
+    /// value cannot be converted, it is ignored. Lambdas are skipped.
     #[allow(clippy::should_implement_trait)]
     pub fn into_iter<T>(self) -> impl Iterator<Item = CodeResult<Spanned<T>>>
     where
@@ -265,6 +296,9 @@ impl Spanned<Value> {
                     .flat_map(|a| a.into_cell_values_vec())
                     .collect();
             }
+            Value::Lambda(_) => {
+                // Lambdas cannot be iterated over as cell values
+            }
         };
 
         itertools::chain!(
@@ -275,7 +309,7 @@ impl Spanned<Value> {
                 .flat_map(|v| v.coerce_or_none::<T>())
         )
     }
-    /// Returns an iterator over cell values.
+    /// Returns an iterator over cell values. Lambdas produce empty iterators.
     pub fn into_iter_cell_values(self) -> impl Iterator<Item = CodeResult<Spanned<CellValue>>> {
         let span = self.span;
 
@@ -286,6 +320,7 @@ impl Spanned<Value> {
                 .into_iter()
                 .flat_map(|a| a.into_cell_values_vec())
                 .collect(),
+            Value::Lambda(_) => smallvec![],
         }
         .into_iter()
         .with_all_same_span(self.span)

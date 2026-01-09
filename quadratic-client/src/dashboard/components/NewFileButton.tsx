@@ -64,7 +64,7 @@ export function NewFileButton() {
             showUpgradeDialog('fileLimitReached');
             return;
           }
-          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+          navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
         }}
       >
         <AIIcon className="mr-0" />

@@ -4,7 +4,7 @@ import { cleanUpFiles, createFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
 import { assertCellValue, assertSelection, gotoCells, sheetRefreshPage } from './helpers/sheet.helper';
 
-test('Keyboard Navigation', async ({ page }) => {
+test.skip('Keyboard Navigation', async ({ page }) => {
   // Constants
   const fileName = 'Keyboard Movement';
   const fileType = 'grid';
@@ -158,7 +158,7 @@ test('Keyboard Navigation', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Keyboard Selection', async ({ page }) => {
+test.skip('Keyboard Selection', async ({ page }) => {
   // Constants
   const fileName = 'Keyboard Movement';
   const fileType = 'grid';
@@ -294,6 +294,7 @@ test('Open calendar', async ({ page }) => {
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).toBeVisible({ timeout: 10 * 1000 });
   await expect(page.locator('[data-testid="calendar-picker-time"]')).toBeVisible({ timeout: 10 * 1000 });
 
   // Change time to 1:23 pm

@@ -312,6 +312,17 @@ export interface ClientCoreSetCellFillColor {
   isAi: boolean;
 }
 
+export interface ClientCoreGetRenderFillsForHashes {
+  type: 'clientCoreGetRenderFillsForHashes';
+  sheetId: string;
+  hashes: JsCoordinate[];
+}
+
+export interface ClientCoreGetSheetMetaFills {
+  type: 'clientCoreGetSheetMetaFills';
+  sheetId: string;
+}
+
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
@@ -485,10 +496,14 @@ export interface CoreClientSetCodeCellValue {
   error?: string;
 }
 
-export interface CoreClientSheetFills {
-  type: 'coreClientSheetFills';
-  sheetId: string;
-  fills: Uint8Array;
+export interface CoreClientHashRenderFills {
+  type: 'coreClientHashRenderFills';
+  hashRenderFills: Uint8Array;
+}
+
+export interface CoreClientHashesDirtyFills {
+  type: 'coreClientHashesDirtyFills';
+  dirtyHashes: Uint8Array;
 }
 
 export interface CoreClientSheetMetaFills {
@@ -1368,6 +1383,20 @@ export interface CoreClientSetFormats {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreSetFormatsA1 {
+  type: 'clientCoreSetFormatsA1';
+  id: number;
+  formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[];
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientSetFormatsA1 {
+  type: 'coreClientSetFormatsA1';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreGetAIFormats {
   type: 'clientCoreGetAIFormats';
   id: number;
@@ -1504,12 +1533,26 @@ export interface ClientCoreSetFormula {
   sheetId: string;
   selection: string;
   codeString: string;
-  codeCellName?: string;
   cursor: string;
 }
 
 export interface CoreClientSetFormula {
   type: 'coreClientSetFormula';
+  id: number;
+  transactionId: string | undefined;
+  error?: string;
+}
+
+export interface ClientCoreSetFormulas {
+  type: 'clientCoreSetFormulas';
+  id: number;
+  sheetId: string;
+  formulas: Array<[string, string]>; // [selection, formula_string]
+  cursor: string;
+}
+
+export interface CoreClientSetFormulas {
+  type: 'coreClientSetFormulas';
   id: number;
   transactionId: string | undefined;
   error?: string;
@@ -1528,6 +1571,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellItalic
   | ClientCoreSetCellFontSize
   | ClientCoreSetCellFillColor
+  | ClientCoreGetRenderFillsForHashes
+  | ClientCoreGetSheetMetaFills
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline
   | ClientCoreSetCellStrikeThrough
@@ -1606,6 +1651,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveRows
   | ClientCoreGetAICells
   | ClientCoreSetFormats
+  | ClientCoreSetFormatsA1
   | ClientCoreGetAIFormats
   | ClientCoreResizeColumns
   | ClientCoreResizeRows
@@ -1618,7 +1664,8 @@ export type ClientCoreMessage =
   | ClientCoreGetAITransactions
   | ClientCoreUndo
   | ClientCoreRedo
-  | ClientCoreSetFormula;
+  | ClientCoreSetFormula
+  | ClientCoreSetFormulas;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1629,7 +1676,8 @@ export type CoreClientMessage =
   | CoreClientImportFile
   | CoreClientAddSheet
   | CoreClientSheetsInfo
-  | CoreClientSheetFills
+  | CoreClientHashRenderFills
+  | CoreClientHashesDirtyFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor
@@ -1686,6 +1734,7 @@ export type CoreClientMessage =
   | CoreClientCoreError
   | CoreClientGetAICells
   | CoreClientSetFormats
+  | CoreClientSetFormatsA1
   | CoreClientGetAIFormats
   | CoreClientGridToDataTable
   | CoreClientDataTablesCache
@@ -1717,4 +1766,5 @@ export type CoreClientMessage =
   | CoreClientUndoResponse
   | CoreClientRedoResponse
   | CoreClientStartupTimer
-  | CoreClientSetFormula;
+  | CoreClientSetFormula
+  | CoreClientSetFormulas;

@@ -173,12 +173,20 @@ export const CheckBoxEmptyIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box_outline_blank</Icon>;
 };
 
+export const CheckBoxIndeterminateIcon: IconComponent = (props) => {
+  return <Icon {...props}>indeterminate_check_box</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
 
 export const CheckIcon: IconComponent = (props) => {
   return <Icon {...props}>check</Icon>;
+};
+
+export const CheckCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_circle</Icon>;
 };
 
 export const CheckSmallIcon: IconComponent = (props) => {
@@ -592,6 +600,10 @@ export const SaveAndRunStopIcon: IconComponent = (props) => {
   return <Icon {...props}>stop</Icon>;
 };
 
+export const ScheduleIcon: IconComponent = (props) => {
+  return <Icon {...props}>schedule</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
@@ -807,6 +819,10 @@ export const RadioButtonCheckedIcon: IconComponent = (props) => {
 
 export const WebBrowserIcon: IconComponent = (props) => {
   return <Icon {...props}>captive_portal</Icon>;
+};
+
+export const ScheduledTasksIcon: IconComponent = (props) => {
+  return <Icon {...props}>timer_play</Icon>;
 };
 
 export const WarningIcon: IconComponent = (props) => {

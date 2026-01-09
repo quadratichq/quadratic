@@ -11,21 +11,23 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use quadratic_rust_shared::auth::jwt::{authorize, authorize_m2m};
+use http::HeaderName;
+use quadratic_rust_shared::auth::jwt::{Claims as SharedClaims, authorize, authorize_m2m};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::{
     error::{ConnectionError, Result},
     state::State,
 };
 
-/// The claims from the Quadratic/Auth JWT token.
-/// We need our own implementation of this because we need to impl on it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Claims {
     pub email: String,
     pub exp: usize,
+    pub file_id: Option<Uuid>,
+    pub team_id: Option<Uuid>,
 }
 
 /// Instance of Axum's middleware that also contains a copy of state
@@ -69,11 +71,14 @@ where
 
         let m2m_token = state.settings.m2m_auth_token.clone();
 
+        // For M2M tokens (internal services), skip team_id validation
         match authorize_m2m(&parts.headers, &m2m_token) {
             Ok(token_data) => {
                 return Ok(Claims {
                     email: token_data.claims.email,
                     exp: token_data.claims.exp,
+                    file_id: None,
+                    team_id: None,
                 });
             }
             Err(_e) => {
@@ -83,9 +88,51 @@ where
                     .await
                     .map_err(|e| ConnectionError::InvalidToken(e.to_string()))?;
 
-                let token_data = authorize(jwks, bearer.token(), false, true)?;
+                let token_data = authorize::<SharedClaims>(jwks, bearer.token(), false, true)?;
 
-                Ok(token_data.claims)
+                // Validate team_id if present in JWT claims
+                if let Some(jwt_team_id) = token_data.claims.team_id {
+                    let header_team_id = parts
+                        .headers
+                        .get(HeaderName::from_static("x-team-id"))
+                        .and_then(|v| v.to_str().ok())
+                        .and_then(|s| Uuid::parse_str(s).ok());
+
+                    match header_team_id {
+                        Some(header_id) if header_id == jwt_team_id => {
+                            // team_id matches, continue
+                        }
+                        Some(header_id) => {
+                            tracing::warn!(
+                                "JWT team_id {} does not match x-team-id header {} (file_id: {:?})",
+                                jwt_team_id,
+                                header_id,
+                                token_data.claims.file_id
+                            );
+                            return Err(ConnectionError::Authentication(
+                                "team_id mismatch".to_string(),
+                            ));
+                        }
+                        None => {
+                            // JWT has team_id but header is missing - reject to prevent bypass
+                            tracing::warn!(
+                                "JWT has team_id {} but x-team-id header is missing (file_id: {:?})",
+                                jwt_team_id,
+                                token_data.claims.file_id
+                            );
+                            return Err(ConnectionError::Authentication(
+                                "missing x-team-id header".to_string(),
+                            ));
+                        }
+                    }
+                }
+
+                Ok(Claims {
+                    email: token_data.claims.email,
+                    exp: token_data.claims.exp,
+                    file_id: token_data.claims.file_id,
+                    team_id: token_data.claims.team_id,
+                })
             }
         }
     }
