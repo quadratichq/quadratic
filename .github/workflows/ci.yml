@@ -84,10 +84,11 @@ jobs:
       - name: Install llvm-tools-preview
         run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
 
-      - name: Install pkg-config and OpenSSL development libraries
+      - name: Install pkg-config, OpenSSL, and CA certificates
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libssl-dev
+          sudo apt-get install -y pkg-config libssl-dev ca-certificates
+          sudo update-ca-certificates
 
       - name: Install Deno for core-cloud and cloud-worker
         if: matrix.package == 'core-cloud' || matrix.package == 'cloud-worker'
@@ -139,6 +140,8 @@ jobs:
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
           BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
+          SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+          SSL_CERT_DIR: /etc/ssl/certs
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
