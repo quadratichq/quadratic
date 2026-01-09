@@ -160,8 +160,10 @@ impl DataTable {
                     continue;
                 }
 
+                // cell_value_at expects display coordinates (where y includes name/header offset)
+                let display_y = y_adjustment + data_y;
                 if let Some(crate::CellValue::Text(text)) =
-                    self.cell_value_at(data_x as u32, data_y as u32)
+                    self.cell_value_at(data_x as u32, display_y as u32)
                     && (text.contains('\n') || text.contains('\r'))
                 {
                     rows_to_resize.insert(actual_row);
@@ -433,21 +435,21 @@ mod test {
         // - Row 1 (column headers): Column 1, Column 2, Column 3
         // - Row 2+ (data): the actual values
         let values = vec![
-            vec!["normal", "also normal", "still normal"],    // data row 0
-            vec!["has\nnewline", "normal", "normal"],         // data row 1 - has \n
-            vec!["normal", "has\r\ncarriage", "normal"],      // data row 2 - has \r\n
-            vec!["normal", "normal", "normal"],               // data row 3
+            vec!["normal", "also normal", "still normal"], // data row 0
+            vec!["has\nnewline", "normal", "normal"],      // data row 1 - has \n
+            vec!["normal", "has\r\ncarriage", "normal"],   // data row 2 - has \r\n
+            vec!["normal", "normal", "normal"],            // data row 3
             vec!["multi\nline\ntext", "normal", "another\nmultiline"], // data row 4 - has \n
         ];
         let data_table = create_data_table_with_values(values);
 
-        // Data table at origin for simplicity
-        let data_table_pos = Pos { x: 0, y: 0 };
+        // Data table at (1, 1) - standard 1-based grid coordinates
+        let data_table_pos = Pos { x: 1, y: 1 };
         let y_adjustment = data_table.y_adjustment(true);
 
         // Display rect covering all data rows (starting after name and column headers)
-        // Sheet coords: y=y_adjustment to y=y_adjustment+4 covers data rows 0-4
-        let display_rect = Rect::new(0, y_adjustment, 2, y_adjustment + 4);
+        // Sheet coords: y = 1 + y_adjustment to 1 + y_adjustment + 4 covers data rows 0-4
+        let display_rect = Rect::new(1, 1 + y_adjustment, 3, 1 + y_adjustment + 4);
         let mut rows_to_resize = HashSet::new();
         data_table.get_rows_with_multiline_text_in_display_rect(
             &data_table_pos,
@@ -456,39 +458,45 @@ mod test {
         );
 
         // Data rows with newlines: 1, 2, 4
-        // In sheet coords: y_adjustment + 1, y_adjustment + 2, y_adjustment + 4
+        // In sheet coords: 1 + y_adjustment + 1, 1 + y_adjustment + 2, 1 + y_adjustment + 4
         assert!(
-            rows_to_resize.contains(&(y_adjustment + 1)),
+            rows_to_resize.contains(&(1 + y_adjustment + 1)),
             "Row with \\n should be included, got {:?}",
             rows_to_resize
         );
         assert!(
-            rows_to_resize.contains(&(y_adjustment + 2)),
+            rows_to_resize.contains(&(1 + y_adjustment + 2)),
             "Row with \\r\\n should be included, got {:?}",
             rows_to_resize
         );
         assert!(
-            rows_to_resize.contains(&(y_adjustment + 4)),
+            rows_to_resize.contains(&(1 + y_adjustment + 4)),
             "Row with multiple multiline cells should be included, got {:?}",
             rows_to_resize
         );
-        assert_eq!(rows_to_resize.len(), 3, "Should have exactly 3 rows, got {:?}", rows_to_resize);
+        assert_eq!(
+            rows_to_resize.len(),
+            3,
+            "Should have exactly 3 rows, got {:?}",
+            rows_to_resize
+        );
     }
 
     #[test]
     fn test_get_rows_with_multiline_text_partial_rect() {
         let values = vec![
-            vec!["line1\nline2", "normal"],  // data row 0 - has \n
-            vec!["normal", "normal"],        // data row 1
-            vec!["normal", "multi\nline"],   // data row 2 - has \n
+            vec!["line1\nline2", "normal"], // data row 0 - has \n
+            vec!["normal", "normal"],       // data row 1
+            vec!["normal", "multi\nline"],  // data row 2 - has \n
         ];
         let data_table = create_data_table_with_values(values);
 
-        let data_table_pos = Pos { x: 0, y: 0 };
+        // Data table at (1, 1) - standard 1-based grid coordinates
+        let data_table_pos = Pos { x: 1, y: 1 };
         let y_adjustment = data_table.y_adjustment(true);
 
         // Test with display rect covering only the first two data rows (0 and 1)
-        let display_rect = Rect::new(0, y_adjustment, 1, y_adjustment + 1);
+        let display_rect = Rect::new(1, 1 + y_adjustment, 2, 1 + y_adjustment + 1);
         let mut rows_to_resize = HashSet::new();
         data_table.get_rows_with_multiline_text_in_display_rect(
             &data_table_pos,
@@ -497,27 +505,30 @@ mod test {
         );
 
         // Only data row 0 should be included (has \n at position 0,0)
-        // In sheet coords: y_adjustment + 0 = y_adjustment
+        // In sheet coords: 1 + y_adjustment + 0 = 1 + y_adjustment
         assert!(
-            rows_to_resize.contains(&y_adjustment),
+            rows_to_resize.contains(&(1 + y_adjustment)),
             "First data row should be included, got {:?}",
             rows_to_resize
         );
-        assert_eq!(rows_to_resize.len(), 1, "Should have exactly 1 row, got {:?}", rows_to_resize);
+        assert_eq!(
+            rows_to_resize.len(),
+            1,
+            "Should have exactly 1 row, got {:?}",
+            rows_to_resize
+        );
     }
 
     #[test]
     fn test_get_rows_with_multiline_text_empty_result() {
-        let values = vec![
-            vec!["normal", "text"],
-            vec!["also normal", "more text"],
-        ];
+        let values = vec![vec!["normal", "text"], vec!["also normal", "more text"]];
         let data_table = create_data_table_with_values(values);
 
-        let data_table_pos = Pos { x: 0, y: 0 };
+        // Data table at (1, 1) - standard 1-based grid coordinates
+        let data_table_pos = Pos { x: 1, y: 1 };
         let y_adjustment = data_table.y_adjustment(true);
 
-        let display_rect = Rect::new(0, y_adjustment, 1, y_adjustment + 1);
+        let display_rect = Rect::new(1, 1 + y_adjustment, 2, 1 + y_adjustment + 1);
         let mut rows_to_resize = HashSet::new();
         data_table.get_rows_with_multiline_text_in_display_rect(
             &data_table_pos,
@@ -525,7 +536,11 @@ mod test {
             &mut rows_to_resize,
         );
 
-        assert!(rows_to_resize.is_empty(), "Should have no rows with multiline text, got {:?}", rows_to_resize);
+        assert!(
+            rows_to_resize.is_empty(),
+            "Should have no rows with multiline text, got {:?}",
+            rows_to_resize
+        );
     }
 
     #[test]
@@ -536,15 +551,16 @@ mod test {
         ];
         let data_table = create_data_table_with_values(values);
 
-        let data_table_pos = Pos { x: 0, y: 0 };
+        // Data table at (1, 1) - standard 1-based grid coordinates
+        let data_table_pos = Pos { x: 1, y: 1 };
         let y_adjustment = data_table.y_adjustment(true);
 
         // Display rect covering both data rows
-        let display_rect = Rect::new(0, y_adjustment, 0, y_adjustment + 1);
+        let display_rect = Rect::new(1, 1 + y_adjustment, 1, 1 + y_adjustment + 1);
         let mut rows_to_resize = HashSet::new();
 
         // Pre-populate with the first data row's sheet coordinate
-        rows_to_resize.insert(y_adjustment);
+        rows_to_resize.insert(1 + y_adjustment);
 
         data_table.get_rows_with_multiline_text_in_display_rect(
             &data_table_pos,
@@ -553,9 +569,21 @@ mod test {
         );
 
         // Should still have both rows - the first was pre-existing, the second was added
-        assert!(rows_to_resize.contains(&y_adjustment), "First row should still be present");
-        assert!(rows_to_resize.contains(&(y_adjustment + 1)), "Second row should be added, got {:?}", rows_to_resize);
-        assert_eq!(rows_to_resize.len(), 2, "Should have exactly 2 rows, got {:?}", rows_to_resize);
+        assert!(
+            rows_to_resize.contains(&(1 + y_adjustment)),
+            "First row should still be present"
+        );
+        assert!(
+            rows_to_resize.contains(&(1 + y_adjustment + 1)),
+            "Second row should be added, got {:?}",
+            rows_to_resize
+        );
+        assert_eq!(
+            rows_to_resize.len(),
+            2,
+            "Should have exactly 2 rows, got {:?}",
+            rows_to_resize
+        );
     }
 
     #[test]
