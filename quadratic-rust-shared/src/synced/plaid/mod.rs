@@ -98,12 +98,16 @@ async fn new_plaid_client_with_products(
     add_access_token: bool,
     products: Vec<plaid::model::Products>,
 ) -> PlaidClient {
-    let credentials = PLAID_CREDENTIALS
-        .lock()
-        .expect("PLAID_CREDENTIALS lock poisoned")
-        .as_ref()
-        .cloned()
-        .expect("PLAID_CREDENTIALS not set in .env.test");
+    // Clone the credentials out of the mutex, then drop the lock before potentially panicking.
+    // This prevents the mutex from being poisoned if credentials are missing.
+    let credentials = {
+        let guard = PLAID_CREDENTIALS
+            .lock()
+            .expect("PLAID_CREDENTIALS lock poisoned");
+        guard.clone()
+    };
+    let credentials =
+        credentials.expect("PLAID_CREDENTIALS not set in .env.test - create a .env.test file with PLAID_CREDENTIALS='{\"client_id\":\"...\",\"secret\":\"...\"}'");
     let config = serde_json::from_str::<PlaidConfigFromEnv>(&credentials)
         .expect("Failed to parse PLAID_CREDENTIALS JSON");
     let environment = PlaidEnvironment::Sandbox;
