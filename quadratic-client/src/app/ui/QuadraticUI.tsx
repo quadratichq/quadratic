@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
@@ -43,6 +44,7 @@ import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -89,6 +91,9 @@ export default function QuadraticUI() {
     }
   }, []);
 
+  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+
   useRemoveInitialLoadingUI();
 
   if (error) {
@@ -105,67 +110,75 @@ export default function QuadraticUI() {
   }
 
   return (
-    <div
-      id="quadratic-ui"
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        // flexDirection: 'column',
-        transition: '.3s ease opacity',
-        opacity: 1,
-        ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
-      }}
-    >
-      {!presentationMode && !isEmbed && <QuadraticSidebar />}
-      <div className="flex min-w-0 flex-grow flex-col" id="main">
-        {!presentationMode && <TopBar />}
-        {!presentationMode && !isEmbed && <Toolbar />}
-
+    <div className="relative flex h-full w-full">
+      {canEditFile && isAuthenticated && <AIAnalyst />}
+      <div className={cn(showAIAnalyst && 'overflow-hidden p-2 pl-0')}>
         <div
+          id="quadratic-ui"
+          className={cn(
+            showAIAnalyst && 'overflow-hidden rounded-lg border-2 shadow-lg',
+            showAIAnalyst && (aiAnalystLoading ? 'border-purple-600 shadow-purple-600/20' : 'border-border shadow')
+          )}
           style={{
             width: '100%',
             height: '100%',
             display: 'flex',
-            overflow: 'hidden',
-            position: 'relative',
+            // flexDirection: 'column',
+            transition: '.3s ease opacity',
+            opacity: 1,
+            ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
           }}
         >
-          {canEditFile && isAuthenticated && <AIAnalyst />}
-          {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
-          <FileDragDropWrapper>
-            <QuadraticGrid />
-            {!presentationMode && <SheetBar />}
-            <FloatingFPS />
-            <FloatingTopLeftPosition />
-            <Coordinates />
-          </FileDragDropWrapper>
-          <CodeEditor />
-          <ValidationPanel />
-          <ScheduledTasks />
+          {!presentationMode && !isEmbed && <QuadraticSidebar />}
+          <div className="flex min-w-0 flex-grow flex-col" id="main">
+            {!presentationMode && <TopBar />}
+            {!presentationMode && !isEmbed && <Toolbar />}
+
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+            >
+              {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
+              <FileDragDropWrapper>
+                <QuadraticGrid />
+                {!presentationMode && <SheetBar />}
+                <FloatingFPS />
+                <FloatingTopLeftPosition />
+                <Coordinates />
+              </FileDragDropWrapper>
+              <CodeEditor />
+              <ValidationPanel />
+              <ScheduledTasks />
+            </div>
+          </div>
+          {/* Global overlay menus */}
+          {canEditFile && isAuthenticated && <AIGetFileName />}
+          <FeedbackMenu />
+          {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
+          {presentationMode && <PresentationModeHint />}
+          {showCellTypeMenu && <CellTypeMenu />}
+          {showCommandPalette && <CommandPalette />}
+          {showRenameFileMenu && (
+            <DialogRenameItem
+              itemLabel="file"
+              onClose={() => setShowRenameFileMenu(false)}
+              onSave={(newValue) => renameFile(newValue)}
+              value={name}
+            />
+          )}
+          <ConnectionsMenu />
+          {!isEmbed && <PermissionOverlay />}
+          <UpdateAlertVersion />
+          <UserMessage />
+          <SettingsDialog />
+          <ChangelogDialog />
         </div>
       </div>
-      {/* Global overlay menus */}
-      {canEditFile && isAuthenticated && <AIGetFileName />}
-      <FeedbackMenu />
-      {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
-      {presentationMode && <PresentationModeHint />}
-      {showCellTypeMenu && <CellTypeMenu />}
-      {showCommandPalette && <CommandPalette />}
-      {showRenameFileMenu && (
-        <DialogRenameItem
-          itemLabel="file"
-          onClose={() => setShowRenameFileMenu(false)}
-          onSave={(newValue) => renameFile(newValue)}
-          value={name}
-        />
-      )}
-      <ConnectionsMenu />
-      {!isEmbed && <PermissionOverlay />}
-      <UpdateAlertVersion />
-      <UserMessage />
-      <SettingsDialog />
-      <ChangelogDialog />
     </div>
   );
 }

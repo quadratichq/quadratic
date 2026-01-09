@@ -7,7 +7,6 @@ import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid } from '@/app/helpers/files';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
@@ -16,6 +15,7 @@ import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -170,7 +170,12 @@ export const AIAnalyst = memo(() => {
           </div>
         )}
 
-        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
+        <ResizeControl
+          position="VERTICAL"
+          style={{ left: `${panelWidth - 1}px` }}
+          setState={handleResize}
+          className="!bg-transparent"
+        />
 
         <div
           className={cn(
