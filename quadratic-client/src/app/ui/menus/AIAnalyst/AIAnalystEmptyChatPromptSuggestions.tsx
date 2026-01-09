@@ -7,8 +7,8 @@ import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
-import { getExtension, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
-import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
@@ -55,7 +55,6 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
     const getEmptyChatPromptSuggestionsRef = useRef(getEmptyChatPromptSuggestions);
     getEmptyChatPromptSuggestionsRef.current = getEmptyChatPromptSuggestions;
-    const handleFileImport = useFileImport();
 
     // Listen for sheet content changes to update suggestions when data is added/removed
     const handleChooseFile = useCallback(async () => {
@@ -77,21 +76,54 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         }
       }
 
-      // Direct import spreadsheet files into the sheet at position (1,1)
+      // Import spreadsheet files directly - each placed to the right of existing content
       if (directImportFiles.length > 0) {
-        handleFileImport({
-          files: directImportFiles,
-          sheetId: sheets.sheet.id,
-          insertAt: { x: 1, y: 1 },
-          cursor: sheets.sheet.cursor.position.toString(),
+        const currentSheet = sheets.sheet;
+
+        // Sort: push Excel files to the end (they create new sheets, so order matters less)
+        directImportFiles.sort((a, b) => {
+          const extA = getExtension(a.name);
+          const extB = getExtension(b.name);
+          if (['xls', 'xlsx'].includes(extA)) return 1;
+          if (['xls', 'xlsx'].includes(extB)) return -1;
+          return 0;
         });
+
+        // Import files one at a time, calculating position based on current bounds
+        for (const file of directImportFiles) {
+          const fileType = getFileTypeFromName(file.name);
+          if (!fileType || fileType === 'Grid') continue;
+
+          const arrayBuffer = await file.arrayBuffer();
+
+          // Calculate insert position: to the right of existing content
+          const sheetBounds = currentSheet.bounds;
+          const insertAt = {
+            x: sheetBounds.type === 'empty' ? 1 : Number(sheetBounds.max.x) + 2,
+            y: 1,
+          };
+
+          try {
+            await quadraticCore.importFile({
+              file: arrayBuffer,
+              fileName: file.name,
+              fileType,
+              sheetId: currentSheet.id,
+              location: insertAt,
+              cursor: currentSheet.cursor.position.toString(),
+              isAi: false,
+            });
+          } catch (error) {
+            console.error('[AIAnalyst] Error importing file:', file.name, error);
+          }
+        }
       }
 
       // Send PDFs/images to AI for processing
       if (aiFiles.length > 0) {
         events.emit('aiAnalystDroppedFiles', aiFiles);
       }
-    }, [handleFileImport]);
+    }, []);
 
     useEffect(() => {
       let debounceTimeout: ReturnType<typeof setTimeout> | undefined;

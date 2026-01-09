@@ -6,10 +6,10 @@ import {
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getExtension, supportedFileTypesFromGrid } from '@/app/helpers/files';
+import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid } from '@/app/helpers/files';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
@@ -28,7 +28,6 @@ export const AIAnalyst = memo(() => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
-  const handleFileImport = useFileImport();
   const [dragOver, setDragOver] = useState(false);
 
   const initialLoadRef = useRef(true);
@@ -68,46 +67,76 @@ export const AIAnalyst = memo(() => {
     setDragOver(e.type !== 'dragleave');
   }, []);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragOver(false);
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
 
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length === 0) return;
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
 
-      // Split files: direct import for spreadsheet files, AI for PDFs/images
-      const directImportFiles: File[] = [];
-      const aiFiles: File[] = [];
+    // Split files: direct import for spreadsheet files, AI for PDFs/images
+    const directImportFiles: File[] = [];
+    const aiFiles: File[] = [];
 
-      for (const file of files) {
-        const extension = `.${getExtension(file.name)}`;
-        if (supportedFileTypesFromGrid.includes(extension)) {
-          directImportFiles.push(file);
-        } else {
-          // PDFs and images need AI to extract data
-          aiFiles.push(file);
+    for (const file of files) {
+      const extension = `.${getExtension(file.name)}`;
+      if (supportedFileTypesFromGrid.includes(extension)) {
+        directImportFiles.push(file);
+      } else {
+        // PDFs and images need AI to extract data
+        aiFiles.push(file);
+      }
+    }
+
+    // Import spreadsheet files directly - each placed to the right of existing content
+    if (directImportFiles.length > 0) {
+      const currentSheet = sheets.sheet;
+
+      // Sort: push Excel files to the end (they create new sheets, so order matters less)
+      directImportFiles.sort((a, b) => {
+        const extA = getExtension(a.name);
+        const extB = getExtension(b.name);
+        if (['xls', 'xlsx'].includes(extA)) return 1;
+        if (['xls', 'xlsx'].includes(extB)) return -1;
+        return 0;
+      });
+
+      // Import files one at a time, calculating position based on current bounds
+      for (const file of directImportFiles) {
+        const fileType = getFileTypeFromName(file.name);
+        if (!fileType || fileType === 'Grid') continue;
+
+        const arrayBuffer = await file.arrayBuffer();
+
+        // Calculate insert position: to the right of existing content
+        const sheetBounds = currentSheet.bounds;
+        const insertAt = {
+          x: sheetBounds.type === 'empty' ? 1 : Number(sheetBounds.max.x) + 2,
+          y: 1,
+        };
+
+        try {
+          await quadraticCore.importFile({
+            file: arrayBuffer,
+            fileName: file.name,
+            fileType,
+            sheetId: currentSheet.id,
+            location: insertAt,
+            cursor: currentSheet.cursor.position.toString(),
+            isAi: false,
+          });
+        } catch (error) {
+          console.error('[AIAnalyst] Error importing file:', file.name, error);
         }
       }
+    }
 
-      // Direct import spreadsheet files into the sheet at position (1,1)
-      if (directImportFiles.length > 0) {
-        handleFileImport({
-          files: directImportFiles,
-          sheetId: sheets.sheet.id,
-          insertAt: { x: 1, y: 1 },
-          cursor: sheets.sheet.cursor.position.toString(),
-        });
-      }
-
-      // Send PDFs/images to AI for processing
-      if (aiFiles.length > 0) {
-        events.emit('aiAnalystDroppedFiles', aiFiles);
-      }
-    },
-    [handleFileImport]
-  );
+    // Send PDFs/images to AI for processing
+    if (aiFiles.length > 0) {
+      events.emit('aiAnalystDroppedFiles', aiFiles);
+    }
+  }, []);
 
   if (!showAIAnalyst || presentationMode) {
     return null;
