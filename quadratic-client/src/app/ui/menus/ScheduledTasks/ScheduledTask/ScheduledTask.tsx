@@ -9,9 +9,9 @@ import { UseCronInterval } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { useCronRange } from '@/app/ui/menus/ScheduledTasks/useCronRange';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ROUTES } from '@/shared/constants/routes';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback } from 'react';
 import { Link } from 'react-router';
 
@@ -27,21 +27,24 @@ export const ScheduledTask = () => {
   const cronInterval = UseCronInterval(currentTask?.cronExpression, timezone ?? undefined);
   const cronRange = useCronRange(currentTask?.operations);
 
+  // Extract values to avoid recreating callback when other currentTask properties change
+  const currentTaskUuid = currentTask?.uuid;
+  const isCreateMode = !currentTask;
+
   const onSave = useCallback(async () => {
     if (!cronInterval.cron || cronInterval.cronError || cronRange.rangeError) return;
     const cloned = cronRange.range?.clone();
     const operations = scheduledTaskEncode(cloned);
-    const isCreate = !currentTask;
 
-    trackEvent(`[ScheduledTasks].${isCreate ? 'create' : 'update'}`, {
+    trackEvent(`[ScheduledTasks].${isCreateMode ? 'create' : 'update'}`, {
       cronExpression: cronInterval.cron,
       cronType: cronInterval.cronType,
       taskType: cronRange.task,
-      taskUuid: currentTask?.uuid,
+      taskUuid: currentTaskUuid,
     });
 
     await saveScheduledTask({
-      uuid: currentTask?.uuid ?? CREATE_TASK_ID,
+      uuid: currentTaskUuid ?? CREATE_TASK_ID,
       cronExpression: cronInterval.cron,
       operations,
     });
@@ -53,8 +56,9 @@ export const ScheduledTask = () => {
     cronRange.rangeError,
     cronRange.range,
     cronRange.task,
+    currentTaskUuid,
+    isCreateMode,
     saveScheduledTask,
-    currentTask?.uuid,
     showScheduledTasks,
   ]);
 

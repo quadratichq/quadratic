@@ -18,6 +18,17 @@ export const clickMoreFormattingIcon = async (page: Page) => {
     return;
   }
 
+  // Press Escape to close any existing menus/popovers before trying to open a new one
+  await page.keyboard.press('Escape');
+  // Wait for any existing popovers to close (if present)
+  const existingPopover = page.locator('[data-radix-popper-content-wrapper]');
+  if ((await existingPopover.count()) > 0) {
+    await existingPopover
+      .first()
+      .waitFor({ state: 'hidden', timeout: 1000 })
+      .catch(() => {});
+  }
+
   // Click the icon - the click will bubble up to the PopoverTrigger parent
   await moreIcon.click();
 
@@ -116,8 +127,7 @@ export const clickFontSizeDecrease = async (page: Page) => {
 };
 
 // Available font sizes (must match FONT_SIZES in gridConstants.ts)
-const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72, 96] as const;
-type FontSize = (typeof FONT_SIZES)[number];
+type FontSize = 8 | 9 | 10 | 11 | 12 | 14 | 16 | 18 | 20 | 24 | 28 | 32 | 36 | 48 | 72 | 96;
 
 export const selectFontSize = async (page: Page, a1: string, size: FontSize) => {
   await gotoCells(page, { a1 });
@@ -253,4 +263,34 @@ export const clickDateTimeFormat = async (page: Page) => {
 
 export const clickClearFormatting = async (page: Page) => {
   await clickFormattingButton(page, 'clear_formatting_borders');
+};
+
+/**
+ * Sets the horizontal alignment for the currently selected cell(s).
+ */
+export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Center' | 'Right') => {
+  await clickMoreFormattingIcon(page);
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
+  // Wait for the dropdown menu to appear
+  const menuItem = page.locator(`div[role="menuitem"]:has-text("${alignment}")`);
+  await menuItem.waitFor({ state: 'visible' });
+  await menuItem.click({ timeout: 60 * 1000 });
+  // Press Escape to close menus and wait for dropdown to close
+  await page.keyboard.press('Escape');
+  await page.locator('[data-radix-popper-content-wrapper]').waitFor({ state: 'hidden' });
+};
+
+/**
+ * Sets the text wrap mode for the currently selected cell(s).
+ */
+export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip') => {
+  await clickMoreFormattingIcon(page);
+  await page.locator('button[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
+  // Wait for the dropdown menu to appear
+  const menuItem = page.locator(`[role="menuitem"]:has-text("${wrap}")`);
+  await menuItem.waitFor({ state: 'visible' });
+  await menuItem.click({ timeout: 60 * 1000 });
+  // Press Escape to close menus and wait for dropdown to close
+  await page.keyboard.press('Escape');
+  await page.locator('[data-radix-popper-content-wrapper]').waitFor({ state: 'hidden' });
 };
