@@ -3,7 +3,7 @@
 import { readFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { ensureUserExists } from './workos.helper.ts';
+import { ensureUserExists } from './workos.helper.js';
 
 interface User {
   email: string;
