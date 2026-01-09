@@ -17,6 +17,17 @@ export const clickMoreFormattingIcon = async (page: Page) => {
     return;
   }
 
+  // Press Escape to close any existing menus/popovers before trying to open a new one
+  await page.keyboard.press('Escape');
+  // Wait for any existing popovers to close (if present)
+  const existingPopover = page.locator('[data-radix-popper-content-wrapper]');
+  if ((await existingPopover.count()) > 0) {
+    await existingPopover
+      .first()
+      .waitFor({ state: 'hidden', timeout: 1000 })
+      .catch(() => {});
+  }
+
   // Click the icon - the click will bubble up to the PopoverTrigger parent
   await moreIcon.click();
 
@@ -25,4 +36,34 @@ export const clickMoreFormattingIcon = async (page: Page) => {
     .locator('[data-radix-popper-content-wrapper]')
     .filter({ has: page.locator('button[data-testid="horizontal-align"]') })
     .waitFor({ state: 'visible' });
+};
+
+/**
+ * Sets the horizontal alignment for the currently selected cell(s).
+ */
+export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Center' | 'Right') => {
+  await clickMoreFormattingIcon(page);
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
+  // Wait for the dropdown menu to appear
+  const menuItem = page.locator(`div[role="menuitem"]:has-text("${alignment}")`);
+  await menuItem.waitFor({ state: 'visible' });
+  await menuItem.click({ timeout: 60 * 1000 });
+  // Press Escape to close menus and wait for dropdown to close
+  await page.keyboard.press('Escape');
+  await page.locator('[data-radix-popper-content-wrapper]').waitFor({ state: 'hidden' });
+};
+
+/**
+ * Sets the text wrap mode for the currently selected cell(s).
+ */
+export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip') => {
+  await clickMoreFormattingIcon(page);
+  await page.locator('button[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
+  // Wait for the dropdown menu to appear
+  const menuItem = page.locator(`[role="menuitem"]:has-text("${wrap}")`);
+  await menuItem.waitFor({ state: 'visible' });
+  await menuItem.click({ timeout: 60 * 1000 });
+  // Press Escape to close menus and wait for dropdown to close
+  await page.keyboard.press('Escape');
+  await page.locator('[data-radix-popper-content-wrapper]').waitFor({ state: 'hidden' });
 };
