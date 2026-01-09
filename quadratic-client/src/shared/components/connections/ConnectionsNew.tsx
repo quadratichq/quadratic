@@ -78,6 +78,12 @@ export const ConnectionsNew = ({
           </div>
         </div>
       ))}
+
+      <p>
+        <Button variant="secondary" onClick={() => handleNavigateToCreatePotentialView('OTHER')}>
+          Suggest a connection…
+        </Button>
+      </p>
     </div>
   );
 };
