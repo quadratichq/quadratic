@@ -140,6 +140,7 @@ jobs:
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
           BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
+          PLAID_CREDENTIALS: "${{ secrets.PLAID_CREDENTIALS }}"
           SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
           SSL_CERT_DIR: /etc/ssl/certs
         run: |
