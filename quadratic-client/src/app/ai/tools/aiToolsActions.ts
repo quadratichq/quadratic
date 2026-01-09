@@ -703,6 +703,10 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetTextFormats]: async (args) => {
     try {
+      if (!args.formats || args.formats.length === 0) {
+        return [createTextContent('Error: At least one format entry is required.')];
+      }
+
       const formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[] = [];
       const descriptions: string[] = [];
 

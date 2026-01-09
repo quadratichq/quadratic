@@ -96,12 +96,5 @@
   },
   "engines": {
     "node": "24.x"
-  },
-  "overrides": {
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5"
-  },
-  "dependencies": {
-    "jotai": "^2.13.1"
   }
 }

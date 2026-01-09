@@ -325,26 +325,28 @@ export const AIToolsArgsSchema = {
     selection: z.string(),
   }),
   [AITool.SetTextFormats]: z.object({
-    formats: z.array(
-      z.object({
-        sheet_name: stringNullableOptionalSchema,
-        selection: stringSchema,
-        bold: booleanNullableOptionalSchema,
-        italic: booleanNullableOptionalSchema,
-        underline: booleanNullableOptionalSchema,
-        strike_through: booleanNullableOptionalSchema,
-        text_color: stringNullableOptionalSchema,
-        fill_color: stringNullableOptionalSchema,
-        align: stringNullableOptionalSchema,
-        vertical_align: stringNullableOptionalSchema,
-        wrap: stringNullableOptionalSchema,
-        numeric_commas: booleanNullableOptionalSchema,
-        number_type: stringNullableOptionalSchema,
-        currency_symbol: stringNullableOptionalSchema,
-        date_time: stringNullableOptionalSchema,
-        font_size: z.number().nullable().optional(),
-      })
-    ),
+    formats: z
+      .array(
+        z.object({
+          sheet_name: stringNullableOptionalSchema,
+          selection: stringSchema,
+          bold: booleanNullableOptionalSchema,
+          italic: booleanNullableOptionalSchema,
+          underline: booleanNullableOptionalSchema,
+          strike_through: booleanNullableOptionalSchema,
+          text_color: stringNullableOptionalSchema,
+          fill_color: stringNullableOptionalSchema,
+          align: stringNullableOptionalSchema,
+          vertical_align: stringNullableOptionalSchema,
+          wrap: stringNullableOptionalSchema,
+          numeric_commas: booleanNullableOptionalSchema,
+          number_type: stringNullableOptionalSchema,
+          currency_symbol: stringNullableOptionalSchema,
+          date_time: stringNullableOptionalSchema,
+          font_size: z.number().nullable().optional(),
+        })
+      )
+      .min(1),
   }),
   [AITool.GetTextFormats]: z.object({
     sheet_name: stringNullableOptionalSchema,
