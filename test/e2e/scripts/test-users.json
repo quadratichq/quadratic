@@ -373,6 +373,10 @@
       "password": "E2E_test"
     },
     {
+      "email": "e2e_inline_editor_alignment_chromium@quadratichq.com",
+      "password": "E2E_test"
+    },
+    {
       "email": "e2e_insert_delete_column_chromium@quadratichq.com",
       "password": "E2E_test"
     },
