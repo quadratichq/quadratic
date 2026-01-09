@@ -174,6 +174,7 @@ fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Re
         current::RunErrorMsgSchema::IndexOutOfBounds => RunErrorMsg::IndexOutOfBounds,
         current::RunErrorMsgSchema::NoMatch => RunErrorMsg::NoMatch,
         current::RunErrorMsgSchema::InvalidArgument => RunErrorMsg::InvalidArgument,
+        current::RunErrorMsgSchema::FormulaTooComplex => RunErrorMsg::FormulaTooComplex,
     };
 
     Ok(run_error_msg)
@@ -438,6 +439,7 @@ fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchem
         RunErrorMsg::IndexOutOfBounds => current::RunErrorMsgSchema::IndexOutOfBounds,
         RunErrorMsg::NoMatch => current::RunErrorMsgSchema::NoMatch,
         RunErrorMsg::InvalidArgument => current::RunErrorMsgSchema::InvalidArgument,
+        RunErrorMsg::FormulaTooComplex => current::RunErrorMsgSchema::FormulaTooComplex,
     }
 }
 
@@ -493,7 +495,7 @@ pub(crate) fn export_data_tables(
                             .collect(),
                     })
                 }
-                Value::Tuple(_) => {
+                Value::Tuple(_) | Value::Lambda(_) => {
                     current::OutputValueSchema::Single(current::CellValueSchema::Blank)
                 }
             };

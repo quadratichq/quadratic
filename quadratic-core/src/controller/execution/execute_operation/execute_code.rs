@@ -49,14 +49,23 @@ impl GridController {
             return;
         }
 
-        // Collect all existing ComputeCode operations and their positions
-        let mut existing_code_positions = Vec::new();
+        // Collect existing ComputeCode operations, separating those with code_runs
+        // from those that don't have code_runs yet (i.e., their SetDataTable hasn't executed)
+        let mut existing_code_positions_with_code_run = Vec::new();
+        let mut pending_compute_code_ops = Vec::new();
         let mut non_code_operations = Vec::new();
 
         for op in transaction.operations.iter() {
             match op {
                 Operation::ComputeCode { sheet_pos } => {
-                    existing_code_positions.push(*sheet_pos);
+                    // Only include in reordering if the code_run exists
+                    // (i.e., SetDataTable has already executed for this position)
+                    if self.code_run_at(sheet_pos).is_some() {
+                        existing_code_positions_with_code_run.push(*sheet_pos);
+                    } else {
+                        // Keep these in order - they're waiting for their SetDataTable
+                        pending_compute_code_ops.push(op.clone());
+                    }
                 }
                 _ => {
                     non_code_operations.push(op.clone());
@@ -64,8 +73,8 @@ impl GridController {
             }
         }
 
-        // Combine existing and new code positions, then reorder based on dependencies
-        let mut all_code_positions = existing_code_positions;
+        // Combine existing positions (that have code_runs) and new positions, then reorder
+        let mut all_code_positions = existing_code_positions_with_code_run;
         all_code_positions.extend(new_code_cell_positions);
 
         // Reorder all code operations based on dependencies
@@ -74,15 +83,21 @@ impl GridController {
 
         // Rebuild the operations queue:
         // 1. Add all non-code operations first (they maintain their relative order)
-        // 2. Add all code operations in dependency order after non-code operations
+        // 2. Add pending ComputeCode ops (whose SetDataTable hasn't executed yet)
+        // 3. Add code operations with code_runs in dependency order
         let mut new_operations = std::collections::VecDeque::new();
 
-        // Add non-code operations first
+        // Add non-code operations first (includes SetDataTable ops for pending formulas)
         for op in non_code_operations {
             new_operations.push_back(op);
         }
 
-        // Add code operations in dependency order after non-code operations
+        // Add pending ComputeCode operations (their SetDataTable is in non_code_operations)
+        for op in pending_compute_code_ops {
+            new_operations.push_back(op);
+        }
+
+        // Add code operations with code_runs in dependency order
         for pos in ordered_positions {
             new_operations.push_back(Operation::ComputeCode { sheet_pos: pos });
         }
