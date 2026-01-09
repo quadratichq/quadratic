@@ -782,6 +782,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreSetFormatsA1':
+        this.send({
+          type: 'coreClientSetFormatsA1',
+          id: e.data.id,
+          response: core.setFormatsA1(e.data.formatEntries, e.data.cursor, e.data.isAi),
+        });
+        return;
+
       case 'clientCoreResizeColumns':
         this.send({
           type: 'coreClientResizeColumns',

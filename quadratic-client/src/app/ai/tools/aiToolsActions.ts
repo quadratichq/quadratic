@@ -711,65 +711,89 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetTextFormats]: async (args) => {
     try {
-      let numericFormat: NumericFormat | null = null;
-      if (args.number_type !== undefined) {
-        const kind = args.number_type
-          ? expectedEnum<NumericFormatKind>(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL'])
-          : null;
-        if (kind) {
-          numericFormat = {
-            type: kind,
-            symbol: args.currency_symbol ?? null,
-          };
-        } else {
-          numericFormat = null;
+      if (!args.formats || args.formats.length === 0) {
+        return [createTextContent('Error: At least one format entry is required.')];
+      }
+
+      const formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[] = [];
+      const descriptions: string[] = [];
+
+      for (const formatEntry of args.formats) {
+        let numericFormat: NumericFormat | null = null;
+        if (formatEntry.number_type !== undefined) {
+          const kind = formatEntry.number_type
+            ? expectedEnum<NumericFormatKind>(formatEntry.number_type, [
+                'NUMBER',
+                'CURRENCY',
+                'PERCENTAGE',
+                'EXPONENTIAL',
+              ])
+            : null;
+          if (kind) {
+            numericFormat = {
+              type: kind,
+              symbol: formatEntry.currency_symbol ?? null,
+            };
+          } else {
+            numericFormat = null;
+          }
+        }
+        const formatUpdates = {
+          ...(formatEntry.bold !== undefined && { bold: formatEntry.bold }),
+          ...(formatEntry.italic !== undefined && { italic: formatEntry.italic }),
+          ...(formatEntry.underline !== undefined && { underline: formatEntry.underline }),
+          ...(formatEntry.strike_through !== undefined && { strike_through: formatEntry.strike_through }),
+          ...(formatEntry.text_color !== undefined && { text_color: formatEntry.text_color }),
+          ...(formatEntry.fill_color !== undefined && { fill_color: formatEntry.fill_color }),
+          ...(formatEntry.align !== undefined && {
+            align: formatEntry.align ? expectedEnum<CellAlign>(formatEntry.align, ['left', 'center', 'right']) : null,
+          }),
+          ...(formatEntry.vertical_align !== undefined && {
+            vertical_align: formatEntry.vertical_align
+              ? expectedEnum<CellVerticalAlign>(formatEntry.vertical_align, ['top', 'middle', 'bottom'])
+              : null,
+          }),
+          ...(formatEntry.wrap !== undefined && {
+            wrap: formatEntry.wrap ? expectedEnum<CellWrap>(formatEntry.wrap, ['wrap', 'overflow', 'clip']) : null,
+          }),
+          ...(formatEntry.numeric_commas !== undefined && { numeric_commas: formatEntry.numeric_commas }),
+          ...(formatEntry.number_type !== undefined && { numeric_format: numericFormat }),
+          ...(formatEntry.date_time !== undefined && { date_time: formatEntry.date_time }),
+          // Convert user-facing font size to internal (AI thinks in user-facing values like the UI)
+          ...(formatEntry.font_size !== undefined && {
+            font_size: formatEntry.font_size !== null ? formatEntry.font_size - FONT_SIZE_DISPLAY_ADJUSTMENT : null,
+          }),
+        } as FormatUpdate;
+
+        const sheetId = formatEntry.sheet_name
+          ? (sheets.getSheetByName(formatEntry.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+
+        formatEntries.push({
+          sheetId,
+          selection: formatEntry.selection,
+          formats: formatUpdates,
+        });
+
+        descriptions.push(`${formatEntry.selection}: ${describeFormatUpdates(formatUpdates, formatEntry)}`);
+      }
+
+      // Move AI cursor to the last selection
+      if (formatEntries.length > 0) {
+        const lastEntry = formatEntries[formatEntries.length - 1];
+        try {
+          const jsSelection = sheets.stringToSelection(lastEntry.selection, lastEntry.sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, lastEntry.sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
         }
       }
-      const formatUpdates = {
-        ...(args.bold !== undefined && { bold: args.bold }),
-        ...(args.italic !== undefined && { italic: args.italic }),
-        ...(args.underline !== undefined && { underline: args.underline }),
-        ...(args.strike_through !== undefined && { strike_through: args.strike_through }),
-        ...(args.text_color !== undefined && { text_color: args.text_color }),
-        ...(args.fill_color !== undefined && { fill_color: args.fill_color }),
-        ...(args.align !== undefined && {
-          align: args.align ? expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']) : null,
-        }),
-        ...(args.vertical_align !== undefined && {
-          vertical_align: args.vertical_align
-            ? expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom'])
-            : null,
-        }),
-        ...(args.wrap !== undefined && {
-          wrap: args.wrap ? expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']) : null,
-        }),
-        ...(args.numeric_commas !== undefined && { numeric_commas: args.numeric_commas }),
-        ...(args.number_type !== undefined && { numeric_format: numericFormat }),
-        ...(args.date_time !== undefined && { date_time: args.date_time }),
-        // Convert user-facing font size to internal (AI thinks in user-facing values like the UI)
-        ...(args.font_size !== undefined && {
-          font_size: args.font_size !== null ? args.font_size - FONT_SIZE_DISPLAY_ADJUSTMENT : null,
-        }),
-      } as FormatUpdate;
 
-      const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
-
-      // Move AI cursor to the cells being formatted
-      try {
-        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
-        const selectionString = jsSelection.save();
-        aiUser.updateSelection(selectionString, sheetId);
-      } catch (e) {
-        console.warn('Failed to update AI user selection:', e);
-      }
-
-      const response = await quadraticCore.setFormats(sheetId, args.selection, formatUpdates, true);
+      // Execute all formats in a single transaction
+      const response = await quadraticCore.setFormatsA1(formatEntries, true);
       if (response?.result) {
-        return [
-          createTextContent(
-            `Executed set formats tool on ${args.selection} for ${describeFormatUpdates(formatUpdates, args)} successfully.`
-          ),
-        ];
+        return [createTextContent(`Set formats completed successfully:\n${descriptions.join('\n')}`)];
       } else {
         return [createTextContent(`There was an error executing the set formats tool: ${response?.error}`)];
       }
