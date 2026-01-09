@@ -436,7 +436,15 @@ class InlineEditorHandler {
       strikeThrough
     );
 
-    this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);
+    // Calculate x position based on horizontal alignment
+    if (align === 'right') {
+      this.x = cellOutlineOffset + Math.min(x, x + cellContentWidth - inlineEditorWidth);
+    } else if (align === 'center') {
+      // Center the editor over the cell (works for both fitting and overflowing content)
+      this.x = cellOutlineOffset + x + (cellContentWidth - inlineEditorWidth) / 2;
+    } else {
+      this.x = cellOutlineOffset + x;
+    }
     this.y =
       cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;

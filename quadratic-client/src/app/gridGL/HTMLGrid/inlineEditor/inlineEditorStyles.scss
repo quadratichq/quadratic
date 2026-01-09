@@ -1,19 +1,22 @@
-#cell-edit .monaco-editor[data-text-align='left'] .view-lines .view-line span {
+// Text alignment - only apply when NOT in clip overflow mode
+// When content overflows in clip mode, horizontal scrolling is enabled which
+// conflicts with CSS text-align (text gets positioned outside visible scroll area)
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='left'] .view-lines .view-line span {
   width: 100%;
   text-align: left;
 }
 
-#cell-edit .monaco-editor[data-text-align='right'] .view-lines .view-line span {
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='right'] .view-lines .view-line span {
   width: 100%;
   text-align: right;
 }
 
-#cell-edit .monaco-editor[data-text-align='center'] .view-lines .view-line span {
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='center'] .view-lines .view-line span {
   width: 100%;
   text-align: center;
 }
 
-#cell-edit .monaco-editor[data-text-align='justify'] .view-lines .view-line span {
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='justify'] .view-lines .view-line span {
   width: 100%;
   text-align: justify;
 }
