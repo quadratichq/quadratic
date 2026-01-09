@@ -13,9 +13,6 @@ import {
 import { gotoCells } from './helpers/sheet.helper';
 
 test.describe('Inline Editor Text Alignment', () => {
-  // Run tests serially since they share the same email account and file name
-  test.describe.configure({ mode: 'serial' });
-
   const fileName = 'Inline Editor Alignment Test';
 
   test.beforeEach(async ({ page }) => {
