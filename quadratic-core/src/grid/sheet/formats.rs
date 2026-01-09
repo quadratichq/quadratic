@@ -276,7 +276,7 @@ mod tests {
         formats.fill_color = Some(fill_color);
 
         // Apply formats
-        let (reverse_ops, dirty_hashes, rows_to_resize, fills_changed) =
+        let (reverse_ops, dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills) =
             sheet.set_formats_a1(&formats);
 
         // Verify reverse operation
@@ -287,7 +287,7 @@ mod tests {
                 sheet_id,
                 formats: reverse_formats,
             } => {
-                assert_eq!(*sheet_id, sheet.id);
+                assert_eq!(sheet_id, &sheet.id);
                 // Reverse formats should have None values (clearing the formats we set)
                 assert!(reverse_formats.bold.is_some());
                 assert!(reverse_formats.fill_color.is_some());
@@ -303,8 +303,9 @@ mod tests {
         assert!(rows_to_resize.contains(&1));
         assert!(rows_to_resize.contains(&3));
 
-        // Verify fills_changed is true
-        assert!(fills_changed);
+        // Verify fill_bounds is some (finite fills applied)
+        assert!(fill_bounds.is_some());
+        assert!(!has_meta_fills);
 
         // Verify formats were actually applied
         assert_eq!(sheet.formats.bold.get(pos![A1]), Some(true));
@@ -336,10 +337,11 @@ mod tests {
         formats.align = Some(align);
 
         // Apply formats
-        let (_, _, _, fills_changed) = sheet.set_formats_a1(&formats);
+        let (_, _, _, fill_bounds, has_meta_fills) = sheet.set_formats_a1(&formats);
 
-        // Verify fills_changed is false
-        assert!(!fills_changed);
+        // Verify no fill changes occurred
+        assert!(fill_bounds.is_none());
+        assert!(!has_meta_fills);
     }
 
     #[test]
