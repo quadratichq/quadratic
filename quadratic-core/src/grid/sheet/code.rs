@@ -138,7 +138,7 @@ impl Sheet {
                             .collect::<Vec<CellValue>>()
                     })
                     .collect::<Vec<Vec<CellValue>>>(),
-                Value::Tuple(_) => vec![vec![]],
+                Value::Tuple(_) | Value::Lambda(_) => vec![vec![]],
             })
             .collect::<Vec<Vec<CellValue>>>()
             .into()

@@ -111,6 +111,7 @@ import type {
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
   CoreClientSetFormula,
+  CoreClientSetFormulas,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
@@ -564,6 +565,31 @@ class QuadraticCore {
         sheetId: options.sheetId,
         selection: options.selection,
         codeString: options.codeString,
+        cursor: sheets.getCursorPosition(),
+      });
+    });
+  }
+
+  // Sets multiple formulas in a single transaction (batched)
+  setFormulas(options: {
+    sheetId: string;
+    formulas: Array<{ selection: string; codeString: string }>;
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve, reject) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormulas) => {
+        if (message.error) {
+          reject(new Error(message.error));
+        }
+        resolve(message.transactionId);
+      };
+      // Convert to tuple format expected by Rust: [selection, code_string]
+      const formulas: Array<[string, string]> = options.formulas.map((f) => [f.selection, f.codeString]);
+      this.send({
+        type: 'clientCoreSetFormulas',
+        id,
+        sheetId: options.sheetId,
+        formulas,
         cursor: sheets.getCursorPosition(),
       });
     });

@@ -12,10 +12,7 @@ import {
 } from './helpers/inlineEditor.helper';
 import { gotoCells } from './helpers/sheet.helper';
 
-test.describe('Inline Editor Text Alignment', () => {
-  // Run tests serially since they share the same email account and file name
-  test.describe.configure({ mode: 'serial' });
-
+test.describe.serial('Inline Editor Text Alignment', () => {
   const fileName = 'Inline Editor Alignment Test';
 
   test.beforeEach(async ({ page }) => {
@@ -38,217 +35,158 @@ test.describe('Inline Editor Text Alignment', () => {
     await cleanUpFiles(page, { fileName });
   });
 
-  test('Short right-aligned text in clip mode should be right-aligned while editing', async ({ page }) => {
-    const shortText = 'Hi';
+  test('Right-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
     const cell = 'A1';
 
-    // Enter short text
+    // Test 1: Short right-aligned text
+    const shortText = 'Hi';
     await typeInCell(page, { a1: cell, text: shortText });
-
-    // Select the cell and set formatting
     await gotoCells(page, { a1: cell });
     await setHorizontalAlignment(page, 'Right');
     await setTextWrap(page, 'Clip');
-
-    // Open cell for editing
     await openCellForEditing(page, cell);
 
-    // Assert the editor is right-aligned (or at least not overflowing left)
-    const isOverflowing = await isInlineEditorOverflowing(page, cell);
+    // Short text should not overflow
+    let isOverflowing = await isInlineEditorOverflowing(page, cell);
     expect(isOverflowing).toBe(false);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('short-right-aligned-clip-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
-  });
 
-  test('Long right-aligned text in clip mode should support scrolling', async ({ page }) => {
+    // Test 2: Long right-aligned text
     const longText = 'This is a very long text that will definitely overflow the cell bounds';
-    const cell = 'A1';
-
-    // Enter long text
-    await typeInCell(page, { a1: cell, text: longText });
-
-    // Select the cell and set formatting
-    await gotoCells(page, { a1: cell });
+    await gotoCells(page, { a1: 'B1' });
+    await typeInCell(page, { a1: 'B1', text: longText });
+    await gotoCells(page, { a1: 'B1' });
     await setHorizontalAlignment(page, 'Right');
     await setTextWrap(page, 'Clip');
-
-    // Open cell for editing
-    await openCellForEditing(page, cell);
+    await openCellForEditing(page, 'B1');
 
     // The editor should be visible and functional
     const editorBounds = await getInlineEditorBounds(page);
     expect(editorBounds.width).toBeGreaterThan(0);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('long-right-aligned-clip-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
   });
 
-  test('Short center-aligned text in clip mode should be centered while editing', async ({ page }) => {
-    const shortText = 'Center';
+  test('Center-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
     const cell = 'A1';
 
-    // Enter short text
+    // Test 1: Short center-aligned text
+    const shortText = 'Center';
     await typeInCell(page, { a1: cell, text: shortText });
-
-    // Select the cell and set formatting
     await gotoCells(page, { a1: cell });
     await setHorizontalAlignment(page, 'Center');
     await setTextWrap(page, 'Clip');
-
-    // Open cell for editing
     await openCellForEditing(page, cell);
 
     // Short centered text should not overflow
-    const isOverflowing = await isInlineEditorOverflowing(page, cell);
+    let isOverflowing = await isInlineEditorOverflowing(page, cell);
     expect(isOverflowing).toBe(false);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('short-center-aligned-clip-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
-  });
 
-  test('Long center-aligned text in clip mode should expand and be centered over the cell', async ({ page }) => {
+    // Test 2: Long center-aligned text
     const longText = 'This is centered text that overflows the cell bounds completely';
-    const cell = 'A1';
-
-    // Enter long text
-    await typeInCell(page, { a1: cell, text: longText });
-
-    // Select the cell and set formatting
-    await gotoCells(page, { a1: cell });
+    await gotoCells(page, { a1: 'B1' });
+    await typeInCell(page, { a1: 'B1', text: longText });
+    await gotoCells(page, { a1: 'B1' });
     await setHorizontalAlignment(page, 'Center');
     await setTextWrap(page, 'Clip');
-
-    // Open cell for editing
-    await openCellForEditing(page, cell);
+    await openCellForEditing(page, 'B1');
 
     // The editor should expand to fit the content
-    const isOverflowing = await isInlineEditorOverflowing(page, cell);
+    isOverflowing = await isInlineEditorOverflowing(page, 'B1');
     expect(isOverflowing).toBe(true);
 
     // The editor should be centered over the cell
-    await assertInlineEditorAlignment(page, cell, 'center', 15);
+    await assertInlineEditorAlignment(page, 'B1', 'center', 15);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('long-center-aligned-clip-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
   });
 
-  test('Short left-aligned text in clip mode should be left-aligned while editing', async ({ page }) => {
-    const shortText = 'Left';
+  test('Left-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
     const cell = 'A1';
 
-    // Enter short text
+    // Test 1: Short left-aligned text
+    const shortText = 'Left';
     await typeInCell(page, { a1: cell, text: shortText });
-
-    // Select the cell and set formatting
     await gotoCells(page, { a1: cell });
     await setHorizontalAlignment(page, 'Left');
     await setTextWrap(page, 'Clip');
-
-    // Open cell for editing
     await openCellForEditing(page, cell);
 
     // Short left-aligned text should not overflow
-    const isOverflowing = await isInlineEditorOverflowing(page, cell);
+    let isOverflowing = await isInlineEditorOverflowing(page, cell);
     expect(isOverflowing).toBe(false);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('short-left-aligned-clip-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
-  });
 
-  test('Long left-aligned text in clip mode should support scrolling', async ({ page }) => {
+    // Test 2: Long left-aligned text
     const longText = 'This is left-aligned text that will overflow the cell width';
-    const cell = 'A1';
-
-    // Enter long text
-    await typeInCell(page, { a1: cell, text: longText });
-
-    // Select the cell and set formatting
-    await gotoCells(page, { a1: cell });
+    await gotoCells(page, { a1: 'B1' });
+    await typeInCell(page, { a1: 'B1', text: longText });
+    await gotoCells(page, { a1: 'B1' });
     await setHorizontalAlignment(page, 'Left');
     await setTextWrap(page, 'Clip');
-
-    // Open cell for editing
-    await openCellForEditing(page, cell);
+    await openCellForEditing(page, 'B1');
 
     // The editor should be visible and functional
     const editorBounds = await getInlineEditorBounds(page);
     expect(editorBounds.width).toBeGreaterThan(0);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('long-left-aligned-clip-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
   });
 
-  test('Numbers in narrow column should handle right-alignment correctly', async ({ page }) => {
+  test('Numbers and overflow mode should handle right-alignment correctly', async ({ page }) => {
+    // Test 1: Numbers in narrow column
     const number = '123.45';
     const cell = 'A1';
-
-    // Enter a number (numbers default to right-align and clip)
     await typeInCell(page, { a1: cell, text: number });
-
-    // Open cell for editing
     await openCellForEditing(page, cell);
 
     // The editor should be visible
-    const editorBounds = await getInlineEditorBounds(page);
+    let editorBounds = await getInlineEditorBounds(page);
     expect(editorBounds.width).toBeGreaterThan(0);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('number-right-aligned-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
-  });
 
-  test('Overflow mode with right-alignment should expand editor width', async ({ page }) => {
+    // Test 2: Overflow mode with right-alignment
     const longText = 'This text should overflow and expand the editor';
-    const cell = 'A1';
-
-    // Enter long text
-    await typeInCell(page, { a1: cell, text: longText });
-
-    // Select the cell and set formatting
-    await gotoCells(page, { a1: cell });
+    await gotoCells(page, { a1: 'B1' });
+    await typeInCell(page, { a1: 'B1', text: longText });
+    await gotoCells(page, { a1: 'B1' });
     await setHorizontalAlignment(page, 'Right');
     // Default wrap is 'overflow', so no need to set it
-
-    // Open cell for editing
-    await openCellForEditing(page, cell);
+    await openCellForEditing(page, 'B1');
 
     // The editor should expand to fit the content
-    const isOverflowing = await isInlineEditorOverflowing(page, cell);
+    const isOverflowing = await isInlineEditorOverflowing(page, 'B1');
     expect(isOverflowing).toBe(true);
 
-    // Take a screenshot for visual verification
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('long-right-aligned-overflow-editing.png', {
       maxDiffPixels: 500,
     });
-
     await closeInlineEditor(page);
   });
 });

@@ -101,7 +101,11 @@ export type JsRenderCell = { x: bigint, y: bigint, value: string,
 /**
  * Code language, set only for the top left cell of a code output.
  */
-language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, };
+language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, 
+/**
+ * Error text to display (e.g., "#N/A", "#DIV/0!", "#REF!")
+ */
+errorText: string | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, };
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
 export type JsRenderCodeCell = { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, is_code: boolean, is_html: boolean, is_html_image: boolean, show_name: boolean, show_columns: boolean, last_modified: bigint, };
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";
@@ -151,7 +155,7 @@ span: Span | null,
  * Type of error.
  */
 msg: RunErrorMsg, };
-export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity";
+export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity" | "FormulaTooComplex";
 export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, };
 export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetId = { id: string, };
