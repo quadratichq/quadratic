@@ -496,12 +496,13 @@ export const Component = () => {
           {step === 'describe' && (
             <>
               <div className="mb-6 text-center">
-                <h1 className="text-3xl font-bold">Let's build your spreadsheet</h1>
+                <h1 className="mb-2 text-3xl font-bold">Start with AI</h1>
+                <p className="text-base text-muted-foreground">Let's build your spreadsheet.</p>
               </div>
 
               {/* Data section */}
               <div className="mb-6 space-y-2">
-                <h3 className="text-base font-medium text-foreground">Start by importing your data</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
@@ -608,7 +609,7 @@ export const Component = () => {
               <div className="mb-6 space-y-2">
                 {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
                   <>
-                    <h3 className="text-base font-medium text-foreground">Example searches</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
                     <div className="flex flex-col gap-2">
                       {WEB_SEARCH_EXAMPLES.map((query, index) => (
                         <button
@@ -625,10 +626,10 @@ export const Component = () => {
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-medium text-foreground">
+                      <h3 className="text-sm font-medium text-muted-foreground">
                         {uploadedFiles.length > 0 || selectedConnection
                           ? 'Suggestions based on your data'
-                          : 'Or start with a suggested prompt'}
+                          : 'Suggested prompts'}
                       </h3>
                       {isLoadingSuggestions && (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
