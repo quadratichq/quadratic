@@ -36,14 +36,14 @@ export const clickMoreFormattingIcon = async (page: Page) => {
   // Wait for the popover content containing the horizontal-align button to be visible
   await page
     .locator('[data-radix-popper-content-wrapper]')
-    .filter({ has: page.locator('button[data-testid="horizontal-align"]') })
+    .filter({ has: page.locator('[data-testid="horizontal-align"]') })
     .waitFor({ state: 'visible' });
 };
 
 // Helper to click a formatting button, ensuring the more menu is opened first if needed
 const clickFormattingButton = async (page: Page, testId: string) => {
   await clickMoreFormattingIcon(page);
-  await page.locator(`button[data-testid="${testId}"]`).click();
+  await page.locator(`[data-testid="${testId}"]`).click();
 };
 
 // Helper to click a dropdown trigger and then a menu item
@@ -274,7 +274,7 @@ export const clickClearFormatting = async (page: Page) => {
  */
 export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Center' | 'Right') => {
   await clickMoreFormattingIcon(page);
-  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   // Wait for the dropdown menu to appear
   const menuItem = page.locator(`div[role="menuitem"]:has-text("${alignment}")`);
   await menuItem.waitFor({ state: 'visible' });
@@ -289,7 +289,7 @@ export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Ce
  */
 export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip') => {
   await clickMoreFormattingIcon(page);
-  await page.locator('button[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="text-wrap"]').click({ timeout: 60 * 1000 });
   // Wait for the dropdown menu to appear
   const menuItem = page.locator(`[role="menuitem"]:has-text("${wrap}")`);
   await menuItem.waitFor({ state: 'visible' });
