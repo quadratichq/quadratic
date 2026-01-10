@@ -35,7 +35,7 @@ test.describe.serial('Inline Editor Text Alignment', () => {
     await cleanUpFiles(page, { fileName });
   });
 
-  test.only('Right-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
+  test('Right-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
     const cell = 'A1';
 
     // Test 1: Short right-aligned text
