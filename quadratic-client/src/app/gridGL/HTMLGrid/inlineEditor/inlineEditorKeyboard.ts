@@ -198,6 +198,22 @@ class InlineEditorKeyboard {
       }
     }
 
+    // Cmd/Ctrl+Enter key - insert new line for non-formulas
+    else if (matchShortcut(Action.InsertNewLine, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      // For formulas, Cmd/Ctrl+Enter saves the editor (same as Enter)
+      if (inlineEditorHandler.isEditingFormula()) {
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close({ deltaY: 1 });
+        }
+      } else {
+        // For non-formulas, insert a new line
+        inlineEditorMonaco.insertTextAtCursor('\n');
+        inlineEditorHandler.sendMultiplayerUpdate();
+      }
+    }
+
     // toggle arrow mode
     else if (matchShortcut(Action.ToggleArrowMode, e)) {
       e.stopPropagation();
@@ -296,14 +312,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleItalic, e)) {
       e.preventDefault();
       e.stopPropagation();
-      inlineEditorHandler.toggleItalics();
-      if (inlineEditorHandler.location) {
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleItalicForSelection()) {
+        inlineEditorHandler.toggleItalics();
+        if (inlineEditorHandler.location) {
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic, false);
+        }
       }
     }
 
@@ -311,14 +330,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleBold, e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (inlineEditorHandler.location) {
-        inlineEditorHandler.toggleBold();
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleBoldForSelection()) {
+        if (inlineEditorHandler.location) {
+          inlineEditorHandler.toggleBold();
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold, false);
+        }
       }
     }
 
@@ -326,14 +348,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleUnderline, e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (inlineEditorHandler.location) {
-        inlineEditorHandler.toggleUnderline();
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleUnderlineForSelection()) {
+        if (inlineEditorHandler.location) {
+          inlineEditorHandler.toggleUnderline();
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline, false);
+        }
       }
     }
 
@@ -341,14 +366,17 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleStrikeThrough, e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (inlineEditorHandler.location) {
-        inlineEditorHandler.toggleStrikeThrough();
-        const selection = getSingleSelection(
-          inlineEditorHandler.location.sheetId,
-          inlineEditorHandler.location.x,
-          inlineEditorHandler.location.y
-        );
-        quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
+      // If there's a text selection, apply span formatting instead of cell formatting
+      if (!inlineEditorHandler.toggleStrikeThroughForSelection()) {
+        if (inlineEditorHandler.location) {
+          inlineEditorHandler.toggleStrikeThrough();
+          const selection = getSingleSelection(
+            inlineEditorHandler.location.sheetId,
+            inlineEditorHandler.location.x,
+            inlineEditorHandler.location.y
+          );
+          quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
+        }
       }
     }
 
@@ -426,6 +454,15 @@ class InlineEditorKeyboard {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       inlineEditorMonaco.insertTextAtCursor(formattedTime);
+    } else if (matchShortcut(Action.InsertHyperlink, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      // Get selection info and emit event to open hyperlink editor
+      const selection = inlineEditorMonaco.getSelection();
+      events.emit('insertLinkInline', {
+        selectedText: selection?.text ?? '',
+        selectionRange: selection?.range,
+      });
     }
 
     // Fallback for all other keys (used to end cursorIsMoving and return

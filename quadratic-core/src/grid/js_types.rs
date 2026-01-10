@@ -72,6 +72,7 @@ pub enum JsCellValueKind {
     Error,
     Html,
     Image,
+    RichText,
 }
 
 impl From<CellValue> for JsCellValueKind {
@@ -89,6 +90,7 @@ impl From<CellValue> for JsCellValueKind {
             CellValue::Error(_) => JsCellValueKind::Error,
             CellValue::Html(_) => JsCellValueKind::Html,
             CellValue::Image(_) => JsCellValueKind::Image,
+            CellValue::RichText(_) => JsCellValueKind::RichText,
         }
     }
 }
@@ -97,6 +99,8 @@ impl From<CellValue> for JsCellValueKind {
 pub struct JsCellValue {
     pub value: String,
     pub kind: JsCellValueKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spans: Option<Vec<crate::cellvalue::TextSpan>>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -171,6 +175,47 @@ pub struct JsChartContext {
     pub spill: bool,
 }
 
+/// A hyperlink span within a cell, with character range and URL.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsRenderCellLinkSpan {
+    /// Start character index (inclusive).
+    pub start: u32,
+    /// End character index (exclusive).
+    pub end: u32,
+    /// The hyperlink URL.
+    pub url: String,
+}
+
+/// A formatting span within a cell, with character range and style overrides.
+/// These override the cell-level formatting for the specified character range.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsRenderCellFormatSpan {
+    /// Start character index (inclusive).
+    pub start: u32,
+    /// End character index (exclusive).
+    pub end: u32,
+    /// Bold override (None means use cell default).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+    /// Italic override (None means use cell default).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+    /// Underline override (None means use cell default).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
+    /// Strike-through override (None means use cell default).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strike_through: Option<bool>,
+    /// Text color override (None means use cell default).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_color: Option<String>,
+    /// Hyperlink URL (None means no link).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link: Option<String>,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
@@ -211,6 +256,12 @@ pub struct JsRenderCell {
     pub table_name: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub column_header: Option<bool>,
+    /// Hyperlink spans for RichText cells with hyperlinks (character ranges + URLs).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub link_spans: Vec<JsRenderCellLinkSpan>,
+    /// Formatting spans for RichText cells with inline formatting overrides.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub format_spans: Vec<JsRenderCellFormatSpan>,
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { gridToDataTable } from '@/app/actions/dataTableSpec';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { FILE_INPUT_ID } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -13,6 +14,7 @@ import {
   CheckBoxIcon,
   DataValidationsIcon,
   FormatDateTimeIcon,
+  InsertLinkIcon,
   ScheduledTasksIcon,
   SheetIcon,
   TableConvertIcon,
@@ -33,6 +35,7 @@ type InsertActionSpec = Pick<
   | Action.InsertDropdown
   | Action.ToggleDataValidation
   | Action.InsertScheduledTask
+  | Action.InsertHyperlink
   | Action.InsertCellReference
   | Action.RemoveInsertedCells
   | Action.InsertToday
@@ -333,6 +336,14 @@ export const insertActionsSpec: InsertActionSpec = {
     run: async () => {
       const { showScheduledTasksDialog, CREATE_TASK_ID } = await import('@/jotai/scheduledTasksAtom');
       showScheduledTasksDialog(CREATE_TASK_ID);
+    },
+  },
+  [Action.InsertHyperlink]: {
+    label: () => 'Hyperlink',
+    labelVerbose: 'Insert hyperlink',
+    Icon: InsertLinkIcon,
+    run: () => {
+      events.emit('insertLink');
     },
   },
   [Action.InsertCellReference]: {

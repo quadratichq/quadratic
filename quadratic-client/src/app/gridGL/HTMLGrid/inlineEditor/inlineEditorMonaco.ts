@@ -3,6 +3,7 @@
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { emojiMap } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -84,7 +85,7 @@ class InlineEditorMonaco {
     return this.editor.getValue();
   };
 
-  // Sets the value of the inline editor and moves the cursor to the end.
+  // Sets the value of the inline editor and moves the cursor to the end of the entire text.
   set(s: string, select?: boolean | number) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setValue');
@@ -94,10 +95,13 @@ class InlineEditorMonaco {
     // set the edited value on the div for playwright
     document.querySelector('#cell-edit')?.setAttribute('data-test-value', s);
 
-    this.setColumn(s.length + 1);
+    // Move cursor to the end of the last line (handles multiline content)
+    const model = this.getModel();
+    const lineCount = model.getLineCount();
+    const lastLineMaxColumn = model.getLineMaxColumn(lineCount);
+    this.editor.setPosition({ lineNumber: lineCount, column: lastLineMaxColumn });
+
     if (select !== undefined && select !== false) {
-      const model = this.getModel();
-      const lineCount = model.getLineCount();
       const maxColumns = model.getLineMaxColumn(lineCount);
       const range = new monaco.Range(1, select !== true ? select : 1, lineCount, maxColumns);
       this.editor.setSelection(range);
@@ -142,7 +146,8 @@ class InlineEditorMonaco {
     verticalAlign: CellVerticalAlign,
     textWrap: CellWrap,
     underline: boolean,
-    strikeThrough: boolean
+    strikeThrough: boolean,
+    formula: boolean
   ): { width: number; height: number } => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
@@ -176,8 +181,7 @@ class InlineEditorMonaco {
       paddingTop = Math.max(height - contentHeight, 0);
     }
 
-    // Calculate padding that scales with font size
-    // Get the actual font size being used
+    // Get the actual font size and family being used
     const fontSize = this.editor.getOption(monaco.editor.EditorOption.fontSize);
     const fontFamily = this.editor.getOption(monaco.editor.EditorOption.fontFamily);
 
@@ -192,9 +196,8 @@ class InlineEditorMonaco {
     let measuredWidth = 0;
 
     if (context) {
-      context.font = `${fontSize}px ${fontFamily}`;
-      const metrics = context.measureText(text);
-      measuredWidth = metrics.width + scaledPadding;
+      // Measure width accounting for span formatting (bold text is wider)
+      measuredWidth = this.measureTextWithSpans(context, text, fontSize, fontFamily) + scaledPadding;
     } else {
       // Fallback to scrollWidth if canvas is not available
       measuredWidth = textarea.scrollWidth + scaledPadding;
@@ -228,8 +231,14 @@ class InlineEditorMonaco {
       this.editor.setScrollLeft(0);
     }
 
-    // Expand width for 'overflow' mode, or for centered clip mode (so text appears centered over cell)
-    if (textWrap === 'overflow' || (textWrap === 'clip' && textAlign === 'center' && contentOverflows)) {
+    // For formulas, always expand width with content (ignoring textWrap setting)
+    // Also expand for 'overflow' mode, or for centered clip mode (so text appears centered over cell)
+    // Note: Centered text in clip mode cannot be both clipped AND centered while editing,
+    // because horizontal scrolling (needed for clipping) conflicts with centering.
+    // We prioritize centering over clipping for centered text while editing.
+    const shouldExpandWidth =
+      formula || textWrap === 'overflow' || (textWrap === 'clip' && textAlign === 'center' && contentOverflows);
+    if (shouldExpandWidth) {
       width = Math.max(width, measuredWidth);
     }
     height = Math.max(contentHeight, height);
@@ -237,8 +246,8 @@ class InlineEditorMonaco {
     const viewportRectangle = pixiApp.getViewportRectangle();
     const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
     if (width > maxWidthDueToViewport) {
-      // For 'clip' mode, keep it clipped; for others, force wrap if needed
-      if (textWrap === 'clip') {
+      // For formulas or 'clip' mode, clamp to viewport edge without wrapping
+      if (formula || textWrap === 'clip') {
         width = Math.min(width, maxWidthDueToViewport);
       } else {
         textWrap = 'wrap';
@@ -254,6 +263,82 @@ class InlineEditorMonaco {
     this.editor.layout({ width, height });
 
     return { width, height };
+  };
+
+  /**
+   * Measure text width accounting for span formatting.
+   * Bold text is wider than regular text, so we need to measure each span separately.
+   * Uses Monaco's font family as the base for gaps between spans.
+   */
+  private measureTextWithSpans = (
+    context: CanvasRenderingContext2D,
+    text: string,
+    fontSize: number,
+    defaultFontFamily: string
+  ): number => {
+    const spans = inlineEditorSpans.getSpans();
+
+    // If no spans or spans are inactive, measure with default font
+    if (!inlineEditorSpans.isActive() || spans.length === 0) {
+      context.font = `${fontSize}px ${defaultFontFamily}`;
+      return context.measureText(text).width;
+    }
+
+    // Get the cell's default bold/italic state from the Monaco font family
+    const defaultBold = defaultFontFamily.includes('Bold');
+    const defaultItalic = defaultFontFamily.includes('Italic');
+
+    let totalWidth = 0;
+    let lastEnd = 0;
+
+    // Sort spans by start position
+    const sortedSpans = [...spans].sort((a, b) => a.start - b.start);
+
+    for (const span of sortedSpans) {
+      // Measure any gap before this span with default font
+      if (span.start > lastEnd) {
+        const gapText = text.slice(lastEnd, span.start);
+        context.font = `${fontSize}px ${defaultFontFamily}`;
+        totalWidth += context.measureText(gapText).width;
+      }
+
+      // Measure the span with its appropriate font
+      // Span formatting overrides cell defaults, undefined means use cell default
+      const clampedEnd = Math.min(span.end, text.length);
+      const spanText = text.slice(span.start, clampedEnd);
+      if (spanText) {
+        const spanBold = span.bold !== undefined ? span.bold : defaultBold;
+        const spanItalic = span.italic !== undefined ? span.italic : defaultItalic;
+        const fontFamily = this.getFontFamilyForSpan(spanBold, spanItalic);
+        context.font = `${fontSize}px ${fontFamily}`;
+        totalWidth += context.measureText(spanText).width;
+      }
+
+      lastEnd = Math.max(lastEnd, clampedEnd);
+    }
+
+    // Measure any remaining text after the last span
+    if (lastEnd < text.length) {
+      const remainingText = text.slice(lastEnd);
+      context.font = `${fontSize}px ${defaultFontFamily}`;
+      totalWidth += context.measureText(remainingText).width;
+    }
+
+    return totalWidth;
+  };
+
+  /**
+   * Get the font family name based on bold and italic formatting.
+   */
+  private getFontFamilyForSpan = (bold: boolean, italic: boolean): string => {
+    if (bold && italic) {
+      return 'OpenSans-BoldItalic';
+    } else if (bold) {
+      return 'OpenSans-Bold';
+    } else if (italic) {
+      return 'OpenSans-Italic';
+    }
+    return 'OpenSans';
   };
 
   removeSelection() {
@@ -386,6 +471,13 @@ class InlineEditorMonaco {
     model.applyEdits([{ range, text }]);
     this.setColumn(column + text.length);
     return column;
+  }
+
+  // Inserts text at a specific position.
+  insertTextAtPosition(position: monaco.Position, text: string) {
+    const model = this.getModel();
+    const range = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+    model.applyEdits([{ range, text }]);
   }
 
   getLastColumn(): number {
@@ -618,16 +710,21 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
+    this.editor.onDidChangeCursorSelection(() => {
+      inlineEditorHandler.updateSelectionFormatting();
+    });
     this.editor.onMouseDown(() => {
       inlineEditorKeyboard.resetKeyboardPosition();
       pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
     });
-    this.editor.onDidChangeModelContent(() => {
+    this.editor.onDidChangeModelContent((e) => {
       this.convertEmojis();
       // Don't emit valueChanged if we're in the middle of emoji conversion
       // as the conversion will trigger another model change that will emit
       if (!this.processingEmojiConversion) {
         inlineEditorEvents.emit('valueChanged', this.get());
+        // Update hyperlink span positions based on content changes
+        inlineEditorEvents.emit('contentChanged', e.changes);
       }
     });
   }

@@ -71,6 +71,7 @@
     "raindrop-ai": "^0.0.59",
     "stripe": "^14.24.0",
     "supertest": "^6.3.3",
+    "unfurl.js": "^6.4.0",
     "winston": "^3.17.0",
     "zod": "^3.25.3"
   },
@@ -92,6 +93,7 @@
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
     "dotenv-cli": "^7.1.0",
+    "nock": "^14.0.10",
     "prisma": "^6.17.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

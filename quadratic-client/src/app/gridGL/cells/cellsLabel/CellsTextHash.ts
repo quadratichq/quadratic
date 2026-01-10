@@ -192,7 +192,8 @@ export class CellsTextHash extends Container {
         link.textRectangle.height
       );
       const isLink = intersects.rectanglePoint(textRectangle, world);
-      if (isLink) return { pos: link.pos, textRectangle };
+      if (isLink)
+        return { pos: link.pos, textRectangle, url: link.url, linkText: link.linkText, isNakedUrl: link.isNakedUrl };
     }
     return undefined;
   };
