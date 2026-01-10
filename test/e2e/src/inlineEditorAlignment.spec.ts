@@ -35,7 +35,7 @@ test.describe.serial('Inline Editor Text Alignment', () => {
     await cleanUpFiles(page, { fileName });
   });
 
-  test('Right-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
+  test.only('Right-aligned text in clip mode should handle short and long text correctly', async ({ page }) => {
     const cell = 'A1';
 
     // Test 1: Short right-aligned text
@@ -47,7 +47,7 @@ test.describe.serial('Inline Editor Text Alignment', () => {
     await openCellForEditing(page, cell);
 
     // Short text should not overflow
-    let isOverflowing = await isInlineEditorOverflowing(page, cell);
+    const isOverflowing = await isInlineEditorOverflowing(page, cell);
     expect(isOverflowing).toBe(false);
 
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('short-right-aligned-clip-editing.png', {
@@ -128,7 +128,7 @@ test.describe.serial('Inline Editor Text Alignment', () => {
     await openCellForEditing(page, cell);
 
     // Short left-aligned text should not overflow
-    let isOverflowing = await isInlineEditorOverflowing(page, cell);
+    const isOverflowing = await isInlineEditorOverflowing(page, cell);
     expect(isOverflowing).toBe(false);
 
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('short-left-aligned-clip-editing.png', {
@@ -163,7 +163,7 @@ test.describe.serial('Inline Editor Text Alignment', () => {
     await openCellForEditing(page, cell);
 
     // The editor should be visible
-    let editorBounds = await getInlineEditorBounds(page);
+    const editorBounds = await getInlineEditorBounds(page);
     expect(editorBounds.width).toBeGreaterThan(0);
 
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('number-right-aligned-editing.png', {
