@@ -5,9 +5,9 @@ export type UserFilesListType = null | 'team' | 'private' | 'shared';
 export type UserFilesListFilters = {
   fileName: string;
   fileType: UserFilesListType;
-  fileCreator: null | string;
-  sharedPublicly?: boolean;
-  hasScheduledTasks?: boolean;
+  fileCreatorEmails: string[];
+  sharedPublicly: boolean;
+  hasScheduledTasks: boolean;
 };
 
 // Helper to get initial fileType from URL search params
@@ -25,8 +25,15 @@ function getInitialFileType(): UserFilesListType {
 export const defaultUserFilesListFilters: UserFilesListFilters = {
   fileName: '',
   fileType: getInitialFileType(),
-  fileCreator: null,
+  fileCreatorEmails: [],
   sharedPublicly: false,
+  hasScheduledTasks: false,
 };
 
 export const userFilesListFiltersAtom = atom<UserFilesListFilters>(defaultUserFilesListFilters);
+
+// Derived atom that checks if "other filters" (dropdown filters) are active
+export const hasFiltersAppliedAtom = atom((get) => {
+  const filters = get(userFilesListFiltersAtom);
+  return filters.hasScheduledTasks || filters.sharedPublicly || filters.fileCreatorEmails.length > 0;
+});

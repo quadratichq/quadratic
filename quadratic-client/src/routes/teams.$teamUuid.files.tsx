@@ -9,16 +9,19 @@ import { useLoaderData, type LoaderFunctionArgs } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClient.files.list({ shared: 'with-me' });
-  const sharedWithMeFiles = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
-    name,
-    thumbnail,
-    createdDate,
-    updatedDate,
-    uuid,
-    publicLinkAccess,
-    permissions: [],
-    fileType: 'shared',
-  }));
+  const sharedWithMeFiles = files.map(
+    ({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail, hasScheduledTasks }) => ({
+      hasScheduledTasks,
+      name,
+      thumbnail,
+      createdDate,
+      updatedDate,
+      uuid,
+      publicLinkAccess,
+      permissions: [],
+      fileType: 'shared',
+    })
+  );
   return { sharedWithMeFiles };
 };
 
@@ -63,6 +66,7 @@ export const Component = () => {
     teamFiles.forEach(({ file, userMakingRequest }) => {
       const creator = usersById[file.creatorId];
       allFiles.push({
+        hasScheduledTasks: file.hasScheduledTasks,
         name: file.name,
         createdDate: file.createdDate,
         updatedDate: file.updatedDate,
@@ -78,6 +82,7 @@ export const Component = () => {
     // Add personal files
     filesPrivate.forEach(({ file, userMakingRequest }) => {
       allFiles.push({
+        hasScheduledTasks: file.hasScheduledTasks,
         name: file.name,
         createdDate: file.createdDate,
         updatedDate: file.updatedDate,
@@ -94,7 +99,7 @@ export const Component = () => {
     const existingUuids = new Set(allFiles.map((f) => f.uuid));
     sharedWithMeFiles.forEach((file) => {
       if (!existingUuids.has(file.uuid)) {
-        allFiles.push({ ...file, fileType: 'shared' });
+        allFiles.push({ ...file, hasScheduledTasks: file.hasScheduledTasks, fileType: 'shared' });
       }
     });
 

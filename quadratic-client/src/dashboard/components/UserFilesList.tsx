@@ -38,6 +38,7 @@ export type UserFilesListFile = {
   publicLinkAccess: PublicLinkAccess;
   permissions: FilePermission[];
   thumbnail: string | null;
+  hasScheduledTasks: boolean;
   updatedDate: string;
   uuid: string;
   creator?: FileCreator;
@@ -50,7 +51,6 @@ export function UserFilesList({
   teamUuid,
 }: {
   files: UserFilesListFile[];
-
   teamUuid?: string;
 }) {
   const { pathname } = useLocation();
@@ -122,11 +122,16 @@ export function UserFilesList({
     filesToRender = filesToRender.filter((file) => file.publicLinkAccess !== 'NOT_SHARED');
   }
 
+  // Filter by scheduled tasks
+  if (filters.hasScheduledTasks) {
+    filesToRender = filesToRender.filter((file) => file.hasScheduledTasks);
+  }
+
   // Filter by file creator
-  if (filters.fileCreator !== null) {
-    filesToRender = filesToRender.filter((file) => {
-      return file.creator?.email === filters.fileCreator;
-    });
+  if (filters.fileCreatorEmails.length > 0) {
+    filesToRender = filesToRender.filter(
+      (file) => file.creator && file.creator.email && filters.fileCreatorEmails.includes(file.creator.email)
+    );
   }
 
   // Sort 'em based on current prefs
