@@ -39,11 +39,8 @@ export const GroupedFormattingToolCards = memo(
           try {
             const args = JSON.parse(toolCall.arguments);
             // Handle new array format for SetTextFormats
-            if (args.formats && Array.isArray(args.formats) && args.formats.length > 0) {
-              const firstFormat = args.formats[0];
-              if (firstFormat.sheet_name) {
-                return firstFormat.sheet_name;
-              }
+            if (Array.isArray(args.formats) && args.formats.length > 0 && args.formats[0]?.sheet_name) {
+              return args.formats[0].sheet_name;
             }
             // Handle old format and other tools
             if (args.sheet_name) {

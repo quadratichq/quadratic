@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { ensureUserExists } from './workos.helper.js';
+import { ensureUserExists, getExistingUserEmails } from './workos.helper.js';
 
 // Load environment variables from .env file
 const __filename = fileURLToPath(import.meta.url);
@@ -25,12 +25,14 @@ interface UsersFile {
 /**
  * Parse command line arguments
  */
-function parseArgs(): { verbose: boolean; filter?: string } {
+function parseArgs(): { verbose: boolean; filter?: string; skipExisting: boolean } {
   const args = process.argv.slice(2);
   const verbose = args.includes('--verbose') || args.includes('-v');
   const filterIndex = args.findIndex((a) => a === '--filter' || a === '-f');
   const filter = filterIndex !== -1 ? args[filterIndex + 1] : undefined;
-  return { verbose, filter };
+  // Use --skip-existing to only process new users (requires fetching existing users from WorkOS)
+  const skipExisting = args.includes('--skip-existing') || args.includes('-s');
+  return { verbose, filter, skipExisting };
 }
 
 /**
@@ -51,9 +53,13 @@ function checkEnvironment(): { valid: boolean; missing: string[] } {
  * Main function to ensure all E2E test users exist in WorkOS
  */
 async function main() {
-  const { verbose, filter } = parseArgs();
+  const { verbose, filter, skipExisting } = parseArgs();
 
   console.log('🚀 Starting user creation/verification process...\n');
+
+  if (skipExisting) {
+    console.log('⏭️  Skip-existing mode: will only process new users\n');
+  }
 
   // Check if running in CI
   if (process.env.CI) {
@@ -95,15 +101,47 @@ async function main() {
     const fileContent = await readFile(usersFilePath, 'utf-8');
     const usersData: UsersFile = JSON.parse(fileContent);
 
+    const totalUsers = usersData.users.length;
+    console.log(`📋 Found ${totalUsers} users in configuration\n`);
+
     // Filter users if filter argument provided
-    let usersToProcess = usersData.users;
+    let usersToProcess: User[] = usersData.users;
     if (filter) {
       usersToProcess = usersData.users.filter((u) => u.email.includes(filter));
       console.log(`🔍 Filtering users matching: "${filter}"`);
+      console.log(`📝 ${usersToProcess.length} user(s) match filter\n`);
     }
 
-    const totalUsers = usersToProcess.length;
-    console.log(`📋 Found ${totalUsers} users to process\n`);
+    // Determine which users need to be processed based on skip-existing flag
+    let skippedCount = 0;
+
+    if (skipExisting) {
+      console.log('🔍 Fetching existing users from WorkOS...\n');
+      const existingEmails = await getExistingUserEmails();
+      console.log('');
+
+      const newUsers: User[] = [];
+      for (const user of usersToProcess) {
+        if (existingEmails.has(user.email)) {
+          skippedCount++;
+        } else {
+          newUsers.push(user);
+        }
+      }
+
+      usersToProcess = newUsers;
+
+      if (skippedCount > 0) {
+        console.log(`⏭️  Skipped ${skippedCount} existing user(s)\n`);
+      }
+
+      if (usersToProcess.length === 0) {
+        console.log('\n✅ All users already exist! Nothing to do.\n');
+        return;
+      }
+
+      console.log(`📝 ${usersToProcess.length} new user(s) to create\n`);
+    }
 
     // Process users with progress tracking
     let successCount = 0;
@@ -112,7 +150,7 @@ async function main() {
 
     for (let i = 0; i < usersToProcess.length; i++) {
       const user = usersToProcess[i];
-      const progress = `[${i + 1}/${totalUsers}]`;
+      const progress = `[${i + 1}/${usersToProcess.length}]`;
 
       try {
         console.log(`${progress} Processing: ${user.email}`);
@@ -147,7 +185,13 @@ async function main() {
     console.log('\n' + '='.repeat(60));
     console.log('📊 Summary:');
     console.log('='.repeat(60));
-    console.log(`Total users:      ${totalUsers}`);
+    console.log(`Total in config:  ${totalUsers}`);
+    if (filter) {
+      console.log(`🔍 Matched filter: ${totalUsers - (usersData.users.length - usersToProcess.length - skippedCount)}`);
+    }
+    if (skipExisting) {
+      console.log(`⏭️  Skipped:        ${skippedCount}`);
+    }
     console.log(`✓ Successful:     ${successCount}`);
     console.log(`✗ Failed:         ${failureCount}`);
     console.log('='.repeat(60));

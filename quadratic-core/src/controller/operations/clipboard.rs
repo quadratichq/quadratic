@@ -852,13 +852,17 @@ impl GridController {
         // collect the plain text clipboard cells
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
-                if value.chars().next().unwrap_or(' ') == '=' {
-                    // code cell
-                    let sheet_pos = SheetPos::new(start_pos.sheet_id, x as i64, y as i64);
+                if let Some(formula_code) = value.strip_prefix('=') {
+                    // code cell - store without the leading '='
+                    let sheet_pos = SheetPos::new(
+                        start_pos.sheet_id,
+                        start_pos.x + x as i64,
+                        start_pos.y + y as i64,
+                    );
                     compute_code_ops.push(Operation::SetDataTable {
                         sheet_pos,
                         data_table: Some(DataTable::new(
-                            DataTableKind::CodeRun(CodeRun::new_formula(value.to_string())),
+                            DataTableKind::CodeRun(CodeRun::new_formula(formula_code.to_string())),
                             "Formula1",
                             Value::Single(CellValue::Blank),
                             false,
@@ -2602,5 +2606,48 @@ mod test {
 
         assert_fill_color(&gc, pos![sheet_id!B10], "red");
         dbg!(&gc.sheet(sheet_id).formats.fill_color);
+    }
+
+    #[test]
+    fn test_paste_formula_strips_equals_prefix() {
+        use crate::grid::js_types::JsClipboard;
+
+        // Test that when pasting a formula from plain text clipboard,
+        // the '=' prefix is stripped before storing (matching direct entry behavior)
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Paste a formula as plain text (like copying from external source)
+        let clipboard = JsClipboard {
+            plain_text: "=1+2".to_string(),
+            html: String::new(),
+        };
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("A1"),
+            clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Get the stored formula code
+        let a1_context = gc.a1_context();
+        let code_cell = gc
+            .sheet(sheet_id)
+            .edit_code_value(pos![A1], a1_context)
+            .expect("Should have a code cell at A1");
+
+        // The stored code should NOT have the '=' prefix
+        assert_eq!(
+            code_cell.code_string, "1+2",
+            "Formula should be stored without '=' prefix"
+        );
+
+        // FORMULATEXT should add the '=' back when returning
+        let result = crate::formulas::tests::eval_to_string(&gc, "FORMULATEXT(A1)");
+        assert_eq!(
+            result, "=1+2",
+            "FORMULATEXT should return formula with '=' prefix"
+        );
     }
 }

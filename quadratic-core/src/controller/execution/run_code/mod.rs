@@ -474,6 +474,7 @@ impl GridController {
                 Value::Single(ref cell_value) => cell_value.type_name().into(),
                 Value::Array(_) => "array".into(),
                 Value::Tuple(_) => "tuple".into(),
+                Value::Lambda(_) => "lambda".into(),
             }
         });
 
