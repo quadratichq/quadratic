@@ -334,7 +334,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
+          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
         env:
           S3_DIR: s3://qa.quadratic-preview.com/
 
@@ -505,7 +505,7 @@ jobs:
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
   test-e2e-start-comment:
-    name: Tests-E2E - Generate Matrix and Start Comment
+    name: Tests-E2E - Setup
     needs:
       [
         build_client,
@@ -524,6 +524,8 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
+      # Number of parallel shards for E2E tests. 164 shards provides optimal parallelization
+      # for ~164 test files, with each shard running a subset of tests. Adjust based on test count.
       matrix_runner: 164
       e2e_url: qa.quadratic-preview.com
     steps:
@@ -531,7 +533,7 @@ jobs:
         id: generate-matrix
         run: |
           # Create a matrix with shardIndex values from 1 to matrix_runner
-          matrix=$(python -c "import json; print(json.dumps({'shardIndex': list(range(1, ${{ env.matrix_runner }} + 1)), 'shardTotal': [${{ env.matrix_runner }}]}))" | tr -d '\n')
+          matrix=$(jq -n --argjson runner "${{ env.matrix_runner }}" '{"shardIndex": [range(1; $runner + 1)], "shardTotal": [$runner]}')
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Generated matrix: $matrix"
 
@@ -568,6 +570,8 @@ jobs:
         verify_deployed_version,
         test-e2e-start-comment,
       ]
+    permissions:
+      contents: read
     runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble
@@ -679,7 +683,7 @@ jobs:
         run: |
           # Upload entire build directory to S3
           aws s3 sync playwright-report s3://${{ env.s3_bucket }}/qa \
-            --delete --force \
+            --delete \
             --cache-control "public, max-age=30"
 
       - name: Find Status Comment
@@ -719,9 +723,9 @@ jobs:
 
   test-e2e-status:
     name: Tests-E2E Status
-    needs: [test-e2e-matrix-run]
+    needs: [test-e2e-start-comment, test-e2e-matrix-run]
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: always() && github.head_ref == 'qa' && github.base_ref == 'main'
+    if: always() && needs.test-e2e-start-comment.result == 'success' && github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 5
     steps:
       - name: Check E2E test results
@@ -742,7 +746,7 @@ jobs:
       ]
     name: Notify QA Wolf
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: always() && github.head_ref == 'qa' && github.base_ref == 'main'
+    if: always() && needs.test-e2e-matrix-run.result == 'success' && github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-wolf-notify
       cancel-in-progress: true
