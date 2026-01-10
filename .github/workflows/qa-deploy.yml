@@ -706,6 +706,8 @@ jobs:
             ✅ Build images
             ✅ Deploy - [QA](https://${{ env.e2e_url }})
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/qa)
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
 
       - name: Update comment on E2E tests cancelled
@@ -719,6 +721,8 @@ jobs:
             ✅ Build images
             ✅ Deploy - [QA](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
 
   test-e2e-status:

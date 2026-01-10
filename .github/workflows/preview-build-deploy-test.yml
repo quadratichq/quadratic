@@ -552,7 +552,7 @@ jobs:
         id: generate-matrix
         run: |
           # Create a matrix with shardIndex values from 1 to matrix_runner
-          matrix=$(python -c "import json; print(json.dumps({'shardIndex': list(range(1, ${{ env.matrix_runner }} + 1)), 'shardTotal': [${{ env.matrix_runner }}]}))" | tr -d '\n')
+          matrix=$(jq -n --argjson runner "${{ env.matrix_runner }}" '{"shardIndex": [range(1; $runner + 1)], "shardTotal": [$runner]}')
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Generated matrix: $matrix"
 
