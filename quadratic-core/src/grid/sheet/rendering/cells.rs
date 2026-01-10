@@ -791,7 +791,7 @@ mod tests {
     #[test]
     fn test_render_rich_text_with_links_and_formatting() {
         use crate::grid::js_types::{JsRenderCellFormatSpan, JsRenderCellLinkSpan};
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -863,7 +863,7 @@ mod tests {
 
     #[test]
     fn test_render_rich_text_plain_no_spans() {
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

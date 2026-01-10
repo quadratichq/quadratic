@@ -2,7 +2,8 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
-use crate::values::{CellValue, TextSpan};
+use crate::cellvalue::TextSpan;
+use crate::values::CellValue;
 use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
@@ -937,7 +938,7 @@ mod test {
 
     #[test]
     fn test_set_cell_rich_text() {
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
 
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;

@@ -1013,7 +1013,7 @@ mod test {
 
     #[test]
     fn js_cell_value_rich_text() {
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
 
         let mut sheet = Sheet::test();
         let rich_text_spans = vec![

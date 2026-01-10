@@ -1779,6 +1779,7 @@ mod test {
         assert_eq!(deserialized, rich);
     }
 
+    #[test]
     fn test_to_number() {
         // Number values return the f64 equivalent
         let cv = CellValue::Number(decimal_from_str("123.456").unwrap());

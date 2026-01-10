@@ -70,7 +70,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let pos = Pos::from((x, y));
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        let spans: Vec<crate::values::TextSpan> = serde_json::from_str(&spans_json)
+        let spans: Vec<crate::cellvalue::TextSpan> = serde_json::from_str(&spans_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse spans: {e}")))?;
 
         self.set_cell_rich_text((pos, sheet_id).into(), spans, cursor);

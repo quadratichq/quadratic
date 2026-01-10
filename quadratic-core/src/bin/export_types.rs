@@ -8,6 +8,7 @@ use quadratic_core::a1::CellRefRangeEnd;
 use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
+use quadratic_core::cellvalue::TextSpan;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::TransactionSource;
@@ -88,7 +89,6 @@ use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
-use quadratic_core::values::TextSpan;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::{
     ArraySize, Axis, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Span,

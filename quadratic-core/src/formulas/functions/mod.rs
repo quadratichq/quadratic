@@ -24,7 +24,7 @@ mod trigonometry;
 use super::{Criterion, Ctx, Param, ParamKind, util};
 use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, Duration, IsBlank, RunError, RunErrorMsg, Span,
-    Spanned, SpannedIterExt, TextSpan, Value,
+    Spanned, SpannedIterExt, Value, cellvalue::TextSpan,
 };
 
 pub use lookup::IndexFunctionArgs;

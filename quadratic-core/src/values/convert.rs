@@ -564,7 +564,7 @@ mod test {
 
     #[test]
     fn test_rich_text_to_string() {
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
 
         let rich = CellValue::RichText(vec![
             TextSpan::plain("Hello "),
@@ -578,7 +578,7 @@ mod test {
 
     #[test]
     fn test_rich_text_to_decimal_fails() {
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
         use rust_decimal::Decimal;
 
         let rich = CellValue::RichText(vec![TextSpan::plain("123")]);
@@ -590,7 +590,7 @@ mod test {
 
     #[test]
     fn test_rich_text_to_bool_fails() {
-        use crate::TextSpan;
+        use crate::cellvalue::TextSpan;
 
         let rich = CellValue::RichText(vec![TextSpan::plain("true")]);
 

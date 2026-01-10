@@ -1,7 +1,7 @@
 use super::current;
 use crate::{
-    CellValue, Duration, TextSpan,
-    cellvalue::Import,
+    CellValue, Duration,
+    cellvalue::{Import, TextSpan},
     grid::{CodeCellLanguage, ConnectionKind},
     number::decimal_from_str,
 };
