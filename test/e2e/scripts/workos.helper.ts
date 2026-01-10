@@ -228,7 +228,6 @@ const fetchUsersFromEnvironment = async (
 
     // Paginate through all users
     let after: string | undefined;
-    let pageCount = 0;
 
     do {
       const response = await workos.userManagement.listUsers({
@@ -240,9 +239,7 @@ const fetchUsersFromEnvironment = async (
         envEmails.add(user.email);
       }
 
-      pageCount++;
-      process.stdout.write(`\r   [${env.name}] Fetched page ${pageCount} (${envEmails.size} users so far)`);
-      after = response.listMetadata?.after ?? undefined;
+after = response.listMetadata?.after ?? undefined;
     } while (after);
 
     // Clear line and print final count

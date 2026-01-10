@@ -154,7 +154,7 @@ export const clickFontSizeDecrease = async (page: Page) => {
   await clickFormattingButton(page, 'format_font_size_decrease');
 };
 
-// Available font sizes in the dropdown (user-facing values)
+// Available font sizes (must match FONT_SIZES in gridConstants.ts)
 type FontSize = 8 | 9 | 10 | 11 | 12 | 14 | 16 | 18 | 20 | 24 | 28 | 32 | 36 | 48 | 72 | 96;
 
 export const selectFontSize = async (page: Page, a1: string, size: FontSize) => {
@@ -292,10 +292,6 @@ export const clickDateTimeFormat = async (page: Page) => {
 export const clickClearFormatting = async (page: Page) => {
   await clickFormattingButton(page, 'clear_formatting_borders');
 };
-
-// ============================================================================
-// Convenience functions (alternative API matching qa branch)
-// ============================================================================
 
 /**
  * Sets the horizontal alignment for the currently selected cell(s).
