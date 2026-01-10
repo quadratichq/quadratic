@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
-import { assertCellValue, assertSelection, gotoCells, sheetRefreshPage } from './helpers/sheet.helper';
+import { assertCellValue, assertSelection, gotoCells, setValueInCell, sheetRefreshPage } from './helpers/sheet.helper';
 
 test.skip('Keyboard Navigation', async ({ page }) => {
   // Constants
@@ -267,11 +267,7 @@ test('Open calendar', async ({ page }) => {
   await createFile(page, { fileName, skipNavigateBack: true });
 
   // Write 1/1/2000 in A1
-  await page.keyboard.press('Enter', { delay: 250 });
-  await page.keyboard.type('1/1/2000', { delay: 250 });
-  await page.keyboard.press('Enter', { delay: 250 });
-  // Wait for the async cell value operation to complete
-  await page.waitForTimeout(1000);
+  await setValueInCell(page, 'A1', '1/1/2000');
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Check calendar picker is open
