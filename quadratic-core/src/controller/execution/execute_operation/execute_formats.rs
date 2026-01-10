@@ -54,21 +54,13 @@ impl GridController {
                             (None, None) => {
                                 transaction.add_fill_cells_from_rows(sheet, 1);
                             }
-                            // Row fill - mark hashes from this row
-                            (None, Some(y2)) => {
+                            // Row fill - mark hashes from this row to end of bounds
+                            (None, Some(_)) => {
                                 transaction.add_fill_cells_from_rows(sheet, y1);
-                                // Also need to mark rows up to y2 if it's a range
-                                if y2 > y1 {
-                                    transaction.add_fill_cells_from_rows(sheet, y2);
-                                }
                             }
-                            // Column fill - mark hashes from this column
-                            (Some(x2), None) => {
+                            // Column fill - mark hashes from this column to end of bounds
+                            (Some(_), None) => {
                                 transaction.add_fill_cells_from_columns(sheet, x1);
-                                // Also need to mark columns up to x2 if it's a range
-                                if x2 > x1 {
-                                    transaction.add_fill_cells_from_columns(sheet, x2);
-                                }
                             }
                             // Finite fill - already handled by fill_bounds
                             (Some(_), Some(_)) => {}
@@ -93,4 +85,168 @@ impl GridController {
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use crate::a1::A1Selection;
+    use crate::controller::GridController;
+    use crate::grid::formats::FormatUpdate;
+
+    #[test]
+    fn test_set_formats_with_meta_fills_column() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set fill color on column A (infinite column fill - triggers has_meta_fills)
+        let selection = A1Selection::test_a1("A");
+        gc.set_fill_color(&selection, Some("red".to_string()), None, false)
+            .unwrap();
+
+        // Verify the fill was applied to cells in column A
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 1 }),
+            Some("red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 100 }),
+            Some("red".to_string())
+        );
+        // Verify other columns are not affected
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 2, y: 1 }),
+            None
+        );
+    }
+
+    #[test]
+    fn test_set_formats_with_meta_fills_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set fill color on row 1 (infinite row fill - triggers has_meta_fills)
+        let selection = A1Selection::test_a1("1");
+        gc.set_fill_color(&selection, Some("blue".to_string()), None, false)
+            .unwrap();
+
+        // Verify the fill was applied to cells in row 1
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 1 }),
+            Some("blue".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 100, y: 1 }),
+            Some("blue".to_string())
+        );
+        // Verify other rows are not affected
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 2 }),
+            None
+        );
+    }
+
+    #[test]
+    fn test_set_formats_with_meta_fills_sheet() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set fill color on entire sheet (infinite sheet fill - triggers has_meta_fills)
+        let selection = A1Selection::test_a1("*");
+        gc.set_fill_color(&selection, Some("green".to_string()), None, false)
+            .unwrap();
+
+        // Verify the fill was applied everywhere
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 1 }),
+            Some("green".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 100, y: 100 }),
+            Some("green".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_formats_with_meta_fills_multiple_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set fill color on columns A:C (infinite column range fill - triggers has_meta_fills)
+        let selection = A1Selection::test_a1("A:C");
+        gc.set_fill_color(&selection, Some("yellow".to_string()), None, false)
+            .unwrap();
+
+        // Verify the fill was applied to cells in columns A-C
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 1 }),
+            Some("yellow".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 3, y: 50 }),
+            Some("yellow".to_string())
+        );
+        // Verify column D is not affected
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 4, y: 1 }),
+            None
+        );
+    }
+
+    #[test]
+    fn test_set_formats_with_meta_fills_multiple_rows() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set fill color on rows 1:3 (infinite row range fill - triggers has_meta_fills)
+        let selection = A1Selection::test_a1("1:3");
+        gc.set_fill_color(&selection, Some("purple".to_string()), None, false)
+            .unwrap();
+
+        // Verify the fill was applied to cells in rows 1-3
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 1 }),
+            Some("purple".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 50, y: 3 }),
+            Some("purple".to_string())
+        );
+        // Verify row 4 is not affected
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 1, y: 4 }),
+            None
+        );
+    }
+
+    #[test]
+    fn test_set_formats_with_mixed_format_updates() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set multiple format properties on a column (triggers has_meta_fills for fill_color)
+        let selection = A1Selection::test_a1("B");
+        let format_update = FormatUpdate {
+            fill_color: Some(Some("orange".to_string())),
+            bold: Some(Some(true)),
+            ..Default::default()
+        };
+        gc.set_formats(&selection, format_update, None, false);
+
+        // Verify both formats were applied
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 2, y: 1 }),
+            Some("orange".to_string())
+        );
+        assert_eq!(
+            sheet.formats.bold.get(crate::Pos { x: 2, y: 1 }),
+            Some(true)
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(crate::Pos { x: 2, y: 1000 }),
+            Some("orange".to_string())
+        );
+    }
+}

@@ -46,10 +46,10 @@ export type DebugFlagKeys =
   | 'debugShowTopLeftPosition'
   | 'debugShowCoordinates'
   | 'debugShowAPITimes'
-  | 'debugEnableSyncedConnections'
   | 'debugUseRustRenderer'
   | 'debugDisableTsRenderer'
-  | 'debugDisableRustRenderer';
+  | 'debugDisableRustRenderer'
+  | 'debugShowAPITimes';
 
 export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> = {
   debug: {
@@ -136,12 +136,6 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
   },
 
   // Misc. group
-  debugEnableSyncedConnections: {
-    initial: false,
-    title: 'Enable Synced Connections',
-    description: 'Enable synced connections (e.g. Mixpanel)',
-    group: 'Misc.',
-  },
   debugShowFileIO: {
     initial: false,
     title: 'Show File I/O',

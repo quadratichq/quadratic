@@ -383,6 +383,7 @@ function ListItemView({
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
             src={thumbnail}
+            crossOrigin="anonymous"
             alt="File thumbnail screenshot"
             className="dark-mode-hack object-cover"
             draggable="false"

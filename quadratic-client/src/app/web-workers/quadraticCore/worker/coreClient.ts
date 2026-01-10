@@ -870,13 +870,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetFormula':
-        transactionId = core.setFormula(
-          e.data.sheetId,
-          e.data.selection,
-          e.data.codeString,
-          e.data.codeCellName,
-          e.data.cursor
-        );
+        transactionId = core.setFormula(e.data.sheetId, e.data.selection, e.data.codeString, e.data.cursor);
         if (typeof transactionId === 'object' && 'error' in transactionId) {
           this.send({
             type: 'coreClientSetFormula',
@@ -887,6 +881,24 @@ class CoreClient {
         } else {
           this.send({
             type: 'coreClientSetFormula',
+            id: e.data.id,
+            transactionId,
+          });
+        }
+        return;
+
+      case 'clientCoreSetFormulas':
+        transactionId = core.setFormulas(e.data.sheetId, e.data.formulas, e.data.cursor);
+        if (typeof transactionId === 'object' && 'error' in transactionId) {
+          this.send({
+            type: 'coreClientSetFormulas',
+            id: e.data.id,
+            transactionId: undefined,
+            error: transactionId.error,
+          });
+        } else {
+          this.send({
+            type: 'coreClientSetFormulas',
             id: e.data.id,
             transactionId,
           });

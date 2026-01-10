@@ -21,6 +21,9 @@
     "bench:watch:src": "./benches.sh src",
     "watch:test": "node scripts/watch-test.js",
     "docs": "cargo doc --no-deps --open --document-private-items",
-    "clean": "cargo clean && npx rimraf node_modules dist build target"
+    "clean": "cargo clean && npx rimraf node_modules dist build target",
+    "formulas:export": "cargo run --bin export_formulas",
+    "formulas:compare": "node scripts/formulas/compare-formulas.js",
+    "formulas": "npm run formulas:export && npm run formulas:compare"
   }
 }

@@ -150,8 +150,7 @@ pub fn adjust_references(
     pos: SheetPos,
     adjust: RefAdjust,
 ) -> String {
-    let source = convert_rc_to_a1(source, ctx, pos); // remove this if we ever remove RC support completely
-    replace_cell_range_references(&source, ctx, pos, |range_ref| {
+    replace_cell_range_references(source, ctx, pos, |range_ref| {
         Ok(range_ref
             .adjust(adjust)
             .map_err(|_| RefError)?
@@ -248,6 +247,12 @@ fn replace_cell_range_references(
     replaced
 }
 
+/// Maximum recursion depth for parsing expressions.
+/// This prevents stack overflow on deeply nested formulas.
+/// Note: WASM has limited stack size (~1MB in browsers), so this value
+/// must be kept low enough to leave headroom for parsing operations.
+const MAX_PARSE_DEPTH: u32 = 100;
+
 /// Token parser used to assemble an AST.
 #[derive(Debug, Copy, Clone)]
 pub struct Parser<'a> {
@@ -262,6 +267,9 @@ pub struct Parser<'a> {
     pub ctx: &'a A1Context,
     /// Location where this formula was entered.
     pub pos: SheetPos,
+
+    /// Current recursion depth for parsing.
+    pub depth: u32,
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
@@ -278,6 +286,7 @@ impl<'a> Parser<'a> {
 
             ctx,
             pos,
+            depth: 0,
         };
 
         // Skip leading `=`
@@ -287,6 +296,28 @@ impl<'a> Parser<'a> {
             ret.cursor = None;
         }
         ret
+    }
+
+    /// Checks if the recursion depth limit has been exceeded and returns an
+    /// error if so.
+    pub fn check_depth(&self) -> CodeResult<()> {
+        if self.depth >= MAX_PARSE_DEPTH {
+            Err(RunErrorMsg::FormulaTooComplex.with_span(self.span()))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Increments the recursion depth, returning an error if the limit is
+    /// exceeded.
+    pub fn enter_depth(&mut self) -> CodeResult<()> {
+        self.depth += 1;
+        self.check_depth()
+    }
+
+    /// Decrements the recursion depth.
+    pub fn exit_depth(&mut self) {
+        self.depth = self.depth.saturating_sub(1);
     }
 
     /// Returns the token at the cursor.
@@ -555,5 +586,162 @@ mod tests {
         assert!(!simple_parse_and_check_formula("*1"));
         assert!(!simple_parse_and_check_formula("(1*)*1"));
         assert!(!simple_parse_and_check_formula("(*1)*1"));
+    }
+
+    #[test]
+    fn test_formula_depth_limit() {
+        // A reasonably nested formula should parse fine
+        let formula = "((((1 + 2) * 3) / 4) - 5)";
+        assert!(simple_parse_formula(formula).is_ok());
+
+        // A deeply nested formula should return FormulaTooComplex error
+        // Each level of parentheses adds depth. We need to exceed MAX_PARSE_DEPTH (100)
+        // Each paren adds about 10 depth levels (for each precedence level traversal)
+        // So we need roughly 100 / 10 = ~10 levels of nesting to trigger the limit
+        // Using 15 parens to ensure we exceed the limit
+        let deeply_nested = format!("{}1{}", "(".repeat(15), ")".repeat(15));
+        let result = simple_parse_formula(&deeply_nested);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.msg, RunErrorMsg::FormulaTooComplex);
+    }
+
+    #[test]
+    fn test_check_depth_within_limit() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let parser = Parser::new("", &tokens, &ctx, pos);
+
+        // Initially depth is 0, should be well within limit
+        assert!(parser.check_depth().is_ok());
+    }
+
+    #[test]
+    fn test_check_depth_at_limit() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        // Set depth to exactly MAX_PARSE_DEPTH
+        parser.depth = MAX_PARSE_DEPTH;
+
+        // Should fail at exactly the limit
+        let result = parser.check_depth();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().msg, RunErrorMsg::FormulaTooComplex);
+    }
+
+    #[test]
+    fn test_check_depth_just_below_limit() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        // Set depth to just below MAX_PARSE_DEPTH
+        parser.depth = MAX_PARSE_DEPTH - 1;
+
+        // Should still be OK
+        assert!(parser.check_depth().is_ok());
+    }
+
+    #[test]
+    fn test_enter_depth_increments() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        assert_eq!(parser.depth, 0);
+
+        // Enter depth multiple times
+        assert!(parser.enter_depth().is_ok());
+        assert_eq!(parser.depth, 1);
+
+        assert!(parser.enter_depth().is_ok());
+        assert_eq!(parser.depth, 2);
+
+        assert!(parser.enter_depth().is_ok());
+        assert_eq!(parser.depth, 3);
+    }
+
+    #[test]
+    fn test_enter_depth_fails_at_limit() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        // Set depth just below limit
+        parser.depth = MAX_PARSE_DEPTH - 1;
+
+        // This should succeed and bring us to the limit
+        let result = parser.enter_depth();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().msg, RunErrorMsg::FormulaTooComplex);
+    }
+
+    #[test]
+    fn test_exit_depth_decrements() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        parser.depth = 5;
+
+        parser.exit_depth();
+        assert_eq!(parser.depth, 4);
+
+        parser.exit_depth();
+        assert_eq!(parser.depth, 3);
+    }
+
+    #[test]
+    fn test_exit_depth_saturates_at_zero() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        assert_eq!(parser.depth, 0);
+
+        // Should not go below zero (saturating_sub)
+        parser.exit_depth();
+        assert_eq!(parser.depth, 0);
+
+        parser.exit_depth();
+        assert_eq!(parser.depth, 0);
+    }
+
+    #[test]
+    fn test_enter_exit_depth_roundtrip() {
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
+        let tokens = vec![];
+        let ctx = A1Context::test(&[], &[]);
+        let mut parser = Parser::new("", &tokens, &ctx, pos);
+
+        // Simulate entering and exiting nested scopes
+        assert!(parser.enter_depth().is_ok());
+        assert!(parser.enter_depth().is_ok());
+        assert!(parser.enter_depth().is_ok());
+        assert_eq!(parser.depth, 3);
+
+        parser.exit_depth();
+        parser.exit_depth();
+        assert_eq!(parser.depth, 1);
+
+        parser.exit_depth();
+        assert_eq!(parser.depth, 0);
     }
 }

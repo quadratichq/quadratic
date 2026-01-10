@@ -1,18 +1,12 @@
+//! Basic math functions: SUM, PRODUCT, ABS, SQRT, POWER, LOG, etc.
+
 use rust_decimal::prelude::*;
 
-use crate::number::{round, round_down, round_up, sum, truncate};
+use crate::number::sum;
 
 use super::*;
 
-pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
-    include_in_docs: true,
-    include_in_completions: true,
-    name: "Mathematics functions",
-    docs: None,
-    get_functions,
-};
-
-fn get_functions() -> Vec<FormulaFunction> {
+pub(super) fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Basic operators
         formula_fn!(
@@ -78,7 +72,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Multiplies all values.  
+            /// Multiplies all values.
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
             fn PRODUCT(numbers: (Iter<f64>)) {
@@ -99,219 +93,6 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[zip_map]
             fn SQRT([number]: f64) {
                 number.sqrt()
-            }
-        ),
-        // Rounding
-        formula_fn!(
-            /// Rounds a number up to the next multiple of `increment`. If
-            /// `number` and `increment` are both negative, rounds the number
-            /// down away from zero. Returns an error if `number` is positive
-            /// but `significance` is negative. Returns `0` if `increment` is
-            /// `0`.
-            #[examples("CEILING(6.5, 2)")]
-            #[zip_map]
-            fn CEILING([number]: f64, [increment]: (Spanned<f64>)) {
-                let Spanned {
-                    span: increment_span,
-                    inner: increment,
-                } = increment;
-
-                if number > 0.0 && increment < 0.0 {
-                    return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
-                }
-
-                // Yes, I know this condition is inconsistent with `FLOOR`. It's
-                // necessary for Excel compatibility.
-                if increment == 0.0 {
-                    0.0
-                } else {
-                    util::checked_div(increment_span, number, increment)?.ceil() * increment
-                }
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number down to the next multiple of `increment`. If
-            /// `number` and `increment` are both negative, rounds the number up
-            /// toward zero. Returns an error if `number` is positive but
-            /// `significance` is negative, or if `increment` is `0` but
-            /// `number` is nonzero. Returns `0` if `increment` is `0` _and_
-            /// `number` is `0`.
-            #[examples("FLOOR(6.5, 2)")]
-            #[zip_map]
-            fn FLOOR([number]: f64, [increment]: (Spanned<f64>)) {
-                let Spanned {
-                    span: increment_span,
-                    inner: increment,
-                } = increment;
-
-                if number > 0.0 && increment < 0.0 {
-                    return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
-                }
-
-                // Yes, I know this condition is inconsistent with `CEILING`. It's
-                // necessary for Excel compatibility.
-                if increment == 0.0 && number == 0.0 {
-                    0.0
-                } else {
-                    util::checked_div(increment_span, number, increment)?.floor() * increment
-                }
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number up or away from zero to the next multiple of
-            /// `increment`. If `increment` is omitted, it is assumed to be `1`.
-            /// The sign of `increment` is ignored.
-            ///
-            /// If `negative_mode` is positive or zero, then `number` is rounded
-            /// up, toward positive infinity. If `negative_mode` is negative,
-            /// then `number` is rounded away from zero. These are equivalent
-            /// when `number` is positive, so in this case `negative_mode` has
-            /// no effect.
-            ///
-            /// If `increment` is zero, returns zero.
-            #[name = "CEILING.MATH"]
-            #[examples(
-                "CEILING.MATH(6.5)",
-                "CEILING.MATH(6.5, 2)",
-                "CEILING.MATH(-12, 5)",
-                "CEILING.MATH(-12, 5, -1)"
-            )]
-            #[zip_map]
-            fn CEILING_MATH(
-                [number]: f64,
-                [increment]: (Option<f64>),
-                [negative_mode]: (Option<f64>),
-            ) {
-                let increment = increment.unwrap_or(1.0).abs();
-
-                if increment == 0.0 {
-                    0.0
-                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
-                    (number / increment).floor() * increment
-                } else {
-                    (number / increment).ceil() * increment
-                }
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number down or toward zero to the next multiple of
-            /// `increment`. If `increment` is omitted, it is assumed to be `1`.
-            /// The sign of `increment` is ignored.
-            ///
-            /// If `negative_mode` is positive or zero, then `number` is rounded
-            /// down, toward negative infinity. If `negative_mode` is negative,
-            /// then `number` is rounded toward zero. These are equivalent when
-            /// `number` is positive, so in this case `negative_mode` has no
-            /// effect.
-            ///
-            /// If `increment` is zero, returns zero.
-            #[name = "FLOOR.MATH"]
-            #[examples(
-                "FLOOR.MATH(6.5)",
-                "FLOOR.MATH(6.5, 2)",
-                "FLOOR.MATH(-12, 5)",
-                "FLOOR.MATH(-12, 5, -1)"
-            )]
-            #[zip_map]
-            fn FLOOR_MATH(
-                [number]: f64,
-                [increment]: (Option<f64>),
-                [negative_mode]: (Option<f64>),
-            ) {
-                let increment = increment.unwrap_or(1.0).abs();
-                if increment == 0.0 {
-                    0.0
-                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
-                    (number / increment).ceil() * increment
-                } else {
-                    (number / increment).floor() * increment
-                }
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number down to the next integer. Always rounds toward
-            /// negative infinity.
-            #[examples("INT(3.9)", "INT(-2.1)")]
-            #[zip_map]
-            fn INT([number]: f64) {
-                number.floor()
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number to the specified number of digits after the
-            /// decimal point.
-            ///
-            /// - If `digits` is 0 or omitted, then the number is rounded to the
-            ///   nearest integer.
-            /// - If `digits > 0`, then the number is rounded to a digit after
-            ///   the decimal point. For example, `ROUND(x, 2)` rounds `x` to
-            ///   the nearest multiple of 0.01.
-            /// - If `digits < 0`, then the number is rounded to a digit before
-            ///   the decimal point. For example, `ROUND(x, -2)` rounds `x` to
-            ///   the nearest multiple of 100.
-            ///
-            /// Ties are broken by rounding away from zero. For example,
-            /// `ROUND(50, -2)` rounds to `100`.
-            #[examples("ROUND(6.553, 2)")]
-            #[zip_map]
-            fn ROUND([number]: Decimal, [digits]: (Option<i64>)) {
-                round(number, digits.unwrap_or(0))
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number **away from zero** to the specified number of
-            /// digits after the decimal point.
-            ///
-            /// - If `digits` is 0 or omitted, then the number is rounded to an
-            ///   integer.
-            /// - If `digits > 0`, then the number is rounded to a digit after
-            ///   the decimal point. For example, `ROUNDUP(x, 2)` rounds `x` to
-            ///   a multiple of 0.01.
-            /// - If `digits < 0`, then the number is rounded to a digit before
-            ///   the decimal point. For example, `ROUNDUP(x, -2)` rounds `x` to
-            ///   a multiple of 100.
-            #[examples("ROUNDUP(6.553, 2)")]
-            #[zip_map]
-            fn ROUNDUP([number]: Decimal, [digits]: (Option<i64>)) {
-                round_up(number, digits.unwrap_or(0))
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number **toward zero** to the specified number of
-            /// digits after the decimal point. This is exactly the same as
-            /// `TRUNC()`.
-            ///
-            /// - If `digits` is 0 or omitted, then the number is rounded to an
-            ///   integer.
-            /// - If `digits > 0`, then the number is rounded to a digit after
-            ///   the decimal point. For example, `ROUNDDOWN(x, 2)` rounds `x`
-            ///   to a multiple of 0.01.
-            /// - If `digits < 0`, then the number is rounded to a digit before
-            ///   the decimal point. For example, `ROUNDDOWN(x, -2)` rounds `x`
-            ///   to a multiple of 100.
-            #[examples("ROUNDDOWN(6.553, 2)")]
-            #[zip_map]
-            fn ROUNDDOWN([number]: Decimal, [digits]: (Option<i64>)) {
-                round_down(number, digits.unwrap_or(0))
-            }
-        ),
-        formula_fn!(
-            /// Rounds a number **toward zero** to the specified number of
-            /// digits after the decimal point. This is exactly the same as
-            /// `ROUNDDOWN()`.
-            ///
-            /// - If `digits` is 0 or omitted, then the number is rounded to an
-            ///   integer.
-            /// - If `digits > 0`, then the number is rounded to a digit after
-            ///   the decimal point. For example, `TRUNC(x, 2)` rounds `x` to a
-            ///   multiple of 0.01.
-            /// - If `digits < 0`, then the number is rounded to a digit before
-            ///   the decimal point. For example, `TRUNC(x, -2)` rounds `x` to a
-            ///   multiple of 100.
-            #[examples("TRUNC(6.553, 2)")]
-            #[zip_map]
-            fn TRUNC([number]: Decimal, [digits]: (Option<i64>)) {
-                truncate(number, digits.unwrap_or(0))
             }
         ),
         // Other operators
@@ -403,7 +184,122 @@ fn get_functions() -> Vec<FormulaFunction> {
                 std::f64::consts::TAU
             }
         ),
+        // Additional math functions
+        formula_fn!(
+            /// Returns the sign of a number: 1 if positive, -1 if negative, 0 if zero.
+            #[examples("SIGN(-5) = -1", "SIGN(5) = 1", "SIGN(0) = 0")]
+            #[zip_map]
+            fn SIGN([number]: f64) {
+                if number > 0.0 {
+                    1
+                } else if number < 0.0 {
+                    -1
+                } else {
+                    0
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the integer portion of a division.
+            /// Truncates the result to an integer.
+            #[examples("QUOTIENT(10, 3) = 3", "QUOTIENT(-10, 3) = -3")]
+            #[zip_map]
+            fn QUOTIENT(span: Span, [numerator]: f64, [denominator]: f64) {
+                if denominator == 0.0 {
+                    return Err(RunErrorMsg::DivideByZero.with_span(span));
+                }
+                (numerator / denominator).trunc() as i64
+            }
+        ),
+        formula_fn!(
+            /// Returns the sum of squares of the arguments.
+            #[examples("SUMSQ(3, 4) = 25", "SUMSQ(1, 2, 3) = 14")]
+            fn SUMSQ(numbers: (Iter<f64>)) {
+                numbers.try_fold(0.0, |acc, x| {
+                    let val = x?;
+                    Ok(acc + val * val)
+                })
+            }
+        ),
+        formula_fn!(
+            /// Returns the square root of a number multiplied by π.
+            #[examples("SQRTPI(1) = 1.7724538509...", "SQRTPI(2)")]
+            #[zip_map]
+            fn SQRTPI(span: Span, [number]: f64) {
+                if number < 0.0 {
+                    return Err(RunErrorMsg::NaN.with_span(span));
+                }
+                (number * std::f64::consts::PI).sqrt()
+            }
+        ),
+        formula_fn!(
+            /// Converts a Roman numeral to an Arabic numeral.
+            ///
+            /// Recognizes Roman numerals I, V, X, L, C, D, and M (case-insensitive).
+            #[examples("ARABIC(\"XIV\") = 14", "ARABIC(\"MCMXCIV\") = 1994")]
+            #[zip_map]
+            fn ARABIC(span: Span, [text]: String) {
+                roman_to_arabic(&text)
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?
+            }
+        ),
+        formula_fn!(
+            /// Calculates the percentage that a value represents of the sum of
+            /// a data array.
+            ///
+            /// Returns value / SUM(data), which represents what fraction the
+            /// value is of the total sum of all values in the data array.
+            ///
+            /// Note: This function returns a decimal (e.g., 0.333 for 33.3%),
+            /// not a percentage value (33.3). To display as a percentage,
+            /// format the cell as a percentage.
+            #[examples("PERCENTOF(50, {10,20,30,40,50}) = 0.333", "PERCENTOF(A1, A1:A10)")]
+            fn PERCENTOF(span: Span, value: (f64), data: (Iter<f64>)) {
+                let total: f64 = data.sum::<CodeResult<f64>>()?;
+                if total == 0.0 {
+                    return Err(RunErrorMsg::DivideByZero.with_span(span));
+                }
+                value / total
+            }
+        ),
     ]
+}
+
+/// Converts a Roman numeral string to its Arabic (integer) value.
+fn roman_to_arabic(s: &str) -> Option<i64> {
+    let s = s.trim().to_uppercase();
+    if s.is_empty() {
+        return Some(0);
+    }
+
+    let roman_value = |c: char| -> Option<i64> {
+        match c {
+            'I' => Some(1),
+            'V' => Some(5),
+            'X' => Some(10),
+            'L' => Some(50),
+            'C' => Some(100),
+            'D' => Some(500),
+            'M' => Some(1000),
+            _ => None,
+        }
+    };
+
+    let chars: Vec<char> = s.chars().collect();
+    let mut total: i64 = 0;
+    let mut prev_value: i64 = 0;
+
+    for c in chars.iter().rev() {
+        let value = roman_value(*c)?;
+        if value < prev_value {
+            total -= value;
+        } else {
+            total += value;
+        }
+        prev_value = value;
+    }
+
+    Some(total)
 }
 
 #[cfg(test)]
@@ -628,180 +524,6 @@ mod tests {
     }
 
     #[test]
-    fn test_ceiling() {
-        let g = GridController::new();
-        let test_cases = [
-            ("3.5", "2", Ok("4")),
-            ("2.5", "2", Ok("4")),
-            ("0.0", "2", Ok("0")),
-            ("-2.5", "2", Ok("-2")),
-            ("-3.5", "2", Ok("-2")),
-            ("3.5", "0", Ok("0")),
-            ("2.5", "0", Ok("0")),
-            ("0.0", "0", Ok("0")),
-            ("-2.5", "0", Ok("0")),
-            ("-3.5", "0", Ok("0")),
-            ("3.5", "-2", Err(RunErrorMsg::InvalidArgument)),
-            ("2.5", "-2", Err(RunErrorMsg::InvalidArgument)),
-            ("0.0", "-2", Ok("0")),
-            ("-2.5", "-2", Ok("-4")),
-            ("-3.5", "-2", Ok("-4")),
-        ];
-        for (n, increment, expected) in test_cases {
-            let formula = format!("CEILING({n}, {increment})");
-            match expected {
-                Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
-                Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
-            }
-        }
-        assert_eq!(
-            RunErrorMsg::MissingRequiredArgument {
-                func_name: "CEILING".into(),
-                arg_name: "increment".into(),
-            },
-            eval_to_err(&g, "CEILING(3.5)").msg,
-        );
-    }
-
-    #[test]
-    fn test_floor() {
-        let g = GridController::new();
-        let test_cases = [
-            ("3.5", "2", Ok("2")),
-            ("2.5", "2", Ok("2")),
-            ("0.0", "2", Ok("0")),
-            ("-2.5", "2", Ok("-4")),
-            ("-3.5", "2", Ok("-4")),
-            ("3.5", "0", Err(RunErrorMsg::DivideByZero)),
-            ("2.5", "0", Err(RunErrorMsg::DivideByZero)),
-            ("0.0", "0", Ok("0")),
-            ("-2.5", "0", Err(RunErrorMsg::DivideByZero)),
-            ("-3.5", "0", Err(RunErrorMsg::DivideByZero)),
-            ("3.5", "-2", Err(RunErrorMsg::InvalidArgument)),
-            ("2.5", "-2", Err(RunErrorMsg::InvalidArgument)),
-            ("0.0", "-2", Ok("0")),
-            ("-2.5", "-2", Ok("-2")),
-            ("-3.5", "-2", Ok("-2")),
-        ];
-        for (n, increment, expected) in test_cases {
-            let formula = format!("FLOOR({n}, {increment})");
-            match expected {
-                Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
-                Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
-            }
-        }
-        assert_eq!(
-            RunErrorMsg::MissingRequiredArgument {
-                func_name: "FLOOR".into(),
-                arg_name: "increment".into(),
-            },
-            eval_to_err(&g, "FLOOR(3.5)").msg,
-        );
-    }
-
-    #[test]
-    fn test_floor_math_and_ceiling_math() {
-        let g = GridController::new();
-        let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
-        #[allow(clippy::type_complexity)]
-        let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
-            ([4, 3, 0, -2, -3], |n| format!("CEILING.MATH({n})")),
-            ([4, 3, 0, -3, -4], |n| format!("CEILING.MATH({n},, -1)")),
-            ([4, 4, 0, -2, -2], |n| format!("CEILING.MATH({n}, 2)")),
-            ([4, 4, 0, -2, -2], |n| format!("CEILING.MATH({n}, -2)")),
-            ([4, 4, 0, -4, -4], |n| format!("CEILING.MATH({n}, 2, -1)")),
-            ([4, 4, 0, -4, -4], |n| format!("CEILING.MATH({n}, -2, -1)")),
-            ([0, 0, 0, 0, 0], |n| format!("CEILING.MATH({n}, 0)")),
-            ([3, 2, 0, -3, -4], |n| format!("FLOOR.MATH({n})")),
-            ([3, 2, 0, -2, -3], |n| format!("FLOOR.MATH({n},, -1)")),
-            ([2, 2, 0, -4, -4], |n| format!("FLOOR.MATH({n}, 2)")),
-            ([2, 2, 0, -4, -4], |n| format!("FLOOR.MATH({n}, -2)")),
-            ([2, 2, 0, -2, -2], |n| format!("FLOOR.MATH({n}, 2, -1)")),
-            ([2, 2, 0, -2, -2], |n| format!("FLOOR.MATH({n}, -2, -1)")),
-            ([0, 0, 0, 0, 0], |n| format!("FLOOR.MATH({n}, 0)")),
-        ];
-        for (expected_results, formula_gen_fn) in test_cases {
-            assert_eq!(
-                expected_results.map(|n| n.to_string()),
-                test_inputs.map(|n| eval_to_string(&g, &formula_gen_fn(n)))
-            );
-        }
-    }
-
-    #[test]
-    fn test_int() {
-        let g = GridController::new();
-        assert_eq!(
-            "{-3, -2, -1, 0, 0, 1, 2}",
-            eval_to_string(&g, "INT({-2.9, -1.1, -0.1, 0, 0.1, 1.1, 2.9})")
-        );
-    }
-
-    #[test]
-    fn test_rounding() {
-        let test_values = [
-            -2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0,
-        ];
-        let g = GridController::new();
-
-        // Test `ROUND()`
-        #[rustfmt::skip]
-        let test_cases = [
-            (-2, [-2000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0]),
-            (-1, [-2030.0, -10.0, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 2030.0]),
-            (0, [-2025.0, -10.0, -5.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 5.0, 10.0, 2025.0]),
-            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
-            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
-        ];
-        for (digits, expected_results) in test_cases {
-            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
-                assert_f64_eval(&g, expected_output, &format!("ROUND({input}, {digits})"));
-            }
-        }
-
-        // Test `ROUNDUP()`
-        #[rustfmt::skip]
-        let test_cases = [
-            (-2, [-2100.0, -100.0, -100.0, -100.0, -100.0, -100.0, 0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 2100.0]),
-            (-1, [-2030.0, -10.0, -10.0, -10.0, -10.0, -10.0, 0.0, 10.0, 10.0, 10.0, 10.0, 10.0, 2030.0]),
-            (0, [-2025.0, -10.0, -5.0, -1.0, -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 5.0, 10.0, 2025.0]),
-            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
-            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
-        ];
-        for (digits, expected_results) in test_cases {
-            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
-                assert_f64_eval(&g, expected_output, &format!("ROUNDUP({input}, {digits})"));
-            }
-        }
-
-        // Test `ROUNDDOWN()` and `TRUNC()` (same semantics)
-        #[rustfmt::skip]
-        let test_cases = [
-            (-2, [-2000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0]),
-            (-1, [-2020.0, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 2020.0]),
-            (0, [-2025.0, -10.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 10.0, 2025.0]),
-            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
-            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
-        ];
-        for (digits, expected_results) in test_cases {
-            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
-                assert_f64_eval(
-                    &g,
-                    expected_output,
-                    &format!("ROUNDDOWN({input}, {digits})"),
-                );
-                assert_f64_eval(&g, expected_output, &format!("TRUNC({input}, {digits})"));
-            }
-        }
-
-        // Test string printing
-        assert_eq!("44999.55", eval_to_string(&g, "ROUND(44999.553294, 2)"));
-        assert_eq!("44999.55", eval_to_string(&g, "TRUNC(44999.553294, 2)"));
-        assert_eq!("44999.55", eval_to_string(&g, "ROUNDDOWN(44999.553294, 2)"));
-        assert_eq!("44999.56", eval_to_string(&g, "ROUNDUP(44999.553294, 2)"));
-    }
-
-    #[test]
     fn test_mod() {
         let g = GridController::new();
         assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
@@ -918,5 +640,226 @@ mod tests {
                 .unwrap_err()
                 .msg,
         );
+    }
+
+    #[test]
+    fn test_sign() {
+        let g = GridController::new();
+        assert_eq!("1", eval_to_string(&g, "SIGN(42)"));
+        assert_eq!("-1", eval_to_string(&g, "SIGN(-42)"));
+        assert_eq!("0", eval_to_string(&g, "SIGN(0)"));
+        assert_eq!("1", eval_to_string(&g, "SIGN(0.001)"));
+        assert_eq!("-1", eval_to_string(&g, "SIGN(-0.001)"));
+    }
+
+    #[test]
+    fn test_quotient() {
+        let g = GridController::new();
+        assert_eq!("2", eval_to_string(&g, "QUOTIENT(7, 3)"));
+        assert_eq!("-2", eval_to_string(&g, "QUOTIENT(-7, 3)"));
+        assert_eq!("-2", eval_to_string(&g, "QUOTIENT(7, -3)"));
+        assert_eq!("2", eval_to_string(&g, "QUOTIENT(-7, -3)"));
+    }
+
+    #[test]
+    fn test_sumsq() {
+        let g = GridController::new();
+        assert_eq!("25", eval_to_string(&g, "SUMSQ(3, 4)")); // 9 + 16
+        assert_eq!("14", eval_to_string(&g, "SUMSQ(1, 2, 3)")); // 1 + 4 + 9
+        assert_eq!("100", eval_to_string(&g, "SUMSQ(10)"));
+    }
+
+    #[test]
+    fn test_sqrtpi() {
+        let g = GridController::new();
+        // SQRTPI(1) = sqrt(π) ≈ 1.7724538509
+        let result = eval_to_string(&g, "SQRTPI(1)");
+        assert!(result.starts_with("1.77"));
+
+        // SQRTPI(2) = sqrt(2π) ≈ 2.5066282746
+        let result = eval_to_string(&g, "SQRTPI(2)");
+        assert!(result.starts_with("2.50"));
+    }
+
+    #[test]
+    fn test_arabic() {
+        let g = GridController::new();
+        assert_eq!("14", eval_to_string(&g, "ARABIC(\"XIV\")"));
+        assert_eq!("1994", eval_to_string(&g, "ARABIC(\"MCMXCIV\")"));
+        assert_eq!("9", eval_to_string(&g, "ARABIC(\"IX\")"));
+        assert_eq!("4", eval_to_string(&g, "ARABIC(\"IV\")"));
+        assert_eq!("1000", eval_to_string(&g, "ARABIC(\"M\")"));
+        assert_eq!("0", eval_to_string(&g, "ARABIC(\"\")"));
+        // Case insensitive
+        assert_eq!("14", eval_to_string(&g, "ARABIC(\"xiv\")"));
+
+        // Invalid Roman numeral
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "ARABIC(\"ABC\")").msg,
+        );
+    }
+
+    #[test]
+    fn test_percentof() {
+        let g = GridController::new();
+        // Test basic usage: 50 / (10+20+30+40+50) = 50/150 = 0.333...
+        crate::util::assert_f64_approx_eq(
+            0.333333333,
+            eval_to_string(&g, "PERCENTOF(50, {10,20,30,40,50})")
+                .parse::<f64>()
+                .unwrap(),
+            "Testing PERCENTOF(50, {10,20,30,40,50})",
+        );
+
+        // Test with simple values: 25 / 100 = 0.25
+        assert_eq!("0.25", eval_to_string(&g, "PERCENTOF(25, {100})"));
+
+        // Test with multiple values: 10 / (10+20+30+40) = 10/100 = 0.1
+        assert_eq!("0.1", eval_to_string(&g, "PERCENTOF(10, {10,20,30,40})"));
+
+        // Test divide by zero error
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "PERCENTOF(10, {0})").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "PERCENTOF(10, {5,-5})").msg,
+        );
+    }
+
+    // ============================================================================
+    // Tests for roman_to_arabic helper function
+    // ============================================================================
+
+    #[test]
+    fn test_roman_to_arabic_single_numerals() {
+        use super::roman_to_arabic;
+
+        // Test each individual Roman numeral
+        assert_eq!(roman_to_arabic("I"), Some(1));
+        assert_eq!(roman_to_arabic("V"), Some(5));
+        assert_eq!(roman_to_arabic("X"), Some(10));
+        assert_eq!(roman_to_arabic("L"), Some(50));
+        assert_eq!(roman_to_arabic("C"), Some(100));
+        assert_eq!(roman_to_arabic("D"), Some(500));
+        assert_eq!(roman_to_arabic("M"), Some(1000));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_case_insensitive() {
+        use super::roman_to_arabic;
+
+        // Lowercase
+        assert_eq!(roman_to_arabic("i"), Some(1));
+        assert_eq!(roman_to_arabic("v"), Some(5));
+        assert_eq!(roman_to_arabic("x"), Some(10));
+        assert_eq!(roman_to_arabic("l"), Some(50));
+        assert_eq!(roman_to_arabic("c"), Some(100));
+        assert_eq!(roman_to_arabic("d"), Some(500));
+        assert_eq!(roman_to_arabic("m"), Some(1000));
+
+        // Mixed case
+        assert_eq!(roman_to_arabic("McM"), Some(1900));
+        assert_eq!(roman_to_arabic("xIv"), Some(14));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_subtractive_notation() {
+        use super::roman_to_arabic;
+
+        // Subtractive combinations
+        assert_eq!(roman_to_arabic("IV"), Some(4));
+        assert_eq!(roman_to_arabic("IX"), Some(9));
+        assert_eq!(roman_to_arabic("XL"), Some(40));
+        assert_eq!(roman_to_arabic("XC"), Some(90));
+        assert_eq!(roman_to_arabic("CD"), Some(400));
+        assert_eq!(roman_to_arabic("CM"), Some(900));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_additive_notation() {
+        use super::roman_to_arabic;
+
+        // Simple additive combinations
+        assert_eq!(roman_to_arabic("II"), Some(2));
+        assert_eq!(roman_to_arabic("III"), Some(3));
+        assert_eq!(roman_to_arabic("VI"), Some(6));
+        assert_eq!(roman_to_arabic("VII"), Some(7));
+        assert_eq!(roman_to_arabic("VIII"), Some(8));
+        assert_eq!(roman_to_arabic("XI"), Some(11));
+        assert_eq!(roman_to_arabic("XX"), Some(20));
+        assert_eq!(roman_to_arabic("XXX"), Some(30));
+        assert_eq!(roman_to_arabic("CC"), Some(200));
+        assert_eq!(roman_to_arabic("MM"), Some(2000));
+        assert_eq!(roman_to_arabic("MMM"), Some(3000));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_complex_numbers() {
+        use super::roman_to_arabic;
+
+        // Complex numbers combining additive and subtractive
+        assert_eq!(roman_to_arabic("XIV"), Some(14));
+        assert_eq!(roman_to_arabic("XIX"), Some(19));
+        assert_eq!(roman_to_arabic("XLIV"), Some(44));
+        assert_eq!(roman_to_arabic("XCIX"), Some(99));
+        assert_eq!(roman_to_arabic("CDXLIX"), Some(449));
+        assert_eq!(roman_to_arabic("MCMXCIV"), Some(1994));
+        assert_eq!(roman_to_arabic("MMXXIV"), Some(2024));
+        assert_eq!(roman_to_arabic("MMMCMXCIX"), Some(3999));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_edge_cases() {
+        use super::roman_to_arabic;
+
+        // Empty string
+        assert_eq!(roman_to_arabic(""), Some(0));
+
+        // Whitespace handling
+        assert_eq!(roman_to_arabic("  "), Some(0));
+        assert_eq!(roman_to_arabic("  XIV  "), Some(14));
+        assert_eq!(roman_to_arabic("\tXIV\n"), Some(14));
+    }
+
+    #[test]
+    fn test_roman_to_arabic_invalid_characters() {
+        use super::roman_to_arabic;
+
+        // Invalid characters should return None
+        assert_eq!(roman_to_arabic("A"), None);
+        assert_eq!(roman_to_arabic("B"), None);
+        assert_eq!(roman_to_arabic("E"), None);
+        assert_eq!(roman_to_arabic("Z"), None);
+        assert_eq!(roman_to_arabic("1"), None);
+        assert_eq!(roman_to_arabic("XIZ"), None);
+        assert_eq!(roman_to_arabic("XIV2"), None);
+        assert_eq!(roman_to_arabic("X I V"), None); // spaces in the middle
+    }
+
+    #[test]
+    fn test_roman_to_arabic_large_values() {
+        use super::roman_to_arabic;
+
+        // Large values
+        assert_eq!(roman_to_arabic("MMMM"), Some(4000));
+        assert_eq!(roman_to_arabic("MMMMM"), Some(5000));
+        assert_eq!(roman_to_arabic("MMMMMMMMMM"), Some(10000)); // 10 Ms
+
+        // Combination of many numerals
+        assert_eq!(roman_to_arabic("MDCLXVI"), Some(1666)); // 1000 + 500 + 100 + 50 + 10 + 5 + 1
+    }
+
+    #[test]
+    fn test_roman_to_arabic_historical_years() {
+        use super::roman_to_arabic;
+
+        // Historical years
+        assert_eq!(roman_to_arabic("MDCCLXXVI"), Some(1776)); // US independence
+        assert_eq!(roman_to_arabic("MCMLXIX"), Some(1969)); // Moon landing
+        assert_eq!(roman_to_arabic("MM"), Some(2000)); // Y2K
+        assert_eq!(roman_to_arabic("MMXXI"), Some(2021));
     }
 }

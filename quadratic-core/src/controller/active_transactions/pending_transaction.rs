@@ -15,7 +15,7 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        A1SelectionExt, CellsAccessed, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, GridBounds, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
 };
@@ -556,34 +556,11 @@ impl PendingTransaction {
         }
 
         // Use bounds(false) to include formatting since fills are part of formatting
-        let bounds = sheet.bounds(false);
-        if !bounds.is_empty() {
-            let min_hash_x = bounds
-                .first_column()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let max_hash_x = bounds
-                .last_column()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let min_hash_y = bounds
-                .first_row()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-            let max_hash_y = bounds
-                .last_row()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-
-            let dirty_hashes = self.fill_cells.entry(sheet.id).or_default();
-            for hash_x in min_hash_x..=max_hash_x {
-                for hash_y in min_hash_y..=max_hash_y {
-                    dirty_hashes.insert(Pos {
-                        x: hash_x,
-                        y: hash_y,
-                    });
-                }
-            }
+        if let GridBounds::NonEmpty(rect) = sheet.bounds(false) {
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(rect.to_hashes());
         }
     }
 
@@ -594,31 +571,18 @@ impl PendingTransaction {
         }
 
         // Use bounds(false) to include formatting since fills are part of formatting
-        let bounds = sheet.bounds(false);
-        if !bounds.is_empty() {
-            let min_hash_x = start_column.div_euclid(CELL_SHEET_WIDTH as i64);
-            let max_hash_x = bounds
-                .last_column()
-                .unwrap_or(start_column)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let min_hash_y = bounds
-                .first_row()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-            let max_hash_y = bounds
-                .last_row()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-
-            let dirty_hashes = self.fill_cells.entry(sheet.id).or_default();
-            for hash_x in min_hash_x..=max_hash_x {
-                for hash_y in min_hash_y..=max_hash_y {
-                    dirty_hashes.insert(Pos {
-                        x: hash_x,
-                        y: hash_y,
-                    });
-                }
-            }
+        if let GridBounds::NonEmpty(bounds_rect) = sheet.bounds(false) {
+            // Create rect from start_column to end of bounds
+            let rect = Rect::new(
+                start_column,
+                bounds_rect.min.y,
+                bounds_rect.max.x,
+                bounds_rect.max.y,
+            );
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(rect.to_hashes());
         }
     }
 
@@ -629,31 +593,18 @@ impl PendingTransaction {
         }
 
         // Use bounds(false) to include formatting since fills are part of formatting
-        let bounds = sheet.bounds(false);
-        if !bounds.is_empty() {
-            let min_hash_x = bounds
-                .first_column()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let max_hash_x = bounds
-                .last_column()
-                .unwrap_or(0)
-                .div_euclid(CELL_SHEET_WIDTH as i64);
-            let min_hash_y = start_row.div_euclid(CELL_SHEET_HEIGHT as i64);
-            let max_hash_y = bounds
-                .last_row()
-                .unwrap_or(start_row)
-                .div_euclid(CELL_SHEET_HEIGHT as i64);
-
-            let dirty_hashes = self.fill_cells.entry(sheet.id).or_default();
-            for hash_x in min_hash_x..=max_hash_x {
-                for hash_y in min_hash_y..=max_hash_y {
-                    dirty_hashes.insert(Pos {
-                        x: hash_x,
-                        y: hash_y,
-                    });
-                }
-            }
+        if let GridBounds::NonEmpty(bounds_rect) = sheet.bounds(false) {
+            // Create rect from start_row to end of bounds
+            let rect = Rect::new(
+                bounds_rect.min.x,
+                start_row,
+                bounds_rect.max.x,
+                bounds_rect.max.y,
+            );
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(rect.to_hashes());
         }
     }
 
@@ -976,5 +927,89 @@ mod tests {
         let sheet_id = SheetId::new();
         transaction.add_borders(sheet_id);
         assert!(transaction.sheet_borders.contains(&sheet_id));
+    }
+
+    #[test]
+    fn test_add_all_fill_cells() {
+        let mut sheet = Sheet::test();
+        // Place cells to create bounds spanning multiple hashes
+        // CELL_SHEET_WIDTH = 15, CELL_SHEET_HEIGHT = 30
+        sheet.set_value(pos![1, 1], "A".to_string()); // In hash (0, 0)
+        sheet.set_value(pos![20, 40], "B".to_string()); // In hash (1, 1)
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_all_fill_cells(&sheet);
+
+        let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
+        // Should have hashes (0,0), (0,1), (1,0), (1,1)
+        assert_eq!(fill_cells.len(), 4);
+        assert!(fill_cells.contains(&Pos { x: 0, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 0, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 1 }));
+    }
+
+    #[test]
+    fn test_add_all_fill_cells_empty_sheet() {
+        let sheet = Sheet::test();
+        let mut transaction = PendingTransaction::default();
+        transaction.add_all_fill_cells(&sheet);
+
+        // Empty sheet should not add any fill cells
+        assert!(!transaction.fill_cells.contains_key(&sheet.id));
+    }
+
+    #[test]
+    fn test_add_fill_cells_from_columns() {
+        let mut sheet = Sheet::test();
+        // Place cells to create bounds
+        sheet.set_value(pos![1, 1], "A".to_string()); // In hash (0, 0)
+        sheet.set_value(pos![30, 60], "B".to_string()); // In hash (2, 2)
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_fill_cells_from_columns(&sheet, 15);
+
+        let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
+        // Should have hashes from x=1 to x=2, y=0 to y=2
+        // (1,0), (1,1), (1,2), (2,0), (2,1), (2,2)
+        assert_eq!(fill_cells.len(), 6);
+        assert!(fill_cells.contains(&Pos { x: 1, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 2 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 2 }));
+        // Should NOT contain hash x=0
+        assert!(!fill_cells.contains(&Pos { x: 0, y: 0 }));
+    }
+
+    #[test]
+    fn test_add_fill_cells_from_rows() {
+        let mut sheet = Sheet::test();
+        // Place cells to create bounds
+        sheet.set_value(pos![1, 1], "A".to_string()); // In hash (0, 0)
+        sheet.set_value(pos![30, 60], "B".to_string()); // In hash (2, 2)
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_fill_cells_from_rows(&sheet, 30);
+
+        let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
+        // Should have hashes from x=0 to x=2, y=1 to y=2
+        // (0,1), (0,2), (1,1), (1,2), (2,1), (2,2)
+        assert_eq!(fill_cells.len(), 6);
+        assert!(fill_cells.contains(&Pos { x: 0, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 0, y: 2 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 2 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 2 }));
+        // Should NOT contain hash y=0
+        assert!(!fill_cells.contains(&Pos { x: 0, y: 0 }));
     }
 }

@@ -3,11 +3,58 @@ use itertools::Itertools;
 use rust_decimal::prelude::*;
 
 use super::{CellValue, Duration, IsBlank, Value};
+use crate::number::decimal_from_str;
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
-const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
-
 const DECIMAL_PRECISION: u32 = 14; // just enough to not lose information
+
+/// Parses a text string as a number.
+pub fn parse_value_text(s: &str) -> Option<f64> {
+    let s = s.trim();
+
+    if s.is_empty() {
+        return Some(0.0);
+    }
+
+    if let Ok(n) = s.parse::<f64>() {
+        return Some(n);
+    }
+
+    if s.ends_with('%') {
+        let num_part = s.trim_end_matches('%').trim();
+        if let Ok(n) = num_part.parse::<f64>() {
+            return Some(n / 100.0);
+        }
+        let cleaned: String = num_part.chars().filter(|&c| c != ',').collect();
+        if let Ok(n) = cleaned.parse::<f64>() {
+            return Some(n / 100.0);
+        }
+    }
+
+    let cleaned: String = s
+        .chars()
+        .filter(|&c| c.is_ascii_digit() || c == '.' || c == '-' || c == '+')
+        .collect();
+
+    if let Ok(n) = cleaned.parse::<f64>() {
+        if s.starts_with('(') && s.ends_with(')') {
+            return Some(-n);
+        }
+        if (s.starts_with('-') || s.contains("-$") || s.contains("-€"))
+            && n > 0.0
+            && !cleaned.starts_with('-')
+        {
+            return Some(-n);
+        }
+        return Some(n);
+    }
+
+    if let Ok(d) = decimal_from_str(s) {
+        return d.to_f64();
+    }
+
+    None
+}
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -149,17 +196,12 @@ impl<'a> TryFrom<&'a CellValue> for Decimal {
         match value {
             CellValue::Blank => Ok(Decimal::zero()),
             CellValue::Text(s) => {
-                let mut s = s.trim();
-                if s.is_empty() {
-                    return Ok(Decimal::zero());
-                }
-                if let Some(rest) = s.strip_prefix(CURRENCY_PREFIXES) {
-                    s = rest;
-                }
-                s.parse().map_err(|_| RunErrorMsg::Expected {
-                    expected: "number".into(),
-                    got: Some(value.type_name().into()),
-                })
+                parse_value_text(s)
+                    .and_then(Decimal::from_f64)
+                    .ok_or_else(|| RunErrorMsg::Expected {
+                        expected: "number".into(),
+                        got: Some(value.type_name().into()),
+                    })
             }
             // todo: this may be wrong
             CellValue::Number(n) => Ok(*n),
@@ -239,6 +281,20 @@ impl<'a> TryFrom<&'a CellValue> for NaiveDateTime {
         match value {
             CellValue::DateTime(naive_date_time) => Ok(*naive_date_time),
             CellValue::Date(naive_date) => Ok((*naive_date).into()),
+            CellValue::Text(s) => {
+                // First try to parse as a full datetime
+                if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                    return Ok(dt);
+                }
+                // Fall back to parsing as just a date (with midnight time)
+                if let Some(CellValue::Date(d)) = CellValue::unpack_date(s) {
+                    return Ok(d.into());
+                }
+                Err(RunErrorMsg::Expected {
+                    expected: "date time".into(),
+                    got: Some(value.type_name().into()),
+                })
+            }
             _ => Err(RunErrorMsg::Expected {
                 expected: "date time".into(),
                 got: Some(value.type_name().into()),
@@ -261,6 +317,20 @@ impl<'a> TryFrom<&'a CellValue> for NaiveTime {
             CellValue::DateTime(naive_date_time) => Ok(naive_date_time.time()),
             CellValue::Date(_) => Ok(NaiveTime::MIN),
             CellValue::Time(naive_time) => Ok(*naive_time),
+            CellValue::Text(s) => {
+                // First try to parse as time
+                if let Some(CellValue::Time(t)) = CellValue::unpack_time(s) {
+                    return Ok(t);
+                }
+                // Fall back to parsing as datetime and extracting the time
+                if let Some(CellValue::DateTime(dt)) = CellValue::unpack_date_time(s) {
+                    return Ok(dt.time());
+                }
+                Err(RunErrorMsg::Expected {
+                    expected: "time".into(),
+                    got: Some(value.type_name().into()),
+                })
+            }
             _ => Err(RunErrorMsg::Expected {
                 expected: "time".into(),
                 got: Some(value.type_name().into()),
@@ -406,6 +476,7 @@ impl<'a> CoerceInto for Spanned<&'a Value> {
             Value::Single(v) => v.error(),
             Value::Array(a) => a.first_error(),
             Value::Tuple(t) => t.iter().find_map(|a| a.first_error()),
+            Value::Lambda(_) => None,
         };
         match error {
             Some(e) => Err(e.clone()),
@@ -423,6 +494,7 @@ impl CoerceInto for Spanned<Value> {
                 .map(|a| a.into_non_error_array())
                 .try_collect()
                 .map(Value::Tuple),
+            Value::Lambda(l) => Ok(Value::Lambda(l)),
         }
     }
 }
@@ -491,39 +563,47 @@ mod test {
     }
 
     #[test]
-    fn test_rich_text_to_string() {
-        use crate::TextSpan;
+    fn test_string_to_date_conversions() {
+        // Test string to datetime conversion
+        let datetime_string = CellValue::from("2024-12-25 14:30:00");
+        let expected_dt = NaiveDate::from_ymd_opt(2024, 12, 25)
+            .unwrap()
+            .and_hms_opt(14, 30, 0)
+            .unwrap();
+        assert_eq!(
+            expected_dt,
+            NaiveDateTime::try_from(&datetime_string).unwrap()
+        );
 
-        let rich = CellValue::RichText(vec![
-            TextSpan::plain("Hello "),
-            TextSpan::link("world", "https://example.com"),
-        ]);
+        // Test string to date conversion (from date-only string)
+        let date_string = CellValue::from("2024-12-25");
+        let expected_date = NaiveDate::from_ymd_opt(2024, 12, 25).unwrap();
+        assert_eq!(expected_date, NaiveDate::try_from(&date_string).unwrap());
 
-        // RichText should convert to concatenated string
-        let s: String = String::try_from(&rich).unwrap();
-        assert_eq!(s, "Hello world");
-    }
+        // Test string to date conversion (from various formats)
+        let date_string_slash = CellValue::from("12/25/2024");
+        assert_eq!(
+            expected_date,
+            NaiveDate::try_from(&date_string_slash).unwrap()
+        );
 
-    #[test]
-    fn test_rich_text_to_decimal_fails() {
-        use crate::TextSpan;
-        use rust_decimal::Decimal;
+        // Test string to time conversion
+        let time_string = CellValue::from("14:30:00");
+        let expected_time = NaiveTime::from_hms_opt(14, 30, 0).unwrap();
+        assert_eq!(expected_time, NaiveTime::try_from(&time_string).unwrap());
 
-        let rich = CellValue::RichText(vec![TextSpan::plain("123")]);
+        // Test string to time conversion (from 12-hour format)
+        let time_string_12h = CellValue::from("2:30 PM");
+        let expected_time_pm = NaiveTime::from_hms_opt(14, 30, 0).unwrap();
+        assert_eq!(
+            expected_time_pm,
+            NaiveTime::try_from(&time_string_12h).unwrap()
+        );
 
-        // RichText should NOT convert to Decimal (returns error)
-        let result = Decimal::try_from(&rich);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_rich_text_to_bool_fails() {
-        use crate::TextSpan;
-
-        let rich = CellValue::RichText(vec![TextSpan::plain("true")]);
-
-        // RichText should NOT convert to bool (returns error)
-        let result = bool::try_from(&rich);
-        assert!(result.is_err());
+        // Test invalid string conversion
+        let invalid_string = CellValue::from("not a date");
+        NaiveDateTime::try_from(&invalid_string).unwrap_err();
+        NaiveDate::try_from(&invalid_string).unwrap_err();
+        NaiveTime::try_from(&invalid_string).unwrap_err();
     }
 }

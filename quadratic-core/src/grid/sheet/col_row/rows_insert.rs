@@ -31,6 +31,11 @@ impl Sheet {
         self.formats.insert_row(row, copy_formats);
         transaction.add_fill_cells_from_rows(self, row);
 
+        // update meta fills if there are any infinite fills (column/row/sheet fills)
+        if self.formats.has_meta_fills() {
+            transaction.add_sheet_meta_fills(self.id);
+        }
+
         // signal client to update the borders for changed columns
         self.borders.insert_row(row, copy_formats);
         transaction.sheet_borders.insert(self.id);
@@ -227,5 +232,77 @@ mod test {
         assert_eq!(sheet.offsets.row_height(2), 200.0);
         assert_eq!(sheet.offsets.row_height(3), 200.0);
         assert_eq!(sheet.offsets.row_height(5), 400.0);
+    }
+
+    /// Tests that sheet_meta_fills is marked when inserting a row with row fills (infinite x).
+    #[test]
+    fn insert_row_meta_fills_row_fill() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
+
+        // Set a row fill (infinite in x direction) on row 2
+        sheet
+            .formats
+            .fill_color
+            .set_rect(1, 2, None, Some(2), Some("red".to_string()));
+
+        let mut transaction = PendingTransaction::default();
+        let context = A1Context::default();
+
+        sheet.insert_row(&mut transaction, 1, false, CopyFormats::None, &context);
+
+        // Verify that sheet_meta_fills is marked dirty
+        assert!(
+            transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should be marked when there are row fills"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is marked when inserting a row with column fills (infinite y).
+    #[test]
+    fn insert_row_meta_fills_column_fill() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
+
+        // Set a column fill (infinite in y direction) on column A
+        sheet
+            .formats
+            .fill_color
+            .set_rect(1, 1, Some(1), None, Some("blue".to_string()));
+
+        let mut transaction = PendingTransaction::default();
+        let context = A1Context::default();
+
+        sheet.insert_row(&mut transaction, 1, false, CopyFormats::None, &context);
+
+        // Verify that sheet_meta_fills is marked dirty
+        assert!(
+            transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should be marked when there are column fills"
+        );
+    }
+
+    /// Tests that sheet_meta_fills is NOT marked when inserting a row with only finite fills.
+    #[test]
+    fn insert_row_no_meta_fills_for_finite_fills() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
+
+        // Set a finite fill (not infinite in any direction)
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A2], Some("green".to_string()));
+
+        let mut transaction = PendingTransaction::default();
+        let context = A1Context::default();
+
+        sheet.insert_row(&mut transaction, 1, false, CopyFormats::None, &context);
+
+        // Verify that sheet_meta_fills is NOT marked dirty for finite fills
+        assert!(
+            !transaction.sheet_meta_fills.contains(&sheet.id),
+            "sheet_meta_fills should NOT be marked for finite fills only"
+        );
     }
 }

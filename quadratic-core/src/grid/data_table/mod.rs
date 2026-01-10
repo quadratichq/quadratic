@@ -39,6 +39,43 @@ use super::{Grid, SheetFormatting, SheetId};
 #[cfg(test)]
 mod test_util;
 
+/// Template for preserving DataTable presentation properties during operations
+/// like autocomplete. This is a lightweight alternative to sending the full
+/// DataTable when only UI preferences need to be preserved.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+pub struct DataTableTemplate {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub show_name: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub show_columns: Option<bool>,
+
+    #[serde(default)]
+    pub alternating_colors: bool,
+
+    #[serde(default)]
+    pub header_is_first_row: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_output: Option<(u32, u32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_pixel_output: Option<(f32, f32)>,
+}
+
+impl From<&DataTable> for DataTableTemplate {
+    fn from(dt: &DataTable) -> Self {
+        DataTableTemplate {
+            show_name: dt.show_name,
+            show_columns: dt.show_columns,
+            alternating_colors: dt.alternating_colors,
+            header_is_first_row: dt.header_is_first_row,
+            chart_output: dt.chart_output,
+            chart_pixel_output: dt.chart_pixel_output,
+        }
+    }
+}
+
 /// Returns a unique name for the data table, taking into account its
 /// position on the sheet (so it doesn't conflict with itself).
 pub fn unique_data_table_name(
@@ -486,6 +523,7 @@ impl DataTable {
             Value::Single(value) => Ok(vec![value]),
             Value::Array(array) => Ok(array.cell_values_slice().iter().collect()),
             Value::Tuple(_) => bail!("Expected an array"),
+            Value::Lambda(_) => bail!("Expected an array"),
         }
     }
 
@@ -494,7 +532,7 @@ impl DataTable {
         match &self.value {
             Value::Single(_) => 1,
             Value::Array(array) => array.width() as usize,
-            Value::Tuple(_) => 0,
+            Value::Tuple(_) | Value::Lambda(_) => 0,
         }
     }
 
@@ -519,7 +557,7 @@ impl DataTable {
                         (array.height() as i64 + self.y_adjustment(true)) as usize
                     }
                 }
-                Value::Tuple(_) => 0,
+                Value::Tuple(_) | Value::Lambda(_) => 0,
             }
         }
     }
@@ -569,6 +607,7 @@ impl DataTable {
                         match &self.value {
                             Value::Array(_) => false,
                             Value::Tuple(_) => false,
+                            Value::Lambda(_) => false,
                             Value::Single(v) => {
                                 if let CellValue::Error(_) = v {
                                     true
@@ -626,9 +665,9 @@ impl DataTable {
                     _ => v.clone(),
                 },
                 Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
-                Value::Tuple(_) => CellValue::Error(Box::new(
+                Value::Tuple(_) | Value::Lambda(_) => CellValue::Error(Box::new(
                     // should never happen
-                    RunErrorMsg::InternalError("tuple saved as code run result".into())
+                    RunErrorMsg::InternalError("tuple or lambda saved as code run result".into())
                         .without_span(),
                 )),
             }
@@ -649,7 +688,7 @@ impl DataTable {
                         return false;
                     }
                 }
-                Value::Tuple(_) => {}
+                Value::Tuple(_) | Value::Lambda(_) => {}
             }
 
             return true;
@@ -690,7 +729,7 @@ impl DataTable {
 
                     size
                 }
-                Value::Single(_) | Value::Tuple(_) => {
+                Value::Single(_) | Value::Tuple(_) | Value::Lambda(_) => {
                     let mut height: u32 = 1;
                     height = height.saturating_add_signed(self.y_adjustment(true) as i32);
                     ArraySize::new(1, height).unwrap_or(ArraySize::_1X1)
@@ -835,7 +874,7 @@ impl DataTable {
         match &self.value {
             Value::Single(_) => true,
             Value::Array(a) => a.width() * a.height() < 2,
-            Value::Tuple(_) => false,
+            Value::Tuple(_) | Value::Lambda(_) => false,
         }
     }
 

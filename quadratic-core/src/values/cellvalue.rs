@@ -282,6 +282,17 @@ impl CellValue {
         }
     }
 
+    /// Returns the value as an f64 if it represents a number.
+    pub fn to_number(&self) -> Option<f64> {
+        use rust_decimal::prelude::ToPrimitive;
+        match self {
+            CellValue::Number(n) => n.to_f64(),
+            CellValue::Logical(true) => Some(1.0),
+            CellValue::Logical(false) => Some(0.0),
+            _ => None,
+        }
+    }
+
     pub fn to_number_display(
         &self,
         numeric_format: Option<NumericFormat>,
@@ -622,9 +633,6 @@ impl CellValue {
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
     pub fn parse_from_str(value: &str) -> CellValue {
-        if let Some(duration) = CellValue::unpack_duration(value) {
-            return duration;
-        }
         if let Some(time) = CellValue::unpack_time(value) {
             return time;
         }
@@ -715,8 +723,6 @@ impl CellValue {
             date
         } else if let Some(date_time) = CellValue::unpack_date_time(value) {
             date_time
-        } else if let Some(duration) = CellValue::unpack_duration(value) {
-            duration
         } else {
             CellValue::Text(value.into())
         };
@@ -1667,106 +1673,30 @@ mod test {
     }
 
     #[test]
-    fn test_text_span_plain() {
-        let span = TextSpan::plain("Hello");
-        assert_eq!(span.text, "Hello");
-        assert!(span.link.is_none());
-        assert!(span.bold.is_none());
-        assert!(span.italic.is_none());
-        assert!(span.is_plain());
-    }
+    fn test_to_number() {
+        // Number values return the f64 equivalent
+        let cv = CellValue::Number(decimal_from_str("123.456").unwrap());
+        assert_eq!(cv.to_number(), Some(123.456));
 
-    #[test]
-    fn test_text_span_link() {
-        let span = TextSpan::link("Click here", "https://example.com");
-        assert_eq!(span.text, "Click here");
-        assert_eq!(span.link, Some("https://example.com".to_string()));
-        assert!(!span.is_plain());
-    }
+        let cv = CellValue::Number(decimal_from_str("-99.5").unwrap());
+        assert_eq!(cv.to_number(), Some(-99.5));
 
-    #[test]
-    fn test_text_span_with_formatting() {
-        let span = TextSpan {
-            text: "Bold text".to_string(),
-            bold: Some(true),
-            italic: Some(false),
-            ..Default::default()
-        };
-        assert_eq!(span.text, "Bold text");
-        assert_eq!(span.bold, Some(true));
-        assert_eq!(span.italic, Some(false));
-        assert!(!span.is_plain());
-    }
+        let cv = CellValue::Number(decimal_from_str("0").unwrap());
+        assert_eq!(cv.to_number(), Some(0.0));
 
-    #[test]
-    fn test_rich_text_display() {
-        let rich = CellValue::RichText(vec![
-            TextSpan::plain("Hello "),
-            TextSpan::link("world", "https://example.com"),
-            TextSpan::plain("!"),
-        ]);
-        assert_eq!(rich.to_string(), "Hello world!");
-        assert_eq!(rich.to_display(), "Hello world!");
-    }
+        // Logical true returns 1.0
+        let cv = CellValue::Logical(true);
+        assert_eq!(cv.to_number(), Some(1.0));
 
-    #[test]
-    fn test_rich_text_type_name() {
-        let rich = CellValue::RichText(vec![TextSpan::plain("test")]);
-        assert_eq!(rich.type_name(), "rich text");
-        assert_eq!(rich.type_u8(), 12);
-        assert_eq!(rich.type_id(), 12);
-    }
+        // Logical false returns 0.0
+        let cv = CellValue::Logical(false);
+        assert_eq!(cv.to_number(), Some(0.0));
 
-    #[test]
-    fn test_rich_text_to_edit() {
-        let rich = CellValue::RichText(vec![TextSpan::plain("Part 1"), TextSpan::plain(" Part 2")]);
-        assert_eq!(rich.to_edit(), "Part 1 Part 2");
-    }
+        // Other types return None
+        let cv = CellValue::Text(String::from("hello"));
+        assert_eq!(cv.to_number(), None);
 
-    #[test]
-    fn test_rich_text_to_get_cells() {
-        let rich = CellValue::RichText(vec![TextSpan::link("Link text", "https://example.com")]);
-        assert_eq!(rich.to_get_cells(), "Link text");
-    }
-
-    #[test]
-    fn test_rich_text_repr() {
-        let rich = CellValue::RichText(vec![TextSpan::plain("Hello"), TextSpan::plain(" World")]);
-        assert_eq!(rich.repr(), "Hello World");
-    }
-
-    #[test]
-    fn test_rich_text_empty_spans() {
-        let rich = CellValue::RichText(vec![]);
-        assert_eq!(rich.to_string(), "");
-        assert_eq!(rich.to_display(), "");
-    }
-
-    #[test]
-    fn test_text_span_serialization() {
-        let span = TextSpan::link("Click", "https://example.com");
-        let json = serde_json::to_string(&span).unwrap();
-        // Should skip None fields
-        assert!(json.contains("\"text\":\"Click\""));
-        assert!(json.contains("\"link\":\"https://example.com\""));
-        assert!(!json.contains("\"bold\""));
-
-        let deserialized: TextSpan = serde_json::from_str(&json).unwrap();
-        assert_eq!(deserialized, span);
-    }
-
-    #[test]
-    fn test_rich_text_serialization() {
-        let rich = CellValue::RichText(vec![
-            TextSpan::plain("Normal "),
-            TextSpan {
-                text: "bold".to_string(),
-                bold: Some(true),
-                ..Default::default()
-            },
-        ]);
-        let json = serde_json::to_string(&rich).unwrap();
-        let deserialized: CellValue = serde_json::from_str(&json).unwrap();
-        assert_eq!(deserialized, rich);
+        let cv = CellValue::Blank;
+        assert_eq!(cv.to_number(), None);
     }
 }

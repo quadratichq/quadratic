@@ -1,36 +1,12 @@
+//! Search/lookup functions: VLOOKUP, HLOOKUP, XLOOKUP, LOOKUP, MATCH, XMATCH
+
 use itertools::Itertools;
-use regex::Regex;
 use smallvec::smallvec;
 
-use crate::{ArraySize, CodeResultExt, a1::SheetCellRefRange};
+use super::{LookupMatchMode, LookupSearchMode, lookup, *};
 
-use super::*;
-
-pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
-    include_in_docs: true,
-    include_in_completions: true,
-    name: "Lookup functions",
-    docs: None,
-    get_functions,
-};
-
-fn get_functions() -> Vec<FormulaFunction> {
+pub(super) fn get_functions() -> Vec<FormulaFunction> {
     vec![
-        formula_fn!(
-            /// Returns the value of the cell at a given location.
-            #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
-            fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
-                let span = cellref_string.span;
-                let cell_ref = SheetCellRefRange::parse_at(
-                    &cellref_string.inner,
-                    ctx.sheet_pos,
-                    ctx.grid_controller.a1_context(),
-                )
-                .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
-                let sheet_rect = ctx.resolve_range_ref(&cell_ref, span, true)?.inner;
-                ctx.get_cell_array(sheet_rect, span)?.inner
-            }
-        ),
         formula_fn!(
             /// Searches for a value in the first vertical column of a range and
             /// return the corresponding cell in another vertical column, or an
@@ -336,302 +312,131 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Returns the element in `range` at a given `row` and `column`. If
-            /// the array is a single row, then `row` may be omitted; otherwise
-            /// it is required. If the array is a single column, then `column`
-            /// may be omitted; otherwise it is required.
+            /// Searches for a value in a one-row or one-column range and returns
+            /// a corresponding value from another one-row or one-column range.
             ///
-            /// If `range` is a group of multiple range references, then the
-            /// extra parameter `range_num` indicates which range to index from.
+            /// This is the vector form of LOOKUP. If `result_range` is omitted,
+            /// `lookup_range` is used for both searching and returning values.
             ///
-            /// When `range` is a range references or a group of range
-            /// references, `INDEX` may be used as part of a new range
-            /// reference.
+            /// The values in `lookup_range` must be sorted in ascending order;
+            /// otherwise the result may be incorrect. LOOKUP finds the largest
+            /// value less than or equal to `lookup_value`.
+            ///
+            /// If no value is found (all values are greater than `lookup_value`),
+            /// returns an error.
             #[examples(
-                "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)",
-                "INDEX(A1:A100, 42)",
-                "INDEX(A6:Q6, 12)",
-                "INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)",
-                "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)",
-                "INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6):E1",
-                "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)"
+                "LOOKUP(5, {1, 2, 3, 4, 5})",
+                "LOOKUP(\"c\", {\"a\", \"b\", \"c\"}, {1, 2, 3})",
+                "LOOKUP(50, A1:A10, B1:B10)"
             )]
-            fn INDEX(
+            fn LOOKUP(
                 span: Span,
-                range: (Spanned<Vec<Array>>),
-                row: (Option<Spanned<i64>>),
-                column: (Option<Spanned<i64>>),
-                range_num: (Option<Spanned<i64>>),
+                lookup_value: CellValue,
+                lookup_range: (Spanned<Array>),
+                result_range: (Option<Spanned<Array>>),
             ) {
-                let args = IndexFunctionArgs::from_values(
-                    |i| Some(range.inner.get(i)?.size()),
-                    row,
-                    column,
-                    range_num,
-                )?;
-                range
-                    .inner
-                    .get(args.tuple_index)
-                    .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(span))?
-                    .get(args.x, args.y)
+                // Determine if lookup_range is a row or column vector
+                let lookup_axis = lookup_range.array_linear_axis()?;
+                let lookup_vec = lookup_range.try_as_linear_array()?;
+
+                // Use lookup_range as result_range if not provided
+                let result_range = result_range.unwrap_or_else(|| lookup_range.clone());
+                let _result_axis = result_range.array_linear_axis()?;
+                let result_vec = result_range.try_as_linear_array()?;
+
+                // For vector form, both must be linear and same length
+                if lookup_vec.len() != result_vec.len() {
+                    return Err(RunErrorMsg::ArrayAxisMismatch {
+                        axis: lookup_axis.unwrap_or(Axis::Y),
+                        expected: lookup_vec.len() as u32,
+                        got: result_vec.len() as u32,
+                    }
+                    .with_span(span));
+                }
+
+                // Use binary search with "next smaller" mode since LOOKUP expects sorted data
+                let match_mode = LookupMatchMode::NextSmaller;
+                let search_mode = LookupSearchMode::BinaryAscending;
+
+                let index = lookup(&lookup_value, lookup_vec, match_mode, search_mode)?
+                    .ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?;
+
+                // Both are linear - just get the element at the found index
+                result_vec
+                    .get(index)
                     .cloned()
-                    .with_span(span)?
-                    .inner
+                    .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(span))?
+            }
+        ),
+        formula_fn!(
+            /// Searches for a value in a range and returns the index of the
+            /// first match, starting from 1.
+            ///
+            /// This is an enhanced version of MATCH with more flexible matching
+            /// and search options.
+            ///
+            /// - `search_key`: The value to search for.
+            /// - `search_range`: A one-row or one-column range to search.
+            /// - `match_mode`: Optional. How to match:
+            ///   - `0` (default): Exact match
+            ///   - `-1`: Exact match or next smaller
+            ///   - `1`: Exact match or next larger
+            ///   - `2`: Wildcard match (*, ?, ~)
+            /// - `search_mode`: Optional. How to search:
+            ///   - `1` (default): Search first to last
+            ///   - `-1`: Search last to first
+            ///   - `2`: Binary search ascending (range must be sorted ascending)
+            ///   - `-2`: Binary search descending (range must be sorted descending)
+            ///
+            #[doc = see_docs_for_more_about_wildcards!()]
+            #[examples(
+                "XMATCH(\"b\", {\"a\", \"b\", \"c\"}) = 2",
+                "XMATCH(5, {1, 3, 5, 7, 9}, 0) = 3",
+                "XMATCH(4, {1, 3, 5, 7, 9}, 1) = 3",
+                "XMATCH(4, {1, 3, 5, 7, 9}, -1) = 2"
+            )]
+            #[zip_map]
+            fn XMATCH(
+                span: Span,
+                [search_key]: CellValue,
+                search_range: (Spanned<Array>),
+                match_mode: (Option<i64>),
+                search_mode: (Option<i64>),
+            ) {
+                let match_mode = match match_mode.unwrap_or(0) {
+                    0 => LookupMatchMode::Exact,
+                    -1 => LookupMatchMode::NextSmaller,
+                    1 => LookupMatchMode::NextLarger,
+                    2 => LookupMatchMode::Wildcard,
+                    _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                };
+                let search_mode = match search_mode.unwrap_or(1) {
+                    1 => LookupSearchMode::LinearForward,
+                    -1 => LookupSearchMode::LinearReverse,
+                    2 => LookupSearchMode::BinaryAscending,
+                    -2 => LookupSearchMode::BinaryDescending,
+                    _ => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                };
+
+                // Check for invalid combination
+                if match_mode == LookupMatchMode::Wildcard {
+                    match search_mode {
+                        LookupSearchMode::LinearForward | LookupSearchMode::LinearReverse => (), //ok
+                        LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
+                            // not ok -- can't do binary search with wildcard
+                            return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                        }
+                    }
+                }
+
+                let needle = search_key;
+                let haystack = search_range.try_as_linear_array()?;
+                let index = lookup(needle, haystack, match_mode, search_mode)?
+                    .ok_or(RunErrorMsg::NoMatch)?;
+                index as i64 + 1 // 1-indexed
             }
         ),
     ]
-}
-
-/// Arguments to the `INDEX` function.
-#[derive(Debug, Copy, Clone)]
-pub struct IndexFunctionArgs {
-    /// Which range (0-indexed) to return from.
-    pub tuple_index: usize,
-    /// X coordinate (0-indexed) within the range.
-    pub x: u32,
-    /// Y coordinate (0-indexed) within the range.
-    pub y: u32,
-}
-impl IndexFunctionArgs {
-    pub fn from_values(
-        get_array_size: impl FnOnce(usize) -> Option<ArraySize>,
-        mut row: Option<Spanned<i64>>,
-        mut column: Option<Spanned<i64>>,
-        range_num: Option<Spanned<i64>>,
-    ) -> CodeResult<Self> {
-        let (tuple_index, array_size) = match range_num {
-            // IIFE to mimic try_block
-            Some(v) => (|| {
-                let i = v.inner.saturating_sub(1).try_into().ok()?;
-                Some((i, get_array_size(i)?))
-            })()
-            .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(v.span))?,
-            None => {
-                let array_size = get_array_size(0).ok_or(RunErrorMsg::InternalError(
-                    "get_array_size(0) returned None".into(),
-                ))?;
-                (0, array_size)
-            }
-        };
-
-        let w = array_size.w.get() as i64;
-        let h = array_size.h.get() as i64;
-        if h == 1 && column.is_none() {
-            std::mem::swap(&mut row, &mut column);
-        }
-
-        let x;
-        match column {
-            Some(column) => {
-                x = column.inner.saturating_sub(1);
-                if !(0 <= x && x < w) {
-                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(column));
-                }
-            }
-            None => x = 0,
-        }
-
-        let y;
-        match row {
-            Some(row) => {
-                y = row.inner.saturating_sub(1);
-                if !(0 <= y && y < h) {
-                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(row));
-                }
-            }
-            None => y = 0,
-        }
-
-        Ok(Self {
-            tuple_index,
-            x: x as u32,
-            y: y as u32,
-        })
-    }
-}
-
-/// Performs a `LOOKUP` and returns the index of the best match (0-indexed).
-fn lookup<V: ToString + AsRef<CellValue>>(
-    needle: &CellValue,
-    haystack: &[V],
-    match_mode: LookupMatchMode,
-    search_mode: LookupSearchMode,
-) -> CodeResult<Option<usize>> {
-    let fix_rev_index = |i: usize| haystack.len() - 1 - i;
-
-    let preference = match match_mode {
-        LookupMatchMode::Exact => std::cmp::Ordering::Equal,
-        LookupMatchMode::NextSmaller => std::cmp::Ordering::Less,
-        LookupMatchMode::NextLarger => std::cmp::Ordering::Greater,
-        LookupMatchMode::Wildcard => match needle {
-            CellValue::Text(needle_string) => {
-                let regex = crate::formulas::wildcard_pattern_to_regex(needle_string)?;
-                return Ok(match search_mode {
-                    LookupSearchMode::LinearForward => lookup_regex(regex, haystack),
-                    LookupSearchMode::LinearReverse => {
-                        lookup_regex(regex, haystack.iter().rev()).map(fix_rev_index)
-                    }
-                    LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
-                        internal_error!(
-                            "invalid match_mode+search_mode combination \
-                             should have been caught earlier in XLOOKUP",
-                        );
-                    }
-                });
-            }
-            _ => std::cmp::Ordering::Equal,
-        },
-    };
-
-    Ok(match search_mode {
-        LookupSearchMode::LinearForward => {
-            lookup_linear_search(needle, haystack.iter(), preference)
-        }
-        LookupSearchMode::LinearReverse => {
-            lookup_linear_search(needle, haystack.iter().rev(), preference).map(fix_rev_index)
-        }
-        LookupSearchMode::BinaryAscending => {
-            lookup_binary_search(needle, haystack, preference, |a, b| a.partial_cmp(b))
-        }
-        LookupSearchMode::BinaryDescending => {
-            lookup_binary_search(needle, haystack, preference.reverse(), |a, b| {
-                b.partial_cmp(a)
-            })
-        }
-    }
-    .filter(|&i| {
-        // Only return a match if it's comparable (i.e., the same type).
-        haystack
-            .get(i)
-            .is_some_and(|candidate| candidate.as_ref().type_id() == needle.type_id())
-    }))
-}
-
-/// Performs a `LOOKUP` using a wildcard and returns the index of the first
-/// match.
-fn lookup_regex<'a, V: 'a + ToString>(
-    needle: Regex,
-    haystack: impl IntoIterator<Item = &'a V>,
-) -> Option<usize> {
-    haystack
-        .into_iter()
-        .find_position(|candidate| needle.is_match(&candidate.to_string()))
-        .map(|(index, _value)| index)
-}
-
-fn lookup_linear_search<'a, V: 'a + AsRef<CellValue>>(
-    needle: &CellValue,
-    haystack: impl IntoIterator<Item = &'a V>,
-    preference: std::cmp::Ordering,
-) -> Option<usize> {
-    let haystack = haystack.into_iter().map(|v| v.as_ref());
-
-    let mut best_match: Option<(usize, &'a CellValue)> = None;
-
-    for candidate @ (index, value) in haystack.enumerate() {
-        // Compare the old value to the new one.
-        let cmp_result = value.partial_cmp(needle).ok();
-        let Some(cmp_result) = cmp_result else {
-            continue;
-        };
-
-        if cmp_result == std::cmp::Ordering::Equal {
-            return Some(index);
-        } else if cmp_result == preference {
-            if let Some((_, old_best_value)) = best_match {
-                // If `value` is closer, then return it instead of
-                // `old_best_value`.
-                if old_best_value.partial_cmp(value) == Ok(preference) {
-                    best_match = Some(candidate);
-                }
-            } else {
-                best_match = Some(candidate);
-            }
-        }
-    }
-
-    best_match.map(|(index, _value)| index)
-}
-
-fn lookup_binary_search<V: AsRef<CellValue>>(
-    needle: &CellValue,
-    haystack: &[V],
-    preference: std::cmp::Ordering,
-    cmp_fn: fn(&CellValue, &CellValue) -> CodeResult<std::cmp::Ordering>,
-) -> Option<usize> {
-    // Error behavior doesn't matter too much, since the result is undefined if
-    // values aren't sorted. I think Excel assumes errors are greater that the
-    // needle but I'm not sure.
-    let cmp_fn =
-        |candidate: &V| cmp_fn(candidate.as_ref(), needle).unwrap_or(std::cmp::Ordering::Greater);
-
-    match haystack.binary_search_by(cmp_fn) {
-        Ok(i) => Some(i),
-        Err(i) => match preference {
-            std::cmp::Ordering::Less => i.checked_sub(1),
-            std::cmp::Ordering::Equal => None,
-            std::cmp::Ordering::Greater => (i < haystack.len()).then_some(i),
-        },
-    }
-}
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-enum LookupMatchMode {
-    #[default]
-    Exact = 0,
-    NextSmaller = -1,
-    NextLarger = 1,
-    Wildcard = 2,
-}
-impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
-    type Error = RunError;
-
-    fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
-        match value {
-            None => Ok(LookupMatchMode::default()),
-            Some(v) => match v.inner {
-                0 => Ok(LookupMatchMode::Exact),
-                -1 => Ok(LookupMatchMode::NextSmaller),
-                1 => Ok(LookupMatchMode::NextLarger),
-                2 => Ok(LookupMatchMode::Wildcard),
-                _ => Err(RunErrorMsg::InvalidArgument.with_span(v.span)),
-            },
-        }
-    }
-}
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-enum LookupSearchMode {
-    #[default]
-    LinearForward = 1,
-    LinearReverse = -1,
-    BinaryAscending = 2,
-    BinaryDescending = -2,
-}
-impl LookupSearchMode {
-    fn from_is_sorted(is_sorted: Option<bool>) -> Self {
-        // TODO: the default behavior here may be incorrect.
-        match is_sorted {
-            Some(false) | None => LookupSearchMode::LinearForward,
-            Some(true) => LookupSearchMode::BinaryAscending,
-        }
-    }
-}
-impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
-    type Error = RunError;
-
-    fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
-        match value {
-            None => Ok(LookupSearchMode::default()),
-            Some(v) => match v.inner {
-                1 => Ok(LookupSearchMode::LinearForward),
-                -1 => Ok(LookupSearchMode::LinearReverse),
-                2 => Ok(LookupSearchMode::BinaryAscending),
-                -2 => Ok(LookupSearchMode::BinaryDescending),
-                _ => Err(RunErrorMsg::InvalidArgument.with_span(v.span)),
-            },
-        }
-    }
 }
 
 #[cfg(test)]
@@ -641,7 +446,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::{Pos, controller::GridController, formulas::tests::*};
+    use crate::{Axis, Pos, controller::GridController, formulas::tests::*};
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -669,31 +474,6 @@ mod tests {
         ];
         static ref VALUES_THAT_SHOULD_NEVER_MATCH: Vec<CellValue> =
             vec![(-987.0).into(), "this shouldn't match anything".into()];
-    }
-
-    #[test]
-    fn test_formula_indirect() {
-        let mut g = GridController::new();
-        let ctx: &crate::a1::A1Context = g.a1_context();
-        let sheet_id = g.sheet_ids()[0];
-        let pos = pos![B2].to_sheet_pos(sheet_id);
-        let form = parse_formula("INDIRECT(\"D5\")", ctx, pos).unwrap();
-
-        g.set_cell_value(pos![sheet_id!D5], 35.to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!D6], 36.to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!D7], 37.to_string(), None, false);
-
-        let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
-        assert_eq!(
-            RunErrorMsg::CircularReference,
-            form.eval(&mut ctx).unwrap_err().msg,
-        );
-
-        assert_eq!("{35}".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
-        assert_eq!(
-            "{35; 36; 37}".to_string(),
-            eval_to_string(&g, "INDIRECT(\"D5:D7\")"),
-        );
     }
 
     /// Test VLOOKUP error conditions.
@@ -1323,94 +1103,152 @@ mod tests {
     }
 
     #[test]
-    fn test_index() {
-        let mut g = GridController::from_grid(Grid::new(), 0);
+    fn test_lookup() {
+        let g = GridController::new();
 
-        let s = "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)";
-        assert_check_syntax_succeeds(&g, s);
-        assert_eq!("3", eval_to_string(&g, s));
+        // Basic LOOKUP with array - finds exact match
+        assert_eq!("3", eval_to_string(&g, "LOOKUP(3, {1, 2, 3, 4, 5})"));
 
-        let sheet_id = g.sheet_ids()[0];
-        g.set_cell_value(pos![sheet_id!A42], "funny number".to_string(), None, false);
-        let s = "INDEX(A1:A100, 42)";
-        assert_check_syntax_succeeds(&g, s);
-        assert_eq!("funny number", eval_to_string(&g, s));
+        // LOOKUP finds largest value less than or equal to lookup_value
+        assert_eq!("2", eval_to_string(&g, "LOOKUP(2.5, {1, 2, 3, 4, 5})"));
+        assert_eq!("5", eval_to_string(&g, "LOOKUP(10, {1, 2, 3, 4, 5})"));
 
-        g.set_cell_value(pos![sheet_id!L6], "twelfth".to_string(), None, false);
-        let s = "INDEX((A6:Q6), 12)"; // parens are ok
-        assert_check_syntax_succeeds(&g, s);
-        assert_eq!("twelfth", eval_to_string(&g, s));
-        let s = "INDEX(L6, 1)"; // single cells are ok
-        assert_check_syntax_succeeds(&g, s);
-        assert_eq!("twelfth", eval_to_string(&g, s));
-        let s = "INDEX(6, 1)"; // single values are ok
-        assert_check_syntax_succeeds(&g, s);
-        assert_eq!("6", eval_to_string(&g, s));
-        let s = "INDEX(3+3, 1)"; // expressions are ok
-        assert_check_syntax_succeeds(&g, s);
-        assert_eq!("6", eval_to_string(&g, s));
-
-        let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
-        assert_check_syntax_succeeds(&g, s);
-        g.set_cell_value(pos![sheet_id!A5], "aaa".to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!C5], "ccc".to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!D5], "ddd".to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!C6], 1.to_string(), None, false);
-        assert_eq!("aaa", eval_to_string(&g, s));
-        g.set_cell_value(pos![sheet_id!C6], 2.to_string(), None, false);
-        assert_eq!("ccc", eval_to_string(&g, s));
-        g.set_cell_value(pos![sheet_id!C6], 3.to_string(), None, false);
-        assert_eq!("ddd", eval_to_string(&g, s));
-        g.set_cell_value(pos![sheet_id!C6], 4.to_string(), None, false);
-        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.set_cell_value(pos![sheet_id!C6], "-1".to_string(), None, false);
-        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.set_cell_value(pos![sheet_id!C6], i64::MAX.to_string(), None, false);
-        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.set_cell_value(pos![sheet_id!C6], i64::MIN.to_string(), None, false);
-        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-
-        let s = "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)";
-        assert_check_syntax_succeeds(&g, s);
-        g.set_cell_value(pos![sheet_id!A2], 12.to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!L3], "l3".to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!L4], "l4".to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!L5], "l5".to_string(), None, false);
-        g.set_cell_value(pos![sheet_id!L6], "l6".to_string(), None, false);
-        assert_eq!("{l3; l4; l5; l6}", eval_to_string(&g, s));
-
-        let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)";
-        assert_check_syntax_succeeds(&g, s);
-        g.set_cell_value(pos![sheet_id!C6], "2".to_string(), None, false);
-        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-
-        let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
-        assert_check_syntax_succeeds(&g, s);
-        let array_size = eval(&g, s).into_array().unwrap().size();
-        assert_eq!(array_size.w.get(), 3);
-        assert_eq!(array_size.h.get(), 5);
-
-        let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6):E1";
-        assert_check_syntax_succeeds(&g, s);
-        let array_size = eval(&g, s).into_array().unwrap().size();
-        assert_eq!(array_size.w.get(), 3);
-        assert_eq!(array_size.h.get(), 5);
-
-        // values are not ok when we expect a cell reference
-        let s = "INDEX(6, 1):E1";
+        // LOOKUP with separate result array
         assert_eq!(
-            RunErrorMsg::Expected {
-                expected: "cell range reference".into(),
-                got: Some("numeric literal".into()),
-            },
-            eval_to_err(&g, s).msg,
+            "c",
+            eval_to_string(
+                &g,
+                "LOOKUP(3, {1, 2, 3, 4, 5}, {\"a\", \"b\", \"c\", \"d\", \"e\"})"
+            )
         );
         assert_eq!(
-            RunErrorMsg::Expected {
-                expected: "cell range reference".into(),
-                got: Some("numeric literal".into()),
+            "b",
+            eval_to_string(
+                &g,
+                "LOOKUP(2.5, {1, 2, 3, 4, 5}, {\"a\", \"b\", \"c\", \"d\", \"e\"})"
+            )
+        );
+
+        // LOOKUP with column vectors
+        assert_eq!("3", eval_to_string(&g, "LOOKUP(3, {1; 2; 3; 4; 5})"));
+        assert_eq!(
+            "c",
+            eval_to_string(
+                &g,
+                "LOOKUP(3, {1; 2; 3; 4; 5}, {\"a\"; \"b\"; \"c\"; \"d\"; \"e\"})"
+            )
+        );
+
+        // LOOKUP with strings (sorted alphabetically)
+        assert_eq!(
+            "2",
+            eval_to_string(
+                &g,
+                "LOOKUP(\"banana\", {\"apple\", \"banana\", \"cherry\"}, {1, 2, 3})"
+            )
+        );
+
+        // Error: no match (all values greater than lookup_value)
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "LOOKUP(0, {1, 2, 3, 4, 5})").msg,
+        );
+
+        // Error: array size mismatch
+        assert_eq!(
+            RunErrorMsg::ArrayAxisMismatch {
+                axis: Axis::X,
+                expected: 3,
+                got: 2,
             },
-            check_syntax_to_err(&g, s).msg,
+            eval_to_err(&g, "LOOKUP(3, {1, 2, 3}, {\"a\", \"b\"})").msg,
+        );
+    }
+
+    #[test]
+    fn test_xmatch() {
+        let g = GridController::new();
+
+        // Basic exact match (default match_mode = 0)
+        assert_eq!(
+            "2",
+            eval_to_string(&g, "XMATCH(\"b\", {\"a\", \"b\", \"c\"})")
+        );
+        assert_eq!(
+            "1",
+            eval_to_string(&g, "XMATCH(\"a\", {\"a\", \"b\", \"c\"})")
+        );
+        assert_eq!(
+            "3",
+            eval_to_string(&g, "XMATCH(\"c\", {\"a\", \"b\", \"c\"})")
+        );
+
+        // Exact match with numbers
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, 0)"));
+        assert_eq!("1", eval_to_string(&g, "XMATCH(1, {1, 3, 5, 7, 9}, 0)"));
+        assert_eq!("5", eval_to_string(&g, "XMATCH(9, {1, 3, 5, 7, 9}, 0)"));
+
+        // No match returns error
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "XMATCH(4, {1, 3, 5, 7, 9}, 0)").msg,
+        );
+
+        // match_mode = 1 (exact or next larger)
+        assert_eq!("3", eval_to_string(&g, "XMATCH(4, {1, 3, 5, 7, 9}, 1)"));
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, 1)"));
+        assert_eq!("1", eval_to_string(&g, "XMATCH(0, {1, 3, 5, 7, 9}, 1)"));
+
+        // match_mode = -1 (exact or next smaller)
+        assert_eq!("2", eval_to_string(&g, "XMATCH(4, {1, 3, 5, 7, 9}, -1)"));
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, -1)"));
+        assert_eq!("5", eval_to_string(&g, "XMATCH(100, {1, 3, 5, 7, 9}, -1)"));
+
+        // match_mode = 2 (wildcard)
+        assert_eq!(
+            "2",
+            eval_to_string(&g, "XMATCH(\"b*\", {\"apple\", \"banana\", \"cherry\"}, 2)")
+        );
+        assert_eq!(
+            "1",
+            eval_to_string(&g, "XMATCH(\"a*\", {\"apple\", \"banana\", \"cherry\"}, 2)")
+        );
+        assert_eq!(
+            "3",
+            eval_to_string(&g, "XMATCH(\"c*\", {\"apple\", \"banana\", \"cherry\"}, 2)")
+        );
+
+        // search_mode = -1 (reverse search)
+        assert_eq!(
+            "5",
+            eval_to_string(
+                &g,
+                "XMATCH(\"a\", {\"a\", \"b\", \"c\", \"d\", \"a\"}, 0, -1)"
+            )
+        );
+
+        // search_mode = 2 (binary search ascending)
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {1, 3, 5, 7, 9}, 0, 2)"));
+
+        // search_mode = -2 (binary search descending)
+        assert_eq!("3", eval_to_string(&g, "XMATCH(5, {9, 7, 5, 3, 1}, 0, -2)"));
+
+        // Column vector
+        assert_eq!(
+            "2",
+            eval_to_string(&g, "XMATCH(\"b\", {\"a\"; \"b\"; \"c\"})")
+        );
+
+        // Error: wildcard with binary search not allowed
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "XMATCH(\"a*\", {\"a\", \"b\", \"c\"}, 2, 2)").msg,
+        );
+
+        // Error: non-linear array
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "XMATCH(1, {1, 2; 3, 4})").msg,
         );
     }
 }
