@@ -7,10 +7,47 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  create_status_comment:
+    name: Create Status Comment
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 5
+    steps:
+      - name: Find Status Comment
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Create initial status comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ⏳ Building images...
+            ⏳ Deploy
+            ⏳ Tests-E2E
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
   build_client:
     name: Build Client
+    needs: [create_status_comment]
     runs-on: blacksmith-4vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-build-client
       cancel-in-progress: true
@@ -122,10 +159,39 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on build failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ❌ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
   build_images:
     name: Build Images
+    needs: [create_status_comment]
     runs-on: ${{ matrix.runner }}
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-build-images-${{ matrix.service }}
       cancel-in-progress: true
@@ -193,15 +259,65 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on build failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ❌ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
   deploy_client:
     needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-deploy-client
     timeout-minutes: 60
     steps:
+      - name: Find Status Comment
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment-start
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment-start.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ⏳ Deploying...
+            ⏳ Tests-E2E
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -237,11 +353,39 @@ jobs:
             exit 1
           fi
 
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment-failure
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment-failure.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
   deploy_infra:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-deploy-infra
     timeout-minutes: 60
@@ -287,6 +431,30 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           STACK_NAME: quadratic-qa
+
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment-failure
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment-failure.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
 
   verify_deployed_version:
     name: Verify Version
@@ -336,11 +504,245 @@ jobs:
           expected_version: ${{ env.EXPECTED_VERSION }}
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
-  qa-wolf-notify:
-    needs: [deploy_client, deploy_infra, verify_deployed_version]
-    name: Notify QA Wolf
+  test-e2e-start-comment:
+    name: Tests-E2E - Generate Matrix and Start Comment
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    env:
+      matrix_runner: 164
+      e2e_url: qa.quadratic-preview.com
+    steps:
+      - name: Generate Test Matrix
+        id: generate-matrix
+        run: |
+          # Create a matrix with shardIndex values from 1 to matrix_runner
+          matrix=$(python -c "import json; print(json.dumps({'shardIndex': list(range(1, ${{ env.matrix_runner }} + 1)), 'shardTotal': [${{ env.matrix_runner }}]}))" | tr -d '\n')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $matrix"
+
+      - name: Find Status Comment
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-start-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on E2E tests start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-start-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${{ env.e2e_url }})
+            ⏳ Tests-E2E running...
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+  test-e2e-matrix-run:
+    name: Tests-E2E - Matrix Run, Shard
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+        test-e2e-start-comment,
+      ]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      options: --user root
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.test-e2e-start-comment.outputs.matrix) }}
+    env:
+      e2e_url: qa.quadratic-preview.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions/tests-e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
+
+      - name: Run tests e2e
+        uses: ./.github/actions/tests-e2e
+        id: run-tests-e2e
+        with:
+          e2e_url: "https://${{ env.e2e_url }}"
+          shard_index: ${{ matrix.shardIndex }}
+          shard_total: ${{ matrix.shardTotal }}
+
+  test-e2e-merge-report-and-end-comment:
+    name: Tests-E2E - Generate Report and End Comment
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+        test-e2e-start-comment,
+        test-e2e-matrix-run,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && needs.test-e2e-start-comment.result == 'success' && github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 15
+    env:
+      e2e_url: qa.quadratic-preview.com
+      s3_bucket: e2e.quadratic-preview.com
+    steps:
+      - name: Checkout code
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            test/e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
+
+      - name: Setup Node
+        if: ${{ !cancelled() }}
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install Dependencies
+        if: ${{ !cancelled() }}
+        run: cd test/e2e && npm install
+
+      - name: Download blob reports
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: blob-report-${{ github.run_id }}-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        if: ${{ !cancelled() }}
+        run: |
+          if [ ! -d "all-blob-reports" ] || [ -z "$(ls -A all-blob-reports 2>/dev/null)" ]; then
+            echo "No blob reports found. Creating empty report."
+            mkdir -p playwright-report
+            echo "<html><body><h1>No test reports available</h1><p>Tests may have been cancelled or failed to upload reports.</p></body></html>" > playwright-report/index.html
+            exit 0
+          fi
+          file_count=$(find all-blob-reports -type f 2>/dev/null | wc -l || echo 0)
+          echo "Merging $file_count blob reports into HTML report..."
+          npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Configure AWS Credentials
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload HTML report to S3
+        if: ${{ !cancelled() }}
+        run: |
+          # Upload entire build directory to S3
+          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/qa \
+            --delete --force \
+            --cache-control "public, max-age=30"
+
+      - name: Find Status Comment
+        if: always()
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-merge-report-and-end-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on E2E tests end
+        if: ${{ !cancelled() }}
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${{ env.e2e_url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/qa)
+          edit-mode: replace
+
+      - name: Update comment on E2E tests cancelled
+        if: cancelled()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${{ env.e2e_url }})
+            ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+  test-e2e-status:
+    name: Tests-E2E Status
+    needs: [test-e2e-matrix-run]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 5
+    steps:
+      - name: Check E2E test results
+        run: |
+          if [ "${{ needs.test-e2e-matrix-run.result }}" != "success" ]; then
+            echo "E2E tests failed or were cancelled. Result: ${{ needs.test-e2e-matrix-run.result }}"
+            exit 1
+          fi
+          echo "All E2E tests passed successfully!"
+
+  qa-wolf-notify:
+    needs:
+      [
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+        test-e2e-matrix-run,
+      ]
+    name: Notify QA Wolf
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-wolf-notify
       cancel-in-progress: true
