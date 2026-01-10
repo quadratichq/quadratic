@@ -270,6 +270,8 @@ test('Open calendar', async ({ page }) => {
   await page.keyboard.press('Enter', { delay: 250 });
   await page.keyboard.type('1/1/2000', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
+  // Wait for the async cell value operation to complete
+  await page.waitForTimeout(1000);
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Check calendar picker is open
@@ -287,6 +289,8 @@ test('Open calendar', async ({ page }) => {
   await gotoCells(page, { a1: 'A2' });
   await page.keyboard.type('1/1/1999 1:23 am', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
+  // Wait for the async cell value operation to complete
+  await page.waitForTimeout(1000);
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Check calendar picker with time is open
@@ -306,6 +310,8 @@ test('Open calendar', async ({ page }) => {
   await gotoCells(page, { a1: 'A3' });
   await page.keyboard.type('1:23 am', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
+  // Wait for the async cell value operation to complete
+  await page.waitForTimeout(1000);
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Calendar picker should not be open
