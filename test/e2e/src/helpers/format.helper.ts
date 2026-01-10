@@ -1,16 +1,28 @@
 import type { Page } from '@playwright/test';
 import { gotoCells } from './sheet.helper';
 
+// Helper to wait for all Radix popovers/menus to close
+// This handles cases where multiple popper wrappers exist simultaneously
+// (e.g., "more formatting" popover + nested dropdown menu)
+const waitForAllPoppersToClose = async (page: Page, timeout = 5000) => {
+  const popperLocator = page.locator('[data-radix-popper-content-wrapper]');
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    const count = await popperLocator.count();
+    if (count === 0) {
+      return;
+    }
+    // Small delay before checking again
+    await page.waitForTimeout(50);
+  }
+  // If we timeout, just continue - the popovers may still close
+};
+
 // Helper to ensure any existing popovers/menus are closed
 const closeExistingPopovers = async (page: Page) => {
   await page.keyboard.press('Escape');
-  const existingPopover = page.locator('[data-radix-popper-content-wrapper]');
-  if ((await existingPopover.count()) > 0) {
-    await existingPopover
-      .first()
-      .waitFor({ state: 'hidden', timeout: 1000 })
-      .catch(() => {});
-  }
+  await waitForAllPoppersToClose(page, 1000);
 };
 
 // This function clicks the "more formatting" icon in the formatting bar. This
@@ -303,9 +315,9 @@ export const setHorizontalAlignment = async (page: Page, alignment: 'Left' | 'Ce
   const menuItem = page.locator(`div[role="menuitem"]:has-text("${alignment}")`);
   await menuItem.waitFor({ state: 'visible' });
   await menuItem.click({ timeout: 60 * 1000 });
-  // Press Escape to close menus and wait for dropdown to close
+  // Press Escape to close menus and wait for all popovers to close
   await page.keyboard.press('Escape');
-  await page.locator('[data-radix-popper-content-wrapper]').waitFor({ state: 'hidden' });
+  await waitForAllPoppersToClose(page);
 };
 
 /**
@@ -318,7 +330,7 @@ export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip'
   const menuItem = page.locator(`[role="menuitem"]:has-text("${wrap}")`);
   await menuItem.waitFor({ state: 'visible' });
   await menuItem.click({ timeout: 60 * 1000 });
-  // Press Escape to close menus and wait for dropdown to close
+  // Press Escape to close menus and wait for all popovers to close
   await page.keyboard.press('Escape');
-  await page.locator('[data-radix-popper-content-wrapper]').waitFor({ state: 'hidden' });
+  await waitForAllPoppersToClose(page);
 };

@@ -329,43 +329,58 @@ impl GridController {
         ordered_positions
     }
 
+    /// Gets all upstream dependents of a code cell in topological order
+    /// (dependencies come before dependents).
+    ///
+    /// Uses an iterative approach with an explicit stack to avoid stack
+    /// overflow in dev builds when there are many interdependent formulas.
     pub(super) fn get_upstream_dependents(
         &self,
         sheet_pos: &SheetPos,
         seen: &mut HashSet<SheetPos>,
     ) -> Vec<SheetPos> {
-        if !seen.insert(*sheet_pos) {
-            return vec![];
-        }
+        // State for iterative DFS: (position, have_we_visited_children)
+        let mut stack: Vec<(SheetPos, bool)> = vec![(*sheet_pos, false)];
+        let mut result = Vec::new();
 
-        let Some(code_run) = self.code_run_at(sheet_pos) else {
-            // Even if no code_run exists yet (e.g., SetDataTable not executed),
-            // we must still return this position so it's not lost when
-            // order_code_cells rebuilds the operation queue.
-            return vec![*sheet_pos];
-        };
+        while let Some((current_pos, children_visited)) = stack.pop() {
+            if children_visited {
+                // Post-order: add to result after all children have been processed
+                result.push(current_pos);
+                continue;
+            }
 
-        let mut parent_nodes = Vec::new();
-        for (sheet_id, rect) in code_run
-            .cells_accessed
-            .iter_rects_unbounded(&self.a1_context)
-        {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
-                    if !seen.contains(&sheet_pos) {
-                        parent_nodes.push(sheet_pos);
+            // Check if already seen
+            if !seen.insert(current_pos) {
+                continue;
+            }
+
+            // Push current node back with children_visited=true for post-order processing
+            stack.push((current_pos, true));
+
+            let Some(code_run) = self.code_run_at(&current_pos) else {
+                // No code_run exists yet - it will be added in post-order
+                continue;
+            };
+
+            // Collect parent nodes (cells this formula depends on)
+            for (sheet_id, rect) in code_run
+                .cells_accessed
+                .iter_rects_unbounded(&self.a1_context)
+            {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
+                        let parent_pos = pos.to_sheet_pos(sheet_id);
+                        if !seen.contains(&parent_pos) {
+                            // Push parent nodes to process before current node
+                            stack.push((parent_pos, false));
+                        }
                     }
                 }
             }
         }
 
-        let mut upstream = vec![];
-        for node in parent_nodes.into_iter() {
-            upstream.extend(self.get_upstream_dependents(&node, seen));
-        }
-        upstream.push(*sheet_pos);
-        upstream
+        result
     }
 }
 
