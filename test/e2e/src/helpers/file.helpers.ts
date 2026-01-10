@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import path from 'path';
+import { dismissUpgradeToProDialog } from './auth.helpers';
 import { waitForAppReady, waitForNetworkIdle } from './wait.helpers';
 
 type CreateFileOptions = {
@@ -38,6 +39,9 @@ type CleanUpFilesOptions = {
   skipFilterClear?: boolean;
 };
 export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = false }: CleanUpFilesOptions) => {
+  // Dismiss the "Upgrade to Pro" dialog if it appears
+  await dismissUpgradeToProDialog(page);
+
   // filter file by name
   await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
@@ -63,6 +67,9 @@ type NavigateIntoFileOptions = {
   skipClose?: boolean;
 };
 export const navigateIntoFile = async (page: Page, { fileName, skipClose = false }: NavigateIntoFileOptions) => {
+  // Dismiss the "Upgrade to Pro" dialog if it appears
+  await dismissUpgradeToProDialog(page);
+
   // Search for the file
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
   await waitForNetworkIdle(page); // Wait for filter results instead of fixed 2s
