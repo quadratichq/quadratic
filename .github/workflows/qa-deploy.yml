@@ -739,29 +739,3 @@ jobs:
             exit 1
           fi
           echo "All E2E tests passed successfully!"
-
-  qa-wolf-notify:
-    needs:
-      [
-        deploy_client,
-        deploy_infra,
-        verify_deployed_version,
-        test-e2e-matrix-run,
-      ]
-    name: Notify QA Wolf
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: always() && needs.test-e2e-matrix-run.result == 'success' && github.head_ref == 'qa' && github.base_ref == 'main'
-    concurrency:
-      group: qa-wolf-notify
-      cancel-in-progress: true
-    timeout-minutes: 10
-    steps:
-      - name: Wait for 5 minutes
-        run: sleep 300
-
-      - name: Notify deploy_success
-        run: |
-          curl -H "Authorization: ${{ secrets.QAW_API_KEY }}" \
-          -H 'Content-Type: application/json' \
-          -d '{"branch": "qa", "deployment_type": "new_qa", "commit_url": "https://github.com/quadratichq/quadratic/commit/${{ github.sha }}", "sha": "${{ github.sha }}"}' \
-          https://app.qawolf.com/api/webhooks/deploy_success
