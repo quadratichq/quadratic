@@ -437,7 +437,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
-            ⏳ Tests-E2E
+            ⏳ Tests-E2E - [Previous Report](https://e2e.quadratic-preview.com/pr-${{ github.event.pull_request.number }})
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
@@ -720,6 +720,8 @@ jobs:
             ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }})
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
 
       - name: Update comment on E2E tests end
@@ -733,6 +735,8 @@ jobs:
             ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
 
   # This job provides a single required status check for branch protection.
