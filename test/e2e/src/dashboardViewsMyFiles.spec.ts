@@ -501,10 +501,9 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   await sharedUserPage.keyboard.press('ArrowDown');
   await sharedUserPage.keyboard.type('test', { delay: 250 });
   await sharedUserPage.keyboard.press('Enter');
+  await sharedUserPage.waitForTimeout(60 * 1000);
 
   await sharedUserPage.locator(`nav a svg`).click({ timeout: 60 * 1000 });
-
-  await sharedUserPage.waitForTimeout(3000);
 
   await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 

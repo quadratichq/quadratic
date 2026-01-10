@@ -43,6 +43,7 @@ import type {
   SheetBounds,
   SheetInfo,
   SheetRect,
+  TextSpan,
   TrackedTransaction,
   Validation,
   ValidationUpdate,
@@ -497,6 +498,21 @@ class QuadraticCore {
       value,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  /**
+   * Sets a cell to a RichText value with the given spans.
+   * Each span can have: text, link, bold, italic, underline, strike_through, text_color, font_size
+   */
+  setCellRichText(sheetId: string, x: number, y: number, spans: TextSpan[]) {
+    this.send({
+      type: 'clientCoreSetCellRichText',
+      sheetId,
+      x,
+      y,
+      spansJson: JSON.stringify(spans),
+      cursor: sheets.getCursorPosition(),
     });
   }
 

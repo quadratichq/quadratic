@@ -280,6 +280,15 @@ export interface CoreClientSetCellValues {
   id: number;
 }
 
+export interface ClientCoreSetCellRichText {
+  type: 'clientCoreSetCellRichText';
+  sheetId: string;
+  x: number;
+  y: number;
+  spansJson: string;
+  cursor: string;
+}
+
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
   selection: string;
@@ -1564,6 +1573,7 @@ export type ClientCoreMessage =
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
   | ClientCoreSetCellValues
+  | ClientCoreSetCellRichText
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
   | ClientCoreSummarizeSelection

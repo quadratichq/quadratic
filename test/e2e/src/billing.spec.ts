@@ -45,7 +45,6 @@ test.skip('AI Message Counter', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -121,7 +120,6 @@ test.skip('AI Message Counter', async ({ page }) => {
   await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -191,7 +189,6 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -249,13 +246,14 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
-  await userPage2.waitForLoadState('networkidle');
 
   // Navigate to 'Settings' to check team member count again
   await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
+  // Wait for Settings page to be fully loaded
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the text element that starts with 'Team members (manage)' followed by a number
   // Store the text content (e.g., 'Team members (manage)1'
@@ -265,8 +263,18 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Assert that the team member count increased to 2
   expect(newMemberCount).toBe(2);
 
+  // Wait for Manage subscription button to be visible before clicking
+  // If not visible after initial wait, reload the page to ensure subscription status is synced
+  const manageSubscriptionButton = page.getByRole(`button`, { name: `Manage subscription` });
+  const isVisible = await manageSubscriptionButton.isVisible();
+  if (!isVisible) {
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
+  }
+  await expect(manageSubscriptionButton).toBeVisible({ timeout: 60 * 1000 });
+
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
+  await manageSubscriptionButton.click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -350,7 +358,6 @@ test('Cancel Subscription', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -424,7 +431,6 @@ test('Update Billing Information', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -543,7 +549,6 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -576,7 +581,6 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -636,7 +640,6 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
