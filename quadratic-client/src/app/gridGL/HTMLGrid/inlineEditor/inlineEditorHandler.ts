@@ -591,19 +591,20 @@ class InlineEditorHandler {
   };
 
   private updateFont = () => {
-    let fontFamily = 'OpenSans';
+    // Always use base font - italic/bold are applied via CSS data attributes
+    // This allows span-level formatting to override cell-level formatting
+    inlineEditorMonaco.setFontFamily('OpenSans');
+
+    // Apply italic and bold via CSS data attributes (like underline/strikethrough)
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
       const bold = this.temporaryBold === undefined ? this.formatSummary?.bold : this.temporaryBold;
-      if (italic && bold) {
-        fontFamily = 'OpenSans-BoldItalic';
-      } else if (italic) {
-        fontFamily = 'OpenSans-Italic';
-      } else if (bold) {
-        fontFamily = 'OpenSans-Bold';
-      }
+      inlineEditorMonaco.setItalic(!!italic);
+      inlineEditorMonaco.setBold(!!bold);
+    } else {
+      inlineEditorMonaco.setItalic(false);
+      inlineEditorMonaco.setBold(false);
     }
-    inlineEditorMonaco.setFontFamily(fontFamily);
 
     // Set font size from format summary
     const fontSize = this.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;

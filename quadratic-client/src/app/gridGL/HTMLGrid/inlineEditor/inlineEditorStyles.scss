@@ -44,3 +44,15 @@
 #cell-edit .monaco-editor[data-has-text-color='true'] .view-lines .view-line span {
   color: var(--cell-text-color);
 }
+
+// Cell-level italic formatting
+// Span-level italic/not-italic can override via !important
+#cell-edit .monaco-editor[data-italic='true'] .view-lines .view-line span {
+  font-style: italic;
+}
+
+// Cell-level bold formatting
+// Span-level bold/not-bold can override via !important
+#cell-edit .monaco-editor[data-bold='true'] .view-lines .view-line span {
+  font-weight: bold;
+}
