@@ -12,7 +12,9 @@ import * as monaco from 'monaco-editor';
 const HYPERLINK_STYLE_ID = 'inline-editor-hyperlink-styles';
 const HYPERLINK_CLASS = 'inline-hyperlink';
 const BOLD_CLASS = 'inline-bold';
+const NOT_BOLD_CLASS = 'inline-not-bold';
 const ITALIC_CLASS = 'inline-italic';
+const NOT_ITALIC_CLASS = 'inline-not-italic';
 const UNDERLINE_CLASS = 'inline-underline';
 const STRIKE_THROUGH_CLASS = 'inline-strike-through';
 
@@ -170,8 +172,20 @@ class InlineEditorSpans {
         vertical-align: baseline !important;
         line-height: inherit !important;
       }
+      /* Override cell-level bold when span explicitly sets not-bold */
+      .${NOT_BOLD_CLASS} {
+        font-weight: normal !important;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
+      }
       .${ITALIC_CLASS} {
         font-style: italic !important;
+        vertical-align: baseline !important;
+        line-height: inherit !important;
+      }
+      /* Override cell-level italic when span explicitly sets not-italic */
+      .${NOT_ITALIC_CLASS} {
+        font-style: normal !important;
         vertical-align: baseline !important;
         line-height: inherit !important;
       }
@@ -267,8 +281,17 @@ class InlineEditorSpans {
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
     for (const span of this.spans) {
-      // Skip spans that have no formatting
-      if (!span.link && !span.bold && !span.italic && !span.underline && !span.strikeThrough && !span.textColor) {
+      // Check if span has any formatting that needs decoration
+      // Note: We need to distinguish between `false` (explicitly not set) and `undefined` (inherit)
+      // - `span.bold === true` → apply bold
+      // - `span.bold === false` → apply not-bold (to override cell-level bold)
+      // - `span.bold === undefined` → inherit from cell (no decoration needed)
+      const hasBoldOverride = span.bold !== undefined;
+      const hasItalicOverride = span.italic !== undefined;
+      const hasFormatting =
+        span.link || hasBoldOverride || hasItalicOverride || span.underline || span.strikeThrough || span.textColor;
+
+      if (!hasFormatting) {
         continue;
       }
 
@@ -280,8 +303,21 @@ class InlineEditorSpans {
       // Build the class name based on formatting
       const classes: string[] = [];
       if (span.link) classes.push(HYPERLINK_CLASS);
-      if (span.bold) classes.push(BOLD_CLASS);
-      if (span.italic) classes.push(ITALIC_CLASS);
+
+      // Bold: true = bold, false = explicitly not-bold (override cell-level)
+      if (span.bold === true) {
+        classes.push(BOLD_CLASS);
+      } else if (span.bold === false) {
+        classes.push(NOT_BOLD_CLASS);
+      }
+
+      // Italic: true = italic, false = explicitly not-italic (override cell-level)
+      if (span.italic === true) {
+        classes.push(ITALIC_CLASS);
+      } else if (span.italic === false) {
+        classes.push(NOT_ITALIC_CLASS);
+      }
+
       if (span.underline) classes.push(UNDERLINE_CLASS);
       if (span.strikeThrough) classes.push(STRIKE_THROUGH_CLASS);
 
