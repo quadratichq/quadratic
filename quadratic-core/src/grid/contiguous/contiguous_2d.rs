@@ -1756,6 +1756,7 @@ mod tests {
         assert_eq!(value, None); // default value
     }
 
+    #[test]
     fn test_has_infinite_non_default() {
         // Empty/default has no infinite non-default values
         let c = Contiguous2D::<u8>::new();

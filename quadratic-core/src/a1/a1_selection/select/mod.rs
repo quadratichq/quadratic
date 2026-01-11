@@ -3,10 +3,10 @@ mod helpers;
 mod keyboard;
 mod mouse;
 
-#[cfg(test)]
-mod tests;
+use std::str::FromStr;
 
 use crate::a1::{A1Context, RefRangeBounds};
+use crate::grid::SheetId;
 use crate::{Pos, Rect};
 
 use super::{A1Selection, CellRefRange};
@@ -70,7 +70,45 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{A1Selection, CellRefRange};
+    use crate::grid::SheetId;
+
+    #[test]
+    fn test_move_to() {
+        let mut selection = A1Selection::test_a1("A1,B1,C1");
+        selection.move_to(2, 2, false);
+        assert_eq!(selection.test_to_string(), "B2");
+    }
+
+    #[test]
+    fn test_select_rect() {
+        let mut selection = A1Selection::test_a1("A1,B2,C3");
+        selection.select_rect(1, 1, 2, 2, false);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
+        assert_eq!(selection.cursor.x, 1);
+        assert_eq!(selection.cursor.y, 1);
+
+        let mut selection = A1Selection::test_a1("A1:C3");
+        selection.select_rect(3, 3, 5, 5, true);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test_a1("A1:C3"),
+                CellRefRange::test_a1("C3:E5"),
+            ]
+        );
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 3);
+    }
+
+    #[test]
+    fn test_select_rect_single_cell() {
+        let mut selection = A1Selection::test_a1("A1");
+        selection.select_rect(2, 2, 2, 2, false);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2")]);
+        assert_eq!(selection.cursor.x, 2);
+        assert_eq!(selection.cursor.y, 2);
+    }
 
     #[test]
     fn test_select_sheet() {

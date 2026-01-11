@@ -398,6 +398,7 @@ impl GridController {
             value: Value::Single(CellValue::Blank),
             spill_value: false,
             spill_data_table: false,
+            spill_merged_cell: false,
             last_modified: now(),
             alternating_colors,
             formats: None,
