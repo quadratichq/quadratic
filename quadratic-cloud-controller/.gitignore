@@ -1,0 +1,4 @@
+# Private keys for JWT signing
+controller_private.pem
+*.pem
+

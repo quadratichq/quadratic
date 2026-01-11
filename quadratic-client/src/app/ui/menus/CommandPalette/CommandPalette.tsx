@@ -18,6 +18,7 @@ import fileCommandGroup from '@/app/ui/menus/CommandPalette/commands/File';
 import formatCommandGroup from '@/app/ui/menus/CommandPalette/commands/Format';
 import helpCommandGroup from '@/app/ui/menus/CommandPalette/commands/Help';
 import importCommandGroup from '@/app/ui/menus/CommandPalette/commands/Import';
+import scheduledTasksCommandGroup from '@/app/ui/menus/CommandPalette/commands/ScheduledTasks';
 import getSheetCommandGroup from '@/app/ui/menus/CommandPalette/commands/Sheets';
 import textCommandGroup from '@/app/ui/menus/CommandPalette/commands/Text';
 import validationCommandGroup from '@/app/ui/menus/CommandPalette/commands/Validation';
@@ -64,6 +65,7 @@ export const CommandPalette = memo(() => {
       viewCommandGroup,
       importCommandGroup,
       connectionsCommandGroup,
+      scheduledTasksCommandGroup,
       borderCommandGroup,
       textCommandGroup,
       formatCommandGroup,

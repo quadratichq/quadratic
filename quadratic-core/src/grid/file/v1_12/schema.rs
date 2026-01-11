@@ -159,6 +159,33 @@ impl SheetFormattingSchema {
     }
 }
 
+/// A span of text with optional inline formatting overrides.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TextSpanSchema {
+    pub text: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strike_through: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_color: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<i16>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValueSchema {
     Blank,
@@ -173,6 +200,7 @@ pub enum CellValueSchema {
     Duration(String),
     Error(RunErrorSchema),
     Image(String),
+    RichText(Vec<TextSpanSchema>),
 }
 
 pub type ColumnSchema = Vec<(i64, CellValueSchema)>;

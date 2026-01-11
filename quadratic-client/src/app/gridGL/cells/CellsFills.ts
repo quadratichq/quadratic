@@ -1,12 +1,23 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
-import type { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import type {
+  JsCoordinate,
+  JsHashesDirty,
+  JsHashRenderFills,
+  JsRenderCodeCell,
+  JsRenderFill,
+  JsSheetFill,
+} from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import { colors } from '@/app/theme/colors';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 
 interface SpriteBounds extends Sprite {
@@ -20,15 +31,28 @@ interface SpriteBounds extends Sprite {
 const ALTERNATING_BG_OPACITY = 0.035;
 const ALTERNATING_BG_COLOR = getCSSVariableTint('text');
 
+// Number of hashes to load outside the viewport in each direction
+const VIEWPORT_PADDING = 2;
+
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
-  private cells: JsRenderFill[] = [];
+  // Map of hash key (e.g., "0,0") to fills in that hash
+  private fillsByHash: Map<string, JsRenderFill[]> = new Map();
+
+  // Track which hashes we've requested fills for
+  private loadedHashes: Set<string> = new Set();
+
+  // Track the last viewport hash bounds to detect changes
+  private lastViewportHashBounds?: { minX: number; maxX: number; minY: number; maxY: number };
+
   private sheetFills?: JsSheetFill[];
+  private metaFillsLoaded = false;
   private alternatingColorsGraphics: Graphics;
 
   private cellsContainer: ParticleContainer;
   private meta: Graphics;
   private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
+  private debugGraphics: Graphics;
 
   private dirty = false;
   private dirtyTables = false;
@@ -41,35 +65,83 @@ export class CellsFills extends Container {
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
     this.alternatingColorsGraphics = this.addChild(new Graphics());
+    this.debugGraphics = this.addChild(new Graphics());
 
-    events.on('sheetFills', this.handleSheetFills);
+    events.on('hashRenderFills', this.handleHashRenderFills);
+    events.on('hashesDirtyFills', this.handleHashesDirtyFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
     events.on('sheetOffsetsUpdated', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingColumn', this.drawSheetCells);
+    events.on('resizeHeadingColumn', this.drawSheetMeta);
     events.on('resizeHeadingRow', this.drawCells);
     events.on('resizeHeadingRow', this.drawSheetCells);
-    events.on('viewportChanged', this.setDirty);
+    events.on('resizeHeadingRow', this.drawSheetMeta);
   }
 
   destroy() {
-    events.off('sheetFills', this.handleSheetFills);
+    events.off('hashRenderFills', this.handleHashRenderFills);
+    events.off('hashesDirtyFills', this.handleHashesDirtyFills);
     events.off('sheetMetaFills', this.handleSheetMetaFills);
     events.off('sheetOffsetsUpdated', this.drawSheetCells);
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
     events.off('resizeHeadingColumn', this.drawSheetCells);
+    events.off('resizeHeadingColumn', this.drawSheetMeta);
     events.off('resizeHeadingRow', this.drawCells);
     events.off('resizeHeadingRow', this.drawSheetCells);
-    events.off('viewportChanged', this.setDirty);
+    events.off('resizeHeadingRow', this.drawSheetMeta);
     super.destroy();
   }
 
-  private handleSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
-    if (sheetId === this.cellsSheet.sheetId) {
-      this.cells = fills;
+  private handleHashRenderFills = (hashRenderFillsData: Uint8Array) => {
+    const hashRenderFillsArray = fromUint8Array<JsHashRenderFills[]>(hashRenderFillsData);
+    let needsRedraw = false;
+
+    for (const { sheet_id, hash, fills } of hashRenderFillsArray) {
+      if (sheet_id.id === this.cellsSheet.sheetId) {
+        const key = `${hash.x},${hash.y}`;
+        const alreadyHad = this.fillsByHash.has(key);
+        if (fills.length === 0) {
+          this.fillsByHash.delete(key);
+          if (debugFlag('debugShowCellHashesInfo')) {
+            console.log(
+              `[CellsFills] received empty fills for hash (${hash.x},${hash.y})${alreadyHad ? ' (DUPLICATE)' : ''}`
+            );
+          }
+        } else {
+          this.fillsByHash.set(key, fills);
+          if (debugFlag('debugShowCellHashesInfo')) {
+            console.log(
+              `[CellsFills] received ${fills.length} fills for hash (${hash.x},${hash.y})${alreadyHad ? ' (DUPLICATE)' : ''}`
+            );
+          }
+        }
+        needsRedraw = true;
+      }
+    }
+
+    if (needsRedraw) {
       this.drawCells();
+    }
+  };
+
+  // Handle dirty fill hashes that are outside the viewport
+  // These will be requested when they enter the viewport
+  private handleHashesDirtyFills = (dirtyHashesData: Uint8Array) => {
+    const dirtyHashesArray = fromUint8Array<JsHashesDirty[]>(dirtyHashesData);
+
+    for (const { sheet_id, hashes } of dirtyHashesArray) {
+      if (sheet_id.id === this.cellsSheet.sheetId) {
+        for (const hash of hashes) {
+          const key = `${hash.x},${hash.y}`;
+          // Clear the loaded flag so we'll request it when it enters viewport
+          this.loadedHashes.delete(key);
+          // Clear stale data to prevent rendering outdated fills
+          this.fillsByHash.delete(key);
+        }
+      }
     }
   };
 
@@ -91,9 +163,16 @@ export class CellsFills extends Container {
   };
 
   cheapCull = (viewBounds: Rectangle) => {
-    this.cellsContainer.children.forEach(
-      (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
-    );
+    let visibleCount = 0;
+    this.cellsContainer.children.forEach((sprite) => {
+      sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds);
+      if (sprite.visible) visibleCount++;
+    });
+    if (debugFlag('debugShowCellHashesInfo')) {
+      console.log(
+        `[CellsFills] visible: ${visibleCount}/${this.cellsContainer.children.length} fills (${this.fillsByHash.size} hashes in memory)`
+      );
+    }
   };
 
   private getColor(color: string): number {
@@ -112,16 +191,30 @@ export class CellsFills extends Container {
 
   private drawCells = () => {
     this.cellsContainer.removeChildren();
+    this.debugGraphics.clear();
+    const showDebug = debugFlag('debugShowCellHashesInfo');
+    let totalFills = 0;
+    this.fillsByHash.forEach((fills) => {
+      totalFills += fills.length;
+      fills.forEach((fill) => {
+        const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
+        sprite.tint = this.getColor(fill.color);
+        const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
+        sprite.position.set(screen.x, screen.y);
+        sprite.width = screen.width;
+        sprite.height = screen.height;
+        sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
 
-    this.cells.forEach((fill) => {
-      const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
-      sprite.tint = this.getColor(fill.color);
-      const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
-      sprite.position.set(screen.x, screen.y);
-      sprite.width = screen.width;
-      sprite.height = screen.height;
-      sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+        // Draw debug outline around each fill
+        if (showDebug) {
+          this.debugGraphics.lineStyle(2, 0xff0000, 1);
+          this.debugGraphics.drawRect(screen.x, screen.y, screen.width, screen.height);
+        }
+      });
     });
+    if (showDebug) {
+      console.log(`[CellsFills] rendering ${totalFills} fills from ${this.fillsByHash.size} hashes`);
+    }
     pixiApp.setViewportDirty();
   };
 
@@ -131,14 +224,106 @@ export class CellsFills extends Container {
     }
   };
 
-  update = () => {
-    if (this.dirty) {
+  private drawSheetMeta = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.drawMeta();
+    }
+  };
+
+  update = (dirtyViewport: boolean) => {
+    // Load meta fills on first update
+    if (!this.metaFillsLoaded) {
+      this.metaFillsLoaded = true;
+      quadraticCore.getSheetMetaFills(this.cellsSheet.sheetId);
+    }
+
+    // Handle viewport-based hash loading
+    if (dirtyViewport) {
+      this.updateViewportHashes();
+    }
+
+    if (dirtyViewport || this.dirty) {
       this.dirty = false;
       this.drawMeta();
     }
     if (this.dirtyTables) {
       this.dirtyTables = false;
       this.drawAlternatingColors();
+    }
+  };
+
+  // Calculate which hashes are in/near the viewport and load/unload as needed
+  private updateViewportHashes = () => {
+    const viewport = pixiApp.viewport.getVisibleBounds();
+
+    // Get the cell coordinates at viewport corners
+    const topLeft = this.sheet.getColumnRowFromScreen(viewport.left, viewport.top);
+    const bottomRight = this.sheet.getColumnRowFromScreen(viewport.right, viewport.bottom);
+
+    // Calculate hash coordinates with padding
+    const minHashX = Math.floor(topLeft.column / sheetHashWidth) - VIEWPORT_PADDING;
+    const maxHashX = Math.floor(bottomRight.column / sheetHashWidth) + VIEWPORT_PADDING;
+    const minHashY = Math.floor(topLeft.row / sheetHashHeight) - VIEWPORT_PADDING;
+    const maxHashY = Math.floor(bottomRight.row / sheetHashHeight) + VIEWPORT_PADDING;
+
+    // Check if viewport hash bounds changed
+    if (
+      this.lastViewportHashBounds &&
+      this.lastViewportHashBounds.minX === minHashX &&
+      this.lastViewportHashBounds.maxX === maxHashX &&
+      this.lastViewportHashBounds.minY === minHashY &&
+      this.lastViewportHashBounds.maxY === maxHashY
+    ) {
+      return; // No change
+    }
+
+    this.lastViewportHashBounds = { minX: minHashX, maxX: maxHashX, minY: minHashY, maxY: maxHashY };
+
+    // Find hashes that need to be loaded
+    const hashesToLoad: JsCoordinate[] = [];
+    const activeHashes = new Set<string>();
+
+    for (let hashX = minHashX; hashX <= maxHashX; hashX++) {
+      for (let hashY = minHashY; hashY <= maxHashY; hashY++) {
+        const key = `${hashX},${hashY}`;
+        activeHashes.add(key);
+
+        if (!this.loadedHashes.has(key)) {
+          hashesToLoad.push({ x: hashX, y: hashY });
+          this.loadedHashes.add(key);
+        }
+      }
+    }
+
+    // Request fills for new hashes
+    if (hashesToLoad.length > 0) {
+      if (debugFlag('debugShowCellHashesInfo')) {
+        console.log(
+          `[CellsFills] loading ${hashesToLoad.length} fill hashes: ${hashesToLoad.map((h) => `(${h.x},${h.y})`).join(', ')}`
+        );
+      }
+      quadraticCore.getRenderFillsForHashes(this.cellsSheet.sheetId, hashesToLoad);
+    }
+
+    // Unload hashes that are no longer in viewport + padding
+    const hashesToUnload: string[] = [];
+    for (const key of this.loadedHashes) {
+      if (!activeHashes.has(key)) {
+        hashesToUnload.push(key);
+      }
+    }
+
+    for (const key of hashesToUnload) {
+      this.loadedHashes.delete(key);
+      this.fillsByHash.delete(key);
+    }
+
+    // Redraw if we unloaded any hashes
+    if (hashesToUnload.length > 0) {
+      if (debugFlag('debugShowCellHashesInfo')) {
+        console.log(`[CellsFills] unloading ${hashesToUnload.length} fill hashes: ${hashesToUnload.join(', ')}`);
+      }
+      this.drawCells();
     }
   };
 

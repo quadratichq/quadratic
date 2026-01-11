@@ -1,8 +1,13 @@
 use wasm_bindgen::prelude::*;
 
-use crate::{a1::CellRefRange, grid::sheet::data_tables::cache::SheetDataTablesCache};
+use crate::{
+    a1::{CellRefRange, UNBOUNDED},
+    grid::sheet::data_tables::cache::SheetDataTablesCache,
+};
 
 use super::*;
+
+const MAX_RANGE_TO_DISPLAY: i64 = 100_000_000;
 
 #[wasm_bindgen]
 impl JsSelection {
@@ -14,6 +19,15 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSheetId")]
     pub fn sheet_id(&self) -> String {
         self.selection.sheet_id.to_string()
+    }
+
+    #[wasm_bindgen(js_name = "getSheetName")]
+    pub fn sheet_name(&self, context: &JsA1Context) -> String {
+        context
+            .get_context()
+            .try_sheet_id(self.selection.sheet_id)
+            .map(|name| name.to_string())
+            .unwrap_or_default()
     }
 
     /// Get A1Selection as a JsValue.
@@ -257,13 +271,15 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "toA1String")]
     pub fn to_string(
         &self,
-        default_sheet_id: String,
+        default_sheet_id: Option<String>,
         context: &JsA1Context,
     ) -> Result<String, String> {
-        let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
+        let default_sheet_id = default_sheet_id
+            .map(|default_sheet_id| SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string()))
+            .transpose()?;
         Ok(self
             .selection
-            .to_string(Some(default_sheet_id), context.get_context()))
+            .to_string(default_sheet_id, context.get_context()))
     }
 
     #[wasm_bindgen(js_name = "cursorIsOnHtmlImage")]
@@ -343,6 +359,20 @@ impl JsSelection {
             .iter()
             .map(|c| *c as u32)
             .collect()
+    }
+
+    #[wasm_bindgen(js_name = "outOfRange")]
+    pub fn out_of_range(&self) -> bool {
+        self.selection.ranges.iter().any(|range| {
+            if let CellRefRange::Sheet { range } = range {
+                (range.start.col() != UNBOUNDED && range.start.col() > MAX_RANGE_TO_DISPLAY)
+                    || (range.end.col() != UNBOUNDED && range.end.col() > MAX_RANGE_TO_DISPLAY)
+                    || (range.start.row() != UNBOUNDED && range.start.row() > MAX_RANGE_TO_DISPLAY)
+                    || (range.end.row() != UNBOUNDED && range.end.row() > MAX_RANGE_TO_DISPLAY)
+            } else {
+                false
+            }
+        })
     }
 
     #[wasm_bindgen(js_name = "is1dRange")]

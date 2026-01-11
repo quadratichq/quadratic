@@ -15,7 +15,10 @@ use http::{
     header::{CACHE_CONTROL, PRAGMA},
 };
 use quadratic_rust_shared::sql::Connection;
-use quadratic_rust_shared::{auth::jwt::get_jwks, cache::memory::MemoryCache};
+use quadratic_rust_shared::{
+    auth::jwt::{get_jwks, merge_jwks, parse_jwks},
+    cache::memory::MemoryCache,
+};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 use tokio::time;
@@ -36,7 +39,10 @@ use crate::{
     proxy::proxy,
     sql::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
-        datafusion::{query as query_datafusion, schema as schema_datafusion, test_mixpanel},
+        datafusion::{
+            query as query_datafusion, schema as schema_datafusion, test_google_analytics,
+            test_mixpanel,
+        },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
@@ -145,10 +151,13 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         .route("/bigquery/query", post(query_bigquery))
         .route("/bigquery/schema/:id", get(schema_bigquery))
         //
-        // mixpanel
+        // synced connections
         .route("/mixpanel/test", post(test_mixpanel))
         .route("/mixpanel/query", post(query_datafusion))
         .route("/mixpanel/schema/:id", get(schema_datafusion))
+        .route("/google-analytics/test", post(test_google_analytics))
+        .route("/google-analytics/query", post(query_datafusion))
+        .route("/google-analytics/schema/:id", get(schema_datafusion))
         //
         // proxy
         .route("/proxy", any(proxy))
@@ -237,7 +246,14 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Fetch JWKS from the remote URI (e.g., WorkOS)
+    let mut jwks = get_jwks(&config.jwks_uri).await?;
+
+    // Merge the local JWKS with the remote JWKS
+    let local_jwks = parse_jwks(&config.quadratic_jwks)?;
+    jwks = merge_jwks(jwks, local_jwks);
+
     let state = Arc::new(State::new(&config, Some(jwks.clone())).await?);
     let app = app(state.clone())?;
 

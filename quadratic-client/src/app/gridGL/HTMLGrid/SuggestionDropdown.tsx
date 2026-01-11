@@ -9,7 +9,7 @@ import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/vali
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import type { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const SuggestionDropDown = () => {
   const inlineEditorStatus = useInlineEditorStatus();
@@ -17,6 +17,7 @@ export const SuggestionDropDown = () => {
   const [list, setList] = useState<string[] | undefined>();
   const [filteredList, setFilteredList] = useState<string[] | undefined>();
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
+  const suggestionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const populateList = async () => {
@@ -77,6 +78,12 @@ export const SuggestionDropDown = () => {
     };
 
     const valueChanged = (input = inlineEditorMonaco.get()) => {
+      // Clear any pending suggestion timeout
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+        suggestionTimeoutRef.current = null;
+      }
+
       if (inlineEditorHandler.formula || input.trim() === '' || !list) {
         inlineEditorMonaco.autocompleteShowingList = false;
         setFilteredList(undefined);
@@ -87,7 +94,13 @@ export const SuggestionDropDown = () => {
       if (possibleValues.length === 1) {
         setFilteredList(undefined);
         inlineEditorMonaco.setShowingList(false);
-        setTimeout(() => inlineEditorMonaco.triggerSuggestion(), 100);
+        suggestionTimeoutRef.current = setTimeout(() => {
+          // Only trigger if editor is still open
+          if (inlineEditorHandler.isOpen()) {
+            inlineEditorMonaco.triggerSuggestion();
+          }
+          suggestionTimeoutRef.current = null;
+        }, 100);
       } else if (possibleValues.length > 1) {
         const lowerCaseValue = input.toLowerCase();
         const possibleValues = list.filter((v) => v.toLowerCase().startsWith(lowerCaseValue));
@@ -103,6 +116,11 @@ export const SuggestionDropDown = () => {
     inlineEditorEvents.on('valueChanged', valueChanged);
 
     return () => {
+      // Clear timeout on cleanup to prevent "Canceled" errors
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+        suggestionTimeoutRef.current = null;
+      }
       events.off('cursorPosition', populateList);
       inlineEditorEvents.off('valueChanged', valueChanged);
     };

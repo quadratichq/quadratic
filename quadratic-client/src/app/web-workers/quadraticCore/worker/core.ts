@@ -22,6 +22,7 @@ import type {
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsResponse,
@@ -217,6 +218,15 @@ class Core {
     }
   }
 
+  setCellRichText(sheetId: string, x: number, y: number, spansJson: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.setCellRichText(sheetId, x, y, spansJson, cursor);
+    } catch (e) {
+      this.handleCoreError('setCellRichText', e);
+    }
+  }
+
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -387,6 +397,31 @@ class Core {
     }
   }
 
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const hashesJson = JSON.stringify(hashes);
+      const fills = this.gridController.getRenderFillsForHashes(sheetId, hashesJson);
+      if (fills && fills.length > 0) {
+        coreClient.sendHashRenderFills(fills);
+      }
+    } catch (e) {
+      this.handleCoreError('getRenderFillsForHashes', e);
+    }
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const fills = this.gridController.getSheetMetaFills(sheetId);
+      if (fills) {
+        coreClient.sendSheetMetaFills(sheetId, fills);
+      }
+    } catch (e) {
+      this.handleCoreError('getSheetMetaFills', e);
+    }
+  }
+
   setCommas(selection: string, commas: boolean | undefined, cursor: string, isAi: boolean) {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -417,7 +452,7 @@ class Core {
       return { contents, version };
     } catch (error: unknown) {
       this.sendAnalyticsError('upgradeGridFile', error);
-      return { error: error as string };
+      return { error: error instanceof Error ? error.message : String(error) };
     }
   }
 
@@ -455,7 +490,7 @@ class Core {
         return { contents, version };
       } catch (error: unknown) {
         this.sendAnalyticsError('importFile.Dashboard', error);
-        return { error: error as string };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
     } else {
       try {
@@ -1403,6 +1438,24 @@ class Core {
     }
   }
 
+  setFormatsA1(
+    formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[],
+    cursor: string,
+    isAi: boolean
+  ): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const entries = formatEntries.map((entry) => ({
+        sheet_id: entry.sheetId,
+        selection: entry.selection,
+        ...entry.formats,
+      }));
+      return this.gridController.setFormatsA1(JSON.stringify(entries), cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('setFormatsA1', e);
+    }
+  }
+
   getAICellFormats(sheetId: string, selection: string, page: number): string | JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1500,7 +1553,6 @@ class Core {
     sheetId: string,
     selection: string,
     codeString: string,
-    codeCellName: string | undefined,
     cursor: string
   ): string | { error: string } | undefined {
     try {
@@ -1508,9 +1560,29 @@ class Core {
       if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
         return { error: 'Error in set formula: Cannot add formula to a data table' };
       }
-      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
+      return this.gridController.setFormula(sheetId, selection, codeString, cursor);
     } catch (e) {
       this.handleCoreError('setFormula', e);
+    }
+  }
+
+  // Sets multiple formulas in a single transaction (batched)
+  setFormulas(
+    sheetId: string,
+    formulas: Array<[string, string]>,
+    cursor: string
+  ): string | { error: string } | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      // Check if any formula intersects with a data table
+      for (const [selection] of formulas) {
+        if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
+          return { error: `Error in set formulas: Cannot add formula to a data table (selection: ${selection})` };
+        }
+      }
+      return this.gridController.setFormulas(sheetId, formulas, cursor);
+    } catch (e) {
+      this.handleCoreError('setFormulas', e);
     }
   }
 }

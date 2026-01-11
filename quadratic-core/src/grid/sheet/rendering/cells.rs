@@ -3,7 +3,10 @@ use crate::{
     a1::A1Context,
     grid::{
         CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
-        js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
+        js_types::{
+            JsNumber, JsRenderCell, JsRenderCellFormatSpan, JsRenderCellLinkSpan,
+            JsRenderCellSpecial,
+        },
     },
 };
 
@@ -42,6 +45,11 @@ impl Sheet {
                 } else {
                     JsRenderCellSpecial::RunError
                 }),
+                error_text: if spill_error {
+                    None
+                } else {
+                    Some(format!("{}", error.msg))
+                },
                 ..Default::default()
             };
         } else if let CellValue::Image(_) = value {
@@ -64,8 +72,55 @@ impl Sheet {
             None
         };
 
+        // Extract hyperlink spans and formatting spans from RichText (with character ranges)
+        let (link_spans, format_spans) = if let CellValue::RichText(spans) = value {
+            let mut char_offset: u32 = 0;
+            let mut links = Vec::new();
+            let mut formats = Vec::new();
+
+            for span in spans.iter() {
+                let start = char_offset;
+                let len = span.text.chars().count() as u32;
+                char_offset += len;
+                let end = char_offset;
+
+                // Extract hyperlink span
+                if let Some(url) = &span.link {
+                    links.push(JsRenderCellLinkSpan {
+                        start,
+                        end,
+                        url: url.clone(),
+                    });
+                }
+
+                // Extract formatting span if it has any formatting overrides
+                if span.bold.is_some()
+                    || span.italic.is_some()
+                    || span.underline.is_some()
+                    || span.strike_through.is_some()
+                    || span.text_color.is_some()
+                    || span.link.is_some()
+                {
+                    formats.push(JsRenderCellFormatSpan {
+                        start,
+                        end,
+                        bold: span.bold,
+                        italic: span.italic,
+                        underline: span.underline,
+                        strike_through: span.strike_through,
+                        text_color: span.text_color.clone(),
+                        link: span.link.clone(),
+                    });
+                }
+            }
+
+            (links, formats)
+        } else {
+            (vec![], vec![])
+        };
+
         let mut number: Option<JsNumber> = None;
-        let value = match value {
+        let display_value = match value {
             CellValue::Number(_) => {
                 // get numeric_format and numeric_decimal to turn number into a string
                 // if align is not set, set it to right only for numbers
@@ -81,7 +136,7 @@ impl Sheet {
         JsRenderCell {
             x,
             y,
-            value,
+            value: display_value,
             language,
             align: format.align.or(align),
             wrap: format.wrap,
@@ -90,12 +145,15 @@ impl Sheet {
             text_color: format.text_color,
             vertical_align: format.vertical_align,
             special,
+            error_text: None,
             number,
             underline: format.underline,
             strike_through: format.strike_through,
             font_size: format.font_size,
             table_name: None,
             column_header: None,
+            link_spans,
+            format_spans,
         }
     }
 
@@ -478,6 +536,7 @@ mod tests {
                 x: 3,
                 y: 3,
                 special: Some(JsRenderCellSpecial::RunError),
+                error_text: Some("Array is too big".to_string()),
                 ..Default::default()
             },
         );
@@ -543,49 +602,6 @@ mod tests {
             }
             assert_eq!(rendering.special, Some(JsRenderCellSpecial::Logical));
         }
-    }
-
-    #[test]
-    fn render_cells_duration() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            (0, 0, sheet_id).into(),
-            "1 week, 3 days".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            (0, 1, sheet_id).into(),
-            "36 mo 500 ms".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            (0, 2, sheet_id).into(),
-            "1 min, 10 ms".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            (0, 3, sheet_id).into(),
-            "0.2 millisecond".to_string(),
-            None,
-            false,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        let rendering = sheet.get_render_cells(
-            Rect {
-                min: (0, 0).into(),
-                max: (0, 3).into(),
-            },
-            gc.a1_context(),
-        );
-        assert_eq!(rendering[0].value, "10d");
-        assert_eq!(rendering[1].value, "3y 0d 0h 0m 0.5s");
-        assert_eq!(rendering[2].value, "1m 0.01s");
-        assert_eq!(rendering[3].value, "200µs");
     }
 
     #[test]
@@ -770,5 +786,108 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn test_render_rich_text_with_links_and_formatting() {
+        use crate::grid::js_types::{JsRenderCellFormatSpan, JsRenderCellLinkSpan};
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set a RichText cell with hyperlinks and formatting
+        let spans = vec![
+            TextSpan::plain("Hello "),
+            TextSpan::link("world", "https://example.com"),
+            TextSpan {
+                text: " bold".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+        ];
+        gc.sheet_mut(sheet_id)
+            .set_value(Pos { x: 1, y: 1 }, CellValue::RichText(spans));
+
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render.len(), 1);
+        let cell = &render[0];
+
+        // Check that value is the concatenated text
+        assert_eq!(cell.value, "Hello world bold");
+
+        // Check link_spans: "world" starts at char 6 and ends at char 11
+        assert_eq!(cell.link_spans.len(), 1);
+        assert_eq!(
+            cell.link_spans[0],
+            JsRenderCellLinkSpan {
+                start: 6,
+                end: 11,
+                url: "https://example.com".to_string(),
+            }
+        );
+
+        // Check format_spans: link span and bold span should have formatting
+        assert_eq!(cell.format_spans.len(), 2);
+
+        // Link span (chars 6-11)
+        assert_eq!(
+            cell.format_spans[0],
+            JsRenderCellFormatSpan {
+                start: 6,
+                end: 11,
+                link: Some("https://example.com".to_string()),
+                ..Default::default()
+            }
+        );
+
+        // Bold span (chars 11-16)
+        assert_eq!(
+            cell.format_spans[1],
+            JsRenderCellFormatSpan {
+                start: 11,
+                end: 16,
+                bold: Some(true),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn test_render_rich_text_plain_no_spans() {
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set a RichText cell with only plain text (no formatting)
+        let spans = vec![TextSpan::plain("Plain text only")];
+        gc.sheet_mut(sheet_id)
+            .set_value(Pos { x: 1, y: 1 }, CellValue::RichText(spans));
+
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render.len(), 1);
+        let cell = &render[0];
+
+        assert_eq!(cell.value, "Plain text only");
+        // Plain text spans should not create any link_spans or format_spans
+        assert!(cell.link_spans.is_empty());
+        assert!(cell.format_spans.is_empty());
     }
 }

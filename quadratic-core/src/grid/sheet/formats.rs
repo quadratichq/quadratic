@@ -78,15 +78,14 @@ impl Sheet {
         }
     }
 
-    /// Returns the dirty hashes and rows changed for the formats
+    /// Returns the dirty hashes, rows changed, fill bounds, and whether meta fills changed
     fn formats_transaction_changes(
         &self,
         formats: &SheetFormatUpdates,
         reverse_formats: &SheetFormatUpdates,
-    ) -> (HashSet<Pos>, HashSet<i64>, bool) {
+    ) -> (HashSet<Pos>, HashSet<i64>, Option<Rect>, bool) {
         let mut dirty_hashes = HashSet::new();
         let mut rows_to_resize = HashSet::new();
-        let mut fills_changed = false;
 
         self.format_transaction_changes(
             formats.align.to_owned(),
@@ -174,23 +173,55 @@ impl Sheet {
             &mut rows_to_resize,
         );
 
-        if formats.fill_color.is_some() {
-            fills_changed = true;
-        }
+        // Get finite bounds from new fills
+        let new_fill_bounds = formats
+            .fill_color
+            .as_ref()
+            .and_then(|fc| fc.finite_bounds());
 
-        (dirty_hashes, rows_to_resize, fills_changed)
+        // Get finite bounds from old fills that were replaced (from reverse_formats)
+        // This ensures finite fill hashes are marked dirty when meta fills overwrite them
+        let old_fill_bounds = reverse_formats
+            .fill_color
+            .as_ref()
+            .and_then(|fc| fc.finite_bounds());
+
+        // Combine both bounds - we need to update both old and new fill locations
+        let fill_bounds = match (new_fill_bounds, old_fill_bounds) {
+            (Some(new_bounds), Some(old_bounds)) => Some(new_bounds.union(&old_bounds)),
+            (Some(bounds), None) | (None, Some(bounds)) => Some(bounds),
+            (None, None) => None,
+        };
+
+        // Check if any fill has infinite bounds (meta fills: row/column/sheet fills)
+        let has_meta_fills = formats
+            .fill_color
+            .as_ref()
+            .map(|fc| {
+                fc.to_rects()
+                    .any(|(_, _, x2, y2, _)| x2.is_none() || y2.is_none())
+            })
+            .unwrap_or(false);
+
+        (dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills)
     }
 
     /// Sets formats using SheetFormatUpdates.
     ///
-    /// Returns (reverse_operations, dirty_hashes, rows_to_resize)
+    /// Returns (reverse_operations, dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills)
     pub fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
-    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>, bool) {
+    ) -> (
+        Vec<Operation>,
+        HashSet<Pos>,
+        HashSet<i64>,
+        Option<Rect>,
+        bool,
+    ) {
         let reverse_formats = self.formats.apply_updates(formats);
 
-        let (dirty_hashes, rows_to_resize, fills_changed) =
+        let (dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills) =
             self.formats_transaction_changes(formats, &reverse_formats);
 
         let reverse_op = Operation::SetCellFormatsA1 {
@@ -202,7 +233,8 @@ impl Sheet {
             vec![reverse_op],
             dirty_hashes,
             rows_to_resize,
-            fills_changed,
+            fill_bounds,
+            has_meta_fills,
         )
     }
 }
@@ -215,6 +247,102 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_set_formats_a1() {
+        let mut sheet = Sheet::test();
+
+        // Add some data to create non-empty bounds
+        sheet.set_value(pos![A1], CellValue::Text("test".to_string()));
+        sheet.set_value(pos![C3], CellValue::Text("test".to_string()));
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        // Create format updates with bold and fill_color
+        let mut formats = SheetFormatUpdates::default();
+
+        let mut bold = Contiguous2D::new();
+        bold.set_rect(1, 1, Some(3), Some(3), Some(ClearOption::Some(true)));
+        formats.bold = Some(bold);
+
+        let mut fill_color = Contiguous2D::new();
+        fill_color.set_rect(
+            1,
+            1,
+            Some(3),
+            Some(3),
+            Some(ClearOption::Some("rgb(255, 0, 0)".to_string())),
+        );
+        formats.fill_color = Some(fill_color);
+
+        // Apply formats
+        let (reverse_ops, dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills) =
+            sheet.set_formats_a1(&formats);
+
+        // Verify reverse operation
+        assert_eq!(reverse_ops.len(), 1);
+        let reverse_op = &reverse_ops[0];
+        match reverse_op {
+            Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: reverse_formats,
+            } => {
+                assert_eq!(sheet_id, &sheet.id);
+                // Reverse formats should have None values (clearing the formats we set)
+                assert!(reverse_formats.bold.is_some());
+                assert!(reverse_formats.fill_color.is_some());
+            }
+            _ => panic!("Expected SetCellFormatsA1 operation"),
+        }
+
+        // Verify dirty hashes contains the affected quadrant
+        assert!(!dirty_hashes.is_empty());
+        assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
+
+        // Verify rows_to_resize contains rows with content (bold triggers resize)
+        assert!(rows_to_resize.contains(&1));
+        assert!(rows_to_resize.contains(&3));
+
+        // Verify fill_bounds is some (finite fills applied)
+        assert!(fill_bounds.is_some());
+        assert!(!has_meta_fills);
+
+        // Verify formats were actually applied
+        assert_eq!(sheet.formats.bold.get(pos![A1]), Some(true));
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("rgb(255, 0, 0)".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_formats_a1_no_fill_color() {
+        let mut sheet = Sheet::test();
+
+        // Add some data
+        sheet.set_value(pos![A1], CellValue::Text("test".to_string()));
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        // Create format updates with only alignment (no fill)
+        let mut formats = SheetFormatUpdates::default();
+        let mut align = Contiguous2D::new();
+        align.set_rect(
+            1,
+            1,
+            Some(1),
+            Some(1),
+            Some(ClearOption::Some(CellAlign::Center)),
+        );
+        formats.align = Some(align);
+
+        // Apply formats
+        let (_, _, _, fill_bounds, has_meta_fills) = sheet.set_formats_a1(&formats);
+
+        // Verify no fill changes occurred
+        assert!(fill_bounds.is_none());
+        assert!(!has_meta_fills);
+    }
 
     #[test]
     fn test_formats_transaction_changes() {
@@ -281,7 +409,7 @@ mod tests {
         reverse_formats.fill_color = Some(reverse_fill_color);
 
         // Get the changes
-        let (dirty_hashes, rows_changed, fills_changed) =
+        let (dirty_hashes, rows_changed, fills_changed, has_meta_fills) =
             sheet.formats_transaction_changes(&formats, &reverse_formats);
 
         // Expected quadrants (converted to quadrant coordinates)
@@ -296,6 +424,7 @@ mod tests {
 
         assert_eq!(dirty_hashes, expected_quadrants);
         assert_eq!(rows_changed, expected_rows);
-        assert!(fills_changed);
+        assert!(fills_changed.is_some());
+        assert!(!has_meta_fills); // finite fill, not a meta fill
     }
 }

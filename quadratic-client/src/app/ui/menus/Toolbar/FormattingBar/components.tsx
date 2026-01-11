@@ -2,11 +2,13 @@ import { Action } from '@/app/actions/actions';
 import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { DateFormat } from '@/app/ui/components/DateFormat';
-import { textFormatSetCurrency } from '@/app/ui/helpers/formatCells';
+import { shouldKeepInlineEditorFocus, textFormatSetCurrency } from '@/app/ui/helpers/formatCells';
 import { useDefaultCurrency } from '@/app/ui/hooks/useDefaultCurrency';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -68,10 +70,16 @@ export const FormatButtonDropdown = memo(
           </TooltipContent>
         </Tooltip>
         <DropdownMenuContent
-          className={cn('w-fit min-w-fit px-4 hover:bg-background', className)}
+          className={cn('pointer-up-ignore w-fit min-w-fit px-4 hover:bg-background', className)}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            focusGrid();
+            // Refocus inline editor if it's open, otherwise focus grid
+            if (inlineEditorHandler.isOpen()) {
+              shouldKeepInlineEditorFocus();
+              setTimeout(() => inlineEditorMonaco.focus(), 0);
+            } else if (!shouldKeepInlineEditorFocus()) {
+              focusGrid();
+            }
           }}
         >
           {children}
@@ -116,10 +124,16 @@ export const FormatButtonPopover = memo(
           </TooltipContent>
         </Tooltip>
         <PopoverContent
-          className={className + ' w-fit p-1'}
+          className={cn('pointer-up-ignore w-fit p-1', className)}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            focusGrid();
+            // Refocus inline editor if it's open, otherwise focus grid
+            if (inlineEditorHandler.isOpen()) {
+              shouldKeepInlineEditorFocus();
+              setTimeout(() => inlineEditorMonaco.focus(), 0);
+            } else if (!shouldKeepInlineEditorFocus()) {
+              focusGrid();
+            }
           }}
         >
           {children}
@@ -239,7 +253,14 @@ export const FormatButton = memo(
     const handleMouseUp = useCallback(() => {
       if (!enableHoldToRepeat) return;
       clearTimers();
-      focusGrid();
+      // Refocus inline editor if it's open, otherwise focus grid
+      if (inlineEditorHandler.isOpen()) {
+        // Clear the flag if it was set (for span formatting)
+        shouldKeepInlineEditorFocus();
+        setTimeout(() => inlineEditorMonaco.focus(), 0);
+      } else if (!shouldKeepInlineEditorFocus()) {
+        focusGrid();
+      }
     }, [enableHoldToRepeat, clearTimers]);
 
     const handleMouseLeave = useCallback(() => {
@@ -250,7 +271,14 @@ export const FormatButton = memo(
     const handleClick = useCallback(() => {
       if (!enableHoldToRepeat) {
         executeAction();
-        focusGrid();
+        // Refocus inline editor if it's open, otherwise focus grid
+        if (inlineEditorHandler.isOpen()) {
+          // Clear the flag if it was set (for span formatting)
+          shouldKeepInlineEditorFocus();
+          setTimeout(() => inlineEditorMonaco.focus(), 0);
+        } else if (!shouldKeepInlineEditorFocus()) {
+          focusGrid();
+        }
       }
     }, [enableHoldToRepeat, executeAction]);
 
@@ -321,11 +349,23 @@ export const FormatColorPickerButton = memo(
             color={activeColor}
             onChangeComplete={(color) => {
               actionSpec.run(color);
-              focusGrid();
+              // Refocus inline editor if it's open, otherwise focus grid
+              if (inlineEditorHandler.isOpen()) {
+                shouldKeepInlineEditorFocus();
+                setTimeout(() => inlineEditorMonaco.focus(), 0);
+              } else if (!shouldKeepInlineEditorFocus()) {
+                focusGrid();
+              }
             }}
             onClear={() => {
               actionSpec.run(undefined);
-              focusGrid();
+              // Refocus inline editor if it's open, otherwise focus grid
+              if (inlineEditorHandler.isOpen()) {
+                shouldKeepInlineEditorFocus();
+                setTimeout(() => inlineEditorMonaco.focus(), 0);
+              } else if (!shouldKeepInlineEditorFocus()) {
+                focusGrid();
+              }
             }}
           />
         </DropdownMenuItem>
@@ -348,7 +388,12 @@ export const FormatDateAndTimePickerButton = memo(({ hideLabel }: { hideLabel?: 
       <div className="min-w-80 p-2">
         <DateFormat
           closeMenu={() => {
-            focusGrid();
+            // Refocus inline editor if it's open, otherwise focus grid
+            if (inlineEditorHandler.isOpen()) {
+              setTimeout(() => inlineEditorMonaco.focus(), 0);
+            } else {
+              focusGrid();
+            }
           }}
         />
       </div>
@@ -416,7 +461,12 @@ export const FormatCurrencyButton = memo(
                 onClick={() => {
                   trackEvent('[FormattingBar].button', { label: 'Currency' });
                   textFormatSetCurrency(defaultCurrency);
-                  focusGrid();
+                  // Refocus inline editor if it's open, otherwise focus grid
+                  if (inlineEditorHandler.isOpen()) {
+                    setTimeout(() => inlineEditorMonaco.focus(), 0);
+                  } else {
+                    focusGrid();
+                  }
                 }}
                 data-testid={hideLabel ? '' : 'format_number_currency'}
               >
@@ -439,10 +489,15 @@ export const FormatCurrencyButton = memo(
           </DropdownMenuTrigger>
         </div>
         <DropdownMenuContent
-          className="hover:bg-background"
+          className="pointer-up-ignore hover:bg-background"
           onCloseAutoFocus={(e) => {
             e.preventDefault();
-            focusGrid();
+            // Refocus inline editor if it's open, otherwise focus grid
+            if (inlineEditorHandler.isOpen()) {
+              setTimeout(() => inlineEditorMonaco.focus(), 0);
+            } else {
+              focusGrid();
+            }
           }}
         >
           {CURRENCY_OPTIONS.map((option) => {
@@ -454,7 +509,12 @@ export const FormatCurrencyButton = memo(
                   trackEvent('[FormattingBar].button', { label: `Currency: ${option.symbol}` });
                   textFormatSetCurrency(option.symbol);
                   setDefaultCurrency(option.symbol);
-                  focusGrid();
+                  // Refocus inline editor if it's open, otherwise focus grid
+                  if (inlineEditorHandler.isOpen()) {
+                    setTimeout(() => inlineEditorMonaco.focus(), 0);
+                  } else {
+                    focusGrid();
+                  }
                 }}
                 aria-label={hideLabel ? '' : option.label}
                 data-testid={hideLabel ? '' : `currency_${option.symbol}`}

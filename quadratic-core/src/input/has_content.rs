@@ -14,13 +14,7 @@ pub fn table_at<'a>(
 ) -> Option<&'a TableMapEntry> {
     let table_pos = match table_cache.multi_cell_tables.get(sheet_pos.into()) {
         Some(pos) => pos.to_sheet_pos(sheet_pos.sheet_id),
-        None if table_cache
-            .single_cell_tables
-            .get(sheet_pos.into())
-            .is_some() =>
-        {
-            sheet_pos
-        }
+        None if table_cache.single_cell_tables.get(sheet_pos.into()) => sheet_pos,
         _ => return None,
     };
 

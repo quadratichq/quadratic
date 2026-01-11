@@ -635,6 +635,16 @@ export class GridHeadings extends Container {
         row === start.index
       ) {
         // only show labels that will fit (unless grid lines are hidden)
+        if (
+          currentHeight === 0 ||
+          (currentHeight < halfCharacterHeight &&
+            scale >= 0.2 &&
+            content.gridLines.alpha >= colors.headerSelectedRowColumnBackgroundColorAlpha)
+        ) {
+          row++;
+          continue;
+        }
+
         let yPosition = y + currentHeight / 2;
         const top = yPosition - halfCharacterHeight / 2;
         const bottom = yPosition + halfCharacterHeight / 2;

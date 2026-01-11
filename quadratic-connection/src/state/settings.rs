@@ -21,35 +21,9 @@ pub(crate) struct Settings {
 
 impl Settings {
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
-        let expected = |val: &Option<String>, var: &str| {
-            val.to_owned()
-                .unwrap_or_else(|| panic!("Expected {var} to have a value"))
-        };
-        let is_local = config.environment.is_local_or_docker();
-        let storage = match config.storage_type {
-            StorageType::S3 => StorageContainer::S3(S3::new(
-                S3Config::new(
-                    expected(&config.aws_s3_bucket_name, "AWS_S3_BUCKET_NAME"),
-                    expected(&config.aws_s3_region, "AWS_S3_REGION"),
-                    expected(&config.aws_s3_access_key_id, "AWS_S3_ACCESS_KEY_ID"),
-                    expected(&config.aws_s3_secret_access_key, "AWS_S3_SECRET_ACCESS_KEY"),
-                    "Quadratic File Service",
-                    is_local,
-                )
-                .await,
-            )),
-            StorageType::FileSystem => {
-                StorageContainer::FileSystem(FileSystem::new(FileSystemConfig {
-                    path: expected(&config.storage_dir, "STORAGE_DIR"),
-                    encryption_keys: config
-                        .storage_encryption_keys
-                        .to_owned()
-                        .expect("Expected STORAGE_ENCRYPTION_KEYS to have a value"),
-                }))
-            }
-        };
+        let synced_data_storage = Self::new_storage(config).await?;
 
-        let object_store = StorageConfig::from(&storage)
+        let object_store = StorageConfig::from(&synced_data_storage)
             .try_into()
             .map_err(|e: SharedError| ConnectionError::CreateObjectStore(e.to_string()))?;
 
@@ -63,6 +37,50 @@ impl Settings {
             datafusion_connection,
         })
     }
+
+    async fn new_storage(config: &Config) -> Result<StorageContainer> {
+        let is_local = config.environment.is_local_or_docker();
+        let expected = |val: &Option<String>, var: &str| {
+            val.to_owned()
+                .unwrap_or_else(|| panic!("Expected {var} to have a value"))
+        };
+
+        let bucket_name = expected(
+            &config.aws_s3_synced_data_bucket_name,
+            "AWS_S3_SYNCED_DATA_BUCKET_NAME",
+        );
+
+        let storage_dir = expected(&config.synced_data_storage_dir, "SYNCED_DATA_STORAGE_DIR");
+
+        let storage = match config.storage_type {
+            StorageType::S3 => StorageContainer::S3(S3::new(
+                S3Config::new(
+                    bucket_name,
+                    expected(&config.aws_s3_region, "AWS_S3_REGION"),
+                    expected(&config.aws_s3_access_key_id, "AWS_S3_ACCESS_KEY_ID"),
+                    expected(&config.aws_s3_secret_access_key, "AWS_S3_SECRET_ACCESS_KEY"),
+                    "Quadratic File Service",
+                    is_local,
+                )
+                .await,
+            )),
+            StorageType::FileSystem => {
+                StorageContainer::FileSystem(FileSystem::new(FileSystemConfig {
+                    path: storage_dir,
+                    encryption_keys: config
+                        .storage_encryption_keys
+                        .to_owned()
+                        .expect("Expected STORAGE_ENCRYPTION_KEYS to have a value"),
+                    presigned_url_base: format!(
+                        "{}:{}/storage/presigned",
+                        config.host, config.port
+                    ),
+                }))
+            }
+        };
+
+        Ok(storage)
+    }
 }
 
 /// Create a new datafusion connection.
@@ -74,7 +92,13 @@ pub fn new_datafusion_connection(
         StorageType::S3 => ObjectStoreKind::S3,
         StorageType::FileSystem => ObjectStoreKind::FileSystem,
     };
-    let object_store_url = object_store_url(kind, config.aws_s3_bucket_name.as_deref())?;
+
+    let path = config.synced_data_storage_dir.as_ref().ok_or_else(|| {
+        ConnectionError::CreateObjectStore(
+            "Expected AWS_S3_SYNCED_DATA_BUCKET_NAME to have a value".to_string(),
+        )
+    })?;
+    let object_store_url = object_store_url(kind, path)?;
 
     Ok(DatafusionConnection::new(object_store, object_store_url))
 }
