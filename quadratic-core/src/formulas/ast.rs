@@ -17,14 +17,14 @@ use crate::{
 };
 
 /// Abstract syntax tree of a formula expression.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Formula {
     pub ast: AstNode,
 }
 
 pub type AstNode = Spanned<AstNodeContents>;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum AstNodeContents {
     Empty,
     FunctionCall {
@@ -99,6 +99,133 @@ impl Formula {
     /// Evaluates a formula.
     pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
         self.ast.eval(ctx)
+    }
+
+    /// Converts the formula AST back to an A1-style formula string.
+    ///
+    /// This is used to display the formula in the UI. The `default_sheet_id` is
+    /// used to determine when to include sheet names in cell references (if the
+    /// reference is to a different sheet, the sheet name is included).
+    pub fn to_a1_string(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        a1_context: &crate::a1::A1Context,
+    ) -> String {
+        self.ast.inner.to_a1_string(default_sheet_id, a1_context)
+    }
+}
+
+impl AstNodeContents {
+    /// Checks if a function name is an infix operator (binary operator between operands).
+    fn is_infix_operator(name: &str) -> bool {
+        matches!(
+            name,
+            "=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=" | "+" | "-" | "*" | "/" | "^" | "&"
+                | ".."
+        )
+    }
+
+    /// Converts the AST node back to an A1-style formula string.
+    pub fn to_a1_string(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        a1_context: &crate::a1::A1Context,
+    ) -> String {
+        match self {
+            AstNodeContents::Empty => String::new(),
+            AstNodeContents::FunctionCall { func, args } => {
+                // Handle range operator `:` (no spaces around it, e.g., A1:B2)
+                if func.inner == ":" && args.len() == 2 {
+                    let left = args[0].inner.to_a1_string(default_sheet_id, a1_context);
+                    let right = args[1].inner.to_a1_string(default_sheet_id, a1_context);
+                    return format!("{}:{}", left, right);
+                }
+
+                // Handle infix operators (binary operators like +, -, *, /, =, <, >, etc.)
+                if Self::is_infix_operator(&func.inner) && args.len() == 2 {
+                    let left = args[0].inner.to_a1_string(default_sheet_id, a1_context);
+                    let right = args[1].inner.to_a1_string(default_sheet_id, a1_context);
+                    return format!("{} {} {}", left, func.inner, right);
+                }
+
+                // Handle unary prefix operators (+ and - with single arg)
+                if matches!(func.inner.as_str(), "+" | "-") && args.len() == 1 {
+                    let operand = args[0].inner.to_a1_string(default_sheet_id, a1_context);
+                    return format!("{}{}", func.inner, operand);
+                }
+
+                // Handle suffix operators (% with single arg: 50% = 0.5)
+                if func.inner == "%" && args.len() == 1 {
+                    let operand = args[0].inner.to_a1_string(default_sheet_id, a1_context);
+                    return format!("{}%", operand);
+                }
+
+                // Regular function call
+                let args_str = args
+                    .iter()
+                    .map(|arg| arg.inner.to_a1_string(default_sheet_id, a1_context))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}({})", func.inner, args_str)
+            }
+            AstNodeContents::Paren(contents) => {
+                let inner = contents
+                    .iter()
+                    .map(|node| node.inner.to_a1_string(default_sheet_id, a1_context))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("({})", inner)
+            }
+            AstNodeContents::Array(rows) => {
+                let rows_str = rows
+                    .iter()
+                    .map(|row| {
+                        row.iter()
+                            .map(|cell| cell.inner.to_a1_string(default_sheet_id, a1_context))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("; ");
+                format!("{{{}}}", rows_str)
+            }
+            AstNodeContents::CellRef(sheet_id, bounds) => {
+                if let Some(sid) = sheet_id {
+                    // Include sheet name if different from default or if default is None
+                    if default_sheet_id.is_none_or(|default| default != *sid) {
+                        if let Some(sheet_name) = a1_context.try_sheet_id(*sid) {
+                            return format!(
+                                "{}!{}",
+                                crate::a1::quote_sheet_name(sheet_name),
+                                bounds
+                            );
+                        }
+                    }
+                }
+                format!("{}", bounds)
+            }
+            AstNodeContents::RangeRef(range) => range.to_a1_string(default_sheet_id, a1_context),
+            AstNodeContents::String(s) => {
+                // Escape the string for formula syntax
+                crate::formulas::escape_string(s)
+            }
+            AstNodeContents::Number(n) => {
+                // Format number, avoiding unnecessary decimal points
+                if n.fract() == 0.0 && n.abs() < 1e15 {
+                    format!("{}", *n as i64)
+                } else {
+                    format!("{}", n)
+                }
+            }
+            AstNodeContents::Bool(b) => {
+                if *b {
+                    "TRUE".to_string()
+                } else {
+                    "FALSE".to_string()
+                }
+            }
+            AstNodeContents::Error(e) => format!("{}", e),
+        }
     }
 }
 
@@ -627,7 +754,8 @@ impl AstNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::a1::{CellRefCoord, CellRefRangeEnd};
+    use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd};
+    use crate::formulas::parser::simple_parse_formula;
 
     /// Helper to create a column-only reference bounds (e.g., "X" = column 24)
     fn column_ref_bounds(col: i64) -> RefRangeBounds {
@@ -756,5 +884,159 @@ mod tests {
         );
         assert_eq!(AstNodeContents::Paren(vec![]).try_as_identifier(), None);
         assert_eq!(AstNodeContents::Array(vec![]).try_as_identifier(), None);
+    }
+
+    // =========================================================================
+    // Tests for to_a1_string - converting AST back to formula string
+    // =========================================================================
+
+    /// Helper to parse a formula and convert it back to a string
+    fn roundtrip_formula(input: &str) -> String {
+        let formula = simple_parse_formula(input).expect("Failed to parse formula");
+        let a1_context = A1Context::default();
+        formula.to_a1_string(None, &a1_context)
+    }
+
+    #[test]
+    fn test_to_a1_string_literals() {
+        // Numbers
+        assert_eq!(roundtrip_formula("=42"), "42");
+        assert_eq!(roundtrip_formula("=3.14"), "3.14");
+        assert_eq!(roundtrip_formula("=0"), "0");
+        assert_eq!(roundtrip_formula("=-5"), "-5");
+
+        // Booleans
+        assert_eq!(roundtrip_formula("=true"), "TRUE");
+        assert_eq!(roundtrip_formula("=FALSE"), "FALSE");
+
+        // Strings
+        assert_eq!(roundtrip_formula(r#"="hello""#), r#""hello""#);
+        assert_eq!(roundtrip_formula(r#"="hello world""#), r#""hello world""#);
+        assert_eq!(roundtrip_formula(r#"="""#), r#""""#);
+    }
+
+    #[test]
+    fn test_to_a1_string_cell_references() {
+        // Simple cell references
+        assert_eq!(roundtrip_formula("=A1"), "A1");
+        assert_eq!(roundtrip_formula("=B2"), "B2");
+        assert_eq!(roundtrip_formula("=Z100"), "Z100");
+        assert_eq!(roundtrip_formula("=AA1"), "AA1");
+
+        // Absolute references
+        assert_eq!(roundtrip_formula("=$A$1"), "$A$1");
+        assert_eq!(roundtrip_formula("=$A1"), "$A1");
+        assert_eq!(roundtrip_formula("=A$1"), "A$1");
+
+        // Ranges
+        assert_eq!(roundtrip_formula("=A1:B2"), "A1:B2");
+        assert_eq!(roundtrip_formula("=$A$1:$B$2"), "$A$1:$B$2");
+    }
+
+    #[test]
+    fn test_to_a1_string_comparison_operators() {
+        assert_eq!(roundtrip_formula("=A1 = 10"), "A1 = 10");
+        assert_eq!(roundtrip_formula("=A1 > 10"), "A1 > 10");
+        assert_eq!(roundtrip_formula("=A1 < 10"), "A1 < 10");
+        assert_eq!(roundtrip_formula("=A1 >= 10"), "A1 >= 10");
+        assert_eq!(roundtrip_formula("=A1 <= 10"), "A1 <= 10");
+        assert_eq!(roundtrip_formula("=A1 <> 10"), "A1 <> 10");
+    }
+
+    #[test]
+    fn test_to_a1_string_arithmetic_operators() {
+        assert_eq!(roundtrip_formula("=A1 + B1"), "A1 + B1");
+        assert_eq!(roundtrip_formula("=A1 - B1"), "A1 - B1");
+        assert_eq!(roundtrip_formula("=A1 * B1"), "A1 * B1");
+        assert_eq!(roundtrip_formula("=A1 / B1"), "A1 / B1");
+        assert_eq!(roundtrip_formula("=A1 ^ 2"), "A1 ^ 2");
+    }
+
+    #[test]
+    fn test_to_a1_string_string_concat_operator() {
+        assert_eq!(roundtrip_formula(r#"="Hello" & " World""#), r#""Hello" & " World""#);
+        assert_eq!(roundtrip_formula("=A1 & B1"), "A1 & B1");
+    }
+
+    #[test]
+    fn test_to_a1_string_unary_operators() {
+        // Unary minus
+        assert_eq!(roundtrip_formula("=-A1"), "-A1");
+        // Unary plus
+        assert_eq!(roundtrip_formula("=+A1"), "+A1");
+        // Percentage
+        assert_eq!(roundtrip_formula("=50%"), "50%");
+        assert_eq!(roundtrip_formula("=A1%"), "A1%");
+    }
+
+    #[test]
+    fn test_to_a1_string_range_operator() {
+        assert_eq!(roundtrip_formula("=1..10"), "1 .. 10");
+    }
+
+    #[test]
+    fn test_to_a1_string_function_calls() {
+        // Simple functions
+        assert_eq!(roundtrip_formula("=SUM(A1:A10)"), "SUM(A1:A10)");
+        assert_eq!(roundtrip_formula("=AVERAGE(A1:A10)"), "AVERAGE(A1:A10)");
+        assert_eq!(roundtrip_formula("=COUNT(A1:A10)"), "COUNT(A1:A10)");
+
+        // Multiple arguments
+        assert_eq!(roundtrip_formula("=IF(A1 > 10, TRUE, FALSE)"), "IF(A1 > 10, TRUE, FALSE)");
+        assert_eq!(roundtrip_formula("=MAX(1, 2, 3)"), "MAX(1, 2, 3)");
+
+        // Nested functions
+        assert_eq!(
+            roundtrip_formula("=SUM(ABS(A1), ABS(B1))"),
+            "SUM(ABS(A1), ABS(B1))"
+        );
+
+        // No arguments
+        assert_eq!(roundtrip_formula("=NOW()"), "NOW()");
+        assert_eq!(roundtrip_formula("=TODAY()"), "TODAY()");
+    }
+
+    #[test]
+    fn test_to_a1_string_parentheses() {
+        assert_eq!(roundtrip_formula("=(A1 + B1) * C1"), "(A1 + B1) * C1");
+        assert_eq!(roundtrip_formula("=A1 * (B1 + C1)"), "A1 * (B1 + C1)");
+    }
+
+    #[test]
+    fn test_to_a1_string_arrays() {
+        assert_eq!(roundtrip_formula("={1, 2, 3}"), "{1, 2, 3}");
+        assert_eq!(roundtrip_formula("={1; 2; 3}"), "{1; 2; 3}");
+        assert_eq!(roundtrip_formula("={1, 2; 3, 4}"), "{1, 2; 3, 4}");
+    }
+
+    #[test]
+    fn test_to_a1_string_complex_formulas() {
+        // Conditional formatting style formulas
+        assert_eq!(roundtrip_formula("=A1 > 10"), "A1 > 10");
+        assert_eq!(roundtrip_formula("=$A1 > $B$1"), "$A1 > $B$1");
+
+        // Complex expressions
+        assert_eq!(
+            roundtrip_formula("=IF(AND(A1 > 0, B1 < 100), A1 * B1, 0)"),
+            "IF(AND(A1 > 0, B1 < 100), A1 * B1, 0)"
+        );
+
+        // Nested arithmetic
+        assert_eq!(
+            roundtrip_formula("=(A1 + B1) / (C1 - D1)"),
+            "(A1 + B1) / (C1 - D1)"
+        );
+    }
+
+    #[test]
+    fn test_to_a1_string_number_formatting() {
+        // Integers should not have decimal points
+        assert_eq!(roundtrip_formula("=1"), "1");
+        assert_eq!(roundtrip_formula("=100"), "100");
+        assert_eq!(roundtrip_formula("=1000000"), "1000000");
+
+        // Floats should preserve decimals
+        assert_eq!(roundtrip_formula("=1.5"), "1.5");
+        assert_eq!(roundtrip_formula("=3.14159"), "3.14159");
     }
 }
