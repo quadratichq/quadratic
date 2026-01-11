@@ -105,25 +105,58 @@ impl A1Selection {
         for range in &self.ranges {
             match range {
                 CellRefRange::Sheet { range } => {
-                    if range.is_finite()
-                        && let Some(rect) = range.to_rect()
-                    {
-                        // Check all positions in the range for merged cells
-                        for x in rect.min.x..=rect.max.x {
-                            for y in rect.min.y..=rect.max.y {
-                                let pos = Pos { x, y };
-                                if let Some(merge_rect) = merge_cells.get_merge_cell_rect(pos) {
-                                    let merge_key = (
-                                        merge_rect.min.x,
-                                        merge_rect.min.y,
-                                        merge_rect.max.x,
-                                        merge_rect.max.y,
-                                    );
-                                    merge_rects_to_add.insert((merge_key, merge_rect));
+                    if range.is_finite() {
+                        // Finite range: check all positions
+                        if let Some(rect) = range.to_rect() {
+                            for x in rect.min.x..=rect.max.x {
+                                for y in rect.min.y..=rect.max.y {
+                                    let pos = Pos { x, y };
+                                    if let Some(merge_rect) = merge_cells.get_merge_cell_rect(pos) {
+                                        let merge_key = (
+                                            merge_rect.min.x,
+                                            merge_rect.min.y,
+                                            merge_rect.max.x,
+                                            merge_rect.max.y,
+                                        );
+                                        merge_rects_to_add.insert((merge_key, merge_rect));
+                                    }
                                 }
                             }
                         }
+                    } else if range.is_col_range() {
+                        // Column range: iterate through all merge cells and check if they intersect
+                        let col_start = range.start.col().min(range.end.col());
+                        let col_end = range.start.col().max(range.end.col());
+                        for merge_rect in merge_cells.iter_merge_cells() {
+                            // Check if merge cell's column range overlaps with selected columns
+                            if merge_rect.max.x >= col_start && merge_rect.min.x <= col_end {
+                                let merge_key = (
+                                    merge_rect.min.x,
+                                    merge_rect.min.y,
+                                    merge_rect.max.x,
+                                    merge_rect.max.y,
+                                );
+                                merge_rects_to_add.insert((merge_key, merge_rect));
+                            }
+                        }
+                    } else if range.is_row_range() {
+                        // Row range: iterate through all merge cells and check if they intersect
+                        let row_start = range.start.row().min(range.end.row());
+                        let row_end = range.start.row().max(range.end.row());
+                        for merge_rect in merge_cells.iter_merge_cells() {
+                            // Check if merge cell's row range overlaps with selected rows
+                            if merge_rect.max.y >= row_start && merge_rect.min.y <= row_end {
+                                let merge_key = (
+                                    merge_rect.min.x,
+                                    merge_rect.min.y,
+                                    merge_rect.max.x,
+                                    merge_rect.max.y,
+                                );
+                                merge_rects_to_add.insert((merge_key, merge_rect));
+                            }
+                        }
                     }
+                    // Note: "all" selection (entire sheet) doesn't need expansion
                 }
                 CellRefRange::Table { .. } => {
                     // Tables are handled separately in format_ops
@@ -293,6 +326,126 @@ mod tests {
         assert!(
             expanded_str.contains("A1:C3"),
             "Should include merged cell rect"
+        );
+    }
+
+    #[test]
+    fn test_expand_to_include_merge_rects_column_selection() {
+        // Test: Column selection intersecting merged cell
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:D4")); // Merged cell spanning columns B-D
+
+        // Select column B (which intersects the merged cell)
+        let selection = A1Selection::test_a1("B");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        // Should include original column selection and full merged cell rect
+        let expanded_str = expanded.test_to_string();
+        assert!(expanded_str.contains("B"), "Should include original column");
+        assert!(
+            expanded_str.contains("B2:D4"),
+            "Should include full merged cell rect"
+        );
+
+        // Test: Column selection that doesn't intersect merged cell
+        let selection = A1Selection::test_a1("E");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        // Should only include original column selection (may be represented as "E:E" or "E")
+        let expanded_str_non_intersect = expanded.test_to_string();
+        assert!(
+            expanded_str_non_intersect == "E" || expanded_str_non_intersect == "E:E",
+            "Should only include original column, got: {}",
+            expanded_str_non_intersect
+        );
+        // Verify no merged cell rect was added
+        assert!(
+            !expanded_str_non_intersect.contains("B2:D4"),
+            "Should not include merged cell that doesn't intersect"
+        );
+
+        // Test: Multiple column selection
+        let selection = A1Selection::test_a1("C:D");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        let expanded_str = expanded.test_to_string();
+        assert!(
+            expanded_str.contains("C:D"),
+            "Should include original columns"
+        );
+        assert!(
+            expanded_str.contains("B2:D4"),
+            "Should include full merged cell rect"
+        );
+    }
+
+    #[test]
+    fn test_expand_to_include_merge_rects_row_selection() {
+        // Test: Row selection intersecting merged cell
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:D4")); // Merged cell spanning rows 2-4
+
+        // Select row 2 (which intersects the merged cell)
+        let selection = A1Selection::test_a1("2");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        // Should include original row selection and full merged cell rect
+        let expanded_str = expanded.test_to_string();
+        assert!(expanded_str.contains("2"), "Should include original row");
+        assert!(
+            expanded_str.contains("B2:D4"),
+            "Should include full merged cell rect"
+        );
+
+        // Test: Row selection that doesn't intersect merged cell
+        let selection = A1Selection::test_a1("5");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        // Should only include original row selection (may be represented as "5:5" or "5")
+        let expanded_str = expanded.test_to_string();
+        assert!(
+            expanded_str == "5" || expanded_str == "5:5",
+            "Should only include original row, got: {}",
+            expanded_str
+        );
+        // Verify no merged cell rect was added
+        assert!(
+            !expanded_str.contains("B2:D4"),
+            "Should not include merged cell that doesn't intersect"
+        );
+
+        // Test: Multiple row selection
+        let selection = A1Selection::test_a1("3:4");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        let expanded_str = expanded.test_to_string();
+        assert!(expanded_str.contains("3:4"), "Should include original rows");
+        assert!(
+            expanded_str.contains("B2:D4"),
+            "Should include full merged cell rect"
+        );
+    }
+
+    #[test]
+    fn test_expand_to_include_merge_rects_multiple_merged_cells() {
+        // Test: Column selection intersecting multiple merged cells
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:C3")); // First merged cell
+        merge_cells.merge_cells(Rect::test_a1("B5:D6")); // Second merged cell in same column
+
+        // Select column B (which intersects both merged cells)
+        let selection = A1Selection::test_a1("B");
+        let expanded = selection.expand_to_include_merge_rects(&merge_cells);
+
+        let expanded_str = expanded.test_to_string();
+        assert!(expanded_str.contains("B"), "Should include original column");
+        assert!(
+            expanded_str.contains("B2:C3"),
+            "Should include first merged cell rect"
+        );
+        assert!(
+            expanded_str.contains("B5:D6"),
+            "Should include second merged cell rect"
         );
     }
 }

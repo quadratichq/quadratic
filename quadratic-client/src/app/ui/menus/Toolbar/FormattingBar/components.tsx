@@ -186,12 +186,14 @@ export const FormatButton = memo(
     checked,
     hideLabel,
     enableHoldToRepeat = false,
+    disabled = false,
   }: {
     action: T;
     actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
     checked?: boolean | null;
     hideLabel?: boolean;
     enableHoldToRepeat?: boolean;
+    disabled?: boolean;
   }) => {
     const actionSpec = defaultActionSpec[action];
     const label = actionSpec.label();
@@ -300,6 +302,7 @@ export const FormatButton = memo(
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
             data-testid={hideLabel ? '' : action}
+            disabled={disabled}
           >
             <Icon />
           </Button>

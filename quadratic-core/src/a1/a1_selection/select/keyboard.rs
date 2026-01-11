@@ -493,26 +493,9 @@ fn keyboard_jump_select_sheet_range(
     // else: moving horizontally (anchor.y == row), preserve existing y range
 
     // Expand selection to include any partially overlapping merged cells
-    expand_to_include_merge_cells(&mut rect, merge_cells);
+    super::helpers::expand_to_include_merge_cells(&mut rect, merge_cells);
 
     *range = RefRangeBounds::new_relative_rect(rect);
-}
-
-/// Expands the rect to fully include any merged cells that partially overlap it
-fn expand_to_include_merge_cells(rect: &mut Rect, merge_cells: &MergeCells) {
-    loop {
-        let mut expanded = false;
-        let merged_cells = merge_cells.get_merge_cells(*rect);
-        for merged_cell_rect in merged_cells.iter() {
-            if !rect.contains_rect(merged_cell_rect) {
-                rect.union_in_place(merged_cell_rect);
-                expanded = true;
-            }
-        }
-        if !expanded {
-            break;
-        }
-    }
 }
 
 #[cfg(test)]

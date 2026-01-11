@@ -1526,4 +1526,139 @@ mod test {
         assert_eq!(sheet.cell_format(pos![A1]).bold, None);
         assert_eq!(sheet.cell_format(pos![B1]).italic, None);
     }
+
+    #[test]
+    fn test_format_column_with_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a merged cell spanning columns B-D, rows 2-4
+        gc.merge_cells(A1Selection::test_a1("B2:D4"), None, false);
+
+        // Format column B (which intersects the merged cell)
+        gc.set_fill_color(
+            &A1Selection::test_a1("B"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // All cells within the merged cell should have the fill color
+        let sheet = gc.sheet(sheet_id);
+
+        // Check cells in the merged region
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B2]),
+            Some("blue".to_string()),
+            "B2 should have fill color"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![C3]),
+            Some("blue".to_string()),
+            "C3 (in merged cell) should have fill color"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![D4]),
+            Some("blue".to_string()),
+            "D4 (in merged cell) should have fill color"
+        );
+
+        // Cells in column B but outside merged cell should also have fill color
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B1]),
+            Some("blue".to_string()),
+            "B1 should have fill color (column formatting)"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B10]),
+            Some("blue".to_string()),
+            "B10 should have fill color (column formatting)"
+        );
+    }
+
+    #[test]
+    fn test_format_row_with_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a merged cell spanning columns B-D, rows 2-4
+        gc.merge_cells(A1Selection::test_a1("B2:D4"), None, false);
+
+        // Format row 2 (which intersects the merged cell)
+        gc.set_bold(&A1Selection::test_a1("2"), Some(true), None, false)
+            .unwrap();
+
+        // All cells within the merged cell should have the bold formatting
+        let sheet = gc.sheet(sheet_id);
+
+        // Check cells in the merged region
+        assert_eq!(
+            sheet.formats.bold.get(pos![B2]),
+            Some(true),
+            "B2 should be bold"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![C3]),
+            Some(true),
+            "C3 (in merged cell) should be bold"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![D4]),
+            Some(true),
+            "D4 (in merged cell) should be bold"
+        );
+
+        // Cells in row 2 but outside merged cell should also be bold
+        assert_eq!(
+            sheet.formats.bold.get(pos![A2]),
+            Some(true),
+            "A2 should be bold (row formatting)"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![Z2]),
+            Some(true),
+            "Z2 should be bold (row formatting)"
+        );
+    }
+
+    #[test]
+    fn test_format_column_with_multiple_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two merged cells in column B
+        gc.merge_cells(A1Selection::test_a1("B2:C3"), None, false);
+        gc.merge_cells(A1Selection::test_a1("B5:D6"), None, false);
+
+        // Format column B (which intersects both merged cells)
+        gc.set_italic(&A1Selection::test_a1("B"), Some(true), None, false)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Check first merged cell (B2:C3)
+        assert_eq!(
+            sheet.formats.italic.get(pos![B2]),
+            Some(true),
+            "B2 should be italic"
+        );
+        assert_eq!(
+            sheet.formats.italic.get(pos![C3]),
+            Some(true),
+            "C3 (in first merged cell) should be italic"
+        );
+
+        // Check second merged cell (B5:D6)
+        assert_eq!(
+            sheet.formats.italic.get(pos![B5]),
+            Some(true),
+            "B5 should be italic"
+        );
+        assert_eq!(
+            sheet.formats.italic.get(pos![D6]),
+            Some(true),
+            "D6 (in second merged cell) should be italic"
+        );
+    }
 }

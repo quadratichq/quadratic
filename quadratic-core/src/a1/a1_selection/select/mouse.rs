@@ -11,7 +11,7 @@ impl A1Selection {
         row: i64,
         append: bool,
         a1_context: &A1Context,
-        _merge_cells: &MergeCells,
+        merge_cells: &MergeCells,
     ) {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
@@ -102,6 +102,20 @@ impl A1Selection {
                     }
 
                     range.end = CellRefRangeEnd::new_relative_xy(column, row);
+
+                    // Expand selection to include any partially overlapping merged cells
+                    if range.is_finite() {
+                        if let Some(rect) = range.to_rect() {
+                            let mut expanded_rect = rect;
+                            super::helpers::expand_to_include_merge_cells(
+                                &mut expanded_rect,
+                                merge_cells,
+                            );
+                            if expanded_rect != rect {
+                                *range = RefRangeBounds::new_relative_rect(expanded_rect);
+                            }
+                        }
+                    }
 
                     if !append {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
@@ -203,5 +217,119 @@ mod tests {
         let mut selection = A1Selection::test_a1(":");
         selection.select_to(2, 2, false, &context, &merge_cells);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
+    }
+
+    /// Tests that mouse drag selection expands to include merged cells.
+    ///
+    /// Scenario: Merged cell at C4:E6, start at D1, drag to E9.
+    /// The selection should expand to C1:E9 to include the full merged cell.
+    #[test]
+    fn test_select_to_expands_for_merged_cells() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell C4:E6
+        merge_cells.merge_cells(Rect::test_a1("C4:E6"));
+
+        // Start at D1 (cursor at D1)
+        let mut selection = A1Selection::test_a1("D1");
+        assert_eq!(selection.cursor.x, 4); // D = column 4
+        assert_eq!(selection.cursor.y, 1);
+
+        // Drag to E9 (column 5, row 9)
+        selection.select_to(5, 9, false, &context, &merge_cells);
+
+        // Selection should expand to include the full merged cell C4:E6
+        // Result should be C1:E9 (column C=3 to E=5, row 1 to 9)
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("C1:E9")],
+            "Selection should expand to include merged cell, got: {:?}",
+            selection.test_to_string()
+        );
+    }
+
+    /// Tests that mouse drag selection expands when starting inside a merged cell.
+    #[test]
+    fn test_select_to_from_inside_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell B2:D4
+        merge_cells.merge_cells(Rect::test_a1("B2:D4"));
+
+        // Start at C3 (inside merged cell, cursor at C3)
+        let mut selection = A1Selection::test_a1("C3");
+
+        // Drag to F6
+        selection.select_to(6, 6, false, &context, &merge_cells);
+
+        // Selection should expand to include the full merged cell B2:D4
+        // Result should be B2:F6
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("B2:F6")],
+            "Selection should expand to include merged cell, got: {:?}",
+            selection.test_to_string()
+        );
+    }
+
+    /// Tests that mouse drag selection expands when ending inside a merged cell.
+    #[test]
+    fn test_select_to_ending_inside_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell D4:F6
+        merge_cells.merge_cells(Rect::test_a1("D4:F6"));
+
+        // Start at A1
+        let mut selection = A1Selection::test_a1("A1");
+
+        // Drag to E5 (inside merged cell)
+        selection.select_to(5, 5, false, &context, &merge_cells);
+
+        // Selection should expand to include the full merged cell D4:F6
+        // Result should be A1:F6
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A1:F6")],
+            "Selection should expand to include merged cell, got: {:?}",
+            selection.test_to_string()
+        );
+    }
+
+    /// Tests chained merge cell expansion (expanding to one merge cell reveals another).
+    #[test]
+    fn test_select_to_chained_merge_cells() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create two adjacent merged cells
+        merge_cells.merge_cells(Rect::test_a1("C3:D4")); // First merge cell
+        merge_cells.merge_cells(Rect::test_a1("E3:F4")); // Adjacent merge cell
+
+        // Start at A1
+        let mut selection = A1Selection::test_a1("A1");
+
+        // Drag to C3 (corner of first merged cell)
+        selection.select_to(3, 3, false, &context, &merge_cells);
+
+        // Selection should expand to include first merged cell C3:D4
+        // Result should be A1:D4
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A1:D4")],
+            "Selection should expand to include first merged cell, got: {:?}",
+            selection.test_to_string()
+        );
+
+        // Now drag to E3 (corner of second merged cell)
+        selection.select_to(5, 3, false, &context, &merge_cells);
+
+        // Selection should expand to include second merged cell E3:F4
+        // Result should be A1:F4
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A1:F4")],
+            "Selection should expand to include second merged cell, got: {:?}",
+            selection.test_to_string()
+        );
     }
 }
