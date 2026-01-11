@@ -57,4 +57,26 @@ impl A1Selection {
             ranges,
         }
     }
+
+    /// Selects the entire sheet. (Note: doesn't check whether the SheetId
+    /// exists, only if it is valid)
+    pub fn select_sheet(&mut self, sheet_id: String) -> Result<(), String> {
+        self.sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        self.ranges.clear();
+        self.ranges.push(CellRefRange::ALL);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_select_sheet() {
+        let mut selection = A1Selection::default(SheetId::TEST);
+        selection.select_sheet(SheetId::TEST.to_string()).unwrap();
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
+        assert_eq!(selection.sheet_id, SheetId::TEST);
+    }
 }
