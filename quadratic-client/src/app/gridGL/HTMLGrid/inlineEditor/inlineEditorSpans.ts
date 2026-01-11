@@ -150,6 +150,9 @@ class InlineEditorSpans {
 
     const style = document.createElement('style');
     style.id = HYPERLINK_STYLE_ID;
+    // Note: We need compound selectors to properly combine span-level text-decoration
+    // with cell-level text-decoration. CSS text-decoration values don't inherit/combine,
+    // so we must explicitly specify all decorations in each rule.
     style.textContent = `
       .${HYPERLINK_CLASS} {
         color: #0066cc !important;
@@ -157,6 +160,10 @@ class InlineEditorSpans {
         cursor: pointer;
         vertical-align: baseline !important;
         line-height: inherit !important;
+      }
+      /* Hyperlink with cell-level strike-through: combine both */
+      [data-strike-through='true'] .${HYPERLINK_CLASS}:not(.${STRIKE_THROUGH_CLASS}) {
+        text-decoration: underline line-through !important;
       }
       .${BOLD_CLASS} {
         font-weight: bold !important;
@@ -173,11 +180,20 @@ class InlineEditorSpans {
         vertical-align: baseline !important;
         line-height: inherit !important;
       }
+      /* Span underline with cell-level strike-through: combine both */
+      [data-strike-through='true'] .${UNDERLINE_CLASS}:not(.${STRIKE_THROUGH_CLASS}) {
+        text-decoration: underline line-through !important;
+      }
       .${STRIKE_THROUGH_CLASS} {
         text-decoration: line-through !important;
         vertical-align: baseline !important;
         line-height: inherit !important;
       }
+      /* Span strike-through with cell-level underline: combine both */
+      [data-underline='true'] .${STRIKE_THROUGH_CLASS}:not(.${UNDERLINE_CLASS}) {
+        text-decoration: underline line-through !important;
+      }
+      /* Both span underline and strike-through */
       .${UNDERLINE_CLASS}.${STRIKE_THROUGH_CLASS} {
         text-decoration: underline line-through !important;
       }
