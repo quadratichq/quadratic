@@ -121,6 +121,13 @@ export function useHyperlinkPopup() {
 
       const { x, y } = cursor.position;
 
+      // Close cursor-sourced popup if cursor moved to a different cell
+      const current = linkDataRef.current;
+      if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
+        setLinkData(undefined);
+        setMode('view');
+      }
+
       // Clear any existing timeout and set a new one with delay
       v.clearTimeouts();
       v.setHoverTimeout(async () => {
@@ -398,6 +405,34 @@ export function useHyperlinkPopup() {
     };
   }, []);
 
+  // Hide when the cell's hyperlink is deleted
+  useEffect(() => {
+    const handleHashContentChanged = async (sheetId: string) => {
+      const current = linkDataRef.current;
+      if (!current) return;
+
+      // Only check cells on the current sheet
+      if (sheetId !== sheets.sheet.id) return;
+
+      // Re-check if the cell still has a hyperlink
+      const cellValue = await quadraticCore.getCellValue(sheetId, current.x, current.y);
+
+      // Check if cell still has a hyperlink
+      const hasHyperlink = cellValue?.kind === 'RichText' && cellValue.spans?.some((span) => span.link);
+
+      if (!hasHyperlink) {
+        // Hyperlink was removed or cell was deleted - close popup
+        setLinkData(undefined);
+        setMode('view');
+      }
+    };
+
+    events.on('hashContentChanged', handleHashContentChanged);
+    return () => {
+      events.off('hashContentChanged', handleHashContentChanged);
+    };
+  }, []);
+
   // Mouse handlers - use useCallback with visibilityRef to avoid re-creating when hovering changes
   const handleMouseEnter = useCallback(() => {
     visibilityRef.current.handleMouseEnter();
@@ -595,5 +630,6 @@ export function useHyperlinkPopup() {
     handleCancelEdit,
     handleKeyDown,
     handleKeyUp,
+    closePopup,
   };
 }

@@ -30,6 +30,7 @@ export const HyperlinkPopup = () => {
     handleCancelEdit,
     handleKeyDown,
     handleKeyUp,
+    closePopup,
   } = useHyperlinkPopup();
 
   // Positioning
@@ -55,6 +56,20 @@ export const HyperlinkPopup = () => {
     e.stopPropagation();
   }, []);
 
+  // Close popup when focus leaves the popup container
+  const handleBlur = useCallback(
+    (e: React.FocusEvent) => {
+      // Check if the new focus target is outside the popup
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
+        // Focus is still within the popup, don't close
+        return;
+      }
+      closePopup(true);
+    },
+    [closePopup]
+  );
+
   return (
     <div
       ref={ref}
@@ -74,6 +89,7 @@ export const HyperlinkPopup = () => {
       onWheel={handleWheel}
       onKeyDown={handleKeyDownWrapper}
       onKeyUp={handleKeyUpWrapper}
+      onBlur={handleBlur}
     >
       {mode === 'view' ? (
         <HyperlinkPopupView
