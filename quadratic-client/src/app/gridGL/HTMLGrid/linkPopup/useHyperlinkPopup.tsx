@@ -144,6 +144,13 @@ export function useHyperlinkPopup() {
         y = Number(mergeRect.min.y);
       }
 
+      // Close cursor-sourced popup if cursor moved to a different cell
+      const current = linkDataRef.current;
+      if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
+        setLinkData(undefined);
+        setMode('view');
+      }
+
       // Clear any existing timeout and set a new one with delay
       v.clearTimeouts();
       v.setHoverTimeout(async () => {

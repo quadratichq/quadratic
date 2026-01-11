@@ -667,10 +667,21 @@ class InlineEditorHandler {
 
     const hyperlinkSpan = inlineEditorSpans.getHyperlinkAtPosition(position);
     if (hyperlinkSpan?.link) {
-      // Get the cell offsets to position the popup
+      // Get the cell offsets to position the popup, accounting for merged cells
       const sheet = sheets.sheet;
-      const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      const mergeRect = sheet.getMergeCellRect(this.location.x, this.location.y);
+      let rect: Rectangle;
+      if (mergeRect) {
+        rect = sheet.getScreenRectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      } else {
+        const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
+        rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      }
       // Get the link text from the editor content
       const model = editor.getModel();
       const fullText = model?.getValue() ?? '';
