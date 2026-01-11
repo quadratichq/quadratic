@@ -30,6 +30,10 @@ export interface LinkData {
   linkText?: string;
   // True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink)
   isNakedUrl?: boolean;
+  // Character start position of this hyperlink span within the cell text
+  spanStart?: number;
+  // Character end position of this hyperlink span within the cell text
+  spanEnd?: number;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -285,6 +289,8 @@ export function useHyperlinkPopup() {
       rect: Rectangle;
       linkText?: string;
       isNakedUrl?: boolean;
+      spanStart?: number;
+      spanEnd?: number;
     }) => {
       const v = visibilityRef.current;
       if (v.isEditMode()) return;
@@ -315,6 +321,8 @@ export function useHyperlinkPopup() {
             isFormula,
             linkText: link.linkText,
             isNakedUrl: link.isNakedUrl,
+            spanStart: link.spanStart,
+            spanEnd: link.spanEnd,
           });
           setMode('view');
           setEditUrl(link.url);
@@ -452,6 +460,24 @@ export function useHyperlinkPopup() {
     });
   }, []); // No dependencies - use visibilityRef
 
+  // Close popup when focus leaves the popup container
+  const handleBlur = useCallback(
+    (e: React.FocusEvent) => {
+      // Check if the new focus target is outside the popup
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
+        // Focus is still within the popup, don't close
+        return;
+      }
+      // Don't close if focus moved to null (e.g., window blur) while in edit mode
+      if (!relatedTarget && mode === 'edit') {
+        return;
+      }
+      closePopup(true);
+    },
+    [closePopup, mode]
+  );
+
   // Close popup on wheel scroll (user likely wants to zoom/scroll the viewport)
   const handleWheel = useCallback(() => {
     if (visibilityRef.current.isEditMode()) return;
@@ -515,9 +541,21 @@ export function useHyperlinkPopup() {
     const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
 
     if (cellValue?.kind === 'RichText' && cellValue.spans) {
-      // Find the span with the matching link URL and remove the link property
+      // Find the span at the matching character position and remove the link property
+      // We use character position (spanStart/spanEnd) to uniquely identify the span
+      let charPos = 0;
       const modifiedSpans = cellValue.spans.map((span) => {
-        if (span.link === linkData.url) {
+        const spanStart = charPos;
+        const spanEnd = charPos + span.text.length;
+        charPos = spanEnd;
+
+        // Match by character position if available, otherwise fall back to URL + text
+        const matches =
+          linkData.spanStart !== undefined && linkData.spanEnd !== undefined
+            ? spanStart === linkData.spanStart && spanEnd === linkData.spanEnd
+            : span.link === linkData.url && span.text === linkData.linkText;
+
+        if (matches) {
           // Set link to null to remove the hyperlink, keep everything else
           // Ensure all required TextSpan fields are present
           return {
@@ -568,8 +606,20 @@ export function useHyperlinkPopup() {
 
       if (cellValue?.kind === 'RichText' && cellValue.spans && cellValue.spans.length > 1) {
         // Cell has multiple spans - update only the matching hyperlink span
+        // We use character position (spanStart/spanEnd) to uniquely identify the span
+        let charPos = 0;
         const modifiedSpans = cellValue.spans.map((span) => {
-          if (span.link === linkData.url) {
+          const spanStart = charPos;
+          const spanEnd = charPos + span.text.length;
+          charPos = spanEnd;
+
+          // Match by character position if available, otherwise fall back to URL + text
+          const matches =
+            linkData.spanStart !== undefined && linkData.spanEnd !== undefined
+              ? spanStart === linkData.spanStart && spanEnd === linkData.spanEnd
+              : span.link === linkData.url && span.text === linkData.linkText;
+
+          if (matches) {
             // Update this span's text and link
             return {
               text,
@@ -651,6 +701,7 @@ export function useHyperlinkPopup() {
     handleMouseEnter,
     handleMouseMove,
     handleMouseLeave,
+    handleBlur,
     handleWheel,
     handleOpenLink,
     handleCopyLink,

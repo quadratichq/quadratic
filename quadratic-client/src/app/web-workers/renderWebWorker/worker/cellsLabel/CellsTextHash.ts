@@ -317,6 +317,8 @@ export class CellsTextHash {
             url: linkRect.url,
             linkText: linkRect.linkText,
             isNakedUrl: linkRect.isNakedUrl,
+            spanStart: linkRect.spanStart,
+            spanEnd: linkRect.spanEnd,
           });
         }
       }

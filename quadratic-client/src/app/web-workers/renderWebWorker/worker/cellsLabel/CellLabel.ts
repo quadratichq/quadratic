@@ -155,7 +155,15 @@ export class CellLabel {
   /** Format spans with character ranges and style overrides (from RichText). */
   private formatSpans: FormatSpan[];
   /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
-  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number; linkText: string; isNakedUrl?: boolean }>;
+  linkRectangles: Array<{
+    rect: Rectangle;
+    url: string;
+    underlineY: number;
+    linkText: string;
+    isNakedUrl?: boolean;
+    spanStart: number;
+    spanEnd: number;
+  }>;
   private underline: boolean;
   private strikeThrough: boolean;
 
@@ -1254,6 +1262,8 @@ export class CellLabel {
           underlineY,
           linkText,
           isNakedUrl: this.isNakedUrl,
+          spanStart: span.start,
+          spanEnd: span.end,
         });
       }
     }
