@@ -542,7 +542,7 @@ export function useHyperlinkPopup() {
     focusGrid();
   }, [linkData, closePopup]);
 
-  const handleSaveEdit = useCallback(() => {
+  const handleSaveEdit = useCallback(async () => {
     if (!linkData || !editUrl.trim()) return;
 
     const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
@@ -550,26 +550,56 @@ export function useHyperlinkPopup() {
     const hasCustomTitle = text !== normalizedUrl;
 
     if (linkData.source === 'inline') {
-      // Save to inline editor's hyperlink tracking
-      inlineEditorSpans.completePendingHyperlink(normalizedUrl, text);
+      // Check if we're editing an existing hyperlink or inserting a new one
+      if (inlineEditorSpans.hasPendingHyperlink()) {
+        // Inserting a new hyperlink (via Ctrl+K)
+        inlineEditorSpans.completePendingHyperlink(normalizedUrl, text);
+      } else {
+        // Editing an existing hyperlink - update in place
+        inlineEditorSpans.updateHyperlinkAtCursor(normalizedUrl, text);
+      }
       inlineEditorMonaco.focus();
     } else if (linkData.isNakedUrl && !hasCustomTitle) {
       // For naked URLs without a custom title, keep as plain text
       quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
     } else {
-      // Save as RichText hyperlink (for RichText hyperlinks or naked URLs with custom title)
-      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
-        {
-          text,
-          link: normalizedUrl,
-          bold: null,
-          italic: null,
-          underline: null,
-          strike_through: null,
-          text_color: null,
-          font_size: null,
-        },
-      ]);
+      // Get the current cell value to check if it has multiple spans
+      const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
+
+      if (cellValue?.kind === 'RichText' && cellValue.spans && cellValue.spans.length > 1) {
+        // Cell has multiple spans - update only the matching hyperlink span
+        const modifiedSpans = cellValue.spans.map((span) => {
+          if (span.link === linkData.url) {
+            // Update this span's text and link
+            return {
+              text,
+              link: normalizedUrl,
+              bold: span.bold ?? null,
+              italic: span.italic ?? null,
+              underline: span.underline ?? null,
+              strike_through: span.strike_through ?? null,
+              text_color: span.text_color ?? null,
+              font_size: span.font_size ?? null,
+            };
+          }
+          return span;
+        });
+        quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, modifiedSpans);
+      } else {
+        // Single span or simple case - replace the entire cell
+        quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+          {
+            text,
+            link: normalizedUrl,
+            bold: null,
+            italic: null,
+            underline: null,
+            strike_through: null,
+            text_color: null,
+            font_size: null,
+          },
+        ]);
+      }
     }
     closePopup(true);
   }, [linkData, editUrl, editText, closePopup]);

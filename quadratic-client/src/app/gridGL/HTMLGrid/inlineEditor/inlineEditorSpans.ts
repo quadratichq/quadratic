@@ -668,6 +668,75 @@ class InlineEditorSpans {
   }
 
   /**
+   * Update the hyperlink at the current cursor position with a new URL and optionally new text.
+   * Returns true if a hyperlink was updated, false otherwise.
+   */
+  updateHyperlinkAtCursor(newUrl: string, newText?: string): boolean {
+    if (!this.active) return false;
+
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return false;
+
+    // Find the span with a hyperlink at the current position
+    for (let i = 0; i < this.spans.length; i++) {
+      const span = this.spans[i];
+      if (span.link && offset >= span.start && offset <= span.end) {
+        const editor = inlineEditorMonaco.editor;
+        const model = editor?.getModel();
+        if (!editor || !model) return false;
+
+        const currentText = model.getValue().slice(span.start, span.end);
+
+        // If new text is provided and different from current, replace in editor
+        if (newText !== undefined && newText !== currentText) {
+          const startPos = this.offsetToPosition(span.start);
+          const endPos = this.offsetToPosition(span.end);
+          if (startPos && endPos) {
+            const range = new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column);
+
+            // Calculate the new end position based on text length difference
+            const lengthDiff = newText.length - currentText.length;
+
+            // Replace the text
+            editor.executeEdits('updateHyperlink', [
+              {
+                range,
+                text: newText,
+                forceMoveMarkers: true,
+              },
+            ]);
+
+            // Update the span with new URL and adjusted end position
+            this.spans[i] = {
+              ...span,
+              link: newUrl,
+              end: span.end + lengthDiff,
+            };
+
+            // Adjust subsequent spans
+            for (let j = i + 1; j < this.spans.length; j++) {
+              this.spans[j].start += lengthDiff;
+              this.spans[j].end += lengthDiff;
+            }
+          }
+        } else {
+          // Just update the URL
+          this.spans[i] = {
+            ...span,
+            link: newUrl,
+          };
+        }
+
+        this.updateDecorations();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Apply formatting to the current selection.
    * Returns true if formatting was applied to a selection, false otherwise.
    */
