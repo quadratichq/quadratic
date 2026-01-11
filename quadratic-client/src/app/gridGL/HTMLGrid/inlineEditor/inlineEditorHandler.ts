@@ -309,6 +309,9 @@ class InlineEditorHandler {
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
+      inlineEditorMonaco.setTextColor(
+        this.formatSummary.textColor ? convertColorStringToHex(this.formatSummary.textColor) : undefined
+      );
       this.updateFont();
       this.sendMultiplayerUpdate();
       this.showDiv();

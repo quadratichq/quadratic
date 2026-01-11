@@ -388,6 +388,23 @@ class InlineEditorMonaco {
     styles?.setProperty('--vscode-editor-background', color);
   }
 
+  setTextColor(color: string | undefined) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setTextColor');
+    }
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in setTextColor');
+    }
+    if (color) {
+      domNode.style.setProperty('--cell-text-color', color);
+      domNode.dataset.hasTextColor = 'true';
+    } else {
+      domNode.style.removeProperty('--cell-text-color');
+      delete domNode.dataset.hasTextColor;
+    }
+  }
+
   setFontFamily(fontFamily: string) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setFontFamily');
