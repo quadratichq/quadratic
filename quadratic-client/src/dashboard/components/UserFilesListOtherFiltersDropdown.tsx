@@ -56,8 +56,11 @@ export function UserFilesListFiltersDropdown() {
               disabled={!hasFilters}
               onClick={(e) => {
                 e.preventDefault();
-                setFilters(defaultUserFilesListFilters);
-                // setShowDropdown(false);
+                setFilters((prev) => ({
+                  ...defaultUserFilesListFilters,
+                  fileType: prev.fileType,
+                  fileName: prev.fileName,
+                }));
               }}
             >
               Clear
