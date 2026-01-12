@@ -13,7 +13,7 @@ import {
 import { UserFilesListEmptyState } from '@/dashboard/components/UserFilesListEmptyState';
 import { UserFilesListFileTypeFilter } from '@/dashboard/components/UserFilesListFileTypeFilter';
 import { UserFilesListItem } from '@/dashboard/components/UserFilesListItem';
-import { UserFilesListOtherFilters } from '@/dashboard/components/UserFilesListOtherFilters';
+import { UserFilesListFiltersDropdown } from '@/dashboard/components/UserFilesListOtherFiltersDropdown';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
@@ -170,7 +170,7 @@ export function UserFilesList({
         />
         <UserFilesListFileTypeFilter />
 
-        <UserFilesListOtherFilters />
+        <UserFilesListFiltersDropdown />
 
         <FilesListViewToggle
           viewPreferences={viewPreferences}
