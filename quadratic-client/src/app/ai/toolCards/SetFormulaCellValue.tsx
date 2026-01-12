@@ -43,10 +43,11 @@ export const SetFormulaCellValue = memo(
         // Set code cell position to the first formula's position (for single formula actions)
         if (parsed.success && parsed.data.formulas.length > 0) {
           try {
-            const sheetId = parsed.data.sheet_name
-              ? (sheets.getSheetByName(parsed.data.sheet_name)?.id ?? sheets.current)
+            const firstFormula = parsed.data.formulas[0];
+            const sheetId = firstFormula.sheet_name
+              ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
               : sheets.current;
-            const selection = sheets.stringToSelection(parsed.data.formulas[0].code_cell_position, sheetId);
+            const selection = sheets.stringToSelection(firstFormula.code_cell_position, sheetId);
             const { x, y } = selection.getCursor();
             setCodeCellPos({ x, y });
             selection.free();
@@ -68,13 +69,14 @@ export const SetFormulaCellValue = memo(
             return;
           }
 
+          const firstFormula = toolArgs?.data?.formulas[0];
           set(codeEditorAtom, (prev) => ({
             ...prev,
             diffEditorContent: { editorContent: formulaString, isApplied: false },
             waitingForEditorClose: {
               codeCell: {
-                sheetId: toolArgs?.data?.sheet_name
-                  ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+                sheetId: firstFormula?.sheet_name
+                  ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
                   : sheets.current,
                 pos: codeCellPos,
                 language: 'Formula' as const,
@@ -95,9 +97,10 @@ export const SetFormulaCellValue = memo(
           return;
         }
 
+        const firstFormula = toolArgs?.data?.formulas[0];
         quadraticCore.setCodeCellValue({
-          sheetId: toolArgs?.data?.sheet_name
-            ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+          sheetId: firstFormula?.sheet_name
+            ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
             : sheets.current,
           x: codeCellPos.x,
           y: codeCellPos.y,
@@ -121,11 +124,12 @@ export const SetFormulaCellValue = memo(
     const handleClick = useCallback(() => {
       if (!toolArgs?.success || !toolArgs.data?.formulas.length) return;
       try {
-        const sheetId = toolArgs.data.sheet_name
-          ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+        const firstFormula = toolArgs.data.formulas[0];
+        const sheetId = firstFormula.sheet_name
+          ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
           : sheets.current;
         // Select the first formula's position
-        const selection = sheets.stringToSelection(toolArgs.data.formulas[0].code_cell_position, sheetId);
+        const selection = sheets.stringToSelection(firstFormula.code_cell_position, sheetId);
         sheets.changeSelection(selection);
       } catch (e) {
         console.warn('Failed to select range:', e);
