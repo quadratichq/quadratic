@@ -15,7 +15,7 @@ export default [
     z.object({
       params: z.object({
         uuid: z.string().uuid(),
-        checkpointId: z.string(),
+        sequenceNumber: z.string(),
       }),
     })
   ),
@@ -26,13 +26,14 @@ export default [
 
 async function handler(
   req: Request,
-  res: Response<ApiTypes['/v0/files/:uuid/checkpoints/:checkpointId.GET.response']>
+  res: Response<ApiTypes['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response']>
 ) {
   const {
     user: { id: userId },
-    params: { uuid, checkpointId },
+    params: { uuid, sequenceNumber },
   } = req as RequestWithUser;
   const {
+    file: { id: fileId },
     userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId });
 
@@ -40,17 +41,21 @@ async function handler(
     throw new ApiError(403, 'You do not have permission to access the version history of this file');
   }
 
-  const checkpoint = await dbClient.fileCheckpoint.findFirstOrThrow({
+  const checkpoint = await dbClient.fileCheckpoint.findFirst({
     where: {
-      id: Number(checkpointId),
+      fileId,
+      sequenceNumber: Number(sequenceNumber),
     },
   });
+
+  if (!checkpoint) {
+    throw new ApiError(404, 'Checkpoint not found');
+  }
 
   const dataUrl = await getFileUrl(checkpoint.s3Key);
 
   return res.status(200).json({
     dataUrl,
-    id: checkpoint.id,
     sequenceNumber: checkpoint.sequenceNumber,
     timestamp: checkpoint.timestamp.toISOString(),
     version: checkpoint.version,

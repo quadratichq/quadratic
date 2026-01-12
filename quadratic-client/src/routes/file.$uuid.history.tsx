@@ -7,7 +7,7 @@ import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -44,16 +44,19 @@ export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
   const data = useLoaderData() as LoaderData;
   const revalidator = useRevalidator();
-  const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
+  const [activeSequenceNum, setActiveSequenceNum] = useState<number | null>(null);
 
   const activeCheckpoint = useMemo(
-    () => data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId),
-    [activeCheckpointId, data.checkpoints]
+    () => data.checkpoints.find((checkpoint) => checkpoint.sequenceNumber === activeSequenceNum),
+    [activeSequenceNum, data.checkpoints]
   );
 
   const iframeUrl = useMemo(
-    () => (activeCheckpointId ? ROUTES.FILE({ uuid, searchParams: `checkpoint=${activeCheckpointId}&embed` }) : ''),
-    [activeCheckpointId, uuid]
+    () =>
+      activeSequenceNum !== null
+        ? ROUTES.FILE({ uuid, searchParams: `${SEARCH_PARAMS.SEQUENCE_NUM.KEY}=${activeSequenceNum}&embed` })
+        : '',
+    [activeSequenceNum, uuid]
   );
 
   const teamUuid = useMemo(() => data.team.uuid, [data.team.uuid]);
@@ -90,7 +93,7 @@ export const Component = () => {
 
     trackEvent('[FileVersionHistory].duplicateVersion', {
       uuid,
-      checkpointId: activeCheckpoint.id,
+      sequenceNumber: activeCheckpoint.sequenceNumber,
     });
 
     const duplicateAction = getActionFileDuplicate({
@@ -109,7 +112,7 @@ export const Component = () => {
 
     trackEvent('[FileVersionHistory].downloadVersion', {
       uuid,
-      checkpointId: activeCheckpoint.id,
+      sequenceNumber: activeCheckpoint.sequenceNumber,
     });
 
     const data = getActionFileDownload({ checkpointDataUrl: activeCheckpoint.dataUrl });
@@ -171,15 +174,15 @@ export const Component = () => {
                   {day}
                 </Type>
                 <ul className="flex-col gap-2 text-sm">
-                  {checkpoints.map(({ timestamp, id }, checkpointIndex) => {
+                  {checkpoints.map(({ timestamp, sequenceNumber }, checkpointIndex) => {
                     const label = new Date(timestamp).toLocaleTimeString(undefined, {
                       hour: 'numeric',
                       minute: '2-digit',
                     });
-                    const isSelected = activeCheckpointId === id;
+                    const isSelected = activeSequenceNum === sequenceNumber;
                     const isCurrentVersion = groupIndex === 0 && checkpointIndex === 0;
                     return (
-                      <li key={id} className="mb-0.5">
+                      <li key={sequenceNumber} className="mb-0.5">
                         <button
                           disabled={isLoading}
                           className={cn(
@@ -188,7 +191,7 @@ export const Component = () => {
                             isLoading && 'cursor-not-allowed'
                           )}
                           onClick={() => {
-                            setActiveCheckpointId((prev) => (prev === id ? null : id));
+                            setActiveSequenceNum((prev) => (prev === sequenceNumber ? null : sequenceNumber));
                           }}
                         >
                           <span className="mr-auto">{label}</span>
