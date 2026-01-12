@@ -131,7 +131,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           )}
         </div>
       </div>
-      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
+      <div className="-mb-3 mt-auto flex flex-col gap-1 bg-accent px-3">
         {!isOnPaidPlan && !isSettingsPage && (
           <div className="mb-2 mt-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
             <div className="flex gap-2">
