@@ -270,6 +270,76 @@ class InlineEditorSpans {
   }
 
   /**
+   * Create an empty span at the cursor position with the given formatting.
+   * The span will be extended when the user types.
+   * If there's already an empty span at the cursor, updates its formatting.
+   * Returns true if span was created/updated successfully.
+   */
+  createEmptySpanAtCursor(formatting: SpanFormatting): boolean {
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return false;
+
+    // Activate tracking if not already active
+    if (!this.active) {
+      this.active = true;
+    }
+
+    // Check if there's already an empty span at this position - update it instead
+    for (const span of this.spans) {
+      if (span.start === offset && span.end === offset) {
+        // Update the existing empty span's formatting
+        if (formatting.bold !== undefined) span.bold = formatting.bold;
+        if (formatting.italic !== undefined) span.italic = formatting.italic;
+        if (formatting.underline !== undefined) span.underline = formatting.underline;
+        if (formatting.strikeThrough !== undefined) span.strikeThrough = formatting.strikeThrough;
+        if (formatting.textColor !== undefined) span.textColor = formatting.textColor;
+        return true;
+      }
+    }
+
+    // Create empty span at cursor
+    const newSpan: TrackedSpan = {
+      start: offset,
+      end: offset, // Empty span
+      ...formatting,
+    };
+    this.spans.push(newSpan);
+    this.spans.sort((a, b) => a.start - b.start);
+
+    return true;
+  }
+
+  /**
+   * Get the empty span at the cursor position, if any.
+   */
+  getEmptySpanAtCursor(): TrackedSpan | undefined {
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return undefined;
+
+    return this.spans.find((span) => span.start === offset && span.end === offset);
+  }
+
+  /**
+   * Remove empty spans that the cursor is not inside.
+   * Called when the cursor moves to clean up unused empty spans.
+   */
+  cleanupEmptySpans() {
+    const position = inlineEditorMonaco.getPosition();
+    const cursorOffset = this.positionToOffset(position);
+
+    this.spans = this.spans.filter((span) => {
+      // Keep non-empty spans
+      if (span.end > span.start) return true;
+      // Keep empty spans only if cursor is at that position
+      return cursorOffset === span.start;
+    });
+
+    this.updateDecorations();
+  }
+
+  /**
    * Update Monaco decorations to match current span positions.
    */
   private updateDecorations() {
@@ -411,9 +481,10 @@ class InlineEditorSpans {
   /**
    * Handle content changes from Monaco.
    * Adjusts span positions based on insertions and deletions.
+   * Creates spans for newly inserted text when temporary formatting is active.
    */
   onContentChange(changes: monaco.editor.IModelContentChange[]) {
-    if (!this.active || this.spans.length === 0) return;
+    if (!this.active) return;
 
     // Sort changes in reverse order to process from end to start
     const sortedChanges = [...changes].sort((a, b) => b.rangeOffset - a.rangeOffset);
@@ -422,11 +493,27 @@ class InlineEditorSpans {
       const changeStart = change.rangeOffset;
       const changeEnd = changeStart + change.rangeLength;
       const delta = change.text.length - change.rangeLength;
+      const isInsertion = change.text.length > 0 && change.rangeLength === 0;
+
+      // Check if there's an empty span at the insertion point
+      // If so, we should NOT extend non-empty spans that end at this position
+      const hasEmptySpanAtPosition =
+        isInsertion && this.spans.some((span) => span.start === span.end && span.start === changeStart);
 
       this.spans = this.spans
         .map((span) => {
+          // Handle empty spans (start === end) - extend them when typing at that position
+          if (span.start === span.end && isInsertion && changeStart === span.start) {
+            return {
+              ...span,
+              end: span.start + change.text.length,
+            };
+          }
+
           // Span is entirely before the change - no adjustment needed
-          if (span.end <= changeStart) {
+          // If there's an empty span at this position, treat spans ending exactly at changeStart as "before"
+          // Otherwise, use < instead of <= so typing at the end of a span extends it
+          if (hasEmptySpanAtPosition ? span.end <= changeStart : span.end < changeStart) {
             return span;
           }
 
@@ -471,7 +558,8 @@ class InlineEditorSpans {
 
           return span;
         })
-        .filter((span): span is TrackedSpan => span !== null && span.end > span.start);
+        .filter((span): span is TrackedSpan => span !== null);
+      // Note: We don't filter out empty spans here - they're cleaned up by cleanupEmptySpans
     }
 
     this.updateDecorations();
@@ -889,6 +977,39 @@ class InlineEditorSpans {
   }
 
   /**
+   * Clear formatting for the span at the current cursor position.
+   * Returns true if a span was found and cleared, false otherwise.
+   */
+  clearFormattingAtCursor(): boolean {
+    if (!this.active) return false;
+
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return false;
+
+    // Find the span that contains the cursor position
+    let spanIndex = this.spans.findIndex((span) => offset >= span.start && offset < span.end);
+
+    // Also check if cursor is at the end of a span
+    if (spanIndex === -1) {
+      spanIndex = this.spans.findIndex((span) => offset === span.end);
+    }
+
+    if (spanIndex === -1) {
+      return false;
+    }
+
+    // Remove the span at cursor
+    this.spans.splice(spanIndex, 1);
+
+    // Merge adjacent spans with identical formatting
+    this.mergeAdjacentSpans();
+
+    this.updateDecorations();
+    return true;
+  }
+
+  /**
    * Get the text color for a range if the entire range has the same color.
    * Returns undefined if the range has no color or mixed colors.
    */
@@ -1187,6 +1308,58 @@ class InlineEditorSpans {
     return this.spans.some(
       (span) => span.link || span.bold || span.italic || span.underline || span.strikeThrough || span.textColor
     );
+  }
+
+  /**
+   * Clear formatting from the current selection.
+   * This removes all formatting properties (bold, italic, underline, strikeThrough, textColor, link)
+   * from spans within the selected range.
+   * Returns true if formatting was cleared for a selection, false otherwise.
+   */
+  clearFormattingForSelection(): boolean {
+    const selection = inlineEditorMonaco.getSelection();
+    if (!selection) {
+      return false;
+    }
+
+    const offsets = this.rangeToOffsets(selection.range);
+    if (!offsets || offsets.start === offsets.end) {
+      return false;
+    }
+
+    const { start: startOffset, end: endOffset } = offsets;
+
+    // Process spans that overlap with the selection range
+    const newSpans: TrackedSpan[] = [];
+
+    for (const span of this.spans) {
+      if (span.end <= startOffset || span.start >= endOffset) {
+        // Span is entirely outside the selection - keep it unchanged
+        newSpans.push(span);
+      } else if (span.start >= startOffset && span.end <= endOffset) {
+        // Span is entirely inside the selection - remove it (clear formatting)
+        // Don't add it to newSpans
+      } else if (span.start < startOffset && span.end > endOffset) {
+        // Span encompasses the selection - split into two parts, excluding the middle
+        newSpans.push({ ...span, end: startOffset });
+        newSpans.push({ ...span, start: endOffset });
+      } else if (span.start < startOffset && span.end > startOffset) {
+        // Span overlaps start - trim to before selection
+        newSpans.push({ ...span, end: startOffset });
+      } else if (span.start < endOffset && span.end > endOffset) {
+        // Span overlaps end - trim to after selection
+        newSpans.push({ ...span, start: endOffset });
+      }
+    }
+
+    // Sort spans by start position and filter out empty spans
+    this.spans = newSpans.filter((s) => s.end > s.start).sort((a, b) => a.start - b.start);
+
+    // Merge adjacent spans with identical formatting
+    this.mergeAdjacentSpans();
+
+    this.updateDecorations();
+    return true;
   }
 
   /**

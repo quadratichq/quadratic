@@ -312,8 +312,8 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleItalic, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleItalicForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
         inlineEditorHandler.toggleItalics();
         if (inlineEditorHandler.location) {
           const selection = getSingleSelection(
@@ -323,6 +323,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic, false);
         }
+      } else {
+        inlineEditorHandler.toggleItalicForSelection();
       }
     }
 
@@ -330,10 +332,10 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleBold, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleBoldForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
+        inlineEditorHandler.toggleBold();
         if (inlineEditorHandler.location) {
-          inlineEditorHandler.toggleBold();
           const selection = getSingleSelection(
             inlineEditorHandler.location.sheetId,
             inlineEditorHandler.location.x,
@@ -341,6 +343,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold, false);
         }
+      } else {
+        inlineEditorHandler.toggleBoldForSelection();
       }
     }
 
@@ -348,10 +352,10 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleUnderline, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleUnderlineForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
+        inlineEditorHandler.toggleUnderline();
         if (inlineEditorHandler.location) {
-          inlineEditorHandler.toggleUnderline();
           const selection = getSingleSelection(
             inlineEditorHandler.location.sheetId,
             inlineEditorHandler.location.x,
@@ -359,6 +363,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline, false);
         }
+      } else {
+        inlineEditorHandler.toggleUnderlineForSelection();
       }
     }
 
@@ -366,10 +372,10 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleStrikeThrough, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleStrikeThroughForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
+        inlineEditorHandler.toggleStrikeThrough();
         if (inlineEditorHandler.location) {
-          inlineEditorHandler.toggleStrikeThrough();
           const selection = getSingleSelection(
             inlineEditorHandler.location.sheetId,
             inlineEditorHandler.location.x,
@@ -377,6 +383,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
         }
+      } else {
+        inlineEditorHandler.toggleStrikeThroughForSelection();
       }
     }
 
