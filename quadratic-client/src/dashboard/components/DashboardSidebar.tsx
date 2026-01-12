@@ -204,7 +204,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         )}
       </div>
-      <div className="sticky bottom-3 flex items-center gap-2 px-3">
+      <div className="sticky bottom-0 flex items-center gap-2 bg-accent px-3 pb-3">
         <DropdownMenu>
           <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 pl-2.5 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
             <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
