@@ -232,7 +232,19 @@ class InlineEditorHandler {
             if (jsCellValue.kind === 'Number') {
               this.formatSummary.align = this.formatSummary.align ?? 'right';
             }
-            value = jsCellValue.kind === 'Number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+
+            // For Date/DateTime/Time, use getEditCell to get the properly formatted value
+            if (['Date', 'DateTime', 'Time'].includes(jsCellValue.kind)) {
+              const editValue = await quadraticCore.getEditCell(
+                this.location.sheetId,
+                this.location.x,
+                this.location.y
+              );
+              value = editValue ?? jsCellValue.value;
+            } else {
+              value = jsCellValue.kind === 'Number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+            }
+
             if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
               try {
                 const number = new BigNumber(value).multipliedBy(100).toString();

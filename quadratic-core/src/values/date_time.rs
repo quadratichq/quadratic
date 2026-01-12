@@ -1,7 +1,7 @@
 use chrono::Utc;
 use dateparser::parse_with_timezone;
 
-use crate::date_time::{parse_date, parse_time};
+use crate::date_time::{parse_date, parse_date_with_format, parse_time};
 
 use super::CellValue;
 
@@ -14,6 +14,13 @@ impl CellValue {
     pub fn unpack_date(value: &str) -> Option<CellValue> {
         let date = parse_date(value)?;
         Some(CellValue::Date(date))
+    }
+
+    /// Parses a date and returns both the CellValue and the strftime format
+    /// string that preserves the user's original input format.
+    pub fn unpack_date_with_format(value: &str) -> Option<(CellValue, String)> {
+        let (date, format) = parse_date_with_format(value)?;
+        Some((CellValue::Date(date), format))
     }
 
     pub fn unpack_date_time(value: &str) -> Option<CellValue> {
