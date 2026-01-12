@@ -26,7 +26,7 @@ export default [
 
 async function handler(
   req: Request,
-  res: Response<ApiTypes['/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response']>
+  res: Response<ApiTypes['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response']>
 ) {
   const {
     user: { id: userId },

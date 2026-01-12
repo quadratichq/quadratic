@@ -274,7 +274,7 @@ export const ApiSchemas = {
       })
     ),
   }),
-  '/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response': z.object({
+  '/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
     sequenceNumber: z.number(),
     timestamp: z.string().datetime(),

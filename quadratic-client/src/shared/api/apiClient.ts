@@ -287,9 +287,9 @@ export const apiClient = {
       },
       getBySequenceNumber(uuid: string, sequenceNumber: number) {
         return fetchFromApi(
-          `/v0/files/${uuid}/checkpoints/sequence/${sequenceNumber}`,
+          `/v0/files/${uuid}/checkpoints/sequences/${sequenceNumber}`,
           { method: 'GET' },
-          ApiSchemas['/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response']
+          ApiSchemas['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response']
         );
       },
     },

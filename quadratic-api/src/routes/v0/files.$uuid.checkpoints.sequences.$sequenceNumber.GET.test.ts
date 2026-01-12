@@ -41,32 +41,32 @@ beforeAll(async () => {
 
 afterAll(clearDb);
 
-describe('GET /v0/files/:uuid/checkpoints/sequence/:sequenceNumber - bad request', () => {
+describe('GET /v0/files/:uuid/checkpoints/sequences/:sequenceNumber - bad request', () => {
   it('responds with a 401 when no auth', async () => {
-    await request(app).get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequence/0').expect(401);
+    await request(app).get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequences/0').expect(401);
   });
   it('responds with a 404 when no file', async () => {
     await request(app)
-      .get('/v0/files/10000000-0000-4000-8000-000000000000/checkpoints/sequence/0')
+      .get('/v0/files/10000000-0000-4000-8000-000000000000/checkpoints/sequences/0')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect(404);
   });
   it('responds with a 500 when sequence number does not exist', async () => {
     await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequence/999999')
+      .get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequences/999999')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect(500);
   });
 });
 
-describe('GET /v0/files/:uuid/checkpoints/sequence/:sequenceNumber', () => {
+describe('GET /v0/files/:uuid/checkpoints/sequences/:sequenceNumber', () => {
   it('responds with checkpoint data for sequence 0', async () => {
     await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequence/0')
+      .get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequences/0')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect(200)
       .expect((res) => {
-        ApiSchemas['/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response'].parse(res.body);
+        ApiSchemas['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response'].parse(res.body);
         expect(res.body.sequenceNumber).toEqual(0);
         expect(res.body.dataUrl).toBeDefined();
         expect(res.body.version).toBeDefined();
@@ -75,18 +75,18 @@ describe('GET /v0/files/:uuid/checkpoints/sequence/:sequenceNumber', () => {
   });
   it('responds with checkpoint data for a private file you own', async () => {
     await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000001/checkpoints/sequence/0')
+      .get('/v0/files/00000000-0000-4000-8000-000000000001/checkpoints/sequences/0')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect(200)
       .expect((res) => {
-        ApiSchemas['/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response'].parse(res.body);
+        ApiSchemas['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response'].parse(res.body);
         expect(res.body.sequenceNumber).toEqual(0);
       });
   });
   it('responds with a 403 for users without proper permissions', async () => {
     // user_2 is an EDITOR but doesn't own the private file
     await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000001/checkpoints/sequence/0')
+      .get('/v0/files/00000000-0000-4000-8000-000000000001/checkpoints/sequences/0')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect(403);
   });
