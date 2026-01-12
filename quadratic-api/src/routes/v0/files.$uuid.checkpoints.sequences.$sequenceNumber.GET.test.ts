@@ -51,11 +51,11 @@ describe('GET /v0/files/:uuid/checkpoints/sequences/:sequenceNumber - bad reques
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect(404);
   });
-  it('responds with a 500 when sequence number does not exist', async () => {
+  it('responds with a 404 when sequence number does not exist', async () => {
     await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000000/checkpoints/sequences/999999')
       .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect(500);
+      .expect(404);
   });
 });
 

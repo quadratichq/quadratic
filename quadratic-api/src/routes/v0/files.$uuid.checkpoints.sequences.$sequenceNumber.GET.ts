@@ -41,12 +41,16 @@ async function handler(
     throw new ApiError(403, 'You do not have permission to access the version history of this file');
   }
 
-  const checkpoint = await dbClient.fileCheckpoint.findFirstOrThrow({
+  const checkpoint = await dbClient.fileCheckpoint.findFirst({
     where: {
       fileId,
       sequenceNumber: Number(sequenceNumber),
     },
   });
+
+  if (!checkpoint) {
+    throw new ApiError(404, 'Checkpoint not found');
+  }
 
   const dataUrl = await getFileUrl(checkpoint.s3Key);
 
