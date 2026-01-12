@@ -7,7 +7,7 @@ import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -53,7 +53,9 @@ export const Component = () => {
 
   const iframeUrl = useMemo(
     () =>
-      activeSequenceNum !== null ? ROUTES.FILE({ uuid, searchParams: `sequence_num=${activeSequenceNum}&embed` }) : '',
+      activeSequenceNum !== null
+        ? ROUTES.FILE({ uuid, searchParams: `${SEARCH_PARAMS.SEQUENCE_NUM.KEY}=${activeSequenceNum}&embed` })
+        : '',
     [activeSequenceNum, uuid]
   );
 
