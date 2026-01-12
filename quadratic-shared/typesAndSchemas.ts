@@ -268,15 +268,14 @@ export const ApiSchemas = {
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),
-        id: z.number(),
+        sequenceNumber: z.number(),
         timestamp: z.string().datetime(),
         version: z.string(),
       })
     ),
   }),
-  '/v0/files/:uuid/checkpoints/:checkpointId.GET.response': z.object({
+  '/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
-    id: z.number(),
     sequenceNumber: z.number(),
     timestamp: z.string().datetime(),
     version: z.string(),

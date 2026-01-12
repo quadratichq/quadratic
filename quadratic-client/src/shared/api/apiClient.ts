@@ -285,11 +285,11 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/checkpoints.GET.response']
         );
       },
-      get(uuid: string, checkpointId: string) {
+      getBySequenceNumber(uuid: string, sequenceNumber: number) {
         return fetchFromApi(
-          `/v0/files/${uuid}/checkpoints/${checkpointId}`,
+          `/v0/files/${uuid}/checkpoints/sequence/${sequenceNumber}`,
           { method: 'GET' },
-          ApiSchemas['/v0/files/:uuid/checkpoints/:checkpointId.GET.response']
+          ApiSchemas['/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response']
         );
       },
     },

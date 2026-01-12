@@ -15,7 +15,7 @@ export default [
     z.object({
       params: z.object({
         uuid: z.string().uuid(),
-        checkpointId: z.string(),
+        sequenceNumber: z.string(),
       }),
     })
   ),
@@ -26,13 +26,14 @@ export default [
 
 async function handler(
   req: Request,
-  res: Response<ApiTypes['/v0/files/:uuid/checkpoints/:checkpointId.GET.response']>
+  res: Response<ApiTypes['/v0/files/:uuid/checkpoints/sequence/:sequenceNumber.GET.response']>
 ) {
   const {
     user: { id: userId },
-    params: { uuid, checkpointId },
+    params: { uuid, sequenceNumber },
   } = req as RequestWithUser;
   const {
+    file: { id: fileId },
     userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId });
 
@@ -42,7 +43,8 @@ async function handler(
 
   const checkpoint = await dbClient.fileCheckpoint.findFirstOrThrow({
     where: {
-      id: Number(checkpointId),
+      fileId,
+      sequenceNumber: Number(sequenceNumber),
     },
   });
 
@@ -50,7 +52,6 @@ async function handler(
 
   return res.status(200).json({
     dataUrl,
-    id: checkpoint.id,
     sequenceNumber: checkpoint.sequenceNumber,
     timestamp: checkpoint.timestamp.toISOString(),
     version: checkpoint.version,
