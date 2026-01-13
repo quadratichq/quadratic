@@ -6,7 +6,9 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
@@ -28,6 +30,7 @@ export const SetFormulaCellValue = memo(
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
+    const [isExpanded, setIsExpanded] = useState(false);
 
     useEffect(() => {
       if (loading) {
@@ -64,21 +67,32 @@ export const SetFormulaCellValue = memo(
 
     const openDiffInEditor = useRecoilCallback(
       ({ set }) =>
-        (formulaString: string) => {
-          if (!codeCellPos) {
+        (formula: { sheet_name?: string | null; code_cell_position: string; formula_string: string }) => {
+          let pos: JsCoordinate | undefined;
+          try {
+            const sheetId = formula.sheet_name
+              ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+              : sheets.current;
+            const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
+            const cursor = selection.getCursor();
+            pos = { x: cursor.x, y: cursor.y };
+            selection.free();
+          } catch (e) {
+            console.warn('[SetFormulaCellValue] Failed to get position for diff editor:', e);
             return;
           }
 
-          const firstFormula = toolArgs?.data?.formulas[0];
+          if (!pos) return;
+
           set(codeEditorAtom, (prev) => ({
             ...prev,
-            diffEditorContent: { editorContent: formulaString, isApplied: false },
+            diffEditorContent: { editorContent: formula.formula_string, isApplied: false },
             waitingForEditorClose: {
               codeCell: {
-                sheetId: firstFormula?.sheet_name
-                  ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
+                sheetId: formula.sheet_name
+                  ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
                   : sheets.current,
-                pos: codeCellPos,
+                pos,
                 language: 'Formula' as const,
                 lastModified: 0,
               },
@@ -88,28 +102,54 @@ export const SetFormulaCellValue = memo(
             },
           }));
         },
-      [codeCellPos, toolArgs]
+      []
     );
 
     const saveAndRun = useRecoilCallback(
-      () => (formulaString: string) => {
-        if (!codeCellPos) {
+      () => (formula: { sheet_name?: string | null; code_cell_position: string; formula_string: string }) => {
+        let pos: JsCoordinate | undefined;
+        try {
+          const sheetId = formula.sheet_name
+            ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+            : sheets.current;
+          const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
+          const cursor = selection.getCursor();
+          pos = { x: cursor.x, y: cursor.y };
+          selection.free();
+        } catch (e) {
+          console.warn('[SetFormulaCellValue] Failed to get position for save and run:', e);
           return;
         }
 
-        const firstFormula = toolArgs?.data?.formulas[0];
+        if (!pos) return;
+
         quadraticCore.setCodeCellValue({
-          sheetId: firstFormula?.sheet_name
-            ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
+          sheetId: formula.sheet_name
+            ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
             : sheets.current,
-          x: codeCellPos.x,
-          y: codeCellPos.y,
-          codeString: formulaString,
+          x: pos.x,
+          y: pos.y,
+          codeString: formula.formula_string,
           language: 'Formula',
           isAi: false,
         });
       },
-      [codeCellPos, toolArgs]
+      []
+    );
+
+    const handleFormulaClick = useCallback(
+      (formula: { sheet_name?: string | null; code_cell_position: string }) => {
+        try {
+          const sheetId = formula.sheet_name
+            ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+            : sheets.current;
+          const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
+          sheets.changeSelection(selection);
+        } catch (e) {
+          console.warn('Failed to select range:', e);
+        }
+      },
+      []
     );
 
     const formulaCount = toolArgs?.success ? toolArgs.data.formulas.length : 0;
@@ -118,7 +158,7 @@ export const SetFormulaCellValue = memo(
         ? 'Writing formulas'
         : 'Writing formula'
       : formulaCount > 1
-        ? 'Wrote formulas'
+        ? `Wrote ${formulaCount} formulas`
         : 'Wrote formula';
 
     const handleClick = useCallback(() => {
@@ -174,54 +214,119 @@ export const SetFormulaCellValue = memo(
     }
 
     const { formulas } = toolArgs.data;
-    const positions = formulas.map((f) => f.code_cell_position).join(', ');
     const isSingleFormula = formulas.length === 1;
 
-    return (
-      <ToolCard
-        icon={<LanguageIcon language="Formula" />}
-        label={label}
-        description={positions}
-        actions={
-          codeCellPos && isSingleFormula ? (
-            <div className="flex gap-1">
-              <TooltipPopover label={'Open diff in editor'}>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openDiffInEditor(formulas[0].formula_string);
-                  }}
-                  disabled={!codeCellPos}
-                >
-                  <CodeIcon />
-                </Button>
-              </TooltipPopover>
+    // Single formula: show inline with actions
+    if (isSingleFormula) {
+      const formula = formulas[0];
+      return (
+        <ToolCard
+          icon={<LanguageIcon language="Formula" />}
+          label={label}
+          description={`${formula.code_cell_position}: ${formula.formula_string}`}
+          actions={
+            codeCellPos ? (
+              <div className="flex gap-1">
+                <TooltipPopover label={'Open diff in editor'}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openDiffInEditor(formula);
+                    }}
+                    disabled={!codeCellPos}
+                  >
+                    <CodeIcon />
+                  </Button>
+                </TooltipPopover>
 
-              <TooltipPopover label={'Apply'}>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    saveAndRun(formulas[0].formula_string);
-                  }}
-                  disabled={!codeCellPos}
-                >
-                  <SaveAndRunIcon />
-                </Button>
-              </TooltipPopover>
-            </div>
-          ) : undefined
-        }
-        className={className}
-        compact
-        onClick={handleClick}
-        hideIcon={hideIcon}
-      />
+                <TooltipPopover label={'Apply'}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      saveAndRun(formula);
+                    }}
+                    disabled={!codeCellPos}
+                  >
+                    <SaveAndRunIcon />
+                  </Button>
+                </TooltipPopover>
+              </div>
+            ) : undefined
+          }
+          className={className}
+          compact
+          onClick={handleClick}
+          hideIcon={hideIcon}
+        />
+      );
+    }
+
+    // Multiple formulas: show collapsed view with expand/collapse
+    return (
+      <div className={cn('flex flex-col', className)}>
+        <div
+          className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {!hideIcon && <LanguageIcon language="Formula" />}
+          <span>{label}</span>
+          {isExpanded ? (
+            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+
+        {isExpanded && (
+          <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
+            {formulas.map((formula, index) => (
+              <div
+                key={index}
+                className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
+                onClick={() => handleFormulaClick(formula)}
+              >
+                <span className="font-medium">{formula.code_cell_position}:</span>
+                <span className="min-w-0 truncate font-mono text-xs">{formula.formula_string}</span>
+                <div className="ml-auto flex shrink-0 gap-1">
+                  <TooltipPopover label={'Open diff in editor'}>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openDiffInEditor(formula);
+                      }}
+                    >
+                      <CodeIcon />
+                    </Button>
+                  </TooltipPopover>
+
+                  <TooltipPopover label={'Apply'}>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        saveAndRun(formula);
+                      }}
+                    >
+                      <SaveAndRunIcon />
+                    </Button>
+                  </TooltipPopover>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 );
