@@ -984,6 +984,11 @@ export class CellLabel {
     // they extend more pixels, so we need a scaled epsilon for vertical glyph clipping.
     // Base value of 3 pixels at DEFAULT_FONT_SIZE (14), scaling up with font size.
     const DESCENDER_CLIP_EPSILON = Math.max(0.5, fontScale * 3);
+
+    // Italic characters can extend slightly to the left of their logical position due to slant.
+    // Allow a small tolerance on the left side to prevent clipping italic glyphs at the boundary.
+    // Base value of 3 pixels at DEFAULT_FONT_SIZE (14), scaling with font size.
+    const ITALIC_CLIP_EPSILON = Math.max(0.5, fontScale * 3);
     const clippedLines = new Set<number>();
     const maxLine = this.chars.length > 0 ? Math.max(...this.chars.map((c) => c.line)) : 0;
     for (let line = 0; line <= maxLine; line++) {
@@ -1146,8 +1151,9 @@ export class CellLabel {
         // Use strict inequality with small tolerance for vertical clipping to avoid
         // floating point issues that could cause emojis to oscillate between visible and clipped
         // Use DESCENDER_CLIP_EPSILON for bottom clipping to allow for descenders (p, q, g, y, j)
+        // Use ITALIC_CLIP_EPSILON for left clipping to allow for italic character slant
         const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + DESCENDER_CLIP_EPSILON;
-        const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
+        const horizontallyClipped = charLeft < clipLeft - ITALIC_CLIP_EPSILON || charRight >= clipRight;
 
         // Don't clip emojis vertically. The row will resize based on textHeightWithDescenders,
         // but AABB is set before that calculation completes. Skipping vertical clipping for

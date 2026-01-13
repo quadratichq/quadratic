@@ -226,4 +226,80 @@ mod tests {
         let clipboard = set_clipboard(&mut gc, "A3");
         assert!(get_format(pos![A3], &clipboard).unwrap());
     }
+
+    #[test]
+    fn clipboard_rich_text() {
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set a RichText cell value
+        let spans = vec![
+            TextSpan::plain("Hello "),
+            TextSpan::link("world", "https://example.com"),
+            TextSpan::plain("!"),
+        ];
+        let sheet_pos = crate::SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_cell_rich_text(sheet_pos, spans.clone(), None);
+
+        // Verify the cell value is RichText
+        let sheet = gc.sheet(sheet_id);
+        let cell_value = sheet.cell_value(Pos { x: 0, y: 0 });
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
+
+        // Copy the cell to clipboard
+        let js_clipboard: JsClipboard = sheet
+            .copy_to_clipboard(
+                &A1Selection::test_a1("A1"),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                true,
+            )
+            .into();
+
+        // Verify the clipboard contains the RichText
+        let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
+        let copied_value = clipboard.cells.get(0, 0);
+        assert!(
+            matches!(copied_value, Some(CellValue::RichText(_))),
+            "Expected RichText in clipboard.cells, got {:?}",
+            copied_value
+        );
+
+        // Paste the clipboard to a new location
+        gc.paste_from_clipboard(
+            &A1Selection::from_xy(5, 5, sheet_id),
+            js_clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Verify the pasted cell is also RichText
+        let sheet = gc.sheet(sheet_id);
+        let pasted_value = sheet.cell_value(Pos { x: 5, y: 5 });
+        assert!(
+            matches!(pasted_value, Some(CellValue::RichText(_))),
+            "Expected RichText after paste, got {:?}",
+            pasted_value
+        );
+
+        // Verify the spans are correct
+        if let Some(CellValue::RichText(pasted_spans)) = pasted_value {
+            assert_eq!(pasted_spans.len(), 3);
+            assert_eq!(pasted_spans[0].text, "Hello ");
+            assert!(pasted_spans[0].link.is_none());
+            assert_eq!(pasted_spans[1].text, "world");
+            assert_eq!(
+                pasted_spans[1].link,
+                Some("https://example.com".to_string())
+            );
+            assert_eq!(pasted_spans[2].text, "!");
+        }
+    }
 }
