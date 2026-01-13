@@ -1,5 +1,7 @@
 use chrono::Utc;
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
+use tokio_util::task::TaskTracker;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -26,6 +28,18 @@ use crate::{
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
+
+/// Compute a hash of the transactions for duplicate detection.
+/// Uses SHA-256 for stability across Rust versions and program runs.
+fn compute_transactions_hash(transactions: &[TransactionServer]) -> String {
+    let mut hasher = Sha256::new();
+    for transaction in transactions {
+        hasher.update(transaction.sequence_num.to_le_bytes());
+        hasher.update(transaction.id.as_bytes());
+        hasher.update(&transaction.operations);
+    }
+    format!("{:x}", hasher.finalize())
+}
 
 /// Load a .grid file
 pub(crate) fn load_file(key: &str, file: Vec<u8>) -> Result<Grid> {
@@ -101,11 +115,12 @@ pub(crate) async fn process_queue_for_room(
         ..
     } = &state.settings;
 
-    let checkpoint_sequence_num =
-        match get_file_checkpoint(quadratic_api_uri, m2m_auth_token, &file_id).await {
-            Ok(last_checkpoint) => last_checkpoint.sequence_number,
-            Err(_) => 0,
-        };
+    // When a file is created in API, a zero checkpoint is created, so we
+    // should always expect a return value.
+    let checkpoint_sequence_num = get_file_checkpoint(quadratic_api_uri, m2m_auth_token, &file_id)
+        .await
+        .map_err(|e| FilesError::ApiSequenceNumberNotFound(file_id, e.to_string()))?
+        .sequence_number;
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut pubsub = state.pubsub.lock().await;
@@ -128,6 +143,9 @@ pub(crate) async fn process_queue_for_room(
     if transactions.is_empty() {
         return Ok(None);
     }
+
+    // compute hash for duplicate detection
+    let transactions_hash = compute_transactions_hash(&transactions);
 
     let sequence_numbers = transactions
         .iter()
@@ -201,6 +219,7 @@ pub(crate) async fn process_queue_for_room(
         CURRENT_VERSION.into(),
         key.to_owned(),
         storage.path().to_owned(),
+        transactions_hash,
     )
     .await?;
 
@@ -246,8 +265,15 @@ pub(crate) async fn get_files_to_process(
     Ok(files)
 }
 
-/// Process outstanding transactions in the queue
-pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
+/// Process outstanding transactions in the queue.
+///
+/// The `task_tracker` is used to track spawned file processing tasks so they
+/// can be awaited during graceful shutdown.
+pub(crate) async fn process(
+    state: &Arc<State>,
+    active_channels: &str,
+    task_tracker: &TaskTracker,
+) -> Result<()> {
     let files = get_files_to_process(state, active_channels).await?;
 
     // collect info for stats
@@ -257,8 +283,8 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         let state = Arc::clone(state);
         let active_channels = active_channels.to_owned();
 
-        // process file in a separate thread
-        tokio::spawn(async move {
+        // process file in a separate thread, tracked for graceful shutdown
+        task_tracker.spawn(async move {
             // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
             if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await {
                 tracing::error!("Error processing file {file_id}: {error}");

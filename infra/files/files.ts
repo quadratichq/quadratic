@@ -40,6 +40,7 @@ const instance = new aws.ec2.Instance("files-instance", {
         QUADRATIC_API_URI: quadraticApiUri,
       },
       true,
+      60, // 60 second graceful shutdown timeout for file processing
     ),
   ),
 });
