@@ -120,9 +120,14 @@ export class PointerDown {
       return;
     }
 
-    // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
+    // If the user is holding shift, extend selection from current cursor
+    // If also holding cmd/ctrl, it's append mode (add new range)
     if (event.shiftKey) {
-      cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
+      // Shift-click: extend selection from current cursor to clicked position
+      // If ctrl/cmd is also pressed, it's append mode (MouseCtrlClick)
+      // Otherwise it's MouseShiftClick
+      const isAppend = event.metaKey || event.ctrlKey;
+      cursor.selectTo(column, row, isAppend, true);
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {

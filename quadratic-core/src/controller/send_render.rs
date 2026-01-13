@@ -49,6 +49,7 @@ impl GridController {
         self.send_fills(transaction);
         self.send_undo_redo();
         self.send_set_cursor(transaction);
+        self.send_merge_cells(transaction);
     }
 
     pub(crate) fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
@@ -286,6 +287,7 @@ impl GridController {
 
         sheet.send_content_cache();
         sheet.send_data_tables_cache();
+        sheet.send_merge_cells();
     }
 
     /// Sends delete sheet to the client
@@ -692,6 +694,28 @@ impl GridController {
             !self.undo_stack.is_empty(),
             !self.redo_stack.is_empty(),
         );
+    }
+
+    fn send_merge_cells(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            return;
+        }
+
+        for sheet_id in transaction.merge_cells_updates.iter() {
+            if let Some(sheet) = self.try_sheet(*sheet_id) {
+                match serialize(&SerializationFormat::Bincode, &sheet.merge_cells) {
+                    Ok(merge_cells) => {
+                        crate::wasm_bindings::js::jsMergeCells(sheet_id.to_string(), merge_cells);
+                    }
+                    Err(e) => {
+                        dbgjs!(format!(
+                            "[send_merge_cells] Error serializing merge cells {:?}",
+                            e
+                        ));
+                    }
+                }
+            }
+        }
     }
 }
 

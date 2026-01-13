@@ -166,6 +166,11 @@ export const FormatMenubarMenu = () => {
 
         <MenubarSeparator />
 
+        <MenubarItemAction action={Action.MergeCells} actionArgs={undefined} />
+        <MenubarItemAction action={Action.UnmergeCells} actionArgs={undefined} />
+
+        <MenubarSeparator />
+
         <MenubarItemAction action={Action.ClearFormattingBorders} actionArgs={undefined} />
       </MenubarContent>
     </MenubarMenu>

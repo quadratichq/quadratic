@@ -552,6 +552,34 @@ export interface CoreClientSetBorders {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreMergeCells {
+  type: 'clientCoreMergeCells';
+  id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientMergeCellsResponse {
+  type: 'coreClientMergeCellsResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreUnmergeCells {
+  type: 'clientCoreUnmergeCells';
+  id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientUnmergeCellsResponse {
+  type: 'coreClientUnmergeCellsResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetCellRenderResize {
   type: 'clientCoreSetCellRenderResize';
   id: number;
@@ -1552,6 +1580,12 @@ export interface CoreClientSetFormula {
   error?: string;
 }
 
+export interface CoreClientMergeCells {
+  type: 'coreClientMergeCells';
+  sheetId: string;
+  mergeCells: Uint8Array;
+}
+
 export interface ClientCoreSetFormulas {
   type: 'clientCoreSetFormulas';
   id: number;
@@ -1617,6 +1651,8 @@ export type ClientCoreMessage =
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
   | ClientCoreSetBorders
+  | ClientCoreMergeCells
+  | ClientCoreUnmergeCells
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
@@ -1729,6 +1765,7 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientNeighborText
   | CoreClientBordersSheet
+  | CoreClientMergeCells
   | CoreClientGetCellValue
   | CoreClientClientMessage
   | CoreClientGetAISelectionContexts
@@ -1763,6 +1800,8 @@ export type CoreClientMessage =
   | CoreClientResizeColumns
   | CoreClientResizeRows
   | CoreClientSetBorders
+  | CoreClientMergeCellsResponse
+  | CoreClientUnmergeCellsResponse
   | CoreClientDeleteColumns
   | CoreClientDeleteRows
   | CoreClientInsertColumns
@@ -1777,4 +1816,5 @@ export type CoreClientMessage =
   | CoreClientRedoResponse
   | CoreClientStartupTimer
   | CoreClientSetFormula
+  | CoreClientMergeCellsResponse
   | CoreClientSetFormulas;

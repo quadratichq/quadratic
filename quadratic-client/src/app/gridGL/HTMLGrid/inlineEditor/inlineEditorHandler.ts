@@ -39,7 +39,8 @@ class InlineEditorHandler {
   y = 0;
   width = 0;
   height = 0;
-  location?: SheetPosTS;
+  location?: SheetPosTS; // The cell being edited (anchor for merged cells)
+  cursorLocation?: SheetPosTS; // The cursor position (for editor positioning)
   formula: boolean | undefined = undefined;
 
   cursorIsMoving = false;
@@ -198,7 +199,22 @@ class InlineEditorHandler {
     if (input) {
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
+
+      // For merged cells, we need to edit the anchor cell (where the value lives)
+      // but we'll use the cursor position for positioning the editor
+      const mergeRect = sheet.getMergeCellRect(cursor.x, cursor.y);
+      const editLocation = mergeRect
+        ? { x: Number(mergeRect.min.x), y: Number(mergeRect.min.y) }
+        : { x: cursor.x, y: cursor.y };
+
+      // Store both the edit location (anchor) and cursor location (for positioning)
       this.location = {
+        sheetId: sheet.id,
+        x: editLocation.x,
+        y: editLocation.y,
+      };
+
+      this.cursorLocation = {
         sheetId: sheet.id,
         x: cursor.x,
         y: cursor.y,
@@ -292,6 +308,9 @@ class InlineEditorHandler {
       inlineEditorMonaco.triggerSuggestion();
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
+      );
+      inlineEditorMonaco.setTextColor(
+        this.formatSummary.textColor ? convertColorStringToHex(this.formatSummary.textColor) : undefined
       );
       this.updateFont();
       this.sendMultiplayerUpdate();
@@ -572,19 +591,20 @@ class InlineEditorHandler {
   };
 
   private updateFont = () => {
-    let fontFamily = 'OpenSans';
+    // Always use base font - italic/bold are applied via CSS data attributes
+    // This allows span-level formatting to override cell-level formatting
+    inlineEditorMonaco.setFontFamily('OpenSans');
+
+    // Apply italic and bold via CSS data attributes (like underline/strikethrough)
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
       const bold = this.temporaryBold === undefined ? this.formatSummary?.bold : this.temporaryBold;
-      if (italic && bold) {
-        fontFamily = 'OpenSans-BoldItalic';
-      } else if (italic) {
-        fontFamily = 'OpenSans-Italic';
-      } else if (bold) {
-        fontFamily = 'OpenSans-Bold';
-      }
+      inlineEditorMonaco.setItalic(!!italic);
+      inlineEditorMonaco.setBold(!!bold);
+    } else {
+      inlineEditorMonaco.setItalic(false);
+      inlineEditorMonaco.setBold(false);
     }
-    inlineEditorMonaco.setFontFamily(fontFamily);
 
     // Set font size from format summary
     const fontSize = this.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
@@ -651,10 +671,21 @@ class InlineEditorHandler {
 
     const hyperlinkSpan = inlineEditorSpans.getHyperlinkAtPosition(position);
     if (hyperlinkSpan?.link) {
-      // Get the cell offsets to position the popup
+      // Get the cell offsets to position the popup, accounting for merged cells
       const sheet = sheets.sheet;
-      const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      const mergeRect = sheet.getMergeCellRect(this.location.x, this.location.y);
+      let rect: Rectangle;
+      if (mergeRect) {
+        rect = sheet.getScreenRectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      } else {
+        const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
+        rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      }
       // Get the link text from the editor content
       const model = editor.getModel();
       const fullText = model?.getValue() ?? '';
@@ -666,9 +697,24 @@ class InlineEditorHandler {
   };
 
   updateMonacoCellLayout = () => {
-    if (!this.location) return;
+    if (!this.location || !this.cursorLocation) return;
 
-    const { x, y, width, height } = sheets.sheet.getCellOffsets(this.location.x, this.location.y);
+    // Use the cursor location (where user clicked) for positioning the editor
+    // Check if the cursor is part of a merged cell and get the full merged cell rect
+    const mergeRect = sheets.sheet.getMergeCellRect(this.cursorLocation.x, this.cursorLocation.y);
+    let cellBounds: Rectangle;
+    if (mergeRect) {
+      cellBounds = sheets.sheet.getScreenRectangle(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+        Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+      );
+    } else {
+      cellBounds = sheets.sheet.getCellOffsets(this.cursorLocation.x, this.cursorLocation.y);
+    }
+
+    const { x, y, width, height } = cellBounds;
     const cellOutlineOffset = CURSOR_THICKNESS * (this.formula ? 0.5 : 1);
     const cellContentWidth = width - cellOutlineOffset * 2;
     const cellContentHeight = height - cellOutlineOffset * 2;
@@ -934,9 +980,13 @@ class InlineEditorHandler {
   }
 
   // This checks whether the inline editor is showing (or showing at a given location)
+  // Returns the cursor location (not the edit location) for positioning purposes
   getShowing(x?: number, y?: number): SheetPosTS | undefined {
-    if (this.open && (x === undefined || y === undefined || (this.location?.x === x && this.location.y === y))) {
-      return this.location;
+    if (
+      this.open &&
+      (x === undefined || y === undefined || (this.cursorLocation?.x === x && this.cursorLocation.y === y))
+    ) {
+      return this.cursorLocation;
     }
   }
 

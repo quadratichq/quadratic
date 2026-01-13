@@ -404,4 +404,255 @@ mod tests {
             }]
         );
     }
+
+    #[test]
+    fn test_spill_from_merged_cell() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+
+        // Create a merged cell at B1:C1 (same row as code cell output)
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C1", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Create a code cell that would spill over the merged cell
+        // The formula outputs horizontally: A1=1, B1=2, C1=3
+        // But B1:C1 is a merged cell, causing a spill
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3}".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Should have a spill error due to merged cell
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(code_cell.has_spill());
+        assert!(code_cell.spill_merged_cell);
+    }
+
+    #[test]
+    fn test_spill_removed_when_merged_cell_unmerged() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+
+        // Create a merged cell at B1:C1
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C1", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Create a code cell that would spill over the merged cell
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3}".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify spill error exists
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(code_cell.has_spill());
+
+        // Unmerge the cell
+        let unmerge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C1", sheet_id);
+        gc.unmerge_cells(unmerge_selection, None, false);
+
+        // Spill error should be gone
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(!code_cell.has_spill());
+        assert!(!code_cell.spill_merged_cell);
+    }
+
+    #[test]
+    fn test_merged_cell_created_after_code_causes_spill() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+
+        // Now create a merged cell first
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C1", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Then create a code cell that would spill over the merged cell
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3}".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Should have a spill error due to merged cell
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(
+            code_cell.has_spill(),
+            "Code cell should have a spill error when created over merged cell"
+        );
+        assert!(
+            code_cell.spill_merged_cell,
+            "spill_merged_cell should be true"
+        );
+    }
+
+    #[test]
+    fn test_multiple_merged_cells_causing_spills() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+
+        // Create multiple merged cells on same row as output
+        let merge1 = crate::a1::A1Selection::test_a1_sheet_id("B1:C1", sheet_id);
+        gc.merge_cells(merge1, None, false);
+
+        let merge2 = crate::a1::A1Selection::test_a1_sheet_id("D1:E1", sheet_id);
+        gc.merge_cells(merge2, None, false);
+
+        // Create a code cell that would spill over both merged cells
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3, 4, 5}".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Should have a spill error
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(code_cell.has_spill());
+        assert!(code_cell.spill_merged_cell);
+
+        // Check that the spill error reasons include anchors from both merged cells
+        let reasons = sheet.find_spill_error_reasons(
+            &code_cell.output_rect(Pos { x: 1, y: 1 }, true),
+            Pos { x: 1, y: 1 },
+        );
+        // Should include anchor positions from both merged cells (B1 and D1)
+        assert!(reasons.contains(&Pos { x: 2, y: 1 })); // B1 anchor
+        assert!(reasons.contains(&Pos { x: 4, y: 1 })); // D1 anchor
+    }
+
+    #[test]
+    fn test_spill_with_mixed_causes() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+
+        // Create a merged cell at B1:C1
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C1", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Add a regular cell value at D1
+        gc.set_cell_value(
+            SheetPos {
+                x: 4,
+                y: 1,
+                sheet_id,
+            },
+            "blocks".into(),
+            None,
+            false,
+        );
+
+        // Create a code cell that would spill over both
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3, 4}".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Should have spill errors from both merged cell and regular value
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(code_cell.has_spill());
+        assert!(code_cell.spill_merged_cell);
+        assert!(code_cell.spill_value);
+
+        // Check that the spill error reasons include positions from both causes
+        let reasons = sheet.find_spill_error_reasons(
+            &code_cell.output_rect(Pos { x: 1, y: 1 }, true),
+            Pos { x: 1, y: 1 },
+        );
+        // Should include B1 (anchor of merged cell) and D1 (value)
+        assert!(reasons.contains(&Pos { x: 2, y: 1 })); // B1 anchor of B1:C1 merged cell
+        assert!(reasons.contains(&Pos { x: 4, y: 1 })); // D1 regular value
+    }
+
+    #[test]
+    fn test_spill_vertical_merged_cell() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+
+        // First set up some values to reference
+        gc.set_cell_values(
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
+            None,
+            false,
+        );
+
+        // Create a vertical merged cell at A2:A3
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("A2:A3", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Create a formula that references B1:B3 which will output vertically at A1, A2, A3
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "B1:B3".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Should have a spill error due to vertical merged cell at A2:A3
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        assert!(code_cell.has_spill());
+        assert!(code_cell.spill_merged_cell);
+
+        // Check that spill error includes the anchor of the merged cell
+        let reasons = sheet.find_spill_error_reasons(
+            &code_cell.output_rect(Pos { x: 1, y: 1 }, true),
+            Pos { x: 1, y: 1 },
+        );
+        // Should contain A2 (anchor of the A2:A3 merged cell)
+        assert!(reasons.contains(&Pos { x: 1, y: 2 })); // A2 anchor
+    }
 }

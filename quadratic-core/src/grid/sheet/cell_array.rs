@@ -130,15 +130,21 @@ impl Sheet {
             }
         }
 
-        for x in spill_rect.x_range() {
-            for y in spill_rect.y_range() {
-                let cell_pos = Pos { x, y };
-                if self
-                    .data_table_pos_that_contains_result(cell_pos)
-                    .is_ok_and(|data_table_pos| code_pos != data_table_pos)
-                {
-                    results.insert(cell_pos);
-                }
+        // check data tables - use rect-to-rect comparison for efficiency
+        for data_table_pos in self.data_tables_pos_intersect_rect(*spill_rect, false) {
+            if data_table_pos != code_pos {
+                results.insert(data_table_pos);
+            }
+        }
+
+        // check merged cells
+        let merged_cells = self.merge_cells.get_merge_cells(*spill_rect);
+        for merged_rect in merged_cells {
+            // Only add the anchor (top-left) position of each merged cell
+            // The client can look up the full merged rect from this anchor position
+            let anchor_pos = merged_rect.min;
+            if anchor_pos != code_pos {
+                results.insert(anchor_pos);
             }
         }
 

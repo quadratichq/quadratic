@@ -22,6 +22,7 @@ import { GetValidations } from '@/app/ai/toolCards/GetValidations';
 import { HasCellData } from '@/app/ai/toolCards/HasCellData';
 import { InsertColumns } from '@/app/ai/toolCards/InsertColumns';
 import { InsertRows } from '@/app/ai/toolCards/InsertRows';
+import { MergeCells } from '@/app/ai/toolCards/MergeCells';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -41,6 +42,7 @@ import { TableColumnSettings } from '@/app/ai/toolCards/TableColumnSettings';
 import { TableMeta } from '@/app/ai/toolCards/TableMeta';
 import { TextSearch } from '@/app/ai/toolCards/TextSearch';
 import { Undo } from '@/app/ai/toolCards/Undo';
+import { UnmergeCells } from '@/app/ai/toolCards/UnmergeCells';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
@@ -127,6 +129,10 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <ResizeRows toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetBorders:
       return <SetBorders toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
+    case AITool.MergeCells:
+      return <MergeCells toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.UnmergeCells:
+      return <UnmergeCells toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.InsertColumns:
       return <InsertColumns toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.InsertRows:

@@ -82,6 +82,23 @@ impl GridController {
         for x in sheet_rect.x_range() {
             for y in sheet_rect.y_range() {
                 let value_pos = Pos::new(x, y);
+
+                // Skip non-anchor cells in merge cells - only the anchor cell
+                // should have validation warnings
+                if let Some(anchor) = sheet.merge_cells.get_anchor(value_pos)
+                    && anchor != value_pos
+                {
+                    // This is a non-anchor cell in a merge - remove any
+                    // existing warning and skip validation
+                    if sheet.validations.has_warning(value_pos) {
+                        transaction.validation_warning_deleted(sheet.id, value_pos);
+                        sheet
+                            .validations
+                            .set_warning(value_pos.to_sheet_pos(sheet.id), None);
+                    }
+                    continue;
+                }
+
                 if let Some(validation) =
                     sheet
                         .validations
@@ -166,6 +183,22 @@ impl GridController {
             &self.a1_context,
         ) {
             values.iter().for_each(|(pos, _)| {
+                // Skip non-anchor cells in merge cells - only the anchor cell
+                // should have validation warnings
+                if let Some(anchor) = sheet.merge_cells.get_anchor(*pos)
+                    && anchor != *pos
+                {
+                    // This is a non-anchor cell in a merge - remove any
+                    // existing warning and skip validation
+                    if sheet
+                        .validations
+                        .has_warning_for_validation(*pos, validation.id)
+                    {
+                        remove_warnings.push(*pos);
+                    }
+                    return;
+                }
+
                 if let Some(validation) = sheet.validations.validate(sheet, *pos, context) {
                     warnings.push((*pos, validation.id));
                 } else if sheet
@@ -874,5 +907,124 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
+    }
+
+    #[test]
+    fn test_validation_warnings_with_merge_cells() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set invalid values in A1:B2 (checkboxes expect boolean values)
+        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "invalid".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "invalid".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "invalid".to_string(), None, false);
+
+        // Create a validation for the entire range
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1:B2"));
+
+        // All cells should have warnings initially
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.validations.has_warning(pos![A1]));
+        assert!(sheet.validations.has_warning(pos![B1]));
+        assert!(sheet.validations.has_warning(pos![A2]));
+        assert!(sheet.validations.has_warning(pos![B2]));
+
+        // Merge cells A1:B2
+        gc.merge_cells(A1Selection::test_a1("A1:B2"), None, false);
+
+        // After merge, only the anchor cell (A1) should have a warning
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            sheet.validations.has_warning(pos![A1]),
+            "Anchor cell A1 should still have warning"
+        );
+        assert!(
+            !sheet.validations.has_warning(pos![B1]),
+            "Non-anchor cell B1 should not have warning"
+        );
+        assert!(
+            !sheet.validations.has_warning(pos![A2]),
+            "Non-anchor cell A2 should not have warning"
+        );
+        assert!(
+            !sheet.validations.has_warning(pos![B2]),
+            "Non-anchor cell B2 should not have warning"
+        );
+
+        // Verify the anchor warning has the correct validation id
+        assert_eq!(
+            sheet.validations.get_warning(pos![A1]),
+            Some(&validation.id)
+        );
+
+        // Unmerge cells
+        gc.unmerge_cells(A1Selection::test_a1("A1:B2"), None, false);
+
+        // Note: After unmerge, all cells may have warnings again depending on the data
+        // The current implementation clears cell values when merging, so unmerging
+        // may not restore the original values. This is expected behavior.
+        // The key test is that merge cells removes warnings from non-anchor cells.
+    }
+
+    #[test]
+    fn test_validation_warnings_merge_removes_non_anchor_warnings() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set invalid value only in B1 (not the anchor)
+        gc.set_cell_value(pos![sheet_id!B1], "invalid".to_string(), None, false);
+
+        // Create validation for B1
+        test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1:B1"));
+
+        // B1 should have a warning (A1 is blank, which may be valid)
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.validations.has_warning(pos![B1]));
+
+        // Merge cells A1:B1 - A1 becomes the anchor
+        gc.merge_cells(A1Selection::test_a1("A1:B1"), None, false);
+
+        // After merge, B1's warning should be removed (it's not the anchor)
+        // A1 is the anchor and may or may not have a warning depending on its value
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            !sheet.validations.has_warning(pos![B1]),
+            "Non-anchor cell B1 should not have warning after merge"
+        );
+    }
+
+    #[test]
+    fn test_check_validations_skips_non_anchor_merge_cells() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // First create the merge cells
+        gc.merge_cells(A1Selection::test_a1("A1:B2"), None, false);
+
+        // Set an invalid value in the anchor cell
+        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
+
+        // Create validation for the entire merge range
+        test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1:B2"));
+
+        // Only the anchor cell should have a warning
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            sheet.validations.has_warning(pos![A1]),
+            "Anchor cell A1 should have warning"
+        );
+        assert!(
+            !sheet.validations.has_warning(pos![B1]),
+            "Non-anchor cell B1 should not have warning"
+        );
+        assert!(
+            !sheet.validations.has_warning(pos![A2]),
+            "Non-anchor cell A2 should not have warning"
+        );
+        assert!(
+            !sheet.validations.has_warning(pos![B2]),
+            "Non-anchor cell B2 should not have warning"
+        );
     }
 }

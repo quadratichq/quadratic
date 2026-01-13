@@ -153,6 +153,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
         data_tables: upgrade_tables(sheet.data_tables),
         rows_resize: sheet.rows_resize,
         borders: sheet.borders,
+        merge_cells: v1_12::MergeCellsSchema::default(),
         formats: upgrade_sheet_formatting(sheet.formats),
     }
 }

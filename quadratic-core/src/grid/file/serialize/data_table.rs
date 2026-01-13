@@ -342,6 +342,7 @@ pub(crate) fn import_data_table_builder(
             display_buffer: data_table.display_buffer,
             spill_value: false,
             spill_data_table: false,
+            spill_merged_cell: false,
             alternating_colors: data_table.alternating_colors,
             formats: data_table.formats.map(import_formats),
             borders: data_table.borders.map(import_borders),

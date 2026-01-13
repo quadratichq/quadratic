@@ -47,6 +47,8 @@ export enum AITool {
   ResizeColumns = 'resize_columns',
   ResizeRows = 'resize_rows',
   SetBorders = 'set_borders',
+  MergeCells = 'merge_cells',
+  UnmergeCells = 'unmerge_cells',
   InsertColumns = 'insert_columns',
   InsertRows = 'insert_rows',
   DeleteColumns = 'delete_columns',
@@ -103,6 +105,8 @@ export const AIToolSchema = z.enum([
   AITool.ResizeColumns,
   AITool.ResizeRows,
   AITool.SetBorders,
+  AITool.MergeCells,
+  AITool.UnmergeCells,
   AITool.InsertColumns,
   AITool.InsertRows,
   AITool.DeleteColumns,
@@ -429,6 +433,14 @@ export const AIToolsArgsSchema = {
       .string()
       .transform((val) => val.toLowerCase())
       .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
+  }),
+  [AITool.MergeCells]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    selection: z.string(),
+  }),
+  [AITool.UnmergeCells]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    selection: z.string(),
   }),
   [AITool.InsertColumns]: z.object({
     sheet_name: z.string().nullable().optional(),
@@ -2119,6 +2131,68 @@ The selection is a range of cells, for example: A1:D1.\n
 The color must be a valid CSS color string.\n
 The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
 The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
+`,
+  },
+  [AITool.MergeCells]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool merges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) of cells to merge. The selection must be a range of cells (not a single cell).\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to merge cells in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of cells to merge. This must be a range of cells, for example: A1:D1. Cannot be a single cell.',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.MergeCells],
+    prompt: `
+This tool merges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) of cells to merge.\n
+The selection must be a range of cells (not a single cell), for example: A1:D1.\n
+When cells are merged, all cell values except the top-left cell will be cleared, and the merged cell will display the value from the top-left cell.\n
+`,
+  },
+  [AITool.UnmergeCells]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool unmerges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge. The selection can be a single cell or a range of cells.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to unmerge cells in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) that contains merged cells to unmerge. This can be a single cell or a range of cells, for example: A1 or A1:D1. All merged cells that overlap with this selection will be unmerged.',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UnmergeCells],
+    prompt: `
+This tool unmerges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge.\n
+The selection can be a single cell or a range of cells, for example: A1 or A1:D1.\n
+All merged cells that overlap with the selection will be unmerged, splitting them back into individual cells.\n
 `,
   },
   [AITool.InsertColumns]: {

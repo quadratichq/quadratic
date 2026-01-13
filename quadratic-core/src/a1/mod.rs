@@ -22,7 +22,6 @@ pub use sheet_cell_ref_range::*;
 pub(crate) use sheet_name::*;
 pub use table_ref::*;
 
-// TODO(perf): raise or remove upper bound on proptest to test larger ranges.
 #[cfg(test)]
 pub(crate) const PROPTEST_COORDINATE_I64: std::ops::RangeInclusive<i64> = 1..=16_i64;
 // #[cfg(test)]

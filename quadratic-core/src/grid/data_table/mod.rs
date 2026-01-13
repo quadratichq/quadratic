@@ -229,6 +229,10 @@ pub struct DataTable {
     #[serde(skip_serializing_if = "is_false", default)]
     pub spill_data_table: bool,
 
+    // spill due to merged cell
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub spill_merged_cell: bool,
+
     #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,
 
@@ -294,6 +298,7 @@ impl DataTable {
             display_buffer: None,
             spill_value: false,
             spill_data_table: false,
+            spill_merged_cell: false,
             alternating_colors: true,
             formats: None,
             borders: None,
@@ -325,6 +330,7 @@ impl DataTable {
             display_buffer: self.display_buffer.clone(),
             spill_value: self.spill_value,
             spill_data_table: self.spill_data_table,
+            spill_merged_cell: self.spill_merged_cell,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
             borders: self.borders.clone(),
@@ -572,7 +578,7 @@ impl DataTable {
 
     /// Helper function to determine if the DataTable has an spill error.
     pub fn has_spill(&self) -> bool {
-        self.spill_value || self.spill_data_table
+        self.spill_value || self.spill_data_table || self.spill_merged_cell
     }
 
     /// Helper function to determine if the DataTable's CodeRun has an error.

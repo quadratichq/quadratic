@@ -388,6 +388,23 @@ class InlineEditorMonaco {
     styles?.setProperty('--vscode-editor-background', color);
   }
 
+  setTextColor(color: string | undefined) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setTextColor');
+    }
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in setTextColor');
+    }
+    if (color) {
+      domNode.style.setProperty('--cell-text-color', color);
+      domNode.dataset.hasTextColor = 'true';
+    } else {
+      domNode.style.removeProperty('--cell-text-color');
+      delete domNode.dataset.hasTextColor;
+    }
+  }
+
   setFontFamily(fontFamily: string) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setFontFamily');
@@ -424,12 +441,42 @@ class InlineEditorMonaco {
     }
     const domNode = this.editor.getDomNode();
     if (!domNode) {
-      throw new Error('Expected domNode to be defined in setUnderline');
+      throw new Error('Expected domNode to be defined in setStrikeThrough');
     }
     if (strikeThrough && !inlineEditorHandler.formula) {
       domNode.dataset.strikeThrough = 'true';
     } else {
       delete domNode.dataset.strikeThrough;
+    }
+  }
+
+  setItalic(italic: boolean) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setItalic');
+    }
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in setItalic');
+    }
+    if (italic && !inlineEditorHandler.formula) {
+      domNode.dataset.italic = 'true';
+    } else {
+      delete domNode.dataset.italic;
+    }
+  }
+
+  setBold(bold: boolean) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setBold');
+    }
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in setBold');
+    }
+    if (bold && !inlineEditorHandler.formula) {
+      domNode.dataset.bold = 'true';
+    } else {
+      delete domNode.dataset.bold;
     }
   }
 

@@ -12,6 +12,7 @@ pub enum TransactionName {
     SetBorders,
     SetCells,
     SetFormats,
+    SetMergeCells,
     SetDataTableAt,
     CutClipboard,
     PasteClipboard,

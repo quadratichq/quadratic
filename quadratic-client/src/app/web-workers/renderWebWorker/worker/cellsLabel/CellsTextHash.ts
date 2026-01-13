@@ -125,8 +125,47 @@ export class CellsTextHash {
   }
 
   private createLabel(cell: JsRenderCell) {
-    const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
+    // Check if this cell is part of a merged cell
+    const mergeRect = this.cellsLabels.mergeCells.getMergeCellRect(Number(cell.x), Number(cell.y));
+    if (mergeRect) {
+      // Only render the anchor cell (top-left) of a merged cell
+      const isAnchor = Number(cell.x) === Number(mergeRect.min.x) && Number(cell.y) === Number(mergeRect.min.y);
+      if (!isAnchor) {
+        // Skip rendering non-anchor cells in merged cells
+        return;
+      }
+    }
+
+    let rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
+
+    // Calculate column/row bounds for the cell
+    let minCol = Number(cell.x);
+    let maxCol = Number(cell.x);
+    let minRow = Number(cell.y);
+    let maxRow = Number(cell.y);
+
+    // If this is the anchor of a merged cell, use the merged cell rectangle for alignment
+    if (mergeRect) {
+      // Calculate the screen rectangle for the entire merged cell
+      const mergeWidth = Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1;
+      const mergeHeight = Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1;
+      const screenRectStringified = this.cellsLabels.sheetOffsets.getRectCellOffsets(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        mergeWidth,
+        mergeHeight
+      );
+      const screenRect = JSON.parse(screenRectStringified);
+      rectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+
+      // Update column/row bounds for merged cell
+      minCol = Number(mergeRect.min.x);
+      maxCol = Number(mergeRect.max.x);
+      minRow = Number(mergeRect.min.y);
+      maxRow = Number(mergeRect.max.y);
+    }
+
+    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle, minCol, maxCol, minRow, maxRow);
     this.labels.set(this.getKey(cell), cellLabel);
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
@@ -391,8 +430,9 @@ export class CellsTextHash {
         // get the column from the textRight (which is in screen coordinates)
         const column = offsets.getXPlacement(cellLabel.textRight).index;
 
-        // we need to add all columns that are overlapped
-        for (let i = cellLabel.location.x + 1; i <= column; i++) {
+        // we need to add all columns that are overlapped by overflow
+        // Start from the first column after the cell/merged cell ends
+        for (let i = cellLabel.maxCol + 1; i <= column; i++) {
           this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
         }
       }
@@ -402,8 +442,9 @@ export class CellsTextHash {
         // get the column from the textLeft (which is in screen coordinates)
         const column = offsets.getXPlacement(cellLabel.textLeft).index;
 
-        // we need to add all columns that are overlapped
-        for (let i = column + 1; i <= cellLabel.location.x; i++) {
+        // we need to add all columns that are overlapped by overflow
+        // End at the leftmost column of the cell/merged cell
+        for (let i = column + 1; i <= cellLabel.minCol; i++) {
           this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
         }
       }
@@ -413,7 +454,9 @@ export class CellsTextHash {
   private checkClip(label: CellLabel) {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return;
-    let column = label.location.x - 1;
+
+    // Check left neighbors (start from column before the leftmost column of the cell)
+    let column = label.minCol - 1;
     let row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
     while (column >= bounds.x) {
@@ -435,7 +478,8 @@ export class CellsTextHash {
     }
 
     currentHash = this;
-    column = label.location.x + 1;
+    // Check right neighbors (start from column after the rightmost column of the cell)
+    column = label.maxCol + 1;
     while (column <= bounds.x + bounds.width) {
       if (column > currentHash.AABB.right) {
         // find hash to the right of current hash (skip over empty hashes)

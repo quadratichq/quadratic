@@ -244,6 +244,9 @@ pub struct SheetSchema {
     pub rows_resize: RowsResizesSchema,
     pub borders: BordersSchema,
     pub formats: SheetFormattingSchema,
+
+    #[serde(default)]
+    pub merge_cells: MergeCellsSchema,
 }
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -319,4 +322,9 @@ pub enum OutputValueSchema {
 pub struct OutputArraySchema {
     pub size: OutputSizeSchema,
     pub values: Vec<CellValueSchema>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MergeCellsSchema {
+    pub merge_cells: Contiguous2DSchema<Option<PosSchema>>,
 }

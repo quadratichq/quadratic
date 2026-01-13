@@ -56,6 +56,7 @@ const OperationToChatMessage: OperationMessageMap<TrackedOperation> = {
   ComputeCode: (operation) => `- computed code at ${operation.selection}`,
   MoveDataTable: (operation) => `- moved data table from ${operation.from} to ${operation.to}`,
   SwitchDataTableKind: (operation) => `- switched data table at ${operation.selection} to ${operation.kind}`,
+  SetMergeCells: (operation) => `- set merge cells at ${operation.sheet_name}`,
 };
 
 const convertTransactionToChatMessage = (transaction: TrackedTransaction): string => {

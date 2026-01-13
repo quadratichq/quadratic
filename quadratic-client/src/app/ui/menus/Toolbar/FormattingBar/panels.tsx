@@ -6,6 +6,9 @@
 
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import {
@@ -36,7 +39,7 @@ import { DEFAULT_FONT_SIZE, FONT_SIZES, FONT_SIZE_DISPLAY_ADJUSTMENT } from '@/s
 import { DropdownMenuItem } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { ToggleGroup } from 'radix-ui';
-import { forwardRef, memo } from 'react';
+import { forwardRef, memo, useEffect, useState } from 'react';
 
 export const NumberFormatting = memo(
   forwardRef<
@@ -184,25 +187,58 @@ export const FillAndBorderFormatting = memo(
   forwardRef<
     HTMLDivElement | null,
     { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
-  >((props, ref) => (
-    <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
-      <FormatColorPickerButton
-        action={Action.FormatFillColor}
-        activeColor={props.formatSummary?.fillColor ?? undefined}
-        hideLabel={props.hideLabel}
-      />
-      <FormatButtonPopover
-        action="borders"
-        tooltipLabel="Borders"
-        Icon={BorderAllIcon}
-        className="flex flex-row flex-wrap"
-        hideLabel={props.hideLabel}
-      >
-        <BorderMenu />
-      </FormatButtonPopover>
-      <FormatSeparator />
-    </div>
-  ))
+  >((props, ref) => {
+    const [canMergeCells, setCanMergeCells] = useState(false);
+    const [canUnmergeCells, setCanUnmergeCells] = useState(false);
+
+    useEffect(() => {
+      const updateMergeState = () => {
+        // Merge cells: selection is more than one cell AND does not contain any table or code cells
+        setCanMergeCells(
+          !sheets.sheet.cursor.isSingleSelection() && !content.cellsSheet.tables.hasCodeCellInCurrentSelection()
+        );
+        // Unmerge cells: selection contains at least one merged cell
+        setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells());
+      };
+
+      updateMergeState();
+      events.on('cursorPosition', updateMergeState);
+
+      return () => {
+        events.off('cursorPosition', updateMergeState);
+      };
+    }, []);
+
+    return (
+      <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
+        <FormatColorPickerButton
+          action={Action.FormatFillColor}
+          activeColor={props.formatSummary?.fillColor ?? undefined}
+          hideLabel={props.hideLabel}
+        />
+        <FormatButtonPopover
+          action="borders"
+          tooltipLabel="Borders"
+          Icon={BorderAllIcon}
+          className="flex flex-row flex-wrap"
+          hideLabel={props.hideLabel}
+        >
+          <BorderMenu />
+        </FormatButtonPopover>
+        {canUnmergeCells ? (
+          <FormatButton action={Action.UnmergeCells} actionArgs={undefined} hideLabel={props.hideLabel} />
+        ) : (
+          <FormatButton
+            action={Action.MergeCells}
+            actionArgs={undefined}
+            hideLabel={props.hideLabel}
+            disabled={!canMergeCells}
+          />
+        )}
+        <FormatSeparator />
+      </div>
+    );
+  })
 );
 
 export const AlignmentFormatting = memo(
@@ -297,8 +333,39 @@ export const Clear = memo(
   forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>((props, ref) => (
     <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
       <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
+      <FormatSeparator />
     </div>
   ))
+);
+
+export const InsertLinkFormatting = memo(
+  forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>((props, ref) => {
+    const [isSingleSelection, setIsSingleSelection] = useState(true);
+
+    useEffect(() => {
+      const updateIsSingleSelection = () => {
+        setIsSingleSelection(sheets.sheet.cursor.isSingleSelection());
+      };
+
+      updateIsSingleSelection();
+      events.on('cursorPosition', updateIsSingleSelection);
+
+      return () => {
+        events.off('cursorPosition', updateIsSingleSelection);
+      };
+    }, []);
+
+    return (
+      <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
+        <FormatButton
+          action={Action.InsertHyperlink}
+          actionArgs={undefined}
+          hideLabel={props.hideLabel}
+          disabled={!isSingleSelection}
+        />
+      </div>
+    );
+  })
 );
 
 export const FormatMoreButton = memo(

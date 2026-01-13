@@ -16,6 +16,7 @@ pub mod data_table;
 pub mod export;
 pub mod formatting;
 pub mod import;
+pub mod merge_cells;
 pub mod render;
 pub mod search;
 pub mod sheet_info;
@@ -86,6 +87,9 @@ impl GridController {
 
                             // sends all borders to the client
                             sheet.send_sheet_borders();
+
+                            // sends all merge cells to the client
+                            sheet.send_merge_cells();
                         }
                     });
 
