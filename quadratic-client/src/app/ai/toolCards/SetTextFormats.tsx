@@ -58,7 +58,7 @@ function FormatItemsDisplay({ items, maxItems }: { items: FormatItem[]; maxItems
   if (items.length === 0) return null;
 
   const displayItems = maxItems ? items.slice(0, maxItems) : items;
-  const remainingCount = maxItems ? items.length - maxItems : 0;
+  const remainingCount = maxItems && maxItems < items.length ? items.length - maxItems : 0;
 
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1">
@@ -80,13 +80,13 @@ function FormatItemsDisplay({ items, maxItems }: { items: FormatItem[]; maxItems
 }
 
 // Individual selection item that can be clicked to navigate
-const SelectionItem = memo(({ entry, onClick }: { entry: FormatEntry; onClick: () => void }) => {
+const SelectionItem = memo(({ entry, onSelect }: { entry: FormatEntry; onSelect: (entry: FormatEntry) => void }) => {
   const formatItems = useMemo(() => getFormattingItemsForEntry(entry), [entry]);
 
   return (
     <div
       className="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground hover:text-foreground/80"
-      onClick={onClick}
+      onClick={() => onSelect(entry)}
     >
       <span className="shrink-0 font-medium">{entry.selection}</span>
       <span className="text-muted-foreground/60">•</span>
@@ -96,6 +96,7 @@ const SelectionItem = memo(({ entry, onClick }: { entry: FormatEntry; onClick: (
     </div>
   );
 });
+SelectionItem.displayName = 'SelectionItem';
 
 export const SetTextFormats = memo(
   ({
@@ -225,8 +226,12 @@ export const SetTextFormats = memo(
 
         {isExpanded && formats && (
           <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
-            {formats.map((entry, index) => (
-              <SelectionItem key={index} entry={entry} onClick={() => handleSelectEntry(entry)} />
+            {formats.map((entry) => (
+              <SelectionItem
+                key={`${entry.sheet_name ?? ''}-${entry.selection}`}
+                entry={entry}
+                onSelect={handleSelectEntry}
+              />
             ))}
           </div>
         )}
@@ -234,3 +239,4 @@ export const SetTextFormats = memo(
     );
   }
 );
+SetTextFormats.displayName = 'SetTextFormats';
