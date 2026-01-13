@@ -40,11 +40,14 @@ export function FilesListItemCore({
               dangerouslySetInnerHTML={{ __html }}
             />
 
-            {hasNetworkError ? (
-              <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
-            ) : (
-              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
-            )}
+            <div className="flex h-5 items-center gap-1">
+              {children}
+              {hasNetworkError ? (
+                <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
+              ) : (
+                <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
+              )}
+            </div>
           </div>
 
           {creator?.name && creator?.email && (
@@ -58,7 +61,6 @@ export function FilesListItemCore({
 
         {actions && <div className="flex-none">{actions}</div>}
       </div>
-      {children}
     </div>
   );
 }

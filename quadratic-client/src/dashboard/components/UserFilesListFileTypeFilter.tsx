@@ -39,12 +39,15 @@ export function UserFilesListFileTypeFilter() {
 
   return (
     <>
-      <div className="hidden sm:flex">
+      <div className="hidden gap-0.5 sm:flex">
         {fileTypeOptions.map(({ label, value, Icon }) => (
           <Button
             key={label}
-            variant="ghost"
-            className={cn('flex-shrink-0 px-3', filters.fileType === value && '!bg-foreground !text-background')}
+            variant={filters.fileType === value ? 'secondary' : 'ghost'}
+            className={cn(
+              'flex-shrink-0 px-3 shadow-none',
+              filters.fileType === value ? '' : 'text-muted-foreground hover:text-foreground'
+            )}
             onClick={() =>
               setFilters({
                 ...defaultUserFilesListFilters,

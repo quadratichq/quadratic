@@ -294,14 +294,7 @@ function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
   if (type === 'team') return null;
 
   return (
-    <div
-      className={cn(
-        'absolute left-3.5 top-3.5 flex items-center gap-1 text-xs',
-        'rounded-md py-0.5 pl-1 pr-1.5',
-        type === 'private' && 'bg-accent',
-        type === 'shared' && 'bg-accent'
-      )}
-    >
+    <div className={'flex items-center gap-1 rounded-md bg-accent py-0.5 pl-1 pr-1.5 text-xs text-muted-foreground'}>
       {type === 'shared' && (
         <>
           <FileSharedWithMeIcon size="xxs" className="!hidden" /> Shared with me
