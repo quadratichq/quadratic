@@ -245,6 +245,10 @@ export const CropFreeIcon: IconComponent = (props) => {
   return <Icon {...props}>crop_free</Icon>;
 };
 
+export const CancelIcon: IconComponent = (props) => {
+  return <Icon {...props}>cancel</Icon>;
+};
+
 export const DatabaseIcon: IconComponent = (props) => {
   return <Icon {...props}>database</Icon>;
 };

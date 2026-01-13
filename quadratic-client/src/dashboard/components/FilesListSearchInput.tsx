@@ -1,4 +1,4 @@
-import { CloseIcon, SearchIcon } from '@/shared/components/Icons';
+import { CancelIcon, SearchIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
@@ -23,6 +23,7 @@ export function FilesListSearchInput({
         placeholder="Search…"
         className="w-full pl-8"
         disabled={disabled}
+        data-testid="files-list-search-input"
       />
       {value && (
         <Button
@@ -32,7 +33,7 @@ export function FilesListSearchInput({
           onClick={() => onChange('')}
           aria-label="Clear filter"
         >
-          <CloseIcon />
+          <CancelIcon />
         </Button>
       )}
     </div>
