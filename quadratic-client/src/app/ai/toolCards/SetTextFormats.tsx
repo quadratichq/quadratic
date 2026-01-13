@@ -218,9 +218,9 @@ export const SetTextFormats = memo(
           {!hideIcon && <FormatPaintIcon />}
           <span>{label}</span>
           {isExpanded ? (
-            <ChevronDownIcon className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
-            <ChevronRightIcon className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
         </div>
 
