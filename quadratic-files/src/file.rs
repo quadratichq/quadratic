@@ -1,8 +1,6 @@
 use chrono::Utc;
-use std::{
-    hash::{DefaultHasher, Hash, Hasher},
-    sync::Arc,
-};
+use sha2::{Digest, Sha256};
+use std::sync::Arc;
 use tokio_util::task::TaskTracker;
 use uuid::Uuid;
 
@@ -31,15 +29,16 @@ use crate::{
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
 
-/// Compute a hash of the transactions for duplicate detection
+/// Compute a hash of the transactions for duplicate detection.
+/// Uses SHA-256 for stability across Rust versions and program runs.
 fn compute_transactions_hash(transactions: &[TransactionServer]) -> String {
-    let mut hasher = DefaultHasher::new();
+    let mut hasher = Sha256::new();
     for transaction in transactions {
-        transaction.sequence_num.hash(&mut hasher);
-        transaction.id.hash(&mut hasher);
-        transaction.operations.hash(&mut hasher);
+        hasher.update(transaction.sequence_num.to_le_bytes());
+        hasher.update(transaction.id.as_bytes());
+        hasher.update(&transaction.operations);
     }
-    format!("{:x}", hasher.finish())
+    format!("{:x}", hasher.finalize())
 }
 
 /// Load a .grid file

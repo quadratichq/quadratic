@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
 import express from 'express';
 import { param, validationResult } from 'express-validator';
@@ -18,7 +19,8 @@ const requestValidationMiddleware = validateRequestSchema(
       version: z.string(),
       s3Key: z.string(),
       s3Bucket: z.string(),
-      transactionsHash: z.string(),
+      // Require non-empty hash to prevent false positives when querying for duplicates
+      transactionsHash: z.string().min(1, 'transactionsHash must not be empty'),
     }),
     params: z.object({
       uuid: z.string().uuid(),
@@ -100,26 +102,35 @@ router.put(
 
       return res.status(200).json(buildResponse(result));
     } catch (error) {
-      // Check if this is a duplicate request by looking for matching transactionsHash
-      const file = await dbClient.file.findUnique({
-        where: { uuid: fileUuid },
-        include: {
-          FileCheckpoint: {
-            where: { transactionsHash },
-            take: 1,
+      // Handle unique constraint violation (P2002) which indicates a duplicate checkpoint
+      // This can happen when concurrent requests try to create a checkpoint with the same sequenceNumber
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // Query for the existing checkpoint by transactionsHash to verify it's a true duplicate
+        // Note: There's a small window where another request could have created the checkpoint
+        // between the transaction failure and this query, but this is acceptable since we're
+        // simply returning the existing checkpoint data in that case.
+        const file = await dbClient.file.findUnique({
+          where: { uuid: fileUuid },
+          include: {
+            FileCheckpoint: {
+              where: { transactionsHash },
+              take: 1,
+            },
           },
-        },
-      });
+        });
 
-      const existingCheckpoint = file?.FileCheckpoint[0];
+        const existingCheckpoint = file?.FileCheckpoint[0];
 
-      if (existingCheckpoint) {
-        // Duplicate detected - return success with the existing checkpoint
-        return res.status(200).json(buildResponse(existingCheckpoint));
+        if (existingCheckpoint) {
+          // Duplicate detected - return success with the existing checkpoint
+          return res.status(200).json(buildResponse(existingCheckpoint));
+        }
       }
 
-      // Not a duplicate - re-throw the original error
-      throw error;
+      // Not a duplicate - return an appropriate error response
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Checkpoint creation failed:', error);
+      return res.status(500).json({ error: `Failed to create checkpoint: ${errorMessage}` });
     }
   }
 );
