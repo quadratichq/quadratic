@@ -178,6 +178,7 @@ enum ConnectionType {
     SUPABASE
     MIXPANEL
     GOOGLE_ANALYTICS
+    PLAID
 }
 
 model Connection {

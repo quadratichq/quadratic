@@ -63,7 +63,9 @@ export const connectionClient = {
         | 'mixpanel'
         | 'MIXPANEL'
         | 'google_analytics'
-        | 'GOOGLE_ANALYTICS',
+        | 'GOOGLE_ANALYTICS'
+        | 'plaid'
+        | 'PLAID',
       connectionId: string,
       teamUuid: string,
       forceCacheRefresh: boolean = false,

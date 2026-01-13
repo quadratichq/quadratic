@@ -1,5 +1,6 @@
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,26 +61,26 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="project_id"
+          render={({ field }) => (
+            <FormItem className="col-span-3">
+              <FormLabel>Project ID</FormLabel>
+              <FormControl>
+                <Input autoComplete="off" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="project_id"
-            render={({ field }) => (
-              <FormItem className="col-span-3">
-                <FormLabel>Project ID</FormLabel>
-                <FormControl>
-                  <Input autoComplete="off" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name="api_secret"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>API Secret</FormLabel>
+                <FormLabel>API secret</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -92,29 +93,28 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="start_date"
             render={({ field }) => (
               <FormItem className="col-span-1">
-                <FormLabel>Sync Start Date</FormLabel>
+                <FormLabel>Sync start date</FormLabel>
                 <FormControl>
-                  <Input type="date" autoComplete="off" {...field} />
+                  <Input type="date" autoComplete="off" className="block" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <div className="col-span-3">
-            <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">
-              Data Sync Status
-            </label>
-            {connection && (
-              <p className="mb-4 mt-2 text-xs text-red-500">
-                <SyncedConnection
-                  connectionUuid={connection.uuid}
-                  teamUuid={teamUuid}
-                  createdDate={connection.createdDate}
-                />
-              </p>
-            )}
-            {/* TODO(ddimaria): implement this once we get the green light */}
-            {/* <div className="mb-2 flex flex-row items-center text-xs">
+        </div>
+        {connection && (
+          <div className="flex items-center gap-2 pt-2 text-sm">
+            <Badge>Status</Badge>
+            <SyncedConnection
+              connectionUuid={connection.uuid}
+              teamUuid={teamUuid}
+              createdDate={connection.createdDate}
+            />
+          </div>
+        )}
+
+        {/* TODO(ddimaria): implement this once we get the green light */}
+        {/* <div className="mb-2 flex flex-row items-center text-xs">
               <Checkbox
                 id="show-logs"
                 className="mr-2"
@@ -128,8 +128,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             {showLogs && (
               <SyncedConnectionLogs connectionUuid={connection?.uuid ?? ''} />
             )} */}
-          </div>
-        </div>
+
         {children}
       </form>
     </Form>
