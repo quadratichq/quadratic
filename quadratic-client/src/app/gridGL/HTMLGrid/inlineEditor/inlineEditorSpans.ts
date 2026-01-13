@@ -839,8 +839,11 @@ class InlineEditorSpans {
   /**
    * Toggle a specific formatting property for the current selection.
    * Returns true if formatting was toggled for a selection, false otherwise.
+   *
+   * @param property - The formatting property to toggle (bold, italic, etc.)
+   * @param cellLevelValue - The cell-level formatting value (used when no span formatting exists)
    */
-  toggleFormattingForSelection(property: keyof SpanFormatting): boolean {
+  toggleFormattingForSelection(property: keyof SpanFormatting, cellLevelValue?: boolean): boolean {
     const selection = inlineEditorMonaco.getSelection();
     if (!selection) {
       return false;
@@ -851,13 +854,51 @@ class InlineEditorSpans {
       return false;
     }
 
-    // Check if the selection already has this formatting
-    const currentValue = this.getFormattingForRange(offsets.start, offsets.end, property);
+    // Determine the effective visual state of the selection:
+    // 1. If any span in the range has explicit formatting, use that
+    // 2. Otherwise, fall back to cell-level formatting
+    const spanFormatting = this.getFormattingStateForRange(offsets.start, offsets.end, property);
+    let currentVisualState: boolean;
+
+    if (spanFormatting.hasExplicitValue) {
+      // Use the span's explicit value (could be true or false)
+      currentVisualState = spanFormatting.value;
+    } else {
+      // No span formatting - use cell-level formatting
+      currentVisualState = cellLevelValue ?? false;
+    }
 
     // Toggle the formatting
-    const newValue = !currentValue;
+    const newValue = !currentVisualState;
     this.addFormattingSpan(offsets.start, offsets.end, { [property]: newValue });
     return true;
+  }
+
+  /**
+   * Get the formatting state for a range, distinguishing between:
+   * - Explicit formatting set in spans (true or false)
+   * - No explicit formatting (undefined)
+   *
+   * Returns { hasExplicitValue: boolean, value: boolean }
+   */
+  private getFormattingStateForRange(
+    startOffset: number,
+    endOffset: number,
+    property: keyof SpanFormatting
+  ): { hasExplicitValue: boolean; value: boolean } {
+    // Check if ANY span in the range has an explicit value for this property
+    for (const span of this.spans) {
+      // Check if span overlaps with the range
+      if (span.end > startOffset && span.start < endOffset) {
+        const value = span[property];
+        if (value !== undefined) {
+          // Found explicit formatting - return it
+          return { hasExplicitValue: true, value: !!value };
+        }
+      }
+    }
+    // No explicit formatting found in any span
+    return { hasExplicitValue: false, value: false };
   }
 
   /**
@@ -1296,10 +1337,18 @@ class InlineEditorSpans {
 
   /**
    * Check if there are any formatted spans (requiring RichText).
+   * Note: We check for !== undefined because explicit false values are also meaningful
+   * (e.g., bold: false overrides cell-level bold formatting).
    */
   hasFormattedSpans(): boolean {
     return this.spans.some(
-      (span) => span.link || span.bold || span.italic || span.underline || span.strikeThrough || span.textColor
+      (span) =>
+        span.link !== undefined ||
+        span.bold !== undefined ||
+        span.italic !== undefined ||
+        span.underline !== undefined ||
+        span.strikeThrough !== undefined ||
+        span.textColor !== undefined
     );
   }
 

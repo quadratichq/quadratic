@@ -474,7 +474,8 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('bold');
+      // Pass cell-level bold so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('bold', this.formatSummary?.bold ?? undefined);
       this.updateSelectionFormatting();
       return true;
     }
@@ -499,7 +500,8 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('italic');
+      // Pass cell-level italic so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('italic', this.formatSummary?.italic ?? undefined);
       this.updateSelectionFormatting();
       return true;
     }
@@ -523,7 +525,8 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('underline');
+      // Pass cell-level underline so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('underline', this.formatSummary?.underline ?? undefined);
       this.updateSelectionFormatting();
       return true;
     }
@@ -547,7 +550,8 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('strikeThrough');
+      // Pass cell-level strikeThrough so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('strikeThrough', this.formatSummary?.strikeThrough ?? undefined);
       this.updateSelectionFormatting();
       return true;
     }
