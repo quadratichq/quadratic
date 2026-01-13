@@ -75,6 +75,10 @@ router.put(
 
         const latestCheckpoint = lastTransactionQuery.FileCheckpoint[0];
 
+        if (!latestCheckpoint) {
+          throw new Error('No existing checkpoint found for file.');
+        }
+
         if (latestCheckpoint.sequenceNumber > sequenceNumber) {
           throw new Error('Invalid sequence number.');
         }
@@ -102,13 +106,12 @@ router.put(
 
       return res.status(200).json(buildResponse(result));
     } catch (error) {
-      // Handle unique constraint violation (P2002) which indicates a duplicate checkpoint
+      // Handle unique constraint violation (P2002) on (fileId, sequenceNumber)
       // This can happen when concurrent requests try to create a checkpoint with the same sequenceNumber
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        // Query for the existing checkpoint by transactionsHash to verify it's a true duplicate
-        // Note: There's a small window where another request could have created the checkpoint
-        // between the transaction failure and this query, but this is acceptable since we're
-        // simply returning the existing checkpoint data in that case.
+        // Query for the existing checkpoint by transactionsHash to verify it's a true duplicate.
+        // Since sequenceNumber is included in the hash, a matching hash confirms it's the same
+        // checkpoint being processed twice (idempotent retry).
         const file = await dbClient.file.findUnique({
           where: { uuid: fileUuid },
           include: {
@@ -122,12 +125,18 @@ router.put(
         const existingCheckpoint = file?.FileCheckpoint[0];
 
         if (existingCheckpoint) {
-          // Duplicate detected - return success with the existing checkpoint
+          // True duplicate - return success with the existing checkpoint
           return res.status(200).json(buildResponse(existingCheckpoint));
         }
+
+        // No matching hash found - this indicates a conflict (different transactions
+        // trying to claim the same sequence number)
+        return res.status(409).json({
+          error: `Sequence number ${sequenceNumber} already exists with different transactions`,
+        });
       }
 
-      // Not a duplicate - return an appropriate error response
+      // Other error - return an appropriate error response
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Checkpoint creation failed:', error);
       return res.status(500).json({ error: `Failed to create checkpoint: ${errorMessage}` });
