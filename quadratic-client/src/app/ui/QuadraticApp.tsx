@@ -27,7 +27,7 @@ export const QuadraticApp = memo(() => {
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [searchParams] = useSearchParams();
-  const checkpointId = useMemo(() => searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY), [searchParams]);
+  const sequenceNum = useMemo(() => searchParams.get(SEARCH_PARAMS.SEQUENCE_NUM.KEY), [searchParams]);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
@@ -40,7 +40,7 @@ export const QuadraticApp = memo(() => {
     if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
         // If we're loading a specific checkpoint (version history), don't load multiplayer
-        if (checkpointId) {
+        if (sequenceNum !== null) {
           setMultiplayerLoading(false);
           setOfflineLoading(false);
           return;
@@ -54,7 +54,7 @@ export const QuadraticApp = memo(() => {
         }
       });
     }
-  }, [fileUuid, loggedInUser, checkpointId]);
+  }, [fileUuid, loggedInUser, sequenceNum]);
 
   // wait for offline sync
   useEffect(() => {
