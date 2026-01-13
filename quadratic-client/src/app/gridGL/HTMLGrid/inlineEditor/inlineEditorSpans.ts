@@ -783,10 +783,7 @@ class InlineEditorSpans {
           if (startPos && endPos) {
             const range = new monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column);
 
-            // Calculate the new end position based on text length difference
-            const lengthDiff = newText.length - currentText.length;
-
-            // Replace the text
+            // Replace the text - this triggers onContentChange which adjusts all span positions
             editor.executeEdits('updateHyperlink', [
               {
                 range,
@@ -795,17 +792,13 @@ class InlineEditorSpans {
               },
             ]);
 
-            // Update the span with new URL and adjusted end position
-            this.spans[i] = {
-              ...span,
-              link: newUrl,
-              end: span.end + lengthDiff,
-            };
-
-            // Adjust subsequent spans
-            for (let j = i + 1; j < this.spans.length; j++) {
-              this.spans[j].start += lengthDiff;
-              this.spans[j].end += lengthDiff;
+            // onContentChange has already adjusted positions; just update the URL
+            // Re-fetch the span since onContentChange replaced it with a new object
+            if (this.spans[i]) {
+              this.spans[i] = {
+                ...this.spans[i],
+                link: newUrl,
+              };
             }
           }
         } else {

@@ -272,12 +272,14 @@ impl Sheet {
         }
     }
 
-    /// Collects positions affected by format updates for specific format types.
-    fn collect_affected_positions<T: std::fmt::Debug + Clone + PartialEq>(
+    /// Collects RichText cell positions affected by format updates for specific format types.
+    /// Only returns positions that actually contain RichText cells, avoiding large intermediate
+    /// allocations when formatting is applied to large ranges.
+    fn collect_affected_richtext_positions<T: std::fmt::Debug + Clone + PartialEq>(
         &self,
         format: &SheetFormatUpdatesType<T>,
-    ) -> Vec<Pos> {
-        let mut positions = Vec::new();
+        positions: &mut HashSet<Pos>,
+    ) {
         let sheet_bounds =
             |ignore_formatting: bool| -> Option<Rect> { self.bounds(ignore_formatting).into() };
         let columns_bounds = |start: i64, end: i64, ignore_formatting: bool| {
@@ -293,12 +295,17 @@ impl Sheet {
             {
                 for x in x1..=x2 {
                     for y in y1..=y2 {
-                        positions.push(Pos { x, y });
+                        let pos = Pos { x, y };
+                        // Only collect positions with RichText cells
+                        if let Some(cell_value) = self.cell_value(pos)
+                            && matches!(cell_value, CellValue::RichText(_))
+                        {
+                            positions.insert(pos);
+                        }
                     }
                 }
             }
         }
-        positions
     }
 
     /// Clears inline formatting from RichText cells when cell-level formatting is applied.
@@ -334,103 +341,90 @@ impl Sheet {
         let mut affected_positions: HashSet<Pos> = HashSet::new();
 
         if is_clear_all {
-            // For clear all, we need all positions from any format type
-            if let Some(rect) = formats.to_bounding_rect() {
-                let sheet_bounds = |ignore_formatting: bool| -> Option<Rect> {
-                    self.bounds(ignore_formatting).into()
-                };
-                let columns_bounds = |start: i64, end: i64, ignore_formatting: bool| {
-                    self.columns_bounds(start, end, ignore_formatting)
-                };
-                let rows_bounds = |start: i64, end: i64, ignore_formatting: bool| {
-                    self.rows_bounds(start, end, ignore_formatting)
-                };
-
-                // Use bold as a representative since clear formatting sets all
-                if let Some(bold) = &formats.bold {
-                    for (x1, y1, x2, y2, _) in bold.to_rects_with_grid_bounds(
-                        &sheet_bounds,
-                        &columns_bounds,
-                        &rows_bounds,
-                        true,
-                    ) {
-                        for x in x1..=x2.min(rect.max.x) {
-                            for y in y1..=y2.min(rect.max.y) {
-                                affected_positions.insert(Pos { x, y });
-                            }
-                        }
-                    }
-                }
-            }
+            // For clear all, we need RichText positions from any format type
+            // Use bold as a representative since clear formatting sets all
+            self.collect_affected_richtext_positions(&formats.bold, &mut affected_positions);
         } else {
-            // Collect positions for each format type being changed
+            // Collect RichText positions for each format type being changed
             if has_bold {
-                affected_positions.extend(self.collect_affected_positions(&formats.bold));
+                self.collect_affected_richtext_positions(&formats.bold, &mut affected_positions);
             }
             if has_italic {
-                affected_positions.extend(self.collect_affected_positions(&formats.italic));
+                self.collect_affected_richtext_positions(&formats.italic, &mut affected_positions);
             }
             if has_strike_through {
-                affected_positions.extend(self.collect_affected_positions(&formats.strike_through));
+                self.collect_affected_richtext_positions(
+                    &formats.strike_through,
+                    &mut affected_positions,
+                );
             }
             if has_text_color {
-                affected_positions.extend(self.collect_affected_positions(&formats.text_color));
+                self.collect_affected_richtext_positions(
+                    &formats.text_color,
+                    &mut affected_positions,
+                );
             }
             if has_underline {
-                affected_positions.extend(self.collect_affected_positions(&formats.underline));
+                self.collect_affected_richtext_positions(
+                    &formats.underline,
+                    &mut affected_positions,
+                );
             }
         }
 
-        // Process each position with a RichText cell
+        // Process each RichText cell position (already filtered by collect_affected_richtext_positions)
         let mut reverse_ops = Vec::new();
         let mut modified_positions = Vec::new();
 
         for pos in affected_positions {
-            // Check if there's a RichText cell at this position
-            if let Some(cell_value) = self.cell_value(pos)
-                && let CellValue::RichText(_) = &cell_value
-            {
-                // Clone the original value for the reverse operation
-                let old_value = cell_value.clone();
-                let mut new_value = cell_value;
+            // Get the RichText cell value (we know it exists from the collection step)
+            let Some(cell_value) = self.cell_value(pos) else {
+                continue;
+            };
+            let CellValue::RichText(_) = &cell_value else {
+                continue;
+            };
 
-                // Clear the appropriate formatting based on what's being changed
-                let mut changed = false;
+            // Clone the original value for the reverse operation
+            let old_value = cell_value.clone();
+            let mut new_value = cell_value;
 
-                if is_clear_all {
-                    changed = new_value.clear_all_richtext_formatting();
-                } else {
-                    if has_bold && new_value.clear_richtext_bold() {
-                        changed = true;
-                    }
-                    if has_italic && new_value.clear_richtext_italic() {
-                        changed = true;
-                    }
-                    if has_strike_through && new_value.clear_richtext_strike_through() {
-                        changed = true;
-                    }
-                    if has_text_color && new_value.clear_richtext_text_color() {
-                        changed = true;
-                    }
-                    if has_underline && new_value.clear_richtext_underline() {
-                        changed = true;
-                    }
+            // Clear the appropriate formatting based on what's being changed
+            let mut changed = false;
+
+            if is_clear_all {
+                changed = new_value.clear_all_richtext_formatting();
+            } else {
+                if has_bold && new_value.clear_richtext_bold() {
+                    changed = true;
                 }
-
-                if changed {
-                    // Update the cell value
-                    self.set_value(pos, new_value);
-
-                    // Track modified position for dirty hashes
-                    modified_positions.push(pos);
-
-                    // Create reverse operation to restore the original value
-                    let sheet_pos = pos.to_sheet_pos(self.id);
-                    reverse_ops.push(Operation::SetCellValues {
-                        sheet_pos,
-                        values: CellValues::from(old_value),
-                    });
+                if has_italic && new_value.clear_richtext_italic() {
+                    changed = true;
                 }
+                if has_strike_through && new_value.clear_richtext_strike_through() {
+                    changed = true;
+                }
+                if has_text_color && new_value.clear_richtext_text_color() {
+                    changed = true;
+                }
+                if has_underline && new_value.clear_richtext_underline() {
+                    changed = true;
+                }
+            }
+
+            if changed {
+                // Update the cell value
+                self.set_value(pos, new_value);
+
+                // Track modified position for dirty hashes
+                modified_positions.push(pos);
+
+                // Create reverse operation to restore the original value
+                let sheet_pos = pos.to_sheet_pos(self.id);
+                reverse_ops.push(Operation::SetCellValues {
+                    sheet_pos,
+                    values: CellValues::from(old_value),
+                });
             }
         }
 

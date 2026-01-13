@@ -418,7 +418,8 @@ export function useHyperlinkPopup() {
     const handleHashContentChanged = async (sheetId: string) => {
       const current = linkDataRef.current;
       if (!current) return;
-
+      // Don't interfere with edit mode
+      if (visibilityRef.current.isEditMode()) return;
       // Only check cells on the current sheet
       if (sheetId !== sheets.sheet.id) return;
 
