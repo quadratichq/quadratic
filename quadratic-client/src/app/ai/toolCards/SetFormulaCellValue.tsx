@@ -137,20 +137,17 @@ export const SetFormulaCellValue = memo(
       []
     );
 
-    const handleFormulaClick = useCallback(
-      (formula: { sheet_name?: string | null; code_cell_position: string }) => {
-        try {
-          const sheetId = formula.sheet_name
-            ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
-            : sheets.current;
-          const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
-          sheets.changeSelection(selection);
-        } catch (e) {
-          console.warn('Failed to select range:', e);
-        }
-      },
-      []
-    );
+    const handleFormulaClick = useCallback((formula: { sheet_name?: string | null; code_cell_position: string }) => {
+      try {
+        const sheetId = formula.sheet_name
+          ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
+        sheets.changeSelection(selection);
+      } catch (e) {
+        console.warn('Failed to select range:', e);
+      }
+    }, []);
 
     const formulaCount = toolArgs?.success ? toolArgs.data.formulas.length : 0;
     const label = loading
