@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect Your Bank Account</title>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+
+    .container {
+      text-align: center;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+    }
+
+    .loading {
+      color: #666;
+    }
+
+    .success {
+      color: #059669;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .close-btn {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    .close-btn:hover {
+      background: #047857;
+    }
+
+    #status {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="loading">Loading Plaid Link...</div>
+    <div id="status">
+      <p class="success">✓ Bank account connected successfully!</p>
+      <p style="color: #666; font-size: 14px; margin-bottom: 0;">You can close this window and return to the main page.
+      </p>
+      <button class="close-btn" onclick="window.close()">Close Window</button>
+    </div>
+  </div>
+
+  <script>
+    // Use BroadcastChannel for cross-window communication (works without window.opener)
+    const channel = new BroadcastChannel('plaid_link');
+
+    // Track if we've already sent a completion message (success or exit)
+    let hasCompleted = false;
+
+    // Send exit message when window is closed (handles user clicking X)
+    window.addEventListener('pagehide', () => {
+      if (!hasCompleted) {
+        channel.postMessage({
+          type: 'PLAID_EXIT',
+          error: null,
+          metadata: { reason: 'window_closed' }
+        });
+      }
+    });
+
+    // Get link token from URL query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkToken = urlParams.get('linkToken');
+
+    if (!linkToken) {
+      document.querySelector('.loading').textContent = 'Error: No link token provided';
+    } else {
+      // Initialize Plaid Link
+      const handler = Plaid.create({
+        token: linkToken,
+        onSuccess: (publicToken, metadata) => {
+          hasCompleted = true;
+
+          // Hide loading, show success message
+          document.querySelector('.loading').style.display = 'none';
+          document.getElementById('status').style.display = 'block';
+
+          // Send success message via BroadcastChannel
+          channel.postMessage({
+            type: 'PLAID_SUCCESS',
+            publicToken,
+            metadata
+          });
+
+          // Try to auto-close, but if blocked, user can click button
+          setTimeout(() => {
+            window.close();
+          }, 1000);
+        },
+        onExit: (err, metadata) => {
+          hasCompleted = true;
+
+          // Send exit message via BroadcastChannel
+          channel.postMessage({
+            type: 'PLAID_EXIT',
+            error: err,
+            metadata
+          });
+
+          // Close on exit
+          setTimeout(() => {
+            window.close();
+          }, 500);
+        },
+      });
+
+      // Automatically open Plaid Link
+      handler.open();
+    }
+  </script>
+</body>
+
+</html>

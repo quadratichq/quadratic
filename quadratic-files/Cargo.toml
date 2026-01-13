@@ -56,6 +56,8 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
 fake = { version = "4.0.0", features = ["derive"] }
+httpmock = "0.8"
+serial_test = "3.2.0"
 
 [features]
 default = ["files"]

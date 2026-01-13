@@ -65,6 +65,7 @@ export async function getConnectionBySyncedConnectionId(syncedConnectionId: numb
   if (!syncedConnection) {
     throw new ApiError(404, `Synced connection ${syncedConnectionId} not found`);
   }
+
   return await getConnection(syncedConnection.connectionId);
 }
 /*

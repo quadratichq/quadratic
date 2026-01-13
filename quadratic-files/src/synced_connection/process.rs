@@ -10,9 +10,9 @@ use std::sync::Arc;
 use quadratic_rust_shared::{
     quadratic_api::get_synced_connections_by_type,
     synced::{
-        SyncedConnection, chunk_date_range, dates_to_sync,
+        SyncedConnection, SyncedConnectionKind, chunk_date_range, dates_to_sync,
         google_analytics::client::GoogleAnalyticsConnection, mixpanel::MixpanelConnection,
-        object_store_path, upload, write_synced_markers,
+        object_store_path, plaid::PlaidConnection, upload, write_synced_markers,
     },
 };
 use serde::{Serialize, de::DeserializeOwned};
@@ -43,6 +43,8 @@ pub(crate) async fn process_all_synced_connections(
         "GOOGLE_ANALYTICS",
     )
     .await?;
+    process_synced_connections::<PlaidConnection>(state.clone(), sync_kind.clone(), "PLAID")
+        .await?;
     Ok(())
 }
 
@@ -131,12 +133,24 @@ pub(crate) async fn process_synced_connection<
     let today = chrono::Utc::now().date_naive();
     let run_id = Uuid::new_v4();
     let sync_start_date = connection.start_date();
-    let streams = connection.streams();
-    let client = connection.to_client().await?;
     let start_time = std::time::Instant::now();
     let mut total_files_processed = 0;
+
+    let streams = connection.streams();
     let streams_len = streams.len();
     let mut connection_started = false;
+
+    let client = match connection.kind() {
+        // we need to manually assemble the PlaidClient b/c API doesn't store the client_id or secret
+        SyncedConnectionKind::Plaid => state.settings.new_plaid_client(&connection)?,
+
+        // for other connections, we can use the to_client method
+        _ => {
+            connection
+                .to_client(state.settings.environment)
+                .await?
+        }
+    };
 
     // Process each stream/table
     for stream in streams {
