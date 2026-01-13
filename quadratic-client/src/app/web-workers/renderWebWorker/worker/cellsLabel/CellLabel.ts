@@ -137,7 +137,8 @@ export class CellLabel {
   private chars: CharRenderData[] = [];
   private horizontalAlignOffsets: number[] = [];
   private lineWidths: number[] = [];
-  horizontalLines: Rectangle[] = [];
+  /** Horizontal lines for underline/strikethrough with their tint colors. */
+  horizontalLines: { rect: Rectangle; tint: number }[] = [];
 
   private align: CellAlign | 'justify';
   private verticalAlign: CellVerticalAlign;
@@ -1371,7 +1372,7 @@ export class CellLabel {
       const width = Math.min(lineWidth * scale, clipRight - xPos);
 
       const rect = new Rectangle(xPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
-      this.horizontalLines.push(rect);
+      this.horizontalLines.push({ rect, tint: this.tint });
     });
     // Note: We intentionally don't update textHeight here. Underlines/strikethroughs
     // are decorative and shouldn't affect text height for layout purposes.
@@ -1391,52 +1392,77 @@ export class CellLabel {
     const baseData = this.cellsLabels.bitmapFonts[this.fontName];
     if (!baseData) return;
 
-    // Track consecutive runs of underlined/strikethrough characters
+    // Track consecutive runs of underlined/strikethrough characters with same color
     interface LineRun {
       startCharIdx: number;
       endCharIdx: number;
       line: number;
       type: 'underline' | 'strikethrough';
+      tint: number;
     }
 
     const runs: LineRun[] = [];
     let currentUnderlineStart: number | null = null;
     let currentUnderlineLine = 0;
+    let currentUnderlineTint = 0;
     let currentStrikeStart: number | null = null;
     let currentStrikeLine = 0;
+    let currentStrikeTint = 0;
 
     for (let i = 0; i <= this.chars.length; i++) {
       const formatting = i < this.chars.length ? this.getCharFormatting(i) : null;
       const charLine = i < this.chars.length ? this.chars[i].line : -1;
+      // Use the text color from formatting, falling back to cell tint
+      const charTint = formatting?.textColor ?? this.tint;
 
-      // Handle underline runs
+      // Handle underline runs - break on underline change, line change, or color change
       if (formatting?.underline && currentUnderlineStart === null) {
         currentUnderlineStart = i;
         currentUnderlineLine = charLine;
-      } else if ((!formatting?.underline || charLine !== currentUnderlineLine) && currentUnderlineStart !== null) {
+        currentUnderlineTint = charTint;
+      } else if (
+        currentUnderlineStart !== null &&
+        (!formatting?.underline || charLine !== currentUnderlineLine || charTint !== currentUnderlineTint)
+      ) {
         runs.push({
           startCharIdx: currentUnderlineStart,
           endCharIdx: i - 1,
           line: currentUnderlineLine,
           type: 'underline',
+          tint: currentUnderlineTint,
         });
-        currentUnderlineStart = formatting?.underline ? i : null;
-        currentUnderlineLine = charLine;
+        if (formatting?.underline) {
+          currentUnderlineStart = i;
+          currentUnderlineLine = charLine;
+          currentUnderlineTint = charTint;
+        } else {
+          currentUnderlineStart = null;
+        }
       }
 
-      // Handle strikethrough runs
+      // Handle strikethrough runs - break on strikethrough change, line change, or color change
       if (formatting?.strikeThrough && currentStrikeStart === null) {
         currentStrikeStart = i;
         currentStrikeLine = charLine;
-      } else if ((!formatting?.strikeThrough || charLine !== currentStrikeLine) && currentStrikeStart !== null) {
+        currentStrikeTint = charTint;
+      } else if (
+        currentStrikeStart !== null &&
+        (!formatting?.strikeThrough || charLine !== currentStrikeLine || charTint !== currentStrikeTint)
+      ) {
         runs.push({
           startCharIdx: currentStrikeStart,
           endCharIdx: i - 1,
           line: currentStrikeLine,
           type: 'strikethrough',
+          tint: currentStrikeTint,
         });
-        currentStrikeStart = formatting?.strikeThrough ? i : null;
-        currentStrikeLine = charLine;
+        if (formatting?.strikeThrough) {
+          currentStrikeStart = i;
+          currentStrikeLine = charLine;
+          currentStrikeTint = charTint;
+        } else {
+          currentStrikeStart = null;
+        }
       }
     }
 
@@ -1469,7 +1495,7 @@ export class CellLabel {
       const width = lineEndX - startXPos;
       if (width > 0) {
         const rect = new Rectangle(startXPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
-        this.horizontalLines.push(rect);
+        this.horizontalLines.push({ rect, tint: run.tint });
       }
     }
     // Note: We intentionally don't update textHeight here. Underlines/strikethroughs
