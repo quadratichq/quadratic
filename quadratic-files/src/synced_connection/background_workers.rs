@@ -16,7 +16,7 @@ const FULL_SYNC_INTERVAL_M: u64 = 1; // 1 minute
 ///
 /// Returns JoinHandles for all spawned workers so they can be awaited during
 /// graceful shutdown.
-pub(crate) async fn init_sync_workers(
+pub(crate) fn init_sync_workers(
     state: Arc<State>,
     cancellation_token: CancellationToken,
 ) -> Result<Vec<JoinHandle<()>>> {
@@ -29,10 +29,7 @@ pub(crate) async fn init_sync_workers(
         tokio::spawn(async move { full_sync_worker(full_sync_state, full_sync_token).await });
     handles.push(full_sync_handle);
 
-    // wait 10 seconds before syncing daily connections
-    tokio::time::sleep(Duration::from_secs(10)).await;
-
-    // sync daily connections in a separate thread
+    // sync daily connections in a separate thread (with initial delay handled inside the worker)
     let daily_sync_state = Arc::clone(&state);
     let daily_sync_token = cancellation_token.clone();
     let daily_sync_handle =
@@ -43,7 +40,17 @@ pub(crate) async fn init_sync_workers(
 }
 
 /// Update all Mixpanel connections every DAILY_SYNC_INTERVAL_M minutes.
+/// Starts with a 10-second delay to stagger startup load with the full sync worker.
 pub(crate) async fn daily_sync_worker(state: Arc<State>, cancellation_token: CancellationToken) {
+    // Initial delay to stagger startup with full sync worker
+    tokio::select! {
+        _ = cancellation_token.cancelled() => {
+            tracing::info!("Daily sync worker received shutdown signal during startup delay");
+            return;
+        }
+        _ = tokio::time::sleep(Duration::from_secs(10)) => {}
+    }
+
     let mut interval = time::interval(Duration::from_secs(DAILY_SYNC_INTERVAL_M * 60));
 
     loop {

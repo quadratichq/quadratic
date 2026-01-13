@@ -287,7 +287,7 @@ pub(crate) async fn serve() -> Result<()> {
     background_handles.push(stats_handle);
 
     // in a separate thread, sync connections
-    let sync_handles = init_sync_workers(state.clone(), cancellation_token.clone()).await?;
+    let sync_handles = init_sync_workers(state.clone(), cancellation_token.clone())?;
     background_handles.extend(sync_handles);
 
     // Start the HTTP server with graceful shutdown
