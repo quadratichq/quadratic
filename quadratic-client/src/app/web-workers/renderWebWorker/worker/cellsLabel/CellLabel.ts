@@ -978,6 +978,11 @@ export class CellLabel {
     // 2. Descenders naturally extend slightly beyond lineHeight - this is expected
     // 3. Only show dots when the line itself doesn't fit, not for descender overflow
     const CLIP_EPSILON = 0.5;
+
+    // Descenders (p, q, g, y, j, etc.) extend below the baseline. At larger font sizes,
+    // they extend more pixels, so we need a scaled epsilon for vertical glyph clipping.
+    // Base value of 3 pixels at DEFAULT_FONT_SIZE (14), scaling up with font size.
+    const DESCENDER_CLIP_EPSILON = Math.max(0.5, fontScale * 3);
     const clippedLines = new Set<number>();
     const maxLine = this.chars.length > 0 ? Math.max(...this.chars.map((c) => c.line)) : 0;
     for (let line = 0; line <= maxLine; line++) {
@@ -1089,7 +1094,7 @@ export class CellLabel {
 
         // Clip dots that are outside horizontal bounds or extend below the cell bottom
         const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
-        const belowCellBottom = charBottom > this.AABB.bottom + CLIP_EPSILON;
+        const belowCellBottom = charBottom > this.AABB.bottom + DESCENDER_CLIP_EPSILON;
         if (horizontallyClipped || belowCellBottom) {
           buffer.reduceSize(6);
         } else {
@@ -1139,7 +1144,8 @@ export class CellLabel {
         // remove letters that are outside the clipping bounds
         // Use strict inequality with small tolerance for vertical clipping to avoid
         // floating point issues that could cause emojis to oscillate between visible and clipped
-        const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + CLIP_EPSILON;
+        // Use DESCENDER_CLIP_EPSILON for bottom clipping to allow for descenders (p, q, g, y, j)
+        const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + DESCENDER_CLIP_EPSILON;
         const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
 
         // Don't clip emojis vertically. The row will resize based on textHeightWithDescenders,
