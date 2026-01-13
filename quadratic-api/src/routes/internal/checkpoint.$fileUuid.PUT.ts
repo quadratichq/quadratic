@@ -18,6 +18,7 @@ const requestValidationMiddleware = validateRequestSchema(
       version: z.string(),
       s3Key: z.string(),
       s3Bucket: z.string(),
+      transactionsHash: z.string(),
     }),
     params: z.object({
       uuid: z.string().uuid(),
@@ -36,58 +37,90 @@ router.put(
     }
 
     const fileUuid = req.params.uuid;
+    const { sequenceNumber, version, s3Key, s3Bucket, transactionsHash } = req.body;
 
-    const result = await dbClient.$transaction(async (prisma) => {
-      // Retrieve the latest checkpoint
-      const lastTransactionQuery = await prisma.file.findUniqueOrThrow({
-        where: {
-          uuid: fileUuid,
-        },
-        select: {
-          FileCheckpoint: {
-            orderBy: {
-              sequenceNumber: 'desc',
+    const buildResponse = (checkpoint: {
+      sequenceNumber: number;
+      version: string;
+      s3Key: string;
+      s3Bucket: string;
+    }) => ({
+      fileUuid,
+      lastCheckpoint: {
+        sequenceNumber: checkpoint.sequenceNumber,
+        version: checkpoint.version,
+        s3Key: checkpoint.s3Key,
+        s3Bucket: checkpoint.s3Bucket,
+      },
+    });
+
+    try {
+      const result = await dbClient.$transaction(async (prisma) => {
+        // Retrieve the latest checkpoint
+        const lastTransactionQuery = await prisma.file.findUniqueOrThrow({
+          where: {
+            uuid: fileUuid,
+          },
+          select: {
+            FileCheckpoint: {
+              orderBy: {
+                sequenceNumber: 'desc',
+              },
+              take: 1,
             },
+          },
+        });
+
+        const latestCheckpoint = lastTransactionQuery.FileCheckpoint[0];
+
+        if (latestCheckpoint.sequenceNumber > sequenceNumber) {
+          throw new Error('Invalid sequence number.');
+        }
+
+        // Create a new checkpoint
+        const newCheckpoint = await prisma.fileCheckpoint.create({
+          data: {
+            file: { connect: { uuid: fileUuid } },
+            sequenceNumber,
+            s3Bucket,
+            s3Key,
+            version,
+            transactionsHash,
+          },
+        });
+
+        // Update when the file was last modified
+        await prisma.file.update({
+          where: { uuid: fileUuid },
+          data: { updatedDate: new Date() },
+        });
+
+        return newCheckpoint;
+      });
+
+      return res.status(200).json(buildResponse(result));
+    } catch (error) {
+      // Check if this is a duplicate request by looking for matching transactionsHash
+      const file = await dbClient.file.findUnique({
+        where: { uuid: fileUuid },
+        include: {
+          FileCheckpoint: {
+            where: { transactionsHash },
             take: 1,
           },
         },
       });
 
-      const latestCheckpoint = lastTransactionQuery.FileCheckpoint[0];
+      const existingCheckpoint = file?.FileCheckpoint[0];
 
-      if (latestCheckpoint.sequenceNumber > req.body.sequenceNumber) {
-        throw new Error('Invalid sequence number.');
+      if (existingCheckpoint) {
+        // Duplicate detected - return success with the existing checkpoint
+        return res.status(200).json(buildResponse(existingCheckpoint));
       }
 
-      // Create a new checkpoint
-      const newCheckpoint = await prisma.fileCheckpoint.create({
-        data: {
-          file: { connect: { uuid: fileUuid } },
-          sequenceNumber: req.body.sequenceNumber,
-          s3Bucket: req.body.s3Bucket,
-          s3Key: req.body.s3Key,
-          version: req.body.version,
-        },
-      });
-
-      // Update when the file was last modified
-      await prisma.file.update({
-        where: { uuid: fileUuid },
-        data: { updatedDate: new Date() },
-      });
-
-      return newCheckpoint;
-    });
-
-    return res.status(200).json({
-      fileUuid: fileUuid,
-      lastCheckpoint: {
-        sequenceNumber: result.sequenceNumber,
-        version: result.version,
-        s3Key: result.s3Key,
-        s3Bucket: result.s3Bucket,
-      },
-    });
+      // Not a duplicate - re-throw the original error
+      throw error;
+    }
   }
 );
 

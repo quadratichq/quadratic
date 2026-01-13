@@ -42,7 +42,7 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["full"] }
-tokio-util = "0.7.11"
+tokio-util = { version = "0.7.11", features = ["rt"] }
 tower = { version = "0.5.2", features = ["util"] }
 tower-http = { version = "0.6.2", features = [
     "cors",
