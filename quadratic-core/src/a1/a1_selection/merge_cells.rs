@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use crate::{
-    Pos,
     a1::{A1Selection, CellRefRange},
     grid::sheet::merge_cells::MergeCells,
 };
@@ -29,16 +28,11 @@ impl A1Selection {
                     if range.is_finite()
                         && let Some(rect) = range.to_rect()
                     {
-                        // Check all positions in the range for merged cells
-                        for x in rect.min.x..=rect.max.x {
-                            for y in rect.min.y..=rect.max.y {
-                                let pos = Pos { x, y };
-                                if let Some(anchor) = merge_cells.get_anchor(pos) {
-                                    // Add anchor if it's not already in the range
-                                    if !rect.contains(anchor) {
-                                        anchors_to_add.insert(anchor);
-                                    }
-                                }
+                        for merge_rect in merge_cells.get_merge_cells(rect) {
+                            let anchor = merge_rect.min;
+                            // Add anchor if it's not already in the range
+                            if !rect.contains(anchor) {
+                                anchors_to_add.insert(anchor);
                             }
                         }
                     }
@@ -106,21 +100,16 @@ impl A1Selection {
             match range {
                 CellRefRange::Sheet { range } => {
                     if range.is_finite() {
-                        // Finite range: check all positions
+                        // Finite range: find intersecting merges
                         if let Some(rect) = range.to_rect() {
-                            for x in rect.min.x..=rect.max.x {
-                                for y in rect.min.y..=rect.max.y {
-                                    let pos = Pos { x, y };
-                                    if let Some(merge_rect) = merge_cells.get_merge_cell_rect(pos) {
-                                        let merge_key = (
-                                            merge_rect.min.x,
-                                            merge_rect.min.y,
-                                            merge_rect.max.x,
-                                            merge_rect.max.y,
-                                        );
-                                        merge_rects_to_add.insert((merge_key, merge_rect));
-                                    }
-                                }
+                            for merge_rect in merge_cells.get_merge_cells(rect) {
+                                let merge_key = (
+                                    merge_rect.min.x,
+                                    merge_rect.min.y,
+                                    merge_rect.max.x,
+                                    merge_rect.max.y,
+                                );
+                                merge_rects_to_add.insert((merge_key, merge_rect));
                             }
                         }
                     } else if range.is_col_range() {

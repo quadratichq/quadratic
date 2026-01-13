@@ -107,9 +107,11 @@ impl GridController {
                 let rect = Rect::new(*x1, *y1, *x2, *y2);
 
                 // Capture all cell values BEFORE deleting them (for undo)
+                // and find cells with content
                 let width = (rect.max.x - rect.min.x + 1) as u32;
                 let height = (rect.max.y - rect.min.y + 1) as u32;
                 let mut original_values = CellValues::new(width, height);
+                let mut cells_with_content = Vec::new();
 
                 for y in rect.y_range() {
                     for x in rect.x_range() {
@@ -119,7 +121,12 @@ impl GridController {
 
                         // Capture the original value (including blanks)
                         let value = sheet.display_value(pos).unwrap_or(CellValue::Blank);
-                        original_values.set(rel_x, rel_y, value);
+                        original_values.set(rel_x, rel_y, value.clone());
+
+                        // Track non-blank values for determining which value to keep
+                        if value != CellValue::Blank {
+                            cells_with_content.push((pos, value));
+                        }
                     }
                 }
 
@@ -132,20 +139,6 @@ impl GridController {
                     },
                     values: original_values,
                 });
-
-                // Find all cells with content in the merge range
-                let mut cells_with_content = Vec::new();
-                for y in rect.y_range() {
-                    for x in rect.x_range() {
-                        let pos = Pos { x, y };
-                        if let Some(value) = sheet.display_value(pos) {
-                            // Only consider non-blank values as content
-                            if value != CellValue::Blank {
-                                cells_with_content.push((pos, value));
-                            }
-                        }
-                    }
-                }
 
                 // Determine which cell value to keep
                 let value_to_keep = if cells_with_content.is_empty() {
