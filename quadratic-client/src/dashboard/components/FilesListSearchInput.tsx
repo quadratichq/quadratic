@@ -15,7 +15,7 @@ export function FilesListSearchInput({
   disabled?: boolean;
 }) {
   return (
-    <div className={cn(`relative w-48`, className)}>
+    <div className={cn(`relative w-full sm:w-48`, className)}>
       <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground opacity-30" />
       <Input
         onChange={(e) => onChange(e.target.value)}

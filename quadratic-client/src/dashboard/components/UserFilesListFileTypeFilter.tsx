@@ -97,16 +97,13 @@ export function UserFilesListFileTypeFilter() {
           })
         }
       >
-        <SelectTrigger className="sm:hidden">
+        <SelectTrigger className="w-40 sm:hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {fileTypeOptions.map(({ label, value, Icon }) => (
             <SelectItem key={label} value={value === null ? 'all' : value}>
-              <div className="flex items-center">
-                <Icon size="xs" className="mr-2" />
-                {label}
-              </div>
+              <div className="flex items-center">{label}</div>
             </SelectItem>
           ))}
         </SelectContent>
