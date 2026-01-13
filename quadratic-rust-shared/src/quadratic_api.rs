@@ -145,6 +145,7 @@ pub async fn get_file_checkpoint(
 }
 
 /// Set the file's checkpoint with the quadratic API server.
+#[allow(clippy::too_many_arguments)]
 pub async fn set_file_checkpoint(
     base_url: &str,
     jwt: &str,
