@@ -148,23 +148,23 @@ export function subtractRanges(
     return undefined;
   }
 
-  // Create a list of numbers that need removing (following GridOverflowLines pattern)
-  const excluded: number[] = [];
+  // Create a set of numbers that need removing (following GridOverflowLines pattern)
+  const excludedSet = new Set<number>();
   for (const [x0, x1] of excludedRanges) {
     for (let x = x0; x <= x1; x++) {
-      excluded.push(x);
+      excludedSet.add(x);
     }
   }
 
   // if there are no gaps, then draw the entire screen
-  if (excluded.length === 0) {
+  if (excludedSet.size === 0) {
     return undefined;
   }
 
   // now create a list of numbers that need to be drawn (following GridOverflowLines pattern)
   const drawnLines: number[] = [];
   for (let i = baseRange[0]; i <= baseRange[1]; i++) {
-    if (!excluded.includes(i)) {
+    if (!excludedSet.has(i)) {
       drawnLines.push(i);
     }
   }

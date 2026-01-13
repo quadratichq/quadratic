@@ -126,11 +126,12 @@ pub(crate) fn row_bounds(
 
     // Expand bounds to include merged cells that have content
     if let Some(merge_cells) = merge_cells {
-        // Create a rect that spans the entire row to find merged cells that intersect it
-        let search_rect = Rect::new(i64::MIN / 2, row, i64::MAX / 2, row);
-        let merged_rects = merge_cells.get_merge_cells(search_rect);
-
-        for merge_rect in merged_rects {
+        // Iterate over all merge cells and filter to those that intersect this row
+        for merge_rect in merge_cells.iter_merge_cells() {
+            // Skip if this merge cell doesn't intersect the row
+            if merge_rect.min.y > row || merge_rect.max.y < row {
+                continue;
+            }
             // Check if the anchor cell has content
             if content_cache.has_content_at_pos(merge_rect.min) {
                 // Expand bounds to include the merged cell's column range
@@ -183,11 +184,12 @@ pub(crate) fn column_bounds(
 
     // Expand bounds to include merged cells that have content
     if let Some(merge_cells) = merge_cells {
-        // Create a rect that spans the entire column to find merged cells that intersect it
-        let search_rect = Rect::new(column, i64::MIN / 2, column, i64::MAX / 2);
-        let merged_rects = merge_cells.get_merge_cells(search_rect);
-
-        for merge_rect in merged_rects {
+        // Iterate over all merge cells and filter to those that intersect this column
+        for merge_rect in merge_cells.iter_merge_cells() {
+            // Skip if this merge cell doesn't intersect the column
+            if merge_rect.min.x > column || merge_rect.max.x < column {
+                continue;
+            }
             // Check if the anchor cell has content
             if content_cache.has_content_at_pos(merge_rect.min) {
                 // Expand bounds to include the merged cell's row range

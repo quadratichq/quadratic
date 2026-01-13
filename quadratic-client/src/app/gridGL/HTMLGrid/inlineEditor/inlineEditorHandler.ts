@@ -39,8 +39,12 @@ class InlineEditorHandler {
   y = 0;
   width = 0;
   height = 0;
-  location?: SheetPosTS; // The cell being edited (anchor for merged cells)
-  cursorLocation?: SheetPosTS; // The cursor position (for editor positioning)
+  // The cell being edited (anchor for merged cells). Use this for all data operations
+  // (reading/writing cell values, formula operations, validation, etc.)
+  location?: SheetPosTS;
+  // The original cursor position where the user clicked. Use this for UI positioning
+  // (editor placement, popup positioning, etc.). For merged cells, this may differ from location.
+  cursorLocation?: SheetPosTS;
   formula: boolean | undefined = undefined;
 
   cursorIsMoving = false;
@@ -82,6 +86,7 @@ class InlineEditorHandler {
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
+    this.cursorLocation = undefined;
     this.formula = undefined;
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
@@ -673,7 +678,9 @@ class InlineEditorHandler {
     if (hyperlinkSpan?.link) {
       // Get the cell offsets to position the popup, accounting for merged cells
       const sheet = sheets.sheet;
-      const mergeRect = sheet.getMergeCellRect(this.location.x, this.location.y);
+      // Use cursorLocation for positioning (location is for data storage)
+      const cursorLoc = this.cursorLocation ?? this.location;
+      const mergeRect = sheet.getMergeCellRect(cursorLoc.x, cursorLoc.y);
       let rect: Rectangle;
       if (mergeRect) {
         rect = sheet.getScreenRectangle(
@@ -683,7 +690,7 @@ class InlineEditorHandler {
           Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
         );
       } else {
-        const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
+        const offsets = sheet.getCellOffsets(cursorLoc.x, cursorLoc.y);
         rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
       }
       // Get the link text from the editor content

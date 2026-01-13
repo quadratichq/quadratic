@@ -104,6 +104,7 @@ impl A1Selection {
                     range.end = CellRefRangeEnd::new_relative_xy(column, row);
 
                     // Expand selection to include any partially overlapping merged cells
+                    // while preserving the anchor (start) position as much as possible
                     if range.is_finite() {
                         if let Some(rect) = range.to_rect() {
                             let mut expanded_rect = rect;
@@ -112,7 +113,59 @@ impl A1Selection {
                                 merge_cells,
                             );
                             if expanded_rect != rect {
-                                *range = RefRangeBounds::new_relative_rect(expanded_rect);
+                                // Preserve the direction of selection while expanding.
+                                // The key is that start and end may not be normalized
+                                // (start can be > end), and we need to preserve that
+                                // relationship while including the expanded area.
+                                let start_col = range.start.col();
+                                let start_row = range.start.row();
+                                let end_col = range.end.col();
+                                let end_row = range.end.row();
+
+                                // For each axis, determine the selection direction and
+                                // expand appropriately. The start should expand in its
+                                // direction (away from end), and end should expand in
+                                // its direction (away from start).
+                                let (new_start_col, new_end_col) = if end_col < start_col {
+                                    // Selecting left: start is right, end is left
+                                    (expanded_rect.max.x, expanded_rect.min.x)
+                                } else if end_col > start_col {
+                                    // Selecting right: start is left, end is right
+                                    (expanded_rect.min.x, expanded_rect.max.x)
+                                } else {
+                                    // Same column: expand end in both directions if needed
+                                    (
+                                        start_col,
+                                        if expanded_rect.min.x < start_col {
+                                            expanded_rect.min.x
+                                        } else {
+                                            expanded_rect.max.x
+                                        },
+                                    )
+                                };
+
+                                let (new_start_row, new_end_row) = if end_row < start_row {
+                                    // Selecting up: start is below, end is above
+                                    (expanded_rect.max.y, expanded_rect.min.y)
+                                } else if end_row > start_row {
+                                    // Selecting down: start is above, end is below
+                                    (expanded_rect.min.y, expanded_rect.max.y)
+                                } else {
+                                    // Same row: expand end in both directions if needed
+                                    (
+                                        start_row,
+                                        if expanded_rect.min.y < start_row {
+                                            expanded_rect.min.y
+                                        } else {
+                                            expanded_rect.max.y
+                                        },
+                                    )
+                                };
+
+                                range.start =
+                                    CellRefRangeEnd::new_relative_xy(new_start_col, new_start_row);
+                                range.end =
+                                    CellRefRangeEnd::new_relative_xy(new_end_col, new_end_row);
                             }
                         }
                     }
@@ -329,6 +382,76 @@ mod tests {
             selection.ranges,
             vec![CellRefRange::test_a1("A1:F4")],
             "Selection should expand to include second merged cell, got: {:?}",
+            selection.test_to_string()
+        );
+    }
+
+    /// Tests that the anchor cell is preserved when selecting upward past merge cells.
+    ///
+    /// Scenario: Merged cell at A7:D8, start at D10, drag up past the merge cells.
+    /// The selection anchor should remain at D10, not change to the merged cell.
+    #[test]
+    fn test_select_to_preserves_anchor_when_selecting_up_past_merge() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell A7:D8
+        merge_cells.merge_cells(Rect::test_a1("A7:D8"));
+
+        // Start at D10 (anchor at D10)
+        let mut selection = A1Selection::test_a1("D10");
+        assert_eq!(selection.cursor.x, 4); // D = column 4
+        assert_eq!(selection.cursor.y, 10);
+
+        // First drag up to D9 (below the merge cell) - anchor should be D10, end at D9
+        selection.select_to(4, 9, false, &context, &merge_cells);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("D10:D9")],
+            "Selection should be D10:D9, got: {:?}",
+            selection.test_to_string()
+        );
+
+        // Now drag up to D7 (inside the merge cell)
+        // Selection should expand to include the full merged cell A7:D8
+        // The anchor (start) should remain at D10, end should be at A7
+        selection.select_to(4, 7, false, &context, &merge_cells);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("D10:A7")],
+            "Selection should be D10:A7 (preserving anchor), got: {:?}",
+            selection.test_to_string()
+        );
+
+        // Drag up further to D5 (above the merge cell)
+        // Selection should remain D10:A5 (preserving anchor at D10)
+        selection.select_to(4, 5, false, &context, &merge_cells);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("D10:A5")],
+            "Selection should be D10:A5 (preserving anchor), got: {:?}",
+            selection.test_to_string()
+        );
+    }
+
+    /// Tests that the anchor cell is preserved when selecting downward past merge cells.
+    #[test]
+    fn test_select_to_preserves_anchor_when_selecting_down_past_merge() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        // Create merged cell A7:D8
+        merge_cells.merge_cells(Rect::test_a1("A7:D8"));
+
+        // Start at D5 (anchor at D5)
+        let mut selection = A1Selection::test_a1("D5");
+
+        // Drag down to D8 (inside the merge cell)
+        // Selection should expand to include the full merged cell A7:D8
+        // The anchor (start) should remain at D5
+        selection.select_to(4, 8, false, &context, &merge_cells);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("D5:A8")],
+            "Selection should be D5:A8 (preserving anchor), got: {:?}",
             selection.test_to_string()
         );
     }

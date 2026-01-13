@@ -20,10 +20,9 @@ impl GridController {
 
         // find updates for client to re-render
         if cfg!(target_family = "wasm") || cfg!(test) {
-            let rects = merge_cells_updates.to_rects().collect::<Vec<_>>();
-            for (x1, y1, x2, y2, _) in rects {
+            for (x1, y1, x2, y2, _) in &rects_for_spill_check {
                 if let (Some(x2), Some(y2)) = (x2, y2) {
-                    let rect = Rect::new(x1, y1, x2, y2);
+                    let rect = Rect::new(*x1, *y1, *x2, *y2);
                     transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
                 }
             }
@@ -103,15 +102,16 @@ impl GridController {
         // Clear all cells except the one we want to keep after setting merge metadata
         // First, collect all cell values that will be restored on undo
         let mut cell_values_to_restore = Vec::new();
-        let rects = merge_cells_updates.to_rects().collect::<Vec<_>>();
-        for (x1, y1, x2, y2, _) in rects {
+        for (x1, y1, x2, y2, _) in &rects_for_spill_check {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                let rect = Rect::new(x1, y1, x2, y2);
+                let rect = Rect::new(*x1, *y1, *x2, *y2);
 
                 // Capture all cell values BEFORE deleting them (for undo)
+                // and find cells with content
                 let width = (rect.max.x - rect.min.x + 1) as u32;
                 let height = (rect.max.y - rect.min.y + 1) as u32;
                 let mut original_values = CellValues::new(width, height);
+                let mut cells_with_content = Vec::new();
 
                 for y in rect.y_range() {
                     for x in rect.x_range() {
@@ -121,7 +121,12 @@ impl GridController {
 
                         // Capture the original value (including blanks)
                         let value = sheet.display_value(pos).unwrap_or(CellValue::Blank);
-                        original_values.set(rel_x, rel_y, value);
+                        original_values.set(rel_x, rel_y, value.clone());
+
+                        // Track non-blank values for determining which value to keep
+                        if value != CellValue::Blank {
+                            cells_with_content.push((pos, value));
+                        }
                     }
                 }
 
@@ -134,20 +139,6 @@ impl GridController {
                     },
                     values: original_values,
                 });
-
-                // Find all cells with content in the merge range
-                let mut cells_with_content = Vec::new();
-                for y in rect.y_range() {
-                    for x in rect.x_range() {
-                        let pos = Pos { x, y };
-                        if let Some(value) = sheet.display_value(pos) {
-                            // Only consider non-blank values as content
-                            if value != CellValue::Blank {
-                                cells_with_content.push((pos, value));
-                            }
-                        }
-                    }
-                }
 
                 // Determine which cell value to keep
                 let value_to_keep = if cells_with_content.is_empty() {
