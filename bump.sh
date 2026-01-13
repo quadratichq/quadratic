@@ -168,3 +168,13 @@ echo $NEW_VERSION > VERSION
 verify_versions
 
 echo "Version bump to $NEW_VERSION complete!"
+echo ""
+echo "=========================================="
+echo "REMINDER: Create a changelog entry!"
+echo "=========================================="
+echo ""
+echo "Use this prompt to generate the changelog:"
+echo ""
+echo "---"
+echo "Create a changelog entry for version $NEW_VERSION in quadratic-client/src/shared/constants/changelog.json. Review the git history since the last release to identify the key features, improvements, and bug fixes. Follow the existing format with version, date, changes array, and details HTML."
+echo "---"
