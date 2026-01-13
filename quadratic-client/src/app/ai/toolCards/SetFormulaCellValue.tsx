@@ -69,8 +69,9 @@ export const SetFormulaCellValue = memo(
       ({ set }) =>
         (formula: { sheet_name?: string | null; code_cell_position: string; formula_string: string }) => {
           let pos: JsCoordinate | undefined;
+          let sheetId: string;
           try {
-            const sheetId = formula.sheet_name
+            sheetId = formula.sheet_name
               ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
               : sheets.current;
             const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
@@ -89,9 +90,7 @@ export const SetFormulaCellValue = memo(
             diffEditorContent: { editorContent: formula.formula_string, isApplied: false },
             waitingForEditorClose: {
               codeCell: {
-                sheetId: formula.sheet_name
-                  ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
-                  : sheets.current,
+                sheetId,
                 pos,
                 language: 'Formula' as const,
                 lastModified: 0,
@@ -108,8 +107,9 @@ export const SetFormulaCellValue = memo(
     const saveAndRun = useRecoilCallback(
       () => (formula: { sheet_name?: string | null; code_cell_position: string; formula_string: string }) => {
         let pos: JsCoordinate | undefined;
+        let sheetId: string;
         try {
-          const sheetId = formula.sheet_name
+          sheetId = formula.sheet_name
             ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
             : sheets.current;
           const selection = sheets.stringToSelection(formula.code_cell_position, sheetId);
@@ -124,9 +124,7 @@ export const SetFormulaCellValue = memo(
         if (!pos) return;
 
         quadraticCore.setCodeCellValue({
-          sheetId: formula.sheet_name
-            ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
-            : sheets.current,
+          sheetId,
           x: pos.x,
           y: pos.y,
           codeString: formula.formula_string,
@@ -282,9 +280,9 @@ export const SetFormulaCellValue = memo(
 
         {isExpanded && (
           <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
-            {formulas.map((formula, index) => (
+            {formulas.map((formula) => (
               <div
-                key={index}
+                key={`${formula.sheet_name ?? 'default'}-${formula.code_cell_position}`}
                 className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
                 onClick={() => handleFormulaClick(formula)}
               >
