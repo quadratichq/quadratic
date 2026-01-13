@@ -1,13 +1,10 @@
-import { editorInteractionStateShowLogsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useSyncedConnection } from '@/app/atoms/useSyncedConnection';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { type SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
 
 export const SyncedConnectionLogs = ({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) => {
-  const { getLogs } = useSyncedConnection(connectionUuid, teamUuid);
-  const [showLogs] = useRecoilState(editorInteractionStateShowLogsAtom);
+  const { getLogs, showLogs } = useSyncedConnection(connectionUuid, teamUuid);
   const [logs, setLogs] = useState<SyncedConnectionLog[]>([]);
 
   useEffect(() => {

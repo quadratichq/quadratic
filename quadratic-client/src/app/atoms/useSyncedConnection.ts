@@ -1,11 +1,9 @@
 //! This is a Jotai atom that manages the state of synced connections.
 
-import { editorInteractionStateShowLogsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, useAtom } from 'jotai';
 import type { Connection, SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useCallback, useEffect, useState } from 'react';
 
 const SYNCED_CONNECTION_UPDATE_INTERVAL_MS = 10000; // 10 seconds
 
@@ -33,7 +31,7 @@ interface SyncedConnectionActions {
 
 export const useSyncedConnection = (connectionUuid: string, teamUuid: string): SyncedConnectionActions => {
   const [syncedConnection, setSyncedConnection] = useAtom(syncedConnectionAtom);
-  const [showLogs, setShowLogs] = useRecoilState(editorInteractionStateShowLogsAtom);
+  const [showLogs, setShowLogs] = useState(false);
 
   const getConnection = useCallback(async () => {
     if (!connectionUuid || !teamUuid) return null;
