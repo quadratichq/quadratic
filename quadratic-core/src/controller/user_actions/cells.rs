@@ -1,5 +1,9 @@
+use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::cellvalue::TextSpan;
+use crate::values::CellValue;
 use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
@@ -68,6 +72,19 @@ impl GridController {
     pub fn delete_cells(&mut self, selection: &A1Selection, cursor: Option<String>, is_ai: bool) {
         let ops = self.delete_cells_operations(selection, true);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, is_ai);
+    }
+
+    /// Starts a transaction to set a RichText value in a cell from a vector of TextSpans.
+    pub fn set_cell_rich_text(
+        &mut self,
+        sheet_pos: SheetPos,
+        spans: Vec<TextSpan>,
+        cursor: Option<String>,
+    ) {
+        let cell_value = CellValue::RichText(spans);
+        let values = CellValues::from(cell_value);
+        let ops = vec![Operation::SetCellValues { sheet_pos, values }];
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, false);
     }
 
     /// Starts a transaction to clear formatting in a given rect.
@@ -917,5 +934,52 @@ mod test {
             1,
             CellValue::Number(decimal_from_str("0.1").unwrap()),
         );
+    }
+
+    #[test]
+    fn test_set_cell_rich_text() {
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+
+        // Set rich text with hyperlink
+        let spans = vec![
+            TextSpan::plain("Visit "),
+            TextSpan::link("Example", "https://example.com"),
+            TextSpan::plain(" for more info."),
+        ];
+        gc.set_cell_rich_text(sheet_pos, spans.clone(), None);
+
+        // Verify the cell value is RichText
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
+
+        if let Some(CellValue::RichText(stored_spans)) = cell_value {
+            assert_eq!(stored_spans.len(), 3);
+            assert_eq!(stored_spans[0].text, "Visit ");
+            assert!(stored_spans[0].link.is_none());
+            assert_eq!(stored_spans[1].text, "Example");
+            assert_eq!(
+                stored_spans[1].link,
+                Some("https://example.com".to_string())
+            );
+            assert_eq!(stored_spans[2].text, " for more info.");
+        }
+
+        // Test undo
+        gc.undo(1, None, false);
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert_eq!(cell_value, None);
+
+        // Test redo
+        gc.redo(1, None, false);
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
     }
 }

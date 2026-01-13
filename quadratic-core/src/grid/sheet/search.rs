@@ -207,7 +207,7 @@ impl Sheet {
                             }
                         }
                     }
-                    Value::Tuple(_) => {} // Tuples are not spilled onto the grid);
+                    Value::Tuple(_) | Value::Lambda(_) => {} // Tuples and lambdas are not spilled onto the grid
                 }
             });
         results

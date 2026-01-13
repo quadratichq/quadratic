@@ -71,10 +71,10 @@ export type JsCellsA1Error = { core_error: string, };
 export type JsCellsA1Response = { values: JsCellsA1Values | null, error: JsCellsA1Error | null, };
 export type JsCellsA1Value = { x: number, y: number, v: string, t: number, };
 export type JsCellsA1Values = { cells: Array<JsCellsA1Value>, x: number, y: number, w: number, h: number, one_dimensional: boolean, two_dimensional: boolean, has_headers: boolean, };
-export type JsCellValue = { value: string, kind: JsCellValueKind, };
+export type JsCellValue = { value: string, kind: JsCellValueKind, spans: Array<TextSpan> | null, };
 export type JsCellValueCode = { value: string, kind: JsCellValueKind, language: CodeCellLanguage | null, };
 export type JsCellValueSummary = { total_range: string, start_range: string | null, end_range: string | null, start_values: Array<Array<JsCellValueCode>> | null, end_values: Array<Array<JsCellValueCode>> | null, };
-export type JsCellValueKind = "Blank" | "Text" | "Number" | "Logical" | "DateTime" | "Date" | "Time" | "Duration" | "Error" | "Html" | "Image";
+export type JsCellValueKind = "Blank" | "Text" | "Number" | "Logical" | "DateTime" | "Date" | "Time" | "Duration" | "Error" | "Html" | "Image" | "RichText";
 export type JsCellValuePos = { value: string, kind: JsCellValueKind, pos: string, };
 export type JsCellValueRanges = { total_range: string, range: string, values: Array<Array<JsCellValueCode>> | null, };
 export type JsCellValueResult = [string, number];
@@ -101,7 +101,32 @@ export type JsRenderCell = { x: bigint, y: bigint, value: string,
 /**
  * Code language, set only for the top left cell of a code output.
  */
-language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, };
+language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, 
+/**
+ * Error text to display (e.g., "#N/A", "#DIV/0!", "#REF!")
+ */
+errorText: string | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, 
+/**
+ * Hyperlink spans for RichText cells with hyperlinks (character ranges + URLs).
+ */
+linkSpans: Array<JsRenderCellLinkSpan>, 
+/**
+ * Formatting spans for RichText cells with inline formatting overrides.
+ */
+formatSpans: Array<JsRenderCellFormatSpan>, };
+export type JsRenderCellLinkSpan = { 
+/**
+ * Start character index (inclusive).
+ */
+start: number, 
+/**
+ * End character index (exclusive).
+ */
+end: number, 
+/**
+ * The hyperlink URL.
+ */
+url: string, };
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
 export type JsRenderCodeCell = { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, is_code: boolean, is_html: boolean, is_html_image: boolean, show_name: boolean, show_columns: boolean, last_modified: bigint, };
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";
@@ -151,7 +176,7 @@ span: Span | null,
  * Type of error.
  */
 msg: RunErrorMsg, };
-export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity";
+export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity" | "FormulaTooComplex";
 export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, };
 export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetId = { id: string, };
@@ -184,6 +209,7 @@ end: number, };
 export type TableRef = { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, };
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
+export type TextSpan = { text: string, link: string | null, bold: boolean | null, italic: boolean | null, underline: boolean | null, strike_through: boolean | null, text_color: string | null, font_size: number | null, };
 export type TrackedOperation = { "type": "SetCellValues", selection: string, } | { "type": "SetDataTable", selection: string, name: string | null, deleted: boolean, } | { "type": "DeleteDataTable", selection: string, } | { "type": "FlattenDataTable", selection: string, } | { "type": "GridToDataTable", selection: string, } | { "type": "MoveDataTable", from: string, to: string, } | { "type": "SwitchDataTableKind", selection: string, kind: string, } | { "type": "DataTableColumnsChanged", selection: string, } | { "type": "DataTableRowsChanged", selection: string, } | { "type": "DataTableSorted", selection: string, } | { "type": "DataTableHeaderToggled", selection: string, first_row_is_header: boolean, } | { "type": "FormatsChanged", sheet_name: string, selection: string, } | { "type": "AddSheet", sheet_name: string, } | { "type": "DeleteSheet", sheet_name: string, } | { "type": "DuplicateSheet", sheet_name: string, duplicated_sheet_name: string, } | { "type": "SetSheetName", old_sheet_name: string, new_sheet_name: string, } | { "type": "SetSheetColor", sheet_name: string, color: string | null, } | { "type": "ReorderSheet", sheet_name: string, order: string, } | { "type": "ReplaceSheet", sheet_name: string, } | { "type": "ResizeColumn", sheet_name: string, column: bigint, new_size: number, } | { "type": "ResizeRow", sheet_name: string, row: bigint, new_size: number, } | { "type": "ColumnsResized", sheet_name: string, count: number, } | { "type": "RowsResized", sheet_name: string, count: number, } | { "type": "DefaultRowSize", sheet_name: string, size: number, } | { "type": "DefaultColumnSize", sheet_name: string, size: number, } | { "type": "CursorChanged", selection: string, } | { "type": "MoveCells", from: string, to: string, columns: boolean, rows: boolean, } | { "type": "ValidationSet", selection: string, } | { "type": "ValidationRemoved", sheet_name: string, validation_id: string, } | { "type": "ValidationRemovedSelection", sheet_name: string, selection: string, } | { "type": "ColumnInserted", sheet_name: string, column: bigint, } | { "type": "ColumnDeleted", sheet_name: string, column: bigint, } | { "type": "RowInserted", sheet_name: string, row: bigint, } | { "type": "RowDeleted", sheet_name: string, row: bigint, } | { "type": "ColumnsDeleted", sheet_name: string, columns: Array<bigint>, } | { "type": "RowsDeleted", sheet_name: string, rows: Array<bigint>, } | { "type": "ColumnsMoved", sheet_name: string, from_range: [bigint, bigint], to: bigint, } | { "type": "RowsMoved", sheet_name: string, from_range: [bigint, bigint], to: bigint, } | { "type": "ComputeCode", selection: string, };
 export type TrackedTransaction = { source: TransactionSource, transaction_name: TransactionName, operations: Array<TrackedOperation>, time_stamp: bigint, };
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "ResizeColumns" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "ReplaceSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";

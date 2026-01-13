@@ -268,15 +268,14 @@ export const ApiSchemas = {
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),
-        id: z.number(),
+        sequenceNumber: z.number(),
         timestamp: z.string().datetime(),
         version: z.string(),
       })
     ),
   }),
-  '/v0/files/:uuid/checkpoints/:checkpointId.GET.response': z.object({
+  '/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
-    id: z.number(),
     sequenceNumber: z.number(),
     timestamp: z.string().datetime(),
     version: z.string(),
@@ -702,6 +701,15 @@ export const ApiSchemas = {
   }),
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
+  }),
+
+  /**
+   * ===========================================================================
+   * URL Metadata
+   * ===========================================================================
+   */
+  '/v0/url-metadata.GET.response': z.object({
+    title: z.string().optional(),
   }),
 };
 

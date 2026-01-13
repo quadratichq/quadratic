@@ -5,6 +5,7 @@ use anyhow::Result;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::currency;
 use super::number::decimal_from_str;
@@ -37,6 +38,64 @@ impl Display for Import {
 impl Import {
     pub fn new(file_name: String) -> Self {
         Self { file_name }
+    }
+}
+
+/// A span of text with optional inline formatting overrides.
+/// When rendered, span formatting overrides the cell-level format.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, TS)]
+pub struct TextSpan {
+    pub text: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strike_through: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_color: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<i16>,
+}
+
+impl TextSpan {
+    /// Creates a plain text span with no formatting overrides.
+    pub fn plain(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a hyperlink span.
+    pub fn link(text: impl Into<String>, url: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            link: Some(url.into()),
+            ..Default::default()
+        }
+    }
+
+    /// Returns true if this span has no formatting overrides.
+    pub fn is_plain(&self) -> bool {
+        self.link.is_none()
+            && self.bold.is_none()
+            && self.italic.is_none()
+            && self.underline.is_none()
+            && self.strike_through.is_none()
+            && self.text_color.is_none()
+            && self.font_size.is_none()
     }
 }
 
@@ -78,6 +137,9 @@ pub enum CellValue {
     Html(String),
     #[cfg_attr(test, proptest(skip))]
     Image(String),
+    /// Rich text with inline formatting (links, bold, italic, etc. per span).
+    #[cfg_attr(test, proptest(skip))]
+    RichText(Vec<TextSpan>),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -95,6 +157,12 @@ impl fmt::Display for CellValue {
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{s}"),
             CellValue::Image(s) => write!(f, "{s}"),
+            CellValue::RichText(spans) => {
+                for span in spans {
+                    write!(f, "{}", span.text)?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -122,6 +190,7 @@ impl CellValue {
             CellValue::Date(_) => "date",
             CellValue::Time(_) => "time",
             CellValue::DateTime(_) => "date time",
+            CellValue::RichText(_) => "rich text",
         }
     }
 
@@ -139,6 +208,7 @@ impl CellValue {
             CellValue::Date(_) => 9,
             CellValue::Time(_) => 10,
             CellValue::Instant(_) | CellValue::DateTime(_) => 11,
+            CellValue::RichText(_) => 12,
         }
     }
 
@@ -158,6 +228,10 @@ impl CellValue {
             CellValue::Date(d) => d.to_string(),
             CellValue::Time(d) => d.to_string(),
             CellValue::DateTime(d) => d.to_string(),
+            CellValue::RichText(spans) => {
+                // Return the concatenated text for repr
+                spans.iter().map(|s| s.text.as_str()).collect()
+            }
         }
     }
 
@@ -201,9 +275,21 @@ impl CellValue {
             CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
             CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
+            CellValue::RichText(spans) => spans.iter().map(|s| s.text.as_str()).collect(),
 
             // these should not render
             CellValue::Image(_) => String::new(),
+        }
+    }
+
+    /// Returns the value as an f64 if it represents a number.
+    pub fn to_number(&self) -> Option<f64> {
+        use rust_decimal::prelude::ToPrimitive;
+        match self {
+            CellValue::Number(n) => n.to_f64(),
+            CellValue::Logical(true) => Some(1.0),
+            CellValue::Logical(false) => Some(0.0),
+            _ => None,
         }
     }
 
@@ -304,6 +390,7 @@ impl CellValue {
 
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::RichText(spans) => spans.iter().map(|s| s.text.as_str()).collect(),
 
             // this should not be editable
             CellValue::Image(_) => String::new(),
@@ -325,6 +412,7 @@ impl CellValue {
             CellValue::DateTime(t) => t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string(),
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::RichText(spans) => spans.iter().map(|s| s.text.as_str()).collect(),
 
             // these should not return a value
             CellValue::Image(_) => String::new(),
@@ -454,6 +542,7 @@ impl CellValue {
             CellValue::Blank => 8,
             CellValue::Html(_) => 9,
             CellValue::Image(_) => 11,
+            CellValue::RichText(_) => 12,
         }
     }
 
@@ -552,6 +641,9 @@ impl CellValue {
         }
         if let Some(date_time) = CellValue::unpack_date_time(value) {
             return date_time;
+        }
+        if let Some(duration) = CellValue::unpack_duration(value) {
+            return duration;
         }
 
         // check for number
@@ -1581,5 +1673,137 @@ mod test {
         let value = "980E92207901934";
         let (cell_value, _) = CellValue::string_to_cell_value(value, false);
         assert_eq!(cell_value.to_string(), value.to_string());
+    }
+
+    #[test]
+    fn test_text_span_plain() {
+        let span = TextSpan::plain("Hello");
+        assert_eq!(span.text, "Hello");
+        assert!(span.link.is_none());
+        assert!(span.bold.is_none());
+        assert!(span.italic.is_none());
+        assert!(span.is_plain());
+    }
+
+    #[test]
+    fn test_text_span_link() {
+        let span = TextSpan::link("Click here", "https://example.com");
+        assert_eq!(span.text, "Click here");
+        assert_eq!(span.link, Some("https://example.com".to_string()));
+        assert!(!span.is_plain());
+    }
+
+    #[test]
+    fn test_text_span_with_formatting() {
+        let span = TextSpan {
+            text: "Bold text".to_string(),
+            bold: Some(true),
+            italic: Some(false),
+            ..Default::default()
+        };
+        assert_eq!(span.text, "Bold text");
+        assert_eq!(span.bold, Some(true));
+        assert_eq!(span.italic, Some(false));
+        assert!(!span.is_plain());
+    }
+
+    #[test]
+    fn test_rich_text_display() {
+        let rich = CellValue::RichText(vec![
+            TextSpan::plain("Hello "),
+            TextSpan::link("world", "https://example.com"),
+            TextSpan::plain("!"),
+        ]);
+        assert_eq!(rich.to_string(), "Hello world!");
+        assert_eq!(rich.to_display(), "Hello world!");
+    }
+
+    #[test]
+    fn test_rich_text_type_name() {
+        let rich = CellValue::RichText(vec![TextSpan::plain("test")]);
+        assert_eq!(rich.type_name(), "rich text");
+        assert_eq!(rich.type_u8(), 12);
+        assert_eq!(rich.type_id(), 12);
+    }
+
+    #[test]
+    fn test_rich_text_to_edit() {
+        let rich = CellValue::RichText(vec![TextSpan::plain("Part 1"), TextSpan::plain(" Part 2")]);
+        assert_eq!(rich.to_edit(), "Part 1 Part 2");
+    }
+
+    #[test]
+    fn test_rich_text_to_get_cells() {
+        let rich = CellValue::RichText(vec![TextSpan::link("Link text", "https://example.com")]);
+        assert_eq!(rich.to_get_cells(), "Link text");
+    }
+
+    #[test]
+    fn test_rich_text_repr() {
+        let rich = CellValue::RichText(vec![TextSpan::plain("Hello"), TextSpan::plain(" World")]);
+        assert_eq!(rich.repr(), "Hello World");
+    }
+
+    #[test]
+    fn test_rich_text_empty_spans() {
+        let rich = CellValue::RichText(vec![]);
+        assert_eq!(rich.to_string(), "");
+        assert_eq!(rich.to_display(), "");
+    }
+
+    #[test]
+    fn test_text_span_serialization() {
+        let span = TextSpan::link("Click", "https://example.com");
+        let json = serde_json::to_string(&span).unwrap();
+        // Should skip None fields
+        assert!(json.contains("\"text\":\"Click\""));
+        assert!(json.contains("\"link\":\"https://example.com\""));
+        assert!(!json.contains("\"bold\""));
+
+        let deserialized: TextSpan = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, span);
+    }
+
+    #[test]
+    fn test_rich_text_serialization() {
+        let rich = CellValue::RichText(vec![
+            TextSpan::plain("Normal "),
+            TextSpan {
+                text: "bold".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+        ]);
+        let json = serde_json::to_string(&rich).unwrap();
+        let deserialized: CellValue = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, rich);
+    }
+
+    #[test]
+    fn test_to_number() {
+        // Number values return the f64 equivalent
+        let cv = CellValue::Number(decimal_from_str("123.456").unwrap());
+        assert_eq!(cv.to_number(), Some(123.456));
+
+        let cv = CellValue::Number(decimal_from_str("-99.5").unwrap());
+        assert_eq!(cv.to_number(), Some(-99.5));
+
+        let cv = CellValue::Number(decimal_from_str("0").unwrap());
+        assert_eq!(cv.to_number(), Some(0.0));
+
+        // Logical true returns 1.0
+        let cv = CellValue::Logical(true);
+        assert_eq!(cv.to_number(), Some(1.0));
+
+        // Logical false returns 0.0
+        let cv = CellValue::Logical(false);
+        assert_eq!(cv.to_number(), Some(0.0));
+
+        // Other types return None
+        let cv = CellValue::Text(String::from("hello"));
+        assert_eq!(cv.to_number(), None);
+
+        let cv = CellValue::Blank;
+        assert_eq!(cv.to_number(), None);
     }
 }

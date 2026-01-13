@@ -73,9 +73,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/che
     team: {
       uuid: teamUuid,
     },
-    checkpoints: checkpointsWithDataUrls.map(({ timestamp, version, dataUrl, id }) => ({
-      id,
+    checkpoints: checkpointsWithDataUrls.map(({ timestamp, version, dataUrl, sequenceNumber }) => ({
       dataUrl,
+      sequenceNumber,
       timestamp: timestamp.toISOString(),
       version,
     })),

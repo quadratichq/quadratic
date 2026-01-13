@@ -40,12 +40,13 @@ export const SetFormulaCellValue = memo(
         const parsed = aiToolsSpec[AITool.SetFormulaCellValue].responseSchema.safeParse(json);
         setToolArgs(parsed);
 
-        if (parsed.success) {
+        // Set code cell position to the first formula's position (for single formula actions)
+        if (parsed.success && parsed.data.formulas.length > 0) {
           try {
             const sheetId = parsed.data.sheet_name
               ? (sheets.getSheetByName(parsed.data.sheet_name)?.id ?? sheets.current)
               : sheets.current;
-            const selection = sheets.stringToSelection(parsed.data.code_cell_position, sheetId);
+            const selection = sheets.stringToSelection(parsed.data.formulas[0].code_cell_position, sheetId);
             const { x, y } = selection.getCursor();
             setCodeCellPos({ x, y });
             selection.free();
@@ -62,17 +63,19 @@ export const SetFormulaCellValue = memo(
 
     const openDiffInEditor = useRecoilCallback(
       ({ set }) =>
-        (toolArgs: SetFormulaCellValueResponse) => {
+        (formulaString: string) => {
           if (!codeCellPos) {
             return;
           }
 
           set(codeEditorAtom, (prev) => ({
             ...prev,
-            diffEditorContent: { editorContent: toolArgs.formula_string, isApplied: false },
+            diffEditorContent: { editorContent: formulaString, isApplied: false },
             waitingForEditorClose: {
               codeCell: {
-                sheetId: sheets.current,
+                sheetId: toolArgs?.data?.sheet_name
+                  ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+                  : sheets.current,
                 pos: codeCellPos,
                 language: 'Formula' as const,
                 lastModified: 0,
@@ -83,36 +86,46 @@ export const SetFormulaCellValue = memo(
             },
           }));
         },
-      [codeCellPos]
+      [codeCellPos, toolArgs]
     );
 
     const saveAndRun = useRecoilCallback(
-      () => (toolArgs: SetFormulaCellValueResponse) => {
+      () => (formulaString: string) => {
         if (!codeCellPos) {
           return;
         }
 
         quadraticCore.setCodeCellValue({
-          sheetId: sheets.current,
+          sheetId: toolArgs?.data?.sheet_name
+            ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+            : sheets.current,
           x: codeCellPos.x,
           y: codeCellPos.y,
-          codeString: toolArgs.formula_string,
+          codeString: formulaString,
           language: 'Formula',
           isAi: false,
         });
       },
-      [codeCellPos]
+      [codeCellPos, toolArgs]
     );
 
-    const label = loading ? 'Writing formula' : 'Wrote formula';
+    const formulaCount = toolArgs?.success ? toolArgs.data.formulas.length : 0;
+    const label = loading
+      ? formulaCount > 1
+        ? 'Writing formulas'
+        : 'Writing formula'
+      : formulaCount > 1
+        ? 'Wrote formulas'
+        : 'Wrote formula';
 
     const handleClick = useCallback(() => {
-      if (!toolArgs?.success || !toolArgs.data?.code_cell_position) return;
+      if (!toolArgs?.success || !toolArgs.data?.formulas.length) return;
       try {
         const sheetId = toolArgs.data.sheet_name
           ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
           : sheets.current;
-        const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
+        // Select the first formula's position
+        const selection = sheets.stringToSelection(toolArgs.data.formulas[0].code_cell_position, sheetId);
         sheets.changeSelection(selection);
       } catch (e) {
         console.warn('Failed to select range:', e);
@@ -156,14 +169,17 @@ export const SetFormulaCellValue = memo(
       );
     }
 
-    const { code_cell_position } = toolArgs.data;
+    const { formulas } = toolArgs.data;
+    const positions = formulas.map((f) => f.code_cell_position).join(', ');
+    const isSingleFormula = formulas.length === 1;
+
     return (
       <ToolCard
         icon={<LanguageIcon language="Formula" />}
         label={label}
-        description={code_cell_position}
+        description={positions}
         actions={
-          codeCellPos ? (
+          codeCellPos && isSingleFormula ? (
             <div className="flex gap-1">
               <TooltipPopover label={'Open diff in editor'}>
                 <Button
@@ -172,7 +188,7 @@ export const SetFormulaCellValue = memo(
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    openDiffInEditor(toolArgs.data);
+                    openDiffInEditor(formulas[0].formula_string);
                   }}
                   disabled={!codeCellPos}
                 >
@@ -187,7 +203,7 @@ export const SetFormulaCellValue = memo(
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    saveAndRun(toolArgs.data);
+                    saveAndRun(formulas[0].formula_string);
                   }}
                   disabled={!codeCellPos}
                 >

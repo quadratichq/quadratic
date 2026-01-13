@@ -285,11 +285,11 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/checkpoints.GET.response']
         );
       },
-      get(uuid: string, checkpointId: string) {
+      getBySequenceNumber(uuid: string, sequenceNumber: number) {
         return fetchFromApi(
-          `/v0/files/${uuid}/checkpoints/${checkpointId}`,
+          `/v0/files/${uuid}/checkpoints/sequences/${sequenceNumber}`,
           { method: 'GET' },
-          ApiSchemas['/v0/files/:uuid/checkpoints/:checkpointId.GET.response']
+          ApiSchemas['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response']
         );
       },
     },
@@ -545,6 +545,16 @@ export const apiClient = {
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/feedback.POST.response']
     );
+  },
+
+  urlMetadata: {
+    get(url: string) {
+      return fetchFromApi(
+        `/v0/url-metadata?url=${encodeURIComponent(url)}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/url-metadata.GET.response']
+      );
+    },
   },
 
   getApiUrl() {
