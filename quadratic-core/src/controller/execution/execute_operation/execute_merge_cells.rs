@@ -20,10 +20,9 @@ impl GridController {
 
         // find updates for client to re-render
         if cfg!(target_family = "wasm") || cfg!(test) {
-            let rects = merge_cells_updates.to_rects().collect::<Vec<_>>();
-            for (x1, y1, x2, y2, _) in rects {
+            for (x1, y1, x2, y2, _) in &rects_for_spill_check {
                 if let (Some(x2), Some(y2)) = (x2, y2) {
-                    let rect = Rect::new(x1, y1, x2, y2);
+                    let rect = Rect::new(*x1, *y1, *x2, *y2);
                     transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
                 }
             }
@@ -103,10 +102,9 @@ impl GridController {
         // Clear all cells except the one we want to keep after setting merge metadata
         // First, collect all cell values that will be restored on undo
         let mut cell_values_to_restore = Vec::new();
-        let rects = merge_cells_updates.to_rects().collect::<Vec<_>>();
-        for (x1, y1, x2, y2, _) in rects {
+        for (x1, y1, x2, y2, _) in &rects_for_spill_check {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                let rect = Rect::new(x1, y1, x2, y2);
+                let rect = Rect::new(*x1, *y1, *x2, *y2);
 
                 // Capture all cell values BEFORE deleting them (for undo)
                 let width = (rect.max.x - rect.min.x + 1) as u32;
