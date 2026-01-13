@@ -112,8 +112,8 @@ export const SEARCH_PARAMS = {
   DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
-  // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
-  CHECKPOINT: { KEY: 'checkpoint' },
+  // Used to load a specific checkpoint (version history), e.g. /file/123?sequence_num=456
+  SEQUENCE_NUM: { KEY: 'sequence_num' },
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
 } as const;

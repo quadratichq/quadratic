@@ -499,14 +499,6 @@ pub fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Creates a clickable hyperlink.
-            #[examples("HYPERLINK(\"https://example.com\")")]
-            #[zip_map]
-            fn HYPERLINK([link_location]: String, [friendly_name]: (Option<String>)) {
-                friendly_name.unwrap_or(link_location)
-            }
-        ),
-        formula_fn!(
             /// Trims empty rows and columns from the edges of an array.
             ///
             /// Removes rows from the top, bottom, and columns from the left and

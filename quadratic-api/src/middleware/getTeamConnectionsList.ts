@@ -30,7 +30,7 @@ export function getTeamConnectionsList({
       type: connectionDemo.type,
       semanticDescription: connectionDemo.semanticDescription || undefined,
       isDemo: true,
-      syncedConnectionPercentCompleted: 0,
+      syncedConnectionPercentCompleted: undefined,
       syncedConnectionUpdatedDate: undefined,
     });
   }

@@ -17,6 +17,9 @@ interface Props {
 
   forceTop?: boolean;
 
+  // when true, automatically positions above if there's not enough space below
+  autoPosition?: boolean;
+
   direction?: 'vertical' | 'horizontal';
 
   centerHorizontal?: boolean;
@@ -29,7 +32,7 @@ interface PositionCellMessage {
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
   const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
-  const { div, offsets, forceLeft, forceTop, direction: side, centerHorizontal } = props;
+  const { div, offsets, forceLeft, forceTop, autoPosition, direction: side, centerHorizontal } = props;
   const [top, setTop] = useState(0);
   const [left, setLeft] = useState(0);
   const { leftHeading, topHeading } = useHeadingSize();
@@ -58,6 +61,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
 
         // align top to cell bottom
         let top = offsets.bottom;
+
         // if the model is to be displayed above the cell
         if (forceTop) {
           // align bottom to cell top
@@ -66,8 +70,23 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
           if (top < bounds.top + topHeadingScaled) {
             top = offsets.bottom;
           }
+        } else if (autoPosition) {
+          // auto-position: try below first, but if it doesn't fit, position above
+          if (top + offsetHeight > bounds.bottom) {
+            // not enough space below, try above
+            const aboveTop = offsets.top - offsetHeight;
+            // only switch to above if it fits above the heading
+            if (aboveTop >= bounds.top + topHeadingScaled) {
+              top = aboveTop;
+            }
+          }
         }
+
         // make sure top does not go above the heading
+        top = Math.max(top, bounds.top + topHeadingScaled);
+        // make sure top does not go below the viewport (keep popup fully visible)
+        top = Math.min(top, bounds.bottom - offsetHeight);
+        // final clamp: if popup is taller than viewport, prefer showing from top
         top = Math.max(top, bounds.top + topHeadingScaled);
         setTop(top);
       } else {
@@ -78,13 +97,18 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
           triggerLeft = inlineEditorHandler.isOpen() || annotationState === 'dropdown';
         }
         // only box to the left if it doesn't fit.
+        let left: number;
         if (triggerLeft || offsets.right + offsetWidth > bounds.right) {
           // box to the left
-          setLeft(offsets.left - offsetWidth);
+          left = offsets.left - offsetWidth;
         } else {
           // box to the right
-          setLeft(offsets.right);
+          left = offsets.right;
         }
+        // clamp left to stay within viewport
+        left = Math.min(left, bounds.right - offsetWidth);
+        left = Math.max(left, bounds.left + leftHeadingScaled);
+        setLeft(left);
 
         // align top to cell top
         let top = offsets.top;
@@ -93,6 +117,10 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
           top = offsets.bottom - offsetHeight;
         }
         // make sure top does not go above the heading
+        top = Math.max(top, bounds.top + topHeadingScaled);
+        // make sure top does not go below the viewport
+        top = Math.min(top, bounds.bottom - offsetHeight);
+        // final clamp: prefer showing from top if taller than viewport
         top = Math.max(top, bounds.top + topHeadingScaled);
         setTop(top);
       }
@@ -110,7 +138,18 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       events.off('viewportChangedReady', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [centerHorizontal, div, annotationState, forceLeft, forceTop, leftHeading, offsets, side, topHeading]);
+  }, [
+    autoPosition,
+    centerHorizontal,
+    div,
+    annotationState,
+    forceLeft,
+    forceTop,
+    leftHeading,
+    offsets,
+    side,
+    topHeading,
+  ]);
 
   return { top, left };
 };

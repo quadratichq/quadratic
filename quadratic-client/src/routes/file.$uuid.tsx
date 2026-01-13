@@ -99,8 +99,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // Figure out if we're loading a specific checkpoint (for version history)
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
-  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
-  const isVersionHistoryPreview = checkpointId !== null;
+  const sequenceNumParam = searchParams.get(SEARCH_PARAMS.SEQUENCE_NUM.KEY);
+  const isVersionHistoryPreview = sequenceNumParam !== null;
 
   // Check if we're checking for subscription updates (for verification)
   const updateBilling = searchParams.get('subscription') === 'created';
@@ -122,7 +122,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     sequenceNumber: data.file.lastCheckpointSequenceNumber,
   };
   if (isVersionHistoryPreview) {
-    const { dataUrl, version, sequenceNumber } = await apiClient.files.checkpoints.get(uuid, checkpointId);
+    const { dataUrl, version, sequenceNumber } = await apiClient.files.checkpoints.getBySequenceNumber(
+      uuid,
+      Number(sequenceNumParam)
+    );
     checkpoint.url = dataUrl;
     checkpoint.version = version;
     checkpoint.sequenceNumber = sequenceNumber;

@@ -41,7 +41,7 @@ use crate::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
         datafusion::{
             query as query_datafusion, schema as schema_datafusion, test_google_analytics,
-            test_mixpanel,
+            test_mixpanel, test_plaid,
         },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
@@ -158,6 +158,9 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         .route("/google-analytics/test", post(test_google_analytics))
         .route("/google-analytics/query", post(query_datafusion))
         .route("/google-analytics/schema/:id", get(schema_datafusion))
+        .route("/plaid/test", post(test_plaid))
+        .route("/plaid/query", post(query_datafusion))
+        .route("/plaid/schema/:id", get(schema_datafusion))
         //
         // proxy
         .route("/proxy", any(proxy))

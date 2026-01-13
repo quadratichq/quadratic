@@ -50,6 +50,21 @@ interface EventTypes {
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
+  hoverLink: (link?: {
+    x: number;
+    y: number;
+    url: string;
+    rect: Rectangle;
+    linkText?: string;
+    isNakedUrl?: boolean;
+  }) => void;
+  insertLink: () => void;
+  insertLinkInline: (data: {
+    selectedText: string;
+    selectionRange?: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number };
+  }) => void;
+  showInlineHyperlinkInput: (data: { selectedText: string }) => void;
+  inlineEditorCursorOnHyperlink: (data?: { url: string; rect: Rectangle; linkText: string }) => void;
   hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;

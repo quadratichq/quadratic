@@ -345,6 +345,10 @@ export const ExternalLinkIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_outward</Icon>;
 };
 
+export const InsertLinkIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_link</Icon>;
+};
+
 export const FastForwardIcon: IconComponent = (props) => {
   return <Icon {...props}>fast_forward</Icon>;
 };
