@@ -149,12 +149,6 @@ export const SetTextFormats = memo(
       return getFormattingItems(toolArgs.data);
     }, [toolArgs]);
 
-    // For the summary line, limit to 3 items to keep it compact
-    const summaryDescription = useMemo(() => {
-      if (formattingItems.length === 0) return undefined;
-      return <FormatItemsDisplay items={formattingItems} maxItems={3} />;
-    }, [formattingItems]);
-
     // For single selection, show all items
     const fullDescription = useMemo(() => {
       if (formattingItems.length === 0) return undefined;
@@ -222,8 +216,6 @@ export const SetTextFormats = memo(
         >
           {!hideIcon && <FormatPaintIcon />}
           <span>{label}</span>
-          <span className="text-muted-foreground/60">•</span>
-          <span className="min-w-0 truncate">{summaryDescription}</span>
           {isExpanded ? (
             <ChevronDownIcon className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
