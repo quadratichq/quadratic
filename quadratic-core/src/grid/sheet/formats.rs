@@ -223,28 +223,13 @@ impl Sheet {
     ) {
         let reverse_formats = self.formats.apply_updates(formats);
 
-        let (mut dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills) =
+        let (dirty_hashes, rows_to_resize, fill_bounds, has_meta_fills) =
             self.formats_transaction_changes(formats, &reverse_formats);
 
-        // Clear related inline formatting from RichText cells
-        let (richtext_ops, richtext_modified_positions) =
-            self.clear_richtext_formatting_for_formats(formats);
-
-        // Add modified RichText positions to dirty hashes
-        for pos in richtext_modified_positions {
-            let mut hash_pos = pos;
-            hash_pos.to_quadrant();
-            dirty_hashes.insert(hash_pos);
-        }
-
-        // Order matters: RichText restore ops go first so that after reversing
-        // (in to_undo_transaction), they execute AFTER the format restore.
-        // This prevents the format restore from clearing the just-restored RichText formatting.
-        let mut reverse_ops = richtext_ops;
-        reverse_ops.push(Operation::SetCellFormatsA1 {
+        let reverse_ops = vec![Operation::SetCellFormatsA1 {
             sheet_id: self.id,
             formats: reverse_formats,
-        });
+        }];
 
         (
             reverse_ops,
@@ -308,17 +293,16 @@ impl Sheet {
         }
     }
 
-    /// Clears inline formatting from RichText cells when cell-level formatting is applied.
-    /// Returns (reverse_operations, modified_positions) where:
-    /// - reverse_operations: Operations to restore the original RichText values
-    /// - modified_positions: Positions of cells that were modified (for dirty hashes)
+    /// Generates operations to clear RichText inline formatting when cell-level
+    /// formatting is being SET (not cleared). This is called from user actions
+    /// that set formatting, NOT during paste operations.
     ///
-    /// This handles the case where applying cell-level formatting (e.g., bold) should
-    /// clear the corresponding inline formatting from RichText spans.
-    fn clear_richtext_formatting_for_formats(
-        &mut self,
+    /// Returns a Vec of SetCellValues operations that clear the corresponding
+    /// inline formatting from RichText cells.
+    pub fn get_richtext_format_clearing_operations(
+        &self,
         formats: &SheetFormatUpdates,
-    ) -> (Vec<Operation>, Vec<Pos>) {
+    ) -> Vec<Operation> {
         let is_clear_all = Self::is_clear_all_formatting(formats);
         let has_bold = formats.bold.is_some();
         let has_italic = formats.italic.is_some();
@@ -334,18 +318,15 @@ impl Sheet {
             && !has_text_color
             && !has_underline
         {
-            return (vec![], vec![]);
+            return vec![];
         }
 
         // Collect all positions that might be affected
         let mut affected_positions: HashSet<Pos> = HashSet::new();
 
         if is_clear_all {
-            // For clear all, we need RichText positions from any format type
-            // Use bold as a representative since clear formatting sets all
             self.collect_affected_richtext_positions(&formats.bold, &mut affected_positions);
         } else {
-            // Collect RichText positions for each format type being changed
             if has_bold {
                 self.collect_affected_richtext_positions(&formats.bold, &mut affected_positions);
             }
@@ -372,12 +353,9 @@ impl Sheet {
             }
         }
 
-        // Process each RichText cell position (already filtered by collect_affected_richtext_positions)
-        let mut reverse_ops = Vec::new();
-        let mut modified_positions = Vec::new();
+        let mut ops = Vec::new();
 
         for pos in affected_positions {
-            // Get the RichText cell value (we know it exists from the collection step)
             let Some(cell_value) = self.cell_value(pos) else {
                 continue;
             };
@@ -385,50 +363,52 @@ impl Sheet {
                 continue;
             };
 
-            // Clone the original value for the reverse operation
-            let old_value = cell_value.clone();
             let mut new_value = cell_value;
 
-            // Clear the appropriate formatting based on what's being changed
+            // Get the actual format update at this position
+            let format_update = formats.format_update(pos);
+
+            // Check if the format at this position is being SET (not just cleared)
+            let has_set_bold = matches!(format_update.bold, Some(Some(_)));
+            let has_set_italic = matches!(format_update.italic, Some(Some(_)));
+            let has_set_underline = matches!(format_update.underline, Some(Some(_)));
+            let has_set_strike_through = matches!(format_update.strike_through, Some(Some(_)));
+            let has_set_text_color = matches!(format_update.text_color, Some(Some(_)));
+
             let mut changed = false;
 
             if is_clear_all {
+                // For "clear all formatting", clear all RichText formatting
                 changed = new_value.clear_all_richtext_formatting();
             } else {
-                if has_bold && new_value.clear_richtext_bold() {
+                // Only clear RichText formatting if the corresponding format is being SET
+                if has_set_bold && new_value.clear_richtext_bold() {
                     changed = true;
                 }
-                if has_italic && new_value.clear_richtext_italic() {
+                if has_set_italic && new_value.clear_richtext_italic() {
                     changed = true;
                 }
-                if has_strike_through && new_value.clear_richtext_strike_through() {
+                if has_set_strike_through && new_value.clear_richtext_strike_through() {
                     changed = true;
                 }
-                if has_text_color && new_value.clear_richtext_text_color() {
+                if has_set_text_color && new_value.clear_richtext_text_color() {
                     changed = true;
                 }
-                if has_underline && new_value.clear_richtext_underline() {
+                if has_set_underline && new_value.clear_richtext_underline() {
                     changed = true;
                 }
             }
 
             if changed {
-                // Update the cell value
-                self.set_value(pos, new_value);
-
-                // Track modified position for dirty hashes
-                modified_positions.push(pos);
-
-                // Create reverse operation to restore the original value
                 let sheet_pos = pos.to_sheet_pos(self.id);
-                reverse_ops.push(Operation::SetCellValues {
+                ops.push(Operation::SetCellValues {
                     sheet_pos,
-                    values: CellValues::from(old_value),
+                    values: CellValues::from(new_value),
                 });
             }
         }
 
-        (reverse_ops, modified_positions)
+        ops
     }
 }
 
@@ -436,10 +416,7 @@ impl Sheet {
 mod tests {
     use crate::{
         clear_option::ClearOption,
-        grid::{
-            formats::FormatUpdate,
-            {CellAlign, Contiguous2D},
-        },
+        grid::{CellAlign, Contiguous2D},
     };
 
     use super::*;
@@ -627,10 +604,14 @@ mod tests {
 
     #[test]
     fn test_cell_bold_clears_richtext_bold() {
-        let mut sheet = Sheet::test();
+        use crate::SheetPos;
+        use crate::controller::GridController;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Create a RichText cell with bold spans
-        let rich_text = CellValue::RichText(vec![
+        let rich_text = vec![
             TextSpan {
                 text: "bold".to_string(),
                 bold: Some(true),
@@ -646,20 +627,23 @@ mod tests {
                 italic: Some(true), // This should be preserved
                 ..Default::default()
             },
-        ]);
-        sheet.set_value(pos![A1], rich_text);
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
+        ];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich_text,
+            None,
+        );
 
-        // Apply bold formatting at cell level
-        let mut formats = SheetFormatUpdates::default();
-        let mut bold = Contiguous2D::new();
-        bold.set_rect(1, 1, Some(1), Some(1), Some(ClearOption::Some(true)));
-        formats.bold = Some(bold);
-
-        let (reverse_ops, _, _, _, _) = sheet.set_formats_a1(&formats);
+        // Apply bold formatting at cell level via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1");
+        gc.set_bold(&selection, Some(true), None, false).unwrap();
 
         // Verify the RichText spans had bold cleared
+        let sheet = gc.sheet(sheet_id);
         let cell = sheet.cell_value(pos![A1]).unwrap();
         if let CellValue::RichText(spans) = cell {
             assert!(spans[0].bold.is_none(), "First span bold should be cleared");
@@ -673,45 +657,39 @@ mod tests {
         } else {
             panic!("Expected RichText");
         }
-
-        // Verify reverse operations include SetCellValues
-        assert!(
-            reverse_ops.len() >= 2,
-            "Should have format and cell value reverse ops"
-        );
-        let has_cell_value_op = reverse_ops
-            .iter()
-            .any(|op| matches!(op, Operation::SetCellValues { .. }));
-        assert!(
-            has_cell_value_op,
-            "Should have SetCellValues reverse operation"
-        );
     }
 
     #[test]
     fn test_cell_italic_clears_richtext_italic() {
-        let mut sheet = Sheet::test();
+        use crate::SheetPos;
+        use crate::controller::GridController;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Create a RichText cell with italic spans
-        let rich_text = CellValue::RichText(vec![TextSpan {
+        let rich_text = vec![TextSpan {
             text: "italic text".to_string(),
             italic: Some(true),
             bold: Some(true), // This should be preserved
             ..Default::default()
-        }]);
-        sheet.set_value(pos![A1], rich_text);
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich_text,
+            None,
+        );
 
-        // Apply italic formatting at cell level
-        let mut formats = SheetFormatUpdates::default();
-        let mut italic = Contiguous2D::new();
-        italic.set_rect(1, 1, Some(1), Some(1), Some(ClearOption::Some(true)));
-        formats.italic = Some(italic);
-
-        sheet.set_formats_a1(&formats);
+        // Apply italic formatting at cell level via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1");
+        gc.set_italic(&selection, Some(true), None, false).unwrap();
 
         // Verify the RichText spans had italic cleared
+        let sheet = gc.sheet(sheet_id);
         let cell = sheet.cell_value(pos![A1]).unwrap();
         if let CellValue::RichText(spans) = cell {
             assert!(spans[0].italic.is_none(), "Italic should be cleared");
@@ -723,27 +701,35 @@ mod tests {
 
     #[test]
     fn test_cell_strikethrough_clears_richtext_strikethrough() {
-        let mut sheet = Sheet::test();
+        use crate::SheetPos;
+        use crate::controller::GridController;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Create a RichText cell with strikethrough spans
-        let rich_text = CellValue::RichText(vec![TextSpan {
+        let rich_text = vec![TextSpan {
             text: "strikethrough text".to_string(),
             strike_through: Some(true),
             ..Default::default()
-        }]);
-        sheet.set_value(pos![A1], rich_text);
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich_text,
+            None,
+        );
 
-        // Apply strikethrough formatting at cell level
-        let mut formats = SheetFormatUpdates::default();
-        let mut strike = Contiguous2D::new();
-        strike.set_rect(1, 1, Some(1), Some(1), Some(ClearOption::Some(true)));
-        formats.strike_through = Some(strike);
-
-        sheet.set_formats_a1(&formats);
+        // Apply strikethrough formatting at cell level via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1");
+        gc.set_strike_through(&selection, Some(true), None, false)
+            .unwrap();
 
         // Verify the RichText spans had strikethrough cleared
+        let sheet = gc.sheet(sheet_id);
         let cell = sheet.cell_value(pos![A1]).unwrap();
         if let CellValue::RichText(spans) = cell {
             assert!(
@@ -757,10 +743,14 @@ mod tests {
 
     #[test]
     fn test_cell_text_color_clears_richtext_text_color() {
-        let mut sheet = Sheet::test();
+        use crate::SheetPos;
+        use crate::controller::GridController;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Create a RichText cell with text color spans
-        let rich_text = CellValue::RichText(vec![
+        let rich_text = vec![
             TextSpan {
                 text: "red".to_string(),
                 text_color: Some("red".to_string()),
@@ -771,26 +761,24 @@ mod tests {
                 text_color: Some("blue".to_string()),
                 ..Default::default()
             },
-        ]);
-        sheet.set_value(pos![A1], rich_text);
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
-
-        // Apply text color formatting at cell level
-        let mut formats = SheetFormatUpdates::default();
-        let mut text_color = Contiguous2D::new();
-        text_color.set_rect(
-            1,
-            1,
-            Some(1),
-            Some(1),
-            Some(ClearOption::Some("green".to_string())),
+        ];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich_text,
+            None,
         );
-        formats.text_color = Some(text_color);
 
-        sheet.set_formats_a1(&formats);
+        // Apply text color formatting at cell level via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1");
+        gc.set_text_color(&selection, Some("green".to_string()), None, false)
+            .unwrap();
 
         // Verify the RichText spans had text color cleared
+        let sheet = gc.sheet(sheet_id);
         let cell = sheet.cell_value(pos![A1]).unwrap();
         if let CellValue::RichText(spans) = cell {
             assert!(
@@ -808,10 +796,14 @@ mod tests {
 
     #[test]
     fn test_clear_formatting_clears_all_richtext_spans() {
-        let mut sheet = Sheet::test();
+        use crate::SheetPos;
+        use crate::controller::GridController;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Create a RichText cell with various formatting
-        let rich_text = CellValue::RichText(vec![TextSpan {
+        let rich_text = vec![TextSpan {
             text: "formatted".to_string(),
             bold: Some(true),
             italic: Some(true),
@@ -820,20 +812,23 @@ mod tests {
             text_color: Some("red".to_string()),
             font_size: Some(14),
             link: Some("https://example.com".to_string()), // Link should be preserved
-        }]);
-        sheet.set_value(pos![A1], rich_text);
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
-
-        // Apply clear formatting (all text formats set to Some(None))
-        let formats = SheetFormatUpdates::from_selection(
-            &crate::a1::A1Selection::test_a1_sheet_id("A1", sheet.id),
-            FormatUpdate::cleared(),
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich_text,
+            None,
         );
 
-        sheet.set_formats_a1(&formats);
+        // Apply clear formatting via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1");
+        gc.clear_formatting(&selection, None, false);
 
         // Verify all formatting was cleared from RichText spans
+        let sheet = gc.sheet(sheet_id);
         let cell = sheet.cell_value(pos![A1]).unwrap();
         if let CellValue::RichText(spans) = cell {
             assert!(spans[0].bold.is_none(), "Bold should be cleared");
@@ -863,33 +858,48 @@ mod tests {
 
     #[test]
     fn test_multiple_richtext_cells_formatting_cleared() {
-        let mut sheet = Sheet::test();
+        use crate::SheetPos;
+        use crate::controller::GridController;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Create multiple RichText cells
-        let rich1 = CellValue::RichText(vec![TextSpan {
+        let rich1 = vec![TextSpan {
             text: "cell1".to_string(),
             bold: Some(true),
             ..Default::default()
-        }]);
-        let rich2 = CellValue::RichText(vec![TextSpan {
+        }];
+        let rich2 = vec![TextSpan {
             text: "cell2".to_string(),
             bold: Some(false),
             ..Default::default()
-        }]);
-        sheet.set_value(pos![A1], rich1);
-        sheet.set_value(pos![A2], rich2);
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich1,
+            None,
+        );
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            rich2,
+            None,
+        );
 
-        // Apply bold formatting to range A1:A2
-        let mut formats = SheetFormatUpdates::default();
-        let mut bold = Contiguous2D::new();
-        bold.set_rect(1, 1, Some(1), Some(2), Some(ClearOption::Some(true)));
-        formats.bold = Some(bold);
-
-        let (reverse_ops, _, _, _, _) = sheet.set_formats_a1(&formats);
+        // Apply bold formatting to range A1:A2 via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1:A2");
+        gc.set_bold(&selection, Some(true), None, false).unwrap();
 
         // Verify both cells had bold cleared
+        let sheet = gc.sheet(sheet_id);
         let cell1 = sheet.cell_value(pos![A1]).unwrap();
         let cell2 = sheet.cell_value(pos![A2]).unwrap();
 
@@ -904,17 +914,6 @@ mod tests {
         } else {
             panic!("Expected RichText for A2");
         }
-
-        // Should have 2 SetCellValues reverse operations (one for each cell)
-        let cell_value_ops: Vec<_> = reverse_ops
-            .iter()
-            .filter(|op| matches!(op, Operation::SetCellValues { .. }))
-            .collect();
-        assert_eq!(
-            cell_value_ops.len(),
-            2,
-            "Should have 2 SetCellValues reverse ops"
-        );
     }
 
     #[test]
@@ -985,55 +984,92 @@ mod tests {
 
     #[test]
     fn test_bold_across_mixed_cell_types() {
+        use crate::SheetPos;
+        use crate::controller::GridController;
         use crate::number::decimal_from_str;
 
-        let mut sheet = Sheet::test();
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // A1: RichText WITH bold formatting (should be cleared)
-        let rich_with_bold = CellValue::RichText(vec![TextSpan {
+        let rich_with_bold = vec![TextSpan {
             text: "bold text".to_string(),
             bold: Some(true),
             italic: Some(true), // Should be preserved
             ..Default::default()
-        }]);
-        sheet.set_value(pos![A1], rich_with_bold);
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            rich_with_bold,
+            None,
+        );
 
         // A2: RichText WITHOUT bold formatting (no change expected)
-        let rich_without_bold = CellValue::RichText(vec![TextSpan {
+        let rich_without_bold = vec![TextSpan {
             text: "italic only".to_string(),
             italic: Some(true),
             ..Default::default()
-        }]);
-        sheet.set_value(pos![A2], rich_without_bold.clone());
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            rich_without_bold.clone(),
+            None,
+        );
 
         // A3: Plain Text (no change expected)
-        let plain_text = CellValue::Text("plain text".to_string());
-        sheet.set_value(pos![A3], plain_text.clone());
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 3,
+                sheet_id,
+            },
+            "plain text".to_string(),
+            None,
+            false,
+        );
 
         // A4: Number (no change expected)
-        let number = CellValue::Number(decimal_from_str("42").unwrap());
-        sheet.set_value(pos![A4], number.clone());
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 4,
+                sheet_id,
+            },
+            "42".to_string(),
+            None,
+            false,
+        );
 
         // A5: RichText with bold=false (explicit not-bold, should be cleared)
-        let rich_not_bold = CellValue::RichText(vec![TextSpan {
+        let rich_not_bold = vec![TextSpan {
             text: "not bold".to_string(),
             bold: Some(false),
             ..Default::default()
-        }]);
-        sheet.set_value(pos![A5], rich_not_bold);
+        }];
+        gc.set_cell_rich_text(
+            SheetPos {
+                x: 1,
+                y: 5,
+                sheet_id,
+            },
+            rich_not_bold,
+            None,
+        );
 
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.recalculate_bounds(&a1_context);
-
-        // Apply bold formatting to range A1:A5
-        let mut formats = SheetFormatUpdates::default();
-        let mut bold = Contiguous2D::new();
-        bold.set_rect(1, 1, Some(1), Some(5), Some(ClearOption::Some(true)));
-        formats.bold = Some(bold);
-
-        let (reverse_ops, _, _, _, _) = sheet.set_formats_a1(&formats);
+        // Apply bold formatting to range A1:A5 via GridController
+        let selection = crate::a1::A1Selection::test_a1("A1:A5");
+        gc.set_bold(&selection, Some(true), None, false).unwrap();
 
         // Verify A1: RichText bold should be cleared, italic preserved
+        let sheet = gc.sheet(sheet_id);
         let cell1 = sheet.cell_value(pos![A1]).unwrap();
         if let CellValue::RichText(spans) = cell1 {
             assert!(spans[0].bold.is_none(), "A1 bold should be cleared");
@@ -1044,15 +1080,29 @@ mod tests {
 
         // Verify A2: RichText without bold should be unchanged
         let cell2 = sheet.cell_value(pos![A2]).unwrap();
-        assert_eq!(cell2, rich_without_bold, "A2 should be unchanged");
+        if let CellValue::RichText(spans) = cell2 {
+            assert_eq!(spans[0].text, "italic only");
+            assert!(spans[0].bold.is_none());
+            assert_eq!(spans[0].italic, Some(true));
+        } else {
+            panic!("A2 should still be RichText");
+        }
 
         // Verify A3: Plain Text should be unchanged
         let cell3 = sheet.cell_value(pos![A3]).unwrap();
-        assert_eq!(cell3, plain_text, "A3 plain text should be unchanged");
+        assert_eq!(
+            cell3,
+            CellValue::Text("plain text".to_string()),
+            "A3 plain text should be unchanged"
+        );
 
         // Verify A4: Number should be unchanged
         let cell4 = sheet.cell_value(pos![A4]).unwrap();
-        assert_eq!(cell4, number, "A4 number should be unchanged");
+        assert_eq!(
+            cell4,
+            CellValue::Number(decimal_from_str("42").unwrap()),
+            "A4 number should be unchanged"
+        );
 
         // Verify A5: RichText with bold=false should have bold cleared
         let cell5 = sheet.cell_value(pos![A5]).unwrap();
@@ -1061,17 +1111,6 @@ mod tests {
         } else {
             panic!("A5 should still be RichText");
         }
-
-        // Should have exactly 2 SetCellValues reverse ops (for A1 and A5 which had bold)
-        let cell_value_ops: Vec<_> = reverse_ops
-            .iter()
-            .filter(|op| matches!(op, Operation::SetCellValues { .. }))
-            .collect();
-        assert_eq!(
-            cell_value_ops.len(),
-            2,
-            "Should have 2 SetCellValues reverse ops (A1 and A5 had bold to clear)"
-        );
     }
 
     #[test]

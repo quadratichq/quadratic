@@ -127,6 +127,11 @@ impl GridController {
         }
 
         if !sheet_format_update.is_default() {
+            // Add operations to clear RichText inline formatting when cell-level
+            // formatting is being SET.
+            let richtext_ops = sheet.get_richtext_format_clearing_operations(&sheet_format_update);
+            ops.extend(richtext_ops);
+
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: selection.sheet_id,
                 formats: sheet_format_update,
