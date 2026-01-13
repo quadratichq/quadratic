@@ -1,6 +1,8 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { FormatPaintIcon } from '@/shared/components/Icons';
+import { cn } from '@/shared/shadcn/utils';
+import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -51,6 +53,50 @@ function getFormattingItems(data: SetTextFormatsResponse): FormatItem[] {
   return items;
 }
 
+// Render format items inline with color swatches
+function FormatItemsDisplay({ items, maxItems }: { items: FormatItem[]; maxItems?: number }) {
+  if (items.length === 0) return null;
+
+  const displayItems = maxItems ? items.slice(0, maxItems) : items;
+  const remainingCount = maxItems ? items.length - maxItems : 0;
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-1">
+      {displayItems.map((item, index) => (
+        <span key={index} className="inline-flex items-center">
+          {item.label}
+          {item.colorSwatch && (
+            <span
+              className="ml-0.5 inline-block h-3 w-3 rounded-sm border border-border"
+              style={{ backgroundColor: item.colorSwatch }}
+            />
+          )}
+          {index < displayItems.length - 1 && <span className="mr-0.5">,</span>}
+        </span>
+      ))}
+      {remainingCount > 0 && <span className="text-muted-foreground/60">+{remainingCount} more</span>}
+    </span>
+  );
+}
+
+// Individual selection item that can be clicked to navigate
+const SelectionItem = memo(({ entry, onClick }: { entry: FormatEntry; onClick: () => void }) => {
+  const formatItems = useMemo(() => getFormattingItemsForEntry(entry), [entry]);
+
+  return (
+    <div
+      className="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground hover:text-foreground/80"
+      onClick={onClick}
+    >
+      <span className="shrink-0 font-medium">{entry.selection}</span>
+      <span className="text-muted-foreground/60">•</span>
+      <span className="min-w-0 truncate">
+        <FormatItemsDisplay items={formatItems} />
+      </span>
+    </div>
+  );
+});
+
 export const SetTextFormats = memo(
   ({
     toolCall: { arguments: args, loading },
@@ -62,6 +108,7 @@ export const SetTextFormats = memo(
     hideIcon?: boolean;
   }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
+    const [isExpanded, setIsExpanded] = useState(false);
 
     useEffect(() => {
       if (loading) {
@@ -79,6 +126,9 @@ export const SetTextFormats = memo(
     }, [args, loading]);
 
     const icon = <FormatPaintIcon />;
+
+    const formats = toolArgs?.success ? toolArgs.data?.formats : undefined;
+    const hasMultipleSelections = formats && formats.length > 1;
 
     const label = useMemo(() => {
       if (!toolArgs?.success || !toolArgs.data?.formats?.length) {
@@ -99,24 +149,16 @@ export const SetTextFormats = memo(
       return getFormattingItems(toolArgs.data);
     }, [toolArgs]);
 
-    const description = useMemo(() => {
+    // For the summary line, limit to 3 items to keep it compact
+    const summaryDescription = useMemo(() => {
       if (formattingItems.length === 0) return undefined;
-      return (
-        <span className="inline-flex flex-wrap items-center gap-x-1">
-          {formattingItems.map((item, index) => (
-            <span key={index} className="inline-flex items-center">
-              {item.label}
-              {item.colorSwatch && (
-                <span
-                  className="ml-0.5 inline-block h-3 w-3 rounded-sm border border-border"
-                  style={{ backgroundColor: item.colorSwatch }}
-                />
-              )}
-              {index < formattingItems.length - 1 && <span className="mr-0.5">,</span>}
-            </span>
-          ))}
-        </span>
-      );
+      return <FormatItemsDisplay items={formattingItems} maxItems={3} />;
+    }, [formattingItems]);
+
+    // For single selection, show all items
+    const fullDescription = useMemo(() => {
+      if (formattingItems.length === 0) return undefined;
+      return <FormatItemsDisplay items={formattingItems} />;
     }, [formattingItems]);
 
     const handleClick = useCallback(() => {
@@ -134,6 +176,18 @@ export const SetTextFormats = memo(
       }
     }, [toolArgs]);
 
+    const handleSelectEntry = useCallback((entry: FormatEntry) => {
+      try {
+        const sheetId = entry.sheet_name
+          ? (sheets.getSheetByName(entry.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const selection = sheets.stringToSelection(entry.selection, sheetId);
+        sheets.changeSelection(selection);
+      } catch (e) {
+        console.warn('Failed to select range:', e);
+      }
+    }, []);
+
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact hideIcon={hideIcon} />;
     }
@@ -144,16 +198,47 @@ export const SetTextFormats = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} compact hideIcon={hideIcon} />;
     }
 
+    // For single selection, use the simple ToolCard with full description
+    if (!hasMultipleSelections) {
+      return (
+        <ToolCard
+          icon={icon}
+          label={label}
+          description={fullDescription}
+          className={className}
+          compact
+          onClick={handleClick}
+          hideIcon={hideIcon}
+        />
+      );
+    }
+
+    // For multiple selections, render expandable list
     return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description={description}
-        className={className}
-        compact
-        onClick={handleClick}
-        hideIcon={hideIcon}
-      />
+      <div className={cn('flex flex-col', className)}>
+        <div
+          className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {!hideIcon && <FormatPaintIcon />}
+          <span>{label}</span>
+          <span className="text-muted-foreground/60">•</span>
+          <span className="min-w-0 truncate">{summaryDescription}</span>
+          {isExpanded ? (
+            <ChevronDownIcon className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRightIcon className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+        </div>
+
+        {isExpanded && formats && (
+          <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
+            {formats.map((entry, index) => (
+              <SelectionItem key={index} entry={entry} onClick={() => handleSelectEntry(entry)} />
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 );
