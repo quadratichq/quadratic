@@ -36,16 +36,14 @@ export function UserFilesListFiltersDropdown() {
     <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={hasFilters ? 'secondary' : 'ghost'}
+          variant="ghost"
           size="icon"
-          className={cn(
-            'user-select-none relative flex-shrink-0 hover:text-foreground',
-            hasFilters ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-          )}
-          aria-label="Other filters"
+          className={'user-select-none relative flex-shrink-0 text-muted-foreground hover:text-foreground'}
+          aria-label="Filters"
           onClick={() => setShowDropdown(true)}
         >
           <FiltersIcon />
+          {hasFilters && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-h-[300px] w-56 overflow-y-auto">

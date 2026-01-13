@@ -162,7 +162,7 @@ export function FilesListViewToggle({
       <div className={cn(`lg:hidden`, className)}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
               <MoreHorizIcon />
             </Button>
           </DropdownMenuTrigger>
