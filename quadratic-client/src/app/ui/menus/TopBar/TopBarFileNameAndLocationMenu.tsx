@@ -107,7 +107,7 @@ function FileLocation() {
         to={ROUTES.TEAM_FILES_SHARED_WITH_ME(team.uuid)}
         {...linkProps}
         data-testid="file-location-link-shared-with-me"
-      ></Link>
+      >
         {label}
       </Link>
     );
