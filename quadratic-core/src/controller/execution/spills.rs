@@ -330,6 +330,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

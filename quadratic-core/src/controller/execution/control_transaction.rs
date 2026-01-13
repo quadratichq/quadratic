@@ -260,6 +260,7 @@ impl GridController {
                     let code_run = CodeRun {
                         language: code.language.to_owned(),
                         code: code.code.to_owned(),
+                        formula_ast: None,
                         error,
                         return_type: Some(return_type.to_owned()),
                         line_number: Some(1),

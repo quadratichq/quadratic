@@ -590,6 +590,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "=1".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),

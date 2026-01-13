@@ -737,6 +737,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "hello".into(),
+            formula_ast: None,
             error: None,
             std_out: None,
             std_err: None,
@@ -799,6 +800,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".into(),
+            formula_ast: None,
             error: None,
             std_out: None,
             std_err: None,

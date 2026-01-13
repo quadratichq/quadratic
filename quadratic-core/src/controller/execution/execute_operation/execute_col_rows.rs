@@ -501,6 +501,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("B1:B2")"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,
@@ -588,6 +589,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: r#"return q.cells("B1:B2");"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

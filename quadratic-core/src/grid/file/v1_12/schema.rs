@@ -22,12 +22,37 @@ pub type CellWrapSchema = v1_11::CellWrapSchema;
 pub type CodeCellLanguageSchema = v1_11::CodeCellLanguageSchema;
 pub type CodeCellSchema = v1_11::CodeCellSchema;
 pub type CodeRunResultSchema = v1_11::CodeRunResultSchema;
-pub type CodeRunSchema = v1_11::CodeRunSchema;
+/// CodeRun schema with optional formula AST caching.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CodeRunSchema {
+    pub language: CodeCellLanguageSchema,
+    pub code: String,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub formula_ast: Option<super::formula_schema::FormulaSchema>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub std_out: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub std_err: Option<String>,
+    pub cells_accessed: CellsAccessedSchema,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub error: Option<RunErrorSchema>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub return_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub line_number: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub output_type: Option<String>,
+}
 pub type ColRangeSchema = v1_11::ColRangeSchema;
 pub type ColumnRepeatSchema<T> = v1_11::ColumnRepeatSchema<T>;
 pub type ConnectionKindSchema = v1_11::ConnectionKindSchema;
 pub type Contiguous2DSchema<T> = v1_11::Contiguous2DSchema<T>;
-pub type DataTableKindSchema = v1_11::DataTableKindSchema;
+/// DataTableKind schema using the new CodeRunSchema with formula_ast.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DataTableKindSchema {
+    CodeRun(CodeRunSchema),
+    Import(ImportSchema),
+}
 pub type DataTableSortOrderSchema = v1_11::DataTableSortOrderSchema;
 pub type DateTimeRangeSchema = v1_11::DateTimeRangeSchema;
 pub type IdSchema = v1_11::IdSchema;

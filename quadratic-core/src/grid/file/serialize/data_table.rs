@@ -29,7 +29,7 @@ use super::{
     formats::{export_formats, import_formats},
 };
 
-fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
+pub(crate) fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
     CellRefCoord {
         coord: coord.coord,
         is_absolute: coord.is_absolute,
@@ -91,7 +91,9 @@ fn import_cells_accessed(
     Ok(imported_cells)
 }
 
-fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Result<RunErrorMsg> {
+pub(crate) fn import_run_error_msg(
+    run_error_msg: current::RunErrorMsgSchema,
+) -> Result<RunErrorMsg> {
     let run_error_msg = match run_error_msg {
         current::RunErrorMsgSchema::CodeRunError(msg) => RunErrorMsg::CodeRunError(msg),
         current::RunErrorMsgSchema::Unexpected(msg) => RunErrorMsg::Unexpected(msg),
@@ -180,7 +182,7 @@ fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Re
     Ok(run_error_msg)
 }
 
-fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
+pub(crate) fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
     current::CellRefCoordSchema {
         coord: coord.coord,
         is_absolute: coord.is_absolute,
@@ -244,15 +246,21 @@ fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> 
                 start: span.start,
                 end: span.end,
             }),
-            msg: import_run_error_msg_builder(error.msg)?,
+            msg: import_run_error_msg(error.msg)?,
         })
     } else {
         None
     };
 
+    let formula_ast = code_run
+        .formula_ast
+        .map(super::formula::import_formula)
+        .transpose()?;
+
     let code_run = CodeRun {
         language: import_code_cell_language(code_run.language),
         code: code_run.code,
+        formula_ast,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -350,7 +358,7 @@ pub(crate) fn import_data_table_builder(
     Ok(sheet_data_tables)
 }
 
-fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
+pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
     match run_error_msg {
         RunErrorMsg::CodeRunError(msg) => current::RunErrorMsgSchema::CodeRunError(msg),
         RunErrorMsg::Unexpected(msg) => current::RunErrorMsgSchema::Unexpected(msg),
@@ -459,6 +467,7 @@ fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     current::CodeRunSchema {
         language: export_code_cell_language(code_run.language),
         code: code_run.code,
+        formula_ast: code_run.formula_ast.map(super::formula::export_formula),
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,

@@ -215,6 +215,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "return [1,2,3]".into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,
