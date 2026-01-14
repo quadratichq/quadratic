@@ -38,19 +38,23 @@ export const AIThinkingBlock = memo(
     const isActivelyThinking = isLoading && isCurrentMessage;
 
     // Track thinking duration
+    // Start time is captured on mount (when thinking content first appears)
     useEffect(() => {
-      if (isActivelyThinking) {
-        // Start tracking when thinking begins
-        if (thinkingStartTime.current === null) {
-          thinkingStartTime.current = Date.now();
-        }
-      } else if (thinkingStartTime.current !== null) {
-        // Calculate duration when thinking ends
+      if (isLoading) {
+        thinkingStartTime.current = Date.now();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Calculate duration when thinking ends (either text is added making this not the last item,
+    // or loading completes entirely)
+    useEffect(() => {
+      if (!isActivelyThinking && thinkingStartTime.current !== null && thinkingDuration === null) {
         const duration = Math.round((Date.now() - thinkingStartTime.current) / 1000);
         setThinkingDuration(duration);
         thinkingStartTime.current = null;
       }
-    }, [isActivelyThinking]);
+    }, [isActivelyThinking, thinkingDuration]);
 
     // After 1 second of loading, show the last sentence
     useEffect(() => {
