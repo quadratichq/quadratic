@@ -223,6 +223,10 @@ class RenderText {
 
   deleteSheet(sheetId: string) {
     this.cellsLabels.delete(sheetId);
+    const pendingMerge = this.pendingMergeCells.get(sheetId);
+    if (pendingMerge) {
+      pendingMerge.free();
+    }
     this.pendingMergeCells.delete(sheetId);
   }
 
@@ -255,6 +259,10 @@ class RenderText {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) {
       // Sheet may not be initialized yet - queue merge cells to apply when sheet is ready
+      const existing = this.pendingMergeCells.get(sheetId);
+      if (existing) {
+        existing.free();
+      }
       this.pendingMergeCells.set(sheetId, mergeCells);
       return;
     }

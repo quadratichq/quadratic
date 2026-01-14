@@ -23,11 +23,12 @@ export const ConnectionTypeSchema = z.enum([
   'NEON',
   'MIXPANEL',
   'GOOGLE_ANALYTICS',
+  'PLAID',
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
 export function isSyncedConnectionType(type: ConnectionType): boolean {
-  return ['MIXPANEL', 'GOOGLE_ANALYTICS'].includes(type);
+  return ['MIXPANEL', 'GOOGLE_ANALYTICS', 'PLAID'].includes(type);
 }
 
 // Helper function to check if a host address is a localhost variant
@@ -141,6 +142,12 @@ export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
   start_date: z.string().date(),
 });
 
+export const ConnectionTypeDetailsPlaidSchema = z.object({
+  access_token: z.string().min(1, { message: 'Required' }),
+  start_date: z.string().date(),
+  institution_name: z.string().optional(), // For display purposes
+});
+
 /**
  * =============================================================================
  * Schemas for synced connections
@@ -235,4 +242,18 @@ export const ApiSchemasConnections = {
 
   // Get synced connection logs
   '/v0/teams/:uuid/connections/:connectionUuid/log.GET.response': z.array(SyncedConnectionLogSchema),
+
+  // Plaid integration endpoints
+  '/v0/teams/:uuid/plaid/link-token.POST.request': z.object({}),
+  '/v0/teams/:uuid/plaid/link-token.POST.response': z.object({
+    linkToken: z.string(),
+  }),
+
+  '/v0/teams/:uuid/plaid/exchange-token.POST.request': z.object({
+    publicToken: z.string(),
+  }),
+  '/v0/teams/:uuid/plaid/exchange-token.POST.response': z.object({
+    accessToken: z.string(),
+    itemId: z.string(),
+  }),
 };

@@ -140,8 +140,8 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
           uuid: 'xxx',
           createdDate: new Date().toISOString(),
           isDemo: true,
-          syncedConnectionPercentCompleted: 0,
-          syncedConnectionUpdatedDate: new Date().toISOString(),
+          syncedConnectionPercentCompleted: undefined,
+          syncedConnectionUpdatedDate: undefined,
         },
       ];
     }

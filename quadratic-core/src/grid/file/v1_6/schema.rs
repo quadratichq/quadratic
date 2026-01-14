@@ -281,6 +281,7 @@ pub enum ConnectionKind {
     Mixpanel,
     #[serde(rename = "GOOGLE_ANALYTICS")]
     GoogleAnalytics,
+    Plaid,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

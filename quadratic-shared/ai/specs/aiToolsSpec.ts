@@ -275,13 +275,15 @@ export const AIToolsArgsSchema = {
     connection_id: z.string().uuid(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    formulas: z.array(
-      z.object({
-        code_cell_position: stringSchema,
-        formula_string: stringSchema,
-      })
-    ),
+    formulas: z
+      .array(
+        z.object({
+          sheet_name: stringNullableOptionalSchema,
+          code_cell_position: stringSchema,
+          formula_string: stringSchema,
+        })
+      )
+      .min(1),
   }),
   [AITool.SetCellValues]: z.object({
     sheet_name: stringNullableOptionalSchema,
@@ -1118,7 +1120,7 @@ SQL code cell placement instructions:\n
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Sets the value of one or more formula cells and runs them in the current open sheet. Accepts an array of formulas, each with a cell position (in a1 notation) and formula string.\n
+Sets the value of one or more formula cells and runs them. Use the formulas array to set multiple different formulas in a single call, each with its own sheet, cell position, and formula string.\n
 You should use the set_formula_cell_value function to set formula cell values. Use set_formula_cell_value function instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add static data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to formulas.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in formula cells.\n
@@ -1129,19 +1131,19 @@ When using a range, cell references in the formula will automatically adjust rel
     parameters: {
       type: 'object',
       properties: {
-        sheet_name: {
-          type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
-        },
         formulas: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
+              sheet_name: {
+                type: 'string',
+                description: 'The sheet name of the sheet where the formula will be placed, as defined in the context',
+              },
               code_cell_position: {
                 type: 'string',
                 description:
-                  'The position of the formula cell(s) in the current open sheet, in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10") or a collection (e.g., "A1,A2:B2,A3").',
+                  'The position of the formula cell(s) in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10") or a collection (e.g., "A1,A2:B2,A3").',
               },
               formula_string: {
                 type: 'string',
@@ -1154,22 +1156,22 @@ When using a range, cell references in the formula will automatically adjust rel
           },
         },
       },
-      required: ['sheet_name', 'formulas'],
+      required: ['formulas'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
     prompt: `
 You should use the set_formula_cell_value function to set formula cell values. Use set_formula_cell_value instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
-set_formula_cell_value function requires an array of formulas, each with a formula_string and code_cell_position (single cell or range in a1 notation).\n
+set_formula_cell_value function requires an array of formulas, each with a sheet_name, formula_string, and code_cell_position (single cell or range in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
 Using the formulas array:\n
 - You can set multiple different formulas at once by providing multiple objects in the formulas array.\n
-- Each object requires a code_cell_position and formula_string.\n
-- Example: formulas: [{ code_cell_position: "A1", formula_string: "SUM(B1:B10)" }, { code_cell_position: "A2", formula_string: "AVERAGE(B1:B10)" }]\n
+- Each object requires a sheet_name, code_cell_position, and formula_string.\n
+- Example: formulas: [{ sheet_name: "Sheet1", code_cell_position: "A1", formula_string: "SUM(B1:B10)" }, { sheet_name: "Sheet1", code_cell_position: "A2", formula_string: "AVERAGE(B1:B10)" }]\n
 
 Multiple formula cells with relative referencing:\n
 - Within each formula object, you can use a range for code_cell_position (e.g., "A1:A10") to apply the same formula pattern.\n
