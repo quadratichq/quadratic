@@ -97,13 +97,14 @@ impl GridController {
     /// returns a string
     #[wasm_bindgen(js_name = "getEditCell")]
     pub fn js_get_cell_edit(&self, sheet_id: String, pos: String) -> Result<String, JsValue> {
-        let pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
+        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self
             .try_sheet_from_string_id(&sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
         let val = sheet.get_cell_for_formula(pos);
+        let format = sheet.cell_format(pos);
 
-        Ok(val.to_edit())
+        Ok(val.to_edit_with_format(format.date_time))
     }
 
     /// gets the display value for a cell

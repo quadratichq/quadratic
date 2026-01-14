@@ -374,6 +374,12 @@ impl CellValue {
     }
 
     pub fn to_edit(&self) -> String {
+        self.to_edit_with_format(None)
+    }
+
+    /// Returns the editable string representation of the value, using the
+    /// provided date_time format if available.
+    pub fn to_edit_with_format(&self, date_time_format: Option<String>) -> String {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
@@ -383,10 +389,27 @@ impl CellValue {
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
 
-            // todo: these formats should be a user-definable format (we'll need it for localization)
-            CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
-            CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
-            CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
+            CellValue::Date(d) => {
+                if let Some(ref format) = date_time_format {
+                    d.format(format).to_string()
+                } else {
+                    d.format("%m/%d/%Y").to_string()
+                }
+            }
+            CellValue::Time(t) => {
+                if let Some(ref format) = date_time_format {
+                    t.format(format).to_string()
+                } else {
+                    t.format("%-I:%M %p").to_string()
+                }
+            }
+            CellValue::DateTime(t) => {
+                if let Some(ref format) = date_time_format {
+                    t.format(format).to_string()
+                } else {
+                    t.format("%m/%d/%Y %-I:%M %p").to_string()
+                }
+            }
 
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
@@ -722,7 +745,8 @@ impl CellValue {
             CellValue::Number(percent)
         } else if let Some(time) = CellValue::unpack_time(value) {
             time
-        } else if let Some(date) = CellValue::unpack_date(value) {
+        } else if let Some((date, date_format)) = CellValue::unpack_date_with_format(value) {
+            format_update.date_time = Some(Some(date_format));
             date
         } else if let Some(date_time) = CellValue::unpack_date_time(value) {
             date_time
@@ -1805,5 +1829,62 @@ mod test {
 
         let cv = CellValue::Blank;
         assert_eq!(cv.to_number(), None);
+    }
+
+    #[test]
+    fn test_string_to_cell_value_date_format_preserved() {
+        // Test that date format is preserved in FormatUpdate
+
+        // With leading zeros
+        let (value, format_update) = CellValue::string_to_cell_value("01/02/2020", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%m/%d/%Y".to_string())));
+
+        // Without leading zeros
+        let (value, format_update) = CellValue::string_to_cell_value("1/2/2020", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m/%-d/%Y".to_string())));
+
+        // Month/day only
+        let (value, format_update) = CellValue::string_to_cell_value("5/15", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m/%-d".to_string())));
+
+        // With dash separator
+        let (value, format_update) = CellValue::string_to_cell_value("5-5", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%-m-%-d".to_string())));
+
+        // Named month
+        let (value, format_update) = CellValue::string_to_cell_value("Dec 15", false);
+        assert!(matches!(value, CellValue::Date(_)));
+        assert_eq!(format_update.date_time, Some(Some("%b %-d".to_string())));
+    }
+
+    #[test]
+    fn test_date_format_roundtrip() {
+        // Test that formatting with the preserved format produces the original input
+        let test_inputs = vec![
+            "01/02/2020",
+            "1/2/2020",
+            "5/15",
+            "05/15",
+            "5-5",
+            "12/23/24",
+        ];
+
+        for input in test_inputs {
+            let (value, format_update) = CellValue::string_to_cell_value(input, false);
+            if let CellValue::Date(date) = value {
+                if let Some(Some(format)) = format_update.date_time {
+                    let formatted = date.format(&format).to_string();
+                    assert_eq!(formatted, input, "Roundtrip failed for input: {}", input);
+                } else {
+                    panic!("No date_time format set for input: {}", input);
+                }
+            } else {
+                panic!("Expected Date value for input: {}", input);
+            }
+        }
     }
 }

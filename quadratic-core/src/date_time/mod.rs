@@ -311,21 +311,110 @@ impl ParsedDateComponents {
             day.unwrap_or(1),
         )
     }
+
+    /// Tries to parse as a date and also returns the strftime format string
+    /// that matches the original user input.
+    pub fn try_format_with_strftime(&self, format: &str) -> Option<(chrono::NaiveDate, String)> {
+        if format.len() != self.components.len() {
+            return None;
+        }
+
+        let mut year = None;
+        let mut month = None;
+        let mut day = None;
+        let mut strftime_parts = Vec::new();
+
+        for (format_char, component) in std::iter::zip(format.chars(), &self.components) {
+            match format_char {
+                'y' => {
+                    year = Some(component.year()?);
+                    strftime_parts.push(component.year_strftime()?);
+                }
+                'm' => {
+                    month = Some(component.month()?);
+                    strftime_parts.push(component.month_strftime()?);
+                }
+                'd' => {
+                    day = Some(component.day()?);
+                    strftime_parts.push(component.day_strftime()?);
+                }
+                'Y' => {
+                    year = Some(component.year().filter(|_| !component.is_ambiguous())?);
+                    strftime_parts.push(component.year_strftime()?);
+                }
+                'M' => {
+                    month = Some(component.month().filter(|_| !component.is_ambiguous())?);
+                    strftime_parts.push(component.month_strftime()?);
+                }
+                'D' => {
+                    day = Some(component.day().filter(|_| !component.is_ambiguous())?);
+                    strftime_parts.push(component.day_strftime()?);
+                }
+                c => panic!("unexpected char {c:?} in date format"),
+            }
+        }
+
+        let date = NaiveDate::from_ymd_opt(
+            match year {
+                Some(y) => i32::try_from(y).ok()?,
+                None => Utc::now().year(),
+            },
+            month.unwrap_or(1),
+            day.unwrap_or(1),
+        )?;
+
+        let sep = if self.separator == ' ' {
+            " ".to_string()
+        } else {
+            self.separator.to_string()
+        };
+        let strftime = strftime_parts.join(&sep);
+
+        Some((date, strftime))
+    }
 }
 
-#[derive(Debug, Copy, Clone)]
+/// Represents info about how a date component was originally written
+#[derive(Debug, Clone)]
+struct OriginalFormat {
+    /// Whether the number had a leading zero (e.g., "01" vs "1")
+    has_leading_zero: bool,
+    /// Whether the month was a short name (e.g., "Jan")
+    is_short_month_name: bool,
+    /// Whether the month was a long name (e.g., "January")
+    is_long_month_name: bool,
+    /// Whether the day had an ordinal suffix (e.g., "3rd")
+    is_ordinal_day: bool,
+    /// Original length of the string (for year: 2 vs 4 digits)
+    original_len: usize,
+}
+
+impl Default for OriginalFormat {
+    fn default() -> Self {
+        Self {
+            has_leading_zero: false,
+            is_short_month_name: false,
+            is_long_month_name: false,
+            is_ordinal_day: false,
+            original_len: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 enum ParsedDateComponent {
     /// Unambiguous year (4 digits)
-    Year(u32),
+    Year(u32, OriginalFormat),
     /// Unambiguous month (named, like "January")
-    Month(u32),
+    Month(u32, OriginalFormat),
     /// Unambiguous day (has ordinal suffix, like "3rd")
-    Day(u32),
+    Day(u32, OriginalFormat),
     /// Ambiguous (1- or 2-digit number)
     Ambiguous {
         year: Option<u32>,
         month: Option<u32>,
         day: Option<u32>,
+        format: OriginalFormat,
     },
 }
 
@@ -334,8 +423,17 @@ impl FromStr for ParsedDateComponent {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(named_month) = chrono::Month::from_str(s) {
-            // Example: `January`
-            Ok(Self::Month(named_month.number_from_month()))
+            // Example: `January` or `Jan`
+            let is_short = s.len() <= 4; // "Jan", "Feb", etc. are short
+            Ok(Self::Month(
+                named_month.number_from_month(),
+                OriginalFormat {
+                    is_short_month_name: is_short,
+                    is_long_month_name: !is_short,
+                    original_len: s.len(),
+                    ..Default::default()
+                },
+            ))
         } else if let Some(ordinal) = s
             .strip_suffix("st")
             .or_else(|| s.strip_suffix("nd"))
@@ -343,17 +441,30 @@ impl FromStr for ParsedDateComponent {
             .or_else(|| s.strip_suffix("th"))
         {
             // Example `3rd`
-            Ok(Self::Day(ordinal.parse().map_err(|_| ())?))
+            Ok(Self::Day(
+                ordinal.parse().map_err(|_| ())?,
+                OriginalFormat {
+                    is_ordinal_day: true,
+                    original_len: s.len(),
+                    ..Default::default()
+                },
+            ))
         } else {
             let n = s.parse().map_err(|_| ())?;
+            let has_leading_zero = s.starts_with('0') && s.len() == 2;
             match s.len() {
                 // 1-digit number must be day or month. Example: `3`
                 1 => Ok(Self::Ambiguous {
                     year: None,
                     month: Some(n),
                     day: Some(n),
+                    format: OriginalFormat {
+                        has_leading_zero: false,
+                        original_len: 1,
+                        ..Default::default()
+                    },
                 }),
-                // 2-digit number could be anything. Example: `12`
+                // 2-digit number could be anything. Example: `12` or `01`
                 2 => Ok(Self::Ambiguous {
                     year: match n {
                         ..CENTURY_CUTOFF => n.checked_add(2000),
@@ -361,9 +472,20 @@ impl FromStr for ParsedDateComponent {
                     },
                     month: Some(n),
                     day: Some(n),
+                    format: OriginalFormat {
+                        has_leading_zero,
+                        original_len: 2,
+                        ..Default::default()
+                    },
                 }),
                 // 4-digit number must be year. Example: `1619`
-                4 => Ok(Self::Year(n)),
+                4 => Ok(Self::Year(
+                    n,
+                    OriginalFormat {
+                        original_len: 4,
+                        ..Default::default()
+                    },
+                )),
                 // Anything else is probably not a date.
                 _ => Err(()),
             }
@@ -371,34 +493,106 @@ impl FromStr for ParsedDateComponent {
     }
 }
 impl ParsedDateComponent {
-    fn year(self) -> Option<u32> {
+    fn year(&self) -> Option<u32> {
         match self {
-            ParsedDateComponent::Year(year) => Some(year),
-            ParsedDateComponent::Ambiguous { year, .. } => year,
+            ParsedDateComponent::Year(year, _) => Some(*year),
+            ParsedDateComponent::Ambiguous { year, .. } => *year,
             _ => None,
         }
     }
-    fn month(self) -> Option<u32> {
+    fn month(&self) -> Option<u32> {
         match self {
-            ParsedDateComponent::Month(month) => Some(month),
-            ParsedDateComponent::Ambiguous { month, .. } => month,
+            ParsedDateComponent::Month(month, _) => Some(*month),
+            ParsedDateComponent::Ambiguous { month, .. } => *month,
             _ => None,
         }
     }
-    fn day(self) -> Option<u32> {
+    fn day(&self) -> Option<u32> {
         match self {
-            ParsedDateComponent::Day(day) => Some(day),
-            ParsedDateComponent::Ambiguous { day, .. } => day,
+            ParsedDateComponent::Day(day, _) => Some(*day),
+            ParsedDateComponent::Ambiguous { day, .. } => *day,
             _ => None,
         }
     }
-    fn is_ambiguous(self) -> bool {
+    fn is_ambiguous(&self) -> bool {
         matches!(self, ParsedDateComponent::Ambiguous { .. })
+    }
+
+    /// Returns the strftime format string for this component when used as a year
+    fn year_strftime(&self) -> Option<String> {
+        match self {
+            ParsedDateComponent::Year(_, fmt) => {
+                if fmt.original_len == 4 {
+                    Some("%Y".to_string())
+                } else {
+                    Some("%y".to_string())
+                }
+            }
+            ParsedDateComponent::Ambiguous { format, .. } => {
+                if format.original_len == 2 {
+                    Some("%y".to_string())
+                } else {
+                    Some("%Y".to_string())
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Returns the strftime format string for this component when used as a month
+    fn month_strftime(&self) -> Option<String> {
+        match self {
+            ParsedDateComponent::Month(_, fmt) => {
+                if fmt.is_long_month_name {
+                    Some("%B".to_string())
+                } else {
+                    Some("%b".to_string())
+                }
+            }
+            ParsedDateComponent::Ambiguous { format, .. } => {
+                if format.has_leading_zero {
+                    Some("%m".to_string())
+                } else {
+                    Some("%-m".to_string())
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Returns the strftime format string for this component when used as a day
+    fn day_strftime(&self) -> Option<String> {
+        match self {
+            ParsedDateComponent::Day(_, fmt) => {
+                if fmt.is_ordinal_day {
+                    // Use day without leading zero for ordinal days
+                    Some("%-d".to_string())
+                } else if fmt.has_leading_zero {
+                    Some("%d".to_string())
+                } else {
+                    Some("%-d".to_string())
+                }
+            }
+            ParsedDateComponent::Ambiguous { format, .. } => {
+                if format.has_leading_zero {
+                    Some("%d".to_string())
+                } else {
+                    Some("%-d".to_string())
+                }
+            }
+            _ => None,
+        }
     }
 }
 
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
+    parse_date_with_format(value).map(|(date, _)| date)
+}
+
+/// Parses a date string and returns both the date and a strftime format string
+/// that matches the original input format.
+pub fn parse_date_with_format(value: &str) -> Option<(NaiveDate, String)> {
     let components = ParsedDateComponents::from_str(value).ok()?;
     let sep = components.separator;
 
@@ -448,7 +642,9 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         ]
     };
 
-    formats.iter().find_map(|f| components.try_format(f))
+    formats
+        .iter()
+        .find_map(|f| components.try_format_with_strftime(f))
 }
 
 /// Convert the entire time into seconds since midnight
@@ -650,5 +846,116 @@ mod tests {
         assert_eq!(parse_date("10 12"), None);
         assert_eq!(parse_date("10 12 2025"), None);
         assert_eq!(parse_date("14.03.21"), None);
+    }
+
+    #[test]
+    fn test_parse_date_with_format_preserves_leading_zeros() {
+        // With leading zeros
+        let (date, format) = parse_date_with_format("01/02/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%m/%d/%Y");
+
+        // Without leading zeros
+        let (date, format) = parse_date_with_format("1/2/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%-m/%-d/%Y");
+
+        // Mixed: month with leading zero, day without
+        let (date, format) = parse_date_with_format("01/2/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%m/%-d/%Y");
+
+        // Mixed: month without leading zero, day with
+        let (date, format) = parse_date_with_format("1/02/2020").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(format, "%-m/%d/%Y");
+    }
+
+    #[test]
+    fn test_parse_date_with_format_preserves_separator() {
+        // Slash separator
+        let (_, format) = parse_date_with_format("5/15").unwrap();
+        assert_eq!(format, "%-m/%-d");
+
+        // Dash separator
+        let (_, format) = parse_date_with_format("5-5").unwrap();
+        assert_eq!(format, "%-m-%-d");
+
+        // Dash separator with year
+        let (_, format) = parse_date_with_format("2024-12-23").unwrap();
+        assert_eq!(format, "%Y-%-m-%-d");
+    }
+
+    #[test]
+    fn test_parse_date_with_format_named_months() {
+        // Short month name
+        let (date, format) = parse_date_with_format("Dec 15").unwrap();
+        assert_eq!(date.month(), 12);
+        assert_eq!(date.day(), 15);
+        assert_eq!(format, "%b %-d");
+
+        // Short month with year
+        let (date, format) = parse_date_with_format("Dec 15 2024").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 12, 15).unwrap());
+        assert_eq!(format, "%b %-d %Y");
+
+        // Long month name
+        let (date, format) = parse_date_with_format("December 15 2024").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 12, 15).unwrap());
+        assert_eq!(format, "%B %-d %Y");
+
+        // Day before month
+        let (date, format) = parse_date_with_format("15 Dec 2024").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 12, 15).unwrap());
+        assert_eq!(format, "%-d %b %Y");
+    }
+
+    #[test]
+    fn test_parse_date_with_format_two_digit_year() {
+        // Two-digit year
+        let (date, format) = parse_date_with_format("12/23/24").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
+        assert_eq!(format, "%-m/%-d/%y");
+
+        // Four-digit year
+        let (date, format) = parse_date_with_format("12/23/2024").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
+        assert_eq!(format, "%-m/%-d/%Y");
+    }
+
+    #[test]
+    fn test_parse_date_with_format_no_year() {
+        let current_year = Utc::now().year();
+
+        // Month/Day without year
+        let (date, format) = parse_date_with_format("5/15").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(current_year, 5, 15).unwrap());
+        assert_eq!(format, "%-m/%-d");
+
+        // With leading zero
+        let (date, format) = parse_date_with_format("05/15").unwrap();
+        assert_eq!(date, NaiveDate::from_ymd_opt(current_year, 5, 15).unwrap());
+        assert_eq!(format, "%m/%-d");
+    }
+
+    #[test]
+    fn test_format_roundtrip() {
+        // Test that parsing and formatting produces the original input
+        let test_cases = vec![
+            ("01/02/2020", "%m/%d/%Y"),
+            ("1/2/2020", "%-m/%-d/%Y"),
+            ("5/15", "%-m/%-d"),
+            ("05/15", "%m/%-d"),
+            ("5-5", "%-m-%-d"),
+            ("12/23/24", "%-m/%-d/%y"),
+        ];
+
+        for (input, expected_format) in test_cases {
+            let (date, format) = parse_date_with_format(input).unwrap();
+            assert_eq!(format, expected_format, "Format mismatch for input: {}", input);
+            // Verify the format produces the original input
+            let formatted = date.format(&format).to_string();
+            assert_eq!(formatted, input, "Roundtrip failed for input: {}", input);
+        }
     }
 }
