@@ -1,7 +1,7 @@
 import { Markdown } from '@/app/ui/components/Markdown';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import type { AIResponseContent } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 // Helper function to extract the last sentence from text
 function getLastSentence(text: string): string {
@@ -33,6 +33,24 @@ export const AIThinkingBlock = memo(
     // Each thinking block tracks its own expanded state - always collapsed by default
     const [isExpanded, setIsExpanded] = useState(false);
     const [showLastSentence, setShowLastSentence] = useState(false);
+    const [thinkingDuration, setThinkingDuration] = useState<number | null>(null);
+    const thinkingStartTime = useRef<number | null>(null);
+
+    const isActivelyThinking = isLoading && isCurrentMessage;
+
+    // Track thinking duration
+    useEffect(() => {
+      if (isActivelyThinking) {
+        // Start tracking when thinking begins
+        if (thinkingStartTime.current === null) {
+          thinkingStartTime.current = Date.now();
+        }
+      } else if (thinkingStartTime.current !== null) {
+        // Calculate duration when thinking ends
+        const duration = Math.round((Date.now() - thinkingStartTime.current) / 1000);
+        setThinkingDuration(duration);
+      }
+    }, [isActivelyThinking]);
 
     // After 1 second of loading, show the last sentence
     useEffect(() => {
@@ -58,13 +76,13 @@ export const AIThinkingBlock = memo(
       [onContentChange, thinkingContent]
     );
 
-    const isActivelyThinking = isLoading && isCurrentMessage;
     const lastSentence = getLastSentence(thinkingContent.text);
 
     // Determine the label based on state
     const getLabel = () => {
       if (isExpanded) return 'Hide thinking';
       if (isActivelyThinking) return 'Thinking';
+      if (thinkingDuration !== null) return `Thought for ${thinkingDuration}s`;
       return 'Thought';
     };
 
