@@ -1,7 +1,7 @@
 import { aiChatFilesDirect } from '@/app/ai/aiChatFilesDirect';
 import { getExtension, uploadFile } from '@/app/helpers/files';
-import type { GetConnections } from '@/routes/api.connections';
 import { authClient, requireAuth } from '@/auth/auth';
+import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
 import { Connections } from '@/shared/components/connections/Connections';
 import { DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
@@ -23,7 +23,7 @@ import {
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { ArrowRightIcon, ChevronLeftIcon, UploadIcon } from '@radix-ui/react-icons';
+import { ArrowRightIcon, ChevronLeftIcon, Cross1Icon, UploadIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Link, redirect, useFetcher, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -155,6 +155,15 @@ export const Component = () => {
   // Connections dialog state
   const [showConnectionsDialog, setShowConnectionsDialog] = useState(false);
   const connectionsFetcher = useFetcher<GetConnections>({ key: 'START_WITH_AI_CONNECTIONS_FETCHER' });
+
+  // Connections helper dismissed state (persisted to localStorage)
+  const [connectionsHelperDismissed, setConnectionsHelperDismissed] = useState(() => {
+    return localStorage.getItem('startWithAI.connectionsHelperDismissed') === 'true';
+  });
+  const handleDismissConnectionsHelper = () => {
+    setConnectionsHelperDismissed(true);
+    localStorage.setItem('startWithAI.connectionsHelperDismissed', 'true');
+  };
 
   // Fetch connections when dialog opens
   useEffect(() => {
@@ -650,6 +659,61 @@ export const Component = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Connections helper - show when no connections exist and not dismissed */}
+                {latestConnections.length === 0 && !selectedConnection && !connectionsHelperDismissed && (
+                  <div className="relative mt-4 rounded-lg border border-dashed border-border bg-muted/30 p-4">
+                    <button
+                      onClick={handleDismissConnectionsHelper}
+                      className="absolute right-2 top-2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      aria-label="Dismiss"
+                    >
+                      <Cross1Icon className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <DatabaseIcon className="text-primary" />
+                      </div>
+                      <div className="flex-1 pr-4">
+                        <h4 className="mb-1 text-sm font-semibold">Connect Quadratic to your data</h4>
+                        <p className="mb-3 text-sm text-muted-foreground">
+                          Pull data from databases and services like Google Analytics, bank accounts, and databases like
+                          Postgres, MySQL, Snowflake, BigQuery, and Mixpanel.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <LanguageIcon language="POSTGRES" />
+                            <span>Postgres</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <LanguageIcon language="MYSQL" />
+                            <span>MySQL</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <LanguageIcon language="SNOWFLAKE" />
+                            <span>Snowflake</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <LanguageIcon language="GOOGLE_ANALYTICS" />
+                            <span>Analytics</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <LanguageIcon language="PLAID" />
+                            <span>Banks</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">& more</span>
+                        </div>
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Use the{' '}
+                          <Button variant="link" className="h-auto p-0 text-xs" onClick={handleOpenConnectionsDialog}>
+                            Add connection
+                          </Button>{' '}
+                          button above to set up a connection.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Suggestions - above the chat */}
