@@ -38,6 +38,10 @@ pub enum SharedError {
     #[error("{0}")]
     Generic(String),
 
+    // #[cfg(feature = "intrinio")]
+    #[error("Error with Intrinio: {0}")]
+    Intrinio(crate::intrinio::error::Intrinio),
+
     #[cfg(feature = "net")]
     #[error("Error with Net: {0}")]
     Net(crate::net::error::Net),
