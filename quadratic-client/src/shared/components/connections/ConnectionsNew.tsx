@@ -1,6 +1,6 @@
 import type { NavigateToCreatePotentialView, NavigateToCreateView } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
-import { AddIcon } from '@/shared/components/Icons';
+import { AddIcon, FeedbackIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import AffirmLogo from './logo-plaid-affirm.svg?react';
@@ -39,29 +39,37 @@ export const ConnectionsNew = ({
     ([, { uiCategory }]) => uiCategory!
   );
 
+  // Separate Databases from other categories to render last
+  const { Databases: databaseConnections, ...otherCategories } = connectionsByUiCategory;
+
+  const renderCategory = (category: string, connections: typeof databaseConnections) => (
+    <div key={category}>
+      <h3 className="text-sm font-semibold">{category}</h3>
+      <div className="mb-2 mt-2 grid grid-cols-2 gap-4">
+        {connections?.map(([type, { Logo }]) => (
+          <Button
+            data-testid={`new-connection-${type}`}
+            key={type}
+            variant="outline"
+            className="group relative h-auto w-full"
+            onClick={() => {
+              handleNavigateToCreateView(type as ConnectionType);
+            }}
+          >
+            <AddIcon className="absolute bottom-1 right-1 opacity-30 group-hover:opacity-100" />
+            <Logo className="h-[40px] w-[160px]" />
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      {Object.entries(connectionsByUiCategory).map(([category, connections]) => (
-        <div key={category}>
-          <h3 className="text-sm font-semibold">{category}</h3>
-          <div className="mb-2 mt-2 grid grid-cols-2 gap-4">
-            {connections?.map(([type, { Logo }]) => (
-              <Button
-                data-testid={`new-connection-${type}`}
-                key={type}
-                variant="outline"
-                className="group relative h-auto w-full"
-                onClick={() => {
-                  handleNavigateToCreateView(type as ConnectionType);
-                }}
-              >
-                <AddIcon className="absolute bottom-1 right-1 opacity-30 group-hover:opacity-100" />
-                <Logo className="h-[40px] w-[160px]" />
-              </Button>
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* Other categories (Analytics, etc.) */}
+      {Object.entries(otherCategories).map(([category, connections]) => renderCategory(category, connections))}
+
+      {/* Plaid connections */}
       {plaidConnections.map(({ name, logos }) => (
         <div key={name}>
           <h3 className="text-sm font-semibold">{name}</h3>
@@ -79,11 +87,27 @@ export const ConnectionsNew = ({
         </div>
       ))}
 
-      <p>
-        <Button variant="secondary" onClick={() => handleNavigateToCreatePotentialView('OTHER')}>
-          Suggest a connection…
-        </Button>
-      </p>
+      {/* Databases (rendered last) */}
+      {databaseConnections && renderCategory('Databases', databaseConnections)}
+
+      <div>
+        <h3 className="text-sm font-semibold">Don't see the connection you need?</h3>
+        <div className="mt-2">
+          <Button
+            variant="outline"
+            className="h-auto w-full flex-col items-start gap-1 p-4 text-left"
+            onClick={() => handleNavigateToCreatePotentialView('OTHER')}
+          >
+            <div className="flex items-center gap-2">
+              <FeedbackIcon className="h-5 w-5" />
+              <span className="font-medium">Suggest a connection…</span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              Let us know what data source you'd like to connect and we'll consider adding it.
+            </span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
