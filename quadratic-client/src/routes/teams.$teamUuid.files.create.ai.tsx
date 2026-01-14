@@ -154,6 +154,7 @@ export const Component = () => {
 
   // Connections dialog state
   const [showConnectionsDialog, setShowConnectionsDialog] = useState(false);
+  const [connectionsDialogInitialView, setConnectionsDialogInitialView] = useState<'new' | 'list'>('list');
   const connectionsFetcher = useFetcher<GetConnections>({ key: 'START_WITH_AI_CONNECTIONS_FETCHER' });
 
   // Connections helper dismissed state (persisted to localStorage)
@@ -197,9 +198,18 @@ export const Component = () => {
     prevConnectionsLengthRef.current = latestConnections.length;
   }, [showConnectionsDialog, latestConnections]);
 
-  const handleOpenConnectionsDialog = useCallback(() => {
-    trackEvent('[StartWithAI].openConnectionsDialog');
+  const handleOpenConnectionsDialog = useCallback((initialView: 'new' | 'list' = 'list') => {
+    trackEvent('[StartWithAI].openConnectionsDialog', { initialView });
+    setConnectionsDialogInitialView(initialView);
     setShowConnectionsDialog(true);
+  }, []);
+
+  // Reset initial view when dialog closes
+  const handleConnectionsDialogChange = useCallback((open: boolean) => {
+    setShowConnectionsDialog(open);
+    if (!open) {
+      setConnectionsDialogInitialView('list');
+    }
   }, []);
 
   // Generate contextual suggestions when files or connections change
@@ -594,9 +604,13 @@ export const Component = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
                       <DropdownMenuLabel>Connections</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={handleOpenConnectionsDialog} className="gap-4">
+                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
                         <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                        <span className="truncate">Add or remove connection</span>
+                        <span className="truncate">Add connection</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
+                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                        <span className="truncate">Manage connections</span>
                       </DropdownMenuItem>
                       {latestConnections.length > 0 && (
                         <>
@@ -662,7 +676,7 @@ export const Component = () => {
 
                 {/* Connections helper - show when no connections exist and not dismissed */}
                 {latestConnections.length === 0 && !selectedConnection && !connectionsHelperDismissed && (
-                  <div className="relative mt-4 rounded-lg border border-dashed border-border bg-muted/30 p-4">
+                  <div className="relative mt-4 rounded-lg border border-border p-4">
                     <button
                       onClick={handleDismissConnectionsHelper}
                       className="absolute right-2 top-2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -670,47 +684,41 @@ export const Component = () => {
                     >
                       <Cross1Icon className="h-3.5 w-3.5" />
                     </button>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <DatabaseIcon className="text-primary" />
-                      </div>
-                      <div className="flex-1 pr-4">
-                        <h4 className="mb-1 text-sm font-semibold">Connect Quadratic to your data</h4>
-                        <p className="mb-3 text-sm text-muted-foreground">
-                          Pull data from databases and services like Google Analytics, bank accounts, and databases like
-                          Postgres, MySQL, Snowflake, BigQuery, and Mixpanel.
-                        </p>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <LanguageIcon language="POSTGRES" />
-                            <span>Postgres</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <LanguageIcon language="MYSQL" />
-                            <span>MySQL</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <LanguageIcon language="SNOWFLAKE" />
-                            <span>Snowflake</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <LanguageIcon language="GOOGLE_ANALYTICS" />
-                            <span>Analytics</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <LanguageIcon language="PLAID" />
-                            <span>Banks</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">& more</span>
+                    <div className="pr-4">
+                      <h4 className="mb-1 text-sm font-semibold">Connect Quadratic to your data</h4>
+                      <p className="mb-3 text-sm text-muted-foreground">
+                        Pull data from services like Google Analytics and Mixpanel, as well as databases like Postgres
+                        and BigQuery.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="POSTGRES" />
+                          <span>Postgres</span>
                         </div>
-                        <p className="mt-3 text-xs text-muted-foreground">
-                          Use the{' '}
-                          <Button variant="link" className="h-auto p-0 text-xs" onClick={handleOpenConnectionsDialog}>
-                            Add connection
-                          </Button>{' '}
-                          button above to set up a connection.
-                        </p>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="MYSQL" />
+                          <span>MySQL</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="SNOWFLAKE" />
+                          <span>Snowflake</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="GOOGLE_ANALYTICS" />
+                          <span>Analytics</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="PLAID" />
+                          <span>Banks and Brokerages</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">& more</span>
                       </div>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        <Button variant="link" className="h-auto p-0 text-xs" onClick={() => handleOpenConnectionsDialog('new')}>
+                          Add a connection
+                        </Button>{' '}
+                        to get started.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -804,7 +812,7 @@ export const Component = () => {
       </main>
 
       {/* Connections Dialog */}
-      <Dialog open={showConnectionsDialog} onOpenChange={setShowConnectionsDialog}>
+      <Dialog open={showConnectionsDialog} onOpenChange={handleConnectionsDialogChange}>
         <DialogContent
           className="max-w-4xl"
           onPointerDownOutside={(event) => {
@@ -823,6 +831,7 @@ export const Component = () => {
               sshPublicKey={sshPublicKey}
               staticIps={staticIps}
               hideSidebar
+              initialView={connectionsDialogInitialView}
             />
           )}
         </DialogContent>
