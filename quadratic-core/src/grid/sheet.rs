@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use anyhow::{Result, anyhow};
 use borders::Borders;
 use columns::SheetColumns;
+use conditional_format::ConditionalFormats;
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -34,6 +35,7 @@ pub mod clipboard;
 pub mod code;
 pub mod col_row;
 pub mod columns;
+pub mod conditional_format;
 mod content;
 pub mod data_table;
 pub mod data_tables;
@@ -75,6 +77,8 @@ pub struct Sheet {
 
     pub(crate) validations: Validations,
 
+    pub(crate) conditional_formats: ConditionalFormats,
+
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
 
@@ -102,6 +106,7 @@ impl Sheet {
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
             validations: Validations::default(),
+            conditional_formats: ConditionalFormats::default(),
             rows_resize: ResizeMap::default(),
             borders: Borders::default(),
             merge_cells: MergeCells::default(),

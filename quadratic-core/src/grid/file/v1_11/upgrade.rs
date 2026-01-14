@@ -155,6 +155,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
         borders: sheet.borders,
         merge_cells: v1_12::MergeCellsSchema::default(),
         formats: upgrade_sheet_formatting(sheet.formats),
+        conditional_formats: v1_12::ConditionalFormatsSchema::default(),
     }
 }
 

@@ -14,6 +14,7 @@ import {
   CheckBoxIcon,
   DataValidationsIcon,
   FormatDateTimeIcon,
+  FormatPaintIcon,
   InsertLinkIcon,
   ScheduledTasksIcon,
   SheetIcon,
@@ -34,6 +35,7 @@ type InsertActionSpec = Pick<
   | Action.InsertCheckbox
   | Action.InsertDropdown
   | Action.ToggleDataValidation
+  | Action.ToggleConditionalFormat
   | Action.InsertScheduledTask
   | Action.InsertHyperlink
   | Action.InsertCellReference
@@ -326,6 +328,18 @@ export const insertActionsSpec: InsertActionSpec = {
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
         showValidation: true,
+      }));
+    },
+  },
+  [Action.ToggleConditionalFormat]: {
+    label: () => 'Conditional formatting',
+    labelVerbose: 'Manage conditional formatting rules',
+    Icon: FormatPaintIcon,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showConditionalFormat: true,
       }));
     },
   },

@@ -1,0 +1,179 @@
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
+import type { ConditionalFormatStyle } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ConditionalFormat';
+import {
+  FormatBoldIcon,
+  FormatColorFillIcon,
+  FormatColorTextIcon,
+  FormatItalicIcon,
+  FormatStrikethroughIcon,
+  FormatUnderlinedIcon,
+} from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
+
+interface Props {
+  style: ConditionalFormatStyle;
+  setStyle: (style: ConditionalFormatStyle) => void;
+}
+
+export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
+  const toggleBold = () => {
+    setStyle({ ...style, bold: style.bold === true ? undefined : true });
+  };
+
+  const toggleItalic = () => {
+    setStyle({ ...style, italic: style.italic === true ? undefined : true });
+  };
+
+  const toggleUnderline = () => {
+    setStyle({ ...style, underline: style.underline === true ? undefined : true });
+  };
+
+  const toggleStrikeThrough = () => {
+    setStyle({ ...style, strikeThrough: style.strikeThrough === true ? undefined : true });
+  };
+
+  const setTextColor = (color: string | undefined) => {
+    setStyle({ ...style, textColor: color });
+  };
+
+  const setFillColor = (color: string | undefined) => {
+    setStyle({ ...style, fillColor: color });
+  };
+
+  return (
+    <div className="mt-2 flex items-center gap-1 rounded-md border border-border p-1">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              'text-muted-foreground hover:text-foreground',
+              style.bold === true && 'bg-accent text-foreground'
+            )}
+            onClick={toggleBold}
+          >
+            <FormatBoldIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Bold</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              'text-muted-foreground hover:text-foreground',
+              style.italic === true && 'bg-accent text-foreground'
+            )}
+            onClick={toggleItalic}
+          >
+            <FormatItalicIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Italic</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              'text-muted-foreground hover:text-foreground',
+              style.underline === true && 'bg-accent text-foreground'
+            )}
+            onClick={toggleUnderline}
+          >
+            <FormatUnderlinedIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Underline</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              'text-muted-foreground hover:text-foreground',
+              style.strikeThrough === true && 'bg-accent text-foreground'
+            )}
+            onClick={toggleStrikeThrough}
+          >
+            <FormatStrikethroughIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Strikethrough</TooltipContent>
+      </Tooltip>
+
+      <hr className="mx-1 h-6 w-[1px] bg-border" />
+
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className={cn('text-muted-foreground hover:text-foreground', style.textColor && 'text-foreground')}
+              >
+                <div className="relative flex items-center justify-center">
+                  <FormatColorTextIcon />
+                  <div
+                    className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+                    style={{ backgroundColor: style.textColor ?? 'currentColor' }}
+                  />
+                </div>
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Text color</TooltipContent>
+        </Tooltip>
+        <PopoverContent className="w-fit p-1">
+          <ColorPicker
+            color={style.textColor}
+            onChangeComplete={(color) => setTextColor(color.hex)}
+            onClear={() => setTextColor(undefined)}
+          />
+        </PopoverContent>
+      </Popover>
+
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className={cn('text-muted-foreground hover:text-foreground', style.fillColor && 'text-foreground')}
+              >
+                <div className="relative flex items-center justify-center">
+                  <FormatColorFillIcon />
+                  <div
+                    className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+                    style={{ backgroundColor: style.fillColor ?? 'currentColor' }}
+                  />
+                </div>
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Fill color</TooltipContent>
+        </Tooltip>
+        <PopoverContent className="w-fit p-1">
+          <ColorPicker
+            color={style.fillColor}
+            onChangeComplete={(color) => setFillColor(color.hex)}
+            onClear={() => setFillColor(undefined)}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+};

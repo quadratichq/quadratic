@@ -59,7 +59,6 @@ export const ScheduledTask = () => {
     currentTaskUuid,
     isCreateMode,
     saveScheduledTask,
-    currentTask,
     showScheduledTasks,
   ]);
 

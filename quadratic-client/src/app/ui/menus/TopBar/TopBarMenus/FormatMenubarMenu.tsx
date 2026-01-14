@@ -172,6 +172,10 @@ export const FormatMenubarMenu = () => {
         <MenubarSeparator />
 
         <MenubarItemAction action={Action.ClearFormattingBorders} actionArgs={undefined} />
+
+        <MenubarSeparator />
+
+        <MenubarItemAction action={Action.ToggleConditionalFormat} actionArgs={undefined} />
       </MenubarContent>
     </MenubarMenu>
   );

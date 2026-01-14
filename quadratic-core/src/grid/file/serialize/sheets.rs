@@ -7,7 +7,9 @@ use crate::{
     grid::{
         GridBounds, Sheet, SheetFormatting, SheetId,
         file::serialize::contiguous_2d::{export_contiguous_2d, import_contiguous_2d},
-        sheet::{borders::Borders, merge_cells::MergeCells},
+        sheet::{
+            borders::Borders, conditional_format::ConditionalFormats, merge_cells::MergeCells,
+        },
     },
     sheet_offsets::SheetOffsets,
 };
@@ -15,6 +17,7 @@ use crate::{
 use super::{
     borders::{export_borders, import_borders},
     column::{export_column_builder, import_column_builder},
+    conditional_format::{export_conditional_formats, import_conditional_formats},
     current,
     data_table::{export_data_tables, import_data_table_builder},
     formats::{export_formats, import_formats},
@@ -51,6 +54,8 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         offsets: SheetOffsets::import(sheet.offsets),
         rows_resize: import_rows_resize(sheet.rows_resize),
         validations: import_validations(sheet.validations),
+        conditional_formats: import_conditional_formats(sheet.conditional_formats)
+            .unwrap_or_default(),
         columns,
         data_tables,
         data_bounds: GridBounds::Empty,
@@ -74,6 +79,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         offsets: sheet.offsets.export(),
         rows_resize: export_rows_size(sheet.rows_resize),
         validations: export_validations(sheet.validations),
+        conditional_formats: export_conditional_formats(sheet.conditional_formats),
         columns: export_column_builder(sheet.columns),
         data_tables: export_data_tables(sheet.data_tables),
         merge_cells: export_merge_cells(&sheet.merge_cells),

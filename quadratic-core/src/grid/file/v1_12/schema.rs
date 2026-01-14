@@ -2,6 +2,7 @@ use crate::grid::file::v1_11;
 use crate::util::is_false;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 pub type A1SelectionSchema = v1_11::A1SelectionSchema;
 pub type AxisSchema = v1_11::AxisSchema;
@@ -90,6 +91,45 @@ pub type ValidationSchema = v1_11::ValidationSchema;
 pub type ValidationStyleSchema = v1_11::ValidationStyleSchema;
 pub type ValidationTextSchema = v1_11::ValidationTextSchema;
 pub type ValidationsSchema = v1_11::ValidationsSchema;
+
+/// Schema for conditional format style properties.
+/// Only these properties are supported by conditional formatting.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ConditionalFormatStyleSchema {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub bold: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub italic: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub underline: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub strike_through: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub text_color: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub fill_color: Option<String>,
+}
+
+/// Schema for a conditional format rule.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ConditionalFormatSchema {
+    pub id: Uuid,
+    pub selection: A1SelectionSchema,
+    pub style: ConditionalFormatStyleSchema,
+    pub rule: super::formula_schema::FormulaSchema,
+}
+
+/// Schema for all conditional formats in a sheet.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ConditionalFormatsSchema {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub conditional_formats: Vec<ConditionalFormatSchema>,
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FormatSchema {
@@ -247,6 +287,9 @@ pub struct SheetSchema {
 
     #[serde(default)]
     pub merge_cells: MergeCellsSchema,
+
+    #[serde(default)]
+    pub conditional_formats: ConditionalFormatsSchema,
 }
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]

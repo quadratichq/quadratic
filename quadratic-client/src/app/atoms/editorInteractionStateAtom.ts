@@ -21,6 +21,7 @@ export interface EditorInteractionState {
   showSearch: boolean | SearchOptions;
   showContextMenu: boolean;
   showValidation: boolean | string;
+  showConditionalFormat: boolean | string;
   showLogs: boolean;
   annotationState?: AnnotationState;
   permissions: FilePermission[];
@@ -47,6 +48,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
+  showConditionalFormat: false,
   showLogs: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
@@ -182,6 +184,7 @@ export const editorInteractionStateShowShareFileMenuAtom = createSelector('showS
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
 export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
 export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
+export const editorInteractionStateShowConditionalFormatAtom = createSelector('showConditionalFormat');
 export const editorInteractionStateShowLogsAtom = createSelector('showLogs');
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');

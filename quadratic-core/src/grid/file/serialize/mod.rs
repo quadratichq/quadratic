@@ -12,6 +12,7 @@ use super::CURRENT_VERSION;
 pub(crate) mod borders;
 pub(crate) mod cell_value;
 pub(crate) mod column;
+pub(crate) mod conditional_format;
 pub(crate) mod contiguous_2d;
 pub(crate) mod data_table;
 pub(crate) mod formats;
