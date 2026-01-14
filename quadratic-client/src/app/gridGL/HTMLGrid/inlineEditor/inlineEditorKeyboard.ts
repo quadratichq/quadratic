@@ -17,6 +17,15 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { decreaseFontSize, increaseFontSize } from '@/app/ui/helpers/formatCells';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { isMac } from '@/shared/utils/isMac';
+
+/**
+ * Check if the keyboard event is Cmd+K on Mac (for hyperlink insertion in inline editor).
+ * This is handled separately because Cmd+K has another function outside the inline editor.
+ */
+const isMacCmdK = (e: KeyboardEvent): boolean => {
+  return isMac && e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k';
+};
 
 export enum CursorMode {
   Enter,
@@ -471,7 +480,8 @@ class InlineEditorKeyboard {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       inlineEditorMonaco.insertTextAtCursor(formattedTime);
-    } else if (matchShortcut(Action.InsertHyperlink, e)) {
+    } else if (matchShortcut(Action.InsertHyperlink, e) || isMacCmdK(e)) {
+      // Accept both the standard shortcut (Ctrl+K) and Cmd+K on Mac for inline editor
       e.stopPropagation();
       e.preventDefault();
       // Get selection info and emit event to open hyperlink editor

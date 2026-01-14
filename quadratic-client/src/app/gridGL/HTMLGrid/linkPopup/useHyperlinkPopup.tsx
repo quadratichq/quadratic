@@ -592,7 +592,9 @@ export function useHyperlinkPopup() {
       // Check if we're editing an existing hyperlink or inserting a new one
       if (inlineEditorSpans.hasPendingHyperlink()) {
         // Inserting a new hyperlink (via Ctrl+K)
-        inlineEditorSpans.completePendingHyperlink(normalizedUrl, text);
+        // Inherit current formatting from cursor position
+        const formatting = inlineEditorHandler.getFormattingStateForHyperlink();
+        inlineEditorSpans.completePendingHyperlink(normalizedUrl, text, formatting);
       } else {
         // Editing an existing hyperlink - update in place
         inlineEditorSpans.updateHyperlinkAtCursor(normalizedUrl, text);

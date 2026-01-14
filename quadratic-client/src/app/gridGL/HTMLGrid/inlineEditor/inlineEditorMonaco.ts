@@ -281,9 +281,7 @@ class InlineEditorMonaco {
     // If no spans or spans are inactive, measure with default font
     if (!inlineEditorSpans.isActive() || spans.length === 0) {
       context.font = `${fontSize}px ${defaultFontFamily}`;
-      const width = context.measureText(text).width;
-      console.log('[measureWidth] No active spans, using defaultFontFamily:', defaultFontFamily, 'width:', width);
-      return width;
+      return context.measureText(text).width;
     }
 
     // Get cell-level bold/italic state
@@ -301,20 +299,6 @@ class InlineEditorMonaco {
     // Use CSS-style font specification to match how Monaco renders text
     const cellFont = this.getFontForSpan(defaultBold, defaultItalic, fontSize);
 
-    console.log(
-      '[measureWidth] cellBold:',
-      cellBold,
-      'cellItalic:',
-      cellItalic,
-      'defaultBold:',
-      defaultBold,
-      'defaultItalic:',
-      defaultItalic,
-      'cellFont:',
-      cellFont
-    );
-    console.log('[measureWidth] text:', JSON.stringify(text), 'spans:', JSON.stringify(spans));
-
     let totalWidth = 0;
     let lastEnd = 0;
 
@@ -326,9 +310,7 @@ class InlineEditorMonaco {
       if (span.start > lastEnd) {
         const gapText = text.slice(lastEnd, span.start);
         context.font = cellFont;
-        const gapWidth = context.measureText(gapText).width;
-        console.log('[measureWidth] gap:', JSON.stringify(gapText), 'font:', cellFont, 'width:', gapWidth);
-        totalWidth += gapWidth;
+        totalWidth += context.measureText(gapText).width;
       }
 
       // Measure the span with its appropriate font
@@ -340,24 +322,7 @@ class InlineEditorMonaco {
         const spanItalic = span.italic !== undefined ? span.italic : defaultItalic;
         const spanFont = this.getFontForSpan(spanBold, spanItalic, fontSize);
         context.font = spanFont;
-        const spanWidth = context.measureText(spanText).width;
-        console.log(
-          '[measureWidth] span:',
-          JSON.stringify(spanText),
-          'span.bold:',
-          span.bold,
-          'span.italic:',
-          span.italic,
-          '→ spanBold:',
-          spanBold,
-          'spanItalic:',
-          spanItalic,
-          'font:',
-          spanFont,
-          'width:',
-          spanWidth
-        );
-        totalWidth += spanWidth;
+        totalWidth += context.measureText(spanText).width;
       }
 
       lastEnd = Math.max(lastEnd, clampedEnd);
@@ -367,19 +332,9 @@ class InlineEditorMonaco {
     if (lastEnd < text.length) {
       const remainingText = text.slice(lastEnd);
       context.font = cellFont;
-      const remainingWidth = context.measureText(remainingText).width;
-      console.log(
-        '[measureWidth] remaining:',
-        JSON.stringify(remainingText),
-        'font:',
-        cellFont,
-        'width:',
-        remainingWidth
-      );
-      totalWidth += remainingWidth;
+      totalWidth += context.measureText(remainingText).width;
     }
 
-    console.log('[measureWidth] totalWidth:', totalWidth);
     return totalWidth;
   };
 

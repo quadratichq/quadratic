@@ -105,8 +105,9 @@ class InlineEditorSpans {
    * If no selection, insert the URL as both text and link.
    * After insertion, creates an empty span to escape the hyperlink formatting
    * so the cursor is outside the hyperlink by default.
+   * @param formatting Optional formatting to inherit for the hyperlink span
    */
-  completePendingHyperlink(url: string, displayText?: string) {
+  completePendingHyperlink(url: string, displayText?: string, formatting?: SpanFormatting) {
     if (!this.pendingHyperlink) return;
 
     const { startOffset, endOffset } = this.pendingHyperlink;
@@ -120,7 +121,7 @@ class InlineEditorSpans {
         inlineEditorMonaco.insertTextAtPosition(position, textToInsert);
         // After insertion, create the hyperlink span
         hyperlinkEndOffset = startOffset + textToInsert.length;
-        this.addHyperlinkSpan(startOffset, hyperlinkEndOffset, url);
+        this.addHyperlinkSpan(startOffset, hyperlinkEndOffset, url, formatting);
       } else {
         this.pendingHyperlink = null;
         return;
@@ -128,7 +129,7 @@ class InlineEditorSpans {
     } else {
       // There was a selection - create hyperlink for the selected range
       hyperlinkEndOffset = endOffset;
-      this.addHyperlinkSpan(startOffset, endOffset, url);
+      this.addHyperlinkSpan(startOffset, endOffset, url, formatting);
     }
 
     // Create an empty span at the end of the hyperlink to escape the formatting
@@ -227,6 +228,10 @@ class InlineEditorSpans {
       }
       /* Both span underline and strike-through */
       .${UNDERLINE_CLASS}.${STRIKE_THROUGH_CLASS} {
+        text-decoration: underline line-through !important;
+      }
+      /* Hyperlink with span-level strike-through */
+      .${HYPERLINK_CLASS}.${STRIKE_THROUGH_CLASS} {
         text-decoration: underline line-through !important;
       }
     `;
@@ -347,22 +352,12 @@ class InlineEditorSpans {
     const position = inlineEditorMonaco.getPosition();
     const cursorOffset = this.positionToOffset(position);
 
-    const beforeCount = this.spans.length;
     this.spans = this.spans.filter((span) => {
       // Keep non-empty spans
       if (span.end > span.start) return true;
       // Keep empty spans only if cursor is at that position
       return cursorOffset === span.start;
     });
-
-    if (this.spans.length !== beforeCount) {
-      console.log(
-        '[spans] cleanupEmptySpans removed',
-        beforeCount - this.spans.length,
-        'spans, remaining:',
-        JSON.stringify(this.spans, null, 2)
-      );
-    }
 
     this.updateDecorations();
   }
@@ -514,8 +509,6 @@ class InlineEditorSpans {
   onContentChange(changes: monaco.editor.IModelContentChange[]) {
     if (!this.active) return;
 
-    console.log('[spans] onContentChange - before:', JSON.stringify(this.spans, null, 2));
-
     // Sort changes in reverse order to process from end to start
     const sortedChanges = [...changes].sort((a, b) => b.rangeOffset - a.rangeOffset);
 
@@ -524,16 +517,6 @@ class InlineEditorSpans {
       const changeEnd = changeStart + change.rangeLength;
       const delta = change.text.length - change.rangeLength;
       const isInsertion = change.text.length > 0 && change.rangeLength === 0;
-
-      console.log('[spans] change:', {
-        text: change.text,
-        rangeOffset: change.rangeOffset,
-        rangeLength: change.rangeLength,
-        changeStart,
-        changeEnd,
-        delta,
-        isInsertion,
-      });
 
       // Check if there's an empty span at the insertion point
       // If so, we should NOT extend non-empty spans that end at this position
@@ -601,11 +584,8 @@ class InlineEditorSpans {
         .filter((span): span is TrackedSpan => span !== null)
         // Remove empty spans when deleting (but keep them when inserting, as they track formatting for new text)
         .filter((span) => isInsertion || span.start < span.end);
-
-      console.log('[spans] after change:', JSON.stringify(this.spans, null, 2));
     }
 
-    console.log('[spans] onContentChange - final:', JSON.stringify(this.spans, null, 2));
     this.updateDecorations();
   }
 
@@ -723,12 +703,33 @@ class InlineEditorSpans {
 
   /**
    * Add or update a hyperlink span for a given character range.
-   * If the range overlaps existing spans, they will be split accordingly.
+   * If the range overlaps existing spans, their formatting will be preserved (merged into the hyperlink).
+   * @param formatting Optional default formatting for ranges not covered by existing spans
    */
-  addHyperlinkSpan(startOffset: number, endOffset: number, url: string) {
+  addHyperlinkSpan(startOffset: number, endOffset: number, url: string, formatting?: SpanFormatting) {
     if (!this.active) {
       // Activate hyperlink tracking if not already active
       this.active = true;
+    }
+
+    // Collect formatting from existing spans that overlap with the hyperlink range
+    // We'll merge their formatting into the new hyperlink span
+    const overlappingSpans = this.spans.filter((span) => span.end > startOffset && span.start < endOffset);
+
+    // Determine the merged formatting from overlapping spans
+    // If there are overlapping spans, use their formatting; otherwise use provided formatting
+    let mergedFormatting: SpanFormatting = { ...formatting };
+    if (overlappingSpans.length > 0) {
+      // Use the first overlapping span's formatting as the base
+      // (In most cases, there's only one span or they have the same formatting)
+      const firstSpan = overlappingSpans[0];
+      mergedFormatting = {
+        bold: firstSpan.bold ?? formatting?.bold,
+        italic: firstSpan.italic ?? formatting?.italic,
+        underline: firstSpan.underline ?? formatting?.underline,
+        strikeThrough: firstSpan.strikeThrough ?? formatting?.strikeThrough,
+        textColor: firstSpan.textColor ?? formatting?.textColor,
+      };
     }
 
     // Remove or split any spans that overlap with the new hyperlink range
@@ -738,7 +739,7 @@ class InlineEditorSpans {
         // Span is entirely outside the new range - keep it
         newSpans.push(span);
       } else if (span.start >= startOffset && span.end <= endOffset) {
-        // Span is entirely inside the new range - remove it (will be replaced)
+        // Span is entirely inside the new range - remove it (will be replaced by hyperlink)
         continue;
       } else if (span.start < startOffset && span.end > endOffset) {
         // Span encompasses the new range - split into two
@@ -753,11 +754,16 @@ class InlineEditorSpans {
       }
     }
 
-    // Add the new hyperlink span
+    // Add the new hyperlink span with merged formatting
     newSpans.push({
       start: startOffset,
       end: endOffset,
       link: url,
+      bold: mergedFormatting.bold,
+      italic: mergedFormatting.italic,
+      underline: mergedFormatting.underline,
+      strikeThrough: mergedFormatting.strikeThrough,
+      textColor: mergedFormatting.textColor,
     });
 
     // Sort spans by start position

@@ -95,7 +95,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
         return { ...prev, show: true, currentTaskId: taskId ?? null };
       });
     },
-    [showValidation, setShowValidation, setScheduledTasks, scheduledTasks.tasks.length]
+    [showValidation, setShowValidation, setScheduledTasks]
   );
 
   const closeScheduledTasks = useCallback(() => {
@@ -154,7 +154,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
         return { ...prev, tasks: prev.tasks.filter((task) => task.uuid !== taskId) };
       });
     },
-    [fileUuid, setScheduledTasks, scheduledTasks.tasks]
+    [fileUuid, setScheduledTasks]
   );
 
   const getHistory = useCallback(

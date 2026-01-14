@@ -479,6 +479,14 @@ class InlineEditorHandler {
   }
 
   /**
+   * Get the current formatting state for all properties at the cursor position.
+   * Public version for use when creating hyperlinks that should inherit formatting.
+   */
+  getFormattingStateForHyperlink(): SpanFormatting {
+    return this.getCurrentFormattingStateAll();
+  }
+
+  /**
    * Toggle bold formatting for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
