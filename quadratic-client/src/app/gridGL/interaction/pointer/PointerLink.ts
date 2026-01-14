@@ -61,6 +61,8 @@ export class PointerLink {
           rect,
           linkText: link.linkText,
           isNakedUrl: link.isNakedUrl,
+          spanStart: link.spanStart,
+          spanEnd: link.spanEnd,
         });
       } else if (link?.pos) {
         // For naked URLs without url in link data, fetch the URL from cell value

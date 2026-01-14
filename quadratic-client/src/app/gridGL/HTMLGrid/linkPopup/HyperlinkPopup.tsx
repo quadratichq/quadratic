@@ -21,6 +21,7 @@ export const HyperlinkPopup = () => {
     handleMouseEnter,
     handleMouseMove,
     handleMouseLeave,
+    handleBlur,
     handleWheel,
     handleOpenLink,
     handleCopyLink,
@@ -74,6 +75,7 @@ export const HyperlinkPopup = () => {
       onWheel={handleWheel}
       onKeyDown={handleKeyDownWrapper}
       onKeyUp={handleKeyUpWrapper}
+      onBlur={handleBlur}
     >
       {mode === 'view' ? (
         <HyperlinkPopupView

@@ -317,10 +317,24 @@ export class CellsTextHash {
             url: linkRect.url,
             linkText: linkRect.linkText,
             isNakedUrl: linkRect.isNakedUrl,
+            spanStart: linkRect.spanStart,
+            spanEnd: linkRect.spanEnd,
           });
         }
       }
-      this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
+      // Group horizontal lines by tint color for proper rendering
+      const linesByTint = new Map<number, Rectangle[]>();
+      for (const { rect, tint } of cellLabel.horizontalLines) {
+        const rects = linesByTint.get(tint);
+        if (rects) {
+          rects.push(rect);
+        } else {
+          linesByTint.set(tint, [rect]);
+        }
+      }
+      for (const [tint, rects] of linesByTint) {
+        this.drawRects.push({ rects, tint });
+      }
       // Add link underlines with link color (for partial hyperlinks)
       // Use the pre-calculated underlineY position from linkRectangles
       if (!cellLabel.link && cellLabel.linkRectangles.length > 0) {

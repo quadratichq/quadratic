@@ -139,6 +139,10 @@ export const clearFormattingAndBorders = () => {
 
 export const setFontSize = (fontSize: number) => {
   quadraticCore.setFontSize(sheets.getRustSelection(), fontSize, false);
+  // Update the inline editor if it's open
+  if (inlineEditorHandler.isOpen()) {
+    inlineEditorHandler.refreshFontSize();
+  }
 };
 
 export const increaseFontSize = async () => {

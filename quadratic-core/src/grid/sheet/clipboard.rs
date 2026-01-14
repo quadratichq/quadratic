@@ -226,4 +226,138 @@ mod tests {
         let clipboard = set_clipboard(&mut gc, "A3");
         assert!(get_format(pos![A3], &clipboard).unwrap());
     }
+
+    #[test]
+    fn clipboard_rich_text() {
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set a RichText cell value at A1 with bold, italic, and hyperlink
+        let spans = vec![
+            TextSpan {
+                text: "Bold ".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            TextSpan {
+                text: "Italic ".to_string(),
+                italic: Some(true),
+                ..Default::default()
+            },
+            TextSpan::link("link", "https://example.com"),
+            TextSpan::plain("!"),
+        ];
+        let sheet_pos = crate::SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+        gc.set_cell_rich_text(sheet_pos, spans.clone(), None);
+
+        // Verify the cell value is RichText at A1 (1, 1)
+        let sheet = gc.sheet(sheet_id);
+        let cell_value = sheet.cell_value(Pos { x: 1, y: 1 });
+        assert!(
+            matches!(cell_value, Some(CellValue::RichText(_))),
+            "Initial cell value should be RichText, got {:?}",
+            cell_value
+        );
+
+        // Copy the cell to clipboard - get raw clipboard first to debug
+        let selection = A1Selection::test_a1("A1");
+        let raw_clipboard =
+            sheet.copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true);
+
+        // Check the raw clipboard before serialization (cells are stored at 0,0 relative to origin)
+        let raw_copied_value = raw_clipboard.cells.get(0, 0);
+        assert!(
+            matches!(raw_copied_value, Some(CellValue::RichText(_))),
+            "Expected RichText in raw clipboard.cells (before serialization), w={}, h={}, got {:?}",
+            raw_clipboard.w,
+            raw_clipboard.h,
+            raw_copied_value
+        );
+
+        // Verify formatting is preserved in raw clipboard
+        let CellValue::RichText(raw_spans) = raw_copied_value.unwrap() else {
+            panic!("Raw clipboard should have RichText");
+        };
+        assert_eq!(
+            raw_spans[0].bold,
+            Some(true),
+            "Bold should be preserved in raw clipboard"
+        );
+        assert_eq!(
+            raw_spans[1].italic,
+            Some(true),
+            "Italic should be preserved in raw clipboard"
+        );
+
+        // Now convert to JsClipboard (which serializes it)
+        let js_clipboard: JsClipboard = raw_clipboard.into();
+
+        // Verify the clipboard contains the RichText after deserialization
+        let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
+        let copied_value = clipboard.cells.get(0, 0);
+        let CellValue::RichText(decoded_spans) = copied_value.unwrap() else {
+            panic!(
+                "Decoded clipboard should have RichText, got {:?}",
+                copied_value
+            );
+        };
+        assert_eq!(
+            decoded_spans[0].bold,
+            Some(true),
+            "Bold should be preserved after deserialization"
+        );
+        assert_eq!(
+            decoded_spans[1].italic,
+            Some(true),
+            "Italic should be preserved after deserialization"
+        );
+
+        // Paste the clipboard to a new location (B2 = position 2, 2)
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("B2"),
+            js_clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Verify the pasted cell is also RichText at B2 (2, 2)
+        let sheet = gc.sheet(sheet_id);
+        let pasted_value = sheet.cell_value(Pos { x: 2, y: 2 });
+        let Some(CellValue::RichText(pasted_spans)) = pasted_value else {
+            panic!("Pasted cell should be RichText, got {:?}", pasted_value);
+        };
+        assert_eq!(pasted_spans.len(), 4);
+
+        // Check bold span
+        assert_eq!(pasted_spans[0].text, "Bold ");
+        assert_eq!(pasted_spans[0].bold, Some(true));
+        assert!(pasted_spans[0].italic.is_none());
+        assert!(pasted_spans[0].link.is_none());
+
+        // Check italic span
+        assert_eq!(pasted_spans[1].text, "Italic ");
+        assert_eq!(pasted_spans[1].italic, Some(true));
+        assert!(pasted_spans[1].bold.is_none());
+        assert!(pasted_spans[1].link.is_none());
+
+        // Check hyperlink span
+        assert_eq!(pasted_spans[2].text, "link");
+        assert_eq!(
+            pasted_spans[2].link,
+            Some("https://example.com".to_string())
+        );
+
+        // Check plain text span
+        assert_eq!(pasted_spans[3].text, "!");
+        assert!(pasted_spans[3].bold.is_none());
+        assert!(pasted_spans[3].italic.is_none());
+        assert!(pasted_spans[3].link.is_none());
+    }
 }
