@@ -407,9 +407,9 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   await sharedUserPage.bringToFront();
 
+  await sharedUserPage.reload();
   await sharedUserPage.waitForTimeout(5000);
-
-  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await sharedUserPage.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   // Locate the grid button
   const gridButton = sharedUserPage.locator('button:has(span:text-is("grid_view"))');
@@ -506,7 +506,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   await sharedUserPage.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
-  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await sharedUserPage.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -743,15 +743,15 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
 });
 
-test('Filter Files by Name - My Files', async ({ page }) => {
+test('Filter Files by Name - Private Files', async ({ page }) => {
   //--------------------------------
-  // Filter Files by Name - My Files
+  // Filter Files by Name - Private Files
   //--------------------------------
   // Login
   await logIn(page, { emailPrefix: 'e2e_dashboard_filter_files_my' });
 
   // Navigate to My files page (the new Home page shows all files combined)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // // Create new team
@@ -770,10 +770,10 @@ test('Filter Files by Name - My Files', async ({ page }) => {
 
   // Create files (navigate back to My Files after each to ensure files are private)
   await createFile(page, { fileName: file1 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await createFile(page, { fileName: file2 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   //--------------------------------
@@ -860,7 +860,7 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   // Bring user 1 to the front and navigate to Shared with me files
   await user1Page.bringToFront();
   await user1Page.waitForTimeout(2000);
-  await user1Page.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -915,8 +915,8 @@ test('Import Files', async ({ page }) => {
   // Login with dedicated user
   await logIn(page, { emailPrefix: 'e2e_dashboard_import_files' });
 
-  // Navigate to My files page (the new Home page shows all files combined)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  // Navigate to Private files page
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Wait for load
@@ -981,7 +981,7 @@ test('Import Files', async ({ page }) => {
   await cleanUpFiles(page, { fileName: excelFileName });
 });
 
-test('Resources Examples - Dashboard Views', async ({ page }) => {
+test('Dashboard Views - Resources Examples', async ({ page }) => {
   //--------------------------------
   // List View
   //--------------------------------

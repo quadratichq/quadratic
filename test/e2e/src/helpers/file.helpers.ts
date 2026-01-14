@@ -25,9 +25,6 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
 
     // when done, navigate back to where you were
     await page.goto(currentUrl, { waitUntil: 'networkidle' });
-    await waitForAppReady(page);
-
-    return;
   }
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
