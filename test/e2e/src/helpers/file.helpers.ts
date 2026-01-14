@@ -43,8 +43,8 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
   await dismissUpgradeToProDialog(page);
 
   // filter file by name
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
+  await page.locator('[data-testid="files-list-search-input"]').waitFor();
+  await page.locator('[data-testid="files-list-search-input"]').fill(fileName);
   await page.waitForTimeout(2500);
 
   // loop through and delete all the files
@@ -59,7 +59,7 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
   }
 
   // once complete clear out search bar
-  if (!skipFilterClear) await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
+  if (!skipFilterClear) await page.locator('[data-testid="files-list-search-input"]').fill('');
 };
 
 type NavigateIntoFileOptions = {
@@ -71,7 +71,7 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   await dismissUpgradeToProDialog(page);
 
   // Search for the file
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
+  await page.locator('[data-testid="files-list-search-input"]').fill(fileName);
   await waitForNetworkIdle(page); // Wait for filter results instead of fixed 2s
   await page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
 

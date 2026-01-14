@@ -780,7 +780,7 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   //--------------------------------
 
   // Filter by file 1
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file1);
+  await page.locator('[data-testid="files-list-search-input"]').fill(file1);
   await page.waitForTimeout(2500);
 
   //--------------------------------
@@ -790,23 +790,23 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 2 and assert file 2 is visible
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
+  await page.locator('[data-testid="files-list-search-input"]').fill(file2);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (both files)
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
+  await page.locator('[data-testid="files-list-search-input"]').fill(string1);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string2 and assert file2 (which contains string2) is visible
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
+  await page.locator('[data-testid="files-list-search-input"]').fill(string2);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up files
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
+  await page.locator('[data-testid="files-list-search-input"]').fill('');
   await page.waitForTimeout(2500);
 
   await cleanUpFiles(page, { fileName: file1, skipFilterClear: true });
@@ -866,7 +866,7 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   //--------------------------------
 
   // Filter by file 1
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file1);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(file1);
   await user1Page.waitForTimeout(2500);
 
   //--------------------------------
@@ -877,18 +877,18 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 2 and assert file 2 is visible
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(file2);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (both files)
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(string1);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string2 and assert file2 (which contains string2) is visible
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(string2);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
@@ -919,7 +919,7 @@ test('Import Files', async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Wait for load
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await page.locator('[data-testid="files-list-search-input"]').waitFor();
 
   // Clean up files
   await cleanUpFiles(page, { fileName: gridFileName });
@@ -1073,7 +1073,7 @@ test.skip('Search - Search File Examples', async ({ page }) => {
   //--------------------------------
 
   // Search for an example file
-  await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleFile);
+  await page.locator('[data-testid="files-list-search-input"]').fill(exampleFile);
 
   //--------------------------------
   // Assert:

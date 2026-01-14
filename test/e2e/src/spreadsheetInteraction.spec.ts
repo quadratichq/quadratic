@@ -1405,7 +1405,7 @@ test.skip('File - Clear Recent History', async ({ page }) => {
   if (!exampleName) throw new Error('No example name found');
 
   // Search for the randomly picked file, click it
-  await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleName);
+  await page.locator('[data-testid="files-list-search-input"]').fill(exampleName);
   await page.locator(`h2:text("${exampleName}")`).click({ timeout: 60 * 1000 });
 
   // Wait for the page to load, this is the sheet chat.

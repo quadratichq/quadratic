@@ -941,7 +941,7 @@ test.skip('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
-  await userPage1.locator('[placeholder*="Filter by file or creator name"]').waitFor();
+  await userPage1.locator('[data-testid="files-list-search-input"]').waitFor();
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 

@@ -287,7 +287,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await adminPage.bringToFront();
 
   const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
-  await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await adminPage.locator('[data-testid="files-list-search-input"]').waitFor();
 
   //--------------------------------
   // Act: Owner Permission
@@ -649,7 +649,7 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   // Admin creates a new team
   await adminPage.bringToFront();
   const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
-  await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await adminPage.locator('[data-testid="files-list-search-input"]').waitFor();
 
   // Create a new file in the newly created team
   await cleanUpFiles(adminPage, { fileName });
@@ -902,10 +902,10 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   await canEditUserPage.waitForLoadState('networkidle');
 
   // Click on Filter by name
-  await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click({ timeout: 60 * 1000 });
+  await canEditUserPage.locator('[data-testid="files-list-search-input"]').click({ timeout: 60 * 1000 });
 
   // Filter by filename
-  await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).fill(`test-permissions`);
+  await canEditUserPage.locator('[data-testid="files-list-search-input"]').fill(`test-permissions`);
 
   // Click into permissions file
   await canEditUserPage
@@ -1050,10 +1050,10 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   await canViewUserPage.waitForTimeout(60 * 1000);
 
   // Click on Filter by name
-  await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click({ timeout: 60 * 1000 });
+  await canViewUserPage.locator('[data-testid="files-list-search-input"]').click({ timeout: 60 * 1000 });
 
   // Filter by filename
-  await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).fill(`test-permissions`);
+  await canViewUserPage.locator('[data-testid="files-list-search-input"]').fill(`test-permissions`);
 
   // Click into permissions file
   await canViewUserPage

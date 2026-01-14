@@ -162,7 +162,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await handleStartWithAi(page);
 
   // wait for shared with me visibility on dashboard
-  await page.locator('[data-testid="dashboard-sidebar-shared-with-me-link"]').waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').waitFor({ timeout: 2 * 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
@@ -176,8 +176,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       .click({ timeout: 60 * 1000 });
   }
 
-  // Wait for Filter by file or creator name...
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
+  // Wait for Filter
+  await page.locator('[data-testid="files-list-search-input"]').waitFor({ timeout: 60 * 1000 });
 
   // Dismiss the "Upgrade to Pro" dialog if it appears
   await dismissUpgradeToProDialog(page);
@@ -237,7 +237,7 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   }
 
   // Wait for shared with me visibility on dashboard
-  await page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
 
   // Assert we are on the teams page
   await expect(page).toHaveURL(/teams/, { timeout: 60 * 1000 });
