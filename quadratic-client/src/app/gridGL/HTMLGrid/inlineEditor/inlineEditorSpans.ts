@@ -347,12 +347,22 @@ class InlineEditorSpans {
     const position = inlineEditorMonaco.getPosition();
     const cursorOffset = this.positionToOffset(position);
 
+    const beforeCount = this.spans.length;
     this.spans = this.spans.filter((span) => {
       // Keep non-empty spans
       if (span.end > span.start) return true;
       // Keep empty spans only if cursor is at that position
       return cursorOffset === span.start;
     });
+
+    if (this.spans.length !== beforeCount) {
+      console.log(
+        '[spans] cleanupEmptySpans removed',
+        beforeCount - this.spans.length,
+        'spans, remaining:',
+        JSON.stringify(this.spans, null, 2)
+      );
+    }
 
     this.updateDecorations();
   }
@@ -504,6 +514,8 @@ class InlineEditorSpans {
   onContentChange(changes: monaco.editor.IModelContentChange[]) {
     if (!this.active) return;
 
+    console.log('[spans] onContentChange - before:', JSON.stringify(this.spans, null, 2));
+
     // Sort changes in reverse order to process from end to start
     const sortedChanges = [...changes].sort((a, b) => b.rangeOffset - a.rangeOffset);
 
@@ -512,6 +524,16 @@ class InlineEditorSpans {
       const changeEnd = changeStart + change.rangeLength;
       const delta = change.text.length - change.rangeLength;
       const isInsertion = change.text.length > 0 && change.rangeLength === 0;
+
+      console.log('[spans] change:', {
+        text: change.text,
+        rangeOffset: change.rangeOffset,
+        rangeLength: change.rangeLength,
+        changeStart,
+        changeEnd,
+        delta,
+        isInsertion,
+      });
 
       // Check if there's an empty span at the insertion point
       // If so, we should NOT extend non-empty spans that end at this position
@@ -576,10 +598,14 @@ class InlineEditorSpans {
 
           return span;
         })
-        .filter((span): span is TrackedSpan => span !== null);
-      // Note: We don't filter out empty spans here - they're cleaned up by cleanupEmptySpans
+        .filter((span): span is TrackedSpan => span !== null)
+        // Remove empty spans when deleting (but keep them when inserting, as they track formatting for new text)
+        .filter((span) => isInsertion || span.start < span.end);
+
+      console.log('[spans] after change:', JSON.stringify(this.spans, null, 2));
     }
 
+    console.log('[spans] onContentChange - final:', JSON.stringify(this.spans, null, 2));
     this.updateDecorations();
   }
 
