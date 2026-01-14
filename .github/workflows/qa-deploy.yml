@@ -7,10 +7,47 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  create_status_comment:
+    name: Create Status Comment
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 5
+    steps:
+      - name: Find Status Comment
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Create initial status comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ⏳ Building images...
+            ⏳ Deploy
+            ⏳ Tests-E2E
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
   build_client:
     name: Build Client
+    needs: [create_status_comment]
     runs-on: blacksmith-4vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-build-client
       cancel-in-progress: true
@@ -122,10 +159,39 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on build failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ❌ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
   build_images:
     name: Build Images
+    needs: [create_status_comment]
     runs-on: ${{ matrix.runner }}
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-build-images-${{ matrix.service }}
       cancel-in-progress: true
@@ -193,15 +259,65 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on build failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ❌ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
   deploy_client:
     needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-deploy-client
     timeout-minutes: 60
     steps:
+      - name: Find Status Comment
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment-start
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment-start.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ⏳ Deploying...
+            ⏳ Tests-E2E
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -218,7 +334,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
+          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
         env:
           S3_DIR: s3://qa.quadratic-preview.com/
 
@@ -237,11 +353,39 @@ jobs:
             exit 1
           fi
 
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment-failure
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment-failure.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
   deploy_infra:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     concurrency:
       group: qa-deploy-infra
     timeout-minutes: 60
@@ -287,6 +431,30 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           STACK_NAME: quadratic-qa
+
+      - name: Find Status Comment
+        if: failure()
+        uses: peter-evans/find-comment@v3
+        id: find-status-comment-failure
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-status-comment-failure.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ❌ Deploy
+            ❌ Tests-E2E
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
 
   verify_deployed_version:
     name: Verify Version
@@ -336,22 +504,505 @@ jobs:
           expected_version: ${{ env.EXPECTED_VERSION }}
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
-  qa-wolf-notify:
-    needs: [deploy_client, deploy_infra, verify_deployed_version]
-    name: Notify QA Wolf
+  test-e2e-start-comment:
+    name: Tests-E2E - Setup
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
-    concurrency:
-      group: qa-wolf-notify
-      cancel-in-progress: true
-    timeout-minutes: 10
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    env:
+      # Number of parallel shards for E2E tests. 164 shards provides optimal parallelization
+      # for ~164 test files, with each shard running a subset of tests. Adjust based on test count.
+      matrix_runner: 164
+      e2e_url: qa.quadratic-preview.com
     steps:
-      - name: Wait for 5 minutes
-        run: sleep 300
-
-      - name: Notify deploy_success
+      - name: Generate Test Matrix
+        id: generate-matrix
         run: |
-          curl -H "Authorization: ${{ secrets.QAW_API_KEY }}" \
-          -H 'Content-Type: application/json' \
-          -d '{"branch": "qa", "deployment_type": "new_qa", "commit_url": "https://github.com/quadratichq/quadratic/commit/${{ github.sha }}", "sha": "${{ github.sha }}"}' \
-          https://app.qawolf.com/api/webhooks/deploy_success
+          # Create a matrix with shardIndex values from 1 to matrix_runner
+          # Use -c flag for compact (single-line) JSON output required by $GITHUB_OUTPUT
+          matrix=$(jq -c -n --argjson runner "${{ env.matrix_runner }}" '{"shardIndex": [range(1; $runner + 1)], "shardTotal": [$runner]}')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $matrix"
+
+      - name: Find Status Comment
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-start-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on E2E tests start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-start-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${{ env.e2e_url }})
+            ⏳ Tests-E2E running... - [Partial Report](https://e2e.quadratic-preview.com/qa) (updates as shards complete)
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+  test-e2e-matrix-run:
+    name: Tests-E2E - Matrix Run, Shard
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+        test-e2e-start-comment,
+      ]
+    permissions:
+      contents: read
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      options: --user root
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.test-e2e-start-comment.outputs.matrix) }}
+    env:
+      e2e_url: qa.quadratic-preview.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions/tests-e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
+
+      - name: Run tests e2e
+        uses: ./.github/actions/tests-e2e
+        id: run-tests-e2e
+        with:
+          e2e_url: "https://${{ env.e2e_url }}"
+          shard_index: ${{ matrix.shardIndex }}
+          shard_total: ${{ matrix.shardTotal }}
+
+  test-e2e-partial-reports:
+    name: Tests-E2E - Partial Reports
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+        test-e2e-start-comment,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 14
+    env:
+      e2e_url: qa.quadratic-preview.com
+      s3_bucket: e2e.quadratic-preview.com
+      total_shards: 164
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            test/e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install Dependencies
+        run: cd test/e2e && npm install
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Generate partial reports periodically
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const fs = require('fs');
+            const path = require('path');
+
+            const runId = '${{ github.run_id }}';
+            const s3Bucket = '${{ env.s3_bucket }}';
+            const totalShards = parseInt('${{ env.total_shards }}');
+            const e2eUrl = '${{ env.e2e_url }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            const workflowUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+
+            // Helper function to update PR comment
+            async function updatePRComment(shardCount, passed, failed, flaky) {
+              const completionPercent = Math.round((shardCount / totalShards) * 100);
+
+              // Build status line with stats
+              let statusParts = [`⏳ Tests-E2E running... ${shardCount}/${totalShards} shards (${completionPercent}%)`];
+              if (failed > 0) statusParts.push(`❌ ${failed} failed`);
+              if (passed > 0) statusParts.push(`✅ ${passed} passed`);
+              if (flaky > 0) statusParts.push(`🔄 ${flaky} flaky`);
+
+              const statusLine = statusParts.join(' | ');
+
+              const body = `## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${e2eUrl})
+            ${statusLine} - [Partial Report](https://${s3Bucket}/qa)
+
+            🔍 [Workflow run](${workflowUrl})`;
+
+              try {
+                // Find existing comment
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(prNumber),
+                });
+
+                const botComment = comments.find(c =>
+                  c.user?.login === 'github-actions[bot]' &&
+                  c.body?.includes('QA - Build, Deploy & Tests-E2E')
+                );
+
+                if (botComment) {
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: botComment.id,
+                    body: body
+                  });
+                  console.log('Updated PR comment with partial status');
+                }
+              } catch (e) {
+                console.log(`Failed to update PR comment: ${e.message}`);
+              }
+            }
+
+            // Wait 60 seconds before first check to allow some shards to complete
+            console.log('Waiting 60 seconds before first partial report...');
+            await new Promise(r => setTimeout(r, 60000));
+
+            let lastReportedShards = 0;
+            const maxIterations = 12; // Run for up to ~12 minutes (60s initial + 12 * 60s)
+
+            for (let i = 0; i < maxIterations; i++) {
+              console.log(`\n=== Partial report iteration ${i + 1}/${maxIterations} ===`);
+
+              try {
+                // Download available blob reports
+                execSync('rm -rf all-blob-reports', { stdio: 'inherit' });
+
+                try {
+                  execSync(`gh run download ${runId} --pattern "blob-report-${runId}-*" --dir all-blob-reports`, {
+                    stdio: 'inherit',
+                    env: { ...process.env, GH_TOKEN: '${{ github.token }}' }
+                  });
+                } catch (e) {
+                  console.log('No blob reports available yet, waiting...');
+                  await new Promise(r => setTimeout(r, 60000));
+                  continue;
+                }
+
+                // Count downloaded shard reports
+                let shardCount = 0;
+                if (fs.existsSync('all-blob-reports')) {
+                  const dirs = fs.readdirSync('all-blob-reports');
+                  shardCount = dirs.filter(d => d.startsWith('blob-report-')).length;
+
+                  // Flatten the directory structure for merge-reports
+                  for (const dir of dirs) {
+                    const srcDir = path.join('all-blob-reports', dir);
+                    if (fs.statSync(srcDir).isDirectory()) {
+                      const files = fs.readdirSync(srcDir);
+                      for (const file of files) {
+                        fs.renameSync(
+                          path.join(srcDir, file),
+                          path.join('all-blob-reports', `${dir}-${file}`)
+                        );
+                      }
+                      fs.rmdirSync(srcDir);
+                    }
+                  }
+                }
+
+                console.log(`Found ${shardCount} shard reports out of ${totalShards}`);
+
+                // Only generate a new report if we have more shards than last time
+                if (shardCount <= lastReportedShards) {
+                  console.log('No new shards completed, waiting...');
+                  await new Promise(r => setTimeout(r, 60000));
+                  continue;
+                }
+
+                lastReportedShards = shardCount;
+
+                // Check if we have all shards - if so, exit and let final job handle it
+                if (shardCount >= totalShards) {
+                  console.log('All shards completed, exiting to let final report job handle it');
+                  break;
+                }
+
+                // Generate HTML report
+                execSync('rm -rf playwright-report', { stdio: 'inherit' });
+                execSync('npx playwright merge-reports --reporter html ./all-blob-reports', {
+                  stdio: 'inherit',
+                  cwd: process.cwd()
+                });
+
+                // Parse test results from the report to get failure count
+                let passed = 0, failed = 0, flaky = 0, skipped = 0;
+                try {
+                  // Generate JSON report to get accurate counts
+                  execSync('npx playwright merge-reports --reporter json ./all-blob-reports > report.json 2>/dev/null || true', {
+                    stdio: 'pipe',
+                    cwd: process.cwd()
+                  });
+
+                  if (fs.existsSync('report.json')) {
+                    const report = JSON.parse(fs.readFileSync('report.json', 'utf8'));
+                    passed = report.stats?.expected || 0;
+                    failed = report.stats?.unexpected || 0;
+                    flaky = report.stats?.flaky || 0;
+                    skipped = report.stats?.skipped || 0;
+                  }
+                } catch (e) {
+                  console.log('Could not parse JSON report for stats');
+                }
+
+                // Update PR comment with current status
+                await updatePRComment(shardCount, passed, failed, flaky);
+
+                // Add PARTIAL banner to index.html
+                const indexPath = 'playwright-report/index.html';
+                if (fs.existsSync(indexPath)) {
+                  let html = fs.readFileSync(indexPath, 'utf8');
+
+                  const completionPercent = Math.round((shardCount / totalShards) * 100);
+                  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+                  const banner = `
+            <div id="partial-banner" style="
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              z-index: 10000;
+              background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+              color: white;
+              padding: 12px 20px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-size: 14px;
+              font-weight: 500;
+              text-align: center;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            ">
+              <span style="font-size: 16px; margin-right: 8px;">⚠️</span>
+              <strong>PARTIAL REPORT</strong> —
+              ${shardCount}/${totalShards} shards completed (${completionPercent}%)
+              ${failed > 0 ? `<span style="background: #dc2626; padding: 2px 8px; border-radius: 4px; margin-left: 12px;">❌ ${failed} failed</span>` : ''}
+              ${passed > 0 ? `<span style="background: #16a34a; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">✅ ${passed} passed</span>` : ''}
+              ${flaky > 0 ? `<span style="background: #ca8a04; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">🔄 ${flaky} flaky</span>` : ''}
+              <span style="margin-left: 16px; opacity: 0.9; font-size: 12px;">Updated: ${timestamp}</span>
+            </div>
+            <div style="height: 50px;"></div>`;
+
+                  // Insert banner after <body> tag
+                  html = html.replace(/<body[^>]*>/, match => match + banner);
+                  fs.writeFileSync(indexPath, html);
+
+                  console.log(`Added PARTIAL banner: ${shardCount}/${totalShards} shards, ${failed} failed, ${passed} passed`);
+                }
+
+                // Upload to S3 (QA uses /qa path)
+                execSync(`aws s3 sync playwright-report s3://${s3Bucket}/qa --delete --cache-control "public, max-age=30"`, {
+                  stdio: 'inherit'
+                });
+
+                console.log('Partial report uploaded to S3');
+
+              } catch (error) {
+                console.log(`Error in iteration ${i + 1}: ${error.message}`);
+              }
+
+              // Wait 60 seconds before next check
+              if (i < maxIterations - 1) {
+                console.log('Waiting 60 seconds before next check...');
+                await new Promise(r => setTimeout(r, 60000));
+              }
+            }
+
+            console.log('Partial report generation complete');
+
+  test-e2e-merge-report-and-end-comment:
+    name: Tests-E2E - Generate Report and End Comment
+    needs:
+      [
+        build_client,
+        build_images,
+        deploy_client,
+        deploy_infra,
+        verify_deployed_version,
+        test-e2e-start-comment,
+        test-e2e-matrix-run,
+        test-e2e-partial-reports,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && needs.test-e2e-start-comment.result == 'success' && github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 15
+    env:
+      e2e_url: qa.quadratic-preview.com
+      s3_bucket: e2e.quadratic-preview.com
+    steps:
+      - name: Checkout code
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            test/e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
+
+      - name: Setup Node
+        if: ${{ !cancelled() }}
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install Dependencies
+        if: ${{ !cancelled() }}
+        run: cd test/e2e && npm install
+
+      - name: Download blob reports
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: blob-report-${{ github.run_id }}-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        if: ${{ !cancelled() }}
+        run: |
+          if [ ! -d "all-blob-reports" ] || [ -z "$(ls -A all-blob-reports 2>/dev/null)" ]; then
+            echo "No blob reports found. Creating empty report."
+            mkdir -p playwright-report
+            echo "<html><body><h1>No test reports available</h1><p>Tests may have been cancelled or failed to upload reports.</p></body></html>" > playwright-report/index.html
+            exit 0
+          fi
+          file_count=$(find all-blob-reports -type f 2>/dev/null | wc -l || echo 0)
+          echo "Merging $file_count blob reports into HTML report..."
+          npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Configure AWS Credentials
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload HTML report to S3
+        if: ${{ !cancelled() }}
+        run: |
+          # Upload entire build directory to S3
+          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/qa \
+            --delete \
+            --cache-control "public, max-age=30"
+
+      - name: Find Status Comment
+        if: always()
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-merge-report-and-end-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "QA - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on E2E tests end
+        if: ${{ !cancelled() }}
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${{ env.e2e_url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/qa)
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+      - name: Update comment on E2E tests cancelled
+        if: cancelled()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## QA - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy - [QA](https://${{ env.e2e_url }})
+            ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+  test-e2e-status:
+    name: Tests-E2E Status
+    needs: [test-e2e-start-comment, test-e2e-matrix-run]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    if: always() && needs.test-e2e-start-comment.result == 'success' && github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 5
+    steps:
+      - name: Check E2E test results
+        run: |
+          if [ "${{ needs.test-e2e-matrix-run.result }}" != "success" ]; then
+            echo "E2E tests failed or were cancelled. Result: ${{ needs.test-e2e-matrix-run.result }}"
+            exit 1
+          fi
+          echo "All E2E tests passed successfully!"
