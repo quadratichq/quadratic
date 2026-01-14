@@ -9,6 +9,7 @@ import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -54,6 +55,14 @@ class InlineEditorKeyboard {
         e.preventDefault();
         if (!(await this.handleValidationError())) {
           inlineEditorHandler.close({ deltaX: isRight ? 1 : -1 });
+        }
+      } else if (isRight && this.cursorMode === CursorMode.Edit) {
+        // In Edit mode, check if we need to escape from a formatted span.
+        // When the cursor is at the end of a formatted span and pressing right arrow,
+        // we should allow the user to escape the span's formatting.
+        if (inlineEditorSpans.tryEscapeFormattedSpan()) {
+          e.stopPropagation();
+          e.preventDefault();
         }
       }
     }

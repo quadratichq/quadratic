@@ -452,6 +452,19 @@ class InlineEditorHandler {
   }
 
   /**
+   * Get the current text color state at the cursor position.
+   * This checks span formatting at cursor first, then falls back to cell-level formatting.
+   */
+  private getCurrentTextColor(): string | undefined {
+    const cursorFormatting = inlineEditorSpans.getFormattingAtCursor();
+    if (cursorFormatting) {
+      return cursorFormatting.textColor;
+    }
+    // Fall back to cell-level formatting
+    return this.formatSummary?.textColor ?? undefined;
+  }
+
+  /**
    * Get the current formatting state for all properties at the cursor position.
    * Used when creating empty spans to preserve existing formatting.
    */
@@ -461,6 +474,7 @@ class InlineEditorHandler {
       italic: this.getCurrentFormattingState('italic'),
       underline: this.getCurrentFormattingState('underline'),
       strikeThrough: this.getCurrentFormattingState('strikeThrough'),
+      textColor: this.getCurrentTextColor(),
     };
   }
 
@@ -566,7 +580,7 @@ class InlineEditorHandler {
   };
 
   /**
-   * Set text color for the current selection or set temporary formatting.
+   * Set text color for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   setTextColorForSelection = (color: string | undefined): boolean => {
@@ -579,9 +593,15 @@ class InlineEditorHandler {
       this.updateSelectionFormatting();
       return true;
     }
-    // TODO: For now, text color without selection is not supported
-    // We would need to add temporaryTextColor to support this
-    return false;
+    // No selection - create an empty span at cursor with the new text color
+    // Preserve all other formatting properties from the current position
+    const currentFormatting = this.getCurrentFormattingStateAll();
+    inlineEditorSpans.createEmptySpanAtCursor({
+      ...currentFormatting,
+      textColor: color,
+    });
+    this.updateSelectionFormatting();
+    return true;
   };
 
   /**

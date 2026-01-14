@@ -103,11 +103,14 @@ class InlineEditorSpans {
    * Complete the pending hyperlink insertion with the given URL.
    * If there was a selection, create a hyperlink for that range.
    * If no selection, insert the URL as both text and link.
+   * After insertion, creates an empty span to escape the hyperlink formatting
+   * so the cursor is outside the hyperlink by default.
    */
   completePendingHyperlink(url: string, displayText?: string) {
     if (!this.pendingHyperlink) return;
 
     const { startOffset, endOffset } = this.pendingHyperlink;
+    let hyperlinkEndOffset: number;
 
     if (startOffset === endOffset) {
       // No selection - insert the URL/displayText as new text with hyperlink
@@ -116,12 +119,27 @@ class InlineEditorSpans {
       if (position) {
         inlineEditorMonaco.insertTextAtPosition(position, textToInsert);
         // After insertion, create the hyperlink span
-        this.addHyperlinkSpan(startOffset, startOffset + textToInsert.length, url);
+        hyperlinkEndOffset = startOffset + textToInsert.length;
+        this.addHyperlinkSpan(startOffset, hyperlinkEndOffset, url);
+      } else {
+        this.pendingHyperlink = null;
+        return;
       }
     } else {
       // There was a selection - create hyperlink for the selected range
+      hyperlinkEndOffset = endOffset;
       this.addHyperlinkSpan(startOffset, endOffset, url);
     }
+
+    // Create an empty span at the end of the hyperlink to escape the formatting
+    // This ensures new typed text won't be part of the hyperlink
+    const escapeSpan: TrackedSpan = {
+      start: hyperlinkEndOffset,
+      end: hyperlinkEndOffset, // Empty span
+      // No formatting - just escapes the hyperlink
+    };
+    this.spans.push(escapeSpan);
+    this.spans.sort((a, b) => a.start - b.start);
 
     this.pendingHyperlink = null;
   }
@@ -995,19 +1013,93 @@ class InlineEditorSpans {
 
     // Also check if cursor is at the end of a span (e.g., right after typing)
     // This allows formatting to "stick" when cursor is at span boundary
-    for (const span of this.spans) {
-      if (offset === span.end) {
-        return {
-          bold: span.bold ?? false,
-          italic: span.italic ?? false,
-          underline: span.underline ?? false,
-          strikeThrough: span.strikeThrough ?? false,
-          textColor: span.textColor,
-        };
+    // But skip if there's already an empty span at this position (user escaped the formatting)
+    const hasEmptySpanAtCursor = this.spans.some((span) => span.start === offset && span.end === offset);
+    if (!hasEmptySpanAtCursor) {
+      for (const span of this.spans) {
+        if (offset === span.end) {
+          return {
+            bold: span.bold ?? false,
+            italic: span.italic ?? false,
+            underline: span.underline ?? false,
+            strikeThrough: span.strikeThrough ?? false,
+            textColor: span.textColor,
+          };
+        }
       }
     }
 
     return undefined;
+  }
+
+  /**
+   * Try to escape from a formatted span when pressing the right arrow key.
+   * If the cursor is at the end of a formatted span AND at the end of the content,
+   * creates an empty span without any formatting at that position, allowing the
+   * user to type text that won't inherit the span's formatting.
+   *
+   * This is needed because when the formatted span is at the end of the content,
+   * there's no way to move the cursor outside the span normally.
+   *
+   * Returns true if escape was performed (and default behavior should be prevented),
+   * false otherwise.
+   */
+  tryEscapeFormattedSpan(): boolean {
+    const editor = inlineEditorMonaco.editor;
+    if (!editor) return false;
+
+    const model = editor.getModel();
+    if (!model) return false;
+
+    const position = inlineEditorMonaco.getPosition();
+    const offset = this.positionToOffset(position);
+    if (offset === null) return false;
+
+    // Only escape when cursor is at the end of the content
+    // If there's content after the cursor, the normal right arrow movement will
+    // naturally move the cursor outside the span
+    const contentLength = model.getValue().length;
+    if (offset !== contentLength) {
+      return false;
+    }
+
+    // Check if there's already an empty span at this position (already escaped)
+    const hasEmptySpanAtCursor = this.spans.some((span) => span.start === offset && span.end === offset);
+    if (hasEmptySpanAtCursor) {
+      return false;
+    }
+
+    // Find any formatted span that ends at the cursor position
+    const formattedSpan = this.spans.find(
+      (span) =>
+        span.end === offset &&
+        (span.link !== undefined ||
+          span.bold !== undefined ||
+          span.italic !== undefined ||
+          span.underline !== undefined ||
+          span.strikeThrough !== undefined ||
+          span.textColor !== undefined)
+    );
+    if (!formattedSpan) {
+      return false;
+    }
+
+    // Activate tracking if not already active
+    if (!this.active) {
+      this.active = true;
+    }
+
+    // Create an empty span at this position without any formatting
+    // This will allow new typed text to NOT inherit the span's formatting
+    const newSpan: TrackedSpan = {
+      start: offset,
+      end: offset, // Empty span
+      // No formatting - clean escape
+    };
+    this.spans.push(newSpan);
+    this.spans.sort((a, b) => a.start - b.start);
+
+    return true;
   }
 
   /**

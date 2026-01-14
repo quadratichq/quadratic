@@ -94,7 +94,7 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        let ops = self.clear_format_borders_operations(selection, false);
+        let ops = self.clear_format_borders_operations(selection, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
