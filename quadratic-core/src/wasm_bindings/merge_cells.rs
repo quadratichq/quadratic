@@ -28,7 +28,7 @@ impl JsMergeCells {
         match deserialize::<MergeCells>(&SerializationFormat::Bincode, &merge_cells) {
             Ok(merge_cells) => Self { merge_cells },
             Err(e) => {
-                dbgjs!(&format!("Error creating JsA1Context: {e}"));
+                dbgjs!(&format!("Error creating JsMergeCells: {e}"));
                 Self::default()
             }
         }

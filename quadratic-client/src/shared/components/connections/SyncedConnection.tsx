@@ -41,8 +41,8 @@ export const SyncedConnection = ({
 
   return (
     <>
-      {!isSynced && `${syncedConnection.percentCompleted}% Synced`}
-      {isSynced && syncedConnection.updatedDate && `Last Synced ${timeAgo(syncedConnection.updatedDate)}`}
+      {!isSynced && `${syncedConnection.percentCompleted}% synced`}
+      {isSynced && syncedConnection.updatedDate && `Last synced ${timeAgo(syncedConnection.updatedDate)}`}
       {createdDate && ` · Created ${timeAgo(createdDate)}`}
     </>
   );

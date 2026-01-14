@@ -1,10 +1,12 @@
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::SharedError;
 use quadratic_rust_shared::arrow::object_store::{ObjectStore, ObjectStoreKind, object_store_url};
+use quadratic_rust_shared::environment::Environment;
 use quadratic_rust_shared::sql::datafusion_connection::DatafusionConnection;
 use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
 use quadratic_rust_shared::storage::s3::{S3, S3Config};
 use quadratic_rust_shared::storage::{StorageConfig, StorageContainer, StorageType};
+use quadratic_rust_shared::synced::plaid::client::PlaidEnvironment;
 use std::sync::Arc;
 
 use crate::config::Config;
@@ -12,11 +14,15 @@ use crate::error::{ConnectionError, Result};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Settings {
+    pub(crate) environment: Environment,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) jwks: Option<JwkSet>,
     pub(crate) max_response_bytes: u64,
     pub(crate) datafusion_connection: DatafusionConnection,
+    pub(crate) plaid_client_id: String,
+    pub(crate) plaid_secret: String,
+    pub(crate) plaid_environment: PlaidEnvironment,
 }
 
 impl Settings {
@@ -30,11 +36,15 @@ impl Settings {
         let datafusion_connection = new_datafusion_connection(config, object_store)?;
 
         Ok(Settings {
+            environment: config.environment.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
             jwks,
             max_response_bytes: config.max_response_bytes,
             datafusion_connection,
+            plaid_client_id: config.plaid_client_id.to_owned(),
+            plaid_secret: config.plaid_secret.to_owned(),
+            plaid_environment: config.plaid_environment.to_owned(),
         })
     }
 

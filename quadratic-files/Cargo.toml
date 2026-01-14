@@ -38,11 +38,12 @@ rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
+sha2 = "0.10"
 strum = "0.27.1"
 strum_macros = "0.27.1"
 thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["full"] }
-tokio-util = "0.7.11"
+tokio-util = { version = "0.7.11", features = ["rt"] }
 tower = { version = "0.5.2", features = ["util"] }
 tower-http = { version = "0.6.2", features = [
     "cors",
@@ -56,6 +57,8 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
 fake = { version = "4.0.0", features = ["derive"] }
+httpmock = "0.8"
+serial_test = "3.2.0"
 
 [features]
 default = ["files"]
