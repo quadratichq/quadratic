@@ -25,11 +25,10 @@ interface AIThinkingBlockProps {
   isCurrentMessage: boolean;
   isLoading: boolean;
   thinkingContent: AIResponseContent[number];
-  expandedDefault: boolean;
   onContentChange?: (content: AIResponseContent[number]) => void;
 }
 export const AIThinkingBlock = memo(
-  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, onContentChange }: AIThinkingBlockProps) => {
+  ({ isCurrentMessage, isLoading, thinkingContent, onContentChange }: AIThinkingBlockProps) => {
     // Each thinking block tracks its own expanded state - always collapsed by default
     const [isExpanded, setIsExpanded] = useState(false);
     const [showLastSentence, setShowLastSentence] = useState(false);
@@ -49,6 +48,7 @@ export const AIThinkingBlock = memo(
         // Calculate duration when thinking ends
         const duration = Math.round((Date.now() - thinkingStartTime.current) / 1000);
         setThinkingDuration(duration);
+        thinkingStartTime.current = null;
       }
     }, [isActivelyThinking]);
 
