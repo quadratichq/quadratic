@@ -490,6 +490,7 @@ class InlineEditorHandler {
     if (inlineEditorMonaco.hasSelection()) {
       // Pass cell-level bold so toggle knows the "visual" state when no span exists
       inlineEditorSpans.toggleFormattingForSelection('bold', this.formatSummary?.bold ?? undefined);
+      this.updateFont(); // Switch to CSS-based bold/italic when spans are active
       this.updateSelectionFormatting();
       return true;
     }
@@ -500,6 +501,7 @@ class InlineEditorHandler {
       ...currentFormatting,
       bold: !currentFormatting.bold,
     });
+    this.updateFont(); // Switch to CSS-based bold/italic when spans are active
     this.updateSelectionFormatting();
     return true;
   };
@@ -516,6 +518,7 @@ class InlineEditorHandler {
     if (inlineEditorMonaco.hasSelection()) {
       // Pass cell-level italic so toggle knows the "visual" state when no span exists
       inlineEditorSpans.toggleFormattingForSelection('italic', this.formatSummary?.italic ?? undefined);
+      this.updateFont(); // Switch to CSS-based bold/italic when spans are active
       this.updateSelectionFormatting();
       return true;
     }
@@ -525,6 +528,7 @@ class InlineEditorHandler {
       ...currentFormatting,
       italic: !currentFormatting.italic,
     });
+    this.updateFont(); // Switch to CSS-based bold/italic when spans are active
     this.updateSelectionFormatting();
     return true;
   };
@@ -618,11 +622,13 @@ class InlineEditorHandler {
     // If there's a selection, clear formatting only for the selection
     if (inlineEditorMonaco.hasSelection()) {
       inlineEditorSpans.clearFormattingForSelection();
+      this.updateFont(); // May switch back to font-family-based bold/italic if spans are cleared
       this.updateSelectionFormatting();
       return true;
     }
     // If no selection, try to clear the span at the cursor position
     if (inlineEditorSpans.clearFormattingAtCursor()) {
+      this.updateFont(); // May switch back to font-family-based bold/italic if spans are cleared
       this.updateSelectionFormatting();
       return true;
     }
@@ -631,17 +637,28 @@ class InlineEditorHandler {
   };
 
   private updateFont = () => {
-    // Always use base font - italic/bold are applied via CSS data attributes
-    // This allows span-level formatting to override cell-level formatting
-    inlineEditorMonaco.setFontFamily('OpenSans');
-
-    // Apply italic and bold via CSS data attributes (like underline/strikethrough)
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
       const bold = this.temporaryBold === undefined ? this.formatSummary?.bold : this.temporaryBold;
-      inlineEditorMonaco.setItalic(!!italic);
-      inlineEditorMonaco.setBold(!!bold);
+
+      // When there are active spans (RichText), use base font and CSS for bold/italic
+      // so span-level formatting can override cell-level formatting.
+      // When there are no spans (plain text with cell-level formatting), set the font family
+      // directly so Monaco can use correct font metrics for cursor positioning.
+      if (inlineEditorSpans.isActive()) {
+        inlineEditorMonaco.setFontFamily('OpenSans');
+        inlineEditorMonaco.setItalic(!!italic);
+        inlineEditorMonaco.setBold(!!bold);
+      } else {
+        // Set font family directly based on bold/italic state for correct cursor positioning
+        const fontFamily = this.getFontFamily(!!bold, !!italic);
+        inlineEditorMonaco.setFontFamily(fontFamily);
+        // Clear CSS data attributes since we're using font family directly
+        inlineEditorMonaco.setItalic(false);
+        inlineEditorMonaco.setBold(false);
+      }
     } else {
+      inlineEditorMonaco.setFontFamily('OpenSans');
       inlineEditorMonaco.setItalic(false);
       inlineEditorMonaco.setBold(false);
     }
@@ -649,6 +666,20 @@ class InlineEditorHandler {
     // Set font size from format summary
     const fontSize = this.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
     inlineEditorMonaco.setFontSize(fontSize);
+  };
+
+  /**
+   * Get the font family name based on bold and italic formatting.
+   */
+  private getFontFamily = (bold: boolean, italic: boolean): string => {
+    if (bold && italic) {
+      return 'OpenSans-BoldItalic';
+    } else if (bold) {
+      return 'OpenSans-Bold';
+    } else if (italic) {
+      return 'OpenSans-Italic';
+    }
+    return 'OpenSans';
   };
 
   // Refreshes the format summary and updates the font display in the inline editor

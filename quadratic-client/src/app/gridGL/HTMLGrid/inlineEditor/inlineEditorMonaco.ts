@@ -268,7 +268,7 @@ class InlineEditorMonaco {
   /**
    * Measure text width accounting for span formatting.
    * Bold text is wider than regular text, so we need to measure each span separately.
-   * Uses Monaco's font family as the base for gaps between spans.
+   * Uses cell-level formatting for text between spans.
    */
   private measureTextWithSpans = (
     context: CanvasRenderingContext2D,
@@ -281,12 +281,39 @@ class InlineEditorMonaco {
     // If no spans or spans are inactive, measure with default font
     if (!inlineEditorSpans.isActive() || spans.length === 0) {
       context.font = `${fontSize}px ${defaultFontFamily}`;
-      return context.measureText(text).width;
+      const width = context.measureText(text).width;
+      console.log('[measureWidth] No active spans, using defaultFontFamily:', defaultFontFamily, 'width:', width);
+      return width;
     }
 
-    // Get the cell's default bold/italic state from the Monaco font family
-    const defaultBold = defaultFontFamily.includes('Bold');
-    const defaultItalic = defaultFontFamily.includes('Italic');
+    // Get cell-level bold/italic state
+    // When spans are active, Monaco uses base font and cell-level formatting is applied via CSS
+    // We need to check the DOM dataset for the actual cell-level formatting
+    const domNode = this.editor?.getDomNode();
+    const cellBold = domNode?.dataset.bold === 'true';
+    const cellItalic = domNode?.dataset.italic === 'true';
+
+    // Also check if the default font family includes bold/italic (for when spans are not active)
+    const defaultBold = cellBold || defaultFontFamily.includes('Bold');
+    const defaultItalic = cellItalic || defaultFontFamily.includes('Italic');
+
+    // Get the font for text that inherits cell-level formatting
+    // Use CSS-style font specification to match how Monaco renders text
+    const cellFont = this.getFontForSpan(defaultBold, defaultItalic, fontSize);
+
+    console.log(
+      '[measureWidth] cellBold:',
+      cellBold,
+      'cellItalic:',
+      cellItalic,
+      'defaultBold:',
+      defaultBold,
+      'defaultItalic:',
+      defaultItalic,
+      'cellFont:',
+      cellFont
+    );
+    console.log('[measureWidth] text:', JSON.stringify(text), 'spans:', JSON.stringify(spans));
 
     let totalWidth = 0;
     let lastEnd = 0;
@@ -295,11 +322,13 @@ class InlineEditorMonaco {
     const sortedSpans = [...spans].sort((a, b) => a.start - b.start);
 
     for (const span of sortedSpans) {
-      // Measure any gap before this span with default font
+      // Measure any gap before this span with cell-level formatting
       if (span.start > lastEnd) {
         const gapText = text.slice(lastEnd, span.start);
-        context.font = `${fontSize}px ${defaultFontFamily}`;
-        totalWidth += context.measureText(gapText).width;
+        context.font = cellFont;
+        const gapWidth = context.measureText(gapText).width;
+        console.log('[measureWidth] gap:', JSON.stringify(gapText), 'font:', cellFont, 'width:', gapWidth);
+        totalWidth += gapWidth;
       }
 
       // Measure the span with its appropriate font
@@ -309,36 +338,60 @@ class InlineEditorMonaco {
       if (spanText) {
         const spanBold = span.bold !== undefined ? span.bold : defaultBold;
         const spanItalic = span.italic !== undefined ? span.italic : defaultItalic;
-        const fontFamily = this.getFontFamilyForSpan(spanBold, spanItalic);
-        context.font = `${fontSize}px ${fontFamily}`;
-        totalWidth += context.measureText(spanText).width;
+        const spanFont = this.getFontForSpan(spanBold, spanItalic, fontSize);
+        context.font = spanFont;
+        const spanWidth = context.measureText(spanText).width;
+        console.log(
+          '[measureWidth] span:',
+          JSON.stringify(spanText),
+          'span.bold:',
+          span.bold,
+          'span.italic:',
+          span.italic,
+          '→ spanBold:',
+          spanBold,
+          'spanItalic:',
+          spanItalic,
+          'font:',
+          spanFont,
+          'width:',
+          spanWidth
+        );
+        totalWidth += spanWidth;
       }
 
       lastEnd = Math.max(lastEnd, clampedEnd);
     }
 
-    // Measure any remaining text after the last span
+    // Measure any remaining text after the last span with cell-level formatting
     if (lastEnd < text.length) {
       const remainingText = text.slice(lastEnd);
-      context.font = `${fontSize}px ${defaultFontFamily}`;
-      totalWidth += context.measureText(remainingText).width;
+      context.font = cellFont;
+      const remainingWidth = context.measureText(remainingText).width;
+      console.log(
+        '[measureWidth] remaining:',
+        JSON.stringify(remainingText),
+        'font:',
+        cellFont,
+        'width:',
+        remainingWidth
+      );
+      totalWidth += remainingWidth;
     }
 
+    console.log('[measureWidth] totalWidth:', totalWidth);
     return totalWidth;
   };
 
   /**
-   * Get the font family name based on bold and italic formatting.
+   * Get the CSS font string based on bold and italic formatting.
+   * Uses CSS-style font specification to match how Monaco renders text with CSS styling.
+   * Format: "[italic] [bold] <size>px <family>"
    */
-  private getFontFamilyForSpan = (bold: boolean, italic: boolean): string => {
-    if (bold && italic) {
-      return 'OpenSans-BoldItalic';
-    } else if (bold) {
-      return 'OpenSans-Bold';
-    } else if (italic) {
-      return 'OpenSans-Italic';
-    }
-    return 'OpenSans';
+  private getFontForSpan = (bold: boolean, italic: boolean, fontSize: number): string => {
+    const style = italic ? 'italic ' : '';
+    const weight = bold ? 'bold ' : '';
+    return `${style}${weight}${fontSize}px OpenSans`;
   };
 
   removeSelection() {
