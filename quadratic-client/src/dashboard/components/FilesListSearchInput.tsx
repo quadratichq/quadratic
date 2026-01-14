@@ -7,12 +7,10 @@ export function FilesListSearchInput({
   value,
   onChange,
   className,
-  disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
-  disabled?: boolean;
 }) {
   return (
     <div className={cn(`relative w-full sm:w-48`, className)}>
@@ -22,7 +20,6 @@ export function FilesListSearchInput({
         value={value}
         placeholder="Search…"
         className="w-full pl-8"
-        disabled={disabled}
         data-testid="files-list-search-input"
       />
       {value && (

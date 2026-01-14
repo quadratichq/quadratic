@@ -166,7 +166,6 @@ export function UserFilesList({
         <FilesListSearchInput
           value={filterValue}
           onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
-          disabled={filterValue === '' && filesToRender.length === 0}
         />
         <UserFilesListFileTypeFilter />
 
