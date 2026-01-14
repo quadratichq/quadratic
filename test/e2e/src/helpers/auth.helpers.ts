@@ -10,7 +10,7 @@ import { cleanUpFiles } from './file.helpers';
 export const dismissUpgradeToProDialog = async (page: Page) => {
   try {
     // Check if the upgrade dialog is visible (it has "Upgrade to Pro" as the title)
-    const upgradeDialog = page.locator('[role="dialog"]:has-text("Upgrade to Pro")');
+    const upgradeDialog = page.locator('[data-testid="upgrade-to-pro-dialog"]');
     if (await upgradeDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
       // Click the close button (has sr-only text "Close")
       await page.locator('[role="dialog"] button:has-text("Close")').click({ timeout: 5000 });

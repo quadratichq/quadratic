@@ -29,7 +29,7 @@ const getViewCharacteristics = async (page: Page) => {
   };
 };
 
-test('Dashboard Views - My Files', async ({ page }) => {
+test('Dashboard Views - Private Files', async ({ page }) => {
   //--------------------------------
   // Grid View
   //--------------------------------
@@ -38,7 +38,8 @@ test('Dashboard Views - My Files', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_dashboard_my_files' });
 
   // Navigate to My files page (the new Home page shows all files combined)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="files-list-file-type-private"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // // Create new team
@@ -55,10 +56,10 @@ test('Dashboard Views - My Files', async ({ page }) => {
 
   // Create test files (navigate back to My Files after each to ensure files are private)
   await createFile(page, { fileName: testFile1 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="files-list-file-type-private"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await createFile(page, { fileName: testFile2 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="files-list-file-type-private"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Locate the grid button
@@ -157,7 +158,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Navigate back to My files page (nav click goes to Home page)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   //--------------------------------

@@ -43,6 +43,7 @@ export function UserFilesListFileTypeFilter() {
         {fileTypeOptions.map(({ label, value, Icon }) => (
           <Button
             key={label}
+            data-testid={`files-list-file-type-${value}`}
             variant={filters.fileType === value ? 'secondary' : 'ghost'}
             className={cn(
               'flex-shrink-0 px-3 shadow-none',

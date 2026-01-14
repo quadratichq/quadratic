@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import path from 'path';
 import { dismissUpgradeToProDialog } from './auth.helpers';
+import { upgradeToProPlan } from './billing.helpers';
 import { waitForAppReady, waitForNetworkIdle } from './wait.helpers';
 
 type CreateFileOptions = {
@@ -10,6 +11,24 @@ type CreateFileOptions = {
 export const createFile = async (page: Page, { fileName, skipNavigateBack = false }: CreateFileOptions) => {
   // Click New File
   await page.locator(`button:text-is("New file")`).click({ timeout: 30 * 1000 });
+
+  // Wait for the network call to complete
+  await page.waitForTimeout(5000);
+
+  // If you hit the file limit dialog, go subscribe
+  if (await page.locator('[data-testid="upgrade-to-pro-dialog"]').isVisible()) {
+    // Store where we are
+    const currentUrl = page.url();
+
+    await dismissUpgradeToProDialog(page);
+    await upgradeToProPlan(page);
+
+    // when done, navigate back to where you were
+    await page.goto(currentUrl, { waitUntil: 'networkidle' });
+    await waitForAppReady(page);
+
+    return;
+  }
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
