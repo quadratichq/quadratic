@@ -38,9 +38,15 @@ export default defineConfig(({ mode }) => {
     {
       name: 'configure-server',
       configureServer(server) {
-        server.middlewares.use((_req, res, next) => {
-          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+        server.middlewares.use((req, res, next) => {
+          // Don't apply strict COEP to Plaid popup - it needs to load external scripts
+          if (req.url?.includes('plaid-link.html')) {
+            res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+          } else {
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+          }
           res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Security-Policy', 'frame-ancestors *');

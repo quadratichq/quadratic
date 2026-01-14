@@ -483,33 +483,54 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetFormulaCellValue]: async (args) => {
     try {
-      const { sheet_name, formulas } = args;
-      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const { formulas } = args;
+
+      // Group formulas by sheet
+      const formulasBySheet = new Map<string, Array<{ selection: string; codeString: string }>>();
+      for (const formula of formulas) {
+        const sheetId = formula.sheet_name
+          ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        if (!formulasBySheet.has(sheetId)) {
+          formulasBySheet.set(sheetId, []);
+        }
+        formulasBySheet.get(sheetId)!.push({
+          selection: formula.code_cell_position,
+          codeString: formula.formula_string,
+        });
+      }
 
       // Move AI cursor to the first formula cell position
       if (formulas.length > 0) {
+        const firstSheetId = formulas[0].sheet_name
+          ? (sheets.getSheetByName(formulas[0].sheet_name)?.id ?? sheets.current)
+          : sheets.current;
         try {
-          const jsSelection = sheets.stringToSelection(formulas[0].code_cell_position, sheetId);
+          const jsSelection = sheets.stringToSelection(formulas[0].code_cell_position, firstSheetId);
           const selectionString = jsSelection.save();
-          aiUser.updateSelection(selectionString, sheetId);
+          aiUser.updateSelection(selectionString, firstSheetId);
         } catch (e) {
           console.warn('Failed to update AI user selection:', e);
         }
       }
 
-      // Use batched setFormulas call (single transaction)
-      const transactionId = await quadraticCore.setFormulas({
-        sheetId,
-        formulas: formulas.map(({ code_cell_position, formula_string }) => ({
-          selection: code_cell_position,
-          codeString: formula_string,
-        })),
-      });
+      // Execute formulas for each sheet
+      const transactionIds: string[] = [];
+      for (const [sheetId, sheetFormulas] of formulasBySheet) {
+        const transactionId = await quadraticCore.setFormulas({
+          sheetId,
+          formulas: sheetFormulas,
+        });
+        if (transactionId) {
+          transactionIds.push(transactionId);
+        }
+      }
 
       const positions = formulas.map((f) => f.code_cell_position).join(', ');
 
-      if (transactionId) {
-        await waitForSetCodeCellValue(transactionId);
+      if (transactionIds.length > 0) {
+        // Wait for all transactions to complete
+        await Promise.all(transactionIds.map((id) => waitForSetCodeCellValue(id)));
         return [
           createTextContent(
             `Successfully set formula cells in ${positions}. The results of the formula cells are contained with the context above.`

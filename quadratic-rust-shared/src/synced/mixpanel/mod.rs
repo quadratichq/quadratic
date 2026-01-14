@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
+use crate::environment::Environment;
 use crate::error::Result;
 use crate::synced::mixpanel::client::MixpanelClient;
 use crate::synced::{DATE_FORMAT, SyncedClient, SyncedConnection, SyncedConnectionKind};
@@ -39,7 +40,7 @@ impl SyncedConnection for MixpanelConnection {
         MixpanelClient::streams()
     }
 
-    async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
+    async fn to_client(&self, _environment: Environment) -> Result<Box<dyn SyncedClient>> {
         let client = MixpanelClient::new(&self.api_secret, &self.project_id);
 
         Ok(Box::new(client))
