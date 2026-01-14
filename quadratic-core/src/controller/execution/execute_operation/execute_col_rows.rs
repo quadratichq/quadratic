@@ -410,6 +410,8 @@ mod tests {
                         kind: DataTableKind::CodeRun(CodeRun {
                             language: CodeCellLanguage::Formula,
                             code: "B$17 + $B18".to_string(),
+                            // formula_ast is cleared when code is adjusted so it gets re-parsed
+                            formula_ast: None,
                             ..old_code_run
                         }),
                         ..old_dt
