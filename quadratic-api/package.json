@@ -68,6 +68,7 @@
     "multer": "^2.0.0",
     "multer-s3": "^3.0.1",
     "openai": "^6.2.0",
+    "plaid": "^39.1.0",
     "raindrop-ai": "^0.0.59",
     "stripe": "^14.24.0",
     "supertest": "^6.3.3",

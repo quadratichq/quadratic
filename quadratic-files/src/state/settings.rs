@@ -3,21 +3,31 @@ use std::sync::Arc;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::SharedError;
 use quadratic_rust_shared::arrow::object_store::ObjectStore;
+use quadratic_rust_shared::environment::Environment;
 use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
 use quadratic_rust_shared::storage::s3::{S3, S3Config};
 use quadratic_rust_shared::storage::{StorageConfig, StorageContainer, StorageType};
+use quadratic_rust_shared::synced::SyncedClient;
+use quadratic_rust_shared::synced::plaid::client::{PlaidClient, PlaidEnvironment};
+use serde::Serialize;
 
 use crate::config::Config;
 use crate::error::{FilesError, Result};
 
 #[derive(Debug)]
 pub(crate) struct Settings {
+    pub(crate) environment: Environment,
     pub(crate) jwks: Option<JwkSet>,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) storage: StorageContainer,
     pub(crate) pubsub_processed_transactions_channel: String,
     pub(crate) object_store: Arc<dyn ObjectStore>,
+
+    // Plaid
+    pub(crate) plaid_client_id: String,
+    pub(crate) plaid_secret: String,
+    pub(crate) plaid_environment: PlaidEnvironment,
 }
 
 impl Settings {
@@ -32,6 +42,7 @@ impl Settings {
             .map_err(|e: SharedError| FilesError::CreateObjectStore(e.to_string()))?;
 
         Ok(Settings {
+            environment: config.environment.to_owned(),
             jwks,
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
@@ -40,6 +51,9 @@ impl Settings {
                 .pubsub_processed_transactions_channel
                 .to_owned(),
             object_store,
+            plaid_client_id: config.plaid_client_id.to_owned(),
+            plaid_secret: config.plaid_secret.to_owned(),
+            plaid_environment: config.plaid_environment.to_owned(),
         })
     }
 
@@ -93,5 +107,29 @@ impl Settings {
         };
 
         Ok(storage)
+    }
+
+    /// Create a PlaidClient using Settings' credentials and the access_token from the connection.
+    /// We use serialization to extract the access_token since it's Plaid-specific and not on the trait.
+    pub(crate) fn new_plaid_client<T: Serialize>(
+        &self,
+        connection: &T,
+    ) -> Result<Box<dyn SyncedClient>> {
+        let access_token = serde_json::to_value(connection)?
+            .get("access_token")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                FilesError::SyncedConnection("Plaid connection missing access_token".to_string())
+            })?
+            .to_string();
+
+        let client = PlaidClient::new(
+            &self.plaid_client_id,
+            &self.plaid_secret,
+            self.plaid_environment,
+            Some(access_token),
+        );
+
+        Ok(Box::new(client))
     }
 }

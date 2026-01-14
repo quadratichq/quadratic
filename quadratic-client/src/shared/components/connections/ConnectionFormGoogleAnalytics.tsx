@@ -1,5 +1,6 @@
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -80,42 +81,38 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="start_date"
             render={({ field }) => (
               <FormItem className="col-span-1">
-                <FormLabel>Sync Start Date</FormLabel>
+                <FormLabel>Sync start date</FormLabel>
                 <FormControl>
-                  <Input type="date" autoComplete="off" {...field} />
+                  <Input type="date" autoComplete="off" className="block" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="service_account_configuration"
-            render={({ field }) => (
-              <FormItem className="col-span-3">
-                <FormLabel>Service Account Configuration (JSON)</FormLabel>
-                <FormControl>
-                  <Textarea autoComplete="off" {...field} className="h-48" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="col-span-3">
-            <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">
-              Data Sync Status
-            </label>
-            {connection && (
-              <p className="mb-4 mt-2 text-xs">
-                <SyncedConnection
-                  connectionUuid={connection.uuid}
-                  teamUuid={teamUuid}
-                  createdDate={connection.createdDate}
-                />
-              </p>
-            )}
-          </div>
         </div>
+        <FormField
+          control={form.control}
+          name="service_account_configuration"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Service account configuration (JSON)</FormLabel>
+              <FormControl>
+                <Textarea autoComplete="off" {...field} className="h-48" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {connection && (
+          <div className="flex items-center gap-2 pt-2 text-sm">
+            <Badge>Status</Badge>
+            <SyncedConnection
+              connectionUuid={connection.uuid}
+              teamUuid={teamUuid}
+              createdDate={connection.createdDate}
+            />
+          </div>
+        )}
         {children}
       </form>
     </Form>
