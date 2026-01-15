@@ -18,10 +18,7 @@ const fileTypeOptions: { label: string; value: UserFilesListType }[] = [
 
 export function UserFilesListFileTypeFilter() {
   const [filters, setFilters] = useAtom(userFilesListFiltersAtom);
-
   const fileTypeValue = filters.fileType === null ? 'all' : filters.fileType;
-  const fileTypeLabel =
-    fileTypeOptions.find((option) => option.value === fileTypeValue)?.label ?? fileTypeOptions[0].label;
 
   return (
     <>
