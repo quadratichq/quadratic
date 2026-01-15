@@ -41,7 +41,7 @@ export function UserFilesListItem({
   viewPreferences,
 }: {
   file: UserFilesListFile;
-  setActiveShareMenuFileId: Function;
+  setActiveShareMenuFileId: React.Dispatch<React.SetStateAction<string>>;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {

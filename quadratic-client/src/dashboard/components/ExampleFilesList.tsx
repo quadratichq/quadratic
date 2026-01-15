@@ -54,7 +54,7 @@ export function ExampleFilesList({ files, emptyState }: { files: ExampleFilesLis
           const lazyLoad = i > 12;
 
           return (
-            <ListItem>
+            <ListItem key={i}>
               <Link to={href} className="flex w-full" reloadDocument>
                 <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
                   <FilesListItemCore

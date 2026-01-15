@@ -20,6 +20,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       updatedDate,
       uuid,
       publicLinkAccess,
+      // Hard-code permissions to and don't allow user to take actions on the dashboard
       permissions: [],
       fileType: 'shared',
     })

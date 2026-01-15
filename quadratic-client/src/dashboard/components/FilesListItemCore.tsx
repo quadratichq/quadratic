@@ -63,10 +63,25 @@ export function FilesListItemCore({
   );
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function highlightMatchingString(str: string, search: string) {
-  const searchWithEscapedParenthesis = search.replace('(', '\\(').replace(')', '\\)');
-  const regex = new RegExp(searchWithEscapedParenthesis, 'gi'); // case insensitive matching
-  const highlightedString = str.replace(regex, (match: string) => {
+  // Escape HTML to prevent XSS
+  const escapedStr = escapeHtml(str);
+  const escapedSearch = escapeHtml(search);
+
+  // Escape all regex special characters in the search term
+  const searchWithEscapedRegex = escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(searchWithEscapedRegex, 'gi');
+
+  const highlightedString = escapedStr.replace(regex, (match: string) => {
     return `<b class="bg-yellow-100 dark:bg-yellow-700">${match}</b>`;
   });
   return highlightedString;
