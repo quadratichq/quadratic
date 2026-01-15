@@ -54,6 +54,7 @@ impl GridController {
             selection,
             style: update.style,
             rule: formula,
+            apply_to_blank: update.apply_to_blank,
         };
 
         let ops = vec![Operation::SetConditionalFormat { conditional_format }];
@@ -125,6 +126,7 @@ impl GridController {
                 selection,
                 style: update.style,
                 rule: formula,
+                apply_to_blank: update.apply_to_blank,
             };
 
             ops.push(Operation::SetConditionalFormat { conditional_format });

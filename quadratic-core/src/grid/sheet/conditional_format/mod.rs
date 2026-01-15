@@ -80,23 +80,44 @@ pub struct ConditionalFormat {
     /// When evaluated for a cell, if the result is truthy, the format is applied.
     #[ts(skip)]
     pub rule: Formula,
+
+    /// Whether to apply the format to blank cells.
+    /// If None, uses the default based on the rule type.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub apply_to_blank: Option<bool>,
 }
 
 impl ConditionalFormat {
     /// Converts this conditional format to a client-friendly version
     /// with the parsed rule for display/editing.
     pub fn to_client(&self, sheet_id: SheetId, a1_context: &A1Context) -> ConditionalFormatClient {
+        let rule = ConditionalFormatRule::from_formula(
+            &self.rule,
+            Some(sheet_id),
+            a1_context,
+            &self.selection,
+        );
         ConditionalFormatClient {
             id: self.id,
             selection: self.selection.clone(),
             style: self.style.clone(),
-            rule: ConditionalFormatRule::from_formula(
+            apply_to_blank: self.apply_to_blank.unwrap_or_else(|| rule.default_apply_to_blank()),
+            rule,
+        }
+    }
+
+    /// Returns whether this format should apply to blank cells.
+    /// If `apply_to_blank` is None, uses the default based on the rule type.
+    pub fn should_apply_to_blank(&self, sheet_id: SheetId, a1_context: &A1Context) -> bool {
+        self.apply_to_blank.unwrap_or_else(|| {
+            let rule = ConditionalFormatRule::from_formula(
                 &self.rule,
                 Some(sheet_id),
                 a1_context,
                 &self.selection,
-            ),
-        }
+            );
+            rule.default_apply_to_blank()
+        })
     }
 }
 
@@ -112,6 +133,9 @@ pub struct ConditionalFormatClient {
 
     /// The style to apply when the condition is true.
     pub style: ConditionalFormatStyle,
+
+    /// Whether to apply the format to blank cells.
+    pub apply_to_blank: bool,
 
     /// The parsed rule for display/editing.
     pub rule: ConditionalFormatRule,
@@ -136,6 +160,10 @@ pub struct ConditionalFormatUpdate {
 
     /// The formula string (will be parsed into AST).
     pub rule: String,
+
+    /// Whether to apply the format to blank cells.
+    /// If None, uses the default based on the rule type.
+    pub apply_to_blank: Option<bool>,
 }
 
 /// Container for all conditional formats in a sheet.
@@ -303,6 +331,7 @@ mod tests {
             selection: a1_selection,
             style,
             rule,
+            apply_to_blank: None,
         }
     }
 

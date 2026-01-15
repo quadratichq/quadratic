@@ -43,6 +43,7 @@ pub fn import_conditional_formats(
                 selection: import_selection(cf.selection),
                 style: import_style(cf.style),
                 rule: import_formula(cf.rule)?,
+                apply_to_blank: cf.apply_to_blank,
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -62,6 +63,7 @@ pub fn export_conditional_formats(
                 selection: export_selection(cf.selection),
                 style: export_style(cf.style),
                 rule: export_formula(cf.rule),
+                apply_to_blank: cf.apply_to_blank,
             })
             .collect(),
     }
@@ -93,6 +95,7 @@ mod tests {
                 ..Default::default()
             },
             rule: formula,
+            apply_to_blank: None,
         }]);
 
         let exported = export_conditional_formats(conditional_formats.clone());

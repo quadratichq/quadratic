@@ -56,6 +56,7 @@ const convertConditionalFormatToText = (cf: ConditionalFormatClient, sheetId: st
   response += `  Selection: ${selectionString}\n`;
   response += `  Rule: ${convertRuleToText(cf.rule)}\n`;
   response += `  Style: ${convertStyleToText(cf.style)}\n`;
+  response += `  Apply to empty cells: ${cf.apply_to_blank}\n`;
   return response;
 };
 
@@ -137,7 +138,7 @@ type ProcessedRule =
   | { type: 'delete'; id: string; message: string };
 
 const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Sheet): ProcessedRule => {
-  const { action, id, selection, rule: ruleFormula, ...styleProps } = rule;
+  const { action, id, selection, rule: ruleFormula, apply_to_empty, ...styleProps } = rule;
 
   switch (action) {
     case 'delete': {
@@ -168,6 +169,7 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
         selection,
         style,
         rule: ruleFormula,
+        apply_to_blank: apply_to_empty ?? null,
       };
 
       return { type: 'update', update, message: `Created conditional format for selection "${selection}"` };
@@ -194,6 +196,8 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
         selection: selection ?? existingSelection,
         style,
         rule: ruleFormula ?? getExistingRuleFormula(existing),
+        // Use provided value, or keep existing value
+        apply_to_blank: apply_to_empty !== undefined ? apply_to_empty : existing.apply_to_blank,
       };
 
       return { type: 'update', update, message: `Updated conditional format with ID: ${id}` };
@@ -205,7 +209,7 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
 };
 
 const buildStyle = (
-  styleProps: Omit<ConditionalFormatAction, 'id' | 'action' | 'selection' | 'rule'>,
+  styleProps: Omit<ConditionalFormatAction, 'id' | 'action' | 'selection' | 'rule' | 'apply_to_empty'>,
   existing?: ConditionalFormatClient['style']
 ): ConditionalFormatUpdate['style'] => {
   return {

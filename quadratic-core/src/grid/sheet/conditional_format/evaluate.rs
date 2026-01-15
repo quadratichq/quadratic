@@ -8,11 +8,28 @@ use crate::{
     grid::{
         SheetId,
         js_types::JsRenderCell,
-        sheet::conditional_format::{ConditionalFormat, ConditionalFormatRule, ConditionalFormatStyle},
+        sheet::conditional_format::{ConditionalFormat, ConditionalFormatStyle},
     },
+    values::IsBlank,
 };
 
+use super::rules::ConditionalFormatRule;
+
 impl GridController {
+    /// Checks if a cell is blank.
+    fn is_cell_blank(&self, sheet_pos: SheetPos) -> bool {
+        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+            let pos = Pos {
+                x: sheet_pos.x,
+                y: sheet_pos.y,
+            };
+            let value = sheet.get_cell_for_formula(pos);
+            value.is_blank()
+        } else {
+            true
+        }
+    }
+
     /// Evaluates a conditional format rule at a specific cell position.
     /// Translates the formula references relative to the anchor (top-left of first range).
     fn evaluate_conditional_format_rule(
@@ -21,6 +38,12 @@ impl GridController {
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> bool {
+        // Check if the cell is blank and whether we should skip blank cells
+        let should_apply_to_blank = cf.should_apply_to_blank(sheet_pos.sheet_id, a1_context);
+        if !should_apply_to_blank && self.is_cell_blank(sheet_pos) {
+            return false;
+        }
+
         // Get the anchor from the first cell of the first range in the selection.
         // The formula is defined relative to this anchor, and all ranges in the
         // selection should use the same anchor for consistent translation.
@@ -336,6 +359,16 @@ mod tests {
         formula: &str,
         style: ConditionalFormatStyle,
     ) -> ConditionalFormat {
+        create_test_conditional_format_with_apply_to_blank(gc, selection, formula, style, None)
+    }
+
+    fn create_test_conditional_format_with_apply_to_blank(
+        gc: &GridController,
+        selection: &str,
+        formula: &str,
+        style: ConditionalFormatStyle,
+        apply_to_blank: Option<bool>,
+    ) -> ConditionalFormat {
         let sheet_id = gc.sheet_ids()[0];
         // Use test_a1_sheet_id to create selection with the correct sheet_id
         let a1_selection = A1Selection::test_a1_sheet_id(selection, sheet_id);
@@ -347,6 +380,7 @@ mod tests {
             selection: a1_selection,
             style,
             rule,
+            apply_to_blank,
         }
     }
 
@@ -826,6 +860,163 @@ mod tests {
         assert!(
             !fills.iter().any(|(rect, _)| rect.contains(pos_c2)),
             "C2 should NOT have fill"
+        );
+    }
+
+    #[test]
+    fn test_blank_cell_skipped_for_numeric_comparison() {
+        // Test that blank cells are skipped for numeric comparisons by default
+        // (since blank coerces to 0, which would unexpectedly match >=0)
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a2 = crate::Pos::test_a1("A2");
+
+        // A1 is left blank, A2 has value 5
+        gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "5".to_string(), None, false);
+
+        // Create a conditional format for A1:A2 with formula =A1>=0
+        // Without the blank cell check, A1 would match because blank coerces to 0
+        let cf = create_test_conditional_format(
+            &gc,
+            "A1:A2",
+            "=A1>=0",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // A1 is blank - should NOT get style because apply_to_blank defaults to false for numeric comparisons
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_a1.is_none(),
+            "A1 (blank) should NOT have style applied for numeric comparison"
+        );
+
+        // A2 has value 5 >= 0 - should get style
+        let style_a2 =
+            gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a2.is_some(), "A2 (5>=0) should have style applied");
+    }
+
+    #[test]
+    fn test_blank_cell_included_when_apply_to_blank_true() {
+        // Test that blank cells are included when apply_to_blank is explicitly set to true
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+
+        // A1 is left blank
+
+        // Create a conditional format with apply_to_blank = true
+        let cf = create_test_conditional_format_with_apply_to_blank(
+            &gc,
+            "A1",
+            "=A1>=0",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+            Some(true), // explicitly allow blank cells
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // A1 is blank but apply_to_blank is true, so it should be evaluated
+        // blank coerces to 0, and 0 >= 0 is true
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_a1.is_some(),
+            "A1 (blank with apply_to_blank=true) should have style applied"
+        );
+    }
+
+    #[test]
+    fn test_isblank_includes_blank_cells_by_default() {
+        // Test that ISBLANK rule includes blank cells by default
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+
+        // A1 is left blank
+
+        // Create a conditional format with ISBLANK formula
+        let cf = create_test_conditional_format(
+            &gc,
+            "A1",
+            "=ISBLANK(A1)",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // A1 is blank - should get style because IsEmpty defaults apply_to_blank to true
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_a1.is_some(),
+            "A1 (blank with ISBLANK) should have style applied"
+        );
+    }
+
+    #[test]
+    fn test_default_apply_to_blank_for_different_rule_types() {
+        // Test that different rule types have correct default apply_to_blank values
+        use super::super::rules::ConditionalFormatRule;
+
+        // IsEmpty and IsNotEmpty should default to true
+        assert!(
+            ConditionalFormatRule::IsEmpty.default_apply_to_blank(),
+            "IsEmpty should default to apply_to_blank=true"
+        );
+        assert!(
+            ConditionalFormatRule::IsNotEmpty.default_apply_to_blank(),
+            "IsNotEmpty should default to apply_to_blank=true"
+        );
+
+        // Numeric comparisons should default to false
+        assert!(
+            !ConditionalFormatRule::GreaterThan {
+                value: super::super::rules::ConditionalFormatValue::Number(0.0)
+            }
+            .default_apply_to_blank(),
+            "GreaterThan should default to apply_to_blank=false"
+        );
+        assert!(
+            !ConditionalFormatRule::GreaterThanOrEqual {
+                value: super::super::rules::ConditionalFormatValue::Number(0.0)
+            }
+            .default_apply_to_blank(),
+            "GreaterThanOrEqual should default to apply_to_blank=false"
+        );
+
+        // Text conditions should default to false
+        assert!(
+            !ConditionalFormatRule::TextContains {
+                value: "test".to_string()
+            }
+            .default_apply_to_blank(),
+            "TextContains should default to apply_to_blank=false"
+        );
+
+        // Custom should default to false
+        assert!(
+            !ConditionalFormatRule::Custom {
+                formula: "=TRUE".to_string()
+            }
+            .default_apply_to_blank(),
+            "Custom should default to apply_to_blank=false"
         );
     }
 }

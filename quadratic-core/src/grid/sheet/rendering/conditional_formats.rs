@@ -57,6 +57,7 @@ mod tests {
                 ..Default::default()
             },
             rule: formula,
+            apply_to_blank: None,
         };
 
         {

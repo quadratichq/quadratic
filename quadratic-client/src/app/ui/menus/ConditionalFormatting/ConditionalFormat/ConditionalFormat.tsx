@@ -8,6 +8,7 @@ import { ConditionalFormatHeader } from '@/app/ui/menus/ConditionalFormatting/Co
 import { ConditionalFormatStyleToolbar } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ConditionalFormatStyleToolbar';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import {
@@ -113,6 +114,13 @@ const isNumberCondition = (condition: ConditionType): boolean => {
     'is_between',
     'is_not_between',
   ].includes(condition);
+};
+
+// Helper to get the default apply_to_blank value for a condition type.
+// IsEmpty and IsNotEmpty should default to true (they're specifically about blank cells).
+// All other conditions default to false (blank coerces to 0 which is often surprising).
+const getDefaultApplyToBlank = (condition: ConditionType): boolean => {
+  return condition === 'is_empty' || condition === 'is_not_empty';
 };
 
 // Helper to extract the display string from a ConditionalFormatValue
@@ -340,6 +348,10 @@ export const ConditionalFormat = () => {
     }
     return {};
   });
+  const [applyToBlank, setApplyToBlank] = useState<boolean>(() => {
+    // Use existing value if editing, otherwise use the default based on condition type
+    return existingFormat?.apply_to_blank ?? false;
+  });
   const [triggerError, setTriggerError] = useState(false);
 
   // Load rule and style from existing format when editing
@@ -364,6 +376,8 @@ export const ConditionalFormat = () => {
         text_color: existingFormat.style.text_color ?? undefined,
         fill_color: existingFormat.style.fill_color ?? undefined,
       });
+      // Update apply_to_blank
+      setApplyToBlank(existingFormat.apply_to_blank);
     }
   }, [existingFormat]);
 
@@ -508,6 +522,7 @@ export const ConditionalFormat = () => {
         fill_color: style.fill_color ?? null,
       },
       rule: generatedFormula,
+      apply_to_blank: applyToBlank,
     });
 
     setShowConditionalFormat(true);
@@ -518,6 +533,7 @@ export const ConditionalFormat = () => {
     hasValidValues,
     formulaValidation.isValid,
     style,
+    applyToBlank,
     sheetId,
     setShowConditionalFormat,
   ]);
@@ -570,7 +586,17 @@ export const ConditionalFormat = () => {
 
         <div>
           <Label>Format cells if…</Label>
-          <Select value={conditionType} onValueChange={(v) => setConditionType(v as ConditionType)}>
+          <Select
+            value={conditionType}
+            onValueChange={(v) => {
+              const newConditionType = v as ConditionType;
+              setConditionType(newConditionType);
+              // Update apply_to_blank to the default for this condition type (only for new rules)
+              if (isNew) {
+                setApplyToBlank(getDefaultApplyToBlank(newConditionType));
+              }
+            }}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -651,6 +677,18 @@ export const ConditionalFormat = () => {
             {!formulaValidation.isValid && <p className="mt-1">{formulaValidation.error}</p>}
           </div>
         )}
+
+        {/* Apply to blank cells checkbox */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="apply-to-blank"
+            checked={applyToBlank}
+            onCheckedChange={(checked) => setApplyToBlank(checked === true)}
+          />
+          <Label htmlFor="apply-to-blank" className="cursor-pointer text-sm font-normal">
+            Apply to empty cells
+          </Label>
+        </div>
 
         <div>
           <Label>Formatting style</Label>

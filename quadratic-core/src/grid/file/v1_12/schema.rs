@@ -122,6 +122,11 @@ pub struct ConditionalFormatSchema {
     pub selection: A1SelectionSchema,
     pub style: ConditionalFormatStyleSchema,
     pub rule: super::formula_schema::FormulaSchema,
+
+    /// Whether to apply the format to blank cells.
+    /// If None, uses the default based on the rule type.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub apply_to_blank: Option<bool>,
 }
 
 /// Schema for all conditional formats in a sheet.

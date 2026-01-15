@@ -524,6 +524,40 @@ impl ConditionalFormatRule {
 
         None
     }
+
+    /// Returns the default value for `apply_to_blank` based on the rule type.
+    ///
+    /// - `IsEmpty` and `IsNotEmpty`: return `true` (these rules are specifically about blank cells)
+    /// - Numeric comparisons (GreaterThan, LessThan, etc.): return `false` (blank coerces to 0, which is often surprising)
+    /// - Text conditions: return `false` (blank is not the same as empty string for these purposes)
+    /// - Custom formulas: return `false` (user should explicitly opt-in)
+    pub fn default_apply_to_blank(&self) -> bool {
+        match self {
+            // These rules are specifically about blank cells
+            ConditionalFormatRule::IsEmpty | ConditionalFormatRule::IsNotEmpty => true,
+
+            // Numeric comparisons: blank coerces to 0, which is often surprising
+            // e.g., ">=0" would match blank cells unexpectedly
+            ConditionalFormatRule::GreaterThan { .. }
+            | ConditionalFormatRule::GreaterThanOrEqual { .. }
+            | ConditionalFormatRule::LessThan { .. }
+            | ConditionalFormatRule::LessThanOrEqual { .. }
+            | ConditionalFormatRule::IsEqualTo { .. }
+            | ConditionalFormatRule::IsNotEqualTo { .. }
+            | ConditionalFormatRule::IsBetween { .. }
+            | ConditionalFormatRule::IsNotBetween { .. } => false,
+
+            // Text conditions: blank is not the same as empty string
+            ConditionalFormatRule::TextContains { .. }
+            | ConditionalFormatRule::TextNotContains { .. }
+            | ConditionalFormatRule::TextStartsWith { .. }
+            | ConditionalFormatRule::TextEndsWith { .. }
+            | ConditionalFormatRule::TextIsExactly { .. } => false,
+
+            // Custom formulas: user should explicitly opt-in
+            ConditionalFormatRule::Custom { .. } => false,
+        }
+    }
 }
 
 #[cfg(test)]

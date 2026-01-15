@@ -68,7 +68,12 @@ selection: A1Selection,
  * The style to apply when the condition is true.
  * Only properties that are `Some` will override the existing format.
  */
-style: ConditionalFormatStyle, };
+style: ConditionalFormatStyle, 
+/**
+ * Whether to apply the format to blank cells.
+ * If None, uses the default based on the rule type.
+ */
+apply_to_blank: boolean | null, };
 export type ConditionalFormatClient = { 
 /**
  * Unique identifier for this conditional format rule.
@@ -82,6 +87,10 @@ selection: A1Selection,
  * The style to apply when the condition is true.
  */
 style: ConditionalFormatStyle, 
+/**
+ * Whether to apply the format to blank cells.
+ */
+apply_to_blank: boolean, 
 /**
  * The parsed rule for display/editing.
  */
@@ -109,7 +118,12 @@ style: ConditionalFormatStyle,
 /**
  * The formula string (will be parsed into AST).
  */
-rule: string, };
+rule: string, 
+/**
+ * Whether to apply the format to blank cells.
+ * If None, uses the default based on the rule type.
+ */
+apply_to_blank: boolean | null, };
 export type ConditionalFormatValue = { "Number": number } | { "Text": string } | { "CellRef": string } | { "Bool": boolean };
 export type ColumnRow = { column: number, row: number, };
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE" | "COCKROACHDB" | "BIGQUERY" | "MARIADB" | "SUPABASE" | "NEON" | "MIXPANEL" | "GOOGLE_ANALYTICS" | "PLAID";

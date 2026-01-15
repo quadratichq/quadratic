@@ -578,6 +578,7 @@ export const AIToolsArgsSchema = {
         strike_through: booleanNullableOptionalSchema,
         text_color: z.string().nullable().optional(),
         fill_color: z.string().nullable().optional(),
+        apply_to_empty: booleanNullableOptionalSchema,
       })
     ),
   }),
@@ -2963,6 +2964,11 @@ You can perform multiple operations (create/update/delete) in a single call.`,
                 description:
                   'The background/fill color to apply when the rule is true (e.g., "#00FF00" for green, "rgb(0,255,0)").',
               },
+              apply_to_empty: {
+                type: ['boolean', 'null'],
+                description:
+                  'Whether to apply the format to empty/blank cells. By default, this is false for numeric comparisons (like >=0, <10) because empty cells coerce to 0 which often causes unexpected matches. Set to true if you specifically want empty cells to be included. For ISBLANK/NOT(ISBLANK) rules, this defaults to true.',
+              },
             },
             required: ['action'],
             additionalProperties: false,
@@ -2995,6 +3001,8 @@ For the rule parameter, use a formula that evaluates to true/false. Common patte
 - Text starts with: "LEFT(A1, 5)=\\"hello\\""
 - Text ends with: "RIGHT(A1, 5)=\\"world\\""
 - Equals: "A1=42" or "A1=\\"exact text\\""
+
+APPLY TO EMPTY CELLS: By default, numeric comparison rules (>=, >, <, <=, =, <>) do NOT apply to empty cells because empty cells coerce to 0, which often causes unexpected behavior (e.g., ">=0" would match all empty cells). Use apply_to_empty: true only if you specifically want empty cells to be included in the formatting. For ISBLANK and NOT(ISBLANK) rules, apply_to_empty defaults to true since those rules are specifically about empty cells.
 
 For delete action, only the id is required.
 For create action, selection, rule, and at least one style property are required.
