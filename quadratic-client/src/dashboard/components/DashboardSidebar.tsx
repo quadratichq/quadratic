@@ -17,7 +17,6 @@ import {
   ExternalLinkIcon,
   FileIcon,
   GroupIcon,
-  GroupSearchIcon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
@@ -458,7 +457,7 @@ function CreateTeamAlert({ children }: { children: ReactNode }) {
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent className="max-w-sm">
         <AlertDialogHeader>
-          <GroupSearchIcon size="lg" />
+          <GroupIcon size="lg" />
           <AlertDialogTitle>Teams in Quadratic</AlertDialogTitle>
           <AlertDialogDescription>
             Teams are a collaborative space for working with other people. Create a new team and answer a few onboarding
