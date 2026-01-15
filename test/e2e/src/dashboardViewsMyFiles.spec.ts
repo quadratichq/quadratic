@@ -861,6 +861,9 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   await user1Page.bringToFront();
   await user1Page.waitForTimeout(2000);
   await user1Page.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
+  await user1Page.reload({ waitUntil: 'networkidle' });
+  await user1Page.waitForTimeout(2000);
+  await user1Page.waitForLoadState('domcontentloaded');
 
   //--------------------------------
   // Act:
