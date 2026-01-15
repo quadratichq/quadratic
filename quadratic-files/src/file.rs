@@ -17,13 +17,13 @@ use quadratic_core::{
 };
 use quadratic_rust_shared::{
     pubsub::PubSub as PubSubTrait,
-    quadratic_api::{get_file_checkpoint, set_file_checkpoint},
+    quadratic_database::checkpoint::{get_max_sequence_number, set_file_checkpoint},
     storage::{Storage, StorageContainer},
 };
 
 use crate::{
     error::{FilesError, Result},
-    state::{State, settings::Settings},
+    state::State,
     truncate::{add_processed_transaction, processed_transaction_key},
 };
 
@@ -108,19 +108,11 @@ pub(crate) async fn process_queue_for_room(
     let start = Utc::now();
     let channel = &file_id.to_string();
 
-    let Settings {
-        storage,
-        quadratic_api_uri,
-        m2m_auth_token,
-        ..
-    } = &state.settings;
-
     // When a file is created in API, a zero checkpoint is created, so we
     // should always expect a return value.
-    let checkpoint_sequence_num = get_file_checkpoint(quadratic_api_uri, m2m_auth_token, &file_id)
+    let checkpoint_sequence_num = get_max_sequence_number(&state.pool, &file_id)
         .await
-        .map_err(|e| FilesError::ApiSequenceNumberNotFound(file_id, e.to_string()))?
-        .sequence_number;
+        .map_err(|e| FilesError::ApiSequenceNumberNotFound(file_id, e.to_string()))?;
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut pubsub = state.pubsub.lock().await;
@@ -181,9 +173,9 @@ pub(crate) async fn process_queue_for_room(
     // process the transactions and save the file to S3
     let start_processing = Utc::now();
     let last_sequence_num = process_transactions(
-        storage,
+        &state.settings.storage,
         file_id,
-        checkpoint_sequence_num,
+        checkpoint_sequence_num as u64,
         last_sequence_num,
         operations,
     )
@@ -210,16 +202,13 @@ pub(crate) async fn process_queue_for_room(
     drop(pubsub);
 
     // update the checkpoint in quadratic-api
-    let key = &key(file_id, last_sequence_num);
     set_file_checkpoint(
-        quadratic_api_uri,
-        m2m_auth_token,
+        &state.pool,
         &file_id,
-        last_sequence_num,
-        CURRENT_VERSION.into(),
-        key.to_owned(),
-        storage.path().to_owned(),
-        transactions_hash,
+        last_sequence_num as i32,
+        &state.settings.bucket_name,
+        CURRENT_VERSION,
+        &transactions_hash,
     )
     .await?;
 
