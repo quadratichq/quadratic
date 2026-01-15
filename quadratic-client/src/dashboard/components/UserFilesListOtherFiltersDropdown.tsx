@@ -88,7 +88,7 @@ export function UserFilesListFiltersDropdown() {
           onSelect={(e) => e.preventDefault()}
           onCheckedChange={(checked) => {
             trackEvent('[Files].filterByScheduledTasks');
-            setFilters({ ...filters, hasScheduledTasks: checked });
+            setFilters((prev) => ({ ...prev, hasScheduledTasks: checked }));
           }}
         >
           Scheduled tasks
@@ -98,7 +98,7 @@ export function UserFilesListFiltersDropdown() {
           onSelect={(e) => e.preventDefault()}
           onCheckedChange={(checked) => {
             trackEvent('[Files].filterBySharedPublicly');
-            setFilters({ ...filters, sharedPublicly: checked });
+            setFilters((prev) => ({ ...prev, sharedPublicly: checked }));
           }}
         >
           Shared publicly
@@ -116,12 +116,12 @@ export function UserFilesListFiltersDropdown() {
                 onSelect={(e) => e.preventDefault()}
                 onCheckedChange={(checked) => {
                   trackEvent('[Files].filterByFileCreator');
-                  setFilters({
-                    ...filters,
+                  setFilters((prev) => ({
+                    ...prev,
                     fileCreatorEmails: checked
-                      ? [...filters.fileCreatorEmails, user.email]
-                      : filters.fileCreatorEmails.filter((email) => email !== user.email),
-                  });
+                      ? [...prev.fileCreatorEmails, user.email]
+                      : prev.fileCreatorEmails.filter((email) => email !== user.email),
+                  }));
                 }}
               >
                 <Avatar src={user.picture} className="mr-2" /> {user.name}
