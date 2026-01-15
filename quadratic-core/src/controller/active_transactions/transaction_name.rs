@@ -35,5 +35,6 @@ pub enum TransactionName {
     ReplaceSheet,
     MoveCells,
     Validation,
+    ConditionalFormat,
     ManipulateColumnRow,
 }

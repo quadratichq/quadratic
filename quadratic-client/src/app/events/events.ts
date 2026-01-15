@@ -4,6 +4,7 @@ import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import type {
+  ConditionalFormatClient,
   JsBordersSheet,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -133,6 +134,7 @@ interface EventTypes {
   insertCodeEditorText: (text: string) => void;
 
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
+  sheetConditionalFormats: (sheetId: string, conditionalFormats: ConditionalFormatClient[]) => void;
   validationWarnings: (warnings: JsHashValidationWarnings[]) => void;
 
   // pointer down on the grid

@@ -55,6 +55,62 @@ export type CellRefRangeEnd = { col: CellRefCoord, row: CellRefCoord, };
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
+export type ConditionalFormat = { 
+/**
+ * Unique identifier for this conditional format rule.
+ */
+id: string, 
+/**
+ * The selection of cells this conditional format applies to.
+ */
+selection: A1Selection, 
+/**
+ * The style to apply when the condition is true.
+ * Only properties that are `Some` will override the existing format.
+ */
+style: ConditionalFormatStyle, };
+export type ConditionalFormatClient = { 
+/**
+ * Unique identifier for this conditional format rule.
+ */
+id: string, 
+/**
+ * The selection of cells this conditional format applies to.
+ */
+selection: A1Selection, 
+/**
+ * The style to apply when the condition is true.
+ */
+style: ConditionalFormatStyle, 
+/**
+ * The parsed rule for display/editing.
+ */
+rule: ConditionalFormatRule, };
+export type ConditionalFormatRule = "IsEmpty" | "IsNotEmpty" | { "TextContains": { value: string, } } | { "TextNotContains": { value: string, } } | { "TextStartsWith": { value: string, } } | { "TextEndsWith": { value: string, } } | { "TextIsExactly": { value: string, } } | { "GreaterThan": { value: ConditionalFormatValue, } } | { "GreaterThanOrEqual": { value: ConditionalFormatValue, } } | { "LessThan": { value: ConditionalFormatValue, } } | { "LessThanOrEqual": { value: ConditionalFormatValue, } } | { "IsEqualTo": { value: ConditionalFormatValue, } } | { "IsNotEqualTo": { value: ConditionalFormatValue, } } | { "IsBetween": { min: ConditionalFormatValue, max: ConditionalFormatValue, } } | { "IsNotBetween": { min: ConditionalFormatValue, max: ConditionalFormatValue, } } | { "Custom": { formula: string, } };
+export type ConditionalFormatStyle = { bold: boolean | null, italic: boolean | null, underline: boolean | null, strike_through: boolean | null, text_color: string | null, fill_color: string | null, };
+export type ConditionalFormatUpdate = { 
+/**
+ * If None, a new conditional format will be created with a new UUID.
+ * If Some, the existing conditional format with this ID will be updated.
+ */
+id: string | null, 
+/**
+ * The sheet this conditional format belongs to.
+ */
+sheet_id: string, 
+/**
+ * The selection of cells as an A1 notation string.
+ */
+selection: string, 
+/**
+ * The style to apply when the condition is true.
+ */
+style: ConditionalFormatStyle, 
+/**
+ * The formula string (will be parsed into AST).
+ */
+rule: string, };
+export type ConditionalFormatValue = { "Number": number } | { "Text": string } | { "CellRef": string } | { "Bool": boolean };
 export type ColumnRow = { column: number, row: number, };
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE" | "COCKROACHDB" | "BIGQUERY" | "MARIADB" | "SUPABASE" | "NEON" | "MIXPANEL" | "GOOGLE_ANALYTICS" | "PLAID";
 export type DataTableSort = { column_index: number, direction: SortDirection, };
@@ -210,9 +266,9 @@ export type TableRef = { table_name: string, data: boolean, headers: boolean, to
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export type TextSpan = { text: string, link: string | null, bold: boolean | null, italic: boolean | null, underline: boolean | null, strike_through: boolean | null, text_color: string | null, font_size: number | null, };
-export type TrackedOperation = { "type": "SetCellValues", selection: string, } | { "type": "SetDataTable", selection: string, name: string | null, deleted: boolean, } | { "type": "DeleteDataTable", selection: string, } | { "type": "FlattenDataTable", selection: string, } | { "type": "GridToDataTable", selection: string, } | { "type": "MoveDataTable", from: string, to: string, } | { "type": "SwitchDataTableKind", selection: string, kind: string, } | { "type": "DataTableColumnsChanged", selection: string, } | { "type": "DataTableRowsChanged", selection: string, } | { "type": "DataTableSorted", selection: string, } | { "type": "DataTableHeaderToggled", selection: string, first_row_is_header: boolean, } | { "type": "FormatsChanged", sheet_name: string, selection: string, } | { "type": "AddSheet", sheet_name: string, } | { "type": "DeleteSheet", sheet_name: string, } | { "type": "DuplicateSheet", sheet_name: string, duplicated_sheet_name: string, } | { "type": "SetSheetName", old_sheet_name: string, new_sheet_name: string, } | { "type": "SetSheetColor", sheet_name: string, color: string | null, } | { "type": "ReorderSheet", sheet_name: string, order: string, } | { "type": "ReplaceSheet", sheet_name: string, } | { "type": "ResizeColumn", sheet_name: string, column: bigint, new_size: number, } | { "type": "ResizeRow", sheet_name: string, row: bigint, new_size: number, } | { "type": "ColumnsResized", sheet_name: string, count: number, } | { "type": "RowsResized", sheet_name: string, count: number, } | { "type": "DefaultRowSize", sheet_name: string, size: number, } | { "type": "DefaultColumnSize", sheet_name: string, size: number, } | { "type": "CursorChanged", selection: string, } | { "type": "MoveCells", from: string, to: string, columns: boolean, rows: boolean, } | { "type": "ValidationSet", selection: string, } | { "type": "ValidationRemoved", sheet_name: string, validation_id: string, } | { "type": "ValidationRemovedSelection", sheet_name: string, selection: string, } | { "type": "ColumnInserted", sheet_name: string, column: bigint, } | { "type": "ColumnDeleted", sheet_name: string, column: bigint, } | { "type": "RowInserted", sheet_name: string, row: bigint, } | { "type": "RowDeleted", sheet_name: string, row: bigint, } | { "type": "ColumnsDeleted", sheet_name: string, columns: Array<bigint>, } | { "type": "RowsDeleted", sheet_name: string, rows: Array<bigint>, } | { "type": "ColumnsMoved", sheet_name: string, from_range: [bigint, bigint], to: bigint, } | { "type": "RowsMoved", sheet_name: string, from_range: [bigint, bigint], to: bigint, } | { "type": "ComputeCode", selection: string, } | { "type": "SetMergeCells", sheet_name: string, };
+export type TrackedOperation = { "type": "SetCellValues", selection: string, } | { "type": "SetDataTable", selection: string, name: string | null, deleted: boolean, } | { "type": "DeleteDataTable", selection: string, } | { "type": "FlattenDataTable", selection: string, } | { "type": "GridToDataTable", selection: string, } | { "type": "MoveDataTable", from: string, to: string, } | { "type": "SwitchDataTableKind", selection: string, kind: string, } | { "type": "DataTableColumnsChanged", selection: string, } | { "type": "DataTableRowsChanged", selection: string, } | { "type": "DataTableSorted", selection: string, } | { "type": "DataTableHeaderToggled", selection: string, first_row_is_header: boolean, } | { "type": "FormatsChanged", sheet_name: string, selection: string, } | { "type": "AddSheet", sheet_name: string, } | { "type": "DeleteSheet", sheet_name: string, } | { "type": "DuplicateSheet", sheet_name: string, duplicated_sheet_name: string, } | { "type": "SetSheetName", old_sheet_name: string, new_sheet_name: string, } | { "type": "SetSheetColor", sheet_name: string, color: string | null, } | { "type": "ReorderSheet", sheet_name: string, order: string, } | { "type": "ReplaceSheet", sheet_name: string, } | { "type": "ResizeColumn", sheet_name: string, column: bigint, new_size: number, } | { "type": "ResizeRow", sheet_name: string, row: bigint, new_size: number, } | { "type": "ColumnsResized", sheet_name: string, count: number, } | { "type": "RowsResized", sheet_name: string, count: number, } | { "type": "DefaultRowSize", sheet_name: string, size: number, } | { "type": "DefaultColumnSize", sheet_name: string, size: number, } | { "type": "CursorChanged", selection: string, } | { "type": "MoveCells", from: string, to: string, columns: boolean, rows: boolean, } | { "type": "ValidationSet", selection: string, } | { "type": "ValidationRemoved", sheet_name: string, validation_id: string, } | { "type": "ValidationRemovedSelection", sheet_name: string, selection: string, } | { "type": "ConditionalFormatSet", selection: string, } | { "type": "ConditionalFormatRemoved", sheet_name: string, conditional_format_id: string, } | { "type": "ColumnInserted", sheet_name: string, column: bigint, } | { "type": "ColumnDeleted", sheet_name: string, column: bigint, } | { "type": "RowInserted", sheet_name: string, row: bigint, } | { "type": "RowDeleted", sheet_name: string, row: bigint, } | { "type": "ColumnsDeleted", sheet_name: string, columns: Array<bigint>, } | { "type": "RowsDeleted", sheet_name: string, rows: Array<bigint>, } | { "type": "ColumnsMoved", sheet_name: string, from_range: [bigint, bigint], to: bigint, } | { "type": "RowsMoved", sheet_name: string, from_range: [bigint, bigint], to: bigint, } | { "type": "ComputeCode", selection: string, } | { "type": "SetMergeCells", sheet_name: string, };
 export type TrackedTransaction = { source: TransactionSource, transaction_name: TransactionName, operations: Array<TrackedOperation>, time_stamp: bigint, };
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "ResizeColumns" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetMergeCells" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "ReplaceSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
+export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "ResizeColumns" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetMergeCells" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "ReplaceSheet" | "MoveCells" | "Validation" | "ConditionalFormat" | "ManipulateColumnRow";
 export type TransactionSource = "Unset" | "User" | "Undo" | "Redo" | "Multiplayer" | "Server" | "Unsaved" | "AI" | "UndoAI" | "RedoAI";
 export type TransientResize = { row: bigint | null, column: bigint | null, old_size: number, new_size: number, };
 export type Validation = { id: string, selection: A1Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, };

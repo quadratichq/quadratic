@@ -32,15 +32,15 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
   };
 
   const toggleStrikeThrough = () => {
-    setStyle({ ...style, strikeThrough: style.strikeThrough === true ? undefined : true });
+    setStyle({ ...style, strike_through: style.strike_through === true ? undefined : true });
   };
 
   const setTextColor = (color: string | undefined) => {
-    setStyle({ ...style, textColor: color });
+    setStyle({ ...style, text_color: color });
   };
 
   const setFillColor = (color: string | undefined) => {
-    setStyle({ ...style, fillColor: color });
+    setStyle({ ...style, fill_color: color });
   };
 
   return (
@@ -103,7 +103,7 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
             size="icon-sm"
             className={cn(
               'text-muted-foreground hover:text-foreground',
-              style.strikeThrough === true && 'bg-accent text-foreground'
+              style.strike_through === true && 'bg-accent text-foreground'
             )}
             onClick={toggleStrikeThrough}
           >
@@ -122,13 +122,13 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className={cn('text-muted-foreground hover:text-foreground', style.textColor && 'text-foreground')}
+                className={cn('text-muted-foreground hover:text-foreground', style.text_color && 'text-foreground')}
               >
                 <div className="relative flex items-center justify-center">
                   <FormatColorTextIcon />
                   <div
                     className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
-                    style={{ backgroundColor: style.textColor ?? 'currentColor' }}
+                    style={{ backgroundColor: style.text_color ?? 'currentColor' }}
                   />
                 </div>
               </Button>
@@ -138,7 +138,7 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
         </Tooltip>
         <PopoverContent className="w-fit p-1">
           <ColorPicker
-            color={style.textColor}
+            color={style.text_color}
             onChangeComplete={(color) => setTextColor(color.hex)}
             onClear={() => setTextColor(undefined)}
           />
@@ -152,13 +152,13 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className={cn('text-muted-foreground hover:text-foreground', style.fillColor && 'text-foreground')}
+                className={cn('text-muted-foreground hover:text-foreground', style.fill_color && 'text-foreground')}
               >
                 <div className="relative flex items-center justify-center">
                   <FormatColorFillIcon />
                   <div
                     className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
-                    style={{ backgroundColor: style.fillColor ?? 'currentColor' }}
+                    style={{ backgroundColor: style.fill_color ?? 'currentColor' }}
                   />
                 </div>
               </Button>
@@ -168,7 +168,7 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
         </Tooltip>
         <PopoverContent className="w-fit p-1">
           <ColorPicker
-            color={style.fillColor}
+            color={style.fill_color}
             onChangeComplete={(color) => setFillColor(color.hex)}
             onClear={() => setFillColor(undefined)}
           />

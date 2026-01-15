@@ -275,6 +275,22 @@ impl TrackedOperation {
                 selection: selection.to_string(Some(*sheet_id), gc.a1_context()),
             }),
 
+            // Conditional formatting
+            Operation::SetConditionalFormat { conditional_format } => {
+                Some(Self::ConditionalFormatSet {
+                    selection: conditional_format
+                        .selection
+                        .to_string(None, gc.a1_context()),
+                })
+            }
+            Operation::RemoveConditionalFormat {
+                sheet_id,
+                conditional_format_id,
+            } => Some(Self::ConditionalFormatRemoved {
+                sheet_name: get_sheet_name(*sheet_id, gc),
+                conditional_format_id: *conditional_format_id,
+            }),
+
             // Column/row structure changes
             Operation::InsertColumn {
                 sheet_id, column, ..

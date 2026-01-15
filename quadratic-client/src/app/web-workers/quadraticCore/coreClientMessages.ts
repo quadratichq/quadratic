@@ -8,6 +8,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatUpdate,
   DataTableSort,
   Format,
   FormatUpdate,
@@ -652,6 +653,30 @@ export interface ClientCoreGetValidationFromPos {
 
 //#endregion
 
+//#region Conditional Formatting
+
+export interface ClientCoreUpdateConditionalFormat {
+  type: 'clientCoreUpdateConditionalFormat';
+  id: number;
+  conditionalFormat: ConditionalFormatUpdate;
+  cursor: string;
+}
+
+export interface CoreClientUpdateConditionalFormat {
+  type: 'coreClientUpdateConditionalFormat';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreRemoveConditionalFormat {
+  type: 'clientCoreRemoveConditionalFormat';
+  sheetId: string;
+  conditionalFormatId: string;
+  cursor: string;
+}
+
+//#endregion
+
 //#region Sheets
 
 export interface CoreClientSheetsInfo {
@@ -1057,6 +1082,12 @@ export interface CoreClientSheetValidations {
   type: 'coreClientSheetValidations';
   sheetId: string;
   sheetValidations: Uint8Array;
+}
+
+export interface CoreClientSheetConditionalFormats {
+  type: 'coreClientSheetConditionalFormats';
+  sheetId: string;
+  conditionalFormats: Uint8Array;
 }
 
 export interface CoreClientGetValidationFromPos {
@@ -1673,6 +1704,8 @@ export type ClientCoreMessage =
   | ClientCoreRemoveValidations
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
+  | ClientCoreUpdateConditionalFormat
+  | ClientCoreRemoveConditionalFormat
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
@@ -1756,6 +1789,7 @@ export type CoreClientMessage =
   | CoreClientSheetMetaFills
   | CoreClientGetValidations
   | CoreClientSheetValidations
+  | CoreClientSheetConditionalFormats
   | CoreClientGetValidationFromPos
   | CoreClientGetValidationList
   | CoreClientGetDisplayCell
@@ -1810,6 +1844,7 @@ export type CoreClientMessage =
   | CoreClientDataTableMeta
   | CoreClientUpdateValidation
   | CoreClientRemoveValidationSelection
+  | CoreClientUpdateConditionalFormat
   | CoreClientGetAICodeErrors
   | CoreClientGetAITransactions
   | CoreClientUndoResponse

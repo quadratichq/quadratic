@@ -47,9 +47,7 @@ pub fn import_conditional_formats(
         })
         .collect::<Result<Vec<_>>>()?;
 
-    Ok(ConditionalFormats {
-        conditional_formats,
-    })
+    Ok(ConditionalFormats::from_vec(conditional_formats))
 }
 
 pub fn export_conditional_formats(
@@ -86,18 +84,16 @@ mod tests {
 
         let formula = parse_formula("=A1 > 10", ctx, pos).unwrap();
 
-        let conditional_formats = ConditionalFormats {
-            conditional_formats: vec![ConditionalFormat {
-                id: Uuid::new_v4(),
-                selection: A1Selection::test_a1("A1:B10"),
-                style: ConditionalFormatStyle {
-                    bold: Some(true),
-                    fill_color: Some("#FF0000".to_string()),
-                    ..Default::default()
-                },
-                rule: formula,
-            }],
-        };
+        let conditional_formats = ConditionalFormats::from_vec(vec![ConditionalFormat {
+            id: Uuid::new_v4(),
+            selection: A1Selection::test_a1("A1:B10"),
+            style: ConditionalFormatStyle {
+                bold: Some(true),
+                fill_color: Some("#FF0000".to_string()),
+                ..Default::default()
+            },
+            rule: formula,
+        }]);
 
         let exported = export_conditional_formats(conditional_formats.clone());
         let imported = import_conditional_formats(exported).unwrap();

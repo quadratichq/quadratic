@@ -4,5 +4,6 @@ mod borders;
 mod cache;
 mod cells;
 mod code;
+mod conditional_formats;
 mod fills;
 mod validations;

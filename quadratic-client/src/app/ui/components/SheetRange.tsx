@@ -64,7 +64,8 @@ export const SheetRange = (props: Props) => {
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     const jsSelection = sheets.sheet.cursor.jsSelection;
-    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
+    // Pass a1SheetId to hide sheet name when it matches (unless forceSheetName is true)
+    setInput(jsSelection.toA1String(forceSheetName ? undefined : a1SheetId, sheets.jsA1Context));
     onChangeSelection(jsSelection);
     setRangeError(undefined);
   }, [a1SheetId, onChangeSelection, forceSheetName]);
@@ -117,9 +118,10 @@ export const SheetRange = (props: Props) => {
     }
 
     const jsSelection = sheets.A1SelectionToJsSelection(initial);
-    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
-    jsSelection.free();
-  }, [changeCursor, a1SheetId, initial, forceSheetName]);
+    // Pass a1SheetId to hide sheet name when it matches (unless forceSheetName is true)
+    setInput(jsSelection.toA1String(forceSheetName ? undefined : a1SheetId, sheets.jsA1Context));
+    onChangeSelection(jsSelection);
+  }, [changeCursor, a1SheetId, initial, forceSheetName, onChangeSelection]);
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;

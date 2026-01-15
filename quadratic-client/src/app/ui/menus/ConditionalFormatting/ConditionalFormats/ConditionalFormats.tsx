@@ -1,18 +1,65 @@
 import { editorInteractionStateShowConditionalFormatAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type {
+  ConditionalFormatClient,
+  ConditionalFormatRule,
+  ConditionalFormatValue,
+} from '@/app/quadratic-core-types';
 import { ConditionalFormatsHeader } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormats/ConditionalFormatsHeader';
+import { useConditionalFormatsData } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormats/useConditionalFormatsData';
+import { DeleteIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 
+// Helper to format a ConditionalFormatValue for display
+const formatValue = (value: ConditionalFormatValue): string => {
+  if ('Number' in value) return String(value.Number);
+  if ('Text' in value) return `"${value.Text}"`;
+  if ('CellRef' in value) return value.CellRef;
+  if ('Bool' in value) return value.Bool ? 'TRUE' : 'FALSE';
+  return '';
+};
+
+// Convert a ConditionalFormatRule to a human-readable summary
+const getRuleSummary = (rule: ConditionalFormatRule): string => {
+  if (rule === 'IsEmpty') return 'Cell is empty';
+  if (rule === 'IsNotEmpty') return 'Cell is not empty';
+  if ('TextContains' in rule) return `Text contains "${rule.TextContains.value}"`;
+  if ('TextNotContains' in rule) return `Text doesn't contain "${rule.TextNotContains.value}"`;
+  if ('TextStartsWith' in rule) return `Text starts with "${rule.TextStartsWith.value}"`;
+  if ('TextEndsWith' in rule) return `Text ends with "${rule.TextEndsWith.value}"`;
+  if ('TextIsExactly' in rule) return `Text is exactly "${rule.TextIsExactly.value}"`;
+  if ('GreaterThan' in rule) return `Greater than ${formatValue(rule.GreaterThan.value)}`;
+  if ('GreaterThanOrEqual' in rule) return `Greater than or equal to ${formatValue(rule.GreaterThanOrEqual.value)}`;
+  if ('LessThan' in rule) return `Less than ${formatValue(rule.LessThan.value)}`;
+  if ('LessThanOrEqual' in rule) return `Less than or equal to ${formatValue(rule.LessThanOrEqual.value)}`;
+  if ('IsEqualTo' in rule) return `Equal to ${formatValue(rule.IsEqualTo.value)}`;
+  if ('IsNotEqualTo' in rule) return `Not equal to ${formatValue(rule.IsNotEqualTo.value)}`;
+  if ('IsBetween' in rule) return `Between ${formatValue(rule.IsBetween.min)} and ${formatValue(rule.IsBetween.max)}`;
+  if ('IsNotBetween' in rule)
+    return `Not between ${formatValue(rule.IsNotBetween.min)} and ${formatValue(rule.IsNotBetween.max)}`;
+  if ('Custom' in rule) return `Formula: ${rule.Custom.formula}`;
+  return 'Unknown rule';
+};
+
 export const ConditionalFormats = () => {
   const setShowConditionalFormat = useSetRecoilState(editorInteractionStateShowConditionalFormatAtom);
+  const { conditionalFormats, deleteConditionalFormat, removeAllConditionalFormats, readOnly } =
+    useConditionalFormatsData();
 
   const addConditionalFormat = useCallback(() => {
     setShowConditionalFormat('new');
   }, [setShowConditionalFormat]);
 
-  // TODO: In the future, this will fetch conditional formats from the sheet
-  // For now, we just show an empty list with an add button
+  const editConditionalFormat = useCallback(
+    (id: string) => {
+      setShowConditionalFormat(id);
+    },
+    [setShowConditionalFormat]
+  );
 
   return (
     <div
@@ -23,16 +70,100 @@ export const ConditionalFormats = () => {
       <ConditionalFormatsHeader />
 
       <div className="grow overflow-auto">
-        <div className="flex h-full items-center justify-center text-muted-foreground">No conditional formats yet</div>
+        <div className="flex flex-col gap-2 py-2">
+          {conditionalFormats.map((cf) => (
+            <ConditionalFormatItem
+              key={cf.id}
+              conditionalFormat={cf}
+              onEdit={() => editConditionalFormat(cf.id)}
+              onDelete={() => deleteConditionalFormat(cf.id)}
+              readOnly={readOnly}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
-        <div className="mx-auto my-1 flex gap-3">
+      {!readOnly && (
+        <div className="flex w-full items-center justify-center gap-3 border-t border-t-gray-100 py-3">
+          <Button variant="secondary" onClick={removeAllConditionalFormats}>
+            Remove All
+          </Button>
           <Button onClick={addConditionalFormat} autoFocus>
             Add Rule
           </Button>
         </div>
+      )}
+    </div>
+  );
+};
+
+interface ConditionalFormatItemProps {
+  conditionalFormat: ConditionalFormatClient;
+  onEdit: () => void;
+  onDelete: () => void;
+  readOnly: boolean;
+}
+
+const ConditionalFormatItem = ({ conditionalFormat, onEdit, onDelete, readOnly }: ConditionalFormatItemProps) => {
+  // Convert A1Selection to a display string
+  let selectionString = 'Unknown range';
+  if (conditionalFormat.selection) {
+    try {
+      const jsSelection = sheets.A1SelectionToJsSelection(conditionalFormat.selection);
+      // Pass the current sheet ID so the sheet name isn't included
+      // (conditional formats are limited to the current sheet)
+      selectionString = jsSelection.toA1String(sheets.current, sheets.jsA1Context);
+      jsSelection.free();
+    } catch {
+      selectionString = 'Unknown range';
+    }
+  }
+
+  // Get rule summary
+  const ruleSummary = getRuleSummary(conditionalFormat.rule);
+
+  return (
+    <div
+      className="group flex cursor-pointer items-center gap-2 rounded border border-border p-2 transition-colors hover:bg-accent"
+      onClick={readOnly ? undefined : onEdit}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-medium">{selectionString}</div>
+        <div className="truncate text-xs text-muted-foreground">{ruleSummary}</div>
       </div>
+
+      {/* Style preview */}
+      <div
+        className={cn(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded border text-xs',
+          conditionalFormat.style.bold && 'font-bold',
+          conditionalFormat.style.italic && 'italic',
+          conditionalFormat.style.underline && 'underline',
+          conditionalFormat.style.strike_through && 'line-through'
+        )}
+        style={{
+          backgroundColor: conditionalFormat.style.fill_color ?? undefined,
+          color: conditionalFormat.style.text_color ?? undefined,
+        }}
+      >
+        Aa
+      </div>
+
+      {!readOnly && (
+        <TooltipPopover label="Delete" side="bottom">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="opacity-0 transition-opacity group-hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <DeleteIcon />
+          </Button>
+        </TooltipPopover>
+      )}
     </div>
   );
 };

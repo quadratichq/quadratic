@@ -16,6 +16,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatUpdate,
   DataTableSort,
   FormatUpdate,
   JsCellValue,
@@ -1114,6 +1115,24 @@ class Core {
     } catch (e) {
       this.handleCoreError('getValidationFromPos', e);
       return undefined;
+    }
+  }
+
+  updateConditionalFormat(conditionalFormat: ConditionalFormatUpdate, cursor: string): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.updateConditionalFormat(JSON.stringify(conditionalFormat), cursor);
+    } catch (e) {
+      this.handleCoreError('updateConditionalFormat', e);
+    }
+  }
+
+  removeConditionalFormat(sheetId: string, conditionalFormatId: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.removeConditionalFormat(sheetId, conditionalFormatId, cursor);
+    } catch (e) {
+      this.handleCoreError('removeConditionalFormat', e);
     }
   }
 

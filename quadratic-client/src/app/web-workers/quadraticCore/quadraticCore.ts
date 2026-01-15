@@ -17,6 +17,8 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatClient,
+  ConditionalFormatUpdate,
   DataTableSort,
   FormatUpdate,
   JsBordersSheet,
@@ -122,6 +124,7 @@ import type {
   CoreClientSummarizeSelection,
   CoreClientUndoResponse,
   CoreClientUnmergeCellsResponse,
+  CoreClientUpdateConditionalFormat,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -261,6 +264,10 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientValidationWarnings') {
       const warnings = fromUint8Array<JsHashValidationWarnings[]>(e.data.warnings);
       events.emit('validationWarnings', warnings);
+      return;
+    } else if (e.data.type === 'coreClientSheetConditionalFormats') {
+      const conditionalFormats = fromUint8Array<ConditionalFormatClient[]>(e.data.conditionalFormats);
+      events.emit('sheetConditionalFormats', e.data.sheetId, conditionalFormats);
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
@@ -1542,6 +1549,30 @@ class QuadraticCore {
       sheetId,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  updateConditionalFormat(conditionalFormat: ConditionalFormatUpdate): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUpdateConditionalFormat) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreUpdateConditionalFormat',
+        id,
+        conditionalFormat,
+        cursor: sheets.getCursorPosition(),
+      });
+    });
+  }
+
+  removeConditionalFormat(sheetId: string, conditionalFormatId: string) {
+    this.send({
+      type: 'clientCoreRemoveConditionalFormat',
+      sheetId,
+      conditionalFormatId,
+      cursor: sheets.getCursorPosition(),
     });
   }
 

@@ -61,6 +61,10 @@ use quadratic_core::grid::sheet::borders::CellBorderLine;
 use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
+use quadratic_core::grid::sheet::conditional_format::{
+    ConditionalFormat, ConditionalFormatClient, ConditionalFormatRule, ConditionalFormatStyle,
+    ConditionalFormatUpdate, ConditionalFormatValue,
+};
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::rules::ValidationRule;
 use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
@@ -128,6 +132,12 @@ fn main() {
         CellVerticalAlign,
         CellWrap,
         CodeCellLanguage,
+        ConditionalFormat,
+        ConditionalFormatClient,
+        ConditionalFormatRule,
+        ConditionalFormatStyle,
+        ConditionalFormatUpdate,
+        ConditionalFormatValue,
         ColumnRow,
         ConnectionKind,
         DataTableSort,

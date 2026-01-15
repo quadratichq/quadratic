@@ -37,6 +37,11 @@ pub struct Ctx<'ctx> {
     /// Set of omitted variable names (case-insensitive, stored uppercase).
     /// Used by ISOMITTED to check if a LAMBDA parameter was not provided.
     pub omitted_variables: HashSet<String>,
+
+    /// Whether to allow self-references (reading the cell at `sheet_pos`).
+    /// This is used for conditional formatting where formulas like `=A1>5`
+    /// are evaluated at position A1 and need to read A1's value.
+    pub allow_self_reference: bool,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -48,6 +53,25 @@ impl<'ctx> Ctx<'ctx> {
             skip_computation: false,
             variables: HashMap::new(),
             omitted_variables: HashSet::new(),
+            allow_self_reference: false,
+        }
+    }
+
+    /// Constructs a context for evaluating a conditional formatting formula.
+    /// Unlike regular formulas, conditional formatting formulas can reference
+    /// the cell they're being evaluated at (e.g., `=A1>5` evaluated at A1).
+    pub fn new_for_conditional_format(
+        grid_controller: &'ctx GridController,
+        sheet_pos: SheetPos,
+    ) -> Self {
+        Ctx {
+            grid_controller,
+            sheet_pos,
+            cells_accessed: Rc::new(RefCell::new(CellsAccessed::default())),
+            skip_computation: false,
+            variables: HashMap::new(),
+            omitted_variables: HashSet::new(),
+            allow_self_reference: true,
         }
     }
 
@@ -62,6 +86,7 @@ impl<'ctx> Ctx<'ctx> {
             skip_computation: true,
             variables: HashMap::new(),
             omitted_variables: HashSet::new(),
+            allow_self_reference: false,
         }
     }
 
@@ -109,6 +134,7 @@ impl<'ctx> Ctx<'ctx> {
             skip_computation: self.skip_computation,
             variables,
             omitted_variables: self.omitted_variables.clone(),
+            allow_self_reference: self.allow_self_reference,
         }
     }
 
@@ -137,6 +163,7 @@ impl<'ctx> Ctx<'ctx> {
             skip_computation: self.skip_computation,
             variables,
             omitted_variables,
+            allow_self_reference: self.allow_self_reference,
         }
     }
 
@@ -192,7 +219,7 @@ impl<'ctx> Ctx<'ctx> {
         let Some(sheet) = self.grid_controller.try_sheet(pos.sheet_id) else {
             return error_value(RunErrorMsg::BadCellReference);
         };
-        if pos == self.sheet_pos {
+        if pos == self.sheet_pos && !self.allow_self_reference {
             return error_value(RunErrorMsg::CircularReference);
         }
 

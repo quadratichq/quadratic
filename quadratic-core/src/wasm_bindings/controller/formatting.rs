@@ -17,7 +17,7 @@ use super::SheetId;
 #[wasm_bindgen]
 impl GridController {
     /// Returns a summary of the formatting in a region as a
-    /// [`CellFormatSummary`].
+    /// [`CellFormatSummary`]. This includes any conditional formatting applied to the cell.
     #[wasm_bindgen(js_name = "getCellFormatSummary")]
     pub fn js_cell_format_summary(&self, sheet_id: String, pos: String) -> JsValue {
         let Ok(pos) = serde_json::from_str::<Pos>(&pos) else {
@@ -26,7 +26,35 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return JsValue::UNDEFINED;
         };
-        let output: CellFormatSummary = sheet.cell_format_summary(pos);
+        let mut output: CellFormatSummary = sheet.cell_format_summary(pos);
+
+        // Apply conditional formatting if any
+        let sheet_pos = SheetPos {
+            x: pos.x,
+            y: pos.y,
+            sheet_id: sheet.id,
+        };
+        if let Some(cf_style) = self.get_conditional_format_style(sheet_pos, self.a1_context()) {
+            if let Some(bold) = cf_style.bold {
+                output.bold = Some(bold);
+            }
+            if let Some(italic) = cf_style.italic {
+                output.italic = Some(italic);
+            }
+            if let Some(underline) = cf_style.underline {
+                output.underline = Some(underline);
+            }
+            if let Some(strike_through) = cf_style.strike_through {
+                output.strike_through = Some(strike_through);
+            }
+            if let Some(text_color) = cf_style.text_color {
+                output.text_color = Some(text_color);
+            }
+            if let Some(fill_color) = cf_style.fill_color {
+                output.fill_color = Some(fill_color);
+            }
+        }
+
         serde_wasm_bindgen::to_value(&output).unwrap_or(JsValue::UNDEFINED)
     }
 

@@ -12,6 +12,7 @@ pub mod cells;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod conditional_format;
 pub mod data_table;
 pub mod export;
 pub mod formatting;
@@ -65,6 +66,7 @@ impl GridController {
                     }
                     drop(sheets_info);
 
+                    let a1_context = grid.a1_context();
                     grid.sheet_ids().iter().for_each(|sheet_id| {
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
                             // sends SheetContentCache to the client
@@ -84,6 +86,9 @@ impl GridController {
 
                             // sends all validation warnings to the client
                             sheet.send_all_validation_warnings();
+
+                            // sends all conditional formats to the client
+                            sheet.send_all_conditional_formats(a1_context);
 
                             // sends all borders to the client
                             sheet.send_sheet_borders();
