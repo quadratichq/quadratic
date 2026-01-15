@@ -714,7 +714,11 @@ export const Component = () => {
                         <span className="text-xs text-muted-foreground">& more</span>
                       </div>
                       <p className="mt-3 text-xs text-muted-foreground">
-                        <Button variant="link" className="h-auto p-0 text-xs" onClick={() => handleOpenConnectionsDialog('new')}>
+                        <Button
+                          variant="link"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => handleOpenConnectionsDialog('new')}
+                        >
                           Add a connection
                         </Button>{' '}
                         to get started.
