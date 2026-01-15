@@ -170,12 +170,13 @@ export const Component = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const {
     activeTeam: {
-      userMakingRequest: { teamRole: userMakingRequestTeamRole },
+      userMakingRequest: { teamRole: userMakingRequestTeamRole, teamPermissions },
       clientDataKv: { lastSolicitationForProUpgrade },
       billing: { status: billingStatus },
       team: { uuid: activeTeamUuid },
     },
   } = useDashboardRouteLoaderData();
+  const canManageBilling = teamPermissions.includes('TEAM_MANAGE');
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
   // Handle subscription success: show toast and clean up URL params
@@ -254,6 +255,7 @@ export const Component = () => {
           userMakingRequestTeamRole={userMakingRequestTeamRole}
           lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
           billingStatus={billingStatus}
+          canManageBilling={canManageBilling}
         />
         <SettingsDialog />
         <ChangelogDialog />

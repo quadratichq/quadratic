@@ -124,7 +124,7 @@ export const Component = () => {
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
-      <UpgradeDialog teamUuid={teamUuid} />
+      <UpgradeDialog teamUuid={teamUuid} canManageBilling={false} />
       <div className="grid grid-rows-[auto_1fr] overflow-hidden border-r border-border">
         <div className="overflow-hidden border-b border-border p-3">
           <div className="mb-1 flex items-center justify-between">
