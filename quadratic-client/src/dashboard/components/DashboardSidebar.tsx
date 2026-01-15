@@ -257,27 +257,25 @@ function SidebarNavLinkCreateButton({
     window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
   };
 
-  if (true) {
-    return (
-      <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="!bg-transparent opacity-30 hover:opacity-100"
-              onClick={handleClick}
-            >
-              <AddIcon />
-            </Button>
-          </TooltipTrigger>
-          <TooltipPortal>
-            <TooltipContent>{children}</TooltipContent>
-          </TooltipPortal>
-        </Tooltip>
-      </div>
-    );
-  }
+  return (
+    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="!bg-transparent opacity-30 hover:opacity-100"
+            onClick={handleClick}
+          >
+            <AddIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent>{children}</TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
+    </div>
+  );
 }
 
 const sidebarItemClasses = {
