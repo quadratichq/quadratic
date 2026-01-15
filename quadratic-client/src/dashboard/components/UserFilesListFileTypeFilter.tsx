@@ -20,6 +20,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom } from 'jotai';
 import React from 'react';
 
@@ -49,12 +50,13 @@ export function UserFilesListFileTypeFilter() {
               'flex-shrink-0 px-3 shadow-none',
               filters.fileType === value ? '' : 'text-muted-foreground hover:text-foreground'
             )}
-            onClick={() =>
+            onClick={() => {
+              trackEvent('[Files].filterByType', { type: value ?? 'all' });
               setFilters({
                 ...defaultUserFilesListFilters,
                 fileType: value,
-              })
-            }
+              });
+            }}
           >
             {label}
           </Button>

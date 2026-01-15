@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom, useAtomValue } from 'jotai';
 import { useState } from 'react';
 
@@ -86,6 +87,7 @@ export function UserFilesListFiltersDropdown() {
           checked={filters.hasScheduledTasks}
           onSelect={(e) => e.preventDefault()}
           onCheckedChange={(checked) => {
+            trackEvent('[Files].filterByScheduledTasks');
             setFilters({ ...filters, hasScheduledTasks: checked });
           }}
         >
@@ -95,6 +97,7 @@ export function UserFilesListFiltersDropdown() {
           checked={filters.sharedPublicly}
           onSelect={(e) => e.preventDefault()}
           onCheckedChange={(checked) => {
+            trackEvent('[Files].filterBySharedPublicly');
             setFilters({ ...filters, sharedPublicly: checked });
           }}
         >
@@ -112,6 +115,7 @@ export function UserFilesListFiltersDropdown() {
                 checked={filters.fileCreatorEmails.includes(user.email)}
                 onSelect={(e) => e.preventDefault()}
                 onCheckedChange={(checked) => {
+                  trackEvent('[Files].filterByFileCreator');
                   setFilters({
                     ...filters,
                     fileCreatorEmails: checked
