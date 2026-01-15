@@ -29,7 +29,7 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   size?: keyof typeof sizes;
 }
 
-export const Icon = (props: BaseIconProps) => {
+const Icon = (props: BaseIconProps) => {
   const { children, className, size = 'sm', ...rest } = props;
   const _size = size ? sizes[size] : sizes['sm'];
 
