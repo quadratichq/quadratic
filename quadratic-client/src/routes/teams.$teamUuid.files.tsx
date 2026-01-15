@@ -22,7 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       publicLinkAccess,
       // Hard-code permissions to and don't allow user to take actions on the dashboard
       permissions: [],
-      fileType: 'shared',
+      fileType: 'shared' as const,
     })
   );
   return { sharedWithMeFiles };
