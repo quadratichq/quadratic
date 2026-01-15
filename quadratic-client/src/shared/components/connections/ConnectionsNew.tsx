@@ -1,6 +1,7 @@
 import type { NavigateToCreatePotentialView, NavigateToCreateView } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { AddIcon, FeedbackIcon } from '@/shared/components/Icons';
+import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Button } from '@/shared/shadcn/ui/button';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import AffirmLogo from './logo-plaid-affirm.svg?react';
@@ -90,22 +91,19 @@ export const ConnectionsNew = ({
       {/* Databases (rendered last) */}
       {databaseConnections && renderCategory('Databases', databaseConnections)}
 
-      <div>
-        <h3 className="text-sm font-semibold">Don't see the connection you need?</h3>
-        <div className="mt-2">
-          <button
-            className="flex w-full items-start gap-4 rounded-lg border border-border px-5 py-4 text-left hover:bg-accent"
-            onClick={() => handleNavigateToCreatePotentialView('OTHER')}
-          >
-            <FeedbackIcon className="mt-0.5 flex-shrink-0" />
-            <div className="flex flex-col gap-1">
-              <span className="font-medium leading-none">Suggest a connection</span>
-              <span className="text-sm text-muted-foreground">
-                Let us know what you'd like to connect and we'll consider adding it.
-              </span>
-            </div>
-          </button>
-        </div>
+      <div className="mt-2">
+        <button
+          className="bg-background text-left shadow-sm hover:bg-accent"
+          onClick={() => handleNavigateToCreatePotentialView('OTHER')}
+        >
+          <Alert className="bg-inherit">
+            <FeedbackIcon />
+            <AlertTitle>Suggest a connection…</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
+              Let us know what data source you'd like to connect and we'll consider adding it.
+            </AlertDescription>
+          </Alert>
+        </button>
       </div>
     </div>
   );
