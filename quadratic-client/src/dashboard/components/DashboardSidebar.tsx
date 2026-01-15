@@ -16,6 +16,7 @@ import {
   ExamplesIcon,
   ExternalLinkIcon,
   FileIcon,
+  GroupIcon,
   GroupSearchIcon,
   LabsIcon,
   LogoutIcon,
@@ -120,7 +121,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
           )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
-            <GroupSearchIcon className={classNameIcons} />
+            <GroupIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
           {canEditTeam && (

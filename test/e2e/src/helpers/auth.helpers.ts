@@ -4,6 +4,18 @@ import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
 
 /**
+ * Asserts that the Quadratic dashboard page is loaded and the user is logged in.
+ * Checks for the user's email, page title, and "Suggested files" heading.
+ */
+export const assertDashboardLoaded = async (page: Page, options: { email: string }) => {
+  const { email } = options;
+
+  await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page).toHaveTitle(/Files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Files`, exact: true })).toBeVisible();
+};
+
+/**
  * Dismisses the "Upgrade to Pro" dialog if it appears on the dashboard.
  * This dialog can appear periodically for team owners on free plans.
  */
