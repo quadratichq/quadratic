@@ -21,7 +21,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       uuid,
       publicLinkAccess,
       permissions: [],
-      fileType: 'shared',
+      fileType: 'shared' as const,
     })
   );
   return { sharedWithMeFiles };
