@@ -165,9 +165,9 @@ export function UserFilesList({
   const handleDragEnter = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       if (teamUuid === undefined || !e.dataTransfer.types.includes('Files')) return;
-      setFileDragDropState({ show: true, teamUuid, isPrivate: fileType === 'private' });
+      setFileDragDropState({ show: true, teamUuid, isPrivate: true });
     },
-    [setFileDragDropState, fileType, teamUuid]
+    [setFileDragDropState, teamUuid]
   );
 
   return (
