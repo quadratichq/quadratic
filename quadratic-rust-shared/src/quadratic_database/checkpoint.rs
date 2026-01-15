@@ -109,6 +109,9 @@ pub async fn set_file_checkpoint(
 ) -> Result<()> {
     let s3_key = format!("{file_id}-{sequence_number}.grid");
 
+    // Use a transaction to prevent TOCTOU race conditions between insert and conflict check
+    let mut tx = pool.begin().await.map_err(QuadraticDatabase::from)?;
+
     // Try to insert, returning the id if successful
     let insert_query = "
         INSERT INTO \"FileCheckpoint\" (file_id, sequence_number, s3_bucket, s3_key, version, transactions_hash)
@@ -125,18 +128,38 @@ pub async fn set_file_checkpoint(
         .bind(&s3_key)
         .bind(version)
         .bind(transactions_hash)
-        .fetch_optional(pool)
+        .fetch_optional(&mut *tx)
         .await
         .map_err(QuadraticDatabase::from)?;
 
     // If we got a row back, the insert succeeded
     if result.is_some() {
+        tx.commit().await.map_err(QuadraticDatabase::from)?;
         return Ok(());
     }
 
-    // Conflict occurred - check if the existing hash matches
-    match get_checkpoint_hash(pool, file_id, sequence_number).await? {
-        Some(hash) if hash == transactions_hash => Ok(()), // Idempotent - same hash
+    // Conflict occurred - check if the existing hash matches (within the same transaction)
+    let check_query = "
+        SELECT fc.transactions_hash
+        FROM \"FileCheckpoint\" fc
+        INNER JOIN \"File\" f ON fc.file_id = f.id
+        WHERE f.uuid = $1::text AND fc.sequence_number = $2";
+
+    let existing_hash: Option<String> = sqlx::query_scalar(check_query)
+        .bind(file_id)
+        .bind(sequence_number)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(QuadraticDatabase::from)?;
+
+    // Commit the transaction (read-only at this point, but completes the transaction)
+    tx.commit().await.map_err(QuadraticDatabase::from)?;
+
+    match existing_hash {
+        Some(hash) if hash == transactions_hash => {
+            tracing::info!("Checkpoint for file {} sequence {} already exists with same hash", file_id, sequence_number);
+            Ok(()) // Idempotent - same hash
+        },
         Some(hash) => Err(QuadraticDatabase::Conflict(format!(
             "Checkpoint for file {} sequence {} already exists with different hash (existing: {}, new: {})",
             file_id, sequence_number, hash, transactions_hash
