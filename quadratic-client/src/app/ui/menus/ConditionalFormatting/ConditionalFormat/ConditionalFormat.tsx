@@ -86,7 +86,7 @@ const CONDITION_OPTIONS: { value: ConditionType; label: string; group?: string }
   { value: 'is_between', label: 'Is between', group: 'number' },
   { value: 'is_not_between', label: 'Is not between', group: 'number' },
   // Custom
-  { value: 'custom_formula', label: 'Custom formula is', group: 'custom' },
+  { value: 'custom_formula', label: 'Custom formula is TRUE', group: 'custom' },
 ];
 
 // Helper to determine what inputs are needed for each condition type
@@ -748,7 +748,12 @@ export const ConditionalFormat = () => {
             {!formulaValidation.isValid && customFormula ? (
               <p className="mt-1 text-xs text-destructive">{formulaValidation.error}</p>
             ) : (
-              <p className="mt-1 text-xs text-muted-foreground">Enter a formula that returns TRUE or FALSE</p>
+              <>
+                <p className="mt-1 text-xs text-muted-foreground">Enter a formula that returns TRUE or FALSE.</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Cell references will adjust for each cell in the selection, similar to copying a formula.
+                </p>
+              </>
             )}
           </div>
         )}
