@@ -10,6 +10,9 @@ use crate::SharedError;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum QuadraticDatabase {
+    #[error("Conflict: {0}")]
+    Conflict(String),
+
     #[error("Error connecting to database: {0}")]
     Connect(String),
 

@@ -47,7 +47,44 @@ pub async fn get_max_sequence_number(pool: &PgPool, file_id: &Uuid) -> Result<i3
     })
 }
 
+/// Get the transactions hash for a specific checkpoint
+///
+/// # Arguments
+///
+/// * `pool` - The PostgreSQL pool
+/// * `file_id` - The UUID of the file
+/// * `sequence_number` - The sequence number of the checkpoint
+///
+/// # Returns
+///
+/// * `Ok(Some(hash))` - The transactions hash for the checkpoint
+/// * `Ok(None)` - No checkpoint found for this file/sequence
+pub async fn get_checkpoint_hash(
+    pool: &PgPool,
+    file_id: &Uuid,
+    sequence_number: i32,
+) -> Result<Option<String>> {
+    let query = "
+        SELECT fc.transactions_hash
+        FROM \"FileCheckpoint\" fc
+        INNER JOIN \"File\" f ON fc.file_id = f.id
+        WHERE f.uuid = $1::text AND fc.sequence_number = $2";
+
+    let result: Option<String> = sqlx::query_scalar(query)
+        .bind(file_id)
+        .bind(sequence_number)
+        .fetch_optional(pool)
+        .await
+        .map_err(QuadraticDatabase::from)?;
+
+    Ok(result)
+}
+
 /// Set the file's checkpoint with the quadratic database
+///
+/// If a checkpoint already exists for this (file_id, sequence_number), the function
+/// checks if the transactions_hash matches. If it matches, the operation succeeds
+/// (idempotent). If it doesn't match, an error is returned indicating a conflict.
 ///
 /// # Arguments
 ///
@@ -56,9 +93,12 @@ pub async fn get_max_sequence_number(pool: &PgPool, file_id: &Uuid) -> Result<i3
 /// * `sequence_number` - The sequence number of the checkpoint
 /// * `s3_bucket` - The S3 bucket name
 /// * `version` - The version string
-/// * `transactions_hash` - Optional hash of the transactions
+/// * `transactions_hash` - Hash of the transactions
 ///
 /// # Returns
+///
+/// * `Ok(())` - Checkpoint was inserted or already exists with matching hash
+/// * `Err(Conflict)` - Checkpoint exists with a different hash
 pub async fn set_file_checkpoint(
     pool: &PgPool,
     file_id: &Uuid,
@@ -68,25 +108,44 @@ pub async fn set_file_checkpoint(
     transactions_hash: &str,
 ) -> Result<()> {
     let s3_key = format!("{file_id}-{sequence_number}.grid");
-    let query = "
+
+    // Try to insert, returning the id if successful
+    let insert_query = "
         INSERT INTO \"FileCheckpoint\" (file_id, sequence_number, s3_bucket, s3_key, version, transactions_hash)
         SELECT f.\"id\", $2, $3, $4, $5, $6
         FROM \"File\" f
         WHERE f.\"uuid\" = $1::text
-        ON CONFLICT (file_id, sequence_number) DO NOTHING";
+        ON CONFLICT (file_id, sequence_number) DO NOTHING
+        RETURNING id";
 
-    sqlx::query(query)
+    let result: Option<i32> = sqlx::query_scalar(insert_query)
         .bind(file_id)
         .bind(sequence_number)
         .bind(s3_bucket)
-        .bind(s3_key)
+        .bind(&s3_key)
         .bind(version)
         .bind(transactions_hash)
-        .execute(pool)
+        .fetch_optional(pool)
         .await
         .map_err(QuadraticDatabase::from)?;
 
-    Ok(())
+    // If we got a row back, the insert succeeded
+    if result.is_some() {
+        return Ok(());
+    }
+
+    // Conflict occurred - check if the existing hash matches
+    match get_checkpoint_hash(pool, file_id, sequence_number).await? {
+        Some(hash) if hash == transactions_hash => Ok(()), // Idempotent - same hash
+        Some(hash) => Err(QuadraticDatabase::Conflict(format!(
+            "Checkpoint for file {} sequence {} already exists with different hash (existing: {}, new: {})",
+            file_id, sequence_number, hash, transactions_hash
+        )).into()),
+        None => Err(QuadraticDatabase::NotFound(format!(
+            "File {} not found",
+            file_id
+        )).into()),
+    }
 }
 
 #[cfg(test)]
@@ -192,6 +251,34 @@ mod tests {
         // Verify the max sequence number is set
         let max_sequence_num = get_max_sequence_number(&pool, &file_uuid).await.unwrap();
         assert_eq!(max_sequence_num, seq_num);
+
+        // Insert again with same hash (idempotent - should succeed)
+        set_file_checkpoint(
+            &pool,
+            &file_uuid,
+            seq_num,
+            "test-bucket",
+            "1.0.0",
+            "test-hash",
+        )
+        .await
+        .unwrap();
+
+        // Insert again with different hash (should fail with Conflict)
+        let conflict_err = set_file_checkpoint(
+            &pool,
+            &file_uuid,
+            seq_num,
+            "test-bucket",
+            "1.0.0",
+            "different-hash",
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(
+            conflict_err,
+            SharedError::QuadraticDatabase(QuadraticDatabase::Conflict(_))
+        ));
 
         test_teardown(&pool, file_id, team_id, user_id).await;
     }
