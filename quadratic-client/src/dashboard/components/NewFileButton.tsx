@@ -72,6 +72,7 @@ export function NewFileButton() {
       </Button>
 
       <Button
+        data-testid="files-list-new-file-button"
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
