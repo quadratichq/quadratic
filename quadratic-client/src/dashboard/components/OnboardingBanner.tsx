@@ -125,43 +125,43 @@ export function OnboardingBanner() {
       label: 'Create a connection',
       completed: connections.filter((c) => !c.isDemo).length > 0,
       content: (
-        <div className="grid grid-cols-4 gap-2">
-          <Button variant="outline" className="w-full gap-2" asChild>
+        <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'GOOGLE_ANALYTICS')} onClick={trackCreateConnection}>
               <LanguageIcon language="GOOGLE_ANALYTICS" /> Google Analytics
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MIXPANEL')} onClick={trackCreateConnection}>
               <LanguageIcon language="MIXPANEL" /> Mixpanel
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'PLAID')} onClick={trackCreateConnection}>
               <LanguageIcon language="PLAID" /> Bank accounts
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'POSTGRES')} onClick={trackCreateConnection}>
               <LanguageIcon language="POSTGRES" /> Postgres
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MYSQL')} onClick={trackCreateConnection}>
               <LanguageIcon language="MYSQL" /> MySQL
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'SNOWFLAKE')} onClick={trackCreateConnection}>
               <LanguageIcon language="SNOWFLAKE" /> Snowflake
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'BIGQUERY')} onClick={trackCreateConnection}>
               <LanguageIcon language="BIGQUERY" /> BigQuery
             </Link>
           </Button>
-          <Button variant="outline" className="w-full gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 whitespace-nowrap" asChild>
             <Link to={ROUTES.TEAM_CONNECTIONS_NEW(teamUuid)} onClick={trackCreateConnection}>
               View all…
             </Link>
