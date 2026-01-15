@@ -50,8 +50,7 @@ export function ConnectionsPotential({
       <p className="text-sm">
         {connectionType === 'OTHER' ? (
           <>
-            <strong>What connection are you looking for?</strong> Your input will help us prioritize. Share your use
-            case, and we’ll contact you.
+            <strong>What connection are you looking for?</strong> Your input helps us prioritize what we build next.
           </>
         ) : (
           <>
