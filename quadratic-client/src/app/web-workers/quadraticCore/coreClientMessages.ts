@@ -675,6 +675,21 @@ export interface ClientCoreRemoveConditionalFormat {
   cursor: string;
 }
 
+export interface ClientCoreBatchUpdateConditionalFormats {
+  type: 'clientCoreBatchUpdateConditionalFormats';
+  id: number;
+  sheetId: string;
+  updates: ConditionalFormatUpdate[];
+  deleteIds: string[];
+  cursor: string;
+}
+
+export interface CoreClientBatchUpdateConditionalFormats {
+  type: 'coreClientBatchUpdateConditionalFormats';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 //#endregion
 
 //#region Sheets
@@ -1706,6 +1721,7 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationList
   | ClientCoreUpdateConditionalFormat
   | ClientCoreRemoveConditionalFormat
+  | ClientCoreBatchUpdateConditionalFormats
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
@@ -1845,6 +1861,7 @@ export type CoreClientMessage =
   | CoreClientUpdateValidation
   | CoreClientRemoveValidationSelection
   | CoreClientUpdateConditionalFormat
+  | CoreClientBatchUpdateConditionalFormats
   | CoreClientGetAICodeErrors
   | CoreClientGetAITransactions
   | CoreClientUndoResponse

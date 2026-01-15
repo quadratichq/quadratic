@@ -355,27 +355,60 @@ export const ConditionalFormat = () => {
     }
   }, [existingFormat]);
 
-  // Get the first cell from the selection for the placeholder
+  // Get the first cell from the selection for the formula generation.
+  // This uses the start of the first range, not the cursor, to correctly
+  // handle table column selections where the cursor may not be at the first data cell.
   const firstCell = useMemo(() => {
     // Try to get from JsSelection first (if user has changed the selection)
     if (selection) {
+      const firstRangeStart = selection.getFirstRangeStart(sheets.jsA1Context);
+      if (firstRangeStart) {
+        return getA1Notation(Number(firstRangeStart.x), Number(firstRangeStart.y));
+      }
+      // Fall back to cursor if no first range start available
       const sel = selection.selection();
       return getA1Notation(Number(sel.cursor.x), Number(sel.cursor.y));
     }
-    // Fall back to initial selection
+    // Fall back to initial selection - need to convert to JsSelection to get first range start
     if (initialSelection) {
+      try {
+        const jsSelection = sheets.A1SelectionToJsSelection(initialSelection);
+        const firstRangeStart = jsSelection.getFirstRangeStart(sheets.jsA1Context);
+        jsSelection.free();
+        if (firstRangeStart) {
+          return getA1Notation(Number(firstRangeStart.x), Number(firstRangeStart.y));
+        }
+      } catch {
+        // If conversion fails, fall back to cursor
+      }
       return getA1Notation(Number(initialSelection.cursor.x), Number(initialSelection.cursor.y));
     }
     return 'A1';
   }, [selection, initialSelection]);
 
   // Get the position for formula validation (first cell in selection)
+  // This uses the start of the first range, not the cursor, to correctly
+  // handle table column selections.
   const formulaPosition = useMemo(() => {
     if (selection) {
+      const firstRangeStart = selection.getFirstRangeStart(sheets.jsA1Context);
+      if (firstRangeStart) {
+        return { x: Number(firstRangeStart.x), y: Number(firstRangeStart.y) };
+      }
       const sel = selection.selection();
       return { x: Number(sel.cursor.x), y: Number(sel.cursor.y) };
     }
     if (initialSelection) {
+      try {
+        const jsSelection = sheets.A1SelectionToJsSelection(initialSelection);
+        const firstRangeStart = jsSelection.getFirstRangeStart(sheets.jsA1Context);
+        jsSelection.free();
+        if (firstRangeStart) {
+          return { x: Number(firstRangeStart.x), y: Number(firstRangeStart.y) };
+        }
+      } catch {
+        // If conversion fails, fall back to cursor
+      }
       return { x: Number(initialSelection.cursor.x), y: Number(initialSelection.cursor.y) };
     }
     return { x: 0, y: 0 };

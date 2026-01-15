@@ -1136,6 +1136,25 @@ class Core {
     }
   }
 
+  batchUpdateConditionalFormats(
+    sheetId: string,
+    updates: ConditionalFormatUpdate[],
+    deleteIds: string[],
+    cursor: string
+  ): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.batchUpdateConditionalFormats(
+        sheetId,
+        JSON.stringify(updates),
+        JSON.stringify(deleteIds),
+        cursor
+      );
+    } catch (e) {
+      this.handleCoreError('batchUpdateConditionalFormats', e);
+    }
+  }
+
   receiveRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

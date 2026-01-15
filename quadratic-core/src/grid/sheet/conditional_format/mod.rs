@@ -52,6 +52,15 @@ impl ConditionalFormatStyle {
             && self.text_color.is_none()
             && self.fill_color.is_none()
     }
+
+    /// Returns true if any style property other than fill_color is set.
+    pub fn has_non_fill_style(&self) -> bool {
+        self.bold.is_some()
+            || self.italic.is_some()
+            || self.underline.is_some()
+            || self.strike_through.is_some()
+            || self.text_color.is_some()
+    }
 }
 
 /// A single conditional format rule.
@@ -81,7 +90,12 @@ impl ConditionalFormat {
             id: self.id,
             selection: self.selection.clone(),
             style: self.style.clone(),
-            rule: ConditionalFormatRule::from_formula(&self.rule, Some(sheet_id), a1_context),
+            rule: ConditionalFormatRule::from_formula(
+                &self.rule,
+                Some(sheet_id),
+                a1_context,
+                &self.selection,
+            ),
         }
     }
 }
@@ -271,5 +285,254 @@ impl ConditionalFormats {
             self.invalidate_cache();
         }
         reverse
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{a1::A1Selection, formulas::parse_formula};
+
+    fn create_test_format(selection: &str, style: ConditionalFormatStyle) -> ConditionalFormat {
+        let a1_selection = A1Selection::test_a1(selection);
+        let a1_context = A1Context::default();
+        let pos = a1_selection.cursor.to_sheet_pos(a1_selection.sheet_id);
+        let rule = parse_formula("=TRUE", &a1_context, pos).unwrap();
+        ConditionalFormat {
+            id: Uuid::new_v4(),
+            selection: a1_selection,
+            style,
+            rule,
+        }
+    }
+
+    #[test]
+    fn test_conditional_format_style_is_empty() {
+        let style = ConditionalFormatStyle::default();
+        assert!(style.is_empty());
+
+        let style = ConditionalFormatStyle {
+            bold: Some(true),
+            ..Default::default()
+        };
+        assert!(!style.is_empty());
+
+        let style = ConditionalFormatStyle {
+            fill_color: Some("red".to_string()),
+            ..Default::default()
+        };
+        assert!(!style.is_empty());
+    }
+
+    #[test]
+    fn test_conditional_format_style_has_non_fill_style() {
+        let style = ConditionalFormatStyle::default();
+        assert!(!style.has_non_fill_style());
+
+        // Only fill_color should return false
+        let style = ConditionalFormatStyle {
+            fill_color: Some("red".to_string()),
+            ..Default::default()
+        };
+        assert!(!style.has_non_fill_style());
+
+        // Each non-fill property should return true
+        let style = ConditionalFormatStyle {
+            bold: Some(true),
+            ..Default::default()
+        };
+        assert!(style.has_non_fill_style());
+
+        let style = ConditionalFormatStyle {
+            italic: Some(true),
+            ..Default::default()
+        };
+        assert!(style.has_non_fill_style());
+
+        let style = ConditionalFormatStyle {
+            underline: Some(true),
+            ..Default::default()
+        };
+        assert!(style.has_non_fill_style());
+
+        let style = ConditionalFormatStyle {
+            strike_through: Some(true),
+            ..Default::default()
+        };
+        assert!(style.has_non_fill_style());
+
+        let style = ConditionalFormatStyle {
+            text_color: Some("blue".to_string()),
+            ..Default::default()
+        };
+        assert!(style.has_non_fill_style());
+
+        // Both fill and non-fill should return true
+        let style = ConditionalFormatStyle {
+            bold: Some(true),
+            fill_color: Some("red".to_string()),
+            ..Default::default()
+        };
+        assert!(style.has_non_fill_style());
+    }
+
+    #[test]
+    fn test_conditional_formats_set_and_get() {
+        let mut formats = ConditionalFormats::new();
+        let sheet_id = SheetId::TEST;
+
+        assert!(formats.is_empty());
+        assert_eq!(formats.len(), 0);
+
+        let cf = create_test_format(
+            "A1:B2",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+        let cf_id = cf.id;
+
+        // Add new format
+        let reverse_op = formats.set(cf.clone(), sheet_id);
+        assert_eq!(formats.len(), 1);
+        assert!(!formats.is_empty());
+
+        // Verify we can get it
+        let retrieved = formats.get(cf_id);
+        assert!(retrieved.is_some());
+        assert_eq!(retrieved.unwrap().id, cf_id);
+
+        // Verify reverse operation is RemoveConditionalFormat
+        match reverse_op {
+            Operation::RemoveConditionalFormat {
+                conditional_format_id,
+                ..
+            } => {
+                assert_eq!(conditional_format_id, cf_id);
+            }
+            _ => panic!("Expected RemoveConditionalFormat operation"),
+        }
+
+        // Update existing format
+        let mut updated_cf = cf.clone();
+        updated_cf.style.italic = Some(true);
+        let reverse_op = formats.set(updated_cf, sheet_id);
+        assert_eq!(formats.len(), 1); // Still 1
+
+        // Verify reverse operation is SetConditionalFormat with old value
+        match reverse_op {
+            Operation::SetConditionalFormat {
+                conditional_format: old_cf,
+            } => {
+                assert_eq!(old_cf.id, cf_id);
+                assert_eq!(old_cf.style.bold, Some(true));
+                assert_eq!(old_cf.style.italic, None); // Old value
+            }
+            _ => panic!("Expected SetConditionalFormat operation"),
+        }
+
+        // Verify update was applied
+        let retrieved = formats.get(cf_id).unwrap();
+        assert_eq!(retrieved.style.italic, Some(true));
+    }
+
+    #[test]
+    fn test_conditional_formats_remove() {
+        let mut formats = ConditionalFormats::new();
+        let sheet_id = SheetId::TEST;
+
+        let cf = create_test_format(
+            "A1:B2",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+        let cf_id = cf.id;
+
+        formats.set(cf, sheet_id);
+        assert_eq!(formats.len(), 1);
+
+        // Remove non-existent ID returns None
+        let result = formats.remove(Uuid::new_v4());
+        assert!(result.is_none());
+        assert_eq!(formats.len(), 1);
+
+        // Remove existing ID
+        let result = formats.remove(cf_id);
+        assert!(result.is_some());
+        assert_eq!(formats.len(), 0);
+
+        // Verify reverse operation
+        match result.unwrap() {
+            Operation::SetConditionalFormat {
+                conditional_format: old_cf,
+            } => {
+                assert_eq!(old_cf.id, cf_id);
+            }
+            _ => panic!("Expected SetConditionalFormat operation"),
+        }
+    }
+
+    #[test]
+    fn test_conditional_formats_bounds() {
+        let mut formats = ConditionalFormats::new();
+        let sheet_id = SheetId::TEST;
+        let a1_context = A1Context::default();
+
+        // Empty formats have empty bounds
+        assert_eq!(formats.bounds(&a1_context), GridBounds::Empty);
+
+        // Add format for A1:B2
+        let cf1 = create_test_format("A1:B2", ConditionalFormatStyle::default());
+        formats.set(cf1, sheet_id);
+
+        let bounds = formats.bounds(&a1_context);
+        match bounds {
+            GridBounds::NonEmpty(rect) => {
+                assert_eq!(rect, Rect::test_a1("A1:B2"));
+            }
+            _ => panic!("Expected NonEmpty bounds"),
+        }
+
+        // Add format for D4:E5 - bounds should expand
+        let cf2 = create_test_format("D4:E5", ConditionalFormatStyle::default());
+        formats.set(cf2, sheet_id);
+
+        let bounds = formats.bounds(&a1_context);
+        match bounds {
+            GridBounds::NonEmpty(rect) => {
+                assert_eq!(rect, Rect::test_a1("A1:E5"));
+            }
+            _ => panic!("Expected NonEmpty bounds"),
+        }
+    }
+
+    #[test]
+    fn test_conditional_formats_get_mut() {
+        let mut formats = ConditionalFormats::new();
+        let sheet_id = SheetId::TEST;
+
+        let cf = create_test_format(
+            "A1:B2",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+        let cf_id = cf.id;
+        formats.set(cf, sheet_id);
+
+        // Get mutable reference and modify
+        let cf_mut = formats.get_mut(cf_id).unwrap();
+        cf_mut.style.italic = Some(true);
+
+        // Verify modification persisted
+        let retrieved = formats.get(cf_id).unwrap();
+        assert_eq!(retrieved.style.italic, Some(true));
+
+        // Non-existent ID returns None
+        assert!(formats.get_mut(Uuid::new_v4()).is_none());
     }
 }

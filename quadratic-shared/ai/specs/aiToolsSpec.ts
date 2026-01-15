@@ -63,6 +63,8 @@ export enum AITool {
   AddNumberValidation = 'add_number_validation',
   AddDateTimeValidation = 'add_date_time_validation',
   RemoveValidations = 'remove_validation',
+  GetConditionalFormats = 'get_conditional_formats',
+  UpdateConditionalFormats = 'update_conditional_formats',
   Undo = 'undo',
   Redo = 'redo',
   ContactUs = 'contact_us',
@@ -121,6 +123,8 @@ export const AIToolSchema = z.enum([
   AITool.AddNumberValidation,
   AITool.AddDateTimeValidation,
   AITool.RemoveValidations,
+  AITool.GetConditionalFormats,
+  AITool.UpdateConditionalFormats,
   AITool.Undo,
   AITool.Redo,
   AITool.ContactUs,
@@ -556,6 +560,26 @@ export const AIToolsArgsSchema = {
   [AITool.RemoveValidations]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
+  }),
+  [AITool.GetConditionalFormats]: z.object({
+    sheet_name: z.string(),
+  }),
+  [AITool.UpdateConditionalFormats]: z.object({
+    sheet_name: z.string(),
+    rules: z.array(
+      z.object({
+        id: z.string().uuid().nullable().optional(),
+        action: z.enum(['create', 'update', 'delete']),
+        selection: z.string().nullable().optional(),
+        rule: z.string().nullable().optional(),
+        bold: booleanNullableOptionalSchema,
+        italic: booleanNullableOptionalSchema,
+        underline: booleanNullableOptionalSchema,
+        strike_through: booleanNullableOptionalSchema,
+        text_color: z.string().nullable().optional(),
+        fill_color: z.string().nullable().optional(),
+      })
+    ),
   }),
   [AITool.Undo]: z.object({
     count: numberSchema.nullable().optional(),
@@ -1327,7 +1351,8 @@ If there are multiple pages of formatting information, use the page parameter to
         },
         selection: {
           type: 'string',
-          description: 'The selection of cells to get the formats of, in a1 notation',
+          description:
+            'The selection of cells to get the formats of. When targeting table columns, use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges, column references like "A", or infinite ranges like "A3:A". For non-table data, use A1 notation.',
         },
         page: {
           type: 'number',
@@ -1341,6 +1366,7 @@ If there are multiple pages of formatting information, use the page parameter to
     responseSchema: AIToolsArgsSchema[AITool.GetTextFormats],
     prompt: `
 The get_text_formats tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+When checking formats on table columns, use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges, column references like "A", or infinite ranges like "A3:A".\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
@@ -1354,6 +1380,7 @@ If too large, the results will include page information:\n
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
+IMPORTANT: When formatting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A".\n
 Each format entry must have at least one non-null format to set.\n
 You can set bold, italic, underline, strike through, text/fill colors, alignment, wrapping, numeric formats, date formats, and font size.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
@@ -1372,7 +1399,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
               },
               selection: {
                 type: 'string',
-                description: `The selection of cells to set the formats of, in A1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data. When formatting multiple non-contiguous cells, use comma-separated ranges (e.g., "A1,B2:D5,E20").`,
+                description: `The selection of cells to set the formats of. IMPORTANT: When formatting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". Use "Table1" for entire tables, "Table1[Column]" for single columns, or "Table1[[Col1]:[Col3]]" for column ranges. Only use A1 notation for non-table data. When formatting multiple non-contiguous cells, use comma-separated ranges (e.g., "A1,B2:D5,E20").`,
               },
               bold: {
                 type: ['boolean', 'null'],
@@ -1453,6 +1480,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
     prompt: `The set_text_formats tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
 Each format entry requires a selection and at least one format property to set.\n
+IMPORTANT: When formatting table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures formatting applies correctly as the table grows or shrinks.\n
 Here are the formats you can set in each entry:\n
 - bold, italics, underline, or strike through\n
 - text color and fill color using hex format, for example, #FF0000 for red. To remove colors, set to an empty string.\n
@@ -1467,6 +1495,7 @@ Here are the formats you can set in each entry:\n
 To clear/remove a format, set the value to null (or empty string for colors). Omit fields you don't want to change.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
+Example: To format an entire table column as currency, use: { "formats": [{ "selection": "Sales_Data[Revenue]", "number_type": "currency", "currency_symbol": "$" }] }\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {
@@ -2841,6 +2870,129 @@ This tool removes all validations in a sheet from a range.\n`,
     responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
     prompt: `
 This tool removes all validations in a sheet from a range.\n`,
+  },
+  [AITool.GetConditionalFormats]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool gets all conditional formatting rules in a sheet.
+Conditional formatting rules are per-sheet, so the sheet name is required.
+Returns a list of all conditional format rules with their IDs, selections, rules, and styles.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name to get conditional formats from. Required because conditional formats are per-sheet.',
+        },
+      },
+      required: ['sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetConditionalFormats],
+    prompt: `
+This tool gets all conditional formatting rules in a sheet.
+Conditional formatting rules are per-sheet, so the sheet name is required.
+Use this tool to understand what conditional formats already exist before creating, updating, or deleting them.`,
+  },
+  [AITool.UpdateConditionalFormats]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool creates, updates, or deletes conditional formatting rules in a sheet.
+Conditional formatting rules are per-sheet, so the sheet name is required.
+IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A".
+You can perform multiple operations (create/update/delete) in a single call.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name to update conditional formats in. Required because conditional formats are per-sheet.',
+        },
+        rules: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: ['string', 'null'],
+                description:
+                  'The UUID of an existing conditional format. Required for update and delete actions. For create, leave null or omit.',
+              },
+              action: {
+                type: 'string',
+                description:
+                  'The action to perform. Must be one of: "create" (new rule), "update" (modify existing rule), or "delete" (remove rule).',
+              },
+              selection: {
+                type: ['string', 'null'],
+                description:
+                  'The selection for the conditional format. IMPORTANT: When targeting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". For non-table data, use A1 notation (e.g., "A1:D10" or "A:A"). Required for create and update actions.',
+              },
+              rule: {
+                type: ['string', 'null'],
+                description:
+                  'A formula that evaluates to true/false for each cell. Use cell references like A1 which will be evaluated relative to each cell in the selection. Examples: "A1>100", "ISBLANK(A1)", "AND(A1>=5, A1<=10)", "ISNUMBER(SEARCH(\\"hello\\", A1))". Required for create and update actions.',
+              },
+              bold: {
+                type: ['boolean', 'null'],
+                description: 'Whether to apply bold formatting when the rule is true.',
+              },
+              italic: {
+                type: ['boolean', 'null'],
+                description: 'Whether to apply italic formatting when the rule is true.',
+              },
+              underline: {
+                type: ['boolean', 'null'],
+                description: 'Whether to apply underline formatting when the rule is true.',
+              },
+              strike_through: {
+                type: ['boolean', 'null'],
+                description: 'Whether to apply strikethrough formatting when the rule is true.',
+              },
+              text_color: {
+                type: ['string', 'null'],
+                description: 'The text color to apply when the rule is true (e.g., "#FF0000" for red, "rgb(255,0,0)").',
+              },
+              fill_color: {
+                type: ['string', 'null'],
+                description:
+                  'The background/fill color to apply when the rule is true (e.g., "#00FF00" for green, "rgb(0,255,0)").',
+              },
+            },
+            required: ['action'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['sheet_name', 'rules'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UpdateConditionalFormats],
+    prompt: `
+This tool creates, updates, or deletes conditional formatting rules in a sheet.
+Conditional formatting rules are per-sheet, so the sheet name is required.
+
+IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 range notation like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures the formatting applies correctly to the entire column as the table grows or shrinks.
+
+For the rule parameter, use a formula that evaluates to true/false. Common patterns:
+- Greater than: "A1>100"
+- Less than: "A1<50"
+- Between: "AND(A1>=5, A1<=10)"
+- Is empty: "ISBLANK(A1)"
+- Is not empty: "NOT(ISBLANK(A1))"
+- Text contains: "ISNUMBER(SEARCH(\\"text\\", A1))"
+- Text does not contain: "ISERROR(SEARCH(\\"text\\", A1))"
+- Text starts with: "LEFT(A1, 5)=\\"hello\\""
+- Text ends with: "RIGHT(A1, 5)=\\"world\\""
+- Equals: "A1=42" or "A1=\\"exact text\\""
+
+For delete action, only the id is required.
+For create action, selection, rule, and at least one style property are required.
+For update action, id is required plus any fields you want to change.`,
   },
   [AITool.Undo]: {
     sources: ['AIAnalyst'],

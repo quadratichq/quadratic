@@ -346,6 +346,7 @@ pub enum Token {
 impl Token {
     /// Consumes a token from a given starting index and returns the index of
     /// the next character after the token.
+    #[inline]
     fn consume_from_input(input_str: &str, start: usize) -> Option<(Self, usize)> {
         // Find next token.
         let m = TOKEN_REGEX.find_at(input_str, start)?;
@@ -450,6 +451,7 @@ impl Token {
 
     /// Returns whether this token is a comment or whitespace that should be
     /// skipped most of the time when parsing.
+    #[inline]
     pub fn is_skip(self) -> bool {
         matches!(self, Self::Comment | Self::Whitespace)
     }

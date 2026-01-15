@@ -24,7 +24,7 @@ impl GridController {
         let mut output = sheet.get_render_cells(rect, self.a1_context());
 
         // Apply conditional formatting to render cells
-        self.apply_conditional_formatting_to_cells(sheet_id_parsed, &mut output);
+        self.apply_conditional_formatting_to_cells(sheet_id_parsed, rect, &mut output);
 
         serde_json::to_vec(&output).unwrap_or_default()
     }
@@ -58,12 +58,12 @@ impl GridController {
 
             // Add conditional format fills
             let cf_fills = self.get_conditional_format_fills(sheet_id, rect, a1_context);
-            for (pos, color) in cf_fills {
+            for (fill_rect, color) in cf_fills {
                 fills.push(JsRenderFill {
-                    x: pos.x,
-                    y: pos.y,
-                    w: 1,
-                    h: 1,
+                    x: fill_rect.min.x,
+                    y: fill_rect.min.y,
+                    w: fill_rect.width() as u32,
+                    h: fill_rect.height() as u32,
                     color,
                 });
             }

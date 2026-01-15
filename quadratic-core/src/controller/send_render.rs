@@ -144,7 +144,7 @@ impl GridController {
             let mut cells = sheet.get_render_cells(rect, &self.a1_context);
 
             // Apply conditional formatting to render cells
-            self.apply_conditional_formatting_to_cells(sheet_id, &mut cells);
+            self.apply_conditional_formatting_to_cells(sheet_id, rect, &mut cells);
 
             render_cells_in_hashes.push(JsHashRenderCells {
                 sheet_id,
@@ -603,12 +603,12 @@ impl GridController {
                     // Add conditional format fills
                     let cf_fills =
                         self.get_conditional_format_fills(sheet_id, rect, self.a1_context());
-                    for (pos, color) in cf_fills {
+                    for (fill_rect, color) in cf_fills {
                         fills.push(crate::grid::js_types::JsRenderFill {
-                            x: pos.x,
-                            y: pos.y,
-                            w: 1,
-                            h: 1,
+                            x: fill_rect.min.x,
+                            y: fill_rect.min.y,
+                            w: fill_rect.width() as u32,
+                            h: fill_rect.height() as u32,
                             color,
                         });
                     }

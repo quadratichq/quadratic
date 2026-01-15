@@ -36,6 +36,7 @@ type InsertActionSpec = Pick<
   | Action.InsertDropdown
   | Action.ToggleDataValidation
   | Action.ToggleConditionalFormat
+  | Action.AddConditionalFormat
   | Action.InsertScheduledTask
   | Action.InsertHyperlink
   | Action.InsertCellReference
@@ -340,6 +341,18 @@ export const insertActionsSpec: InsertActionSpec = {
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
         showConditionalFormat: true,
+      }));
+    },
+  },
+  [Action.AddConditionalFormat]: {
+    label: () => 'Add conditional format',
+    labelVerbose: 'Add conditional formatting rule',
+    Icon: FormatPaintIcon,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showConditionalFormat: 'new',
       }));
     },
   },

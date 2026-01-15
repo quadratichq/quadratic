@@ -1,3 +1,4 @@
+import { getConditionalFormatsToolCall, updateConditionalFormatsToolCall } from '@/app/ai/tools/aiConditionalFormats';
 import {
   addDateTimeValidationToolCall,
   addListValidationToolCall,
@@ -1577,6 +1578,36 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(text)];
     } catch (e) {
       return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+  [AITool.GetConditionalFormats]: async (args) => {
+    try {
+      const text = getConditionalFormatsToolCall(args.sheet_name);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get conditional formats tool: ${e}`)];
+    }
+  },
+  [AITool.UpdateConditionalFormats]: async (args) => {
+    try {
+      // Move AI cursor to the first selection if any create/update rules have selections
+      const firstRuleWithSelection = args.rules.find(
+        (r) => r.selection && (r.action === 'create' || r.action === 'update')
+      );
+      if (firstRuleWithSelection?.selection) {
+        try {
+          const sheetId = sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current;
+          const jsSelection = sheets.stringToSelection(firstRuleWithSelection.selection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
+      }
+      const text = await updateConditionalFormatsToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing update conditional formats tool: ${e}`)];
     }
   },
   [AITool.GetCodeCellValue]: async (args) => {

@@ -71,12 +71,12 @@ export const SheetRange = (props: Props) => {
   }, [a1SheetId, onChangeSelection, forceSheetName]);
 
   const updateValue = useCallback(
-    (value: string) => {
+    (value: string, changeSelection = true) => {
       try {
         const selection = sheets.stringToSelection(value, a1SheetId);
         onChangeSelection(selection);
         setRangeError(undefined);
-        if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+        if (changeSelection && selection && selection.save() !== sheets.sheet.cursor.save()) {
           isFocusingRef.current = true;
           sheets.changeSelection(selection);
 
@@ -106,7 +106,8 @@ export const SheetRange = (props: Props) => {
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       const value = e.currentTarget.value;
-      updateValue(value);
+      // Don't change selection or refocus on blur - let the user click away
+      updateValue(value, false);
     },
     [updateValue]
   );

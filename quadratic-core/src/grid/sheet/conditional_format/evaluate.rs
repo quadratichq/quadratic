@@ -8,20 +8,26 @@ use crate::{
     grid::{
         SheetId,
         js_types::JsRenderCell,
-        sheet::conditional_format::{ConditionalFormat, ConditionalFormatStyle},
+        sheet::conditional_format::{ConditionalFormat, ConditionalFormatRule, ConditionalFormatStyle},
     },
 };
 
 impl GridController {
     /// Evaluates a conditional format rule at a specific cell position.
-    /// Translates the formula references relative to the anchor (selection cursor).
+    /// Translates the formula references relative to the anchor (top-left of first range).
     fn evaluate_conditional_format_rule(
         &self,
         cf: &ConditionalFormat,
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> bool {
-        let anchor = cf.selection.cursor;
+        // Get the anchor from the first cell of the first range in the selection.
+        // The formula is defined relative to this anchor, and all ranges in the
+        // selection should use the same anchor for consistent translation.
+        // We use get_first_cell_from_selection to properly handle table column
+        // selections where the first data cell may differ from the range's min bounds.
+        let anchor = ConditionalFormatRule::get_first_cell_from_selection(&cf.selection, a1_context)
+            .unwrap_or(cf.selection.cursor);
 
         // Calculate offset from anchor to current position
         let dx = sheet_pos.x - anchor.x;
@@ -48,8 +54,13 @@ impl GridController {
         };
 
         let anchor_pos = anchor.to_sheet_pos(sheet_pos.sheet_id);
-        let adjusted_formula =
-            adjust_references(&formula_string, sheet_pos.sheet_id, a1_context, anchor_pos, adjust);
+        let adjusted_formula = adjust_references(
+            &formula_string,
+            sheet_pos.sheet_id,
+            a1_context,
+            anchor_pos,
+            adjust,
+        );
 
         // Parse and evaluate the adjusted formula
         match parse_formula(&adjusted_formula, a1_context, sheet_pos) {
@@ -79,6 +90,7 @@ impl GridController {
             y: sheet_pos.y,
         };
 
+        // todo: there may be a more efficient way to do this using a different cache
         let formats: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
@@ -130,6 +142,7 @@ impl GridController {
     pub fn apply_conditional_formatting_to_cells(
         &self,
         sheet_id: SheetId,
+        rect: Rect,
         cells: &mut Vec<JsRenderCell>,
     ) {
         let Some(sheet) = self.try_sheet(sheet_id) else {
@@ -143,66 +156,111 @@ impl GridController {
 
         let a1_context = self.a1_context();
 
+        // Pre-filter conditional formats to only those that overlap the rect
+        // and have non-fill styles (fill_color is handled separately)
+        let overlapping_formats: Vec<&ConditionalFormat> = sheet
+            .conditional_formats
+            .iter()
+            .filter(|cf| {
+                cf.style.has_non_fill_style() && cf.selection.intersects_rect(rect, a1_context)
+            })
+            .collect();
+
+        if overlapping_formats.is_empty() {
+            return;
+        }
+
         for cell in cells.iter_mut() {
-            let pos = Pos { x: cell.x, y: cell.y };
+            let pos = Pos {
+                x: cell.x,
+                y: cell.y,
+            };
             let sheet_pos = pos.to_sheet_pos(sheet_id);
 
-            if let Some(style) = self.get_conditional_format_style(sheet_pos, a1_context) {
-                // Apply the conditional format style, overriding existing values
-                if let Some(bold) = style.bold {
+            // Only check the pre-filtered formats
+            let mut combined_style = ConditionalFormatStyle::default();
+            let mut any_applied = false;
+
+            for cf in &overlapping_formats {
+                if cf.selection.contains_pos(pos, a1_context) {
+                    if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
+                        if cf.style.bold.is_some() {
+                            combined_style.bold = cf.style.bold;
+                        }
+                        if cf.style.italic.is_some() {
+                            combined_style.italic = cf.style.italic;
+                        }
+                        if cf.style.underline.is_some() {
+                            combined_style.underline = cf.style.underline;
+                        }
+                        if cf.style.strike_through.is_some() {
+                            combined_style.strike_through = cf.style.strike_through;
+                        }
+                        if cf.style.text_color.is_some() {
+                            combined_style.text_color = cf.style.text_color.clone();
+                        }
+                        any_applied = true;
+                    }
+                }
+            }
+
+            if any_applied {
+                if let Some(bold) = combined_style.bold {
                     cell.bold = Some(bold);
                 }
-                if let Some(italic) = style.italic {
+                if let Some(italic) = combined_style.italic {
                     cell.italic = Some(italic);
                 }
-                if let Some(underline) = style.underline {
+                if let Some(underline) = combined_style.underline {
                     cell.underline = Some(underline);
                 }
-                if let Some(strike_through) = style.strike_through {
+                if let Some(strike_through) = combined_style.strike_through {
                     cell.strike_through = Some(strike_through);
                 }
-                if let Some(text_color) = style.text_color {
+                if let Some(text_color) = combined_style.text_color {
                     cell.text_color = Some(text_color);
                 }
-                // Note: fill_color is handled separately via fills rendering
             }
         }
     }
 
     /// Gets all conditional format fills for cells within a rect.
-    /// Returns a list of (pos, fill_color) tuples for cells where conditional
-    /// formatting applies and has a fill color.
+    /// Returns a list of (rect, fill_color) tuples for cells where conditional
+    /// formatting applies and has a fill color. Uses Contiguous2D to efficiently
+    /// combine adjacent cells with the same fill color into rectangles.
     pub fn get_conditional_format_fills(
         &self,
         sheet_id: crate::grid::SheetId,
         rect: Rect,
         a1_context: &A1Context,
-    ) -> Vec<(Pos, String)> {
+    ) -> Vec<(Rect, String)> {
+        use crate::grid::contiguous::Contiguous2D;
+
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return vec![];
         };
 
-        // Check if there are any conditional formats with fill colors
+        // Pre-filter conditional formats to only those that have fill colors
+        // and overlap the rect
         let formats_with_fills: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
-            .filter(|cf| cf.style.fill_color.is_some())
+            .filter(|cf| {
+                cf.style.fill_color.is_some() && cf.selection.intersects_rect(rect, a1_context)
+            })
             .collect();
 
         if formats_with_fills.is_empty() {
             return vec![];
         }
 
-        let mut fills = Vec::new();
+        // Use Contiguous2D to store fill colors - later rules override earlier ones
+        let mut fills: Contiguous2D<String> = Contiguous2D::new();
 
         for y in rect.y_range() {
             for x in rect.x_range() {
                 let pos = Pos { x, y };
                 let sheet_pos = pos.to_sheet_pos(sheet_id);
-
-                // Track the last matching fill for this position
-                // (later rules override earlier ones)
-                let mut last_fill: Option<String> = None;
 
                 // Check each format with a fill color (in order, first to last)
                 for cf in &formats_with_fills {
@@ -211,20 +269,16 @@ impl GridController {
                         if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
                             if let Some(fill_color) = &cf.style.fill_color {
                                 // Later rules override earlier ones
-                                last_fill = Some(fill_color.clone());
+                                fills.set(pos, fill_color.clone());
                             }
                         }
                     }
                 }
-
-                // Add the last matching fill if any
-                if let Some(fill_color) = last_fill {
-                    fills.push((pos, fill_color));
-                }
             }
         }
 
-        fills
+        // Use nondefault_rects_in_rect to get combined rectangles with colors
+        fills.nondefault_rects_in_rect(rect).collect()
     }
 }
 
@@ -318,7 +372,9 @@ mod tests {
         );
 
         // Add the conditional format to the sheet
-        gc.sheet_mut(sheet_id).conditional_formats.set(cf.clone(), sheet_id);
+        gc.sheet_mut(sheet_id)
+            .conditional_formats
+            .set(cf.clone(), sheet_id);
 
         // Test that the style is applied
         let sheet_pos = pos_a1.to_sheet_pos(sheet_id);
@@ -330,7 +386,10 @@ mod tests {
 
         let style = gc.get_conditional_format_style(sheet_pos, gc.a1_context());
 
-        assert!(style.is_some(), "Style should be Some because formula is TRUE");
+        assert!(
+            style.is_some(),
+            "Style should be Some because formula is TRUE"
+        );
         let style = style.unwrap();
         assert_eq!(style.bold, Some(true));
         assert_eq!(style.text_color, Some("red".to_string()));
@@ -395,7 +454,7 @@ mod tests {
         let mut cells = sheet.get_render_cells(rect, gc.a1_context());
 
         // Apply conditional formatting
-        gc.apply_conditional_formatting_to_cells(sheet_id, &mut cells);
+        gc.apply_conditional_formatting_to_cells(sheet_id, rect, &mut cells);
 
         // Find the cells
         let cell_a1 = cells.iter().find(|c| c.x == pos_a1.x && c.y == pos_a1.y);
@@ -444,7 +503,7 @@ mod tests {
         );
 
         assert_eq!(fills.len(), 1);
-        assert_eq!(fills[0].0, pos_a1);
+        assert!(fills[0].0.contains(pos_a1));
         assert_eq!(fills[0].1, "green".to_string());
     }
 
@@ -537,15 +596,18 @@ mod tests {
 
         // Check each cell - formula should be translated
         // A1: =A1>5 -> 10>5 -> true (should apply)
-        let style_a1 = gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
         assert!(style_a1.is_some(), "A1 (10>5) should have style applied");
 
         // A2: =A2>5 -> 3>5 -> false (should NOT apply)
-        let style_a2 = gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_a2 =
+            gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
         assert!(style_a2.is_none(), "A2 (3>5) should NOT have style applied");
 
         // A3: =A3>5 -> 7>5 -> true (should apply)
-        let style_a3 = gc.get_conditional_format_style(pos_a3.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_a3 =
+            gc.get_conditional_format_style(pos_a3.to_sheet_pos(sheet_id), gc.a1_context());
         assert!(style_a3.is_some(), "A3 (7>5) should have style applied");
     }
 
@@ -577,12 +639,20 @@ mod tests {
         gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
 
         // Both cells should evaluate =$A$1>5 -> 10>5 -> true
-        let style_a1 = gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
-        assert!(style_a1.is_some(), "A1 ($A$1>5 = 10>5) should have style applied");
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_a1.is_some(),
+            "A1 ($A$1>5 = 10>5) should have style applied"
+        );
 
         // A2 should also check $A$1>5 (absolute ref), not $A$2>5
-        let style_a2 = gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
-        assert!(style_a2.is_some(), "A2 ($A$1>5 = 10>5, absolute ref) should have style applied");
+        let style_a2 =
+            gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_a2.is_some(),
+            "A2 ($A$1>5 = 10>5, absolute ref) should have style applied"
+        );
     }
 
     #[test]
@@ -622,8 +692,140 @@ mod tests {
 
         // Should have fills for A1 and A3 (values > 5), but not A2
         assert_eq!(fills.len(), 2, "Should have 2 fills (A1 and A3)");
-        assert!(fills.iter().any(|(pos, _)| *pos == pos_a1), "A1 should have fill");
-        assert!(fills.iter().any(|(pos, _)| *pos == pos_a3), "A3 should have fill");
-        assert!(!fills.iter().any(|(pos, _)| *pos == pos_a2), "A2 should NOT have fill");
+        assert!(
+            fills.iter().any(|(rect, _)| rect.contains(pos_a1)),
+            "A1 should have fill"
+        );
+        assert!(
+            fills.iter().any(|(rect, _)| rect.contains(pos_a3)),
+            "A3 should have fill"
+        );
+        assert!(
+            !fills.iter().any(|(rect, _)| rect.contains(pos_a2)),
+            "A2 should NOT have fill"
+        );
+    }
+
+    #[test]
+    fn test_conditional_format_multiple_ranges_share_anchor() {
+        // Test that when a conditional format has multiple ranges, they all share
+        // the same anchor (first range's top-left) for formula translation.
+        // Example: selection="A1:A3, C1:C3", formula=A1>5
+        // - At A1: evaluates A1>5 (offset 0,0 from anchor A1)
+        // - At A2: evaluates A2>5 (offset 0,1 from anchor A1)
+        // - At C1: evaluates C1>5 (offset 2,0 from anchor A1)
+        // - At C2: evaluates C2>5 (offset 2,1 from anchor A1)
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a2 = crate::Pos::test_a1("A2");
+        let pos_c1 = crate::Pos::test_a1("C1");
+        let pos_c2 = crate::Pos::test_a1("C2");
+
+        // Set values: A1=10 (>5), A2=3 (<5), C1=8 (>5), C2=2 (<5)
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
+        gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "3".to_string(), None, false);
+        gc.set_cell_value(pos_c1.to_sheet_pos(sheet_id), "8".to_string(), None, false);
+        gc.set_cell_value(pos_c2.to_sheet_pos(sheet_id), "2".to_string(), None, false);
+
+        // Create a conditional format for A1:A2, C1:C2 with formula =A1>5
+        // The anchor is A1 (first range's top-left), so:
+        // - At C1: formula translates to C1>5 (offset 2,0)
+        // - At C2: formula translates to C2>5 (offset 2,1)
+        let cf = create_test_conditional_format(
+            &gc,
+            "A1:A2, C1:C2",
+            "=A1>5",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // A1: =A1>5 -> 10>5 -> true
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a1.is_some(), "A1 (10>5) should have style applied");
+
+        // A2: =A2>5 -> 3>5 -> false
+        let style_a2 =
+            gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a2.is_none(), "A2 (3>5) should NOT have style applied");
+
+        // C1: =C1>5 -> 8>5 -> true (formula translated from A1>5 using offset 2,0)
+        let style_c1 =
+            gc.get_conditional_format_style(pos_c1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_c1.is_some(),
+            "C1 (8>5, translated from A1>5) should have style applied"
+        );
+
+        // C2: =C2>5 -> 2>5 -> false (formula translated from A1>5 using offset 2,1)
+        let style_c2 =
+            gc.get_conditional_format_style(pos_c2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(
+            style_c2.is_none(),
+            "C2 (2>5, translated from A1>5) should NOT have style applied"
+        );
+    }
+
+    #[test]
+    fn test_conditional_format_fills_multiple_ranges() {
+        // Test that get_conditional_format_fills works correctly with multiple ranges
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a2 = crate::Pos::test_a1("A2");
+        let pos_c1 = crate::Pos::test_a1("C1");
+        let pos_c2 = crate::Pos::test_a1("C2");
+
+        // Set values: A1=10 (>5), A2=3 (<5), C1=8 (>5), C2=2 (<5)
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
+        gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "3".to_string(), None, false);
+        gc.set_cell_value(pos_c1.to_sheet_pos(sheet_id), "8".to_string(), None, false);
+        gc.set_cell_value(pos_c2.to_sheet_pos(sheet_id), "2".to_string(), None, false);
+
+        // Create a conditional format for A1:A2, C1:C2 with formula =A1>5
+        let cf = create_test_conditional_format(
+            &gc,
+            "A1:A2, C1:C2",
+            "=A1>5",
+            ConditionalFormatStyle {
+                fill_color: Some("green".to_string()),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Get fills for the entire area A1:C2
+        let fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_c2),
+            gc.a1_context(),
+        );
+
+        // Should have fills for A1 and C1 (values > 5), but not A2 or C2
+        assert_eq!(fills.len(), 2, "Should have 2 fills (A1 and C1)");
+        assert!(
+            fills.iter().any(|(rect, _)| rect.contains(pos_a1)),
+            "A1 should have fill"
+        );
+        assert!(
+            fills.iter().any(|(rect, _)| rect.contains(pos_c1)),
+            "C1 should have fill"
+        );
+        assert!(
+            !fills.iter().any(|(rect, _)| rect.contains(pos_a2)),
+            "A2 should NOT have fill"
+        );
+        assert!(
+            !fills.iter().any(|(rect, _)| rect.contains(pos_c2)),
+            "C2 should NOT have fill"
+        );
     }
 }

@@ -41,6 +41,7 @@ pub enum AstNodeContents {
     Error(RunErrorMsg),
 }
 impl AstNodeContents {
+    #[inline]
     fn type_string(&self) -> &'static str {
         match self {
             AstNodeContents::Empty => "empty expression",
@@ -71,6 +72,7 @@ impl AstNodeContents {
     /// - A String literal
     ///
     /// Returns `None` if the node cannot be interpreted as an identifier.
+    #[inline]
     fn try_as_identifier(&self) -> Option<String> {
         match self {
             AstNodeContents::CellRef(None, bounds) => {
@@ -97,6 +99,7 @@ impl AstNodeContents {
 
 impl Formula {
     /// Evaluates a formula.
+    #[inline]
     pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
         self.ast.eval(ctx)
     }
@@ -117,6 +120,7 @@ impl Formula {
 
 impl AstNodeContents {
     /// Checks if a function name is an infix operator (binary operator between operands).
+    #[inline]
     fn is_infix_operator(name: &str) -> bool {
         matches!(
             name,
@@ -231,6 +235,7 @@ impl AstNodeContents {
 
 impl AstNode {
     /// Evaluates an AST node. Errors are converted to [`CellValue::Error`].
+    #[inline]
     pub(crate) fn eval<'expr, 'ctx: 'expr>(
         &'expr self,
         ctx: &'expr mut Ctx<'ctx>,
@@ -243,6 +248,7 @@ impl AstNode {
 
     /// Helper function used by `eval()` so that we can use `?` for error
     /// propagation.
+    #[inline]
     fn eval_to_result<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> CodeResult {
         let value: Value = match &self.inner {
             AstNodeContents::Empty => Value::Single(CellValue::Blank),
@@ -590,6 +596,7 @@ impl AstNode {
 
     /// Evaluates the expression to a tuple of range references, or returns an
     /// error if this cannot be done
+    #[inline]
     fn to_range_ref_tuple<'expr>(
         &'expr self,
         ctx: &mut Ctx<'_>,
@@ -606,6 +613,7 @@ impl AstNode {
 
     /// Evaluates the expression to a cell range reference, or returns an error
     /// if this cannot be done.
+    #[inline]
     fn to_ref_range<'expr>(
         &'expr self,
         ctx: &mut Ctx<'_>,
@@ -658,6 +666,7 @@ impl AstNode {
 
     /// Evaluates the expression to a range bound with an optional sheet ID, or
     /// returns an error if this cannot be done.
+    #[inline]
     fn to_ref_range_bounds<'expr, 'ctx: 'expr>(
         &'expr self,
         ctx: &'expr mut Ctx<'ctx>,

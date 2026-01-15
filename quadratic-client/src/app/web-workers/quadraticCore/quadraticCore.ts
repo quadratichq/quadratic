@@ -65,6 +65,7 @@ import type {
   ClientCoreUpgradeGridFile,
   CodeOperation,
   CoreClientAddSheetResponse,
+  CoreClientBatchUpdateConditionalFormats,
   CoreClientCodeExecutionState,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
@@ -1573,6 +1574,27 @@ class QuadraticCore {
       sheetId,
       conditionalFormatId,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  batchUpdateConditionalFormats(
+    sheetId: string,
+    updates: ConditionalFormatUpdate[],
+    deleteIds: string[]
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientBatchUpdateConditionalFormats) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreBatchUpdateConditionalFormats',
+        id,
+        sheetId,
+        updates,
+        deleteIds,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 

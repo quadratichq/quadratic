@@ -16,6 +16,7 @@ import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetCodeCellValue } from '@/app/ai/toolCards/GetCodeCellValue';
+import { GetConditionalFormats } from '@/app/ai/toolCards/GetConditionalFormats';
 import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { GetValidations } from '@/app/ai/toolCards/GetValidations';
@@ -44,6 +45,7 @@ import { TextSearch } from '@/app/ai/toolCards/TextSearch';
 import { Undo } from '@/app/ai/toolCards/Undo';
 import { UnmergeCells } from '@/app/ai/toolCards/UnmergeCells';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
+import { UpdateConditionalFormats } from '@/app/ai/toolCards/UpdateConditionalFormats';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
 import { cn } from '@/shared/shadcn/utils';
@@ -161,6 +163,10 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetConditionalFormats:
+      return <GetConditionalFormats toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.UpdateConditionalFormats:
+      return <UpdateConditionalFormats toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.Undo:
       return <Undo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.Redo:

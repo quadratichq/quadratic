@@ -50,4 +50,31 @@ impl GridController {
             self.remove_conditional_format(sheet_id, cf_id, cursor);
         }
     }
+
+    /// Batch update conditional formats - creates, updates, or deletes multiple
+    /// conditional formats in a single transaction. Used by AI tools.
+    #[wasm_bindgen(js_name = "batchUpdateConditionalFormats")]
+    pub fn js_batch_update_conditional_formats(
+        &mut self,
+        sheet_id: String,
+        updates: String,
+        delete_ids: String,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet_id: {e}"))?;
+
+            let updates: Vec<ConditionalFormatUpdate> = serde_json::from_str(&updates)
+                .map_err(|e| format!("Error parsing updates: {e}"))?;
+
+            let delete_ids: Vec<Uuid> = serde_json::from_str(&delete_ids)
+                .map_err(|e| format!("Error parsing delete_ids: {e}"))?;
+
+            match self.batch_update_conditional_formats(sheet_id, updates, delete_ids, cursor) {
+                Ok(()) => Ok(None),
+                Err(e) => Err(e),
+            }
+        })
+    }
 }

@@ -77,4 +77,82 @@ impl GridController {
         }];
         self.start_user_ai_transaction(ops, cursor, TransactionName::ConditionalFormat, false);
     }
+
+    /// Batch update conditional formats - creates, updates, or deletes multiple
+    /// conditional formats in a single transaction. Used by AI tools.
+    ///
+    /// Returns a Result with error messages for any failed operations, or Ok if all succeeded.
+    pub fn batch_update_conditional_formats(
+        &mut self,
+        sheet_id: SheetId,
+        updates: Vec<ConditionalFormatUpdate>,
+        delete_ids: Vec<Uuid>,
+        cursor: Option<String>,
+    ) -> Result<(), String> {
+        let Some(_sheet) = self.try_sheet(sheet_id) else {
+            return Err("Sheet not found".to_string());
+        };
+
+        let mut ops = Vec::new();
+        let mut errors = Vec::new();
+
+        // Process updates (creates and updates)
+        for update in updates {
+            // Parse the selection string into A1Selection
+            let selection =
+                match A1Selection::parse_a1(&update.selection, sheet_id, self.a1_context()) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        errors.push(format!("Invalid selection '{}': {}", update.selection, e));
+                        continue;
+                    }
+                };
+
+            // Parse the formula string into AST
+            let pos = selection.cursor.to_sheet_pos(sheet_id);
+            let formula = match parse_formula(&update.rule, self.a1_context(), pos) {
+                Ok(f) => f,
+                Err(e) => {
+                    errors.push(format!("Invalid rule formula '{}': {}", update.rule, e));
+                    continue;
+                }
+            };
+
+            let id = update.id.unwrap_or_else(Uuid::new_v4);
+
+            let conditional_format = ConditionalFormat {
+                id,
+                selection,
+                style: update.style,
+                rule: formula,
+            };
+
+            ops.push(Operation::SetConditionalFormat { conditional_format });
+        }
+
+        // Process deletes
+        for conditional_format_id in delete_ids {
+            ops.push(Operation::RemoveConditionalFormat {
+                sheet_id,
+                conditional_format_id,
+            });
+        }
+
+        if ops.is_empty() && !errors.is_empty() {
+            return Err(errors.join("; "));
+        }
+
+        if !ops.is_empty() {
+            self.start_user_ai_transaction(ops, cursor, TransactionName::ConditionalFormat, false);
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(format!(
+                "Some operations failed: {}. Successful operations were applied.",
+                errors.join("; ")
+            ))
+        }
+    }
 }

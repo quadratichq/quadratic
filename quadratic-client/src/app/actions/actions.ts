@@ -20,6 +20,7 @@ export enum Action {
   InsertDropdown = 'insert_dropdown',
   ToggleDataValidation = 'toggle_data_validation',
   ToggleConditionalFormat = 'toggle_conditional_format',
+  AddConditionalFormat = 'add_conditional_format',
   InsertScheduledTask = 'insert_scheduled_task',
   InsertHyperlink = 'insert_hyperlink',
   Copy = 'copy',

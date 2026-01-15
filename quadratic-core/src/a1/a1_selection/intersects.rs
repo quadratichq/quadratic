@@ -1,8 +1,28 @@
-use crate::a1::{A1Context, RefRangeBounds, TableRef};
+use crate::{
+    Rect,
+    a1::{A1Context, RefRangeBounds, TableRef},
+};
 
 use super::*;
 
 impl A1Selection {
+    /// Returns `true` if any range in this selection intersects with the given rect.
+    pub fn intersects_rect(&self, rect: Rect, a1_context: &A1Context) -> bool {
+        self.ranges.iter().any(|range| match range {
+            CellRefRange::Sheet { range } => {
+                let range_rect = range.to_rect_unbounded();
+                range_rect.intersects(rect)
+            }
+            CellRefRange::Table { range } => {
+                if let Some(table_rect) = range.to_largest_rect(a1_context) {
+                    table_rect.intersects(rect)
+                } else {
+                    false
+                }
+            }
+        })
+    }
+
     /// Finds intersection of two Selections.
     pub fn intersection(&self, other: &Self, a1_context: &A1Context) -> Option<Self> {
         if self.sheet_id != other.sheet_id {
@@ -27,11 +47,11 @@ impl A1Selection {
                             if let Some(rect) = other_range.to_largest_rect(a1_context)
                                 && let Some(intersection) =
                                     RefRangeBounds::new_relative_rect(rect).intersection(range)
-                                {
-                                    ranges.push(CellRefRange::Sheet {
-                                        range: intersection,
-                                    });
-                                }
+                            {
+                                ranges.push(CellRefRange::Sheet {
+                                    range: intersection,
+                                });
+                            }
                         }
                     });
             }
@@ -464,6 +484,95 @@ mod tests {
         assert!(
             !A1Selection::overlap_ref_range_bounds_table_ref(&range, table_ref, &context),
             "Range should not overlap with table"
+        );
+    }
+
+    #[test]
+    fn test_intersects_rect() {
+        let context = A1Context::default();
+
+        // Simple rectangle intersection
+        let sel = A1Selection::test_a1("B2:D4");
+        assert!(
+            sel.intersects_rect(Rect::test_a1("C3:E5"), &context),
+            "Overlapping rectangles should intersect"
+        );
+        assert!(
+            !sel.intersects_rect(Rect::test_a1("E5:F6"), &context),
+            "Non-overlapping rectangles should not intersect"
+        );
+
+        // Edge touching
+        let sel = A1Selection::test_a1("A1:B2");
+        assert!(
+            sel.intersects_rect(Rect::test_a1("B2:C3"), &context),
+            "Edge-touching rectangles should intersect"
+        );
+
+        // Column range intersection
+        let sel = A1Selection::test_a1("B:D");
+        assert!(
+            sel.intersects_rect(Rect::test_a1("C3:E5"), &context),
+            "Column range should intersect with overlapping rect"
+        );
+        assert!(
+            !sel.intersects_rect(Rect::test_a1("E5:F6"), &context),
+            "Column range should not intersect with non-overlapping rect"
+        );
+
+        // Row range intersection
+        let sel = A1Selection::test_a1("2:4");
+        assert!(
+            sel.intersects_rect(Rect::test_a1("C3:E5"), &context),
+            "Row range should intersect with overlapping rect"
+        );
+        assert!(
+            !sel.intersects_rect(Rect::test_a1("A6:B7"), &context),
+            "Row range should not intersect with non-overlapping rect"
+        );
+
+        // All (*) intersection
+        let sel = A1Selection::test_a1("*");
+        assert!(
+            sel.intersects_rect(Rect::test_a1("C3:E5"), &context),
+            "All (*) should intersect with any rect"
+        );
+
+        // Multiple ranges - one intersects
+        let sel = A1Selection::test_a1("A1:B2,E5:F6");
+        assert!(
+            sel.intersects_rect(Rect::test_a1("E5:G7"), &context),
+            "Should intersect if any range intersects"
+        );
+        assert!(
+            !sel.intersects_rect(Rect::test_a1("C3:D4"), &context),
+            "Should not intersect if no range intersects"
+        );
+    }
+
+    #[test]
+    fn test_intersects_rect_table() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B4"))],
+        );
+
+        // Table range intersection
+        let sel = A1Selection::test_a1_context("Table1", &context);
+        assert!(
+            sel.intersects_rect(Rect::test_a1("A1:C3"), &context),
+            "Table should intersect with overlapping rect"
+        );
+        assert!(
+            !sel.intersects_rect(Rect::test_a1("D5:E6"), &context),
+            "Table should not intersect with non-overlapping rect"
+        );
+
+        // Table column intersection
+        let sel = A1Selection::test_a1_context("Table1[Col1]", &context);
+        assert!(
+            sel.intersects_rect(Rect::test_a1("A3:B5"), &context),
+            "Table column should intersect with overlapping rect"
         );
     }
 }

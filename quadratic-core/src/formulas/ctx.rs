@@ -105,12 +105,14 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Looks up a variable by name (case-insensitive).
     /// Returns `None` if the variable is not defined.
+    #[inline]
     pub fn lookup_variable(&self, name: &str) -> Option<&Value> {
         self.variables.get(&name.to_ascii_uppercase())
     }
 
     /// Checks if a variable was omitted (not provided) in a LAMBDA call.
     /// Returns `true` if the variable is in the omitted set.
+    #[inline]
     pub fn is_variable_omitted(&self, name: &str) -> bool {
         self.omitted_variables.contains(&name.to_ascii_uppercase())
     }
@@ -168,6 +170,7 @@ impl<'ctx> Ctx<'ctx> {
     }
 
     /// Resolves a cell range reference relative to `self.sheet_pos`.
+    #[inline]
     pub fn resolve_range_ref(
         &self,
         range: &SheetCellRefRange,
@@ -200,6 +203,7 @@ impl<'ctx> Ctx<'ctx> {
     /// or returns an error in the case of a circular reference. If
     /// add_cells_accessed is true, it will add the cell reference to
     /// cells_accessed. Otherwise, it needs to be added manually.
+    #[inline]
     pub fn get_cell(
         &mut self,
         pos: SheetPos,

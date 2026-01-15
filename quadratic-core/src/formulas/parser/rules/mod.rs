@@ -38,9 +38,11 @@ pub trait SyntaxRule: fmt::Debug + fmt::Display {
 impl<O, T: SyntaxRule<Output = O> + ?Sized> SyntaxRule for Box<T> {
     type Output = O;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.as_ref().prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         self.as_ref().consume_match(p)
     }
@@ -50,9 +52,11 @@ impl<O, T: SyntaxRule<Output = O> + ?Sized> SyntaxRule for Box<T> {
 impl SyntaxRule for Token {
     type Output = ();
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(*self)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         if p.next() == Some(*self) {
             Ok(())
@@ -64,9 +68,11 @@ impl SyntaxRule for Token {
 impl<T: SyntaxRule> SyntaxRule for &T {
     type Output = T::Output;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         (*self).prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         (*self).consume_match(p)
     }

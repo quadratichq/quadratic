@@ -594,6 +594,14 @@ class CoreClient {
         core.removeConditionalFormat(e.data.sheetId, e.data.conditionalFormatId, e.data.cursor);
         return;
 
+      case 'clientCoreBatchUpdateConditionalFormats':
+        this.send({
+          type: 'coreClientBatchUpdateConditionalFormats',
+          id: e.data.id,
+          response: core.batchUpdateConditionalFormats(e.data.sheetId, e.data.updates, e.data.deleteIds, e.data.cursor),
+        });
+        return;
+
       case 'clientCoreGetValidations':
         this.send({
           type: 'coreClientGetValidations',

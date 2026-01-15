@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    a1::A1Context,
+    Pos,
+    a1::{A1Context, A1Selection, CellRefRange},
     formulas::ast::{AstNode, AstNodeContents, Formula},
     grid::SheetId,
 };
@@ -45,39 +46,82 @@ pub enum ConditionalFormatRule {
     IsNotEmpty,
 
     // Text conditions
-    TextContains { value: String },
-    TextNotContains { value: String },
-    TextStartsWith { value: String },
-    TextEndsWith { value: String },
-    TextIsExactly { value: String },
+    TextContains {
+        value: String,
+    },
+    TextNotContains {
+        value: String,
+    },
+    TextStartsWith {
+        value: String,
+    },
+    TextEndsWith {
+        value: String,
+    },
+    TextIsExactly {
+        value: String,
+    },
 
     // Number conditions
-    GreaterThan { value: ConditionalFormatValue },
-    GreaterThanOrEqual { value: ConditionalFormatValue },
-    LessThan { value: ConditionalFormatValue },
-    LessThanOrEqual { value: ConditionalFormatValue },
-    IsEqualTo { value: ConditionalFormatValue },
-    IsNotEqualTo { value: ConditionalFormatValue },
-    IsBetween { min: ConditionalFormatValue, max: ConditionalFormatValue },
-    IsNotBetween { min: ConditionalFormatValue, max: ConditionalFormatValue },
+    GreaterThan {
+        value: ConditionalFormatValue,
+    },
+    GreaterThanOrEqual {
+        value: ConditionalFormatValue,
+    },
+    LessThan {
+        value: ConditionalFormatValue,
+    },
+    LessThanOrEqual {
+        value: ConditionalFormatValue,
+    },
+    IsEqualTo {
+        value: ConditionalFormatValue,
+    },
+    IsNotEqualTo {
+        value: ConditionalFormatValue,
+    },
+    IsBetween {
+        min: ConditionalFormatValue,
+        max: ConditionalFormatValue,
+    },
+    IsNotBetween {
+        min: ConditionalFormatValue,
+        max: ConditionalFormatValue,
+    },
 
     // Custom formula - doesn't match any known pattern
-    Custom { formula: String },
+    Custom {
+        formula: String,
+    },
 }
 
 impl ConditionalFormatRule {
     /// Try to parse a Formula AST into a ConditionalFormatRule.
     /// Returns a Custom rule with the formula string if no pattern matches.
+    ///
+    /// The `selection` parameter is used to determine the expected first cell.
+    /// For a formula to match a preset pattern, any cell reference in the formula
+    /// must match the start of the selection's first range. For example, if the
+    /// selection is A2:B5 (first range starts at A2), and the formula is `=A2<0`,
+    /// it matches the "less than" preset. But if the formula is `=A1<0`, it doesn't
+    /// match because A1 != A2.
     pub fn from_formula(
         formula: &Formula,
         sheet_id: Option<SheetId>,
         a1_context: &A1Context,
+        selection: &A1Selection,
     ) -> Self {
         // Get the formula as a string first (for Custom fallback)
         let formula_string = formula.to_a1_string(sheet_id, a1_context);
 
+        // Get the expected first cell from the start of the first range
+        let expected_first_cell = Self::get_first_cell_from_selection(selection, a1_context);
+
         // Try to match known patterns
-        if let Some(rule) = Self::try_parse_ast(&formula.ast, sheet_id, a1_context) {
+        if let Some(rule) =
+            Self::try_parse_ast(&formula.ast, sheet_id, a1_context, expected_first_cell)
+        {
             rule
         } else {
             ConditionalFormatRule::Custom {
@@ -86,28 +130,73 @@ impl ConditionalFormatRule {
         }
     }
 
+    /// Extract the first cell position from the start of the selection's first range.
+    pub(crate) fn get_first_cell_from_selection(
+        selection: &A1Selection,
+        a1_context: &A1Context,
+    ) -> Option<Pos> {
+        selection.ranges.first().and_then(|range| match range {
+            CellRefRange::Sheet { range } => {
+                // Get the start position of the sheet range
+                let x = range.start.col();
+                let y = range.start.row();
+                // Only return if both are finite (not unbounded)
+                if x != crate::a1::UNBOUNDED && y != crate::a1::UNBOUNDED {
+                    Some(Pos { x, y })
+                } else {
+                    None
+                }
+            }
+            CellRefRange::Table { range } => {
+                // For table references, convert to ref range bounds and get the start position
+                range
+                    .convert_to_ref_range_bounds(false, a1_context, false, false)
+                    .and_then(|bounds| {
+                        let x = bounds.start.col();
+                        let y = bounds.start.row();
+                        if x != crate::a1::UNBOUNDED && y != crate::a1::UNBOUNDED {
+                            Some(Pos { x, y })
+                        } else {
+                            None
+                        }
+                    })
+            }
+        })
+    }
+
     /// Try to parse an AST node into a known rule pattern.
+    /// The `expected_first_cell` is the start of the selection's first range.
+    /// For a formula to match a preset, the cell reference must match this position.
     fn try_parse_ast(
         ast: &AstNode,
         sheet_id: Option<SheetId>,
         a1_context: &A1Context,
+        expected_first_cell: Option<Pos>,
     ) -> Option<Self> {
         match &ast.inner {
             // ISBLANK(cellRef) -> IsEmpty
-            AstNodeContents::FunctionCall { func, args } if func.inner.eq_ignore_ascii_case("ISBLANK") => {
-                if args.len() == 1 && Self::is_cell_ref(&args[0]) {
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("ISBLANK") =>
+            {
+                if args.len() == 1 && Self::is_matching_cell_ref(&args[0], expected_first_cell) {
                     return Some(ConditionalFormatRule::IsEmpty);
                 }
                 None
             }
 
             // NOT(ISBLANK(cellRef)) -> IsNotEmpty
-            AstNodeContents::FunctionCall { func, args } if func.inner.eq_ignore_ascii_case("NOT") => {
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("NOT") =>
+            {
                 if args.len() == 1 {
-                    if let AstNodeContents::FunctionCall { func: inner_func, args: inner_args } = &args[0].inner {
+                    if let AstNodeContents::FunctionCall {
+                        func: inner_func,
+                        args: inner_args,
+                    } = &args[0].inner
+                    {
                         if inner_func.inner.eq_ignore_ascii_case("ISBLANK")
                             && inner_args.len() == 1
-                            && Self::is_cell_ref(&inner_args[0])
+                            && Self::is_matching_cell_ref(&inner_args[0], expected_first_cell)
                         {
                             return Some(ConditionalFormatRule::IsNotEmpty);
                         }
@@ -117,12 +206,19 @@ impl ConditionalFormatRule {
             }
 
             // ISNUMBER(SEARCH(value, cellRef)) -> TextContains
-            AstNodeContents::FunctionCall { func, args } if func.inner.eq_ignore_ascii_case("ISNUMBER") => {
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("ISNUMBER") =>
+            {
                 if args.len() == 1 {
-                    if let AstNodeContents::FunctionCall { func: inner_func, args: inner_args } = &args[0].inner {
-                        if inner_func.inner.eq_ignore_ascii_case("SEARCH") && inner_args.len() == 2 {
+                    if let AstNodeContents::FunctionCall {
+                        func: inner_func,
+                        args: inner_args,
+                    } = &args[0].inner
+                    {
+                        if inner_func.inner.eq_ignore_ascii_case("SEARCH") && inner_args.len() == 2
+                        {
                             if let Some(value) = Self::extract_string_value(&inner_args[0]) {
-                                if Self::is_cell_ref(&inner_args[1]) {
+                                if Self::is_matching_cell_ref(&inner_args[1], expected_first_cell) {
                                     return Some(ConditionalFormatRule::TextContains { value });
                                 }
                             }
@@ -133,12 +229,19 @@ impl ConditionalFormatRule {
             }
 
             // ISERROR(SEARCH(value, cellRef)) -> TextNotContains
-            AstNodeContents::FunctionCall { func, args } if func.inner.eq_ignore_ascii_case("ISERROR") => {
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("ISERROR") =>
+            {
                 if args.len() == 1 {
-                    if let AstNodeContents::FunctionCall { func: inner_func, args: inner_args } = &args[0].inner {
-                        if inner_func.inner.eq_ignore_ascii_case("SEARCH") && inner_args.len() == 2 {
+                    if let AstNodeContents::FunctionCall {
+                        func: inner_func,
+                        args: inner_args,
+                    } = &args[0].inner
+                    {
+                        if inner_func.inner.eq_ignore_ascii_case("SEARCH") && inner_args.len() == 2
+                        {
                             if let Some(value) = Self::extract_string_value(&inner_args[0]) {
-                                if Self::is_cell_ref(&inner_args[1]) {
+                                if Self::is_matching_cell_ref(&inner_args[1], expected_first_cell) {
                                     return Some(ConditionalFormatRule::TextNotContains { value });
                                 }
                             }
@@ -149,15 +252,30 @@ impl ConditionalFormatRule {
             }
 
             // AND(cellRef >= min, cellRef <= max) -> IsBetween
-            AstNodeContents::FunctionCall { func, args } if func.inner.eq_ignore_ascii_case("AND") => {
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("AND") =>
+            {
                 if args.len() == 2 {
                     if let (Some((op1, val1)), Some((op2, val2))) = (
-                        Self::extract_comparison(&args[0], sheet_id, a1_context),
-                        Self::extract_comparison(&args[1], sheet_id, a1_context),
+                        Self::extract_comparison(
+                            &args[0],
+                            sheet_id,
+                            a1_context,
+                            expected_first_cell,
+                        ),
+                        Self::extract_comparison(
+                            &args[1],
+                            sheet_id,
+                            a1_context,
+                            expected_first_cell,
+                        ),
                     ) {
                         // AND(cellRef >= min, cellRef <= max)
                         if op1 == ">=" && op2 == "<=" {
-                            return Some(ConditionalFormatRule::IsBetween { min: val1, max: val2 });
+                            return Some(ConditionalFormatRule::IsBetween {
+                                min: val1,
+                                max: val2,
+                            });
                         }
                     }
                 }
@@ -165,15 +283,30 @@ impl ConditionalFormatRule {
             }
 
             // OR(cellRef < min, cellRef > max) -> IsNotBetween
-            AstNodeContents::FunctionCall { func, args } if func.inner.eq_ignore_ascii_case("OR") => {
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("OR") =>
+            {
                 if args.len() == 2 {
                     if let (Some((op1, val1)), Some((op2, val2))) = (
-                        Self::extract_comparison(&args[0], sheet_id, a1_context),
-                        Self::extract_comparison(&args[1], sheet_id, a1_context),
+                        Self::extract_comparison(
+                            &args[0],
+                            sheet_id,
+                            a1_context,
+                            expected_first_cell,
+                        ),
+                        Self::extract_comparison(
+                            &args[1],
+                            sheet_id,
+                            a1_context,
+                            expected_first_cell,
+                        ),
                     ) {
                         // OR(cellRef < min, cellRef > max)
                         if op1 == "<" && op2 == ">" {
-                            return Some(ConditionalFormatRule::IsNotBetween { min: val1, max: val2 });
+                            return Some(ConditionalFormatRule::IsNotBetween {
+                                min: val1,
+                                max: val2,
+                            });
                         }
                     }
                 }
@@ -186,12 +319,44 @@ impl ConditionalFormatRule {
             AstNodeContents::FunctionCall { func, args } => {
                 let op = func.inner.as_str();
                 match op {
-                    "=" | "==" => Self::try_parse_equals(args, sheet_id, a1_context),
-                    ">" => Self::try_parse_simple_comparison(args, ">", sheet_id, a1_context),
-                    ">=" => Self::try_parse_simple_comparison(args, ">=", sheet_id, a1_context),
-                    "<" => Self::try_parse_simple_comparison(args, "<", sheet_id, a1_context),
-                    "<=" => Self::try_parse_simple_comparison(args, "<=", sheet_id, a1_context),
-                    "<>" | "!=" => Self::try_parse_simple_comparison(args, "<>", sheet_id, a1_context),
+                    "=" | "==" => {
+                        Self::try_parse_equals(args, sheet_id, a1_context, expected_first_cell)
+                    }
+                    ">" => Self::try_parse_simple_comparison(
+                        args,
+                        ">",
+                        sheet_id,
+                        a1_context,
+                        expected_first_cell,
+                    ),
+                    ">=" => Self::try_parse_simple_comparison(
+                        args,
+                        ">=",
+                        sheet_id,
+                        a1_context,
+                        expected_first_cell,
+                    ),
+                    "<" => Self::try_parse_simple_comparison(
+                        args,
+                        "<",
+                        sheet_id,
+                        a1_context,
+                        expected_first_cell,
+                    ),
+                    "<=" => Self::try_parse_simple_comparison(
+                        args,
+                        "<=",
+                        sheet_id,
+                        a1_context,
+                        expected_first_cell,
+                    ),
+                    "<>" | "!=" => Self::try_parse_simple_comparison(
+                        args,
+                        "<>",
+                        sheet_id,
+                        a1_context,
+                        expected_first_cell,
+                    ),
                     _ => None,
                 }
             }
@@ -200,9 +365,29 @@ impl ConditionalFormatRule {
         }
     }
 
-    /// Check if an AST node is a cell reference
-    fn is_cell_ref(ast: &AstNode) -> bool {
-        matches!(&ast.inner, AstNodeContents::CellRef(_, _) | AstNodeContents::RangeRef(_))
+    /// Check if an AST node is a cell reference that matches the expected first cell.
+    /// If `expected_first_cell` is None, we cannot verify the position, so we return false
+    /// (treat as custom formula).
+    fn is_matching_cell_ref(ast: &AstNode, expected_first_cell: Option<Pos>) -> bool {
+        let Some(expected) = expected_first_cell else {
+            return false;
+        };
+
+        match &ast.inner {
+            AstNodeContents::CellRef(_, bounds) => {
+                // Check if this is a single cell reference that matches the expected position
+                if let Some(pos) = bounds.try_to_pos() {
+                    pos == expected
+                } else {
+                    false
+                }
+            }
+            AstNodeContents::RangeRef(_) => {
+                // Range references don't match single cell presets
+                false
+            }
+            _ => false,
+        }
     }
 
     /// Extract a string value from an AST node
@@ -214,7 +399,11 @@ impl ConditionalFormatRule {
     }
 
     /// Extract a value from an AST node
-    fn extract_value(ast: &AstNode, sheet_id: Option<SheetId>, a1_context: &A1Context) -> Option<ConditionalFormatValue> {
+    fn extract_value(
+        ast: &AstNode,
+        sheet_id: Option<SheetId>,
+        a1_context: &A1Context,
+    ) -> Option<ConditionalFormatValue> {
         match &ast.inner {
             AstNodeContents::Number(n) => Some(ConditionalFormatValue::Number(*n)),
             AstNodeContents::String(s) => Some(ConditionalFormatValue::Text(s.clone())),
@@ -222,7 +411,9 @@ impl ConditionalFormatRule {
             AstNodeContents::CellRef(_, _) | AstNodeContents::RangeRef(_) => {
                 // Convert cell reference to A1 string
                 let formula = Formula { ast: ast.clone() };
-                Some(ConditionalFormatValue::CellRef(formula.to_a1_string(sheet_id, a1_context)))
+                Some(ConditionalFormatValue::CellRef(
+                    formula.to_a1_string(sheet_id, a1_context),
+                ))
             }
             _ => None,
         }
@@ -230,13 +421,15 @@ impl ConditionalFormatRule {
 
     /// Extract a comparison operation and value from an AST node.
     /// Returns (operator, value) if successful.
+    /// The cell reference must match the expected_first_cell position.
     fn extract_comparison(
         ast: &AstNode,
         sheet_id: Option<SheetId>,
         a1_context: &A1Context,
+        expected_first_cell: Option<Pos>,
     ) -> Option<(&'static str, ConditionalFormatValue)> {
         if let AstNodeContents::FunctionCall { func, args } = &ast.inner {
-            if args.len() == 2 && Self::is_cell_ref(&args[0]) {
+            if args.len() == 2 && Self::is_matching_cell_ref(&args[0], expected_first_cell) {
                 let op = match func.inner.as_str() {
                     ">" => ">",
                     ">=" => ">=",
@@ -259,15 +452,20 @@ impl ConditionalFormatRule {
         args: &[AstNode],
         sheet_id: Option<SheetId>,
         a1_context: &A1Context,
+        expected_first_cell: Option<Pos>,
     ) -> Option<Self> {
         if args.len() != 2 {
             return None;
         }
 
         // Check for LEFT(cellRef, len) = value -> TextStartsWith
-        if let AstNodeContents::FunctionCall { func, args: left_args } = &args[0].inner {
+        if let AstNodeContents::FunctionCall {
+            func,
+            args: left_args,
+        } = &args[0].inner
+        {
             if func.inner.eq_ignore_ascii_case("LEFT") && left_args.len() == 2 {
-                if Self::is_cell_ref(&left_args[0]) {
+                if Self::is_matching_cell_ref(&left_args[0], expected_first_cell) {
                     if let Some(value) = Self::extract_string_value(&args[1]) {
                         return Some(ConditionalFormatRule::TextStartsWith { value });
                     }
@@ -275,7 +473,7 @@ impl ConditionalFormatRule {
             }
             // Check for RIGHT(cellRef, len) = value -> TextEndsWith
             if func.inner.eq_ignore_ascii_case("RIGHT") && left_args.len() == 2 {
-                if Self::is_cell_ref(&left_args[0]) {
+                if Self::is_matching_cell_ref(&left_args[0], expected_first_cell) {
                     if let Some(value) = Self::extract_string_value(&args[1]) {
                         return Some(ConditionalFormatRule::TextEndsWith { value });
                     }
@@ -284,7 +482,7 @@ impl ConditionalFormatRule {
         }
 
         // Simple comparison: cellRef = value
-        if Self::is_cell_ref(&args[0]) {
+        if Self::is_matching_cell_ref(&args[0], expected_first_cell) {
             if let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context) {
                 // If it's a string, it's TextIsExactly; otherwise IsEqualTo
                 if matches!(value, ConditionalFormatValue::Text(_)) {
@@ -305,12 +503,13 @@ impl ConditionalFormatRule {
         op: &str,
         sheet_id: Option<SheetId>,
         a1_context: &A1Context,
+        expected_first_cell: Option<Pos>,
     ) -> Option<Self> {
         if args.len() != 2 {
             return None;
         }
 
-        if Self::is_cell_ref(&args[0]) {
+        if Self::is_matching_cell_ref(&args[0], expected_first_cell) {
             if let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context) {
                 return match op {
                     ">" => Some(ConditionalFormatRule::GreaterThan { value }),
@@ -334,11 +533,19 @@ mod tests {
     use crate::formulas::parse_formula;
 
     fn parse_and_match(formula_str: &str) -> ConditionalFormatRule {
+        parse_and_match_with_selection(formula_str, "A1")
+    }
+
+    fn parse_and_match_with_selection(
+        formula_str: &str,
+        selection_str: &str,
+    ) -> ConditionalFormatRule {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let pos = gc.grid().origin_in_first_sheet();
         let formula = parse_formula(formula_str, gc.a1_context(), pos).unwrap();
-        ConditionalFormatRule::from_formula(&formula, Some(sheet_id), gc.a1_context())
+        let selection = A1Selection::test_a1(selection_str);
+        ConditionalFormatRule::from_formula(&formula, Some(sheet_id), gc.a1_context(), &selection)
     }
 
     #[test]
@@ -356,37 +563,49 @@ mod tests {
     #[test]
     fn test_greater_than() {
         let rule = parse_and_match("A1 > 5");
-        assert!(matches!(rule, ConditionalFormatRule::GreaterThan { value: ConditionalFormatValue::Number(n) } if n == 5.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::GreaterThan { value: ConditionalFormatValue::Number(n) } if n == 5.0)
+        );
     }
 
     #[test]
     fn test_greater_than_or_equal() {
         let rule = parse_and_match("A1 >= 10");
-        assert!(matches!(rule, ConditionalFormatRule::GreaterThanOrEqual { value: ConditionalFormatValue::Number(n) } if n == 10.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::GreaterThanOrEqual { value: ConditionalFormatValue::Number(n) } if n == 10.0)
+        );
     }
 
     #[test]
     fn test_less_than() {
         let rule = parse_and_match("A1 < 100");
-        assert!(matches!(rule, ConditionalFormatRule::LessThan { value: ConditionalFormatValue::Number(n) } if n == 100.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::LessThan { value: ConditionalFormatValue::Number(n) } if n == 100.0)
+        );
     }
 
     #[test]
     fn test_less_than_or_equal() {
         let rule = parse_and_match("A1 <= 50");
-        assert!(matches!(rule, ConditionalFormatRule::LessThanOrEqual { value: ConditionalFormatValue::Number(n) } if n == 50.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::LessThanOrEqual { value: ConditionalFormatValue::Number(n) } if n == 50.0)
+        );
     }
 
     #[test]
     fn test_is_equal_to() {
         let rule = parse_and_match("A1 = 42");
-        assert!(matches!(rule, ConditionalFormatRule::IsEqualTo { value: ConditionalFormatValue::Number(n) } if n == 42.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::IsEqualTo { value: ConditionalFormatValue::Number(n) } if n == 42.0)
+        );
     }
 
     #[test]
     fn test_is_not_equal_to() {
         let rule = parse_and_match("A1 <> 0");
-        assert!(matches!(rule, ConditionalFormatRule::IsNotEqualTo { value: ConditionalFormatValue::Number(n) } if n == 0.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::IsNotEqualTo { value: ConditionalFormatValue::Number(n) } if n == 0.0)
+        );
     }
 
     #[test]
@@ -398,13 +617,17 @@ mod tests {
     #[test]
     fn test_text_not_contains() {
         let rule = parse_and_match("ISERROR(SEARCH(\"test\", A1))");
-        assert!(matches!(rule, ConditionalFormatRule::TextNotContains { value } if value == "test"));
+        assert!(
+            matches!(rule, ConditionalFormatRule::TextNotContains { value } if value == "test")
+        );
     }
 
     #[test]
     fn test_text_starts_with() {
         let rule = parse_and_match("LEFT(A1, 5) = \"hello\"");
-        assert!(matches!(rule, ConditionalFormatRule::TextStartsWith { value } if value == "hello"));
+        assert!(
+            matches!(rule, ConditionalFormatRule::TextStartsWith { value } if value == "hello")
+        );
     }
 
     #[test]
@@ -416,19 +639,25 @@ mod tests {
     #[test]
     fn test_text_is_exactly() {
         let rule = parse_and_match("A1 = \"exact match\"");
-        assert!(matches!(rule, ConditionalFormatRule::TextIsExactly { value } if value == "exact match"));
+        assert!(
+            matches!(rule, ConditionalFormatRule::TextIsExactly { value } if value == "exact match")
+        );
     }
 
     #[test]
     fn test_is_between() {
         let rule = parse_and_match("AND(A1 >= 5, A1 <= 10)");
-        assert!(matches!(rule, ConditionalFormatRule::IsBetween { min: ConditionalFormatValue::Number(min), max: ConditionalFormatValue::Number(max) } if min == 5.0 && max == 10.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::IsBetween { min: ConditionalFormatValue::Number(min), max: ConditionalFormatValue::Number(max) } if min == 5.0 && max == 10.0)
+        );
     }
 
     #[test]
     fn test_is_not_between() {
         let rule = parse_and_match("OR(A1 < 5, A1 > 10)");
-        assert!(matches!(rule, ConditionalFormatRule::IsNotBetween { min: ConditionalFormatValue::Number(min), max: ConditionalFormatValue::Number(max) } if min == 5.0 && max == 10.0));
+        assert!(
+            matches!(rule, ConditionalFormatRule::IsNotBetween { min: ConditionalFormatValue::Number(min), max: ConditionalFormatValue::Number(max) } if min == 5.0 && max == 10.0)
+        );
     }
 
     #[test]
@@ -440,6 +669,167 @@ mod tests {
     #[test]
     fn test_cell_ref_value() {
         let rule = parse_and_match("A1 > B1");
-        assert!(matches!(rule, ConditionalFormatRule::GreaterThan { value: ConditionalFormatValue::CellRef(_) }));
+        assert!(matches!(
+            rule,
+            ConditionalFormatRule::GreaterThan {
+                value: ConditionalFormatValue::CellRef(_)
+            }
+        ));
+    }
+
+    #[test]
+    fn test_mismatched_cell_ref_becomes_custom() {
+        // Formula references A2 but selection starts at A1 - should be custom
+        let rule = parse_and_match_with_selection("A2 > 5", "A1:B5");
+        assert!(matches!(rule, ConditionalFormatRule::Custom { .. }));
+
+        // Formula references A1 and selection starts at A1 - should match preset
+        let rule = parse_and_match_with_selection("A1 > 5", "A1:B5");
+        assert!(
+            matches!(rule, ConditionalFormatRule::GreaterThan { value: ConditionalFormatValue::Number(n) } if n == 5.0)
+        );
+
+        // Formula references B2 but selection starts at A1 - should be custom
+        let rule = parse_and_match_with_selection("B2 < 10", "A1:C5");
+        assert!(matches!(rule, ConditionalFormatRule::Custom { .. }));
+
+        // Formula references B2 and selection starts at B2 - should match preset
+        let rule = parse_and_match_with_selection("B2 < 10", "B2:C5");
+        assert!(
+            matches!(rule, ConditionalFormatRule::LessThan { value: ConditionalFormatValue::Number(n) } if n == 10.0)
+        );
+    }
+
+    #[test]
+    fn test_isblank_mismatched_becomes_custom() {
+        // ISBLANK with matching cell ref
+        let rule = parse_and_match_with_selection("ISBLANK(A1)", "A1:B5");
+        assert!(matches!(rule, ConditionalFormatRule::IsEmpty));
+
+        // ISBLANK with mismatched cell ref
+        let rule = parse_and_match_with_selection("ISBLANK(A2)", "A1:B5");
+        assert!(matches!(rule, ConditionalFormatRule::Custom { .. }));
+    }
+
+    #[test]
+    fn test_table_column_selection() {
+        use crate::a1::A1Context;
+        use crate::Rect;
+
+        // Create a context with a table at A1:B4 (header row at A2, data at A3:B4)
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B4"))],
+        );
+
+        // Table at A1:B4 with headers and data:
+        // Row 1: Table name
+        // Row 2: Col1, Col2 (headers)
+        // Row 3-4: data
+
+        // Parse a formula at the first data cell of Col1 (A3)
+        let selection = A1Selection::test_a1_context("Table1[Col1]", &context);
+        let sheet_id = selection.sheet_id;
+
+        // The first data cell of Table1[Col1] should be A3
+        let formula = parse_formula("A3 < 0", &context, crate::SheetPos { x: 1, y: 3, sheet_id }).unwrap();
+        let rule = ConditionalFormatRule::from_formula(&formula, Some(sheet_id), &context, &selection);
+        
+        // Should match LessThan preset since formula cell ref (A3) matches first cell of selection
+        assert!(
+            matches!(rule, ConditionalFormatRule::LessThan { value: ConditionalFormatValue::Number(n) } if n == 0.0),
+            "Expected LessThan preset for matching table column selection, got {:?}",
+            rule
+        );
+
+        // Now test with mismatched cell ref (A1 instead of A3)
+        let formula = parse_formula("A1 < 0", &context, crate::SheetPos { x: 1, y: 1, sheet_id }).unwrap();
+        let rule = ConditionalFormatRule::from_formula(&formula, Some(sheet_id), &context, &selection);
+        
+        // Should be Custom since A1 doesn't match the first data cell (A3)
+        assert!(
+            matches!(rule, ConditionalFormatRule::Custom { .. }),
+            "Expected Custom for mismatched table column selection, got {:?}",
+            rule
+        );
+    }
+
+    #[test]
+    fn test_table_column2_first_cell() {
+        use crate::a1::A1Context;
+        use crate::Rect;
+
+        // Create a table at A1:B100 with name+headers
+        // Row 1: Table name (TableName)
+        // Row 2: Column 1, Column 2 (headers)
+        // Rows 3-100: data
+        let context = A1Context::test(
+            &[],
+            &[("TableName", &["Column 1", "Column 2"], Rect::test_a1("A1:B100"))],
+        );
+
+        // Select Column 2 of the table
+        let selection = A1Selection::test_a1_context("TableName[Column 2]", &context);
+        
+        // Check what first cell is extracted
+        let first_cell = ConditionalFormatRule::get_first_cell_from_selection(&selection, &context);
+        
+        // Column 2 should be column B (x=2), first data row should be row 3 (y=3)
+        // So the first cell should be B3
+        assert_eq!(
+            first_cell,
+            Some(Pos { x: 2, y: 3 }),
+            "Expected first cell of TableName[Column 2] to be B3, got {:?}",
+            first_cell
+        );
+
+        // Also test Column 1 to make sure we're getting the right column
+        let selection = A1Selection::test_a1_context("TableName[Column 1]", &context);
+        let first_cell = ConditionalFormatRule::get_first_cell_from_selection(&selection, &context);
+        assert_eq!(
+            first_cell,
+            Some(Pos { x: 1, y: 3 }),
+            "Expected first cell of TableName[Column 1] to be A3, got {:?}",
+            first_cell
+        );
+    }
+
+    #[test]
+    fn test_table_column2_with_real_grid() {
+        use crate::test_util::*;
+
+        // Create a real table using the GridController
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create a data table with 2 columns, multiple rows
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 10);
+
+        // The data table should have:
+        // - Table name row
+        // - Column headers row (Column 1, Column 2)
+        // - Data rows
+        
+        // Debug: print what tables are available
+        println!("A1 Context: {:?}", gc.a1_context());
+        
+        // Select the second column - table name is "test_table"
+        let selection = A1Selection::test_a1_context("test_table[Column 2]", gc.a1_context());
+        
+        // Debug: print the selection
+        println!("Selection: {:?}", selection);
+        
+        // Check what first cell is extracted
+        let first_cell = ConditionalFormatRule::get_first_cell_from_selection(&selection, gc.a1_context());
+        
+        println!("First cell: {:?}", first_cell);
+        
+        // The second column should be column B (x=2)
+        // First data row depends on table settings
+        if let Some(pos) = first_cell {
+            assert_eq!(pos.x, 2, "Expected column B (x=2), got x={}", pos.x);
+        } else {
+            panic!("Expected Some(Pos), got None");
+        }
     }
 }
