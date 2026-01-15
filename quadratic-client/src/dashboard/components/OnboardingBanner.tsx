@@ -42,9 +42,9 @@ export function OnboardingBanner() {
   const handleFileImport = useFileImport();
   const onClickImport = () => {
     trackEvent('[OnboardingBanner].newFileFromImport');
-    handleFileImport({ isPrivate: false, teamUuid });
+    handleFileImport({ isPrivate: true, teamUuid });
   };
-  const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate: false, teamUuid });
+  const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate: true, teamUuid });
 
   // Only show the banner to people who can 1) write to the team, and 2) haven't dismissed it yet
   const initialValueOfShowBanner = teamPermissions.includes('TEAM_EDIT') && !clientDataKv.onboardingBannerDismissed;
