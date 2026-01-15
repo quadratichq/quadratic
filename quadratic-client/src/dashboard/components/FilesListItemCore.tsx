@@ -31,36 +31,34 @@ export function FilesListItemCore({
   const isGrid = viewPreferences.layout === Layout.Grid;
 
   return (
-    <div>
-      <div className={`flex w-full items-center`}>
-        <div className={`flex w-full items-center justify-between gap-3`}>
-          <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
-            <h2
-              className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
-              dangerouslySetInnerHTML={{ __html }}
-            />
+    <div className={`flex w-full items-center`}>
+      <div className={`flex w-full items-center justify-between gap-3`}>
+        <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
+          <h2
+            className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
+            dangerouslySetInnerHTML={{ __html }}
+          />
 
-            <div className="flex h-5 items-center gap-1">
-              {children}
-              {hasNetworkError ? (
-                <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
-              ) : (
-                <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
-              )}
-            </div>
+          <div className="flex h-5 items-center gap-1">
+            {children}
+            {hasNetworkError ? (
+              <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
+            ) : (
+              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
+            )}
           </div>
-
-          {creator?.name && creator?.email && (
-            <TooltipPopover label={`Created by ${creator.name}`}>
-              <Avatar alt={creator.name} src={creator.picture}>
-                {creator.name?.[0] ? creator.name?.[0] : creator.email?.[0]}
-              </Avatar>
-            </TooltipPopover>
-          )}
         </div>
 
-        {actions && <div className="flex-none">{actions}</div>}
+        {creator?.name && creator?.email && (
+          <TooltipPopover label={`Created by ${creator.name}`}>
+            <Avatar alt={creator.name} src={creator.picture}>
+              {creator.name?.[0] ? creator.name?.[0] : creator.email?.[0]}
+            </Avatar>
+          </TooltipPopover>
+        )}
       </div>
+
+      {actions && <div className="flex-none">{actions}</div>}
     </div>
   );
 }
