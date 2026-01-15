@@ -23,7 +23,12 @@ export const UserFilesListEmptyState = ({ filesToRenderCount }: { filesToRenderC
   }
 
   // If there are no active filters, that means the user has 0 files
-  if (filters.fileName === '' && filters.fileCreatorEmails.length === 0 && filters.sharedPublicly === false && filters.hasScheduledTasks === false) {
+  if (
+    filters.fileName === '' &&
+    filters.fileCreatorEmails.length === 0 &&
+    filters.sharedPublicly === false &&
+    filters.hasScheduledTasks === false
+  ) {
     // Shared files
     if (filters.fileType === 'shared') {
       return (
