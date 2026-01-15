@@ -342,16 +342,28 @@ export const ConditionalFormat = () => {
   });
   const [triggerError, setTriggerError] = useState(false);
 
-  // Load rule from existing format when editing
+  // Load rule and style from existing format when editing
   useEffect(() => {
-    if (existingFormat?.rule) {
-      const result = parseRuleToCondition(existingFormat.rule);
-      setConditionType(result.conditionType);
-      setValue1(result.value1);
-      setValue2(result.value2);
-      if (result.conditionType === 'custom_formula') {
-        setCustomFormula(result.value1);
+    if (existingFormat) {
+      // Update the rule/formula state
+      if (existingFormat.rule) {
+        const result = parseRuleToCondition(existingFormat.rule);
+        setConditionType(result.conditionType);
+        setValue1(result.value1);
+        setValue2(result.value2);
+        if (result.conditionType === 'custom_formula') {
+          setCustomFormula(result.value1);
+        }
       }
+      // Update the style state (convert null to undefined)
+      setStyle({
+        bold: existingFormat.style.bold ?? undefined,
+        italic: existingFormat.style.italic ?? undefined,
+        underline: existingFormat.style.underline ?? undefined,
+        strike_through: existingFormat.style.strike_through ?? undefined,
+        text_color: existingFormat.style.text_color ?? undefined,
+        fill_color: existingFormat.style.fill_color ?? undefined,
+      });
     }
   }, [existingFormat]);
 

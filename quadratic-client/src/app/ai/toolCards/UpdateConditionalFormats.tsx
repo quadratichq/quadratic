@@ -190,11 +190,156 @@ export const UpdateConditionalFormats = memo(
 
     const handleSelectRule = useCallback(
       (rule: RuleEntry, sheetName: string) => {
-        // For update actions with an ID, try to open the specific rule
-        const sheet = sheets.sheet;
-        if ((rule.action === 'update' || rule.action === 'create') && rule.id && sheet) {
-          const existingRule = sheet.conditionalFormats.find((cf) => cf.id === rule.id);
+        const sheet = sheets.getSheetByName(sheetName) ?? sheets.sheet;
+
+        // Helper to get the formula from a stored conditional format rule
+        const getStoredFormula = (cfRule: (typeof sheet.conditionalFormats)[number]['rule']): string | undefined => {
+          if (typeof cfRule === 'object' && 'Custom' in cfRule) {
+            return cfRule.Custom.formula;
+          }
+          return undefined;
+        };
+
+        // Helper to check if selection strings match
+        const selectionsMatch = (cf: (typeof sheet.conditionalFormats)[number]): boolean => {
+          if (!rule.selection) return false;
+          try {
+            const jsSelection = sheets.A1SelectionToJsSelection(cf.selection);
+            const cfSelectionString = jsSelection.toA1String(sheet.id, sheets.jsA1Context);
+            jsSelection.free();
+            return cfSelectionString === rule.selection;
+          } catch {
+            return false;
+          }
+        };
+
+        // Helper to check if styles match
+        const stylesMatch = (cf: (typeof sheet.conditionalFormats)[number]): boolean => {
+          const cfStyle = cf.style;
+          // Compare all style properties
+          return (
+            (rule.bold === undefined || rule.bold === null || cfStyle.bold === rule.bold) &&
+            (rule.italic === undefined || rule.italic === null || cfStyle.italic === rule.italic) &&
+            (rule.underline === undefined || rule.underline === null || cfStyle.underline === rule.underline) &&
+            (rule.strike_through === undefined ||
+              rule.strike_through === null ||
+              cfStyle.strike_through === rule.strike_through) &&
+            (rule.text_color === undefined || rule.text_color === null || cfStyle.text_color === rule.text_color) &&
+            (rule.fill_color === undefined || rule.fill_color === null || cfStyle.fill_color === rule.fill_color)
+          );
+        };
+
+        // Helper to check if styles match exactly (for when we need precise matching)
+        // Normalizes undefined/null to be equivalent for comparison
+        const stylesMatchExact = (cf: (typeof sheet.conditionalFormats)[number]): boolean => {
+          const cfStyle = cf.style;
+          // Normalize undefined and null to be equivalent
+          const normalize = (v: unknown): unknown => (v === undefined || v === null ? null : v);
+          return (
+            normalize(cfStyle.bold) === normalize(rule.bold) &&
+            normalize(cfStyle.italic) === normalize(rule.italic) &&
+            normalize(cfStyle.underline) === normalize(rule.underline) &&
+            normalize(cfStyle.strike_through) === normalize(rule.strike_through) &&
+            normalize(cfStyle.text_color) === normalize(rule.text_color) &&
+            normalize(cfStyle.fill_color) === normalize(rule.fill_color)
+          );
+        };
+
+        // For update/create actions, try to find and open the specific rule
+        if (rule.action === 'update' || rule.action === 'create') {
+          console.log('[handleSelectRule] Looking for rule:', {
+            id: rule.id,
+            selection: rule.selection,
+            rule: rule.rule,
+            bold: rule.bold,
+            italic: rule.italic,
+            text_color: rule.text_color,
+            fill_color: rule.fill_color,
+          });
+
+          console.log(
+            '[handleSelectRule] Available conditional formats:',
+            sheet.conditionalFormats.map((cf) => ({
+              id: cf.id,
+              selection: (() => {
+                try {
+                  const js = sheets.A1SelectionToJsSelection(cf.selection);
+                  const str = js.toA1String(sheet.id, sheets.jsA1Context);
+                  js.free();
+                  return str;
+                } catch {
+                  return 'error';
+                }
+              })(),
+              formula: getStoredFormula(cf.rule),
+              style: cf.style,
+            }))
+          );
+
+          let existingRule = rule.id ? sheet.conditionalFormats.find((cf) => cf.id === rule.id) : undefined;
+          if (existingRule) console.log('[handleSelectRule] Found by ID');
+
+          // If not found by ID, try to find by matching selection + formula + styles
+          if (!existingRule && rule.selection && rule.rule) {
+            existingRule = sheet.conditionalFormats.find((cf) => {
+              const storedFormula = getStoredFormula(cf.rule);
+              const selMatch = selectionsMatch(cf);
+              const formulaMatch = storedFormula === rule.rule;
+              const styleMatch = stylesMatch(cf);
+              console.log('[handleSelectRule] Check sel+formula+style:', {
+                cfId: cf.id,
+                selMatch,
+                formulaMatch,
+                styleMatch,
+                storedFormula,
+                ruleFormula: rule.rule,
+              });
+              return selMatch && formulaMatch && styleMatch;
+            });
+            if (existingRule) console.log('[handleSelectRule] Found by selection+formula+styles');
+          }
+
+          // If not found, try matching selection + formula (without style check)
+          if (!existingRule && rule.selection && rule.rule) {
+            existingRule = sheet.conditionalFormats.find((cf) => {
+              const storedFormula = getStoredFormula(cf.rule);
+              return selectionsMatch(cf) && storedFormula === rule.rule;
+            });
+            if (existingRule) console.log('[handleSelectRule] Found by selection+formula');
+          }
+
+          // If still not found, try matching selection + exact styles
+          if (!existingRule && rule.selection) {
+            existingRule = sheet.conditionalFormats.find((cf) => {
+              const selMatch = selectionsMatch(cf);
+              const styleMatch = stylesMatchExact(cf);
+              console.log('[handleSelectRule] Check sel+exactStyles:', {
+                cfId: cf.id,
+                selMatch,
+                styleMatch,
+                cfStyle: cf.style,
+                ruleStyle: {
+                  bold: rule.bold,
+                  italic: rule.italic,
+                  underline: rule.underline,
+                  strike_through: rule.strike_through,
+                  text_color: rule.text_color,
+                  fill_color: rule.fill_color,
+                },
+              });
+              return selMatch && styleMatch;
+            });
+            if (existingRule) console.log('[handleSelectRule] Found by selection+exactStyles');
+          }
+
+          // Last resort: selection only (may be ambiguous)
+          if (!existingRule && rule.selection) {
+            existingRule = sheet.conditionalFormats.find((cf) => selectionsMatch(cf));
+            if (existingRule) console.log('[handleSelectRule] Found by selection only (ambiguous)');
+          }
+
           if (existingRule) {
+            console.log('[handleSelectRule] Opening rule:', existingRule.id);
             // Highlight the selection
             try {
               const jsSelection = sheets.A1SelectionToJsSelection(existingRule.selection);
@@ -203,8 +348,10 @@ export const UpdateConditionalFormats = memo(
               console.warn('Failed to select conditional format range:', e);
             }
             // Open the specific rule for editing
-            setShowConditionalFormat(rule.id);
+            setShowConditionalFormat(existingRule.id);
             return;
+          } else {
+            console.log('[handleSelectRule] No matching rule found');
           }
         }
 
@@ -268,8 +415,6 @@ export const UpdateConditionalFormats = memo(
         >
           <FormatPaintIcon />
           <span>{label}</span>
-          <span className="text-muted-foreground/60">•</span>
-          <span className="text-muted-foreground/80">{description}</span>
           {isExpanded ? (
             <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (

@@ -2903,6 +2903,7 @@ Use this tool to understand what conditional formats already exist before creati
 This tool creates, updates, or deletes conditional formatting rules in a sheet.
 Conditional formatting rules are per-sheet, so the sheet name is required.
 IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A".
+CRITICAL: When using a table column reference as the selection, the formula must reference the FIRST DATA CELL of that column (after the table name and header rows). For example, if a table starts at B2 and you target column C, the first data cell is C4, so use "C4>100".
 You can perform multiple operations (create/update/delete) in a single call.`,
     parameters: {
       type: 'object',
@@ -2935,7 +2936,7 @@ You can perform multiple operations (create/update/delete) in a single call.`,
               rule: {
                 type: ['string', 'null'],
                 description:
-                  'A formula that evaluates to true/false for each cell. Use cell references like A1 which will be evaluated relative to each cell in the selection. Examples: "A1>100", "ISBLANK(A1)", "AND(A1>=5, A1<=10)", "ISNUMBER(SEARCH(\\"hello\\", A1))". Required for create and update actions.',
+                  'A formula that evaluates to true/false for each cell. Use cell references which will be evaluated relative to each cell in the selection. IMPORTANT: When using a table column reference as the selection (e.g., "Table_Name[Column]"), the formula MUST reference the first DATA cell of that column, NOT the header cells. For example, if a table starts at B2 with a table name row and column headers, and you target the second column, the first data cell is C4, so use "C4>100" not "C1>100". Examples: "A1>100", "ISBLANK(A1)", "AND(A1>=5, A1<=10)", "ISNUMBER(SEARCH(\\"hello\\", A1))". Required for create and update actions.',
               },
               bold: {
                 type: ['boolean', 'null'],
@@ -2977,6 +2978,11 @@ This tool creates, updates, or deletes conditional formatting rules in a sheet.
 Conditional formatting rules are per-sheet, so the sheet name is required.
 
 IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 range notation like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures the formatting applies correctly to the entire column as the table grows or shrinks.
+
+CRITICAL FOR TABLE COLUMN FORMULAS: When using a table column reference as the selection, the formula MUST reference the FIRST DATA CELL of that column, NOT the header cells. Tables have a table name row and column header row before the data starts. For example:
+- If a table named "Sales" starts at B2, it has the table name at row 2, column headers at row 3, and data starts at row 4
+- If you target the second column (column C) with selection "Sales[Revenue]", the first data cell is C4
+- So your formula should use C4 as the reference (e.g., "C4>1000"), NOT C1, C2, or C3
 
 For the rule parameter, use a formula that evaluates to true/false. Common patterns:
 - Greater than: "A1>100"
