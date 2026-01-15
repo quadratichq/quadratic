@@ -73,7 +73,7 @@ test.skip('Action Visibility', async ({ page: userPage1 }) => {
 
   // First user navigates into file
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
   //--------------------------------
   // Act:
@@ -458,7 +458,7 @@ test.skip('Connection goes down in Multiplayer Session', async ({ page: userPage
 
   // First user navigates into file
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
@@ -613,7 +613,7 @@ test.skip('Make Changes while Network is off', async ({ page: userPage1 }) => {
 
   // First user navigates into file
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
   //--------------------------------
   // Act:
@@ -805,7 +805,7 @@ test.skip('Mouse Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // Move Mouse as the first user
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await navigateIntoFile(userPage1, { fileName });
 
   await navigateOnSheet(userPage1, { targetColumn: 5, targetRow: 1 });
@@ -993,7 +993,7 @@ test.skip('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   //--------------------------------
   // Switch to first user's page, assert that squares are present in Sheet3
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
   await expect(userPage1.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
@@ -1114,6 +1114,10 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
+  // Move to team files
+  await userPage1.locator(`a:has(:text-is("${fileName}")) button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
+  await userPage1.locator('[data-testid="dashboard-file-actions-move-to-team"]').click({ timeout: 60 * 1000 });
+
   // Invite second and third users to the team
   await inviteUserToTeam(userPage1, {
     email: user2Email,
@@ -1152,7 +1156,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
   // User2 can see both user1 and user3 at the top right
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   await userPage2.bringToFront();
