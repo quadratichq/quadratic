@@ -747,8 +747,8 @@ mod tests {
 
     #[test]
     fn test_table_column_selection() {
-        use crate::a1::A1Context;
         use crate::Rect;
+        use crate::a1::A1Context;
 
         // Create a context with a table at A1:B4 (header row at A2, data at A3:B4)
         let context = A1Context::test(
@@ -766,9 +766,19 @@ mod tests {
         let sheet_id = selection.sheet_id;
 
         // The first data cell of Table1[Col1] should be A3
-        let formula = parse_formula("A3 < 0", &context, crate::SheetPos { x: 1, y: 3, sheet_id }).unwrap();
-        let rule = ConditionalFormatRule::from_formula(&formula, Some(sheet_id), &context, &selection);
-        
+        let formula = parse_formula(
+            "A3 < 0",
+            &context,
+            crate::SheetPos {
+                x: 1,
+                y: 3,
+                sheet_id,
+            },
+        )
+        .unwrap();
+        let rule =
+            ConditionalFormatRule::from_formula(&formula, Some(sheet_id), &context, &selection);
+
         // Should match LessThan preset since formula cell ref (A3) matches first cell of selection
         assert!(
             matches!(rule, ConditionalFormatRule::LessThan { value: ConditionalFormatValue::Number(n) } if n == 0.0),
@@ -777,9 +787,19 @@ mod tests {
         );
 
         // Now test with mismatched cell ref (A1 instead of A3)
-        let formula = parse_formula("A1 < 0", &context, crate::SheetPos { x: 1, y: 1, sheet_id }).unwrap();
-        let rule = ConditionalFormatRule::from_formula(&formula, Some(sheet_id), &context, &selection);
-        
+        let formula = parse_formula(
+            "A1 < 0",
+            &context,
+            crate::SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+        )
+        .unwrap();
+        let rule =
+            ConditionalFormatRule::from_formula(&formula, Some(sheet_id), &context, &selection);
+
         // Should be Custom since A1 doesn't match the first data cell (A3)
         assert!(
             matches!(rule, ConditionalFormatRule::Custom { .. }),
@@ -790,8 +810,8 @@ mod tests {
 
     #[test]
     fn test_table_column2_first_cell() {
-        use crate::a1::A1Context;
         use crate::Rect;
+        use crate::a1::A1Context;
 
         // Create a table at A1:B100 with name+headers
         // Row 1: Table name (TableName)
@@ -799,15 +819,19 @@ mod tests {
         // Rows 3-100: data
         let context = A1Context::test(
             &[],
-            &[("TableName", &["Column 1", "Column 2"], Rect::test_a1("A1:B100"))],
+            &[(
+                "TableName",
+                &["Column 1", "Column 2"],
+                Rect::test_a1("A1:B100"),
+            )],
         );
 
         // Select Column 2 of the table
         let selection = A1Selection::test_a1_context("TableName[Column 2]", &context);
-        
+
         // Check what first cell is extracted
         let first_cell = ConditionalFormatRule::get_first_cell_from_selection(&selection, &context);
-        
+
         // Column 2 should be column B (x=2), first data row should be row 3 (y=3)
         // So the first cell should be B3
         assert_eq!(
@@ -843,21 +867,22 @@ mod tests {
         // - Table name row
         // - Column headers row (Column 1, Column 2)
         // - Data rows
-        
+
         // Debug: print what tables are available
         println!("A1 Context: {:?}", gc.a1_context());
-        
+
         // Select the second column - table name is "test_table"
         let selection = A1Selection::test_a1_context("test_table[Column 2]", gc.a1_context());
-        
+
         // Debug: print the selection
         println!("Selection: {:?}", selection);
-        
+
         // Check what first cell is extracted
-        let first_cell = ConditionalFormatRule::get_first_cell_from_selection(&selection, gc.a1_context());
-        
+        let first_cell =
+            ConditionalFormatRule::get_first_cell_from_selection(&selection, gc.a1_context());
+
         println!("First cell: {:?}", first_cell);
-        
+
         // The second column should be column B (x=2)
         // First data row depends on table settings
         if let Some(pos) = first_cell {
