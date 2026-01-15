@@ -93,19 +93,18 @@ export const ConnectionsNew = ({
       <div>
         <h3 className="text-sm font-semibold">Don't see the connection you need?</h3>
         <div className="mt-2">
-          <Button
-            variant="outline"
-            className="h-auto w-full flex-col items-start gap-1 p-4 text-left"
+          <button
+            className="flex w-full items-start gap-4 rounded-lg border border-border px-5 py-4 text-left hover:bg-accent"
             onClick={() => handleNavigateToCreatePotentialView('OTHER')}
           >
-            <div className="flex items-center gap-2">
-              <FeedbackIcon className="h-5 w-5" />
-              <span className="font-medium">Suggest a connection…</span>
+            <FeedbackIcon className="mt-0.5 flex-shrink-0" />
+            <div className="flex flex-col gap-1">
+              <span className="font-medium leading-none">Suggest a connection</span>
+              <span className="text-sm text-muted-foreground">
+                Let us know what you'd like to connect and we'll consider adding it.
+              </span>
             </div>
-            <span className="text-sm text-muted-foreground">
-              Let us know what data source you'd like to connect and we'll consider adding it.
-            </span>
-          </Button>
+          </button>
         </div>
       </div>
     </div>
