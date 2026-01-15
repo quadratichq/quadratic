@@ -106,4 +106,76 @@ mod tests {
 
         assert_import(&gc, sheet_dest_pos, file_name, 4, 12);
     }
+
+    #[test]
+    fn test_move_rich_text_cell() {
+        use crate::CellValue;
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a RichText cell with bold and italic spans at A1
+        let spans = vec![
+            TextSpan {
+                text: "Bold ".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            TextSpan {
+                text: "Italic ".to_string(),
+                italic: Some(true),
+                ..Default::default()
+            },
+            TextSpan::plain("Normal"),
+        ];
+        let source_pos = pos![A1];
+        let sheet_source_pos = SheetPos::from((source_pos, sheet_id));
+        gc.set_cell_rich_text(sheet_source_pos, spans.clone(), None);
+
+        // Verify the RichText cell is at A1
+        let cell_value = gc.sheet(sheet_id).cell_value(source_pos);
+        assert!(
+            matches!(cell_value, Some(CellValue::RichText(_))),
+            "Expected RichText at source position before move, got {:?}",
+            cell_value
+        );
+
+        // Move the cell from A1 to C3
+        let dest_pos = pos![C3];
+        let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
+        gc.move_cells(
+            crate::SheetRect::single_sheet_pos(sheet_source_pos),
+            sheet_dest_pos,
+            false,
+            false,
+            None,
+            false,
+        );
+
+        // Verify the source cell (A1) is now empty
+        let source_value = gc.sheet(sheet_id).cell_value(source_pos);
+        assert!(
+            source_value.is_none(),
+            "Source cell should be empty after move, got {:?}",
+            source_value
+        );
+
+        // Verify the destination cell (C3) has the RichText
+        let dest_value = gc.sheet(sheet_id).cell_value(dest_pos);
+        let Some(CellValue::RichText(moved_spans)) = dest_value else {
+            panic!(
+                "Destination cell should have RichText after move, got {:?}",
+                dest_value
+            );
+        };
+
+        // Verify the spans are preserved
+        assert_eq!(moved_spans.len(), 3);
+        assert_eq!(moved_spans[0].text, "Bold ");
+        assert_eq!(moved_spans[0].bold, Some(true));
+        assert_eq!(moved_spans[1].text, "Italic ");
+        assert_eq!(moved_spans[1].italic, Some(true));
+        assert_eq!(moved_spans[2].text, "Normal");
+    }
 }
