@@ -162,11 +162,10 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
         )}
         {!canManageBilling && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Only{' '}
+            Only the team owner can edit billing info.{' '}
             <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="underline">
-              the team owner
-            </Link>{' '}
-            can edit billing info.
+              View team members
+            </Link>
           </p>
         )}
       </ProPlan>
