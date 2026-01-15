@@ -16,7 +16,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { FilePrivateIcon, FileSharedWithMeIcon, MoreVertIcon } from '@/shared/components/Icons';
+import { MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
@@ -295,16 +295,7 @@ function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
 
   return (
     <div className={'flex items-center gap-1 rounded-md bg-accent py-0.5 pl-1 pr-1.5 text-xs text-muted-foreground'}>
-      {type === 'shared' && (
-        <>
-          <FileSharedWithMeIcon size="xxs" className="!hidden" /> Shared with me
-        </>
-      )}
-      {type === 'private' && (
-        <>
-          <FilePrivateIcon size="xxs" className="!hidden" /> Private
-        </>
-      )}
+      {type === 'shared' ? 'Shared with me' : 'Private'}
     </div>
   );
 }
