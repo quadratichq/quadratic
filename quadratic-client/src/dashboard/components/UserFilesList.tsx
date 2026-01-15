@@ -21,7 +21,7 @@ import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { useAtom } from 'jotai';
 import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router';
 import { useSetRecoilState } from 'recoil';
@@ -71,7 +71,17 @@ export function UserFilesList({
   );
 
   // We handle the file type in the URL without using the router
-  useUpdateQueryStringValueWithoutNavigation('type', filters.fileType);
+  useUpdateQueryStringValueWithoutNavigation('type', fileType);
+
+  // When we navigate away from the page, reset the file type
+  useEffect(() => {
+    return () => {
+      setFilters((prev) => ({
+        ...prev,
+        fileType: null,
+      }));
+    };
+  }, [setFilters]);
 
   // We will optimistcally render the list of files
   let filesToRender = files;
@@ -109,11 +119,11 @@ export function UserFilesList({
   }
 
   // Filter by file type
-  if (filters.fileType === 'private') {
+  if (fileType === 'private') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'private');
-  } else if (filters.fileType === 'team') {
+  } else if (fileType === 'team') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'team');
-  } else if (filters.fileType === 'shared') {
+  } else if (fileType === 'shared') {
     filesToRender = filesToRender.filter((file) => file.fileType === 'shared');
   }
 
