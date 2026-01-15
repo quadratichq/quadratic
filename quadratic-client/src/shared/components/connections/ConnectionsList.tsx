@@ -10,6 +10,7 @@ import type {
   NavigateToView,
 } from '@/shared/components/connections/Connections';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { timeAgo } from '@/shared/utils/timeAgo';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -144,7 +145,7 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo, syncedConnectionUpdatedDate }, i) => {
         const isNavigable = !(disabled || isDemo);
         const showSecondaryAction = !isApp && !disabled;
         const showIconHideDemo = !disabled && isDemo;
@@ -179,9 +180,13 @@ function ListItems({
 
                   {isDemo ? (
                     <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
-                  ) : (
+                  ) : syncedConnectionUpdatedDate !== undefined ? (
                     <time dateTime={createdDate} className="text-xs text-muted-foreground">
                       <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} createdDate={createdDate} />
+                    </time>
+                  ) : (
+                    <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                      Created {timeAgo(createdDate)}
                     </time>
                   )}
                 </div>

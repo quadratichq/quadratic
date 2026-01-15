@@ -34,6 +34,7 @@ const createBashCommandForEnv = (envVariables: EnvVariables) => {
  * @param pulumiEscEnvironmentName The Pulumi environment name to pull ENV Variables.
  * @param extraEnvVars An object containing additional environment variables.
  * @param rebuildOnEveryPulumiRun If true, a random nonce will be added to the Docker image tag to force a rebuild on every run. userDataReplaceOnChange: true must be set on the EC2 instance.
+ * @param stopTimeout Optional Docker stop timeout in seconds for graceful shutdown. If not provided, Docker's default (10s) is used.
  */
 export const runDockerImageBashScript = (
   imageRepositoryName: string,
@@ -41,6 +42,7 @@ export const runDockerImageBashScript = (
   pulumiEscEnvironmentName: string,
   extraEnvVars: EnvVariables,
   rebuildOnEveryPulumiRun: boolean = false,
+  stopTimeout?: number,
 ) => {
   const extraEnvVarsBashCommand = createBashCommandForEnv(extraEnvVars);
 
@@ -48,6 +50,11 @@ export const runDockerImageBashScript = (
   if (rebuildOnEveryPulumiRun) {
     rebuildNonce = Math.floor(Math.random() * 1000000000000);
   }
+
+  const stopTimeoutFlag =
+    stopTimeout !== undefined
+      ? `--stop-timeout ${stopTimeout} \\\n            `
+      : "";
 
   return `#!/bin/bash
 echo 'rebuildNonce: ${rebuildNonce}'
@@ -79,7 +86,7 @@ sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 sudo docker run -d \
             --name ${imageRepositoryName} \
             --restart always \
-            -p 80:80 \
+            ${stopTimeoutFlag}-p 80:80 \
             --env-file .env \
             ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 

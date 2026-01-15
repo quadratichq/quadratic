@@ -12,11 +12,15 @@ use axum::{
 use quadratic_rust_shared::{SharedError, clean_errors, storage::error::Storage as StorageError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use uuid::Uuid;
 
 pub(crate) type Result<T> = std::result::Result<T, FilesError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum FilesError {
+    #[error("Sequence number not found in API for file {0}: {1}")]
+    ApiSequenceNumberNotFound(Uuid, String),
+
     #[error("Authentication error: {0}")]
     Authentication(String),
 

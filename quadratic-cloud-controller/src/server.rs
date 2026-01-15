@@ -146,6 +146,12 @@ pub(crate) async fn serve() -> Result<()> {
     info!("Starting Worker Controller");
 
     let config = Config::new().map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+    if !config.start_server {
+        tracing::warn!("Starting server is disabled");
+        return Ok(());
+    }
+
     let state = State::new(&config)
         .await
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;

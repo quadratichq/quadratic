@@ -220,6 +220,7 @@ services:
       file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-files
     container_name: files
+    stop_grace_period: 60s
     environment:
       RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
       FILES__HOST: ${QUADRATIC_FILES_HOST}
