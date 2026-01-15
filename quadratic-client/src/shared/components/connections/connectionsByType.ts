@@ -71,7 +71,7 @@ export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
 type ConnectionTypeData<T extends ConnectionFormValues> = {
   name: string;
   Logo: typeof MysqlLogo;
-  uiCategory?: 'Databases' | 'SaaS';
+  uiCategory?: 'Databases' | 'SaaS Services';
 
   ConnectionForm: ConnectionFormComponent<T>;
   useConnectionForm: UseConnectionForm<T>;
@@ -148,14 +148,14 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
   MIXPANEL: {
     name: 'Mixpanel',
     Logo: MixpanelLogo,
-    uiCategory: 'SaaS',
+    uiCategory: 'SaaS Services',
     ConnectionForm: Mixpanel.ConnectionForm,
     useConnectionForm: Mixpanel.useConnectionForm,
   },
   GOOGLE_ANALYTICS: {
     name: 'Google Analytics',
     Logo: GoogleAnalyticsLogo,
-    uiCategory: 'SaaS',
+    uiCategory: 'SaaS Services',
     ConnectionForm: GoogleAnalytics.ConnectionForm,
     useConnectionForm: GoogleAnalytics.useConnectionForm,
   },

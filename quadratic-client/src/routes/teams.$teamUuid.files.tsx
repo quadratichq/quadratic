@@ -8,6 +8,8 @@ import { useMemo } from 'react';
 import { useLoaderData, type LoaderFunctionArgs } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // TODO: (jimniels) we might want to just put this into the default dashboard
+  // loader data rather than loading from another endpoint since it's all combined now
   const files = await apiClient.files.list({ shared: 'with-me' });
   const sharedWithMeFiles = files.map(
     ({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail, hasScheduledTasks }) => ({
