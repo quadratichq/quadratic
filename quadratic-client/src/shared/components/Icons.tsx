@@ -8,8 +8,8 @@ import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
 const sizes = {
-  xxs: '12',
-  xs: '16',
+  // xxs: '12',
+  // xs: '16',
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
