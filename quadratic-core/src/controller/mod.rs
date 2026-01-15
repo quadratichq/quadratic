@@ -181,6 +181,7 @@ impl GridController {
         }
     }
 
+    #[function_timer::function_timer]
     pub(crate) fn update_cells_accessed_cache(
         &mut self,
         sheet_pos: SheetPos,

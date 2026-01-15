@@ -9,6 +9,7 @@ use crate::error::{FilesError, Result};
 use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
 use quadratic_rust_shared::storage::StorageType;
+use quadratic_rust_shared::synced::plaid::client::PlaidEnvironment;
 use serde::Deserialize;
 
 #[allow(dead_code)]
@@ -38,12 +39,19 @@ pub(crate) struct Config {
     // StorageType::S3
     pub(crate) aws_s3_region: Option<String>,
     pub(crate) aws_s3_bucket_name: Option<String>,
+    pub(crate) aws_s3_synced_data_bucket_name: Option<String>,
     pub(crate) aws_s3_access_key_id: Option<String>,
     pub(crate) aws_s3_secret_access_key: Option<String>,
 
     // StorageType::FileSystem
     pub(crate) storage_dir: Option<String>,
+    pub(crate) synced_data_storage_dir: Option<String>,
     pub(crate) storage_encryption_keys: Option<Vec<String>>,
+
+    // Plaid
+    pub(crate) plaid_client_id: String,
+    pub(crate) plaid_secret: String,
+    pub(crate) plaid_environment: PlaidEnvironment,
 }
 
 /// Load the global configuration from the environment into Config.

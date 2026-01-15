@@ -359,7 +359,10 @@ impl GridController {
         force_table_bounds: bool,
     ) -> Vec<Operation> {
         let mut ops = self.delete_cells_operations(selection, force_table_bounds);
-        ops.extend(self.clear_format_borders_operations(selection, true));
+        // Skip RichText clearing because the cells are being deleted anyway.
+        // If we don't skip, the RichText clearing operations would overwrite
+        // the blank values set by delete_cells_operations.
+        ops.extend(self.clear_format_borders_operations(selection, true, true));
         ops
     }
 

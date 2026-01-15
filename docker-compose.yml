@@ -157,6 +157,9 @@ services:
       QUADRATIC_FILE_URI: ${QUADRATIC_FILES_URL_INTERNAL}
       QUADRATIC_FILE_URI_PUBLIC: ${QUADRATIC_FILES_URL_EXTERNAL}
       LICENSE_KEY: ${LICENSE_KEY}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
+      PLAID_SECRET: ${PLAID_SECRET}
+      PLAID_ENVIRONMENT: ${PLAID_ENVIRONMENT}
     restart: "always"
     ports:
       - "8000:8000"
@@ -217,6 +220,7 @@ services:
       file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-files
     container_name: files
+    stop_grace_period: 60s
     environment:
       RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
       FILES__HOST: ${QUADRATIC_FILES_HOST}
@@ -279,16 +283,17 @@ services:
       CONNECTION__STATIC_IPS: ${QUADRATIC_CONNECTION_STATIC_IPS}
       CONNECTION__STORAGE_TYPE: ${STORAGE_TYPE}
       CONNECTION__AWS_S3_REGION: ${AWS_S3_REGION}
-      CONNECTION__AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
+      CONNECTION__AWS_S3_SYNCED_DATA_BUCKET_NAME: ${AWS_S3_SYNCED_DATA_BUCKET_NAME}
       CONNECTION__AWS_S3_ACCESS_KEY_ID: ${AWS_S3_ACCESS_KEY_ID}
       CONNECTION__AWS_S3_SECRET_ACCESS_KEY: ${AWS_S3_SECRET_ACCESS_KEY}
       CONNECTION__STORAGE_DIR: ${STORAGE_DIR}
+      CONNECTION__SYNCED_DATA_STORAGE_DIR: ${SYNCED_DATA_STORAGE_DIR:-/synced-data}
       CONNECTION__STORAGE_ENCRYPTION_KEYS: ${ENCRYPTION_KEY}
     restart: "always"
     ports:
       - "3003:3003"
     volumes:
-      - ./docker/file-storage-synced-data:/file-storage-synced-data:rw
+      - ./docker/synced-data:/synced-data:rw
     depends_on:
       quadratic-client:
         condition: service_healthy

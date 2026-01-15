@@ -702,6 +702,15 @@ export const ApiSchemas = {
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
   }),
+
+  /**
+   * ===========================================================================
+   * URL Metadata
+   * ===========================================================================
+   */
+  '/v0/url-metadata.GET.response': z.object({
+    title: z.string().optional(),
+  }),
 };
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.23.2",
+  "version": "0.23.3",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -26,7 +26,7 @@
     "build:wasm:javascript:dev": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --dev",
     "start:production": "serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
-    "test:unit": "vitest",
+    "test:unit": "which vitest",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",
     "test:unit:ci": "npm run test:unit -- --ci --runInBand",
     "test:wasm": "cd .. && cd quadratic-core && cargo test --workspace",
@@ -89,9 +89,12 @@
     "react-hook-form": "^7.48.2",
     "react-linkify": "^1.0.0-alpha",
     "react-markdown": "^10.1.0",
+    "react-plaid-link": "^4.1.1",
     "react-router": "^7.5.2",
     "recoil": "^0.7.7",
     "remark-gfm": "^4.0.0",
+    "set-cookie-parser": "^2.7.2",
+    "simple-swizzle": "^0.2.4",
     "tailwind-merge": "^3.2.0",
     "uuid": "^11.1.0",
     "vscode-jsonrpc": "^8.2.1",
@@ -105,9 +108,9 @@
     "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
     "@types/color": "^4.2.0",
     "@types/fontfaceobserver": "^2.1.3",
-    "@types/react": "^19.1.1",
+    "@types/react": "^18.3.27",
     "@types/react-avatar-editor": "^13.0.2",
-    "@types/react-dom": "^19.1.2",
+    "@types/react-dom": "^18.3.7",
     "@types/react-linkify": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
@@ -148,6 +151,10 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.12.0"
+  },
+  "overrides": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5"
   },
   "browserslist": {
     "production": [

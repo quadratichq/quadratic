@@ -35,6 +35,7 @@ export const ConnectionFormSemantic = ({ form }: ConnectionFormSemanticProps) =>
       <div className="flex items-center gap-2 py-1">
         <Switch
           id="semantic-description-checkbox"
+          data-testid="ai-checkbox"
           checked={checked}
           onCheckedChange={(checked) => setChecked(!!checked)}
           className=""

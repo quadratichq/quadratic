@@ -14,7 +14,7 @@ pub mod file_system;
 pub mod object_store;
 pub mod s3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StorageConfig {
     S3(S3Config),
     FileSystem(FileSystemConfig),

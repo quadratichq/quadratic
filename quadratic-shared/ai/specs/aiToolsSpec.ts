@@ -271,9 +271,15 @@ export const AIToolsArgsSchema = {
     connection_id: z.string().uuid(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    code_cell_position: stringSchema,
-    formula_string: stringSchema,
+    formulas: z
+      .array(
+        z.object({
+          sheet_name: stringNullableOptionalSchema,
+          code_cell_position: stringSchema,
+          formula_string: stringSchema,
+        })
+      )
+      .min(1),
   }),
   [AITool.SetCellValues]: z.object({
     sheet_name: stringNullableOptionalSchema,
@@ -325,22 +331,28 @@ export const AIToolsArgsSchema = {
     selection: z.string(),
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    selection: stringSchema,
-    bold: booleanNullableOptionalSchema,
-    italic: booleanNullableOptionalSchema,
-    underline: booleanNullableOptionalSchema,
-    strike_through: booleanNullableOptionalSchema,
-    text_color: stringNullableOptionalSchema,
-    fill_color: stringNullableOptionalSchema,
-    align: stringNullableOptionalSchema,
-    vertical_align: stringNullableOptionalSchema,
-    wrap: stringNullableOptionalSchema,
-    numeric_commas: booleanNullableOptionalSchema,
-    number_type: stringNullableOptionalSchema,
-    currency_symbol: stringNullableOptionalSchema,
-    date_time: stringNullableOptionalSchema,
-    font_size: z.number().nullable().optional(),
+    formats: z
+      .array(
+        z.object({
+          sheet_name: stringNullableOptionalSchema,
+          selection: stringSchema,
+          bold: booleanNullableOptionalSchema,
+          italic: booleanNullableOptionalSchema,
+          underline: booleanNullableOptionalSchema,
+          strike_through: booleanNullableOptionalSchema,
+          text_color: stringNullableOptionalSchema,
+          fill_color: stringNullableOptionalSchema,
+          align: stringNullableOptionalSchema,
+          vertical_align: stringNullableOptionalSchema,
+          wrap: stringNullableOptionalSchema,
+          numeric_commas: booleanNullableOptionalSchema,
+          number_type: stringNullableOptionalSchema,
+          currency_symbol: stringNullableOptionalSchema,
+          date_time: stringNullableOptionalSchema,
+          font_size: z.number().nullable().optional(),
+        })
+      )
+      .min(1),
   }),
   [AITool.GetTextFormats]: z.object({
     sheet_name: stringNullableOptionalSchema,
@@ -1096,11 +1108,9 @@ SQL code cell placement instructions:\n
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Sets the value of a formula cell (or multiple formula cells in a range) and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
-You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
+Sets the value of one or more formula cells and runs them. Use the formulas array to set multiple different formulas in a single call, each with its own sheet, cell position, and formula string.\n
+You should use the set_formula_cell_value function to set formula cell values. Use set_formula_cell_value function instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add static data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to formulas.\n
-Provide a name for the output of the formula cell. The name cannot contain spaces or special characters (but _ is allowed).\n
-Note: we only rename the formula cell if its new. Otherwise we keep the old name.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in formula cells.\n
 Do not attempt to add formulas to data tables, it will result in an error.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
@@ -1109,40 +1119,54 @@ When using a range, cell references in the formula will automatically adjust rel
     parameters: {
       type: 'object',
       properties: {
-        sheet_name: {
-          type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
-        },
-        code_cell_position: {
-          type: 'string',
-          description:
-            'The position of the formula cell(s) in the current open sheet, in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10") or a collection (e.g., "A1,A2:B2,A3").',
-        },
-        formula_string: {
-          type: 'string',
-          description:
-            'The formula which will run in the cell(s). If code_cell_position is a range or collection, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
+        formulas: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              sheet_name: {
+                type: 'string',
+                description: 'The sheet name of the sheet where the formula will be placed, as defined in the context',
+              },
+              code_cell_position: {
+                type: 'string',
+                description:
+                  'The position of the formula cell(s) in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10") or a collection (e.g., "A1,A2:B2,A3").',
+              },
+              formula_string: {
+                type: 'string',
+                description:
+                  'The formula which will run in the cell(s). If code_cell_position is a range or collection, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
+              },
+            },
+            required: ['code_cell_position', 'formula_string'],
+            additionalProperties: false,
+          },
         },
       },
-      required: ['sheet_name', 'code_cell_position', 'formula_string'],
+      required: ['formulas'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
     prompt: `
-You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
+You should use the set_formula_cell_value function to set formula cell values. Use set_formula_cell_value instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
-set_formula_cell_value function requires formula_string and the cell position (single cell or range in a1 notation).\n
+set_formula_cell_value function requires an array of formulas, each with a sheet_name, formula_string, and code_cell_position (single cell or range in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
+Using the formulas array:\n
+- You can set multiple different formulas at once by providing multiple objects in the formulas array.\n
+- Each object requires a sheet_name, code_cell_position, and formula_string.\n
+- Example: formulas: [{ sheet_name: "Sheet1", code_cell_position: "A1", formula_string: "SUM(B1:B10)" }, { sheet_name: "Sheet1", code_cell_position: "A2", formula_string: "AVERAGE(B1:B10)" }]\n
+
 Multiple formula cells with relative referencing:\n
-- When setting multiple formulas at once, you can use a range for code_cell_position (e.g., "A1:A10").\n
+- Within each formula object, you can use a range for code_cell_position (e.g., "A1:A10") to apply the same formula pattern.\n
 - Cell references in the formula will automatically adjust relatively for each cell, just like when you copy and paste a formula in a spreadsheet.\n
 - Example: If you apply formula "SUM(A1)" to range B1:B3, it becomes "SUM(A1)" in B1, "SUM(A2)" in B2, and "SUM(A3)" in B3.\n
 - To keep a reference fixed across all cells, use absolute references with $ (e.g., "$A$1" stays as "$A$1" in all cells).\n
 - Mixed references are supported: "$A1" keeps column A fixed but row adjusts, "A$1" keeps row 1 fixed but column adjusts.\n
-- Use ranges when you need to apply a formula pattern to multiple cells, such as calculations down a column or across a row.\n
 
 Formulas placement instructions:\n
 - The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
@@ -1317,114 +1341,107 @@ If too large, the results will include page information:\n
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool sets the text formats of a selection of cells on a specified sheet.\n
-There must be at least one non-null format to set.\n
+This tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
+Each format entry must have at least one non-null format to set.\n
 You can set bold, italic, underline, strike through, text/fill colors, alignment, wrapping, numeric formats, date formats, and font size.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 `,
     parameters: {
       type: 'object',
       properties: {
-        sheet_name: {
-          type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
-        },
-        selection: {
-          type: 'string',
-          description: `
-The selection of cells to set the formats of, in a1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data.\n
-When you are formatting multiple, non-contiguous cells, or cells not in a rectangle, you may use a list of ranges in A1 notation separated by commas. For example, "A1,B2:D5,E20".`,
-        },
-        bold: {
-          type: ['boolean', 'null'],
-          description: 'Whether to set the cell to bold. Set to null to remove bold formatting.',
-        },
-        italic: {
-          type: ['boolean', 'null'],
-          description: 'Whether to set the cell to italic. Set to null to remove italic formatting.',
-        },
-        underline: {
-          type: ['boolean', 'null'],
-          description: 'Whether to set the cell to underline. Set to null to remove underline formatting.',
-        },
-        strike_through: {
-          type: ['boolean', 'null'],
-          description: 'Whether to set the cell to strike through. Set to null to remove strike through formatting.',
-        },
-        text_color: {
-          type: ['string', 'null'],
-          description:
-            'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
-        },
-        fill_color: {
-          type: ['string', 'null'],
-          description:
-            'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
-        },
-        align: {
-          type: ['string', 'null'],
-          description:
-            'The horizontal alignment of the text, this can be one of "left", "center", "right". Set to null to remove alignment formatting.',
-        },
-        vertical_align: {
-          type: ['string', 'null'],
-          description:
-            'The vertical alignment of the text, this can be one of "top", "middle", "bottom". Set to null to remove vertical alignment formatting.',
-        },
-        wrap: {
-          type: ['string', 'null'],
-          description:
-            'The wrapping of the text, this can be one of "wrap", "clip", "overflow". Set to null to remove wrap formatting.',
-        },
-        numeric_commas: {
-          type: ['boolean', 'null'],
-          description:
-            'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas. Set to null to remove comma formatting.',
-        },
-        number_type: {
-          type: ['string', 'null'],
-          description:
-            'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol. Set to null to remove number type formatting.',
-        },
-        currency_symbol: {
-          type: ['string', 'null'],
-          description:
-            'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR. Set to null to remove currency symbol.',
-        },
-        date_time: {
-          type: ['string', 'null'],
-          description:
-            'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y". Set to null to remove date/time formatting.',
-        },
-        font_size: {
-          type: ['number', 'null'],
-          description:
-            'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting. This field is required and must always be included in the tool call.',
+        formats: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              sheet_name: {
+                type: 'string',
+                description: 'The sheet name of the current sheet as defined in the context',
+              },
+              selection: {
+                type: 'string',
+                description: `The selection of cells to set the formats of, in A1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data. When formatting multiple non-contiguous cells, use comma-separated ranges (e.g., "A1,B2:D5,E20").`,
+              },
+              bold: {
+                type: ['boolean', 'null'],
+                description: 'Whether to set the cell to bold. Set to null to remove bold formatting.',
+              },
+              italic: {
+                type: ['boolean', 'null'],
+                description: 'Whether to set the cell to italic. Set to null to remove italic formatting.',
+              },
+              underline: {
+                type: ['boolean', 'null'],
+                description: 'Whether to set the cell to underline. Set to null to remove underline formatting.',
+              },
+              strike_through: {
+                type: ['boolean', 'null'],
+                description:
+                  'Whether to set the cell to strike through. Set to null to remove strike through formatting.',
+              },
+              text_color: {
+                type: ['string', 'null'],
+                description:
+                  'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
+              },
+              fill_color: {
+                type: ['string', 'null'],
+                description:
+                  'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
+              },
+              align: {
+                type: ['string', 'null'],
+                description:
+                  'The horizontal alignment of the text, this can be one of "left", "center", "right". Set to null to remove alignment formatting.',
+              },
+              vertical_align: {
+                type: ['string', 'null'],
+                description:
+                  'The vertical alignment of the text, this can be one of "top", "middle", "bottom". Set to null to remove vertical alignment formatting.',
+              },
+              wrap: {
+                type: ['string', 'null'],
+                description:
+                  'The wrapping of the text, this can be one of "wrap", "clip", "overflow". Set to null to remove wrap formatting.',
+              },
+              numeric_commas: {
+                type: ['boolean', 'null'],
+                description:
+                  'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas. Set to null to remove comma formatting.',
+              },
+              number_type: {
+                type: ['string', 'null'],
+                description:
+                  'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol. Set to null to remove number type formatting.',
+              },
+              currency_symbol: {
+                type: ['string', 'null'],
+                description:
+                  'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR. Set to null to remove currency symbol.',
+              },
+              date_time: {
+                type: ['string', 'null'],
+                description:
+                  'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y". Set to null to remove date/time formatting.',
+              },
+              font_size: {
+                type: ['number', 'null'],
+                description:
+                  'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
+              },
+            },
+            required: ['selection'],
+            additionalProperties: false,
+          },
         },
       },
-      required: [
-        'sheet_name',
-        'selection',
-        'bold',
-        'italic',
-        'underline',
-        'strike_through',
-        'text_color',
-        'fill_color',
-        'align',
-        'vertical_align',
-        'wrap',
-        'numeric_commas',
-        'number_type',
-        'currency_symbol',
-        'date_time',
-        'font_size',
-      ],
+      required: ['formats'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
-    prompt: `The set_text_formats tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
-Here are the formats you can set:\n
+    prompt: `The set_text_formats tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
+Each format entry requires a selection and at least one format property to set.\n
+Here are the formats you can set in each entry:\n
 - bold, italics, underline, or strike through\n
 - text color and fill color using hex format, for example, #FF0000 for red. To remove colors, set to an empty string.\n
 - horizontal alignment, this can be one of "left", "center", "right"\n
@@ -1437,7 +1454,7 @@ Here are the formats you can set:\n
 - font_size, the size of the font in points (default is 10)\n
 To clear/remove a format, set the value to null (or empty string for colors). Omit fields you don't want to change.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
-There must be at least one format to set.\n
+Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {

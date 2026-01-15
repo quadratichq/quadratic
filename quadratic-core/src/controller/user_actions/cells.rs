@@ -1,5 +1,9 @@
+use crate::cell_values::CellValues;
+use crate::cellvalue::TextSpan;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::values::CellValue;
 use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
@@ -70,6 +74,19 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, is_ai);
     }
 
+    /// Starts a transaction to set a RichText value in a cell from a vector of TextSpans.
+    pub fn set_cell_rich_text(
+        &mut self,
+        sheet_pos: SheetPos,
+        spans: Vec<TextSpan>,
+        cursor: Option<String>,
+    ) {
+        let cell_value = CellValue::RichText(spans);
+        let values = CellValues::from(cell_value);
+        let ops = vec![Operation::SetCellValues { sheet_pos, values }];
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, false);
+    }
+
     /// Starts a transaction to clear formatting in a given rect.
     pub fn clear_formatting(
         &mut self,
@@ -77,7 +94,7 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        let ops = self.clear_format_borders_operations(selection, false);
+        let ops = self.clear_format_borders_operations(selection, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
@@ -96,7 +113,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Duration, Pos, Rect, SheetPos,
+        CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
@@ -920,29 +937,145 @@ mod test {
     }
 
     #[test]
-    fn test_set_cell_value_5s() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
+    fn test_set_cell_rich_text() {
+        use crate::cellvalue::TextSpan;
 
-        gc.set_cell_value(pos![sheet_id!A1], "5s".to_string(), None, false);
-        assert_cell_value(
-            &gc,
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
             sheet_id,
-            1,
-            1,
-            CellValue::Duration(Duration::from_seconds(5.0)),
+        };
+
+        // Set rich text with hyperlink
+        let spans = vec![
+            TextSpan::plain("Visit "),
+            TextSpan::link("Example", "https://example.com"),
+            TextSpan::plain(" for more info."),
+        ];
+        gc.set_cell_rich_text(sheet_pos, spans.clone(), None);
+
+        // Verify the cell value is RichText
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
+
+        if let Some(CellValue::RichText(stored_spans)) = cell_value {
+            assert_eq!(stored_spans.len(), 3);
+            assert_eq!(stored_spans[0].text, "Visit ");
+            assert!(stored_spans[0].link.is_none());
+            assert_eq!(stored_spans[1].text, "Example");
+            assert_eq!(
+                stored_spans[1].link,
+                Some("https://example.com".to_string())
+            );
+            assert_eq!(stored_spans[2].text, " for more info.");
+        }
+
+        // Test undo
+        gc.undo(1, None, false);
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert_eq!(cell_value, None);
+
+        // Test redo
+        gc.redo(1, None, false);
+        let cell_value = gc.sheet(sheet_id).display_value(sheet_pos.into());
+        assert!(matches!(cell_value, Some(CellValue::RichText(_))));
+    }
+
+    #[test]
+    fn test_delete_cells_richtext() {
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        // Create a RichText cell with bold and italic spans
+        let spans = vec![
+            TextSpan {
+                text: "Bold ".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            TextSpan {
+                text: "Italic".to_string(),
+                italic: Some(true),
+                ..Default::default()
+            },
+        ];
+        gc.set_cell_rich_text(sheet_pos, spans, None);
+
+        // Verify the cell is RichText
+        let cell_value = gc.sheet(sheet_id).cell_value(sheet_pos.into());
+        assert!(
+            matches!(cell_value, Some(CellValue::RichText(_))),
+            "Expected RichText before delete, got {:?}",
+            cell_value
         );
 
-        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
+        // Delete the cell using delete_cells (values only, no format clearing)
+        let selection = A1Selection::from_single_cell(sheet_pos);
+        gc.delete_cells(&selection, None, false);
 
-        let gc = test_export_and_import(&gc);
-        assert_cell_value(
-            &gc,
-            sheet_id,
-            1,
-            1,
-            CellValue::Duration(Duration::from_seconds(5.0)),
+        // Verify the cell is now empty
+        let cell_value = gc.sheet(sheet_id).cell_value(sheet_pos.into());
+        assert!(
+            cell_value.is_none(),
+            "Cell should be empty after delete_cells, got {:?}",
+            cell_value
         );
-        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
+    }
+
+    #[test]
+    fn test_delete_values_and_formatting_richtext() {
+        use crate::cellvalue::TextSpan;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        // Create a RichText cell with bold and italic spans
+        let spans = vec![
+            TextSpan {
+                text: "Bold ".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            TextSpan {
+                text: "Italic".to_string(),
+                italic: Some(true),
+                ..Default::default()
+            },
+        ];
+        gc.set_cell_rich_text(sheet_pos, spans, None);
+
+        // Verify the cell is RichText
+        let cell_value = gc.sheet(sheet_id).cell_value(sheet_pos.into());
+        assert!(
+            matches!(cell_value, Some(CellValue::RichText(_))),
+            "Expected RichText before delete, got {:?}",
+            cell_value
+        );
+
+        // Delete the cell using delete_values_and_formatting
+        let selection = A1Selection::from_single_cell(sheet_pos);
+        gc.delete_values_and_formatting(&selection, None, false);
+
+        // Verify the cell is now empty
+        let cell_value = gc.sheet(sheet_id).cell_value(sheet_pos.into());
+        assert!(
+            cell_value.is_none(),
+            "Cell should be empty after delete_values_and_formatting, got {:?}",
+            cell_value
+        );
     }
 }

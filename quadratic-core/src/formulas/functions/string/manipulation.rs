@@ -1,0 +1,956 @@
+//! String manipulation functions (concat, substring, case, replace).
+
+use super::*;
+
+pub fn get_functions() -> Vec<FormulaFunction> {
+    vec![
+        // Concatenation
+        formula_fn!(
+            /// Converts an array of values to a string.
+            ///
+            /// If `format` is 0 or omitted, returns a human-readable
+            /// representation such as `Apple, banana, 42, hello, world!`. If
+            /// `format` is 1, returns a machine-readable representation in
+            /// valid formula syntax such as `{"Apple", "banana", 42, "Hello,
+            /// world!"}`. If `format` is any other value, returns an error.
+            #[examples(
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"})",
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"}, 1)"
+            )]
+            fn ARRAYTOTEXT(array: Array, format: (Option<Spanned<i64>>)) {
+                match format {
+                    Some(Spanned { inner: 0, .. }) | None => array
+                        .cell_values_slice()
+                        .iter()
+                        .map(|v| v.to_display())
+                        .join(", "),
+                    Some(Spanned { inner: 1, .. }) => array.repr(),
+                    Some(Spanned { span, .. }) => {
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Same as `CONCAT`, but kept for compatibility.
+            #[examples("CONCATENATE(\"Hello, \", C0, \"!\")")]
+            fn CONCATENATE(strings: (Iter<String>)) {
+                strings.try_fold(String::new(), |a, b| Ok(a + &b?))
+            }
+        ),
+        formula_fn!(
+            /// [Concatenates](https://en.wikipedia.org/wiki/Concatenation) all
+            /// values as strings.
+            ///
+            /// `&` can also be used to concatenate text.
+            #[examples("CONCAT(\"Hello, \", C0, \"!\")", "\"Hello, \" & C0 & \"!\"")]
+            fn CONCAT(strings: (Iter<String>)) {
+                strings.try_fold(String::new(), |a, b| Ok(a + &b?))
+            }
+        ),
+        // Substrings
+        formula_fn!(
+            /// Returns the first `char_count` characters from the beginning of
+            /// the string `s`.
+            ///
+            /// Returns an error if `char_count` is less than 0.
+            ///
+            /// If `char_count` is omitted, it is assumed to be 1.
+            ///
+            /// If `char_count` is greater than the number of characters in `s`,
+            /// then the entire string is returned.
+            #[examples(
+                "LEFT(\"Hello, world!\") = \"H\"",
+                "LEFT(\"Hello, world!\", 6) = \"Hello,\"",
+                "LEFT(\"抱歉，我不懂普通话\") = \"抱\"",
+                "LEFT(\"抱歉，我不懂普通话\", 6) = \"抱歉，我不懂\""
+            )]
+            #[zip_map]
+            fn LEFT([s]: String, [char_count]: (Option<Spanned<i64>>)) {
+                let char_count = char_count.map_or(Ok(1), try_i64_to_usize)?;
+                s.chars().take(char_count).collect::<String>()
+            }
+        ),
+        formula_fn!(
+            /// Returns the first `byte_count` bytes from the beginning of the
+            /// string `s`, encoded using UTF-8.
+            ///
+            /// Returns an error if `byte_count` is less than 0.
+            ///
+            /// If `byte_count` is omitted, it is assumed to be 1. If
+            /// `byte_count` is greater than the number of bytes in `s`, then
+            /// the entire string is returned.
+            ///
+            /// If the string would be split in the middle of a character, then
+            /// `byte_count` is rounded down to the previous character boundary
+            /// so the the returned string takes at most `byte_count` bytes.
+            #[examples(
+                "LEFTB(\"Hello, world!\") = \"H\"",
+                "LEFTB(\"Hello, world!\", 6) = \"Hello,\"",
+                "LEFTB(\"抱歉，我不懂普通话\") = \"\"",
+                "LEFTB(\"抱歉，我不懂普通话\", 6) = \"抱歉\"",
+                "LEFTB(\"抱歉，我不懂普通话\", 8) = \"抱歉\""
+            )]
+            #[zip_map]
+            fn LEFTB([s]: String, [byte_count]: (Option<Spanned<i64>>)) {
+                let byte_count = byte_count.map_or(Ok(1), try_i64_to_usize)?;
+                s[..floor_char_boundary(&s, byte_count)].to_owned()
+            }
+        ),
+        formula_fn!(
+            /// Returns the last `char_count` characters from the end of the
+            /// string `s`.
+            ///
+            /// Returns an error if `char_count` is less than 0.
+            ///
+            /// If `char_count` is omitted, it is assumed to be 1.
+            ///
+            /// If `char_count` is greater than the number of characters in `s`,
+            /// then the entire string is returned.
+            #[examples(
+                "RIGHT(\"Hello, world!\") = \"!\"",
+                "RIGHT(\"Hello, world!\", 6) = \"world!\"",
+                "RIGHT(\"抱歉，我不懂普通话\") = \"话\"",
+                "RIGHT(\"抱歉，我不懂普通话\", 6) = \"我不懂普通话\""
+            )]
+            #[zip_map]
+            fn RIGHT([s]: String, [char_count]: (Option<Spanned<i64>>)) {
+                let char_count = char_count.map_or(Ok(1), try_i64_to_usize)?;
+                if char_count == 0 {
+                    String::new()
+                } else {
+                    match s.char_indices().nth_back(char_count - 1) {
+                        Some((i, _)) => s[i..].to_owned(),
+                        None => s,
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the last `byte_count` bytes from the end of the string
+            /// `s`, encoded using UTF-8.
+            ///
+            /// Returns an error if `byte_count` is less than 0.
+            ///
+            /// If `byte_count` is omitted, it is assumed to be 1.
+            ///
+            /// If `byte_count` is greater than the number of bytes in `s`, then
+            /// the entire string is returned.
+            ///
+            /// If the string would be split in the middle of a character, then
+            /// `byte_count` is rounded down to the next character boundary so
+            /// that the returned string takes at most `byte_count` bytes.
+            #[examples(
+                "RIGHTB(\"Hello, world!\") = \"!\"",
+                "RIGHTB(\"Hello, world!\", 6) = \"world!\"",
+                "RIGHTB(\"抱歉，我不懂普通话\") = \"\"",
+                "RIGHTB(\"抱歉，我不懂普通话\", 6) = \"通话\"",
+                "RIGHTB(\"抱歉，我不懂普通话\", 7) = \"通话\""
+            )]
+            #[zip_map]
+            fn RIGHTB([s]: String, [byte_count]: (Option<Spanned<i64>>)) {
+                let byte_count = byte_count.map_or(Ok(1), try_i64_to_usize)?;
+                let byte_index = s.len().saturating_sub(byte_count);
+                s[ceil_char_boundary(&s, byte_index)..].to_owned()
+            }
+        ),
+        formula_fn!(
+            /// Returns the substring of a string `s` starting at the
+            /// `start_char`th character and with a length of `char_count`.
+            ///
+            /// Returns an error if `start_char` is less than 1 or if
+            /// `char_count` is less than 0.
+            ///
+            /// If `start_char` is past the end of the string, returns an empty
+            /// string. If `start_char + char_count` is past the end of the
+            /// string, returns the rest of the string starting at `start_char`.
+            #[examples(
+                "MID(\"Hello, world!\", 4, 6) = \"lo, wo\"",
+                "MID(\"Hello, world!\", 1, 5) = \"Hello\"",
+                "MID(\"抱歉，我不懂普通话\", 4, 4) = \"我不懂普\""
+            )]
+            #[zip_map]
+            fn MID([s]: String, [start_char]: (Spanned<i64>), [char_count]: (Spanned<i64>)) {
+                let start = try_i64_minus_1_to_usize(start_char)?;
+                let len = try_i64_to_usize(char_count)?;
+                s.chars().skip(start).take(len).collect::<String>()
+            }
+        ),
+        formula_fn!(
+            /// Returns the substring of a string `s` starting at the
+            /// `start_byte`th byte and with a length of `byte_count` bytes,
+            /// encoded using UTF-8.
+            ///
+            /// Returns an error if `start_byte` is less than 1 or if
+            /// `byte_count` is less than 0.
+            ///
+            /// If `start_byte` is past the end of the string, returns an empty
+            /// string. If `start_byte + byte_count` is past the end of the
+            /// string, returns the rest of the string starting at `start_byte`.
+            ///
+            /// If the string would be split in the middle of a character, then
+            /// `start_byte` is rounded up to the next character boundary and
+            /// `byte_count` is rounded down to the previous character boundary
+            /// so that the returned string takes at most `byte_count` bytes.
+            #[examples(
+                "MIDB(\"Hello, world!\", 4, 6) = \"lo, wo\"",
+                "MIDB(\"Hello, world!\", 1, 5) = \"Hello\"",
+                "MIDB(\"抱歉，我不懂普通话\", 10, 12) = \"我不懂普\"",
+                "MIDB(\"抱歉，我不懂普通话\", 8, 16) = \"我不懂普\""
+            )]
+            #[zip_map]
+            fn MIDB([s]: String, [start_byte]: (Spanned<i64>), [byte_count]: (Spanned<i64>)) {
+                let start = try_i64_minus_1_to_usize(start_byte)?;
+                let end = start.saturating_add(try_i64_to_usize(byte_count)?);
+                s[ceil_char_boundary(&s, start)..floor_char_boundary(&s, end)].to_owned()
+            }
+        ),
+        // Fixed substitutions
+        formula_fn!(
+            /// Removes nonprintable [ASCII] characters 0-31 (0x00-0x1F) from a
+            /// string. This removes tabs and newlines, but not spaces.
+            ///
+            /// [ASCII]: https://en.wikipedia.org/wiki/ASCII
+            #[examples("CLEAN(CHAR(9) & \"(only the parenthetical will survive)\" & CHAR(10))")]
+            #[zip_map]
+            fn CLEAN([s]: String) {
+                s.chars().filter(|&c| c as u64 >= 0x20).collect::<String>()
+            }
+        ),
+        formula_fn!(
+            /// Removes spaces from the beginning and end of a string `s`, and
+            /// replaces each run of consecutive space within the string with a
+            /// single space.
+            ///
+            /// [Other forms of whitespace][whitespace], including tabs and
+            /// newlines, are preserved.
+            ///
+            /// [whitespace]: https://en.wikipedia.org/wiki/Whitespace_character
+            #[examples("TRIM(\"    a    b    c    \")=\"a b c\"")]
+            #[zip_map]
+            fn TRIM([s]: String) {
+                let mut allow_next_space = false;
+                s.trim_end_matches(' ')
+                    .chars()
+                    .filter(|&c| {
+                        let is_space = c == ' ';
+                        let keep = if is_space { allow_next_space } else { true };
+                        allow_next_space = !is_space;
+                        keep
+                    })
+                    .collect::<String>()
+            }
+        ),
+        formula_fn!(
+            /// Returns the lowercase equivalent of a string.
+            #[examples(
+                "LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\""
+            )]
+            #[zip_map]
+            fn LOWER([s]: String) {
+                s.to_lowercase()
+            }
+        ),
+        formula_fn!(
+            /// Returns the uppercase equivalent of a string.
+            #[examples("UPPER(\"tschüß, my friend\") = \"TSCHÜSS, MY FRIEND\"")]
+            #[zip_map]
+            fn UPPER([s]: String) {
+                s.to_uppercase()
+            }
+        ),
+        formula_fn!(
+            /// Capitalizes letters that do not have another letter before them,
+            /// and lowercases the rest.
+            #[examples(
+                "PROPER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"Ὀδυσσεύς Is My Favorite Character!\""
+            )]
+            #[zip_map]
+            fn PROPER([s]: String) {
+                let mut last_char = '\0';
+                let mut ret = String::new();
+                for c in s.to_lowercase().chars() {
+                    if last_char.is_alphabetic() {
+                        ret.push(c);
+                    } else {
+                        match unicode_case_mapping::to_titlecase(c) {
+                            [0, 0, 0] => ret.push(c),
+                            char_seq => ret.extend(
+                                char_seq
+                                    .into_iter()
+                                    .filter(|&c| c != 0)
+                                    .filter_map(char::from_u32),
+                            ),
+                        }
+                    }
+                    last_char = c;
+                }
+                ret
+            }
+        ),
+        formula_fn!(
+            /// Replaces part of a text string with a different text string.
+            ///
+            /// - `old_text`: The original text.
+            /// - `start_pos`: The position to start replacing (1-indexed).
+            /// - `num_chars`: The number of characters to replace.
+            /// - `new_text`: The text to insert.
+            #[examples(
+                "REPLACE(\"Hello\", 2, 3, \"i\") = \"Hio\"",
+                "REPLACE(\"abcdef\", 3, 2, \"XYZ\") = \"abXYZef\""
+            )]
+            #[zip_map]
+            fn REPLACE(
+                [old_text]: String,
+                [start_pos]: (Spanned<i64>),
+                [num_chars]: (Spanned<i64>),
+                [new_text]: String,
+            ) {
+                let start = try_i64_minus_1_to_usize(start_pos)?;
+                let num = try_i64_to_usize(num_chars)?;
+
+                let chars: Vec<char> = old_text.chars().collect();
+                let before: String = chars.iter().take(start).collect();
+                let after: String = chars.iter().skip(start + num).collect();
+
+                format!("{}{}{}", before, new_text, after)
+            }
+        ),
+        formula_fn!(
+            /// Replaces part of a text string with a different text string,
+            /// using byte positions.
+            ///
+            /// - `old_text`: The original text.
+            /// - `start_pos`: The byte position to start replacing (1-indexed).
+            /// - `num_bytes`: The number of bytes to replace.
+            /// - `new_text`: The text to insert.
+            #[examples(
+                "REPLACEB(\"Hello\", 2, 3, \"i\") = \"Hio\"",
+                "REPLACEB(\"世界\", 4, 3, \"人\") = \"世人\""
+            )]
+            #[zip_map]
+            fn REPLACEB(
+                [old_text]: String,
+                [start_pos]: (Spanned<i64>),
+                [num_bytes]: (Spanned<i64>),
+                [new_text]: String,
+            ) {
+                let start = try_i64_minus_1_to_usize(start_pos)?;
+                let num = try_i64_to_usize(num_bytes)?;
+
+                let start = ceil_char_boundary(&old_text, start);
+                let end = floor_char_boundary(&old_text, start.saturating_add(num));
+
+                let before = &old_text[..start];
+                let after = &old_text[end..];
+
+                format!("{}{}{}", before, new_text, after)
+            }
+        ),
+        formula_fn!(
+            /// Substitutes new text for old text in a string.
+            ///
+            /// - `text`: The text containing the text to replace.
+            /// - `old_text`: The text to replace.
+            /// - `new_text`: The replacement text.
+            /// - `instance_num`: Optional. Which occurrence to replace (1-indexed). If omitted, all occurrences are replaced.
+            #[examples(
+                "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\") = \"Hi Hi\"",
+                "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\", 2) = \"Hello Hi\""
+            )]
+            #[zip_map]
+            fn SUBSTITUTE(
+                [text]: String,
+                [old_text]: String,
+                [new_text]: String,
+                [instance_num]: (Option<Spanned<i64>>),
+            ) {
+                if old_text.is_empty() {
+                    text
+                } else {
+                    match instance_num {
+                        None => text.replace(&old_text, &new_text),
+                        Some(n) => {
+                            let instance = try_i64_to_usize(n)?;
+                            if instance == 0 {
+                                return Err(RunErrorMsg::InvalidArgument.with_span(n.span));
+                            }
+                            let mut count = 0;
+                            let mut result = String::new();
+                            let mut remaining = text.as_str();
+
+                            while let Some(pos) = remaining.find(&old_text) {
+                                count += 1;
+                                if count == instance {
+                                    result.push_str(&remaining[..pos]);
+                                    result.push_str(&new_text);
+                                    result.push_str(&remaining[pos + old_text.len()..]);
+                                    return Ok(CellValue::Text(result));
+                                } else {
+                                    result.push_str(&remaining[..pos + old_text.len()]);
+                                    remaining = &remaining[pos + old_text.len()..];
+                                }
+                            }
+                            result.push_str(remaining);
+                            result
+                        }
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Repeats a text string a specified number of times.
+            #[examples("REPT(\"*\", 5) = \"*****\"", "REPT(\"ab\", 3) = \"ababab\"")]
+            #[zip_map]
+            fn REPT([text]: String, [number_times]: (Spanned<i64>)) {
+                let n = try_i64_to_usize(number_times)?;
+                text.repeat(n)
+            }
+        ),
+        formula_fn!(
+            /// Joins an array of values with a delimiter.
+            ///
+            /// - `delimiter`: The string to place between each value.
+            /// - `ignore_empty`: If TRUE, empty cells are ignored.
+            /// - `texts`: The values to join.
+            #[examples(
+                "TEXTJOIN(\", \", TRUE, \"a\", \"b\", \"c\") = \"a, b, c\"",
+                "TEXTJOIN(\"-\", TRUE, \"a\", \"\", \"c\") = \"a-c\""
+            )]
+            fn TEXTJOIN(delimiter: String, ignore_empty: bool, texts: (Iter<CellValue>)) {
+                let strings: Vec<String> = texts
+                    .filter_map(|v| match v {
+                        Ok(v) if ignore_empty && v.is_blank() => None,
+                        Ok(v) => Some(Ok(v.to_display())),
+                        Err(e) => Some(Err(e)),
+                    })
+                    .collect::<CodeResult<Vec<_>>>()?;
+                strings.join(&delimiter)
+            }
+        ),
+        formula_fn!(
+            /// Uses a specified XPath to query XML content and returns the matching value.
+            ///
+            /// Supports common XPath expressions:
+            /// - `/root/element` - absolute path to element
+            /// - `//element` - all elements with that name at any depth
+            /// - `/root/element/@attribute` - attribute value
+            /// - `/root/element[n]` - nth element (1-based indexing)
+            ///
+            /// Returns the text content of the first matching element or attribute.
+            #[examples(
+                "FILTERXML(\"<root><item>value</item></root>\", \"/root/item\")",
+                "FILTERXML(\"<root><item id='1'>A</item></root>\", \"/root/item/@id\")"
+            )]
+            #[zip_map]
+            fn FILTERXML(span: Span, [xml]: String, [xpath]: String) {
+                filter_xml_content(&xml, &xpath)
+                    .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))
+            }
+        ),
+    ]
+}
+
+/// Parses XML and evaluates a simple XPath expression.
+fn filter_xml_content(xml: &str, xpath: &str) -> Result<String, ()> {
+    use roxmltree::Document;
+
+    let doc = Document::parse(xml).map_err(|_| ())?;
+
+    // Parse the XPath expression (simplified implementation)
+    let xpath = xpath.trim();
+
+    // Check for attribute query at the end
+    let (element_path, attr_name) = if xpath.contains("/@") {
+        let parts: Vec<&str> = xpath.rsplitn(2, "/@").collect();
+        if parts.len() == 2 {
+            (parts[1], Some(parts[0]))
+        } else {
+            (xpath, None)
+        }
+    } else {
+        (xpath, None)
+    };
+
+    // Handle descendant-or-self axis (//)
+    if element_path.starts_with("//") {
+        let tag_name = element_path.trim_start_matches("//");
+        // Handle index like //tag[n]
+        let (tag_name, index) = parse_element_index(tag_name);
+        let matching: Vec<_> = doc
+            .descendants()
+            .filter(|n| n.is_element() && n.tag_name().name() == tag_name)
+            .collect();
+
+        if matching.is_empty() {
+            return Err(());
+        }
+
+        let node = if let Some(idx) = index {
+            matching.get(idx - 1).ok_or(())?
+        } else {
+            matching.first().ok_or(())?
+        };
+
+        if let Some(attr) = attr_name {
+            return node.attribute(attr).map(|s| s.to_string()).ok_or(());
+        }
+
+        return Ok(get_element_text(node));
+    }
+
+    // Handle absolute path
+    let path = element_path.trim_start_matches('/');
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+
+    let mut current_node = doc.root_element();
+
+    // First segment should match root element
+    if !segments.is_empty() {
+        let (first_tag, first_index) = parse_element_index(segments[0]);
+        if current_node.tag_name().name() != first_tag {
+            return Err(());
+        }
+        if let Some(idx) = first_index
+            && idx != 1
+        {
+            return Err(()); // Only one root
+        }
+    }
+
+    // Navigate through remaining segments
+    for segment in segments.iter().skip(1) {
+        let (tag_name, index) = parse_element_index(segment);
+        let children: Vec<_> = current_node
+            .children()
+            .filter(|n| n.is_element() && n.tag_name().name() == tag_name)
+            .collect();
+
+        if children.is_empty() {
+            return Err(());
+        }
+
+        current_node = if let Some(idx) = index {
+            *children.get(idx - 1).ok_or(())?
+        } else {
+            *children.first().ok_or(())?
+        };
+    }
+
+    if let Some(attr) = attr_name {
+        return current_node
+            .attribute(attr)
+            .map(|s| s.to_string())
+            .ok_or(());
+    }
+
+    Ok(get_element_text(&current_node))
+}
+
+/// Parses an element name that may include an index like "item[2]".
+fn parse_element_index(segment: &str) -> (&str, Option<usize>) {
+    if let Some(bracket_pos) = segment.find('[')
+        && let Some(end_pos) = segment.find(']')
+    {
+        let tag = &segment[..bracket_pos];
+        if let Ok(idx) = segment[bracket_pos + 1..end_pos].parse::<usize>() {
+            return (tag, Some(idx));
+        }
+    }
+    (segment, None)
+}
+
+/// Gets the text content of an XML node.
+fn get_element_text(node: &roxmltree::Node<'_, '_>) -> String {
+    node.descendants()
+        .filter(|n| n.is_text())
+        .map(|n| n.text().unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("")
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{controller::GridController, formulas::tests::*};
+
+    #[test]
+    fn test_formula_array_to_text() {
+        let g = GridController::new();
+        // Test with inline array instead of grid reference
+        assert_eq!(
+            "Apple, banana, 42, Hello, world!",
+            eval_to_string(
+                &g,
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"})"
+            ),
+        );
+        assert_eq!(
+            "Apple, banana, 42, Hello, world!",
+            eval_to_string(
+                &g,
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"}, 0)"
+            ),
+        );
+        assert_eq!(
+            "{\"Apple\", \"banana\"; 42, \"Hello, world!\"}",
+            eval_to_string(
+                &g,
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"}, 1)"
+            ),
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(
+                &g,
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"}, 2)"
+            )
+            .msg,
+        );
+    }
+
+    #[test]
+    fn test_formula_concat() {
+        let g = GridController::new();
+        assert_eq!(
+            "Hello, 14000605 worlds!".to_string(),
+            eval_to_string(&g, "\"Hello, \" & 14000605 & ' worlds!'"),
+        );
+        assert_eq!(
+            "Hello, 14000605 worlds!".to_string(),
+            eval_to_string(&g, "CONCAT(\"Hello, \", 14000605, ' worlds!')"),
+        );
+        assert_eq!(
+            "Hello, 14000605 worlds!".to_string(),
+            eval_to_string(&g, "CONCATENATE(\"Hello, \", 14000605, ' worlds!')"),
+        );
+    }
+
+    #[test]
+    fn test_formula_left() {
+        let g = GridController::new();
+        assert_eq!("H", eval_to_string(&g, "LEFT(\"Hello, world!\")"));
+        assert_eq!("Hello,", eval_to_string(&g, "LEFT(\"Hello, world!\", 6)"));
+        assert_eq!("抱", eval_to_string(&g, "LEFT(\"抱歉，我不懂普通话\")"));
+        assert_eq!(
+            "抱歉，我不懂",
+            eval_to_string(&g, "LEFT(\"抱歉，我不懂普通话\", 6)")
+        );
+    }
+
+    #[test]
+    fn test_formula_right() {
+        let g = GridController::new();
+        assert_eq!("!", eval_to_string(&g, "RIGHT(\"Hello, world!\")"));
+        assert_eq!("world!", eval_to_string(&g, "RIGHT(\"Hello, world!\", 6)"));
+    }
+
+    #[test]
+    fn test_formula_mid() {
+        let g = GridController::new();
+        assert_eq!("lo, wo", eval_to_string(&g, "MID(\"Hello, world!\", 4, 6)"));
+        assert_eq!("Hello", eval_to_string(&g, "MID(\"Hello, world!\", 1, 5)"));
+    }
+
+    #[test]
+    fn test_formula_clean() {
+        let g = GridController::new();
+        assert_eq!(
+            "(only the parenthetical will survive)",
+            eval_to_string(
+                &g,
+                "CLEAN(CHAR(9) & \"(only the parenthetical will survive)\" & CHAR(10))"
+            ),
+        );
+    }
+
+    #[test]
+    fn test_formula_trim() {
+        let g = GridController::new();
+        assert_eq!("a b c", eval_to_string(&g, "TRIM(\"    a    b    c    \")"),);
+    }
+
+    #[test]
+    fn test_formula_lower_upper() {
+        let g = GridController::new();
+        assert_eq!("hello", eval_to_string(&g, "LOWER(\"HELLO\")"),);
+        assert_eq!("HELLO", eval_to_string(&g, "UPPER(\"hello\")"),);
+    }
+
+    #[test]
+    fn test_formula_proper() {
+        let g = GridController::new();
+        assert_eq!("Hello World", eval_to_string(&g, "PROPER(\"hello world\")"),);
+    }
+
+    #[test]
+    fn test_formula_replace() {
+        let g = GridController::new();
+        assert_eq!(
+            "abcXYZjk",
+            eval_to_string(&g, "REPLACE(\"abcdefghijk\", 4, 6, \"XYZ\")"),
+        );
+    }
+
+    #[test]
+    fn test_formula_substitute() {
+        let g = GridController::new();
+        assert_eq!(
+            "Hi Hi",
+            eval_to_string(&g, "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\")"),
+        );
+        assert_eq!(
+            "Hello Hi",
+            eval_to_string(&g, "SUBSTITUTE(\"Hello Hello\", \"Hello\", \"Hi\", 2)"),
+        );
+    }
+
+    #[test]
+    fn test_formula_rept() {
+        let g = GridController::new();
+        assert_eq!("*****", eval_to_string(&g, "REPT(\"*\", 5)"));
+        assert_eq!("ababab", eval_to_string(&g, "REPT(\"ab\", 3)"));
+    }
+
+    #[test]
+    fn test_formula_textjoin() {
+        let g = GridController::new();
+        assert_eq!(
+            "a, b, c",
+            eval_to_string(&g, "TEXTJOIN(\", \", TRUE, \"a\", \"b\", \"c\")"),
+        );
+    }
+
+    #[test]
+    fn test_formula_filterxml() {
+        let g = GridController::new();
+
+        // Basic element selection
+        assert_eq!(
+            "value",
+            eval_to_string(
+                &g,
+                "FILTERXML(\"<root><item>value</item></root>\", \"/root/item\")"
+            )
+        );
+
+        // Attribute selection
+        assert_eq!(
+            "1",
+            eval_to_string(
+                &g,
+                "FILTERXML(\"<root><item id='1'>A</item></root>\", \"/root/item/@id\")"
+            )
+        );
+
+        // Descendant selection
+        assert_eq!(
+            "deep",
+            eval_to_string(
+                &g,
+                "FILTERXML(\"<root><a><b>deep</b></a></root>\", \"//b\")"
+            )
+        );
+    }
+
+    // ===== Helper function tests =====
+
+    mod helper_tests {
+        use super::super::{filter_xml_content, get_element_text, parse_element_index};
+
+        #[test]
+        fn test_parse_element_index_no_index() {
+            assert_eq!(parse_element_index("item"), ("item", None));
+            assert_eq!(parse_element_index("root"), ("root", None));
+            assert_eq!(parse_element_index("element"), ("element", None));
+        }
+
+        #[test]
+        fn test_parse_element_index_with_index() {
+            assert_eq!(parse_element_index("item[1]"), ("item", Some(1)));
+            assert_eq!(parse_element_index("item[2]"), ("item", Some(2)));
+            assert_eq!(parse_element_index("item[10]"), ("item", Some(10)));
+            assert_eq!(parse_element_index("element[5]"), ("element", Some(5)));
+        }
+
+        #[test]
+        fn test_parse_element_index_invalid_index() {
+            // Invalid indices should return None
+            assert_eq!(parse_element_index("item[]"), ("item[]", None));
+            assert_eq!(parse_element_index("item[abc]"), ("item[abc]", None));
+            assert_eq!(parse_element_index("item[-1]"), ("item[-1]", None));
+        }
+
+        #[test]
+        fn test_parse_element_index_malformed() {
+            // Missing closing bracket
+            assert_eq!(parse_element_index("item[1"), ("item[1", None));
+            // Only opening bracket
+            assert_eq!(parse_element_index("item["), ("item[", None));
+        }
+
+        #[test]
+        fn test_get_element_text_simple() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root>hello</root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "hello");
+        }
+
+        #[test]
+        fn test_get_element_text_nested() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root><a>hello</a><b>world</b></root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "helloworld");
+        }
+
+        #[test]
+        fn test_get_element_text_empty() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root></root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "");
+        }
+
+        #[test]
+        fn test_get_element_text_mixed_content() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root>before<child>middle</child>after</root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "beforemiddleafter");
+        }
+
+        #[test]
+        fn test_get_element_text_deeply_nested() {
+            use roxmltree::Document;
+            let doc = Document::parse("<root><a><b><c>deep</c></b></a></root>").unwrap();
+            let root = doc.root_element();
+            assert_eq!(get_element_text(&root), "deep");
+        }
+
+        #[test]
+        fn test_filter_xml_content_basic_path() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/item"),
+                Ok("value".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_nested_path() {
+            let xml = "<root><parent><child>nested</child></parent></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/parent/child"),
+                Ok("nested".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_attribute() {
+            let xml = "<root><item id='123'>text</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/item/@id"),
+                Ok("123".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_descendant() {
+            let xml = "<root><a><b><c>deep</c></b></a></root>";
+            assert_eq!(filter_xml_content(xml, "//c"), Ok("deep".to_string()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_descendant_with_index() {
+            let xml = "<root><item>first</item><item>second</item><item>third</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "//item[1]"),
+                Ok("first".to_string())
+            );
+            assert_eq!(
+                filter_xml_content(xml, "//item[2]"),
+                Ok("second".to_string())
+            );
+            assert_eq!(
+                filter_xml_content(xml, "//item[3]"),
+                Ok("third".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_path_with_index() {
+            let xml = "<root><item>first</item><item>second</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "/root/item[1]"),
+                Ok("first".to_string())
+            );
+            assert_eq!(
+                filter_xml_content(xml, "/root/item[2]"),
+                Ok("second".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_invalid_xml() {
+            let xml = "<root><unclosed>";
+            assert_eq!(filter_xml_content(xml, "/root"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_nonexistent_element() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(filter_xml_content(xml, "/root/missing"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_nonexistent_attribute() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(filter_xml_content(xml, "/root/item/@missing"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_wrong_root() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(filter_xml_content(xml, "/wrong/item"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_index_out_of_bounds() {
+            let xml = "<root><item>first</item><item>second</item></root>";
+            assert_eq!(filter_xml_content(xml, "/root/item[5]"), Err(()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_descendant_attribute() {
+            let xml = "<root><a><b attr='value'>text</b></a></root>";
+            assert_eq!(
+                filter_xml_content(xml, "//b/@attr"),
+                Ok("value".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_whitespace_in_xpath() {
+            let xml = "<root><item>value</item></root>";
+            assert_eq!(
+                filter_xml_content(xml, "  /root/item  "),
+                Ok("value".to_string())
+            );
+        }
+
+        #[test]
+        fn test_filter_xml_content_root_only() {
+            let xml = "<root>text</root>";
+            assert_eq!(filter_xml_content(xml, "/root"), Ok("text".to_string()));
+        }
+
+        #[test]
+        fn test_filter_xml_content_root_with_index() {
+            let xml = "<root>text</root>";
+            assert_eq!(filter_xml_content(xml, "/root[1]"), Ok("text".to_string()));
+            // Only one root, so index 2 should fail
+            assert_eq!(filter_xml_content(xml, "/root[2]"), Err(()));
+        }
+    }
+}
