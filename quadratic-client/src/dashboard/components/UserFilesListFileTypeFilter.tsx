@@ -30,7 +30,7 @@ export function UserFilesListFileTypeFilter() {
             variant={filters.fileType === value ? 'secondary' : 'ghost'}
             className={cn(
               'flex-shrink-0 px-3 shadow-none',
-              filters.fileType === value ? '' : 'text-muted-foreground hover:text-foreground'
+              filters.fileType !== value && 'text-muted-foreground hover:text-foreground'
             )}
             onClick={() => {
               trackEvent('[Files].filterByType', { type: value ?? 'all' });
