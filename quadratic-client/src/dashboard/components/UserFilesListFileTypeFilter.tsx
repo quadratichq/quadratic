@@ -3,32 +3,17 @@ import {
   userFilesListFiltersAtom,
   type UserFilesListType,
 } from '@/dashboard/atoms/userFilesListFiltersAtom';
-import {
-  ArrowDropDownIcon,
-  FileIcon,
-  FilePrivateIcon,
-  FileSharedWithMeIcon,
-  GroupIcon,
-} from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom } from 'jotai';
-import React from 'react';
 
-const fileTypeOptions: { label: string; value: UserFilesListType; Icon: React.ElementType }[] = [
-  { label: 'All', value: null, Icon: FileIcon },
-  { label: 'Team', value: 'team', Icon: GroupIcon },
-  { label: 'Private', value: 'private', Icon: FilePrivateIcon },
-  { label: 'Shared with me', value: 'shared', Icon: FileSharedWithMeIcon },
+const fileTypeOptions: { label: string; value: UserFilesListType }[] = [
+  { label: 'All', value: null },
+  { label: 'Team', value: 'team' },
+  { label: 'Private', value: 'private' },
+  { label: 'Shared with me', value: 'shared' },
 ];
 
 export function UserFilesListFileTypeFilter() {
@@ -41,7 +26,7 @@ export function UserFilesListFileTypeFilter() {
   return (
     <>
       <div className="hidden gap-0.5 sm:flex">
-        {fileTypeOptions.map(({ label, value, Icon }) => (
+        {fileTypeOptions.map(({ label, value }) => (
           <Button
             key={label}
             data-testid={`files-list-file-type-${value}`}
@@ -62,35 +47,6 @@ export function UserFilesListFileTypeFilter() {
           </Button>
         ))}
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="hidden">
-            {fileTypeLabel} <ArrowDropDownIcon />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuRadioGroup
-            value={fileTypeValue}
-            onValueChange={(value) =>
-              setFilters({
-                ...defaultUserFilesListFilters,
-                fileType: value === 'all' ? null : (value as UserFilesListType),
-              })
-            }
-          >
-            {fileTypeOptions.map(({ label, value, Icon }) => (
-              <DropdownMenuRadioItem
-                key={label}
-                value={value === null ? 'all' : value}
-                className="justify-between gap-4"
-              >
-                {label} {value !== null && <Icon className="ml-auto !hidden text-muted-foreground opacity-50" />}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
       <Select
         value={fileTypeValue}
         onValueChange={(value) =>
@@ -104,7 +60,7 @@ export function UserFilesListFileTypeFilter() {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {fileTypeOptions.map(({ label, value, Icon }) => (
+          {fileTypeOptions.map(({ label, value }) => (
             <SelectItem key={label} value={value === null ? 'all' : value}>
               <div className="flex items-center">{label}</div>
             </SelectItem>
