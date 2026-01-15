@@ -71,6 +71,7 @@ export const ROUTES = {
   TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
   TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
+  TEAM_CONNECTIONS_NEW: (teamUuid: string) => `/teams/${teamUuid}/connections?view=new`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
   TEAM_CONNECTION: (teamUuid: string, connectionUuid: string, connectionType: ConnectionType) =>
