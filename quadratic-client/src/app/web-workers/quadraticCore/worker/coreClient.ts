@@ -602,6 +602,18 @@ class CoreClient {
         });
         return;
 
+      case 'clientCorePreviewConditionalFormat':
+        this.send({
+          type: 'coreClientPreviewConditionalFormat',
+          id: e.data.id,
+          response: core.previewConditionalFormat(e.data.conditionalFormat),
+        });
+        return;
+
+      case 'clientCoreClearPreviewConditionalFormat':
+        core.clearPreviewConditionalFormat(e.data.sheetId);
+        return;
+
       case 'clientCoreGetValidations':
         this.send({
           type: 'coreClientGetValidations',

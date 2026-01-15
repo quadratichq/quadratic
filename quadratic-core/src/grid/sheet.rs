@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use anyhow::{Result, anyhow};
 use borders::Borders;
 use columns::SheetColumns;
-use conditional_format::ConditionalFormats;
+use conditional_format::{ConditionalFormat, ConditionalFormats};
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -90,6 +90,11 @@ pub struct Sheet {
     pub(crate) borders: Borders,
 
     pub(crate) merge_cells: MergeCells,
+
+    /// Transient preview of a conditional format being edited.
+    /// Not persisted, not in undo history. Used for live preview in the UI.
+    #[serde(skip)]
+    pub(crate) preview_conditional_format: Option<ConditionalFormat>,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -110,6 +115,7 @@ impl Sheet {
             rows_resize: ResizeMap::default(),
             borders: Borders::default(),
             merge_cells: MergeCells::default(),
+            preview_conditional_format: None,
         }
     }
 

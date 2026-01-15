@@ -61,6 +61,7 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
         merge_cells: import_merge_cells(sheet.merge_cells),
+        preview_conditional_format: None,
     };
 
     Ok(sheet)

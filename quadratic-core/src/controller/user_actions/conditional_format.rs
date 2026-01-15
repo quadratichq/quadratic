@@ -13,9 +13,15 @@ use crate::{
     formulas::parse_formula,
     grid::{
         SheetId,
+        js_types::JsHashesDirty,
         sheet::conditional_format::{ConditionalFormat, ConditionalFormatUpdate},
     },
 };
+
+/// UUID used for new conditional format previews (when id is None).
+/// This is a fixed UUID so that repeated previews during editing
+/// are treated as the same preview rather than accumulating.
+const PREVIEW_UUID: &str = "00000000-0000-0000-0000-000000000000";
 
 impl GridController {
     /// Creates or updates a conditional format.
@@ -155,6 +161,114 @@ impl GridController {
                 "Some operations failed: {}. Successful operations were applied.",
                 errors.join("; ")
             ))
+        }
+    }
+
+    /// Sets a preview conditional format for live preview while editing.
+    /// This is transient and not persisted or added to undo history.
+    /// Triggers a re-render of affected cells (both fills and text styles).
+    pub fn set_preview_conditional_format(
+        &mut self,
+        update: ConditionalFormatUpdate,
+    ) -> Result<(), String> {
+        let sheet_id =
+            SheetId::from_str(&update.sheet_id).map_err(|e| format!("Invalid sheet_id: {e}"))?;
+
+        // Check that sheet exists
+        if self.try_sheet(sheet_id).is_none() {
+            return Err("Sheet not found".to_string());
+        }
+
+        // Parse the selection string into A1Selection (before mutable borrow)
+        let a1_context = self.a1_context();
+        let selection = A1Selection::parse_a1(&update.selection, sheet_id, a1_context)
+            .map_err(|e| format!("Invalid selection: {e}"))?;
+
+        // Parse the formula string into AST (before mutable borrow)
+        let pos = selection.cursor.to_sheet_pos(sheet_id);
+        let formula = parse_formula(&update.rule, a1_context, pos)
+            .map_err(|e| format!("Invalid formula: {e}"))?;
+
+        // Use the provided ID (for editing existing formats) or the fixed preview UUID
+        let id = update.id.unwrap_or_else(|| {
+            Uuid::from_str(PREVIEW_UUID).expect("PREVIEW_UUID should be valid")
+        });
+
+        // Get the old selection (if updating an existing preview) so we can mark it dirty too
+        let old_selection = self
+            .try_sheet(sheet_id)
+            .and_then(|s| s.preview_conditional_format.as_ref())
+            .map(|p| p.selection.clone());
+
+        let preview = ConditionalFormat {
+            id,
+            selection: selection.clone(),
+            style: update.style,
+            rule: formula,
+            apply_to_blank: update.apply_to_blank,
+        };
+
+        // Now get mutable borrow and set the preview
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            sheet.preview_conditional_format = Some(preview);
+        }
+
+        // Trigger re-render for fills (via jsSheetConditionalFormats -> client clears fill cache)
+        let a1_context = self.a1_context();
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            sheet.send_all_conditional_formats(a1_context);
+
+            // Also mark cell hashes dirty for text style re-rendering
+            // This reuses the same logic as execute_set_conditional_format
+            let mut dirty_hashes = selection.rects_to_hashes(sheet, a1_context);
+            if let Some(old_sel) = old_selection {
+                dirty_hashes.extend(old_sel.rects_to_hashes(sheet, a1_context));
+            }
+
+            if !dirty_hashes.is_empty() {
+                let js_dirty = vec![JsHashesDirty {
+                    sheet_id,
+                    hashes: dirty_hashes.into_iter().collect(),
+                }];
+                if let Ok(data) = serde_json::to_vec(&js_dirty) {
+                    crate::wasm_bindings::js::jsHashesDirty(data);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Clears the preview conditional format and triggers a re-render.
+    pub fn clear_preview_conditional_format(&mut self, sheet_id: SheetId) {
+        // Get the old selection before clearing so we can mark it dirty
+        let old_selection = self
+            .try_sheet(sheet_id)
+            .and_then(|s| s.preview_conditional_format.as_ref())
+            .map(|p| p.selection.clone());
+
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            sheet.preview_conditional_format = None;
+        }
+
+        if let Some(old_sel) = old_selection {
+            // Trigger re-render for fills
+            let a1_context = self.a1_context();
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                sheet.send_all_conditional_formats(a1_context);
+
+                // Also mark cell hashes dirty for text style re-rendering
+                let dirty_hashes = old_sel.rects_to_hashes(sheet, a1_context);
+                if !dirty_hashes.is_empty() {
+                    let js_dirty = vec![JsHashesDirty {
+                        sheet_id,
+                        hashes: dirty_hashes.into_iter().collect(),
+                    }];
+                    if let Ok(data) = serde_json::to_vec(&js_dirty) {
+                        crate::wasm_bindings::js::jsHashesDirty(data);
+                    }
+                }
+            }
         }
     }
 }

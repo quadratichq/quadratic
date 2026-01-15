@@ -20,6 +20,29 @@ impl GridController {
             .map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
+    /// Sets a preview conditional format for live preview while editing.
+    /// This is transient and not persisted. Triggers a re-render of affected cells.
+    #[wasm_bindgen(js_name = "previewConditionalFormat")]
+    pub fn js_preview_conditional_format(
+        &mut self,
+        conditional_format: String,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let cf_update = serde_json::from_str::<ConditionalFormatUpdate>(&conditional_format)
+                .map_err(|e| format!("Error parsing conditional format: {e}"))?;
+            self.set_preview_conditional_format(cf_update)?;
+            Ok(None)
+        })
+    }
+
+    /// Clears the preview conditional format and triggers a re-render.
+    #[wasm_bindgen(js_name = "clearPreviewConditionalFormat")]
+    pub fn js_clear_preview_conditional_format(&mut self, sheet_id: String) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            self.clear_preview_conditional_format(sheet_id);
+        }
+    }
+
     /// Creates or updates a conditional format
     #[wasm_bindgen(js_name = "updateConditionalFormat")]
     pub fn js_update_conditional_format(

@@ -690,6 +690,23 @@ export interface CoreClientBatchUpdateConditionalFormats {
   response: JsResponse | undefined;
 }
 
+export interface ClientCorePreviewConditionalFormat {
+  type: 'clientCorePreviewConditionalFormat';
+  id: number;
+  conditionalFormat: ConditionalFormatUpdate;
+}
+
+export interface CoreClientPreviewConditionalFormat {
+  type: 'coreClientPreviewConditionalFormat';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreClearPreviewConditionalFormat {
+  type: 'clientCoreClearPreviewConditionalFormat';
+  sheetId: string;
+}
+
 //#endregion
 
 //#region Sheets
@@ -1722,6 +1739,8 @@ export type ClientCoreMessage =
   | ClientCoreUpdateConditionalFormat
   | ClientCoreRemoveConditionalFormat
   | ClientCoreBatchUpdateConditionalFormats
+  | ClientCorePreviewConditionalFormat
+  | ClientCoreClearPreviewConditionalFormat
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
@@ -1862,6 +1881,7 @@ export type CoreClientMessage =
   | CoreClientRemoveValidationSelection
   | CoreClientUpdateConditionalFormat
   | CoreClientBatchUpdateConditionalFormats
+  | CoreClientPreviewConditionalFormat
   | CoreClientGetAICodeErrors
   | CoreClientGetAITransactions
   | CoreClientUndoResponse

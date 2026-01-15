@@ -1155,6 +1155,24 @@ class Core {
     }
   }
 
+  previewConditionalFormat(conditionalFormat: ConditionalFormatUpdate): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.previewConditionalFormat(JSON.stringify(conditionalFormat));
+    } catch (e) {
+      this.handleCoreError('previewConditionalFormat', e);
+    }
+  }
+
+  clearPreviewConditionalFormat(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.clearPreviewConditionalFormat(sheetId);
+    } catch (e) {
+      this.handleCoreError('clearPreviewConditionalFormat', e);
+    }
+  }
+
   receiveRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

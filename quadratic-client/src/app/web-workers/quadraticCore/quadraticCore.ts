@@ -126,6 +126,7 @@ import type {
   CoreClientUndoResponse,
   CoreClientUnmergeCellsResponse,
   CoreClientUpdateConditionalFormat,
+  CoreClientPreviewConditionalFormat,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -1595,6 +1596,27 @@ class QuadraticCore {
         deleteIds,
         cursor: sheets.getCursorPosition(),
       });
+    });
+  }
+
+  previewConditionalFormat(conditionalFormat: ConditionalFormatUpdate): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientPreviewConditionalFormat) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCorePreviewConditionalFormat',
+        id,
+        conditionalFormat,
+      });
+    });
+  }
+
+  clearPreviewConditionalFormat(sheetId: string) {
+    this.send({
+      type: 'clientCoreClearPreviewConditionalFormat',
+      sheetId,
     });
   }
 

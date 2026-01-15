@@ -98,6 +98,7 @@ impl GridController {
 
     /// Evaluates all conditional formats that apply to a cell and returns
     /// the combined style to apply. Later rules override earlier ones.
+    /// Includes the preview format if one is set.
     pub fn get_conditional_format_style(
         &self,
         sheet_pos: SheetPos,
@@ -113,12 +114,26 @@ impl GridController {
             y: sheet_pos.y,
         };
 
-        // todo: there may be a more efficient way to do this using a different cache
-        let formats: Vec<&ConditionalFormat> = sheet
+        // Get the preview format ID (if any) to exclude persisted formats with the same ID
+        let preview_id = sheet.preview_conditional_format.as_ref().map(|p| p.id);
+
+        // Collect formats, excluding any with the same ID as the preview
+        // (the preview replaces the persisted format during editing)
+        let mut formats: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
-            .filter(|cf| cf.selection.contains_pos(pos, a1_context))
+            .filter(|cf| {
+                cf.selection.contains_pos(pos, a1_context)
+                    && preview_id.map_or(true, |pid| cf.id != pid)
+            })
             .collect();
+
+        // Add preview format if it applies to this cell
+        if let Some(ref preview) = sheet.preview_conditional_format {
+            if preview.selection.contains_pos(pos, a1_context) {
+                formats.push(preview);
+            }
+        }
 
         if formats.is_empty() {
             return None;
@@ -162,6 +177,7 @@ impl GridController {
 
     /// Applies conditional formatting styles to a vector of render cells.
     /// Modifies the cells in place to include any conditional formatting.
+    /// Includes the preview format if one is set.
     pub fn apply_conditional_formatting_to_cells(
         &self,
         sheet_id: SheetId,
@@ -172,22 +188,37 @@ impl GridController {
             return;
         };
 
-        // Skip if no conditional formats
-        if sheet.conditional_formats.is_empty() {
+        // Skip if no conditional formats and no preview
+        if sheet.conditional_formats.is_empty() && sheet.preview_conditional_format.is_none() {
             return;
         }
 
         let a1_context = self.a1_context();
 
+        // Get the preview format ID (if any) to exclude persisted formats with the same ID
+        let preview_id = sheet.preview_conditional_format.as_ref().map(|p| p.id);
+
         // Pre-filter conditional formats to only those that overlap the rect
         // and have non-fill styles (fill_color is handled separately)
-        let overlapping_formats: Vec<&ConditionalFormat> = sheet
+        // Exclude formats with the same ID as the preview
+        let mut overlapping_formats: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
             .filter(|cf| {
-                cf.style.has_non_fill_style() && cf.selection.intersects_rect(rect, a1_context)
+                cf.style.has_non_fill_style()
+                    && cf.selection.intersects_rect(rect, a1_context)
+                    && preview_id.map_or(true, |pid| cf.id != pid)
             })
             .collect();
+
+        // Add preview format if it has non-fill styles and overlaps the rect
+        if let Some(ref preview) = sheet.preview_conditional_format {
+            if preview.style.has_non_fill_style()
+                && preview.selection.intersects_rect(rect, a1_context)
+            {
+                overlapping_formats.push(preview);
+            }
+        }
 
         if overlapping_formats.is_empty() {
             return;
@@ -251,6 +282,7 @@ impl GridController {
     /// Returns a list of (rect, fill_color) tuples for cells where conditional
     /// formatting applies and has a fill color. Uses Contiguous2D to efficiently
     /// combine adjacent cells with the same fill color into rectangles.
+    /// Includes the preview format if one is set.
     pub fn get_conditional_format_fills(
         &self,
         sheet_id: crate::grid::SheetId,
@@ -263,15 +295,29 @@ impl GridController {
             return vec![];
         };
 
+        // Get the preview format ID (if any) to exclude persisted formats with the same ID
+        let preview_id = sheet.preview_conditional_format.as_ref().map(|p| p.id);
+
         // Pre-filter conditional formats to only those that have fill colors
-        // and overlap the rect
-        let formats_with_fills: Vec<&ConditionalFormat> = sheet
+        // and overlap the rect. Exclude formats with the same ID as the preview.
+        let mut formats_with_fills: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
             .filter(|cf| {
-                cf.style.fill_color.is_some() && cf.selection.intersects_rect(rect, a1_context)
+                cf.style.fill_color.is_some()
+                    && cf.selection.intersects_rect(rect, a1_context)
+                    && preview_id.map_or(true, |pid| cf.id != pid)
             })
             .collect();
+
+        // Add preview format if it has a fill color and overlaps the rect
+        if let Some(ref preview) = sheet.preview_conditional_format {
+            if preview.style.fill_color.is_some()
+                && preview.selection.intersects_rect(rect, a1_context)
+            {
+                formats_with_fills.push(preview);
+            }
+        }
 
         if formats_with_fills.is_empty() {
             return vec![];

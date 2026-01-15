@@ -20,8 +20,11 @@ import {
   SelectValue,
 } from '@/shared/shadcn/ui/select';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+
+// Debounce delay for preview updates (ms)
+const PREVIEW_DEBOUNCE_MS = 150;
 
 export interface ConditionalFormatStyle {
   bold?: boolean;
@@ -496,6 +499,87 @@ export const ConditionalFormat = () => {
     );
   }, [style]);
 
+  // Track the preview timeout for debouncing
+  const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track the last sent preview JSON to avoid sending duplicates
+  const lastPreviewJsonRef = useRef<string | null>(null);
+  // Track whether we have an active preview (to know if we need to clear it)
+  const hasActivePreviewRef = useRef(false);
+
+  // Send preview to core when form values change (debounced)
+  useEffect(() => {
+    // Clear any pending preview update
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+
+    // Don't send preview if required values are missing or formula is invalid or no style
+    if (!selection || !hasValidValues || !formulaValidation.isValid || !hasAnyStyle) {
+      // Only clear the preview if we had previously sent one
+      if (hasActivePreviewRef.current) {
+        quadraticCore.clearPreviewConditionalFormat(sheetId);
+        hasActivePreviewRef.current = false;
+        lastPreviewJsonRef.current = null;
+      }
+      return;
+    }
+
+    // Build the preview object
+    const selectionJson = selection.toA1String(sheetId, sheets.jsA1Context);
+    const previewData = {
+      id: existingFormat?.id ?? null,
+      sheet_id: sheetId,
+      selection: selectionJson,
+      style: {
+        bold: style.bold ?? null,
+        italic: style.italic ?? null,
+        underline: style.underline ?? null,
+        strike_through: style.strike_through ?? null,
+        text_color: style.text_color ?? null,
+        fill_color: style.fill_color ?? null,
+      },
+      rule: generatedFormula,
+      apply_to_blank: applyToBlank,
+    };
+
+    // Check if preview data actually changed
+    const previewJson = JSON.stringify(previewData);
+    if (previewJson === lastPreviewJsonRef.current) {
+      return; // Nothing changed, don't send
+    }
+
+    // Debounce the preview update
+    previewTimeoutRef.current = setTimeout(() => {
+      lastPreviewJsonRef.current = previewJson;
+      hasActivePreviewRef.current = true;
+      quadraticCore.previewConditionalFormat(previewData);
+    }, PREVIEW_DEBOUNCE_MS);
+  }, [
+    selection,
+    existingFormat?.id,
+    generatedFormula,
+    hasValidValues,
+    formulaValidation.isValid,
+    hasAnyStyle,
+    style,
+    applyToBlank,
+    sheetId,
+  ]);
+
+  // Clean up preview on unmount
+  useEffect(() => {
+    return () => {
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+      }
+      // Only clear if we had an active preview
+      if (hasActivePreviewRef.current) {
+        quadraticCore.clearPreviewConditionalFormat(sheetId);
+      }
+    };
+  }, [sheetId]);
+
   const applyConditionalFormat = useCallback(() => {
     if (!selection) {
       setTriggerError(true);
@@ -505,6 +589,9 @@ export const ConditionalFormat = () => {
     if (!hasValidValues || !formulaValidation.isValid) {
       return;
     }
+
+    // Clear the preview first so it doesn't interfere with the real format
+    quadraticCore.clearPreviewConditionalFormat(sheetId);
 
     // Get the selection as a JSON string for the backend
     const selectionJson = selection.toA1String(sheetId, sheets.jsA1Context);
@@ -539,8 +626,10 @@ export const ConditionalFormat = () => {
   ]);
 
   const cancel = useCallback(() => {
+    // Clear the preview when canceling (also handled by unmount cleanup)
+    quadraticCore.clearPreviewConditionalFormat(sheetId);
     setShowConditionalFormat(true);
-  }, [setShowConditionalFormat]);
+  }, [sheetId, setShowConditionalFormat]);
 
   // Group the options for rendering with separators
   const renderConditionOptions = () => {
