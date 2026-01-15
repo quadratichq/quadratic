@@ -66,13 +66,12 @@ test('Create New File', async ({ page }) => {
   await expect(fileCard).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert thumbnail appears as expected
-  // TODO: fix screenshot
-  // await expect(fileCard.locator(`img[alt="File thumbnail screenshot"]`)).toHaveScreenshot(
-  //   `create-new-file-thumbnail-with-red-section.png`,
-  //   {
-  //     maxDiffPixels: 100,
-  //   }
-  // );
+  await expect(fileCard.locator(`img[alt="File thumbnail screenshot"]`)).toHaveScreenshot(
+    `create-new-file-thumbnail-with-red-section.png`,
+    {
+      maxDiffPixels: 100,
+    }
+  );
 
   // Clean up
   await cleanUpFiles(page, { fileName });
