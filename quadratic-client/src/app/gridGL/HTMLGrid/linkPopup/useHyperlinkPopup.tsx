@@ -45,6 +45,10 @@ export interface LinkData {
   linkText?: string;
   // True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink)
   isNakedUrl?: boolean;
+  // Character start position of this hyperlink span within the cell text
+  spanStart?: number;
+  // Character end position of this hyperlink span within the cell text
+  spanEnd?: number;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -144,6 +148,7 @@ export function useHyperlinkPopup() {
         y = Number(mergeRect.min.y);
       }
 
+      // Close cursor-sourced popup if cursor moved to a different cell
       // Close cursor-sourced popup if cursor moved to a different cell
       const current = linkDataRef.current;
       if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
@@ -332,6 +337,8 @@ export function useHyperlinkPopup() {
       rect: Rectangle;
       linkText?: string;
       isNakedUrl?: boolean;
+      spanStart?: number;
+      spanEnd?: number;
     }) => {
       const v = visibilityRef.current;
       if (v.isEditMode()) return;
@@ -361,6 +368,8 @@ export function useHyperlinkPopup() {
             isFormula,
             linkText: link.linkText,
             isNakedUrl: link.isNakedUrl,
+            spanStart: link.spanStart,
+            spanEnd: link.spanEnd,
           });
           setMode('view');
           setEditUrl(link.url);
@@ -456,7 +465,8 @@ export function useHyperlinkPopup() {
     const handleHashContentChanged = async (sheetId: string) => {
       const current = linkDataRef.current;
       if (!current) return;
-
+      // Don't interfere with edit mode
+      if (visibilityRef.current.isEditMode()) return;
       // Only check cells on the current sheet
       if (sheetId !== sheets.sheet.id) return;
 
@@ -497,6 +507,24 @@ export function useHyperlinkPopup() {
       }
     });
   }, []); // No dependencies - use visibilityRef
+
+  // Close popup when focus leaves the popup container
+  const handleBlur = useCallback(
+    (e: React.FocusEvent) => {
+      // Check if the new focus target is outside the popup
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
+        // Focus is still within the popup, don't close
+        return;
+      }
+      // Don't close if focus moved to null (e.g., window blur) while in edit mode
+      if (!relatedTarget && mode === 'edit') {
+        return;
+      }
+      closePopup(true);
+    },
+    [closePopup, mode]
+  );
 
   // Close popup on wheel scroll (user likely wants to zoom/scroll the viewport)
   const handleWheel = useCallback(() => {
@@ -561,9 +589,21 @@ export function useHyperlinkPopup() {
     const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
 
     if (cellValue?.kind === 'RichText' && cellValue.spans) {
-      // Find the span with the matching link URL and remove the link property
+      // Find the span at the matching character position and remove the link property
+      // We use character position (spanStart/spanEnd) to uniquely identify the span
+      let charPos = 0;
       const modifiedSpans = cellValue.spans.map((span) => {
-        if (span.link === linkData.url) {
+        const spanStart = charPos;
+        const spanEnd = charPos + span.text.length;
+        charPos = spanEnd;
+
+        // Match by character position if available, otherwise fall back to URL + text
+        const matches =
+          linkData.spanStart !== undefined && linkData.spanEnd !== undefined
+            ? spanStart === linkData.spanStart && spanEnd === linkData.spanEnd
+            : span.link === linkData.url && span.text === linkData.linkText;
+
+        if (matches) {
           // Set link to null to remove the hyperlink, keep everything else
           // Ensure all required TextSpan fields are present
           return {
@@ -588,7 +628,7 @@ export function useHyperlinkPopup() {
     focusGrid();
   }, [linkData, closePopup]);
 
-  const handleSaveEdit = useCallback(() => {
+  const handleSaveEdit = useCallback(async () => {
     if (!linkData || !editUrl.trim()) return;
 
     const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
@@ -596,26 +636,70 @@ export function useHyperlinkPopup() {
     const hasCustomTitle = text !== normalizedUrl;
 
     if (linkData.source === 'inline') {
-      // Save to inline editor's hyperlink tracking
-      inlineEditorSpans.completePendingHyperlink(normalizedUrl, text);
+      // Check if we're editing an existing hyperlink or inserting a new one
+      if (inlineEditorSpans.hasPendingHyperlink()) {
+        // Inserting a new hyperlink (via Ctrl+K)
+        // Inherit current formatting from cursor position
+        const formatting = inlineEditorHandler.getFormattingStateForHyperlink();
+        inlineEditorSpans.completePendingHyperlink(normalizedUrl, text, formatting);
+      } else {
+        // Editing an existing hyperlink - update in place
+        inlineEditorSpans.updateHyperlinkAtCursor(normalizedUrl, text);
+      }
       inlineEditorMonaco.focus();
     } else if (linkData.isNakedUrl && !hasCustomTitle) {
       // For naked URLs without a custom title, keep as plain text
       quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
     } else {
-      // Save as RichText hyperlink (for RichText hyperlinks or naked URLs with custom title)
-      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
-        {
-          text,
-          link: normalizedUrl,
-          bold: null,
-          italic: null,
-          underline: null,
-          strike_through: null,
-          text_color: null,
-          font_size: null,
-        },
-      ]);
+      // Get the current cell value to check if it has multiple spans
+      const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
+
+      if (cellValue?.kind === 'RichText' && cellValue.spans && cellValue.spans.length > 1) {
+        // Cell has multiple spans - update only the matching hyperlink span
+        // We use character position (spanStart/spanEnd) to uniquely identify the span
+        let charPos = 0;
+        const modifiedSpans = cellValue.spans.map((span) => {
+          const spanStart = charPos;
+          const spanEnd = charPos + span.text.length;
+          charPos = spanEnd;
+
+          // Match by character position if available, otherwise fall back to URL + text
+          const matches =
+            linkData.spanStart !== undefined && linkData.spanEnd !== undefined
+              ? spanStart === linkData.spanStart && spanEnd === linkData.spanEnd
+              : span.link === linkData.url && span.text === linkData.linkText;
+
+          if (matches) {
+            // Update this span's text and link
+            return {
+              text,
+              link: normalizedUrl,
+              bold: span.bold ?? null,
+              italic: span.italic ?? null,
+              underline: span.underline ?? null,
+              strike_through: span.strike_through ?? null,
+              text_color: span.text_color ?? null,
+              font_size: span.font_size ?? null,
+            };
+          }
+          return span;
+        });
+        quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, modifiedSpans);
+      } else {
+        // Single span or simple case - replace the entire cell
+        quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+          {
+            text,
+            link: normalizedUrl,
+            bold: null,
+            italic: null,
+            underline: null,
+            strike_through: null,
+            text_color: null,
+            font_size: null,
+          },
+        ]);
+      }
     }
     closePopup(true);
   }, [linkData, editUrl, editText, closePopup]);
@@ -667,6 +751,7 @@ export function useHyperlinkPopup() {
     handleMouseEnter,
     handleMouseMove,
     handleMouseLeave,
+    handleBlur,
     handleWheel,
     handleOpenLink,
     handleCopyLink,

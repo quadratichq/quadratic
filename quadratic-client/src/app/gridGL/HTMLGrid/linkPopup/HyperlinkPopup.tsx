@@ -21,6 +21,7 @@ export const HyperlinkPopup = () => {
     handleMouseEnter,
     handleMouseMove,
     handleMouseLeave,
+    handleBlur,
     handleWheel,
     handleOpenLink,
     handleCopyLink,

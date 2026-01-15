@@ -58,6 +58,8 @@ interface EventTypes {
     rect: Rectangle;
     linkText?: string;
     isNakedUrl?: boolean;
+    spanStart?: number;
+    spanEnd?: number;
   }) => void;
   insertLink: () => void;
   insertLinkInline: (data: {
