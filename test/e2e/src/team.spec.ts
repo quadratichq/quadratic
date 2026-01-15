@@ -659,6 +659,10 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   // Assert that the new file is created and visible in the list of files
   await expect(adminPage.locator(`a:has-text("${fileName}")`)).toBeVisible({ timeout: 60 * 1000 });
 
+  // Move it to team files
+  await adminPage.locator(`a:has(:text-is("${fileName}")) button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
+  await adminPage.locator('[data-testid="dashboard-file-actions-move-to-team"]').click({ timeout: 60 * 1000 });
+
   //--------------------------------
   // Act: Invite Test User with "Can edit" Permission
   //--------------------------------
