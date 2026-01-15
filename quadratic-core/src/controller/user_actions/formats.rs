@@ -18,16 +18,22 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        let ops = self.clear_format_borders_operations(selection, false);
+        let ops = self.clear_format_borders_operations(selection, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
     /// Separately apply sheet and table formats.
+    ///
+    /// If `skip_richtext_clearing` is true, the function will not generate
+    /// operations to clear RichText inline formatting. This should be set to
+    /// true when the cells are being deleted (since there's no point in
+    /// clearing formatting on cells that will be removed).
     pub(crate) fn format_ops(
         &self,
         selection: &A1Selection,
         format_update: FormatUpdate,
         ignore_tables_having_anchoring_cell_in_selection: bool,
+        skip_richtext_clearing: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -133,6 +139,16 @@ impl GridController {
         }
 
         if !sheet_format_update.is_default() {
+            // Add operations to clear RichText inline formatting when cell-level
+            // formatting is being SET. Skip this when cells are being deleted
+            // since there's no point in clearing formatting on deleted cells,
+            // and doing so would overwrite the deletion with a modified RichText.
+            if !skip_richtext_clearing {
+                let richtext_ops =
+                    sheet.get_richtext_format_clearing_operations(&sheet_format_update);
+                ops.extend(richtext_ops);
+            }
+
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: expanded_selection.sheet_id,
                 formats: sheet_format_update,
@@ -153,7 +169,7 @@ impl GridController {
             align: Some(Some(align)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -169,7 +185,7 @@ impl GridController {
             vertical_align: Some(Some(vertical_align)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -196,7 +212,7 @@ impl GridController {
             bold: Some(Some(bold)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -223,7 +239,7 @@ impl GridController {
             italic: Some(Some(italic)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -239,7 +255,7 @@ impl GridController {
             font_size: Some(Some(font_size)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -255,7 +271,7 @@ impl GridController {
             wrap: Some(Some(wrap)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -286,7 +302,7 @@ impl GridController {
             numeric_decimals: Some(Some(2)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -312,7 +328,7 @@ impl GridController {
             numeric_format: Some(Some(NumericFormat { kind, symbol })),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -339,7 +355,7 @@ impl GridController {
             numeric_commas: Some(Some(commas)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -355,7 +371,7 @@ impl GridController {
             text_color: Some(color),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -371,7 +387,7 @@ impl GridController {
             fill_color: Some(color),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -386,7 +402,7 @@ impl GridController {
             numeric_format: Some(None),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -410,7 +426,7 @@ impl GridController {
             numeric_decimals: Some(Some(new_precision)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -426,7 +442,7 @@ impl GridController {
             date_time: Some(date_time),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -453,7 +469,7 @@ impl GridController {
             underline: Some(Some(underline)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -480,7 +496,7 @@ impl GridController {
             strike_through: Some(Some(strike_through)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -492,7 +508,7 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
@@ -530,7 +546,7 @@ impl GridController {
     ) {
         let mut all_ops = vec![];
         for (selection, format_update) in format_entries {
-            let ops = self.format_ops(&selection, format_update, false);
+            let ops = self.format_ops(&selection, format_update, false, false);
             all_ops.extend(ops);
         }
         self.start_user_ai_transaction(all_ops, cursor, TransactionName::SetFormats, is_ai);
@@ -1234,6 +1250,7 @@ mod test {
         let ops = gc.format_ops(
             &A1Selection::test_a1_context("Table1", gc.a1_context()),
             format_update.clone(),
+            false,
             false,
         );
         assert_eq!(ops.len(), 1);

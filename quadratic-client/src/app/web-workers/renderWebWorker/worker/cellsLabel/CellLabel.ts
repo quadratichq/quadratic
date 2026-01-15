@@ -145,7 +145,8 @@ export class CellLabel {
   private chars: CharRenderData[] = [];
   private horizontalAlignOffsets: number[] = [];
   private lineWidths: number[] = [];
-  horizontalLines: Rectangle[] = [];
+  /** Horizontal lines for underline/strikethrough with their tint colors. */
+  horizontalLines: { rect: Rectangle; tint: number }[] = [];
 
   private align: CellAlign | 'justify';
   private verticalAlign: CellVerticalAlign;
@@ -163,7 +164,15 @@ export class CellLabel {
   /** Format spans with character ranges and style overrides (from RichText). */
   private formatSpans: FormatSpan[];
   /** Calculated link rectangles with URLs (populated after updateLabelMesh). */
-  linkRectangles: Array<{ rect: Rectangle; url: string; underlineY: number; linkText: string; isNakedUrl?: boolean }>;
+  linkRectangles: Array<{
+    rect: Rectangle;
+    url: string;
+    underlineY: number;
+    linkText: string;
+    isNakedUrl?: boolean;
+    spanStart: number;
+    spanEnd: number;
+  }>;
   private underline: boolean;
   private strikeThrough: boolean;
 
@@ -992,6 +1001,16 @@ export class CellLabel {
     // 2. Descenders naturally extend slightly beyond lineHeight - this is expected
     // 3. Only show dots when the line itself doesn't fit, not for descender overflow
     const CLIP_EPSILON = 0.5;
+
+    // Descenders (p, q, g, y, j, etc.) extend below the baseline. At larger font sizes,
+    // they extend more pixels, so we need a scaled epsilon for vertical glyph clipping.
+    // Base value of 3 pixels at DEFAULT_FONT_SIZE (14), scaling up with font size.
+    const DESCENDER_CLIP_EPSILON = Math.max(0.5, fontScale * 3);
+
+    // Italic characters can extend slightly to the left of their logical position due to slant.
+    // Allow a small tolerance on the left side to prevent clipping italic glyphs at the boundary.
+    // Base value of 3 pixels at DEFAULT_FONT_SIZE (14), scaling with font size.
+    const ITALIC_CLIP_EPSILON = Math.max(0.5, fontScale * 3);
     const clippedLines = new Set<number>();
     const maxLine = this.chars.length > 0 ? Math.max(...this.chars.map((c) => c.line)) : 0;
     for (let line = 0; line <= maxLine; line++) {
@@ -1103,7 +1122,7 @@ export class CellLabel {
 
         // Clip dots that are outside horizontal bounds or extend below the cell bottom
         const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
-        const belowCellBottom = charBottom > this.AABB.bottom + CLIP_EPSILON;
+        const belowCellBottom = charBottom > this.AABB.bottom + DESCENDER_CLIP_EPSILON;
         if (horizontallyClipped || belowCellBottom) {
           buffer.reduceSize(6);
         } else {
@@ -1153,8 +1172,10 @@ export class CellLabel {
         // remove letters that are outside the clipping bounds
         // Use strict inequality with small tolerance for vertical clipping to avoid
         // floating point issues that could cause emojis to oscillate between visible and clipped
-        const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + CLIP_EPSILON;
-        const horizontallyClipped = charLeft <= clipLeft || charRight >= clipRight;
+        // Use DESCENDER_CLIP_EPSILON for bottom clipping to allow for descenders (p, q, g, y, j)
+        // Use ITALIC_CLIP_EPSILON for left clipping to allow for italic character slant
+        const verticallyClipped = charTop < clipTop - CLIP_EPSILON || charBottom > clipBottom + DESCENDER_CLIP_EPSILON;
+        const horizontallyClipped = charLeft < clipLeft - ITALIC_CLIP_EPSILON || charRight >= clipRight;
 
         // Don't clip emojis vertically. The row will resize based on textHeightWithDescenders,
         // but AABB is set before that calculation completes. Skipping vertical clipping for
@@ -1276,6 +1297,8 @@ export class CellLabel {
           underlineY,
           linkText,
           isNakedUrl: this.isNakedUrl,
+          spanStart: span.start,
+          spanEnd: span.end,
         });
       }
     }
@@ -1377,7 +1400,7 @@ export class CellLabel {
       const width = Math.min(lineWidth * scale, clipRight - xPos);
 
       const rect = new Rectangle(xPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
-      this.horizontalLines.push(rect);
+      this.horizontalLines.push({ rect, tint: this.tint });
     });
     // Note: We intentionally don't update textHeight here. Underlines/strikethroughs
     // are decorative and shouldn't affect text height for layout purposes.
@@ -1397,52 +1420,77 @@ export class CellLabel {
     const baseData = this.cellsLabels.bitmapFonts[this.fontName];
     if (!baseData) return;
 
-    // Track consecutive runs of underlined/strikethrough characters
+    // Track consecutive runs of underlined/strikethrough characters with same color
     interface LineRun {
       startCharIdx: number;
       endCharIdx: number;
       line: number;
       type: 'underline' | 'strikethrough';
+      tint: number;
     }
 
     const runs: LineRun[] = [];
     let currentUnderlineStart: number | null = null;
     let currentUnderlineLine = 0;
+    let currentUnderlineTint = 0;
     let currentStrikeStart: number | null = null;
     let currentStrikeLine = 0;
+    let currentStrikeTint = 0;
 
     for (let i = 0; i <= this.chars.length; i++) {
       const formatting = i < this.chars.length ? this.getCharFormatting(i) : null;
       const charLine = i < this.chars.length ? this.chars[i].line : -1;
+      // Use the text color from formatting, falling back to cell tint
+      const charTint = formatting?.textColor ?? this.tint;
 
-      // Handle underline runs
+      // Handle underline runs - break on underline change, line change, or color change
       if (formatting?.underline && currentUnderlineStart === null) {
         currentUnderlineStart = i;
         currentUnderlineLine = charLine;
-      } else if ((!formatting?.underline || charLine !== currentUnderlineLine) && currentUnderlineStart !== null) {
+        currentUnderlineTint = charTint;
+      } else if (
+        currentUnderlineStart !== null &&
+        (!formatting?.underline || charLine !== currentUnderlineLine || charTint !== currentUnderlineTint)
+      ) {
         runs.push({
           startCharIdx: currentUnderlineStart,
           endCharIdx: i - 1,
           line: currentUnderlineLine,
           type: 'underline',
+          tint: currentUnderlineTint,
         });
-        currentUnderlineStart = formatting?.underline ? i : null;
-        currentUnderlineLine = charLine;
+        if (formatting?.underline) {
+          currentUnderlineStart = i;
+          currentUnderlineLine = charLine;
+          currentUnderlineTint = charTint;
+        } else {
+          currentUnderlineStart = null;
+        }
       }
 
-      // Handle strikethrough runs
+      // Handle strikethrough runs - break on strikethrough change, line change, or color change
       if (formatting?.strikeThrough && currentStrikeStart === null) {
         currentStrikeStart = i;
         currentStrikeLine = charLine;
-      } else if ((!formatting?.strikeThrough || charLine !== currentStrikeLine) && currentStrikeStart !== null) {
+        currentStrikeTint = charTint;
+      } else if (
+        currentStrikeStart !== null &&
+        (!formatting?.strikeThrough || charLine !== currentStrikeLine || charTint !== currentStrikeTint)
+      ) {
         runs.push({
           startCharIdx: currentStrikeStart,
           endCharIdx: i - 1,
           line: currentStrikeLine,
           type: 'strikethrough',
+          tint: currentStrikeTint,
         });
-        currentStrikeStart = formatting?.strikeThrough ? i : null;
-        currentStrikeLine = charLine;
+        if (formatting?.strikeThrough) {
+          currentStrikeStart = i;
+          currentStrikeLine = charLine;
+          currentStrikeTint = charTint;
+        } else {
+          currentStrikeStart = null;
+        }
       }
     }
 
@@ -1475,7 +1523,7 @@ export class CellLabel {
       const width = lineEndX - startXPos;
       if (width > 0) {
         const rect = new Rectangle(startXPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
-        this.horizontalLines.push(rect);
+        this.horizontalLines.push({ rect, tint: run.tint });
       }
     }
     // Note: We intentionally don't update textHeight here. Underlines/strikethroughs
