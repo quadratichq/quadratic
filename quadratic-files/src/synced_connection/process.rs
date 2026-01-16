@@ -265,17 +265,18 @@ pub(crate) async fn process_synced_connection<
                 )
                 .await?;
 
-                let num_files =
-                    upload(&object_store, &prefix, parquet_data)
-                        .await
-                        .map_err(|e| {
-                            FilesError::SyncedConnection(format!(
-                                "Failed to upload stream '{}' for chunk {}: {}",
-                                stream,
-                                chunk_index + 1,
-                                e
-                            ))
-                        })?;
+                let num_files = upload(&object_store, &prefix, parquet_data).await.map_err(
+                    |e| {
+                        FilesError::SyncedConnection(format!(
+                            "Failed to upload stream '{}' for chunk {} for connection {} ({}): {}",
+                            stream,
+                            chunk_index + 1,
+                            connection_name,
+                            connection_id,
+                            e
+                        ))
+                    },
+                )?;
 
                 // If no files were uploaded, write marker files so we don't re-sync these dates
                 if num_files == 0 {
@@ -283,9 +284,11 @@ pub(crate) async fn process_synced_connection<
                         .await
                         .map_err(|e| {
                             FilesError::SyncedConnection(format!(
-                                "Failed to write synced markers for stream '{}' chunk {}: {}",
+                                "Failed to write synced markers for stream '{}' chunk {} for connection {} ({}): {}",
                                 stream,
                                 chunk_index + 1,
+                                connection_name,
+                                connection_id,
                                 e
                             ))
                         })?;
@@ -294,10 +297,12 @@ pub(crate) async fn process_synced_connection<
                 total_files_processed += num_files;
 
                 tracing::trace!(
-                    "Completed stream '{}' chunk {}/{}: processed {} files",
+                    "Completed stream '{}' chunk {}/{} for connection {} ({}): processed {} files",
                     stream,
                     chunk_index + 1,
                     total_chunks,
+                    connection_name,
+                    connection_id,
                     num_files
                 );
 
