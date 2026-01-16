@@ -14,7 +14,10 @@ use crate::{
     grid::{
         SheetId,
         js_types::JsHashesDirty,
-        sheet::conditional_format::{ConditionalFormat, ConditionalFormatUpdate},
+        sheet::conditional_format::{
+            ConditionalFormat, ConditionalFormatConfig, ConditionalFormatConfigUpdate,
+            ConditionalFormatUpdate,
+        },
     },
 };
 
@@ -24,6 +27,28 @@ use crate::{
 const PREVIEW_UUID: &str = "00000000-0000-0000-0000-000000000000";
 
 impl GridController {
+    /// Parses a config update into a config, returning None if parsing fails.
+    fn parse_config_update(
+        &self,
+        config_update: ConditionalFormatConfigUpdate,
+        sheet_id: SheetId,
+        selection: &A1Selection,
+    ) -> Option<ConditionalFormatConfig> {
+        match config_update {
+            ConditionalFormatConfigUpdate::Formula { rule, style } => {
+                let pos = selection.cursor.to_sheet_pos(sheet_id);
+                let formula = parse_formula(&rule, self.a1_context(), pos).ok()?;
+                Some(ConditionalFormatConfig::Formula {
+                    rule: formula,
+                    style,
+                })
+            }
+            ConditionalFormatConfigUpdate::ColorScale { color_scale } => {
+                Some(ConditionalFormatConfig::ColorScale { color_scale })
+            }
+        }
+    }
+
     /// Creates or updates a conditional format.
     pub fn update_conditional_format(
         &mut self,
@@ -46,11 +71,10 @@ impl GridController {
             Err(_) => return, // Invalid selection, don't save
         };
 
-        // Parse the formula string into AST
-        let pos = selection.cursor.to_sheet_pos(sheet_id);
-        let formula = match parse_formula(&update.rule, self.a1_context(), pos) {
-            Ok(f) => f,
-            Err(_) => return, // Invalid formula, don't save
+        // Parse the config
+        let config = match self.parse_config_update(update.config, sheet_id, &selection) {
+            Some(c) => c,
+            None => return, // Invalid config, don't save
         };
 
         let id = update.id.unwrap_or_else(Uuid::new_v4);
@@ -58,8 +82,7 @@ impl GridController {
         let conditional_format = ConditionalFormat {
             id,
             selection,
-            style: update.style,
-            rule: formula,
+            config,
             apply_to_blank: update.apply_to_blank,
         };
 
@@ -115,12 +138,11 @@ impl GridController {
                     }
                 };
 
-            // Parse the formula string into AST
-            let pos = selection.cursor.to_sheet_pos(sheet_id);
-            let formula = match parse_formula(&update.rule, self.a1_context(), pos) {
-                Ok(f) => f,
-                Err(e) => {
-                    errors.push(format!("Invalid rule formula '{}': {}", update.rule, e));
+            // Parse the config
+            let config = match self.parse_config_update(update.config, sheet_id, &selection) {
+                Some(c) => c,
+                None => {
+                    errors.push("Invalid config".to_string());
                     continue;
                 }
             };
@@ -130,8 +152,7 @@ impl GridController {
             let conditional_format = ConditionalFormat {
                 id,
                 selection,
-                style: update.style,
-                rule: formula,
+                config,
                 apply_to_blank: update.apply_to_blank,
             };
 
@@ -184,10 +205,10 @@ impl GridController {
         let selection = A1Selection::parse_a1(&update.selection, sheet_id, a1_context)
             .map_err(|e| format!("Invalid selection: {e}"))?;
 
-        // Parse the formula string into AST (before mutable borrow)
-        let pos = selection.cursor.to_sheet_pos(sheet_id);
-        let formula = parse_formula(&update.rule, a1_context, pos)
-            .map_err(|e| format!("Invalid formula: {e}"))?;
+        // Parse the config
+        let config = self
+            .parse_config_update(update.config, sheet_id, &selection)
+            .ok_or("Invalid config")?;
 
         // Use the provided ID (for editing existing formats) or the fixed preview UUID
         let id = update.id.unwrap_or_else(|| {
@@ -203,8 +224,7 @@ impl GridController {
         let preview = ConditionalFormat {
             id,
             selection: selection.clone(),
-            style: update.style,
-            rule: formula,
+            config,
             apply_to_blank: update.apply_to_blank,
         };
 

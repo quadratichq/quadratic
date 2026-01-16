@@ -1,9 +1,10 @@
 import { editorInteractionStateShowConditionalFormatAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
-import type { A1Selection, ConditionalFormatRule } from '@/app/quadratic-core-types';
+import type { A1Selection, ColorScaleThreshold, ConditionalFormatRule } from '@/app/quadratic-core-types';
 import { checkFormula, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import { ColorScaleEditor } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ColorScaleEditor';
 import { ConditionalFormatHeader } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ConditionalFormatHeader';
 import { ConditionalFormatStyleToolbar } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ConditionalFormatStyleToolbar';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -22,6 +23,9 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+
+// Format type for the conditional format
+type FormatType = 'formula' | 'colorScale';
 
 // Debounce delay for preview updates (ms)
 const PREVIEW_DEBOUNCE_MS = 150;
@@ -338,19 +342,41 @@ export const ConditionalFormat = () => {
   }, [isNew, existingFormat]);
 
   const [selection, setSelection] = useState<JsSelection | undefined>(undefined);
+
+  // Determine initial format type from existing format
+  const [formatType, setFormatType] = useState<FormatType>(() => {
+    if (existingFormat?.config.type === 'ColorScale') {
+      return 'colorScale';
+    }
+    return 'formula';
+  });
+
   const [conditionType, setConditionType] = useState<ConditionType>(() => {
     // For editing, start with custom formula since we store the raw formula
-    return existingFormat ? 'custom_formula' : 'greater_than';
+    return existingFormat?.config.type === 'Formula' ? 'custom_formula' : 'greater_than';
   });
   const [value1, setValue1] = useState('');
   const [value2, setValue2] = useState('');
   const [customFormula, setCustomFormula] = useState('');
   const [style, setStyle] = useState<ConditionalFormatStyle>(() => {
-    if (existingFormat) {
-      return { ...existingFormat.style };
+    if (existingFormat?.config.type === 'Formula') {
+      return { ...existingFormat.config.style };
     }
     return {};
   });
+
+  // Color scale state
+  const [colorScaleThresholds, setColorScaleThresholds] = useState<ColorScaleThreshold[]>(() => {
+    if (existingFormat?.config.type === 'ColorScale') {
+      return [...existingFormat.config.color_scale.thresholds];
+    }
+    // Default 2-color scale: red (min) to green (max)
+    return [
+      { value_type: 'Min', color: '#f8696b' },
+      { value_type: 'Max', color: '#63be7b' },
+    ];
+  });
+
   const [applyToBlank, setApplyToBlank] = useState<boolean>(() => {
     // Use existing value if editing, otherwise use the default based on condition type
     return existingFormat?.apply_to_blank ?? false;
@@ -360,25 +386,32 @@ export const ConditionalFormat = () => {
   // Load rule and style from existing format when editing
   useEffect(() => {
     if (existingFormat) {
-      // Update the rule/formula state
-      if (existingFormat.rule) {
-        const result = parseRuleToCondition(existingFormat.rule);
-        setConditionType(result.conditionType);
-        setValue1(result.value1);
-        setValue2(result.value2);
-        if (result.conditionType === 'custom_formula') {
-          setCustomFormula(result.value1);
+      // Determine format type from config
+      if (existingFormat.config.type === 'ColorScale') {
+        setFormatType('colorScale');
+        setColorScaleThresholds([...existingFormat.config.color_scale.thresholds]);
+      } else if (existingFormat.config.type === 'Formula') {
+        setFormatType('formula');
+        // Update the rule/formula state
+        if (existingFormat.config.rule) {
+          const result = parseRuleToCondition(existingFormat.config.rule);
+          setConditionType(result.conditionType);
+          setValue1(result.value1);
+          setValue2(result.value2);
+          if (result.conditionType === 'custom_formula') {
+            setCustomFormula(result.value1);
+          }
         }
+        // Update the style state (convert null to undefined)
+        setStyle({
+          bold: existingFormat.config.style.bold ?? undefined,
+          italic: existingFormat.config.style.italic ?? undefined,
+          underline: existingFormat.config.style.underline ?? undefined,
+          strike_through: existingFormat.config.style.strike_through ?? undefined,
+          text_color: existingFormat.config.style.text_color ?? undefined,
+          fill_color: existingFormat.config.style.fill_color ?? undefined,
+        });
       }
-      // Update the style state (convert null to undefined)
-      setStyle({
-        bold: existingFormat.style.bold ?? undefined,
-        italic: existingFormat.style.italic ?? undefined,
-        underline: existingFormat.style.underline ?? undefined,
-        strike_through: existingFormat.style.strike_through ?? undefined,
-        text_color: existingFormat.style.text_color ?? undefined,
-        fill_color: existingFormat.style.fill_color ?? undefined,
-      });
       // Update apply_to_blank
       setApplyToBlank(existingFormat.apply_to_blank);
     }
@@ -506,6 +539,11 @@ export const ConditionalFormat = () => {
   // Track whether we have an active preview (to know if we need to clear it)
   const hasActivePreviewRef = useRef(false);
 
+  // Check if color scale is valid
+  const hasValidColorScale = useMemo(() => {
+    return colorScaleThresholds.length >= 2;
+  }, [colorScaleThresholds]);
+
   // Send preview to core when form values change (debounced)
   useEffect(() => {
     // Clear any pending preview update
@@ -514,8 +552,12 @@ export const ConditionalFormat = () => {
       previewTimeoutRef.current = null;
     }
 
-    // Don't send preview if required values are missing or formula is invalid or no style
-    if (!selection || !hasValidValues || !formulaValidation.isValid || !hasAnyStyle) {
+    // Validation depends on format type
+    const isFormulaValid = formatType === 'formula' && hasValidValues && formulaValidation.isValid && hasAnyStyle;
+    const isColorScaleValid = formatType === 'colorScale' && hasValidColorScale;
+
+    // Don't send preview if required values are missing
+    if (!selection || (!isFormulaValid && !isColorScaleValid)) {
       // Only clear the preview if we had previously sent one
       if (hasActivePreviewRef.current) {
         quadraticCore.clearPreviewConditionalFormat(sheetId);
@@ -525,21 +567,32 @@ export const ConditionalFormat = () => {
       return;
     }
 
-    // Build the preview object
+    // Build the preview object based on format type
     const selectionJson = selection.toA1String(sheetId, sheets.jsA1Context);
+    const config =
+      formatType === 'colorScale'
+        ? {
+            type: 'ColorScale' as const,
+            color_scale: { thresholds: colorScaleThresholds },
+          }
+        : {
+            type: 'Formula' as const,
+            rule: generatedFormula,
+            style: {
+              bold: style.bold ?? null,
+              italic: style.italic ?? null,
+              underline: style.underline ?? null,
+              strike_through: style.strike_through ?? null,
+              text_color: style.text_color ?? null,
+              fill_color: style.fill_color ?? null,
+            },
+          };
+
     const previewData = {
       id: existingFormat?.id ?? null,
       sheet_id: sheetId,
       selection: selectionJson,
-      style: {
-        bold: style.bold ?? null,
-        italic: style.italic ?? null,
-        underline: style.underline ?? null,
-        strike_through: style.strike_through ?? null,
-        text_color: style.text_color ?? null,
-        fill_color: style.fill_color ?? null,
-      },
-      rule: generatedFormula,
+      config,
       apply_to_blank: applyToBlank,
     };
 
@@ -558,11 +611,14 @@ export const ConditionalFormat = () => {
   }, [
     selection,
     existingFormat?.id,
+    formatType,
     generatedFormula,
     hasValidValues,
     formulaValidation.isValid,
     hasAnyStyle,
+    hasValidColorScale,
     style,
+    colorScaleThresholds,
     applyToBlank,
     sheetId,
   ]);
@@ -586,7 +642,13 @@ export const ConditionalFormat = () => {
       return;
     }
 
-    if (!hasValidValues || !formulaValidation.isValid) {
+    // For formula type, validate the formula
+    if (formatType === 'formula' && (!hasValidValues || !formulaValidation.isValid)) {
+      return;
+    }
+
+    // For color scale, validate thresholds
+    if (formatType === 'colorScale' && colorScaleThresholds.length < 2) {
       return;
     }
 
@@ -596,19 +658,31 @@ export const ConditionalFormat = () => {
     // Get the selection as a JSON string for the backend
     const selectionJson = selection.toA1String(sheetId, sheets.jsA1Context);
 
+    // Build the config based on format type
+    const config =
+      formatType === 'colorScale'
+        ? {
+            type: 'ColorScale' as const,
+            color_scale: { thresholds: colorScaleThresholds },
+          }
+        : {
+            type: 'Formula' as const,
+            rule: generatedFormula,
+            style: {
+              bold: style.bold ?? null,
+              italic: style.italic ?? null,
+              underline: style.underline ?? null,
+              strike_through: style.strike_through ?? null,
+              text_color: style.text_color ?? null,
+              fill_color: style.fill_color ?? null,
+            },
+          };
+
     quadraticCore.updateConditionalFormat({
       id: existingFormat?.id ?? null,
       sheet_id: sheetId,
       selection: selectionJson,
-      style: {
-        bold: style.bold ?? null,
-        italic: style.italic ?? null,
-        underline: style.underline ?? null,
-        strike_through: style.strike_through ?? null,
-        text_color: style.text_color ?? null,
-        fill_color: style.fill_color ?? null,
-      },
-      rule: generatedFormula,
+      config,
       apply_to_blank: applyToBlank,
     });
 
@@ -616,10 +690,12 @@ export const ConditionalFormat = () => {
   }, [
     selection,
     existingFormat?.id,
+    formatType,
     generatedFormula,
     hasValidValues,
     formulaValidation.isValid,
     style,
+    colorScaleThresholds,
     applyToBlank,
     sheetId,
     setShowConditionalFormat,
@@ -673,122 +749,145 @@ export const ConditionalFormat = () => {
           onlyCurrentSheetError="Range must be on the same sheet"
         />
 
+        {/* Format Type Selector */}
         <div>
-          <Label>Format cells if…</Label>
-          <Select
-            value={conditionType}
-            onValueChange={(v) => {
-              const newConditionType = v as ConditionType;
-              setConditionType(newConditionType);
-              // Update apply_to_blank to the default for this condition type (only for new rules)
-              if (isNew) {
-                setApplyToBlank(getDefaultApplyToBlank(newConditionType));
-              }
-            }}
-          >
-            <SelectTrigger className="mt-1">
-              <SelectValue />
+          <Label>Format type</Label>
+          <Select value={formatType} onValueChange={(value) => setFormatType(value as FormatType)}>
+            <SelectTrigger className="mt-1 w-full">
+              <SelectValue placeholder="Select format type" />
             </SelectTrigger>
-            <SelectContent>{renderConditionOptions()}</SelectContent>
+            <SelectContent>
+              <SelectItem value="formula">Single Color</SelectItem>
+              <SelectItem value="colorScale">Color Scale</SelectItem>
+            </SelectContent>
           </Select>
         </div>
 
-        {/* Show value inputs based on condition type */}
-        {inputType === 'single' && (
-          <div>
-            <Label htmlFor="value1">Value</Label>
-            <Input
-              id="value1"
-              type={isNumberCondition(conditionType) ? 'number' : 'text'}
-              value={value1}
-              onChange={(e) => setValue1(e.target.value)}
-              placeholder={conditionType.startsWith('text_') ? 'Enter text' : 'Enter number'}
-              className="mt-1"
-            />
-          </div>
-        )}
-
-        {inputType === 'double' && (
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Label htmlFor="value1">From</Label>
-              <Input
-                id="value1"
-                type="number"
-                value={value1}
-                onChange={(e) => setValue1(e.target.value)}
-                placeholder="Min"
-                className="mt-1"
-              />
+        {formatType === 'formula' && (
+          <>
+            <div>
+              <Label>Format cells if…</Label>
+              <Select
+                value={conditionType}
+                onValueChange={(v) => {
+                  const newConditionType = v as ConditionType;
+                  setConditionType(newConditionType);
+                  // Update apply_to_blank to the default for this condition type (only for new rules)
+                  if (isNew) {
+                    setApplyToBlank(getDefaultApplyToBlank(newConditionType));
+                  }
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>{renderConditionOptions()}</SelectContent>
+              </Select>
             </div>
-            <div className="flex-1">
-              <Label htmlFor="value2">To</Label>
-              <Input
-                id="value2"
-                type="number"
-                value={value2}
-                onChange={(e) => setValue2(e.target.value)}
-                placeholder="Max"
-                className="mt-1"
+
+            {/* Show value inputs based on condition type */}
+            {inputType === 'single' && (
+              <div>
+                <Label htmlFor="value1">Value</Label>
+                <Input
+                  id="value1"
+                  type={isNumberCondition(conditionType) ? 'number' : 'text'}
+                  value={value1}
+                  onChange={(e) => setValue1(e.target.value)}
+                  placeholder={conditionType.startsWith('text_') ? 'Enter text' : 'Enter number'}
+                  className="mt-1"
+                />
+              </div>
+            )}
+
+            {inputType === 'double' && (
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Label htmlFor="value1">From</Label>
+                  <Input
+                    id="value1"
+                    type="number"
+                    value={value1}
+                    onChange={(e) => setValue1(e.target.value)}
+                    placeholder="Min"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="value2">To</Label>
+                  <Input
+                    id="value2"
+                    type="number"
+                    value={value2}
+                    onChange={(e) => setValue2(e.target.value)}
+                    placeholder="Max"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            )}
+
+            {inputType === 'formula' && (
+              <div>
+                <Label htmlFor="formula">Custom formula</Label>
+                <Input
+                  id="formula"
+                  value={customFormula}
+                  onChange={(e) => setCustomFormula(e.target.value)}
+                  placeholder={`e.g., ${firstCell} > 10`}
+                  className={cn('mt-1', !formulaValidation.isValid && customFormula && 'border-destructive')}
+                />
+                {!formulaValidation.isValid && customFormula ? (
+                  <p className="mt-1 text-xs text-destructive">{formulaValidation.error}</p>
+                ) : (
+                  <>
+                    <p className="mt-1 text-xs text-muted-foreground">Enter a formula that returns TRUE or FALSE.</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Cell references will adjust for each cell in the selection, similar to copying a formula.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Show generated formula preview for non-custom conditions */}
+            {inputType !== 'formula' && generatedFormula && (
+              <div
+                className={cn(
+                  'rounded px-3 py-2 text-xs',
+                  formulaValidation.isValid ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive'
+                )}
+              >
+                <span className="font-medium">Formula: </span>
+                <code>{generatedFormula}</code>
+                {!formulaValidation.isValid && <p className="mt-1">{formulaValidation.error}</p>}
+              </div>
+            )}
+
+            {/* Apply to blank cells checkbox */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="apply-to-blank"
+                checked={applyToBlank}
+                onCheckedChange={(checked) => setApplyToBlank(checked === true)}
               />
+              <Label htmlFor="apply-to-blank" className="cursor-pointer text-sm font-normal">
+                Apply to empty cells
+              </Label>
             </div>
-          </div>
+
+            <div>
+              <Label>Formatting style</Label>
+              <ConditionalFormatStyleToolbar style={style} setStyle={setStyle} />
+              <StylePreview style={style} />
+            </div>
+          </>
         )}
 
-        {inputType === 'formula' && (
-          <div>
-            <Label htmlFor="formula">Custom formula</Label>
-            <Input
-              id="formula"
-              value={customFormula}
-              onChange={(e) => setCustomFormula(e.target.value)}
-              placeholder={`e.g., ${firstCell} > 10`}
-              className={cn('mt-1', !formulaValidation.isValid && customFormula && 'border-destructive')}
-            />
-            {!formulaValidation.isValid && customFormula ? (
-              <p className="mt-1 text-xs text-destructive">{formulaValidation.error}</p>
-            ) : (
-              <>
-                <p className="mt-1 text-xs text-muted-foreground">Enter a formula that returns TRUE or FALSE.</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Cell references will adjust for each cell in the selection, similar to copying a formula.
-                </p>
-              </>
-            )}
-          </div>
+        {/* Color Scale Editor */}
+        {formatType === 'colorScale' && (
+          <ColorScaleEditor thresholds={colorScaleThresholds} setThresholds={setColorScaleThresholds} />
         )}
-
-        {/* Show generated formula preview for non-custom conditions */}
-        {inputType !== 'formula' && generatedFormula && (
-          <div
-            className={cn(
-              'rounded px-3 py-2 text-xs',
-              formulaValidation.isValid ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive'
-            )}
-          >
-            <span className="font-medium">Formula: </span>
-            <code>{generatedFormula}</code>
-            {!formulaValidation.isValid && <p className="mt-1">{formulaValidation.error}</p>}
-          </div>
-        )}
-
-        {/* Apply to blank cells checkbox */}
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="apply-to-blank"
-            checked={applyToBlank}
-            onCheckedChange={(checked) => setApplyToBlank(checked === true)}
-          />
-          <Label htmlFor="apply-to-blank" className="cursor-pointer text-sm font-normal">
-            Apply to empty cells
-          </Label>
-        </div>
-
-        <div>
-          <Label>Formatting style</Label>
-          <ConditionalFormatStyleToolbar style={style} setStyle={setStyle} />
-          <StylePreview style={style} />
-        </div>
       </div>
 
       <div className="mt-3 flex w-full justify-between border-t border-t-gray-100 py-3">
@@ -811,7 +910,11 @@ export const ConditionalFormat = () => {
           </Button>
           <Button
             onClick={applyConditionalFormat}
-            disabled={!hasValidValues || !formulaValidation.isValid || !hasAnyStyle}
+            disabled={
+              formatType === 'formula'
+                ? !hasValidValues || !formulaValidation.isValid || !hasAnyStyle
+                : !hasValidColorScale
+            }
           >
             {isNew ? 'Add' : 'Save'}
           </Button>

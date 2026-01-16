@@ -1,6 +1,11 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
-import type { ConditionalFormatClient, ConditionalFormatUpdate } from '@/app/quadratic-core-types';
+import type {
+  ConditionalFormatClient,
+  ConditionalFormatRule,
+  ConditionalFormatStyle,
+  ConditionalFormatUpdate,
+} from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
@@ -8,7 +13,7 @@ const getSheetFromSheetName = (sheetName: string | null | undefined): Sheet | un
   return sheetName ? sheets.getSheetByName(sheetName) : sheets.sheet;
 };
 
-const convertRuleToText = (rule: ConditionalFormatClient['rule']): string => {
+const convertRuleToText = (rule: ConditionalFormatRule): string => {
   if (rule === 'IsEmpty') return 'is empty (ISBLANK)';
   if (rule === 'IsNotEmpty') return 'is not empty (NOT(ISBLANK))';
   if ('TextContains' in rule) return `text contains "${rule.TextContains.value}"`;
@@ -39,7 +44,7 @@ const formatValue = (
   return 'unknown';
 };
 
-const convertStyleToText = (style: ConditionalFormatClient['style']): string => {
+const convertStyleToText = (style: ConditionalFormatStyle): string => {
   const parts: string[] = [];
   if (style.bold === true) parts.push('bold');
   if (style.italic === true) parts.push('italic');
@@ -54,8 +59,15 @@ const convertConditionalFormatToText = (cf: ConditionalFormatClient, sheetId: st
   const selectionString = sheets.A1SelectionToA1String(cf.selection, sheetId);
   let response = `- ID: ${cf.id}\n`;
   response += `  Selection: ${selectionString}\n`;
-  response += `  Rule: ${convertRuleToText(cf.rule)}\n`;
-  response += `  Style: ${convertStyleToText(cf.style)}\n`;
+
+  if (cf.config.type === 'Formula') {
+    response += `  Rule: ${convertRuleToText(cf.config.rule)}\n`;
+    response += `  Style: ${convertStyleToText(cf.config.style)}\n`;
+  } else if (cf.config.type === 'ColorScale') {
+    const colors = cf.config.color_scale.thresholds.map((t) => t.color).join(' → ');
+    response += `  Type: Color Scale (${colors})\n`;
+  }
+
   response += `  Apply to empty cells: ${cf.apply_to_blank}\n`;
   return response;
 };
@@ -167,8 +179,11 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
         id: null,
         sheet_id: sheet.id,
         selection,
-        style,
-        rule: ruleFormula,
+        config: {
+          type: 'Formula',
+          rule: ruleFormula,
+          style,
+        },
         apply_to_blank: apply_to_empty ?? null,
       };
 
@@ -186,16 +201,24 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
         throw new Error(`Conditional format with ID "${id}" not found`);
       }
 
+      // Only support updating formula-based formats for now
+      if (existing.config.type !== 'Formula') {
+        throw new Error('Cannot update color scale conditional formats via AI');
+      }
+
       // Merge existing with updates
-      const style = buildStyle(styleProps, existing.style);
+      const style = buildStyle(styleProps, existing.config.style);
       const existingSelection = sheets.A1SelectionToA1String(existing.selection, sheet.id);
 
       const update: ConditionalFormatUpdate = {
         id,
         sheet_id: sheet.id,
         selection: selection ?? existingSelection,
-        style,
-        rule: ruleFormula ?? getExistingRuleFormula(existing),
+        config: {
+          type: 'Formula',
+          rule: ruleFormula ?? getExistingRuleFormula(existing),
+          style,
+        },
         // Use provided value, or keep existing value
         apply_to_blank: apply_to_empty !== undefined ? apply_to_empty : existing.apply_to_blank,
       };
@@ -210,8 +233,8 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
 
 const buildStyle = (
   styleProps: Omit<ConditionalFormatAction, 'id' | 'action' | 'selection' | 'rule' | 'apply_to_empty'>,
-  existing?: ConditionalFormatClient['style']
-): ConditionalFormatUpdate['style'] => {
+  existing?: ConditionalFormatStyle
+): ConditionalFormatStyle => {
   return {
     bold: styleProps.bold !== undefined ? styleProps.bold : (existing?.bold ?? null),
     italic: styleProps.italic !== undefined ? styleProps.italic : (existing?.italic ?? null),
@@ -223,7 +246,7 @@ const buildStyle = (
   };
 };
 
-const isEmptyStyle = (style: ConditionalFormatUpdate['style']): boolean => {
+const isEmptyStyle = (style: ConditionalFormatStyle): boolean => {
   return (
     style.bold === null &&
     style.italic === null &&
@@ -235,7 +258,11 @@ const isEmptyStyle = (style: ConditionalFormatUpdate['style']): boolean => {
 };
 
 const getExistingRuleFormula = (cf: ConditionalFormatClient): string => {
-  const rule = cf.rule;
+  // Only formula-based configs have rules
+  if (cf.config.type !== 'Formula') {
+    return 'TRUE()';
+  }
+  const rule = cf.config.rule;
   if (rule === 'IsEmpty') return 'ISBLANK(A1)';
   if (rule === 'IsNotEmpty') return 'NOT(ISBLANK(A1))';
   if ('TextContains' in rule) return `ISNUMBER(SEARCH("${rule.TextContains.value}", A1))`;

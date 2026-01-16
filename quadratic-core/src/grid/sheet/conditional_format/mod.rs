@@ -1,5 +1,6 @@
 //! Conditional Formatting for a Sheet.
 
+pub mod color_scale;
 mod evaluate;
 pub mod rules;
 
@@ -7,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
+pub use color_scale::{ColorScale, ColorScaleThreshold, ColorScaleThresholdValueType};
 pub use rules::{ConditionalFormatRule, ConditionalFormatValue};
 
 use crate::{
@@ -16,6 +18,70 @@ use crate::{
     formulas::ast::Formula,
     grid::{SheetId, bounds::GridBounds},
 };
+
+/// The configuration for a conditional format - either formula-based or color scale.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(tag = "type")]
+pub enum ConditionalFormatConfig {
+    /// Formula-based conditional format that applies a style when a condition is true.
+    Formula {
+        /// The formula that determines whether to apply the format.
+        /// When evaluated for a cell, if the result is truthy, the format is applied.
+        #[ts(skip)]
+        rule: Formula,
+
+        /// The style to apply when the condition is true.
+        style: ConditionalFormatStyle,
+    },
+
+    /// Color scale that applies a gradient of colors based on numeric cell values.
+    ColorScale {
+        /// The color scale configuration with threshold points.
+        color_scale: ColorScale,
+    },
+}
+
+impl ConditionalFormatConfig {
+    /// Returns the style if this is a formula-based config, None for color scales.
+    pub fn style(&self) -> Option<&ConditionalFormatStyle> {
+        match self {
+            ConditionalFormatConfig::Formula { style, .. } => Some(style),
+            ConditionalFormatConfig::ColorScale { .. } => None,
+        }
+    }
+
+    /// Returns the formula if this is a formula-based config, None for color scales.
+    pub fn formula(&self) -> Option<&Formula> {
+        match self {
+            ConditionalFormatConfig::Formula { rule, .. } => Some(rule),
+            ConditionalFormatConfig::ColorScale { .. } => None,
+        }
+    }
+
+    /// Returns the color scale if this is a color scale config, None for formula-based.
+    pub fn color_scale(&self) -> Option<&ColorScale> {
+        match self {
+            ConditionalFormatConfig::Formula { .. } => None,
+            ConditionalFormatConfig::ColorScale { color_scale } => Some(color_scale),
+        }
+    }
+
+    /// Returns true if this config has a fill color (either static or color scale).
+    pub fn has_fill(&self) -> bool {
+        match self {
+            ConditionalFormatConfig::Formula { style, .. } => style.fill_color.is_some(),
+            ConditionalFormatConfig::ColorScale { .. } => true,
+        }
+    }
+
+    /// Returns true if this config has non-fill styles (only applicable to formula-based).
+    pub fn has_non_fill_style(&self) -> bool {
+        match self {
+            ConditionalFormatConfig::Formula { style, .. } => style.has_non_fill_style(),
+            ConditionalFormatConfig::ColorScale { .. } => false,
+        }
+    }
+}
 
 /// The styling properties that can be applied by conditional formatting.
 /// Only these properties are supported - other format properties are ignored.
@@ -72,14 +138,8 @@ pub struct ConditionalFormat {
     /// The selection of cells this conditional format applies to.
     pub selection: A1Selection,
 
-    /// The style to apply when the condition is true.
-    /// Only properties that are `Some` will override the existing format.
-    pub style: ConditionalFormatStyle,
-
-    /// The formula that determines whether to apply the format.
-    /// When evaluated for a cell, if the result is truthy, the format is applied.
-    #[ts(skip)]
-    pub rule: Formula,
+    /// The configuration for this conditional format (formula-based or color scale).
+    pub config: ConditionalFormatConfig,
 
     /// Whether to apply the format to blank cells.
     /// If None, uses the default based on the rule type.
@@ -88,21 +148,65 @@ pub struct ConditionalFormat {
 }
 
 impl ConditionalFormat {
+    /// Returns the style if this is a formula-based format, None for color scales.
+    pub fn style(&self) -> Option<&ConditionalFormatStyle> {
+        self.config.style()
+    }
+
+    /// Returns the formula if this is a formula-based format, None for color scales.
+    pub fn formula(&self) -> Option<&Formula> {
+        self.config.formula()
+    }
+
+    /// Returns the color scale if this is a color scale format, None for formula-based.
+    pub fn color_scale(&self) -> Option<&ColorScale> {
+        self.config.color_scale()
+    }
+
+    /// Returns true if this format has a fill (either static or color scale).
+    pub fn has_fill(&self) -> bool {
+        self.config.has_fill()
+    }
+
+    /// Returns true if this format has non-fill styles (only applicable to formula-based).
+    pub fn has_non_fill_style(&self) -> bool {
+        self.config.has_non_fill_style()
+    }
+}
+
+impl ConditionalFormat {
     /// Converts this conditional format to a client-friendly version
     /// with the parsed rule for display/editing.
     pub fn to_client(&self, sheet_id: SheetId, a1_context: &A1Context) -> ConditionalFormatClient {
-        let rule = ConditionalFormatRule::from_formula(
-            &self.rule,
-            Some(sheet_id),
-            a1_context,
-            &self.selection,
-        );
-        ConditionalFormatClient {
-            id: self.id,
-            selection: self.selection.clone(),
-            style: self.style.clone(),
-            apply_to_blank: self.apply_to_blank.unwrap_or_else(|| rule.default_apply_to_blank()),
-            rule,
+        match &self.config {
+            ConditionalFormatConfig::Formula { rule, style } => {
+                let parsed_rule = ConditionalFormatRule::from_formula(
+                    rule,
+                    Some(sheet_id),
+                    a1_context,
+                    &self.selection,
+                );
+                ConditionalFormatClient {
+                    id: self.id,
+                    selection: self.selection.clone(),
+                    config: ConditionalFormatConfigClient::Formula {
+                        style: style.clone(),
+                        rule: parsed_rule.clone(),
+                    },
+                    apply_to_blank: self
+                        .apply_to_blank
+                        .unwrap_or_else(|| parsed_rule.default_apply_to_blank()),
+                }
+            }
+            ConditionalFormatConfig::ColorScale { color_scale } => ConditionalFormatClient {
+                id: self.id,
+                selection: self.selection.clone(),
+                config: ConditionalFormatConfigClient::ColorScale {
+                    color_scale: color_scale.clone(),
+                },
+                // Color scales don't apply to blank cells by default
+                apply_to_blank: self.apply_to_blank.unwrap_or(false),
+            },
         }
     }
 
@@ -110,15 +214,41 @@ impl ConditionalFormat {
     /// If `apply_to_blank` is None, uses the default based on the rule type.
     pub fn should_apply_to_blank(&self, sheet_id: SheetId, a1_context: &A1Context) -> bool {
         self.apply_to_blank.unwrap_or_else(|| {
-            let rule = ConditionalFormatRule::from_formula(
-                &self.rule,
-                Some(sheet_id),
-                a1_context,
-                &self.selection,
-            );
-            rule.default_apply_to_blank()
+            match &self.config {
+                ConditionalFormatConfig::Formula { rule, .. } => {
+                    let parsed_rule = ConditionalFormatRule::from_formula(
+                        rule,
+                        Some(sheet_id),
+                        a1_context,
+                        &self.selection,
+                    );
+                    parsed_rule.default_apply_to_blank()
+                }
+                // Color scales don't apply to blank cells by default
+                ConditionalFormatConfig::ColorScale { .. } => false,
+            }
         })
     }
+}
+
+/// Client-friendly configuration for a conditional format.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(tag = "type")]
+pub enum ConditionalFormatConfigClient {
+    /// Formula-based conditional format with parsed rule for display/editing.
+    Formula {
+        /// The style to apply when the condition is true.
+        style: ConditionalFormatStyle,
+
+        /// The parsed rule for display/editing.
+        rule: ConditionalFormatRule,
+    },
+
+    /// Color scale configuration.
+    ColorScale {
+        /// The color scale configuration with threshold points.
+        color_scale: ColorScale,
+    },
 }
 
 /// Conditional format for client communication.
@@ -131,14 +261,31 @@ pub struct ConditionalFormatClient {
     /// The selection of cells this conditional format applies to.
     pub selection: A1Selection,
 
-    /// The style to apply when the condition is true.
-    pub style: ConditionalFormatStyle,
+    /// The configuration for this conditional format.
+    pub config: ConditionalFormatConfigClient,
 
     /// Whether to apply the format to blank cells.
     pub apply_to_blank: bool,
+}
 
-    /// The parsed rule for display/editing.
-    pub rule: ConditionalFormatRule,
+/// Update configuration from the client.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(tag = "type")]
+pub enum ConditionalFormatConfigUpdate {
+    /// Formula-based conditional format.
+    Formula {
+        /// The formula string (will be parsed into AST).
+        rule: String,
+
+        /// The style to apply when the condition is true.
+        style: ConditionalFormatStyle,
+    },
+
+    /// Color scale configuration.
+    ColorScale {
+        /// The color scale configuration with threshold points.
+        color_scale: ColorScale,
+    },
 }
 
 /// Update type for creating/updating conditional formats from the client.
@@ -155,11 +302,8 @@ pub struct ConditionalFormatUpdate {
     /// The selection of cells as an A1 notation string.
     pub selection: String,
 
-    /// The style to apply when the condition is true.
-    pub style: ConditionalFormatStyle,
-
-    /// The formula string (will be parsed into AST).
-    pub rule: String,
+    /// The configuration for this conditional format.
+    pub config: ConditionalFormatConfigUpdate,
 
     /// Whether to apply the format to blank cells.
     /// If None, uses the default based on the rule type.
@@ -329,8 +473,19 @@ mod tests {
         ConditionalFormat {
             id: Uuid::new_v4(),
             selection: a1_selection,
-            style,
-            rule,
+            config: ConditionalFormatConfig::Formula { rule, style },
+            apply_to_blank: None,
+        }
+    }
+
+    fn create_test_color_scale(selection: &str) -> ConditionalFormat {
+        let a1_selection = A1Selection::test_a1(selection);
+        ConditionalFormat {
+            id: Uuid::new_v4(),
+            selection: a1_selection,
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale::default(),
+            },
             apply_to_blank: None,
         }
     }
@@ -445,7 +600,9 @@ mod tests {
 
         // Update existing format
         let mut updated_cf = cf.clone();
-        updated_cf.style.italic = Some(true);
+        if let ConditionalFormatConfig::Formula { ref mut style, .. } = updated_cf.config {
+            style.italic = Some(true);
+        }
         let reverse_op = formats.set(updated_cf, sheet_id);
         assert_eq!(formats.len(), 1); // Still 1
 
@@ -455,15 +612,16 @@ mod tests {
                 conditional_format: old_cf,
             } => {
                 assert_eq!(old_cf.id, cf_id);
-                assert_eq!(old_cf.style.bold, Some(true));
-                assert_eq!(old_cf.style.italic, None); // Old value
+                let old_style = old_cf.style().unwrap();
+                assert_eq!(old_style.bold, Some(true));
+                assert_eq!(old_style.italic, None); // Old value
             }
             _ => panic!("Expected SetConditionalFormat operation"),
         }
 
         // Verify update was applied
         let retrieved = formats.get(cf_id).unwrap();
-        assert_eq!(retrieved.style.italic, Some(true));
+        assert_eq!(retrieved.style().unwrap().italic, Some(true));
     }
 
     #[test]
@@ -555,13 +713,24 @@ mod tests {
 
         // Get mutable reference and modify
         let cf_mut = formats.get_mut(cf_id).unwrap();
-        cf_mut.style.italic = Some(true);
+        if let ConditionalFormatConfig::Formula { ref mut style, .. } = cf_mut.config {
+            style.italic = Some(true);
+        }
 
         // Verify modification persisted
         let retrieved = formats.get(cf_id).unwrap();
-        assert_eq!(retrieved.style.italic, Some(true));
+        assert_eq!(retrieved.style().unwrap().italic, Some(true));
 
         // Non-existent ID returns None
         assert!(formats.get_mut(Uuid::new_v4()).is_none());
+    }
+
+    #[test]
+    fn test_color_scale_format() {
+        let cf = create_test_color_scale("A1:A10");
+        assert!(cf.color_scale().is_some());
+        assert!(cf.style().is_none());
+        assert!(cf.has_fill());
+        assert!(!cf.has_non_fill_style());
     }
 }

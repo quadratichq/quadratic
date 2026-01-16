@@ -52,11 +52,13 @@ mod tests {
         let format = ConditionalFormat {
             id: Uuid::new_v4(),
             selection,
-            style: ConditionalFormatStyle {
-                bold: Some(true),
-                ..Default::default()
+            config: crate::grid::sheet::conditional_format::ConditionalFormatConfig::Formula {
+                rule: formula,
+                style: ConditionalFormatStyle {
+                    bold: Some(true),
+                    ..Default::default()
+                },
             },
-            rule: formula,
             apply_to_blank: None,
         };
 

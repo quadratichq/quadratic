@@ -4,11 +4,14 @@ use crate::{
     CellValue, Pos, Rect, RefAdjust, SheetPos, Value,
     a1::A1Context,
     controller::GridController,
-    formulas::{Ctx, adjust_references, parse_formula},
+    formulas::{Ctx, adjust_references, ast::Formula, parse_formula},
     grid::{
         SheetId,
         js_types::JsRenderCell,
-        sheet::conditional_format::{ConditionalFormat, ConditionalFormatStyle},
+        sheet::conditional_format::{
+            ColorScale, ColorScaleThresholdValueType, ConditionalFormat, ConditionalFormatConfig,
+            ConditionalFormatStyle, color_scale::compute_color_for_value,
+        },
     },
     values::IsBlank,
 };
@@ -30,27 +33,22 @@ impl GridController {
         }
     }
 
-    /// Evaluates a conditional format rule at a specific cell position.
+    /// Evaluates a formula-based conditional format rule at a specific cell position.
     /// Translates the formula references relative to the anchor (top-left of first range).
-    fn evaluate_conditional_format_rule(
+    fn evaluate_formula_rule(
         &self,
-        cf: &ConditionalFormat,
+        formula: &Formula,
+        selection: &crate::a1::A1Selection,
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> bool {
-        // Check if the cell is blank and whether we should skip blank cells
-        let should_apply_to_blank = cf.should_apply_to_blank(sheet_pos.sheet_id, a1_context);
-        if !should_apply_to_blank && self.is_cell_blank(sheet_pos) {
-            return false;
-        }
-
         // Get the anchor from the first cell of the first range in the selection.
         // The formula is defined relative to this anchor, and all ranges in the
         // selection should use the same anchor for consistent translation.
         // We use get_first_cell_from_selection to properly handle table column
         // selections where the first data cell may differ from the range's min bounds.
-        let anchor = ConditionalFormatRule::get_first_cell_from_selection(&cf.selection, a1_context)
-            .unwrap_or(cf.selection.cursor);
+        let anchor = ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context)
+            .unwrap_or(selection.cursor);
 
         // Calculate offset from anchor to current position
         let dx = sheet_pos.x - anchor.x;
@@ -59,12 +57,12 @@ impl GridController {
         // If no translation needed, evaluate directly
         if dx == 0 && dy == 0 {
             let mut ctx = Ctx::new_for_conditional_format(self, sheet_pos);
-            let result = cf.rule.eval(&mut ctx);
+            let result = formula.eval(&mut ctx);
             return is_truthy(&result.inner);
         }
 
         // Get the original formula string from the AST
-        let formula_string = cf.rule.to_a1_string(Some(sheet_pos.sheet_id), a1_context);
+        let formula_string = formula.to_a1_string(Some(sheet_pos.sheet_id), a1_context);
 
         // Adjust references by the offset (relative_only = true to only adjust relative refs)
         let adjust = RefAdjust {
@@ -94,6 +92,163 @@ impl GridController {
             }
             Err(_) => false,
         }
+    }
+
+    /// Evaluates a conditional format at a specific cell position.
+    /// For formula-based formats, returns true if the formula is truthy.
+    /// For color scales, always returns true (color is computed separately).
+    fn evaluate_conditional_format_rule(
+        &self,
+        cf: &ConditionalFormat,
+        sheet_pos: SheetPos,
+        a1_context: &A1Context,
+    ) -> bool {
+        // Check if the cell is blank and whether we should skip blank cells
+        let should_apply_to_blank = cf.should_apply_to_blank(sheet_pos.sheet_id, a1_context);
+        if !should_apply_to_blank && self.is_cell_blank(sheet_pos) {
+            return false;
+        }
+
+        match &cf.config {
+            ConditionalFormatConfig::Formula { rule, .. } => {
+                self.evaluate_formula_rule(rule, &cf.selection, sheet_pos, a1_context)
+            }
+            ConditionalFormatConfig::ColorScale { .. } => {
+                // Color scales always apply (the actual color is computed separately)
+                true
+            }
+        }
+    }
+
+    /// Get the numeric value of a cell, returning None if not numeric.
+    fn get_cell_numeric_value(&self, sheet_pos: SheetPos) -> Option<f64> {
+        let sheet = self.try_sheet(sheet_pos.sheet_id)?;
+        let pos = Pos {
+            x: sheet_pos.x,
+            y: sheet_pos.y,
+        };
+        let value = sheet.get_cell_for_formula(pos);
+        match value {
+            CellValue::Number(n) => n.try_into().ok(),
+            _ => None,
+        }
+    }
+
+    /// Collect all numeric values in a selection for computing min/max/percentiles.
+    /// For unbounded selections (like entire columns), uses the sheet's data bounds.
+    fn collect_numeric_values(
+        &self,
+        sheet_id: SheetId,
+        selection: &crate::a1::A1Selection,
+        a1_context: &A1Context,
+    ) -> Vec<f64> {
+        use crate::grid::GridBounds;
+
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return vec![];
+        };
+
+        let mut values = Vec::new();
+
+        // Get the rect to iterate over. For unbounded selections, use the sheet's data bounds.
+        let finite_rect = selection.largest_rect_finite(a1_context);
+
+        // Check if the selection might be unbounded by seeing if any range is unbounded
+        let has_unbounded = selection.ranges.iter().any(|range| match range {
+            crate::a1::CellRefRange::Sheet { range } => range.end.is_unbounded(),
+            crate::a1::CellRefRange::Table { .. } => false,
+        });
+
+        let rect = if has_unbounded {
+            // Use the sheet's data bounds (ignore formatting, only data)
+            match sheet.bounds(true) {
+                GridBounds::NonEmpty(data_rect) => {
+                    // Union with the finite rect in case the cursor is outside data bounds
+                    data_rect.union(&finite_rect)
+                }
+                GridBounds::Empty => finite_rect,
+            }
+        } else {
+            finite_rect
+        };
+
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if selection.contains_pos(pos, a1_context) {
+                    let value = sheet.get_cell_for_formula(pos);
+                    if let CellValue::Number(n) = value {
+                        if let Ok(f) = n.try_into() {
+                            values.push(f);
+                        }
+                    }
+                }
+            }
+        }
+
+        values.sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        values
+    }
+
+    /// Compute the threshold values for a color scale based on the values in the selection.
+    fn compute_color_scale_threshold_values(
+        &self,
+        color_scale: &ColorScale,
+        sheet_id: SheetId,
+        selection: &crate::a1::A1Selection,
+        a1_context: &A1Context,
+    ) -> Vec<f64> {
+        let values = self.collect_numeric_values(sheet_id, selection, a1_context);
+
+        if values.is_empty() {
+            // No values, return zeros as placeholder
+            return color_scale.thresholds.iter().map(|_| 0.0).collect();
+        }
+
+        let min_val = *values.first().unwrap();
+        let max_val = *values.last().unwrap();
+        let range = max_val - min_val;
+
+        color_scale
+            .thresholds
+            .iter()
+            .map(|threshold| {
+                match &threshold.value_type {
+                    ColorScaleThresholdValueType::Min => min_val,
+                    ColorScaleThresholdValueType::Max => max_val,
+                    ColorScaleThresholdValueType::Number(n) => *n,
+                    ColorScaleThresholdValueType::Percentile(p) => {
+                        // Compute the p-th percentile
+                        if values.is_empty() {
+                            0.0
+                        } else {
+                            let idx = (p / 100.0 * (values.len() - 1) as f64).round() as usize;
+                            values[idx.min(values.len() - 1)]
+                        }
+                    }
+                    ColorScaleThresholdValueType::Percent(p) => {
+                        // Compute as min + range * percent/100
+                        min_val + range * (p / 100.0)
+                    }
+                }
+            })
+            .collect()
+    }
+
+    /// Compute the color for a cell based on a color scale.
+    fn compute_color_scale_color(
+        &self,
+        color_scale: &ColorScale,
+        sheet_id: SheetId,
+        selection: &crate::a1::A1Selection,
+        sheet_pos: SheetPos,
+        a1_context: &A1Context,
+    ) -> Option<String> {
+        let cell_value = self.get_cell_numeric_value(sheet_pos)?;
+        let threshold_values =
+            self.compute_color_scale_threshold_values(color_scale, sheet_id, selection, a1_context);
+
+        compute_color_for_value(color_scale, &threshold_values, cell_value)
     }
 
     /// Evaluates all conditional formats that apply to a cell and returns
@@ -146,25 +301,28 @@ impl GridController {
             // Evaluate the formula with translated references
             if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
                 // Apply the style (later rules override earlier ones)
-                if cf.style.bold.is_some() {
-                    combined_style.bold = cf.style.bold;
+                // Only formula-based formats have styles; color scales are handled separately
+                if let Some(style) = cf.style() {
+                    if style.bold.is_some() {
+                        combined_style.bold = style.bold;
+                    }
+                    if style.italic.is_some() {
+                        combined_style.italic = style.italic;
+                    }
+                    if style.underline.is_some() {
+                        combined_style.underline = style.underline;
+                    }
+                    if style.strike_through.is_some() {
+                        combined_style.strike_through = style.strike_through;
+                    }
+                    if style.text_color.is_some() {
+                        combined_style.text_color = style.text_color.clone();
+                    }
+                    if style.fill_color.is_some() {
+                        combined_style.fill_color = style.fill_color.clone();
+                    }
+                    any_applied = true;
                 }
-                if cf.style.italic.is_some() {
-                    combined_style.italic = cf.style.italic;
-                }
-                if cf.style.underline.is_some() {
-                    combined_style.underline = cf.style.underline;
-                }
-                if cf.style.strike_through.is_some() {
-                    combined_style.strike_through = cf.style.strike_through;
-                }
-                if cf.style.text_color.is_some() {
-                    combined_style.text_color = cf.style.text_color.clone();
-                }
-                if cf.style.fill_color.is_some() {
-                    combined_style.fill_color = cf.style.fill_color.clone();
-                }
-                any_applied = true;
             }
         }
 
@@ -205,7 +363,7 @@ impl GridController {
             .conditional_formats
             .iter()
             .filter(|cf| {
-                cf.style.has_non_fill_style()
+                cf.has_non_fill_style()
                     && cf.selection.intersects_rect(rect, a1_context)
                     && preview_id.map_or(true, |pid| cf.id != pid)
             })
@@ -213,9 +371,7 @@ impl GridController {
 
         // Add preview format if it has non-fill styles and overlaps the rect
         if let Some(ref preview) = sheet.preview_conditional_format {
-            if preview.style.has_non_fill_style()
-                && preview.selection.intersects_rect(rect, a1_context)
-            {
+            if preview.has_non_fill_style() && preview.selection.intersects_rect(rect, a1_context) {
                 overlapping_formats.push(preview);
             }
         }
@@ -238,22 +394,24 @@ impl GridController {
             for cf in &overlapping_formats {
                 if cf.selection.contains_pos(pos, a1_context) {
                     if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
-                        if cf.style.bold.is_some() {
-                            combined_style.bold = cf.style.bold;
+                        if let Some(style) = cf.style() {
+                            if style.bold.is_some() {
+                                combined_style.bold = style.bold;
+                            }
+                            if style.italic.is_some() {
+                                combined_style.italic = style.italic;
+                            }
+                            if style.underline.is_some() {
+                                combined_style.underline = style.underline;
+                            }
+                            if style.strike_through.is_some() {
+                                combined_style.strike_through = style.strike_through;
+                            }
+                            if style.text_color.is_some() {
+                                combined_style.text_color = style.text_color.clone();
+                            }
+                            any_applied = true;
                         }
-                        if cf.style.italic.is_some() {
-                            combined_style.italic = cf.style.italic;
-                        }
-                        if cf.style.underline.is_some() {
-                            combined_style.underline = cf.style.underline;
-                        }
-                        if cf.style.strike_through.is_some() {
-                            combined_style.strike_through = cf.style.strike_through;
-                        }
-                        if cf.style.text_color.is_some() {
-                            combined_style.text_color = cf.style.text_color.clone();
-                        }
-                        any_applied = true;
                     }
                 }
             }
@@ -298,23 +456,22 @@ impl GridController {
         // Get the preview format ID (if any) to exclude persisted formats with the same ID
         let preview_id = sheet.preview_conditional_format.as_ref().map(|p| p.id);
 
-        // Pre-filter conditional formats to only those that have fill colors
-        // and overlap the rect. Exclude formats with the same ID as the preview.
+        // Pre-filter conditional formats to only those that have fills
+        // (either static fill_color or color scale) and overlap the rect.
+        // Exclude formats with the same ID as the preview.
         let mut formats_with_fills: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
             .filter(|cf| {
-                cf.style.fill_color.is_some()
+                cf.has_fill()
                     && cf.selection.intersects_rect(rect, a1_context)
                     && preview_id.map_or(true, |pid| cf.id != pid)
             })
             .collect();
 
-        // Add preview format if it has a fill color and overlaps the rect
+        // Add preview format if it has a fill and overlaps the rect
         if let Some(ref preview) = sheet.preview_conditional_format {
-            if preview.style.fill_color.is_some()
-                && preview.selection.intersects_rect(rect, a1_context)
-            {
+            if preview.has_fill() && preview.selection.intersects_rect(rect, a1_context) {
                 formats_with_fills.push(preview);
             }
         }
@@ -331,14 +488,31 @@ impl GridController {
                 let pos = Pos { x, y };
                 let sheet_pos = pos.to_sheet_pos(sheet_id);
 
-                // Check each format with a fill color (in order, first to last)
+                // Check each format with a fill (in order, first to last)
                 for cf in &formats_with_fills {
                     if cf.selection.contains_pos(pos, a1_context) {
-                        // Evaluate the formula with translated references
+                        // Evaluate the conditional format
                         if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
-                            if let Some(fill_color) = &cf.style.fill_color {
+                            // Get the fill color based on format type
+                            let fill_color = match &cf.config {
+                                ConditionalFormatConfig::Formula { style, .. } => {
+                                    style.fill_color.clone()
+                                }
+                                ConditionalFormatConfig::ColorScale { color_scale } => {
+                                    // Compute the interpolated color based on cell value
+                                    self.compute_color_scale_color(
+                                        color_scale,
+                                        sheet_id,
+                                        &cf.selection,
+                                        sheet_pos,
+                                        a1_context,
+                                    )
+                                }
+                            };
+
+                            if let Some(color) = fill_color {
                                 // Later rules override earlier ones
-                                fills.set(pos, fill_color.clone());
+                                fills.set(pos, color);
                             }
                         }
                     }
@@ -424,8 +598,7 @@ mod tests {
         ConditionalFormat {
             id: Uuid::new_v4(),
             selection: a1_selection,
-            style,
-            rule,
+            config: ConditionalFormatConfig::Formula { rule, style },
             apply_to_blank,
         }
     }
@@ -1063,6 +1236,150 @@ mod tests {
             }
             .default_apply_to_blank(),
             "Custom should default to apply_to_blank=false"
+        );
+    }
+
+    #[test]
+    fn test_color_scale_fills() {
+        // Test that color scale fills compute correctly
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a2 = crate::Pos::test_a1("A2");
+        let pos_a3 = crate::Pos::test_a1("A3");
+
+        // Set values: A1=0 (min), A2=50 (mid), A3=100 (max)
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "0".to_string(), None, false);
+        gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "50".to_string(), None, false);
+        gc.set_cell_value(pos_a3.to_sheet_pos(sheet_id), "100".to_string(), None, false);
+
+        // Create a color scale format from red to green
+        let cf = ConditionalFormat {
+            id: uuid::Uuid::new_v4(),
+            selection: crate::a1::A1Selection::test_a1("A1:A3"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"),
+                        ColorScaleThreshold::max("#00ff00"),
+                    ],
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Get fills for the entire range
+        let fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Should have fills for all 3 cells
+        assert!(fills.len() >= 1, "Should have at least 1 fill rect");
+
+        // A1 (min) should be red
+        let a1_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a1));
+        assert!(a1_fill.is_some(), "A1 should have a fill");
+        assert_eq!(a1_fill.unwrap().1, "#ff0000", "A1 should be red (min)");
+
+        // A3 (max) should be green
+        let a3_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a3));
+        assert!(a3_fill.is_some(), "A3 should have a fill");
+        assert_eq!(a3_fill.unwrap().1, "#00ff00", "A3 should be green (max)");
+
+        // A2 (mid) should be somewhere in between
+        let a2_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a2));
+        assert!(a2_fill.is_some(), "A2 should have a fill");
+        // Middle should be some shade that's not pure red or green
+        let a2_color = &a2_fill.unwrap().1;
+        assert!(a2_color.starts_with('#'), "A2 color should be a hex color");
+        assert_ne!(a2_color, "#ff0000", "A2 should not be pure red");
+        assert_ne!(a2_color, "#00ff00", "A2 should not be pure green");
+    }
+
+    #[test]
+    fn test_color_scale_ignores_blank_cells_for_min_max() {
+        // Test that color scale min/max calculation ignores blank cells
+        // When values 1-10 are in A1:A10 but selection is entire column A,
+        // min should be 1 and max should be 10 (not affected by blank cells)
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set values 1-10 in A1:A10
+        for i in 1..=10 {
+            let pos = crate::Pos { x: 1, y: i };
+            gc.set_cell_value(pos.to_sheet_pos(sheet_id), i.to_string(), None, false);
+        }
+
+        let pos_a1 = crate::Pos::test_a1("A1"); // value = 1 (min)
+        let pos_a10 = crate::Pos::test_a1("A10"); // value = 10 (max)
+        let pos_a5 = crate::Pos::test_a1("A5"); // value = 5 (mid)
+
+        // Create a color scale format for the entire column A
+        let cf = ConditionalFormat {
+            id: uuid::Uuid::new_v4(),
+            selection: crate::a1::A1Selection::test_a1("A:A"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"), // red for min
+                        ColorScaleThreshold::max("#00ff00"), // green for max
+                    ],
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Get fills for A1:A20 (includes blank cells A11:A20)
+        let fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, crate::Pos::test_a1("A20")),
+            gc.a1_context(),
+        );
+
+        // A1 (value=1, should be min) should be red
+        let a1_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a1));
+        assert!(a1_fill.is_some(), "A1 should have a fill");
+        assert_eq!(
+            a1_fill.unwrap().1, "#ff0000",
+            "A1 (value=1) should be red (min). Blank cells should not affect min calculation."
+        );
+
+        // A10 (value=10, should be max) should be green
+        let a10_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a10));
+        assert!(a10_fill.is_some(), "A10 should have a fill");
+        assert_eq!(
+            a10_fill.unwrap().1, "#00ff00",
+            "A10 (value=10) should be green (max). Blank cells should not affect max calculation."
+        );
+
+        // A5 (value=5, should be ~mid) should be somewhere in between
+        let a5_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a5));
+        assert!(a5_fill.is_some(), "A5 should have a fill");
+        let a5_color = &a5_fill.unwrap().1;
+        assert_ne!(a5_color, "#ff0000", "A5 should not be pure red");
+        assert_ne!(a5_color, "#00ff00", "A5 should not be pure green");
+
+        // Blank cells (A11:A20) should NOT have fills
+        let pos_a15 = crate::Pos::test_a1("A15");
+        let a15_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a15));
+        assert!(
+            a15_fill.is_none(),
+            "A15 (blank) should NOT have a fill - blank cells should be excluded"
         );
     }
 }

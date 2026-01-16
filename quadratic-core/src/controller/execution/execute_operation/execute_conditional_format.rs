@@ -24,13 +24,13 @@ impl GridController {
             return;
         }
 
-        // Check if any conditional format with a fill color might be affected
-        // by this cell value change. For simplicity, we mark all conditional format
-        // fills as potentially dirty since formulas can reference any cell.
+        // Check if any conditional format with a fill (static fill_color or color scale)
+        // might be affected by this cell value change. For simplicity, we mark all
+        // conditional format fills as potentially dirty since formulas can reference any cell.
         let fill_selections: Vec<_> = sheet
             .conditional_formats
             .iter()
-            .filter(|cf| cf.style.fill_color.is_some())
+            .filter(|cf| cf.has_fill())
             .map(|cf| cf.selection.clone())
             .collect();
 

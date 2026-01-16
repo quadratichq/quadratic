@@ -119,8 +119,18 @@ const ConditionalFormatItem = ({ conditionalFormat, onEdit, onDelete, readOnly }
     }
   }
 
-  // Get rule summary
-  const ruleSummary = getRuleSummary(conditionalFormat.rule);
+  // Get rule summary based on config type
+  const ruleSummary =
+    conditionalFormat.config.type === 'Formula' ? getRuleSummary(conditionalFormat.config.rule) : 'Color Scale';
+
+  // Get style from config (only for formula-based)
+  const style = conditionalFormat.config.type === 'Formula' ? conditionalFormat.config.style : null;
+
+  // Get color scale gradient for preview (only for color scale)
+  const colorScaleGradient =
+    conditionalFormat.config.type === 'ColorScale'
+      ? `linear-gradient(to right, ${conditionalFormat.config.color_scale.thresholds.map((t) => t.color).join(', ')})`
+      : undefined;
 
   return (
     <div
@@ -132,22 +142,33 @@ const ConditionalFormatItem = ({ conditionalFormat, onEdit, onDelete, readOnly }
         <div className="truncate text-xs text-muted-foreground">{ruleSummary}</div>
       </div>
 
-      {/* Style preview */}
-      <div
-        className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded border text-xs',
-          conditionalFormat.style.bold && 'font-bold',
-          conditionalFormat.style.italic && 'italic',
-          conditionalFormat.style.underline && 'underline',
-          conditionalFormat.style.strike_through && 'line-through'
-        )}
-        style={{
-          backgroundColor: conditionalFormat.style.fill_color ?? undefined,
-          color: conditionalFormat.style.text_color ?? undefined,
-        }}
-      >
-        Aa
-      </div>
+      {/* Style preview for formula-based */}
+      {style && (
+        <div
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded border text-xs',
+            style.bold && 'font-bold',
+            style.italic && 'italic',
+            style.underline && 'underline',
+            style.strike_through && 'line-through'
+          )}
+          style={{
+            backgroundColor: style.fill_color ?? undefined,
+            color: style.text_color ?? undefined,
+          }}
+        >
+          Aa
+        </div>
+      )}
+
+      {/* Gradient preview for color scale */}
+      {colorScaleGradient && (
+        <div
+          className="h-8 w-8 shrink-0 rounded border"
+          style={{ background: colorScaleGradient }}
+          title="Color Scale"
+        />
+      )}
 
       {!readOnly && (
         <TooltipPopover label="Delete" side="bottom">

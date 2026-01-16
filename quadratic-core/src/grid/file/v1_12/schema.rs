@@ -115,13 +115,53 @@ pub struct ConditionalFormatStyleSchema {
     pub fill_color: Option<String>,
 }
 
+/// Schema for color scale threshold value type.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum ColorScaleThresholdValueTypeSchema {
+    /// Automatically use the minimum value in the selection.
+    Min,
+    /// Automatically use the maximum value in the selection.
+    Max,
+    /// Use a fixed numeric value.
+    Number(f64),
+    /// Use a percentile (0-100) of the values in the selection.
+    Percentile(f64),
+    /// Use a percent of the range (0-100).
+    Percent(f64),
+}
+
+/// Schema for a color scale threshold point.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ColorScaleThresholdSchema {
+    pub value_type: ColorScaleThresholdValueTypeSchema,
+    pub color: String,
+}
+
+/// Schema for a color scale configuration.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ColorScaleSchema {
+    pub thresholds: Vec<ColorScaleThresholdSchema>,
+}
+
+/// Schema for a conditional format configuration (formula-based or color scale).
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type")]
+pub enum ConditionalFormatConfigSchema {
+    /// Formula-based conditional format with static style.
+    Formula {
+        rule: super::formula_schema::FormulaSchema,
+        style: ConditionalFormatStyleSchema,
+    },
+    /// Color scale that applies gradient colors based on numeric values.
+    ColorScale { color_scale: ColorScaleSchema },
+}
+
 /// Schema for a conditional format rule.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ConditionalFormatSchema {
     pub id: Uuid,
     pub selection: A1SelectionSchema,
-    pub style: ConditionalFormatStyleSchema,
-    pub rule: super::formula_schema::FormulaSchema,
+    pub config: ConditionalFormatConfigSchema,
 
     /// Whether to apply the format to blank cells.
     /// If None, uses the default based on the rule type.

@@ -62,7 +62,9 @@ use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
 use quadratic_core::grid::sheet::conditional_format::{
-    ConditionalFormat, ConditionalFormatClient, ConditionalFormatRule, ConditionalFormatStyle,
+    ColorScale, ColorScaleThreshold, ColorScaleThresholdValueType, ConditionalFormat,
+    ConditionalFormatClient, ConditionalFormatConfig, ConditionalFormatConfigClient,
+    ConditionalFormatConfigUpdate, ConditionalFormatRule, ConditionalFormatStyle,
     ConditionalFormatUpdate, ConditionalFormatValue,
 };
 use quadratic_core::grid::sheet::search::SearchOptions;
@@ -132,8 +134,14 @@ fn main() {
         CellVerticalAlign,
         CellWrap,
         CodeCellLanguage,
+        ColorScale,
+        ColorScaleThreshold,
+        ColorScaleThresholdValueType,
         ConditionalFormat,
         ConditionalFormatClient,
+        ConditionalFormatConfig,
+        ConditionalFormatConfigClient,
+        ConditionalFormatConfigUpdate,
         ConditionalFormatRule,
         ConditionalFormatStyle,
         ConditionalFormatUpdate,

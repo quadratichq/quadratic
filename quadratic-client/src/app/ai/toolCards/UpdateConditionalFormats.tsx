@@ -192,12 +192,20 @@ export const UpdateConditionalFormats = memo(
       (rule: RuleEntry, sheetName: string) => {
         const sheet = sheets.getSheetByName(sheetName) ?? sheets.sheet;
 
-        // Helper to get the formula from a stored conditional format rule
-        const getStoredFormula = (cfRule: (typeof sheet.conditionalFormats)[number]['rule']): string | undefined => {
+        // Helper to get the formula from a stored conditional format config
+        const getStoredFormula = (cf: (typeof sheet.conditionalFormats)[number]): string | undefined => {
+          if (cf.config.type !== 'Formula') return undefined;
+          const cfRule = cf.config.rule;
           if (typeof cfRule === 'object' && 'Custom' in cfRule) {
             return cfRule.Custom.formula;
           }
           return undefined;
+        };
+
+        // Helper to get style from a conditional format (only for formula-based)
+        const getStyle = (cf: (typeof sheet.conditionalFormats)[number]) => {
+          if (cf.config.type !== 'Formula') return null;
+          return cf.config.style;
         };
 
         // Helper to check if selection strings match
@@ -215,7 +223,8 @@ export const UpdateConditionalFormats = memo(
 
         // Helper to check if styles match
         const stylesMatch = (cf: (typeof sheet.conditionalFormats)[number]): boolean => {
-          const cfStyle = cf.style;
+          const cfStyle = getStyle(cf);
+          if (!cfStyle) return false;
           // Compare all style properties
           return (
             (rule.bold === undefined || rule.bold === null || cfStyle.bold === rule.bold) &&
@@ -232,7 +241,8 @@ export const UpdateConditionalFormats = memo(
         // Helper to check if styles match exactly (for when we need precise matching)
         // Normalizes undefined/null to be equivalent for comparison
         const stylesMatchExact = (cf: (typeof sheet.conditionalFormats)[number]): boolean => {
-          const cfStyle = cf.style;
+          const cfStyle = getStyle(cf);
+          if (!cfStyle) return false;
           // Normalize undefined and null to be equivalent
           const normalize = (v: unknown): unknown => (v === undefined || v === null ? null : v);
           return (
@@ -271,8 +281,8 @@ export const UpdateConditionalFormats = memo(
                   return 'error';
                 }
               })(),
-              formula: getStoredFormula(cf.rule),
-              style: cf.style,
+              formula: getStoredFormula(cf),
+              style: getStyle(cf),
             }))
           );
 
@@ -282,7 +292,7 @@ export const UpdateConditionalFormats = memo(
           // If not found by ID, try to find by matching selection + formula + styles
           if (!existingRule && rule.selection && rule.rule) {
             existingRule = sheet.conditionalFormats.find((cf) => {
-              const storedFormula = getStoredFormula(cf.rule);
+              const storedFormula = getStoredFormula(cf);
               const selMatch = selectionsMatch(cf);
               const formulaMatch = storedFormula === rule.rule;
               const styleMatch = stylesMatch(cf);
@@ -302,7 +312,7 @@ export const UpdateConditionalFormats = memo(
           // If not found, try matching selection + formula (without style check)
           if (!existingRule && rule.selection && rule.rule) {
             existingRule = sheet.conditionalFormats.find((cf) => {
-              const storedFormula = getStoredFormula(cf.rule);
+              const storedFormula = getStoredFormula(cf);
               return selectionsMatch(cf) && storedFormula === rule.rule;
             });
             if (existingRule) console.log('[handleSelectRule] Found by selection+formula');
@@ -317,7 +327,7 @@ export const UpdateConditionalFormats = memo(
                 cfId: cf.id,
                 selMatch,
                 styleMatch,
-                cfStyle: cf.style,
+                cfStyle: getStyle(cf),
                 ruleStyle: {
                   bold: rule.bold,
                   italic: rule.italic,

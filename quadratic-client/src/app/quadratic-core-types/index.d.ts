@@ -55,6 +55,23 @@ export type CellRefRangeEnd = { col: CellRefCoord, row: CellRefCoord, };
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
+export type ColorScale = { 
+/**
+ * The threshold points defining the color scale.
+ * Must have at least 2 thresholds (min and max).
+ * Thresholds should be ordered from lowest to highest value.
+ */
+thresholds: Array<ColorScaleThreshold>, };
+export type ColorScaleThreshold = { 
+/**
+ * How to determine the threshold value.
+ */
+value_type: ColorScaleThresholdValueType, 
+/**
+ * The color at this threshold (hex format, e.g., "#ff0000").
+ */
+color: string, };
+export type ColorScaleThresholdValueType = "Min" | "Max" | { "Number": number } | { "Percentile": number } | { "Percent": number };
 export type ConditionalFormat = { 
 /**
  * Unique identifier for this conditional format rule.
@@ -65,10 +82,9 @@ id: string,
  */
 selection: A1Selection, 
 /**
- * The style to apply when the condition is true.
- * Only properties that are `Some` will override the existing format.
+ * The configuration for this conditional format (formula-based or color scale).
  */
-style: ConditionalFormatStyle, 
+config: ConditionalFormatConfig, 
 /**
  * Whether to apply the format to blank cells.
  * If None, uses the default based on the rule type.
@@ -84,17 +100,48 @@ id: string,
  */
 selection: A1Selection, 
 /**
+ * The configuration for this conditional format.
+ */
+config: ConditionalFormatConfigClient, 
+/**
+ * Whether to apply the format to blank cells.
+ */
+apply_to_blank: boolean, };
+export type ConditionalFormatConfig = { "type": "Formula", 
+/**
+ * The style to apply when the condition is true.
+ */
+style: ConditionalFormatStyle, } | { "type": "ColorScale", 
+/**
+ * The color scale configuration with threshold points.
+ */
+color_scale: ColorScale, };
+export type ConditionalFormatConfigClient = { "type": "Formula", 
+/**
  * The style to apply when the condition is true.
  */
 style: ConditionalFormatStyle, 
 /**
- * Whether to apply the format to blank cells.
- */
-apply_to_blank: boolean, 
-/**
  * The parsed rule for display/editing.
  */
-rule: ConditionalFormatRule, };
+rule: ConditionalFormatRule, } | { "type": "ColorScale", 
+/**
+ * The color scale configuration with threshold points.
+ */
+color_scale: ColorScale, };
+export type ConditionalFormatConfigUpdate = { "type": "Formula", 
+/**
+ * The formula string (will be parsed into AST).
+ */
+rule: string, 
+/**
+ * The style to apply when the condition is true.
+ */
+style: ConditionalFormatStyle, } | { "type": "ColorScale", 
+/**
+ * The color scale configuration with threshold points.
+ */
+color_scale: ColorScale, };
 export type ConditionalFormatRule = "IsEmpty" | "IsNotEmpty" | { "TextContains": { value: string, } } | { "TextNotContains": { value: string, } } | { "TextStartsWith": { value: string, } } | { "TextEndsWith": { value: string, } } | { "TextIsExactly": { value: string, } } | { "GreaterThan": { value: ConditionalFormatValue, } } | { "GreaterThanOrEqual": { value: ConditionalFormatValue, } } | { "LessThan": { value: ConditionalFormatValue, } } | { "LessThanOrEqual": { value: ConditionalFormatValue, } } | { "IsEqualTo": { value: ConditionalFormatValue, } } | { "IsNotEqualTo": { value: ConditionalFormatValue, } } | { "IsBetween": { min: ConditionalFormatValue, max: ConditionalFormatValue, } } | { "IsNotBetween": { min: ConditionalFormatValue, max: ConditionalFormatValue, } } | { "Custom": { formula: string, } };
 export type ConditionalFormatStyle = { bold: boolean | null, italic: boolean | null, underline: boolean | null, strike_through: boolean | null, text_color: string | null, fill_color: string | null, };
 export type ConditionalFormatUpdate = { 
@@ -112,13 +159,9 @@ sheet_id: string,
  */
 selection: string, 
 /**
- * The style to apply when the condition is true.
+ * The configuration for this conditional format.
  */
-style: ConditionalFormatStyle, 
-/**
- * The formula string (will be parsed into AST).
- */
-rule: string, 
+config: ConditionalFormatConfigUpdate, 
 /**
  * Whether to apply the format to blank cells.
  * If None, uses the default based on the rule type.
