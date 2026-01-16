@@ -37,7 +37,7 @@ fn handle_single_value_table_format(
 
     if data_table.formats.is_some() {
         let existing_table_format = data_table.get_format(pos![A1]);
-        // Combine new format with existing table format (new takes precedence)
+        // Combine new format with existing table format (new values take precedence where set, existing values preserved otherwise)
         let combined_format: FormatUpdate = format_update.combine(&existing_table_format.into());
         sheet_format_update.set_format_cell(data_table_pos, combined_format);
 
