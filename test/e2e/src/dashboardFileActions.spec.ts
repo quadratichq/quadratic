@@ -600,7 +600,7 @@ test.skip('Share File - Dashboard', async ({ page: user1Page }) => {
   await user2Page.bringToFront();
   await user2Page.goBack();
   await user2Page.locator('[data-testid="files-list-search-input"]').fill(fileName);
-  await user2Page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
+  await user2Page.locator(`h2:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:

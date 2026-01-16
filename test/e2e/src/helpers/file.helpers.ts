@@ -89,7 +89,7 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   // Search for the file
   await page.locator('[data-testid="files-list-search-input"]').fill(fileName);
   await waitForNetworkIdle(page); // Wait for filter results instead of fixed 2s
-  await page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
+  await page.locator(`h2:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
