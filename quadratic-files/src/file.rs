@@ -206,7 +206,7 @@ pub(crate) async fn process_queue_for_room(
         &state.pool,
         &file_id,
         last_sequence_num as i32,
-        &state.settings.bucket_name,
+        &state.settings.checkpoint_bucket_name,
         CURRENT_VERSION,
         &transactions_hash,
     )

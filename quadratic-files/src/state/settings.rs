@@ -23,7 +23,7 @@ pub(crate) struct Settings {
     pub(crate) storage: StorageContainer,
     pub(crate) pubsub_processed_transactions_channel: String,
     pub(crate) object_store: Arc<dyn ObjectStore>,
-    pub(crate) bucket_name: String,
+    pub(crate) checkpoint_bucket_name: String,
 
     // Plaid
     pub(crate) plaid_client_id: String,
@@ -55,8 +55,16 @@ impl Settings {
             plaid_client_id: config.plaid_client_id.to_owned(),
             plaid_secret: config.plaid_secret.to_owned(),
             plaid_environment: config.plaid_environment.to_owned(),
-            bucket_name: Self::bucket_name(config, true),
+            checkpoint_bucket_name: Self::checkpoint_bucket_name(config),
         })
+    }
+
+    fn storage_dir(config: &Config, is_file_storage: bool) -> String {
+        if is_file_storage {
+            expected(&config.storage_dir, "STORAGE_DIR")
+        } else {
+            expected(&config.synced_data_storage_dir, "SYNCED_DATA_STORAGE_DIR")
+        }
     }
 
     fn bucket_name(config: &Config, is_file_storage: bool) -> String {
@@ -70,14 +78,17 @@ impl Settings {
         }
     }
 
+    fn checkpoint_bucket_name(config: &Config) -> String {
+        match config.storage_type {
+            StorageType::S3 => Self::bucket_name(config, true),
+            StorageType::FileSystem => Self::storage_dir(config, true),
+        }
+    }
+
     async fn new_storage(config: &Config, is_file_storage: bool) -> Result<StorageContainer> {
         let is_local = config.environment.is_local_or_docker();
         let bucket_name = Self::bucket_name(config, is_file_storage);
-        let storage_dir = if is_file_storage {
-            expected(&config.storage_dir, "STORAGE_DIR")
-        } else {
-            expected(&config.synced_data_storage_dir, "SYNCED_DATA_STORAGE_DIR")
-        };
+        let storage_dir = Self::storage_dir(config, is_file_storage);
 
         let storage = match config.storage_type {
             StorageType::S3 => StorageContainer::S3(S3::new(
