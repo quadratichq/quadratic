@@ -115,7 +115,7 @@ function ConnectionFormWrapper({
   props: ConnectionFormProps;
 }) {
   const { ConnectionForm } = connectionsByType[type];
-  const { form } = connectionsByType[type].useConnectionForm(props.connection);
+  const { form, percentCompleted } = connectionsByType[type].useConnectionForm(props.connection);
 
   // This is a middleware that tests the connection before saving
   const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
@@ -147,7 +147,14 @@ function ConnectionFormWrapper({
   };
 
   return (
-    <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form} teamUuid={teamUuid}>
+    <ConnectionForm
+      handleSubmitForm={handleSubmitMiddleware}
+      handleCancelForm={props.handleCancelForm}
+      form={form}
+      teamUuid={teamUuid}
+      connection={props.connection}
+      percentCompleted={percentCompleted}
+    >
       <ConnectionFormActions
         form={form}
         handleCancelForm={props.handleCancelForm}

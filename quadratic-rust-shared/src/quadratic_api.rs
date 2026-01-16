@@ -48,6 +48,8 @@ pub struct LastCheckpoint {
     version: String,
     s3_key: String,
     s3_bucket: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    transactions_hash: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -143,6 +145,7 @@ pub async fn get_file_checkpoint(
 }
 
 /// Set the file's checkpoint with the quadratic API server.
+#[allow(clippy::too_many_arguments)]
 pub async fn set_file_checkpoint(
     base_url: &str,
     jwt: &str,
@@ -151,6 +154,7 @@ pub async fn set_file_checkpoint(
     version: String,
     s3_key: String,
     s3_bucket: String,
+    transactions_hash: String,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
     let body = LastCheckpoint {
@@ -158,6 +162,7 @@ pub async fn set_file_checkpoint(
         version,
         s3_key,
         s3_bucket,
+        transactions_hash: Some(transactions_hash),
     };
 
     let response = reqwest::Client::new()

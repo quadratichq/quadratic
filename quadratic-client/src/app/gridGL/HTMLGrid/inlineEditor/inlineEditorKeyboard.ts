@@ -9,6 +9,7 @@ import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -16,6 +17,15 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { decreaseFontSize, increaseFontSize } from '@/app/ui/helpers/formatCells';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { isMac } from '@/shared/utils/isMac';
+
+/**
+ * Check if the keyboard event is Cmd+K on Mac (for hyperlink insertion in inline editor).
+ * This is handled separately because Cmd+K has another function outside the inline editor.
+ */
+const isMacCmdK = (e: KeyboardEvent): boolean => {
+  return isMac && e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k';
+};
 
 export enum CursorMode {
   Enter,
@@ -54,6 +64,14 @@ class InlineEditorKeyboard {
         e.preventDefault();
         if (!(await this.handleValidationError())) {
           inlineEditorHandler.close({ deltaX: isRight ? 1 : -1 });
+        }
+      } else if (isRight && this.cursorMode === CursorMode.Edit) {
+        // In Edit mode, check if we need to escape from a formatted span.
+        // When the cursor is at the end of a formatted span and pressing right arrow,
+        // we should allow the user to escape the span's formatting.
+        if (inlineEditorSpans.tryEscapeFormattedSpan()) {
+          e.stopPropagation();
+          e.preventDefault();
         }
       }
     }
@@ -312,8 +330,8 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleItalic, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleItalicForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
         inlineEditorHandler.toggleItalics();
         if (inlineEditorHandler.location) {
           const selection = getSingleSelection(
@@ -323,6 +341,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic, false);
         }
+      } else {
+        inlineEditorHandler.toggleItalicForSelection();
       }
     }
 
@@ -330,10 +350,10 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleBold, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleBoldForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
+        inlineEditorHandler.toggleBold();
         if (inlineEditorHandler.location) {
-          inlineEditorHandler.toggleBold();
           const selection = getSingleSelection(
             inlineEditorHandler.location.sheetId,
             inlineEditorHandler.location.x,
@@ -341,6 +361,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold, false);
         }
+      } else {
+        inlineEditorHandler.toggleBoldForSelection();
       }
     }
 
@@ -348,10 +370,10 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleUnderline, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleUnderlineForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
+        inlineEditorHandler.toggleUnderline();
         if (inlineEditorHandler.location) {
-          inlineEditorHandler.toggleUnderline();
           const selection = getSingleSelection(
             inlineEditorHandler.location.sheetId,
             inlineEditorHandler.location.x,
@@ -359,6 +381,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline, false);
         }
+      } else {
+        inlineEditorHandler.toggleUnderlineForSelection();
       }
     }
 
@@ -366,10 +390,10 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ToggleStrikeThrough, e)) {
       e.preventDefault();
       e.stopPropagation();
-      // If there's a text selection, apply span formatting instead of cell formatting
-      if (!inlineEditorHandler.toggleStrikeThroughForSelection()) {
+      // For formulas, apply cell-level formatting; for text, apply span formatting
+      if (inlineEditorHandler.formula) {
+        inlineEditorHandler.toggleStrikeThrough();
         if (inlineEditorHandler.location) {
-          inlineEditorHandler.toggleStrikeThrough();
           const selection = getSingleSelection(
             inlineEditorHandler.location.sheetId,
             inlineEditorHandler.location.x,
@@ -377,6 +401,8 @@ class InlineEditorKeyboard {
           );
           quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
         }
+      } else {
+        inlineEditorHandler.toggleStrikeThroughForSelection();
       }
     }
 
@@ -454,7 +480,8 @@ class InlineEditorKeyboard {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       inlineEditorMonaco.insertTextAtCursor(formattedTime);
-    } else if (matchShortcut(Action.InsertHyperlink, e)) {
+    } else if (matchShortcut(Action.InsertHyperlink, e) || isMacCmdK(e)) {
+      // Accept both the standard shortcut (Ctrl+K) and Cmd+K on Mac for inline editor
       e.stopPropagation();
       e.preventDefault();
       // Get selection info and emit event to open hyperlink editor

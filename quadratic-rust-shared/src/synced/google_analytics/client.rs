@@ -7,7 +7,7 @@ use arrow::datatypes::{DataType, Date32Type, Field, Schema};
 use arrow_array::{Date32Array, Float64Array, RecordBatch, StringArray};
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use google_analyticsdata1_beta::{
     AnalyticsData,
     api::{DateRange, Dimension, Metric, RunReportRequest, RunReportResponse},
@@ -21,8 +21,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use yup_oauth2::{ServiceAccountAuthenticator, ServiceAccountKey};
 
-use crate::synced::{DATE_FORMAT, SyncedConnectionKind, google_analytics::reports::REPORTS, today};
 use crate::{SharedError, synced::string_to_date};
+use crate::{
+    environment::Environment,
+    synced::{DATE_FORMAT, SyncedConnectionKind, google_analytics::reports::REPORTS, today},
+};
 use crate::{error::Result, synced::SyncedConnection};
 use crate::{parquet::utils::record_batch_to_parquet_bytes, synced::SyncedClient};
 
@@ -58,7 +61,7 @@ impl SyncedConnection for GoogleAnalyticsConnection {
         GoogleAnalyticsClient::streams()
     }
 
-    async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
+    async fn to_client(&self, _environment: Environment) -> Result<Box<dyn SyncedClient>> {
         let client = GoogleAnalyticsClient::new(
             self.service_account_configuration.clone(),
             self.property_id.clone(),
@@ -74,13 +77,22 @@ impl SyncedConnection for GoogleAnalyticsConnection {
 pub struct GoogleAnalyticsClient {
     pub property_id: String,
     pub analytics: AnalyticsData<HttpsConnector<HttpConnector>>,
-    pub start_date: String,
+    pub start_date: NaiveDate,
 }
 
 #[async_trait]
 impl SyncedClient for GoogleAnalyticsClient {
     fn streams() -> Vec<&'static str> {
         REPORTS.keys().copied().collect()
+    }
+
+    /// Test the connection by running a simple report
+    async fn test_connection(&self) -> bool {
+        let today = Utc::now().date_naive().format(DATE_FORMAT).to_string();
+
+        self.run_report(&today, &today, vec!["activeUsers"], None, Some(1))
+            .await
+            .is_ok()
     }
 
     async fn process(
@@ -139,6 +151,9 @@ impl GoogleAnalyticsClient {
         // Ignore error if already installed (happens in tests when multiple connections are created)
         let _ = default_provider().install_default();
 
+        let start_date = NaiveDate::parse_from_str(&start_date, DATE_FORMAT)
+            .map_err(|e| SharedError::Synced(format!("Failed to parse start_date: {}", e)))?;
+
         // Validate property_id format
         if !property_id.starts_with("properties/") {
             // Check if it's a numeric property ID (all digits)
@@ -180,16 +195,6 @@ impl GoogleAnalyticsClient {
             analytics,
             start_date,
         })
-    }
-
-    /// Test the connection by running a simple report
-    pub async fn test_connection(&self) -> bool {
-        use chrono::Utc;
-        let today = Utc::now().date_naive().format(DATE_FORMAT).to_string();
-
-        self.run_report(&today, &today, vec!["activeUsers"], None, Some(1))
-            .await
-            .is_ok()
     }
 
     /// Run reports for a date range and convert to Parquet files grouped by day
