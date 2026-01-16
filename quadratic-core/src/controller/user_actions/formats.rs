@@ -4,12 +4,59 @@
 
 use wasm_bindgen::JsValue;
 
+use crate::Pos;
+use crate::Rect;
 use crate::a1::{A1Selection, CellRefRange};
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
+use crate::grid::DataTable;
+use crate::grid::SheetId;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
+
+/// Handles format migration for single-value tables.
+///
+/// For single-value tables, formatting is applied to the sheet instead of the table
+/// to avoid issues with format merging. If the table has existing formats, they are
+/// migrated to the sheet and combined with the new format, then the table formats
+/// are cleared.
+///
+/// Returns `true` if the table was handled as a single-value table (caller should continue).
+fn handle_single_value_table_format(
+    data_table: &DataTable,
+    data_table_pos: Pos,
+    format_update: FormatUpdate,
+    sheet_id: SheetId,
+    sheet_format_update: &mut SheetFormatUpdates,
+    ops: &mut Vec<Operation>,
+) -> bool {
+    if !data_table.is_single_value() {
+        return false;
+    }
+
+    if data_table.formats.is_some() {
+        let existing_table_format = data_table.get_format(pos![A1]);
+        // Combine new format with existing table format (new values take precedence where set, existing values preserved otherwise)
+        let combined_format: FormatUpdate = format_update.combine(&existing_table_format.into());
+        sheet_format_update.set_format_cell(data_table_pos, combined_format);
+
+        // Clear the table formats since we've migrated them to the sheet
+        let table_format_updates = SheetFormatUpdates::from_selection(
+            &A1Selection::from_rect(Rect::single_pos(pos![A1]).to_sheet_rect(sheet_id)),
+            FormatUpdate::cleared(),
+        );
+        ops.push(Operation::DataTableFormats {
+            sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+            formats: table_format_updates,
+        });
+    } else {
+        // No existing table formats, just apply to sheet
+        sheet_format_update.set_format_cell(data_table_pos, format_update);
+    }
+
+    true
+}
 
 impl GridController {
     pub(crate) fn clear_format_borders(
@@ -59,6 +106,19 @@ impl GridController {
                             continue;
                         }
 
+                        // For single-value tables, apply formatting to the sheet instead of the table
+                        let cell_format_update = sheet_format_update.format_update(data_table_pos);
+                        if handle_single_value_table_format(
+                            data_table,
+                            data_table_pos,
+                            cell_format_update,
+                            selection.sheet_id,
+                            &mut sheet_format_update,
+                            &mut ops,
+                        ) {
+                            continue;
+                        }
+
                         let table_format_updates = data_table
                             .transfer_formats_from_sheet_format_updates(
                                 data_table_pos,
@@ -89,6 +149,18 @@ impl GridController {
                     let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
                         continue;
                     };
+
+                    // For single-value tables, apply formatting to the sheet instead of the table
+                    if handle_single_value_table_format(
+                        data_table,
+                        data_table_pos,
+                        format_update.clone(),
+                        selection.sheet_id,
+                        &mut sheet_format_update,
+                        &mut ops,
+                    ) {
+                        continue;
+                    }
 
                     let y_adjustment = data_table.y_adjustment(true);
 
@@ -1012,6 +1084,107 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let format = sheet.cell_format(pos![F7]);
         assert_eq!(format.bold, Some(true));
+    }
+
+    #[test]
+    fn test_single_cell_table_format_preserves_existing_formats() {
+        // Test that setting bold on a single-cell table doesn't clear existing fill color
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single-cell table (1x1) at E5
+        gc.test_set_data_table(
+            pos!(E5).to_sheet_pos(sheet_id),
+            1,
+            1,
+            false,
+            Some(false),
+            Some(false),
+        );
+
+        // First, set fill color on the table
+        gc.set_fill_color(
+            &A1Selection::test_a1_context("Table1", gc.a1_context()),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify fill color was applied
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(format.fill_color, Some("red".to_string()));
+
+        // Now set bold on the same table
+        gc.set_bold(
+            &A1Selection::test_a1_context("Table1", gc.a1_context()),
+            Some(true),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify that BOTH fill color AND bold are present
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(
+            format.fill_color,
+            Some("red".to_string()),
+            "Fill color should be preserved after setting bold"
+        );
+        assert_eq!(format.bold, Some(true), "Bold should be set");
+    }
+
+    #[test]
+    fn test_single_cell_table_format_preserves_existing_formats_sheet_path() {
+        // Test that setting bold on a single-cell table via sheet reference (CellRefRange::Sheet)
+        // doesn't clear existing fill color. This complements the test above which uses
+        // CellRefRange::Table path.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single-cell table (1x1) at E5
+        gc.test_set_data_table(
+            pos!(E5).to_sheet_pos(sheet_id),
+            1,
+            1,
+            false,
+            Some(false),
+            Some(false),
+        );
+
+        // First, set fill color using sheet reference "E5" (CellRefRange::Sheet path)
+        gc.set_fill_color(
+            &A1Selection::test_a1("E5"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify fill color was applied
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(format.fill_color, Some("blue".to_string()));
+
+        // Now set bold using sheet reference "E5" (CellRefRange::Sheet path)
+        gc.set_bold(&A1Selection::test_a1("E5"), Some(true), None, false)
+            .unwrap();
+
+        // Verify that BOTH fill color AND bold are present
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(
+            format.fill_color,
+            Some("blue".to_string()),
+            "Fill color should be preserved after setting bold via sheet reference"
+        );
+        assert_eq!(
+            format.bold,
+            Some(true),
+            "Bold should be set via sheet reference"
+        );
     }
 
     #[test]

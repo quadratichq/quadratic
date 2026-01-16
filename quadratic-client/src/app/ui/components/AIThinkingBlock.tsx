@@ -25,14 +25,15 @@ interface AIThinkingBlockProps {
   isCurrentMessage: boolean;
   isLoading: boolean;
   thinkingContent: AIResponseContent[number];
-  expandedDefault: boolean;
   onContentChange?: (content: AIResponseContent[number]) => void;
 }
 export const AIThinkingBlock = memo(
-  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, onContentChange }: AIThinkingBlockProps) => {
+  ({ isCurrentMessage, isLoading, thinkingContent, onContentChange }: AIThinkingBlockProps) => {
     // Each thinking block tracks its own expanded state - always collapsed by default
     const [isExpanded, setIsExpanded] = useState(false);
     const [showLastSentence, setShowLastSentence] = useState(false);
+
+    const isActivelyThinking = isLoading && isCurrentMessage;
 
     // After 1 second of loading, show the last sentence
     useEffect(() => {
@@ -58,12 +59,14 @@ export const AIThinkingBlock = memo(
       [onContentChange, thinkingContent]
     );
 
-    // Hide component completely once thinking completes
-    if (!(isLoading && isCurrentMessage)) {
-      return null;
-    }
-
     const lastSentence = getLastSentence(thinkingContent.text);
+
+    // Determine the label based on state
+    const getLabel = () => {
+      if (isExpanded) return 'Hide thinking';
+      if (isActivelyThinking) return 'Thinking';
+      return 'Thought';
+    };
 
     return (
       <div className="flex flex-col">
@@ -73,12 +76,12 @@ export const AIThinkingBlock = memo(
         >
           <span
             className={`select-none ${
-              !isExpanded && isLoading
+              !isExpanded && isActivelyThinking
                 ? 'animate-shimmer bg-gradient-to-r from-muted-foreground via-foreground to-muted-foreground bg-[length:200%_100%] bg-clip-text text-transparent'
                 : ''
             }`}
           >
-            {isExpanded ? 'Hide thinking' : 'Thinking'}
+            {getLabel()}
           </span>
           {isExpanded ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
         </div>
@@ -89,7 +92,7 @@ export const AIThinkingBlock = memo(
           </div>
         )}
 
-        {!isExpanded && showLastSentence && lastSentence && (
+        {!isExpanded && isActivelyThinking && showLastSentence && lastSentence && (
           <div className="mt-1 text-xs italic text-muted-foreground">{lastSentence}</div>
         )}
       </div>
