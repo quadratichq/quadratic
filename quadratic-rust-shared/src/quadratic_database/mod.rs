@@ -32,6 +32,6 @@ pub async fn connect(url: &str, max_connections: Option<u32>) -> Result<PgPool> 
 // For testing, we need to connect to a test database
 pub async fn connect_test() -> Result<PgPool> {
     let _ = dotenv::from_filename(".env.test").ok();
-    let url = std::env::var("QUADRATIC_DATABASE_URL").expect("QUADRATIC_DATABASE_URL is not set");
+    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
     connect(&url, None).await
 }
