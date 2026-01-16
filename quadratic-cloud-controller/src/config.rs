@@ -29,6 +29,13 @@ pub(crate) struct Config {
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,
     pub(crate) pubsub_password: String,
+
+    #[serde(default = "default_start_server")]
+    pub(crate) start_server: bool,
+}
+
+fn default_start_server() -> bool {
+    true
 }
 
 impl Config {
@@ -43,6 +50,7 @@ impl Config {
             .from_env::<Config>()
             .or_else(|_| envy::from_env::<Config>())
             .map_err(|e| ControllerError::Config(e.to_string()))?;
+
         Ok(config)
     }
 }
