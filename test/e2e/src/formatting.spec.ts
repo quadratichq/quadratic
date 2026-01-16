@@ -1,4 +1,5 @@
 import test, { expect } from '@playwright/test';
+import { typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
 import {
@@ -9,7 +10,7 @@ import {
   clickItalic,
   clickStrikeThrough,
   clickTextColor,
-  clickUnderline
+  clickUnderline,
 } from './helpers/format.helper';
 import {
   copyToClipboard,
@@ -18,7 +19,6 @@ import {
   positionCursorInEditor,
   selectTextInEditor,
   sheetRefreshPage,
-  typeInCell
 } from './helpers/sheet.helper';
 
 // =============================================================================
@@ -43,37 +43,37 @@ test.describe('Text Formatting', () => {
     //--------------------------------
     // A1: Bold formatting on entire cell
     //--------------------------------
-    await typeInCell(page, 'A1', 'Bold entire cell');
+    await typeInCell(page, { a1: 'A1', text: 'Bold entire cell' });
     await applyCellLevelFormats(page, ['bold'], { a1: 'A1' });
 
     //--------------------------------
     // A2: Italic formatting on entire cell
     //--------------------------------
-    await typeInCell(page, 'A2', 'Italic entire cell');
+    await typeInCell(page, { a1: 'A2', text: 'Italic entire cell' });
     await applyCellLevelFormats(page, ['italic'], { a1: 'A2' });
 
     //--------------------------------
     // A3: Underline formatting on entire cell
     //--------------------------------
-    await typeInCell(page, 'A3', 'Underline entire cell');
+    await typeInCell(page, { a1: 'A3', text: 'Underline entire cell' });
     await applyCellLevelFormats(page, ['underline'], { a1: 'A3' });
 
     //--------------------------------
     // A4: Strikethrough formatting on entire cell
     //--------------------------------
-    await typeInCell(page, 'A4', 'Strikethrough entire cell');
+    await typeInCell(page, { a1: 'A4', text: 'Strikethrough entire cell' });
     await applyCellLevelFormats(page, ['strike'], { a1: 'A4' });
 
     //--------------------------------
     // A5: Text color on entire cell
     //--------------------------------
-    await typeInCell(page, 'A5', 'Colored entire cell');
+    await typeInCell(page, { a1: 'A5', text: 'Colored entire cell' });
     await applyCellLevelFormats(page, ['color'], { a1: 'A5' });
 
     //--------------------------------
     // A6: All formats combined on entire cell
     //--------------------------------
-    await typeInCell(page, 'A6', 'All formats entire cell');
+    await typeInCell(page, { a1: 'A6', text: 'All formats entire cell' });
     await applyCellLevelFormats(page, ['bold', 'italic', 'underline', 'strike', 'color'], { a1: 'A6' });
     await page.waitForTimeout(300);
 
@@ -409,14 +409,14 @@ test.describe('Text Formatting', () => {
     //--------------------------------
     // B1: Cell-level formatting (to be cleared with keyboard)
     //--------------------------------
-    await typeInCell(page, 'B1', 'Cell KEYBOARD clear');
+    await typeInCell(page, { a1: 'B1', text: 'Cell KEYBOARD clear' });
     await applyCellLevelFormats(page, ['bold', 'italic', 'underline', 'strike', 'color'], { a1: 'B1' });
     await page.waitForTimeout(300);
 
     //--------------------------------
     // B2: Cell-level formatting (to be cleared with toolbar button)
     //--------------------------------
-    await typeInCell(page, 'B2', 'Cell BUTTON clear');
+    await typeInCell(page, { a1: 'B2', text: 'Cell BUTTON clear' });
     await applyCellLevelFormats(page, ['bold', 'italic', 'underline', 'strike', 'color'], { a1: 'B2' });
     await page.waitForTimeout(300);
 
@@ -1023,7 +1023,7 @@ test.describe('Copy/Paste/Undo/Redo Formatting', () => {
     //--------------------------------
     // A3: Create cell with cell-level formatting
     //--------------------------------
-    await typeInCell(page, 'A3', 'Cell-level bold italic underline strike');
+    await typeInCell(page, { a1: 'A3', text: 'Cell-level bold italic underline strike' });
     await gotoCells(page, { a1: 'A3' });
     await clickBold(page);
     await page.waitForTimeout(300);
@@ -1031,7 +1031,7 @@ test.describe('Copy/Paste/Undo/Redo Formatting', () => {
     //--------------------------------
     // A4: Create cell with cell-level italic
     //--------------------------------
-    await typeInCell(page, 'A4', 'Cell-level italic text here');
+    await typeInCell(page, { a1: 'A4', text: 'Cell-level italic text here' });
     await gotoCells(page, { a1: 'A4' });
     await clickItalic(page);
     await page.waitForTimeout(300);
@@ -1039,7 +1039,7 @@ test.describe('Copy/Paste/Undo/Redo Formatting', () => {
     //--------------------------------
     // A5: Create cell with cell-level underline
     //--------------------------------
-    await typeInCell(page, 'A5', 'Cell-level underline text');
+    await typeInCell(page, { a1: 'A5', text: 'Cell-level underline text' });
     await gotoCells(page, { a1: 'A5' });
     await clickUnderline(page);
     await page.waitForTimeout(300);
@@ -1047,7 +1047,7 @@ test.describe('Copy/Paste/Undo/Redo Formatting', () => {
     //--------------------------------
     // A6: Create cell with cell-level strikethrough
     //--------------------------------
-    await typeInCell(page, 'A6', 'Cell-level strikethrough');
+    await typeInCell(page, { a1: 'A6', text: 'Cell-level strikethrough' });
     await gotoCells(page, { a1: 'A6' });
     await clickStrikeThrough(page);
     await page.waitForTimeout(500);
@@ -1319,10 +1319,10 @@ test.describe('Edge Cases', () => {
     //--------------------------------
     // Create multiple cells with text
     //--------------------------------
-    await typeInCell(page, 'A1', 'Cell one text');
-    await typeInCell(page, 'A2', 'Cell two text');
-    await typeInCell(page, 'A3', 'Cell three text');
-    await typeInCell(page, 'A4', 'Cell four text');
+    await typeInCell(page, { a1: 'A1', text: 'Cell one text' });
+    await typeInCell(page, { a1: 'A2', text: 'Cell two text' });
+    await typeInCell(page, { a1: 'A3', text: 'Cell three text' });
+    await typeInCell(page, { a1: 'A4', text: 'Cell four text' });
 
     await gotoCells(page, { a1: 'A1' });
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Multi_Cell_Before_Range_Format.png', {

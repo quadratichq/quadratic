@@ -37,23 +37,6 @@ export const setValueInCell = async (page: Page, a1: string, value: string) => {
 };
 
 /**
- * Types text in a cell and exits edit mode using Tab.
- * This is preferred for RTF formatting scenarios as Tab saves inline formatting.
- *
- * @param page - Playwright page
- * @param a1 - Cell reference in A1 notation
- * @param text - Text to type in the cell
- */
-export const typeInCell = async (page: Page, a1: string, text: string) => {
-  await gotoCells(page, { a1 });
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(150);
-  await page.keyboard.type(text, { delay: 30 });
-  await page.keyboard.press('Tab');
-  await page.waitForTimeout(150);
-};
-
-/**
  * Asserts the selection is the expected a1 notation.
  */
 type AssertSelectionOptions = {
