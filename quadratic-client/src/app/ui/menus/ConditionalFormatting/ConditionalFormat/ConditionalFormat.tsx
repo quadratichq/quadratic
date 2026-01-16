@@ -757,7 +757,7 @@ export const ConditionalFormat = () => {
               <SelectValue placeholder="Select format type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="formula">Single Color</SelectItem>
+              <SelectItem value="formula">Style and Color</SelectItem>
               <SelectItem value="colorScale">Color Scale</SelectItem>
             </SelectContent>
           </Select>
