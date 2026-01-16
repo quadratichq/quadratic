@@ -43,6 +43,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
 export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
   const data = useLoaderData() as LoaderData;
+  const {
+    userMakingRequest: { teamPermissions },
+  } = data;
   const revalidator = useRevalidator();
   const [activeSequenceNum, setActiveSequenceNum] = useState<number | null>(null);
 
@@ -124,7 +127,7 @@ export const Component = () => {
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
-      <UpgradeDialog teamUuid={teamUuid} canManageBilling={false} />
+      <UpgradeDialog teamUuid={teamUuid} canManageBilling={teamPermissions.includes('TEAM_MANAGE')} />
       <div className="grid grid-rows-[auto_1fr] overflow-hidden border-r border-border">
         <div className="overflow-hidden border-b border-border p-3">
           <div className="mb-1 flex items-center justify-between">

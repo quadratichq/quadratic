@@ -79,5 +79,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/che
       timestamp: timestamp.toISOString(),
       version,
     })),
+    userMakingRequest: {
+      id: userId,
+      filePermissions: filePermissions,
+      teamPermissions: teamPermissions,
+    },
   });
 }
