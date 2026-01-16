@@ -2,7 +2,7 @@ name: Preview
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, unlabeled]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-deploy-test
@@ -17,7 +17,10 @@ jobs:
       issues: write
       deployments: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 5
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
@@ -105,7 +108,10 @@ jobs:
       issues: write
       deployments: write
     runs-on: ${{ matrix.runner }}
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 30
     outputs:
       version: ${{ steps.read-version.outputs.version }}
@@ -246,7 +252,10 @@ jobs:
       issues: write
       deployments: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 30
     outputs:
       WEBSITE_URL: ${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
@@ -490,7 +499,10 @@ jobs:
     name: Verify Version
     needs: [build_images, deploy_images]
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 30
     strategy:
       matrix:
@@ -539,7 +551,10 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 15
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
@@ -592,7 +607,10 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble
       options: --user root
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -633,7 +651,10 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 14
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
@@ -900,7 +921,12 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: always() && needs.test-e2e-start-comment.result == 'success' && (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      always() &&
+      needs.test-e2e-start-comment.result == 'success' &&
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 15
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
@@ -1013,7 +1039,11 @@ jobs:
     name: Tests-E2E Status
     needs: [test-e2e-matrix-run]
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: always() && (github.head_ref != 'qa' || github.base_ref != 'main') && !contains(github.event.pull_request.labels.*.name, 'no-preview')
+    if: |
+      always() &&
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 5
     steps:
       - name: Check E2E test results
