@@ -1888,5 +1888,4 @@ export type CoreClientMessage =
   | CoreClientRedoResponse
   | CoreClientStartupTimer
   | CoreClientSetFormula
-  | CoreClientMergeCellsResponse
   | CoreClientSetFormulas;
