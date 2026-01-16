@@ -1,12 +1,10 @@
 import { CancellationDialog } from '@/components/CancellationDialog';
-import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { CheckIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -126,7 +124,6 @@ export const ProPlan = ({
 
 export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, teamUuid }: BillingPlansProps) => {
   const navigate = useNavigate();
-  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const className = 'rounded border border-border p-4 outline outline-transparent';
 
   return (
@@ -165,15 +162,11 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
         )}
         {!canManageBilling && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Only the team owner can edit billing info.
-            <br />
-            <Link
-              to={ROUTES.TEAM_MEMBERS(teamUuid)}
-              className="underline"
-              onClick={() => setShowUpgradeDialog({ open: false, eventSource: null })}
-            >
-              View team members
-            </Link>
+            Only{' '}
+            <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="underline">
+              the team owner
+            </Link>{' '}
+            can edit billing info.
           </p>
         )}
       </ProPlan>
