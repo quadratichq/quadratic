@@ -67,7 +67,8 @@ const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: Co
     return () => clearInterval(interval);
   }, [connection.uuid, connection.syncedConnectionUpdatedDate, teamUuid]);
 
-  const isDisabled = percentCompleted !== undefined && percentCompleted < 100;
+  const isSyncedConnection = connection.syncedConnectionUpdatedDate !== undefined;
+  const isDisabled = isSyncedConnection && percentCompleted !== undefined && percentCompleted < 100;
 
   return (
     <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isDisabled}>

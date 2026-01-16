@@ -164,18 +164,38 @@ mod tests {
     use super::*;
     use crate::synced_connection::{SyncedConnectionKind, SyncedConnectionStatus};
     use crate::test_util::new_arc_state;
+    use chrono::Utc;
+    use httpmock::prelude::*;
+    use serial_test::serial;
     use uuid::Uuid;
 
-    fn handle_quadratic_api_response(result: Result<()>) {
-        match result {
-            // local tests have quadratic api running locally, so we expect a success
-            Ok(_) => {}
-            // CI tests don't have quadratic api running locally, so we expect a QuadraticApi error
-            Err(FilesError::QuadraticApi(e)) => {
-                assert!(e.contains("Error communicating with the Quadratic API"));
-            }
-            Err(e) => panic!("Expected QuadraticApi error, got {}", e),
+    fn mock_log_response(
+        synced_connection_id: u64,
+        run_id: Uuid,
+        status: &str,
+    ) -> serde_json::Value {
+        serde_json::json!({
+            "id": 1,
+            "syncedConnectionId": synced_connection_id,
+            "runId": run_id,
+            "syncedDates": [],
+            "status": status,
+            "error": null,
+            "createdDate": Utc::now().to_rfc3339()
+        })
+    }
+
+    fn mock_server() -> MockServer {
+        let server = MockServer::start();
+
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe {
+            // Set both prefixed and unprefixed versions to ensure the mock URL is used
+            std::env::set_var("FILES__QUADRATIC_API_URI", server.base_url());
+            std::env::set_var("QUADRATIC_API_URI", server.base_url());
         }
+
+        server
     }
 
     #[tokio::test]
@@ -205,11 +225,25 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_start_connection_status() {
+        let server = mock_server();
+        let synced_connection_id = 1u64;
+        let run_id = Uuid::new_v4();
+
+        // Mock log calls (PENDING and RUNNING)
+        let mock = server.mock(|when, then| {
+            when.method(POST).path(format!(
+                "/v0/internal/synced-connection/{}/log",
+                synced_connection_id
+            ));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(synced_connection_id, run_id, "PENDING"));
+        });
+
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
-        let synced_connection_id = 1;
-        let run_id = Uuid::new_v4();
 
         let result = start_connection_status(
             state.clone(),
@@ -221,7 +255,8 @@ mod tests {
         )
         .await;
 
-        handle_quadratic_api_response(result);
+        mock.assert_calls(2); // PENDING and RUNNING
+        assert!(result.is_ok());
 
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_some());
@@ -233,11 +268,25 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_update_connection_status() {
+        let server = mock_server();
+        let synced_connection_id = 1u64;
+        let run_id = Uuid::new_v4();
+
+        // Mock log calls for start_connection_status
+        let mock = server.mock(|when, then| {
+            when.method(POST).path(format!(
+                "/v0/internal/synced-connection/{}/log",
+                synced_connection_id
+            ));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(synced_connection_id, run_id, "PENDING"));
+        });
+
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
-        let synced_connection_id = 1;
-        let run_id = Uuid::new_v4();
 
         let result = start_connection_status(
             state.clone(),
@@ -248,8 +297,8 @@ mod tests {
             SyncKind::Full,
         )
         .await;
-
-        handle_quadratic_api_response(result);
+        mock.assert_calls(2);
+        assert!(result.is_ok());
 
         update_connection_status(
             state.clone(),
@@ -271,11 +320,25 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_complete_connection_status() {
+        let server = mock_server();
+        let synced_connection_id = 1u64;
+        let run_id = Uuid::new_v4();
+
+        // Mock log calls (PENDING, RUNNING, and COMPLETED)
+        let mock = server.mock(|when, then| {
+            when.method(POST).path(format!(
+                "/v0/internal/synced-connection/{}/log",
+                synced_connection_id
+            ));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(synced_connection_id, run_id, "PENDING"));
+        });
+
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
-        let synced_connection_id = 1;
-        let run_id = Uuid::new_v4();
 
         let result = start_connection_status(
             state.clone(),
@@ -286,8 +349,7 @@ mod tests {
             SyncKind::Full,
         )
         .await;
-
-        handle_quadratic_api_response(result);
+        assert!(result.is_ok());
 
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_some(), "Connection should be in cache");
@@ -302,7 +364,8 @@ mod tests {
         )
         .await;
 
-        handle_quadratic_api_response(result);
+        mock.assert_calls(3); // PENDING, RUNNING, and COMPLETED
+        assert!(result.is_ok());
 
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_none());

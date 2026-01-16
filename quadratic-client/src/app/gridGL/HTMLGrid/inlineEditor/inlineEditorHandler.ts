@@ -8,7 +8,7 @@ import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
-import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
+import { inlineEditorSpans, type SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -293,6 +293,9 @@ class InlineEditorHandler {
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
+      inlineEditorMonaco.setTextColor(
+        this.formatSummary.textColor ? convertColorStringToHex(this.formatSummary.textColor) : undefined
+      );
       this.updateFont();
       this.sendMultiplayerUpdate();
       this.showDiv();
@@ -449,7 +452,42 @@ class InlineEditorHandler {
   }
 
   /**
-   * Toggle bold formatting for the current selection or set temporary formatting.
+   * Get the current text color state at the cursor position.
+   * This checks span formatting at cursor first, then falls back to cell-level formatting.
+   */
+  private getCurrentTextColor(): string | undefined {
+    const cursorFormatting = inlineEditorSpans.getFormattingAtCursor();
+    if (cursorFormatting) {
+      return cursorFormatting.textColor;
+    }
+    // Fall back to cell-level formatting
+    return this.formatSummary?.textColor ?? undefined;
+  }
+
+  /**
+   * Get the current formatting state for all properties at the cursor position.
+   * Used when creating empty spans to preserve existing formatting.
+   */
+  private getCurrentFormattingStateAll(): SpanFormatting {
+    return {
+      bold: this.getCurrentFormattingState('bold'),
+      italic: this.getCurrentFormattingState('italic'),
+      underline: this.getCurrentFormattingState('underline'),
+      strikeThrough: this.getCurrentFormattingState('strikeThrough'),
+      textColor: this.getCurrentTextColor(),
+    };
+  }
+
+  /**
+   * Get the current formatting state for all properties at the cursor position.
+   * Public version for use when creating hyperlinks that should inherit formatting.
+   */
+  getFormattingStateForHyperlink(): SpanFormatting {
+    return this.getCurrentFormattingStateAll();
+  }
+
+  /**
+   * Toggle bold formatting for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleBoldForSelection = (): boolean => {
@@ -458,21 +496,26 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('bold');
+      // Pass cell-level bold so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('bold', this.formatSummary?.bold ?? undefined);
+      this.updateFont(); // Switch to CSS-based bold/italic when spans are active
       this.updateSelectionFormatting();
       return true;
     }
-    // Otherwise, toggle temporary formatting based on current displayed state
-    const currentState = this.getCurrentFormattingState('bold');
-    this.temporaryBold = !currentState;
-    this.updateFont();
-    this.sendMultiplayerUpdate();
+    // No selection - create an empty span at cursor with toggled formatting
+    // Preserve all other formatting properties from the current position
+    const currentFormatting = this.getCurrentFormattingStateAll();
+    inlineEditorSpans.createEmptySpanAtCursor({
+      ...currentFormatting,
+      bold: !currentFormatting.bold,
+    });
+    this.updateFont(); // Switch to CSS-based bold/italic when spans are active
     this.updateSelectionFormatting();
     return true;
   };
 
   /**
-   * Toggle italic formatting for the current selection or set temporary formatting.
+   * Toggle italic formatting for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleItalicForSelection = (): boolean => {
@@ -481,21 +524,25 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('italic');
+      // Pass cell-level italic so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('italic', this.formatSummary?.italic ?? undefined);
+      this.updateFont(); // Switch to CSS-based bold/italic when spans are active
       this.updateSelectionFormatting();
       return true;
     }
-    // Otherwise, toggle temporary formatting based on current displayed state
-    const currentState = this.getCurrentFormattingState('italic');
-    this.temporaryItalic = !currentState;
-    this.updateFont();
-    this.sendMultiplayerUpdate();
+    // No selection - create an empty span at cursor with toggled formatting
+    const currentFormatting = this.getCurrentFormattingStateAll();
+    inlineEditorSpans.createEmptySpanAtCursor({
+      ...currentFormatting,
+      italic: !currentFormatting.italic,
+    });
+    this.updateFont(); // Switch to CSS-based bold/italic when spans are active
     this.updateSelectionFormatting();
     return true;
   };
 
   /**
-   * Toggle underline formatting for the current selection or set temporary formatting.
+   * Toggle underline formatting for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleUnderlineForSelection = (): boolean => {
@@ -504,21 +551,23 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('underline');
+      // Pass cell-level underline so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('underline', this.formatSummary?.underline ?? undefined);
       this.updateSelectionFormatting();
       return true;
     }
-    // Otherwise, toggle temporary formatting based on current displayed state
-    const currentState = this.getCurrentFormattingState('underline');
-    this.temporaryUnderline = !currentState;
-    inlineEditorMonaco.setUnderline(this.temporaryUnderline);
-    this.sendMultiplayerUpdate();
+    // No selection - create an empty span at cursor with toggled formatting
+    const currentFormatting = this.getCurrentFormattingStateAll();
+    inlineEditorSpans.createEmptySpanAtCursor({
+      ...currentFormatting,
+      underline: !currentFormatting.underline,
+    });
     this.updateSelectionFormatting();
     return true;
   };
 
   /**
-   * Toggle strikethrough formatting for the current selection or set temporary formatting.
+   * Toggle strikethrough formatting for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   toggleStrikeThroughForSelection = (): boolean => {
@@ -527,21 +576,23 @@ class InlineEditorHandler {
     }
     // If there's a selection, apply span formatting
     if (inlineEditorMonaco.hasSelection()) {
-      inlineEditorSpans.toggleFormattingForSelection('strikeThrough');
+      // Pass cell-level strikeThrough so toggle knows the "visual" state when no span exists
+      inlineEditorSpans.toggleFormattingForSelection('strikeThrough', this.formatSummary?.strikeThrough ?? undefined);
       this.updateSelectionFormatting();
       return true;
     }
-    // Otherwise, toggle temporary formatting based on current displayed state
-    const currentState = this.getCurrentFormattingState('strikeThrough');
-    this.temporaryStrikeThrough = !currentState;
-    inlineEditorMonaco.setStrikeThrough(this.temporaryStrikeThrough);
-    this.sendMultiplayerUpdate();
+    // No selection - create an empty span at cursor with toggled formatting
+    const currentFormatting = this.getCurrentFormattingStateAll();
+    inlineEditorSpans.createEmptySpanAtCursor({
+      ...currentFormatting,
+      strikeThrough: !currentFormatting.strikeThrough,
+    });
     this.updateSelectionFormatting();
     return true;
   };
 
   /**
-   * Set text color for the current selection or set temporary formatting.
+   * Set text color for the current selection or create empty span.
    * Returns true if formatting was handled by the inline editor, false otherwise.
    */
   setTextColorForSelection = (color: string | undefined): boolean => {
@@ -554,41 +605,89 @@ class InlineEditorHandler {
       this.updateSelectionFormatting();
       return true;
     }
-    // TODO: For now, text color without selection is not supported
-    // We would need to add temporaryTextColor to support this
-    return false;
+    // No selection - create an empty span at cursor with the new text color
+    // Preserve all other formatting properties from the current position
+    const currentFormatting = this.getCurrentFormattingStateAll();
+    inlineEditorSpans.createEmptySpanAtCursor({
+      ...currentFormatting,
+      textColor: color,
+    });
+    this.updateSelectionFormatting();
+    return true;
   };
 
   /**
-   * Clear all span formatting when the inline editor is open (not editing a formula).
+   * Clear span formatting when the inline editor is open (not editing a formula).
+   * If there's a selection, clears formatting only for the selected text.
+   * If no selection but cursor is in a span, clears that span's formatting.
+   * Does not clear cell-level formatting - only span-level formatting.
    * Returns true if formatting was cleared, false otherwise.
    */
   clearSpanFormatting = (): boolean => {
     if (!this.open || this.formula) {
       return false;
     }
-    inlineEditorSpans.clearAllFormatting();
-    return true;
+    // If there's a selection, clear formatting only for the selection
+    if (inlineEditorMonaco.hasSelection()) {
+      inlineEditorSpans.clearFormattingForSelection();
+      this.updateFont(); // May switch back to font-family-based bold/italic if spans are cleared
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // If no selection, try to clear the span at the cursor position
+    if (inlineEditorSpans.clearFormattingAtCursor()) {
+      this.updateFont(); // May switch back to font-family-based bold/italic if spans are cleared
+      this.updateSelectionFormatting();
+      return true;
+    }
+    // No span at cursor - don't clear cell-level formatting
+    return false;
   };
 
   private updateFont = () => {
-    let fontFamily = 'OpenSans';
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
       const bold = this.temporaryBold === undefined ? this.formatSummary?.bold : this.temporaryBold;
-      if (italic && bold) {
-        fontFamily = 'OpenSans-BoldItalic';
-      } else if (italic) {
-        fontFamily = 'OpenSans-Italic';
-      } else if (bold) {
-        fontFamily = 'OpenSans-Bold';
+
+      // When there are active spans (RichText), use base font and CSS for bold/italic
+      // so span-level formatting can override cell-level formatting.
+      // When there are no spans (plain text with cell-level formatting), set the font family
+      // directly so Monaco can use correct font metrics for cursor positioning.
+      if (inlineEditorSpans.isActive()) {
+        inlineEditorMonaco.setFontFamily('OpenSans');
+        inlineEditorMonaco.setItalic(!!italic);
+        inlineEditorMonaco.setBold(!!bold);
+      } else {
+        // Set font family directly based on bold/italic state for correct cursor positioning
+        const fontFamily = this.getFontFamily(!!bold, !!italic);
+        inlineEditorMonaco.setFontFamily(fontFamily);
+        // Clear CSS data attributes since we're using font family directly
+        inlineEditorMonaco.setItalic(false);
+        inlineEditorMonaco.setBold(false);
       }
+    } else {
+      inlineEditorMonaco.setFontFamily('OpenSans');
+      inlineEditorMonaco.setItalic(false);
+      inlineEditorMonaco.setBold(false);
     }
-    inlineEditorMonaco.setFontFamily(fontFamily);
 
     // Set font size from format summary
     const fontSize = this.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
     inlineEditorMonaco.setFontSize(fontSize);
+  };
+
+  /**
+   * Get the font family name based on bold and italic formatting.
+   */
+  private getFontFamily = (bold: boolean, italic: boolean): string => {
+    if (bold && italic) {
+      return 'OpenSans-BoldItalic';
+    } else if (bold) {
+      return 'OpenSans-Bold';
+    } else if (italic) {
+      return 'OpenSans-Italic';
+    }
+    return 'OpenSans';
   };
 
   // Refreshes the format summary and updates the font display in the inline editor
@@ -621,6 +720,11 @@ class InlineEditorHandler {
 
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
+    }
+
+    // Clean up empty spans that the cursor has moved away from
+    if (!this.formula) {
+      inlineEditorSpans.cleanupEmptySpans();
     }
 
     // Check if cursor is over a hyperlink and emit event for popup

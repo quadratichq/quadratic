@@ -10,11 +10,13 @@ use uuid::Uuid;
 use crate::{
     SharedError,
     arrow::object_store::{list_objects, upload_multipart},
+    environment::Environment,
     error::Result,
 };
 
 pub mod google_analytics;
 pub mod mixpanel;
+pub mod plaid;
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
@@ -22,6 +24,7 @@ pub const DATE_FORMAT: &str = "%Y-%m-%d";
 pub enum SyncedConnectionKind {
     Mixpanel,
     GoogleAnalytics,
+    Plaid,
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -36,7 +39,7 @@ pub trait SyncedConnection: Send + Sync {
     fn kind(&self) -> SyncedConnectionKind;
     fn start_date(&self) -> NaiveDate;
     fn streams(&self) -> Vec<&'static str>;
-    async fn to_client(&self) -> Result<Box<dyn SyncedClient>>;
+    async fn to_client(&self, environment: Environment) -> Result<Box<dyn SyncedClient>>;
 }
 
 #[async_trait]
@@ -44,6 +47,9 @@ pub trait SyncedClient: Send + Sync {
     fn streams() -> Vec<&'static str>
     where
         Self: Sized;
+
+    /// Test the connection to the data source.
+    async fn test_connection(&self) -> bool;
 
     /// Process a single stream.
     async fn process(

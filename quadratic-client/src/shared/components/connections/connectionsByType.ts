@@ -6,6 +6,7 @@ import * as Mixpanel from '@/shared/components/connections/ConnectionFormMixpane
 import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
 import * as Mysql from '@/shared/components/connections/ConnectionFormMysql';
 import * as Neon from '@/shared/components/connections/ConnectionFormNeon';
+import * as Plaid from '@/shared/components/connections/ConnectionFormPlaid';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
 import * as Snowflake from '@/shared/components/connections/ConnectionFormSnowflake';
 import * as Supabase from '@/shared/components/connections/ConnectionFormSupabase';
@@ -30,6 +31,7 @@ import NeonLogo from './logo-neon.svg?react';
 import NetsuiteLogo from './logo-netsuite.svg?react';
 import OracleLogo from './logo-oracle.svg?react';
 import OtherLogo from './logo-other.svg?react';
+import PlaidLogo from './logo-plaid.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
 import QuickbooksLogo from './logo-quickbooks.svg?react';
 import RedshiftLogo from './logo-redshift.svg?react';
@@ -60,6 +62,7 @@ export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   form: UseFormReturn<T>;
   children: ReactNode;
   handleSubmitForm: SubmitHandler<ConnectionFormValues>;
+  handleCancelForm: () => void;
   percentCompleted?: number;
   connection?: Connection;
   teamUuid: string;
@@ -68,6 +71,7 @@ export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
 type ConnectionTypeData<T extends ConnectionFormValues> = {
   name: string;
   Logo: typeof MysqlLogo;
+  uiCategory?: 'Databases' | 'Analytics';
 
   ConnectionForm: ConnectionFormComponent<T>;
   useConnectionForm: UseConnectionForm<T>;
@@ -81,68 +85,85 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
   POSTGRES: {
     name: 'Postgres',
     Logo: PostgresLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Postgres.ConnectionForm,
     useConnectionForm: Postgres.useConnectionForm,
   },
   MYSQL: {
     name: 'MySQL',
     Logo: MysqlLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Mysql.ConnectionForm,
     useConnectionForm: Mysql.useConnectionForm,
   },
   MSSQL: {
     name: 'MS SQL Server',
     Logo: MssqlLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Mssql.ConnectionForm,
     useConnectionForm: Mssql.useConnectionForm,
   },
   SNOWFLAKE: {
     name: 'Snowflake',
     Logo: SnowflakeLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Snowflake.ConnectionForm,
     useConnectionForm: Snowflake.useConnectionForm,
   },
   BIGQUERY: {
     name: 'BigQuery',
     Logo: BigqueryLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Bigquery.ConnectionForm,
     useConnectionForm: Bigquery.useConnectionForm,
   },
   COCKROACHDB: {
     name: 'CockroachDB',
     Logo: CockroachdbLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Cockroachdb.ConnectionForm,
     useConnectionForm: Cockroachdb.useConnectionForm,
   },
   MARIADB: {
     name: 'MariaDB',
     Logo: MariadbLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Mariadb.ConnectionForm,
     useConnectionForm: Mariadb.useConnectionForm,
   },
   SUPABASE: {
     name: 'Supabase',
     Logo: SupabaseLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Supabase.ConnectionForm,
     useConnectionForm: Supabase.useConnectionForm,
   },
   NEON: {
     name: 'Neon',
     Logo: NeonLogo,
+    uiCategory: 'Databases',
     ConnectionForm: Neon.ConnectionForm,
     useConnectionForm: Neon.useConnectionForm,
   },
   MIXPANEL: {
     name: 'Mixpanel',
     Logo: MixpanelLogo,
+    uiCategory: 'Analytics',
     ConnectionForm: Mixpanel.ConnectionForm,
     useConnectionForm: Mixpanel.useConnectionForm,
   },
   GOOGLE_ANALYTICS: {
     name: 'Google Analytics',
     Logo: GoogleAnalyticsLogo,
+    uiCategory: 'Analytics',
     ConnectionForm: GoogleAnalytics.ConnectionForm,
     useConnectionForm: GoogleAnalytics.useConnectionForm,
+  },
+  PLAID: {
+    name: 'Plaid',
+    Logo: PlaidLogo,
+    ConnectionForm: Plaid.ConnectionForm,
+    useConnectionForm: Plaid.useConnectionForm,
   },
 };
 

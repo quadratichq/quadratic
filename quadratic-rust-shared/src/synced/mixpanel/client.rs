@@ -31,6 +31,7 @@ pub struct MixpanelConfig {
 
 #[async_trait]
 impl SyncedClient for MixpanelClient {
+    /// Get the streams available for this client
     fn streams() -> Vec<&'static str> {
         vec![
             "events",
@@ -43,6 +44,15 @@ impl SyncedClient for MixpanelClient {
         ]
     }
 
+    /// Test the connection and authentication
+    async fn test_connection(&self) -> bool {
+        let today = chrono::Utc::now().date_naive();
+        let mut params = ExportParams::new(today, today);
+        params.limit = Some(1);
+        self.export_events(params).await.is_ok()
+    }
+
+    /// Process a single stream
     async fn process(
         &self,
         stream: &str,
@@ -152,14 +162,6 @@ impl MixpanelClient {
             .await
             .map_err(|e| SharedError::Synced(format!("Failed to parse response: {}", e)))?;
         Ok(result)
-    }
-
-    /// test the connection and authentication
-    pub async fn test_connection(&self) -> bool {
-        let today = chrono::Utc::now().date_naive();
-        let mut params = ExportParams::new(today, today);
-        params.limit = Some(1);
-        self.export_events(params).await.is_ok()
     }
 
     /// get project information (if available)
