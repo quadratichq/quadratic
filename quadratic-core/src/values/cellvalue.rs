@@ -97,6 +97,82 @@ impl TextSpan {
             && self.text_color.is_none()
             && self.font_size.is_none()
     }
+
+    /// Clears the bold formatting from this span.
+    /// Returns true if the value was changed.
+    pub fn clear_bold(&mut self) -> bool {
+        if self.bold.is_some() {
+            self.bold = None;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Clears the italic formatting from this span.
+    /// Returns true if the value was changed.
+    pub fn clear_italic(&mut self) -> bool {
+        if self.italic.is_some() {
+            self.italic = None;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Clears the strikethrough formatting from this span.
+    /// Returns true if the value was changed.
+    pub fn clear_strike_through(&mut self) -> bool {
+        if self.strike_through.is_some() {
+            self.strike_through = None;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Clears the text color formatting from this span.
+    /// Returns true if the value was changed.
+    pub fn clear_text_color(&mut self) -> bool {
+        if self.text_color.is_some() {
+            self.text_color = None;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Clears the underline formatting from this span.
+    /// Returns true if the value was changed.
+    pub fn clear_underline(&mut self) -> bool {
+        if self.underline.is_some() {
+            self.underline = None;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Clears all text formatting (bold, italic, underline, strikethrough, text_color, font_size)
+    /// but preserves links.
+    /// Returns true if any value was changed.
+    pub fn clear_all_formatting(&mut self) -> bool {
+        let changed = self.bold.is_some()
+            || self.italic.is_some()
+            || self.underline.is_some()
+            || self.strike_through.is_some()
+            || self.text_color.is_some()
+            || self.font_size.is_some();
+
+        self.bold = None;
+        self.italic = None;
+        self.underline = None;
+        self.strike_through = None;
+        self.text_color = None;
+        self.font_size = None;
+
+        changed
+    }
 }
 
 /// Non-array value in the formula language.
@@ -511,6 +587,123 @@ impl CellValue {
         match self {
             CellValue::Error(e) => Err((**e).clone()),
             other => Ok(other),
+        }
+    }
+
+    /// If this is a RichText value, clears the bold formatting from all spans.
+    /// Returns true if any changes were made, false if not RichText or no changes.
+    pub fn clear_richtext_bold(&mut self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            let mut changed = false;
+            for span in spans.iter_mut() {
+                if span.clear_bold() {
+                    changed = true;
+                }
+            }
+            changed
+        } else {
+            false
+        }
+    }
+
+    /// If this is a RichText value, clears the italic formatting from all spans.
+    /// Returns true if any changes were made, false if not RichText or no changes.
+    pub fn clear_richtext_italic(&mut self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            let mut changed = false;
+            for span in spans.iter_mut() {
+                if span.clear_italic() {
+                    changed = true;
+                }
+            }
+            changed
+        } else {
+            false
+        }
+    }
+
+    /// If this is a RichText value, clears the strikethrough formatting from all spans.
+    /// Returns true if any changes were made, false if not RichText or no changes.
+    pub fn clear_richtext_strike_through(&mut self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            let mut changed = false;
+            for span in spans.iter_mut() {
+                if span.clear_strike_through() {
+                    changed = true;
+                }
+            }
+            changed
+        } else {
+            false
+        }
+    }
+
+    /// If this is a RichText value, clears the text color formatting from all spans.
+    /// Returns true if any changes were made, false if not RichText or no changes.
+    pub fn clear_richtext_text_color(&mut self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            let mut changed = false;
+            for span in spans.iter_mut() {
+                if span.clear_text_color() {
+                    changed = true;
+                }
+            }
+            changed
+        } else {
+            false
+        }
+    }
+
+    /// If this is a RichText value, clears the underline formatting from all spans.
+    /// Returns true if any changes were made, false if not RichText or no changes.
+    pub fn clear_richtext_underline(&mut self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            let mut changed = false;
+            for span in spans.iter_mut() {
+                if span.clear_underline() {
+                    changed = true;
+                }
+            }
+            changed
+        } else {
+            false
+        }
+    }
+
+    /// If this is a RichText value, clears all text formatting from all spans
+    /// (bold, italic, underline, strikethrough, text_color, font_size) but preserves links.
+    /// Returns true if any changes were made, false if not RichText or no changes.
+    pub fn clear_all_richtext_formatting(&mut self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            let mut changed = false;
+            for span in spans.iter_mut() {
+                if span.clear_all_formatting() {
+                    changed = true;
+                }
+            }
+            changed
+        } else {
+            false
+        }
+    }
+
+    /// If this is a RichText value, converts it to plain Text by concatenating all spans.
+    /// Also clears all formatting and links. Returns the original if not RichText.
+    pub fn richtext_to_plain_text(self) -> CellValue {
+        if let CellValue::RichText(spans) = self {
+            let text: String = spans.iter().map(|s| s.text.as_str()).collect();
+            CellValue::Text(text)
+        } else {
+            self
+        }
+    }
+
+    /// Returns true if this is a RichText value with any inline formatting.
+    pub fn has_richtext_formatting(&self) -> bool {
+        if let CellValue::RichText(spans) = self {
+            spans.iter().any(|s| !s.is_plain())
+        } else {
+            false
         }
     }
 
@@ -1805,5 +1998,278 @@ mod test {
 
         let cv = CellValue::Blank;
         assert_eq!(cv.to_number(), None);
+    }
+
+    #[test]
+    fn test_text_span_clear_bold() {
+        let mut span = TextSpan {
+            text: "test".to_string(),
+            bold: Some(true),
+            italic: Some(true),
+            ..Default::default()
+        };
+        assert!(span.clear_bold());
+        assert!(span.bold.is_none());
+        assert_eq!(span.italic, Some(true)); // Other formatting preserved
+
+        // No change when already None
+        assert!(!span.clear_bold());
+    }
+
+    #[test]
+    fn test_text_span_clear_italic() {
+        let mut span = TextSpan {
+            text: "test".to_string(),
+            italic: Some(false),
+            ..Default::default()
+        };
+        assert!(span.clear_italic());
+        assert!(span.italic.is_none());
+
+        // No change when already None
+        assert!(!span.clear_italic());
+    }
+
+    #[test]
+    fn test_text_span_clear_strike_through() {
+        let mut span = TextSpan {
+            text: "test".to_string(),
+            strike_through: Some(true),
+            ..Default::default()
+        };
+        assert!(span.clear_strike_through());
+        assert!(span.strike_through.is_none());
+
+        // No change when already None
+        assert!(!span.clear_strike_through());
+    }
+
+    #[test]
+    fn test_text_span_clear_text_color() {
+        let mut span = TextSpan {
+            text: "test".to_string(),
+            text_color: Some("red".to_string()),
+            ..Default::default()
+        };
+        assert!(span.clear_text_color());
+        assert!(span.text_color.is_none());
+
+        // No change when already None
+        assert!(!span.clear_text_color());
+    }
+
+    #[test]
+    fn test_text_span_clear_underline() {
+        let mut span = TextSpan {
+            text: "test".to_string(),
+            underline: Some(true),
+            ..Default::default()
+        };
+        assert!(span.clear_underline());
+        assert!(span.underline.is_none());
+
+        // No change when already None
+        assert!(!span.clear_underline());
+    }
+
+    #[test]
+    fn test_text_span_clear_all_formatting() {
+        let mut span = TextSpan {
+            text: "test".to_string(),
+            bold: Some(true),
+            italic: Some(false),
+            underline: Some(true),
+            strike_through: Some(true),
+            text_color: Some("blue".to_string()),
+            font_size: Some(14),
+            link: Some("https://example.com".to_string()),
+        };
+
+        assert!(span.clear_all_formatting());
+        assert!(span.bold.is_none());
+        assert!(span.italic.is_none());
+        assert!(span.underline.is_none());
+        assert!(span.strike_through.is_none());
+        assert!(span.text_color.is_none());
+        assert!(span.font_size.is_none());
+        // Link should be preserved
+        assert_eq!(span.link, Some("https://example.com".to_string()));
+        // Text should be preserved
+        assert_eq!(span.text, "test");
+
+        // No change when already cleared
+        assert!(!span.clear_all_formatting());
+    }
+
+    #[test]
+    fn test_cellvalue_clear_richtext_bold() {
+        let mut cv = CellValue::RichText(vec![
+            TextSpan {
+                text: "first".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            TextSpan {
+                text: "second".to_string(),
+                bold: Some(false),
+                italic: Some(true),
+                ..Default::default()
+            },
+            TextSpan::plain("third"),
+        ]);
+
+        assert!(cv.clear_richtext_bold());
+        if let CellValue::RichText(spans) = &cv {
+            assert!(spans[0].bold.is_none());
+            assert!(spans[1].bold.is_none());
+            assert!(spans[1].italic.is_some()); // Other formatting preserved
+            assert!(spans[2].bold.is_none());
+        } else {
+            panic!("Expected RichText");
+        }
+
+        // No change on second call
+        assert!(!cv.clear_richtext_bold());
+
+        // Non-RichText returns false
+        let mut text_cv = CellValue::Text("hello".to_string());
+        assert!(!text_cv.clear_richtext_bold());
+    }
+
+    #[test]
+    fn test_cellvalue_clear_richtext_italic() {
+        let mut cv = CellValue::RichText(vec![TextSpan {
+            text: "test".to_string(),
+            italic: Some(true),
+            ..Default::default()
+        }]);
+
+        assert!(cv.clear_richtext_italic());
+        if let CellValue::RichText(spans) = &cv {
+            assert!(spans[0].italic.is_none());
+        } else {
+            panic!("Expected RichText");
+        }
+    }
+
+    #[test]
+    fn test_cellvalue_clear_richtext_strike_through() {
+        let mut cv = CellValue::RichText(vec![TextSpan {
+            text: "test".to_string(),
+            strike_through: Some(true),
+            ..Default::default()
+        }]);
+
+        assert!(cv.clear_richtext_strike_through());
+        if let CellValue::RichText(spans) = &cv {
+            assert!(spans[0].strike_through.is_none());
+        } else {
+            panic!("Expected RichText");
+        }
+    }
+
+    #[test]
+    fn test_cellvalue_clear_richtext_text_color() {
+        let mut cv = CellValue::RichText(vec![TextSpan {
+            text: "test".to_string(),
+            text_color: Some("red".to_string()),
+            ..Default::default()
+        }]);
+
+        assert!(cv.clear_richtext_text_color());
+        if let CellValue::RichText(spans) = &cv {
+            assert!(spans[0].text_color.is_none());
+        } else {
+            panic!("Expected RichText");
+        }
+    }
+
+    #[test]
+    fn test_cellvalue_clear_richtext_underline() {
+        let mut cv = CellValue::RichText(vec![TextSpan {
+            text: "test".to_string(),
+            underline: Some(true),
+            ..Default::default()
+        }]);
+
+        assert!(cv.clear_richtext_underline());
+        if let CellValue::RichText(spans) = &cv {
+            assert!(spans[0].underline.is_none());
+        } else {
+            panic!("Expected RichText");
+        }
+    }
+
+    #[test]
+    fn test_cellvalue_clear_all_richtext_formatting() {
+        let mut cv = CellValue::RichText(vec![
+            TextSpan {
+                text: "formatted".to_string(),
+                bold: Some(true),
+                italic: Some(true),
+                text_color: Some("blue".to_string()),
+                link: Some("https://example.com".to_string()),
+                ..Default::default()
+            },
+            TextSpan::plain("plain"),
+        ]);
+
+        assert!(cv.clear_all_richtext_formatting());
+        if let CellValue::RichText(spans) = &cv {
+            assert!(spans[0].bold.is_none());
+            assert!(spans[0].italic.is_none());
+            assert!(spans[0].text_color.is_none());
+            // Link preserved
+            assert_eq!(spans[0].link, Some("https://example.com".to_string()));
+            // Text preserved
+            assert_eq!(spans[0].text, "formatted");
+            assert_eq!(spans[1].text, "plain");
+        } else {
+            panic!("Expected RichText");
+        }
+    }
+
+    #[test]
+    fn test_cellvalue_richtext_to_plain_text() {
+        let cv = CellValue::RichText(vec![
+            TextSpan {
+                text: "Hello ".to_string(),
+                bold: Some(true),
+                ..Default::default()
+            },
+            TextSpan::link("world", "https://example.com"),
+            TextSpan::plain("!"),
+        ]);
+
+        let plain = cv.richtext_to_plain_text();
+        assert_eq!(plain, CellValue::Text("Hello world!".to_string()));
+
+        // Non-RichText returns original
+        let text_cv = CellValue::Text("hello".to_string());
+        let result = text_cv.clone().richtext_to_plain_text();
+        assert_eq!(result, text_cv);
+    }
+
+    #[test]
+    fn test_cellvalue_has_richtext_formatting() {
+        // RichText with formatting
+        let cv = CellValue::RichText(vec![TextSpan {
+            text: "bold".to_string(),
+            bold: Some(true),
+            ..Default::default()
+        }]);
+        assert!(cv.has_richtext_formatting());
+
+        // RichText with link only (link is formatting)
+        let cv = CellValue::RichText(vec![TextSpan::link("link", "https://example.com")]);
+        assert!(cv.has_richtext_formatting());
+
+        // RichText with no formatting
+        let cv = CellValue::RichText(vec![TextSpan::plain("plain")]);
+        assert!(!cv.has_richtext_formatting());
+
+        // Non-RichText
+        let cv = CellValue::Text("hello".to_string());
+        assert!(!cv.has_richtext_formatting());
     }
 }

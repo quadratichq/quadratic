@@ -157,6 +157,9 @@ services:
       QUADRATIC_FILE_URI: ${QUADRATIC_FILES_URL_INTERNAL}
       QUADRATIC_FILE_URI_PUBLIC: ${QUADRATIC_FILES_URL_EXTERNAL}
       LICENSE_KEY: ${LICENSE_KEY}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
+      PLAID_SECRET: ${PLAID_SECRET}
+      PLAID_ENVIRONMENT: ${PLAID_ENVIRONMENT}
     restart: "always"
     ports:
       - "8000:8000"
@@ -217,6 +220,7 @@ services:
       file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-files
     container_name: files
+    stop_grace_period: 60s
     environment:
       RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
       FILES__HOST: ${QUADRATIC_FILES_HOST}

@@ -1,8 +1,7 @@
 import express from 'express';
 import checkpointRead from './checkpoint.$fileUuid.GET';
 import checkpointPut from './checkpoint.$fileUuid.PUT';
-import connectionGet from './connection.GET';
-import connectionListGet from './connection.GET';
+import { default as connectionGet, default as connectionListGet } from './connection.GET';
 import initDataGet from './file.$fileUuid.init-data.GET';
 import scheduledTaskLogPost from './scheduled-tasks.$scheduledTaskId.log.POST';
 import scheduledTaskGet from './scheduled-tasks.GET';
