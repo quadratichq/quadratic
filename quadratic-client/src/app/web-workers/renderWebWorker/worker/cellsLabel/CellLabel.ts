@@ -1205,8 +1205,8 @@ export class CellLabel {
     this.textTop = textTop;
     this.textBottom = textBottom;
 
-    // Calculate link rectangles based on character positions
-    this.calculateLinkRectangles(scale);
+    // Calculate link rectangles based on character positions, clipped to visible bounds
+    this.calculateLinkRectangles(scale, clipLeft, clipRight, clipTop, clipBottom);
 
     this.horizontalLines = [];
 
@@ -1228,8 +1228,16 @@ export class CellLabel {
     return bounds;
   };
 
-  /** Calculate pixel rectangles for each link span based on character positions. */
-  private calculateLinkRectangles = (scale: number) => {
+  /** Calculate pixel rectangles for each link span based on character positions.
+   * Clips rectangles to the provided bounds so hover detection only works on visible portions.
+   */
+  private calculateLinkRectangles = (
+    scale: number,
+    clipLeft: number,
+    clipRight: number,
+    clipTop: number,
+    clipBottom: number
+  ) => {
     this.linkRectangles = [];
     if (this.linkSpans.length === 0 || this.chars.length === 0) return;
 
@@ -1265,12 +1273,23 @@ export class CellLabel {
 
       // If we found characters for this span, create a rectangle
       if (minX < Infinity) {
+        // Clip the rectangle to the visible bounds
+        const clippedMinX = Math.max(minX, clipLeft);
+        const clippedMaxX = Math.min(maxX, clipRight);
+        const clippedMinY = Math.max(minY, clipTop);
+        const clippedMaxY = Math.min(maxY, clipBottom);
+
+        // Skip this link if it's completely clipped
+        if (clippedMinX >= clippedMaxX || clippedMinY >= clippedMaxY) {
+          continue;
+        }
+
         // Calculate underline y position using the same formula as addLine
         const underlineY = this.position.y + this.lineHeight * spanLine + this.underlineOffset * scale + scaledFixY;
         // Get the link text from the original text
         const linkText = this.originalText.slice(span.start, span.end);
         this.linkRectangles.push({
-          rect: new Rectangle(minX, minY, maxX - minX, maxY - minY),
+          rect: new Rectangle(clippedMinX, clippedMinY, clippedMaxX - clippedMinX, clippedMaxY - clippedMinY),
           url: span.url,
           underlineY,
           linkText,
