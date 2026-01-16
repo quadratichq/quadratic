@@ -188,19 +188,16 @@ impl ConditionalFormatRule {
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("NOT") =>
             {
-                if args.len() == 1 {
-                    if let AstNodeContents::FunctionCall {
+                if args.len() == 1
+                    && let AstNodeContents::FunctionCall {
                         func: inner_func,
                         args: inner_args,
                     } = &args[0].inner
-                    {
-                        if inner_func.inner.eq_ignore_ascii_case("ISBLANK")
-                            && inner_args.len() == 1
-                            && Self::is_matching_cell_ref(&inner_args[0], expected_first_cell)
-                        {
-                            return Some(ConditionalFormatRule::IsNotEmpty);
-                        }
-                    }
+                    && inner_func.inner.eq_ignore_ascii_case("ISBLANK")
+                    && inner_args.len() == 1
+                    && Self::is_matching_cell_ref(&inner_args[0], expected_first_cell)
+                {
+                    return Some(ConditionalFormatRule::IsNotEmpty);
                 }
                 None
             }
@@ -209,21 +206,17 @@ impl ConditionalFormatRule {
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("ISNUMBER") =>
             {
-                if args.len() == 1 {
-                    if let AstNodeContents::FunctionCall {
+                if args.len() == 1
+                    && let AstNodeContents::FunctionCall {
                         func: inner_func,
                         args: inner_args,
                     } = &args[0].inner
-                    {
-                        if inner_func.inner.eq_ignore_ascii_case("SEARCH") && inner_args.len() == 2
-                        {
-                            if let Some(value) = Self::extract_string_value(&inner_args[0]) {
-                                if Self::is_matching_cell_ref(&inner_args[1], expected_first_cell) {
-                                    return Some(ConditionalFormatRule::TextContains { value });
-                                }
-                            }
-                        }
-                    }
+                    && inner_func.inner.eq_ignore_ascii_case("SEARCH")
+                    && inner_args.len() == 2
+                    && let Some(value) = Self::extract_string_value(&inner_args[0])
+                    && Self::is_matching_cell_ref(&inner_args[1], expected_first_cell)
+                {
+                    return Some(ConditionalFormatRule::TextContains { value });
                 }
                 None
             }
@@ -232,21 +225,17 @@ impl ConditionalFormatRule {
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("ISERROR") =>
             {
-                if args.len() == 1 {
-                    if let AstNodeContents::FunctionCall {
+                if args.len() == 1
+                    && let AstNodeContents::FunctionCall {
                         func: inner_func,
                         args: inner_args,
                     } = &args[0].inner
-                    {
-                        if inner_func.inner.eq_ignore_ascii_case("SEARCH") && inner_args.len() == 2
-                        {
-                            if let Some(value) = Self::extract_string_value(&inner_args[0]) {
-                                if Self::is_matching_cell_ref(&inner_args[1], expected_first_cell) {
-                                    return Some(ConditionalFormatRule::TextNotContains { value });
-                                }
-                            }
-                        }
-                    }
+                    && inner_func.inner.eq_ignore_ascii_case("SEARCH")
+                    && inner_args.len() == 2
+                    && let Some(value) = Self::extract_string_value(&inner_args[0])
+                    && Self::is_matching_cell_ref(&inner_args[1], expected_first_cell)
+                {
+                    return Some(ConditionalFormatRule::TextNotContains { value });
                 }
                 None
             }
@@ -255,8 +244,8 @@ impl ConditionalFormatRule {
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("AND") =>
             {
-                if args.len() == 2 {
-                    if let (Some((op1, val1)), Some((op2, val2))) = (
+                if args.len() == 2
+                    && let (Some((op1, val1)), Some((op2, val2))) = (
                         Self::extract_comparison(
                             &args[0],
                             sheet_id,
@@ -269,15 +258,15 @@ impl ConditionalFormatRule {
                             a1_context,
                             expected_first_cell,
                         ),
-                    ) {
-                        // AND(cellRef >= min, cellRef <= max)
-                        if op1 == ">=" && op2 == "<=" {
-                            return Some(ConditionalFormatRule::IsBetween {
-                                min: val1,
-                                max: val2,
-                            });
-                        }
-                    }
+                    )
+                    // AND(cellRef >= min, cellRef <= max)
+                    && op1 == ">="
+                    && op2 == "<="
+                {
+                    return Some(ConditionalFormatRule::IsBetween {
+                        min: val1,
+                        max: val2,
+                    });
                 }
                 None
             }
@@ -286,8 +275,8 @@ impl ConditionalFormatRule {
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("OR") =>
             {
-                if args.len() == 2 {
-                    if let (Some((op1, val1)), Some((op2, val2))) = (
+                if args.len() == 2
+                    && let (Some((op1, val1)), Some((op2, val2))) = (
                         Self::extract_comparison(
                             &args[0],
                             sheet_id,
@@ -300,15 +289,15 @@ impl ConditionalFormatRule {
                             a1_context,
                             expected_first_cell,
                         ),
-                    ) {
-                        // OR(cellRef < min, cellRef > max)
-                        if op1 == "<" && op2 == ">" {
-                            return Some(ConditionalFormatRule::IsNotBetween {
-                                min: val1,
-                                max: val2,
-                            });
-                        }
-                    }
+                    )
+                    // OR(cellRef < min, cellRef > max)
+                    && op1 == "<"
+                    && op2 == ">"
+                {
+                    return Some(ConditionalFormatRule::IsNotBetween {
+                        min: val1,
+                        max: val2,
+                    });
                 }
                 None
             }
@@ -428,20 +417,21 @@ impl ConditionalFormatRule {
         a1_context: &A1Context,
         expected_first_cell: Option<Pos>,
     ) -> Option<(&'static str, ConditionalFormatValue)> {
-        if let AstNodeContents::FunctionCall { func, args } = &ast.inner {
-            if args.len() == 2 && Self::is_matching_cell_ref(&args[0], expected_first_cell) {
-                let op = match func.inner.as_str() {
-                    ">" => ">",
-                    ">=" => ">=",
-                    "<" => "<",
-                    "<=" => "<=",
-                    "=" | "==" => "=",
-                    "<>" | "!=" => "<>",
-                    _ => return None,
-                };
-                if let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context) {
-                    return Some((op, value));
-                }
+        if let AstNodeContents::FunctionCall { func, args } = &ast.inner
+            && args.len() == 2
+            && Self::is_matching_cell_ref(&args[0], expected_first_cell)
+        {
+            let op = match func.inner.as_str() {
+                ">" => ">",
+                ">=" => ">=",
+                "<" => "<",
+                "<=" => "<=",
+                "=" | "==" => "=",
+                "<>" | "!=" => "<>",
+                _ => return None,
+            };
+            if let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context) {
+                return Some((op, value));
             }
         }
         None
@@ -464,34 +454,32 @@ impl ConditionalFormatRule {
             args: left_args,
         } = &args[0].inner
         {
-            if func.inner.eq_ignore_ascii_case("LEFT") && left_args.len() == 2 {
-                if Self::is_matching_cell_ref(&left_args[0], expected_first_cell) {
-                    if let Some(value) = Self::extract_string_value(&args[1]) {
-                        return Some(ConditionalFormatRule::TextStartsWith { value });
-                    }
-                }
+            if func.inner.eq_ignore_ascii_case("LEFT")
+                && left_args.len() == 2
+                && Self::is_matching_cell_ref(&left_args[0], expected_first_cell)
+                && let Some(value) = Self::extract_string_value(&args[1])
+            {
+                return Some(ConditionalFormatRule::TextStartsWith { value });
             }
             // Check for RIGHT(cellRef, len) = value -> TextEndsWith
-            if func.inner.eq_ignore_ascii_case("RIGHT") && left_args.len() == 2 {
-                if Self::is_matching_cell_ref(&left_args[0], expected_first_cell) {
-                    if let Some(value) = Self::extract_string_value(&args[1]) {
-                        return Some(ConditionalFormatRule::TextEndsWith { value });
-                    }
-                }
+            if func.inner.eq_ignore_ascii_case("RIGHT")
+                && left_args.len() == 2
+                && Self::is_matching_cell_ref(&left_args[0], expected_first_cell)
+                && let Some(value) = Self::extract_string_value(&args[1])
+            {
+                return Some(ConditionalFormatRule::TextEndsWith { value });
             }
         }
 
         // Simple comparison: cellRef = value
-        if Self::is_matching_cell_ref(&args[0], expected_first_cell) {
-            if let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context) {
-                // If it's a string, it's TextIsExactly; otherwise IsEqualTo
-                if matches!(value, ConditionalFormatValue::Text(_)) {
-                    if let ConditionalFormatValue::Text(s) = value {
-                        return Some(ConditionalFormatRule::TextIsExactly { value: s });
-                    }
-                }
-                return Some(ConditionalFormatRule::IsEqualTo { value });
+        if Self::is_matching_cell_ref(&args[0], expected_first_cell)
+            && let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context)
+        {
+            // If it's a string, it's TextIsExactly; otherwise IsEqualTo
+            if let ConditionalFormatValue::Text(s) = value {
+                return Some(ConditionalFormatRule::TextIsExactly { value: s });
             }
+            return Some(ConditionalFormatRule::IsEqualTo { value });
         }
 
         None
@@ -509,17 +497,17 @@ impl ConditionalFormatRule {
             return None;
         }
 
-        if Self::is_matching_cell_ref(&args[0], expected_first_cell) {
-            if let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context) {
-                return match op {
-                    ">" => Some(ConditionalFormatRule::GreaterThan { value }),
-                    ">=" => Some(ConditionalFormatRule::GreaterThanOrEqual { value }),
-                    "<" => Some(ConditionalFormatRule::LessThan { value }),
-                    "<=" => Some(ConditionalFormatRule::LessThanOrEqual { value }),
-                    "<>" | "!=" => Some(ConditionalFormatRule::IsNotEqualTo { value }),
-                    _ => None,
-                };
-            }
+        if Self::is_matching_cell_ref(&args[0], expected_first_cell)
+            && let Some(value) = Self::extract_value(&args[1], sheet_id, a1_context)
+        {
+            return match op {
+                ">" => Some(ConditionalFormatRule::GreaterThan { value }),
+                ">=" => Some(ConditionalFormatRule::GreaterThanOrEqual { value }),
+                "<" => Some(ConditionalFormatRule::LessThan { value }),
+                "<=" => Some(ConditionalFormatRule::LessThanOrEqual { value }),
+                "<>" | "!=" => Some(ConditionalFormatRule::IsNotEqualTo { value }),
+                _ => None,
+            };
         }
 
         None

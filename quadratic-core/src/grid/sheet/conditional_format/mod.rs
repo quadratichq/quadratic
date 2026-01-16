@@ -401,10 +401,10 @@ impl ConditionalFormats {
         }
 
         // Check bounds for early rejection
-        if let GridBounds::NonEmpty(bounds) = self.bounds(a1_context) {
-            if !bounds.intersects(rect) {
-                return vec![];
-            }
+        if let GridBounds::NonEmpty(bounds) = self.bounds(a1_context)
+            && !bounds.intersects(rect)
+        {
+            return vec![];
         }
 
         // Filter to only formats that intersect the rect

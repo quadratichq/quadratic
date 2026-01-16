@@ -50,6 +50,7 @@ pub type ConnectionKindSchema = v1_11::ConnectionKindSchema;
 pub type Contiguous2DSchema<T> = v1_11::Contiguous2DSchema<T>;
 /// DataTableKind schema using the new CodeRunSchema with formula_ast.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum DataTableKindSchema {
     CodeRun(CodeRunSchema),
     Import(ImportSchema),

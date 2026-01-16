@@ -62,8 +62,8 @@ impl GridController {
                 fills.push(JsRenderFill {
                     x: fill_rect.min.x,
                     y: fill_rect.min.y,
-                    w: fill_rect.width() as u32,
-                    h: fill_rect.height() as u32,
+                    w: fill_rect.width(),
+                    h: fill_rect.height(),
                     color,
                 });
             }

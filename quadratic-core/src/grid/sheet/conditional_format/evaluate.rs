@@ -177,10 +177,10 @@ impl GridController {
                 let pos = Pos { x, y };
                 if selection.contains_pos(pos, a1_context) {
                     let value = sheet.get_cell_for_formula(pos);
-                    if let CellValue::Number(n) = value {
-                        if let Ok(f) = n.try_into() {
-                            values.push(f);
-                        }
+                    if let CellValue::Number(n) = value
+                        && let Ok(f) = n.try_into()
+                    {
+                        values.push(f);
                     }
                 }
             }
@@ -259,9 +259,7 @@ impl GridController {
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> Option<ConditionalFormatStyle> {
-        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
-            return None;
-        };
+        let sheet = self.try_sheet(sheet_pos.sheet_id)?;
 
         // Get all conditional formats that might apply to this cell
         let pos = Pos {
@@ -277,17 +275,14 @@ impl GridController {
         let mut formats: Vec<&ConditionalFormat> = sheet
             .conditional_formats
             .iter()
-            .filter(|cf| {
-                cf.selection.contains_pos(pos, a1_context)
-                    && preview_id.map_or(true, |pid| cf.id != pid)
-            })
+            .filter(|cf| cf.selection.contains_pos(pos, a1_context) && preview_id != Some(cf.id))
             .collect();
 
         // Add preview format if it applies to this cell
-        if let Some(ref preview) = sheet.preview_conditional_format {
-            if preview.selection.contains_pos(pos, a1_context) {
-                formats.push(preview);
-            }
+        if let Some(ref preview) = sheet.preview_conditional_format
+            && preview.selection.contains_pos(pos, a1_context)
+        {
+            formats.push(preview);
         }
 
         if formats.is_empty() {
@@ -340,7 +335,7 @@ impl GridController {
         &self,
         sheet_id: SheetId,
         rect: Rect,
-        cells: &mut Vec<JsRenderCell>,
+        cells: &mut [JsRenderCell],
     ) {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return;
@@ -365,15 +360,16 @@ impl GridController {
             .filter(|cf| {
                 cf.has_non_fill_style()
                     && cf.selection.intersects_rect(rect, a1_context)
-                    && preview_id.map_or(true, |pid| cf.id != pid)
+                    && preview_id != Some(cf.id)
             })
             .collect();
 
         // Add preview format if it has non-fill styles and overlaps the rect
-        if let Some(ref preview) = sheet.preview_conditional_format {
-            if preview.has_non_fill_style() && preview.selection.intersects_rect(rect, a1_context) {
-                overlapping_formats.push(preview);
-            }
+        if let Some(ref preview) = sheet.preview_conditional_format
+            && preview.has_non_fill_style()
+            && preview.selection.intersects_rect(rect, a1_context)
+        {
+            overlapping_formats.push(preview);
         }
 
         if overlapping_formats.is_empty() {
@@ -392,27 +388,26 @@ impl GridController {
             let mut any_applied = false;
 
             for cf in &overlapping_formats {
-                if cf.selection.contains_pos(pos, a1_context) {
-                    if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
-                        if let Some(style) = cf.style() {
-                            if style.bold.is_some() {
-                                combined_style.bold = style.bold;
-                            }
-                            if style.italic.is_some() {
-                                combined_style.italic = style.italic;
-                            }
-                            if style.underline.is_some() {
-                                combined_style.underline = style.underline;
-                            }
-                            if style.strike_through.is_some() {
-                                combined_style.strike_through = style.strike_through;
-                            }
-                            if style.text_color.is_some() {
-                                combined_style.text_color = style.text_color.clone();
-                            }
-                            any_applied = true;
-                        }
+                if cf.selection.contains_pos(pos, a1_context)
+                    && self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context)
+                    && let Some(style) = cf.style()
+                {
+                    if style.bold.is_some() {
+                        combined_style.bold = style.bold;
                     }
+                    if style.italic.is_some() {
+                        combined_style.italic = style.italic;
+                    }
+                    if style.underline.is_some() {
+                        combined_style.underline = style.underline;
+                    }
+                    if style.strike_through.is_some() {
+                        combined_style.strike_through = style.strike_through;
+                    }
+                    if style.text_color.is_some() {
+                        combined_style.text_color = style.text_color.clone();
+                    }
+                    any_applied = true;
                 }
             }
 
@@ -465,15 +460,16 @@ impl GridController {
             .filter(|cf| {
                 cf.has_fill()
                     && cf.selection.intersects_rect(rect, a1_context)
-                    && preview_id.map_or(true, |pid| cf.id != pid)
+                    && preview_id != Some(cf.id)
             })
             .collect();
 
         // Add preview format if it has a fill and overlaps the rect
-        if let Some(ref preview) = sheet.preview_conditional_format {
-            if preview.has_fill() && preview.selection.intersects_rect(rect, a1_context) {
-                formats_with_fills.push(preview);
-            }
+        if let Some(ref preview) = sheet.preview_conditional_format
+            && preview.has_fill()
+            && preview.selection.intersects_rect(rect, a1_context)
+        {
+            formats_with_fills.push(preview);
         }
 
         if formats_with_fills.is_empty() {
@@ -1256,7 +1252,12 @@ mod tests {
         // Set values: A1=0 (min), A2=50 (mid), A3=100 (max)
         gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "0".to_string(), None, false);
         gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "50".to_string(), None, false);
-        gc.set_cell_value(pos_a3.to_sheet_pos(sheet_id), "100".to_string(), None, false);
+        gc.set_cell_value(
+            pos_a3.to_sheet_pos(sheet_id),
+            "100".to_string(),
+            None,
+            false,
+        );
 
         // Create a color scale format from red to green
         let cf = ConditionalFormat {
@@ -1283,7 +1284,7 @@ mod tests {
         );
 
         // Should have fills for all 3 cells
-        assert!(fills.len() >= 1, "Should have at least 1 fill rect");
+        assert!(!fills.is_empty(), "Should have at least 1 fill rect");
 
         // A1 (min) should be red
         let a1_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a1));
@@ -1355,7 +1356,8 @@ mod tests {
         let a1_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a1));
         assert!(a1_fill.is_some(), "A1 should have a fill");
         assert_eq!(
-            a1_fill.unwrap().1, "#ff0000",
+            a1_fill.unwrap().1,
+            "#ff0000",
             "A1 (value=1) should be red (min). Blank cells should not affect min calculation."
         );
 
@@ -1363,7 +1365,8 @@ mod tests {
         let a10_fill = fills.iter().find(|(rect, _)| rect.contains(pos_a10));
         assert!(a10_fill.is_some(), "A10 should have a fill");
         assert_eq!(
-            a10_fill.unwrap().1, "#00ff00",
+            a10_fill.unwrap().1,
+            "#00ff00",
             "A10 (value=10) should be green (max). Blank cells should not affect max calculation."
         );
 

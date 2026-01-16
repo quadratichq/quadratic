@@ -120,7 +120,7 @@ impl GridController {
             transaction,
             sheet,
             self.a1_context(),
-            &[selection.clone()],
+            std::slice::from_ref(selection),
         );
     }
 
@@ -215,17 +215,17 @@ impl GridController {
             .get(conditional_format_id)
             .map(|cf| cf.selection.clone());
 
-        if let Some(reverse) = sheet.conditional_formats.remove(conditional_format_id) {
-            if transaction.is_user_ai_undo_redo() {
-                transaction.reverse_operations.push(reverse);
+        if let Some(reverse) = sheet.conditional_formats.remove(conditional_format_id)
+            && transaction.is_user_ai_undo_redo()
+        {
+            transaction.reverse_operations.push(reverse);
 
-                transaction
-                    .forward_operations
-                    .push(Operation::RemoveConditionalFormat {
-                        sheet_id,
-                        conditional_format_id,
-                    });
-            }
+            transaction
+                .forward_operations
+                .push(Operation::RemoveConditionalFormat {
+                    sheet_id,
+                    conditional_format_id,
+                });
         }
 
         transaction.conditional_formats.insert(sheet_id);
