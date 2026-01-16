@@ -9,10 +9,14 @@ type GotoCellsOptions = {
   a1: string;
 };
 export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
+  // Dismiss any open popups/menus first
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(100);
+
   // Only click if QuadraticCanvas or its descendants don't have focus
   const canvasHasFocus = (await page.locator('#QuadraticCanvasID:focus-within').count()) > 0;
   if (!canvasHasFocus) {
-    await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
+    await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000, force: true });
   }
   await page.waitForTimeout(2 * 1000);
   await page.keyboard.press('Control+G');
@@ -30,6 +34,23 @@ export const setValueInCell = async (page: Page, a1: string, value: string) => {
   await page.keyboard.type(value, { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
   await page.waitForTimeout(250);
+};
+
+/**
+ * Types text in a cell and exits edit mode using Tab.
+ * This is preferred for RTF formatting scenarios as Tab saves inline formatting.
+ *
+ * @param page - Playwright page
+ * @param a1 - Cell reference in A1 notation
+ * @param text - Text to type in the cell
+ */
+export const typeInCell = async (page: Page, a1: string, text: string) => {
+  await gotoCells(page, { a1 });
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(150);
+  await page.keyboard.type(text, { delay: 30 });
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(150);
 };
 
 /**
@@ -192,4 +213,71 @@ export const resizeColumn = async (page: Page, column: string, deltaX: number) =
   await page.mouse.move(handleX + deltaX, handleY, { steps: 10 });
   await page.mouse.up();
   await page.waitForTimeout(500);
+};
+
+// =============================================================================
+// INLINE EDITOR HELPERS
+// =============================================================================
+
+/**
+ * Ensures the inline editor has focus by clicking on it.
+ */
+export const focusInlineEditor = async (page: Page) => {
+  const cellEdit = page.locator('#cell-edit');
+  await cellEdit.waitFor({ state: 'visible', timeout: 5000 });
+  await cellEdit.click();
+  await page.waitForTimeout(300);
+};
+
+/**
+ * Helper function to select text within the inline editor.
+ * Clicks on the Monaco editor first to ensure focus, then selects text.
+ *
+ * @param page - Playwright page
+ * @param startPosition - The character position to start selection (0-indexed)
+ * @param length - The number of characters to select
+ */
+export const selectTextInEditor = async (page: Page, startPosition: number, length: number) => {
+  await focusInlineEditor(page);
+
+  // Use Home to go to start of text
+  await page.keyboard.press('End'); // Go to end first
+  await page.waitForTimeout(100);
+  await page.keyboard.press('Home'); // Go to start
+  await page.waitForTimeout(200);
+
+  // Move to start position character by character
+  for (let i = 0; i < startPosition; i++) {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(30);
+  }
+  await page.waitForTimeout(200);
+
+  // Select characters using Shift+Arrow
+  await page.keyboard.down('Shift');
+  for (let i = 0; i < length; i++) {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(50);
+  }
+  await page.keyboard.up('Shift');
+  await page.waitForTimeout(300);
+};
+
+/**
+ * Helper function to position the cursor at a specific character offset within the inline editor.
+ * Clicks on the Monaco editor first to ensure focus.
+ *
+ * @param page - Playwright page
+ * @param position - The character position to move the cursor to (0-indexed)
+ */
+export const positionCursorInEditor = async (page: Page, position: number) => {
+  await focusInlineEditor(page);
+
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(200);
+  for (let i = 0; i < position; i++) {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(30);
+  }
+  await page.waitForTimeout(200);
 };
