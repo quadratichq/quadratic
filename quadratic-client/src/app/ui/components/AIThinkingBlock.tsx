@@ -1,7 +1,7 @@
 import { Markdown } from '@/app/ui/components/Markdown';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import type { AIResponseContent } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
 // Helper function to extract the last sentence from text
 function getLastSentence(text: string): string {
@@ -32,28 +32,8 @@ export const AIThinkingBlock = memo(
     // Each thinking block tracks its own expanded state - always collapsed by default
     const [isExpanded, setIsExpanded] = useState(false);
     const [showLastSentence, setShowLastSentence] = useState(false);
-    const [thinkingDuration, setThinkingDuration] = useState<number | null>(null);
-    const thinkingStartTime = useRef<number | null>(null);
 
     const isActivelyThinking = isLoading && isCurrentMessage;
-    const hasInitialized = useRef(false);
-
-    // Track thinking duration
-    useEffect(() => {
-      // Capture start time on first render if loading
-      if (!hasInitialized.current && isLoading) {
-        thinkingStartTime.current = Date.now();
-        hasInitialized.current = true;
-      }
-
-      // Calculate duration when thinking ends (either text is added making this not the last item,
-      // or loading completes entirely)
-      if (!isActivelyThinking && thinkingStartTime.current !== null && thinkingDuration === null) {
-        const duration = Math.round((Date.now() - thinkingStartTime.current) / 1000);
-        setThinkingDuration(duration);
-        thinkingStartTime.current = null;
-      }
-    }, [isLoading, isActivelyThinking, thinkingDuration]);
 
     // After 1 second of loading, show the last sentence
     useEffect(() => {
@@ -85,7 +65,6 @@ export const AIThinkingBlock = memo(
     const getLabel = () => {
       if (isExpanded) return 'Hide thinking';
       if (isActivelyThinking) return 'Thinking';
-      if (thinkingDuration !== null) return `Thought for ${thinkingDuration}s`;
       return 'Thought';
     };
 
