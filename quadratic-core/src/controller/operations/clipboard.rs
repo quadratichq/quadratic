@@ -1220,10 +1220,10 @@ impl GridController {
             if paste_rect.contains(anchor) {
                 let rel_x = (anchor.x - insert_at.x) as u32;
                 let rel_y = (anchor.y - insert_at.y) as u32;
-                if let Some(value) = cell_values.get(rel_x, rel_y) {
-                    if *value != CellValue::Blank {
-                        value_to_use = Some(value.clone());
-                    }
+                if let Some(value) = cell_values.get(rel_x, rel_y)
+                    && *value != CellValue::Blank
+                {
+                    value_to_use = Some(value.clone());
                 }
             }
 
@@ -1233,11 +1233,11 @@ impl GridController {
                     for x in intersection.x_range() {
                         let rel_x = (x - insert_at.x) as u32;
                         let rel_y = (y - insert_at.y) as u32;
-                        if let Some(value) = cell_values.get(rel_x, rel_y) {
-                            if *value != CellValue::Blank {
-                                value_to_use = Some(value.clone());
-                                break 'outer;
-                            }
+                        if let Some(value) = cell_values.get(rel_x, rel_y)
+                            && *value != CellValue::Blank
+                        {
+                            value_to_use = Some(value.clone());
+                            break 'outer;
                         }
                     }
                 }
@@ -1347,46 +1347,46 @@ impl GridController {
         }
 
         // Check if we're pasting to the bottom edge of the merged cell
-        if intersection.max.y == merge_rect.max.y {
-            if let Some(ref bottom_borders) = borders.bottom {
-                for x in intersection.x_range() {
-                    if let Some(border) = bottom_borders.get(Pos {
-                        x,
-                        y: intersection.max.y,
-                    }) {
-                        anchor_bottom = Some(border);
-                        break;
-                    }
+        if intersection.max.y == merge_rect.max.y
+            && let Some(ref bottom_borders) = borders.bottom
+        {
+            for x in intersection.x_range() {
+                if let Some(border) = bottom_borders.get(Pos {
+                    x,
+                    y: intersection.max.y,
+                }) {
+                    anchor_bottom = Some(border);
+                    break;
                 }
             }
         }
 
         // Check if we're pasting to the left edge of the merged cell
-        if intersection.min.x == merge_rect.min.x {
-            if let Some(ref left_borders) = borders.left {
-                for y in intersection.y_range() {
-                    if let Some(border) = left_borders.get(Pos {
-                        x: intersection.min.x,
-                        y,
-                    }) {
-                        anchor_left = Some(border);
-                        break;
-                    }
+        if intersection.min.x == merge_rect.min.x
+            && let Some(ref left_borders) = borders.left
+        {
+            for y in intersection.y_range() {
+                if let Some(border) = left_borders.get(Pos {
+                    x: intersection.min.x,
+                    y,
+                }) {
+                    anchor_left = Some(border);
+                    break;
                 }
             }
         }
 
         // Check if we're pasting to the right edge of the merged cell
-        if intersection.max.x == merge_rect.max.x {
-            if let Some(ref right_borders) = borders.right {
-                for y in intersection.y_range() {
-                    if let Some(border) = right_borders.get(Pos {
-                        x: intersection.max.x,
-                        y,
-                    }) {
-                        anchor_right = Some(border);
-                        break;
-                    }
+        if intersection.max.x == merge_rect.max.x
+            && let Some(ref right_borders) = borders.right
+        {
+            for y in intersection.y_range() {
+                if let Some(border) = right_borders.get(Pos {
+                    x: intersection.max.x,
+                    y,
+                }) {
+                    anchor_right = Some(border);
+                    break;
                 }
             }
         }

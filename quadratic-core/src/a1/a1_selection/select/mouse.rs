@@ -105,68 +105,68 @@ impl A1Selection {
 
                     // Expand selection to include any partially overlapping merged cells
                     // while preserving the anchor (start) position as much as possible
-                    if range.is_finite() {
-                        if let Some(rect) = range.to_rect() {
-                            let mut expanded_rect = rect;
-                            super::helpers::expand_to_include_merge_cells(
-                                &mut expanded_rect,
-                                merge_cells,
-                            );
-                            if expanded_rect != rect {
-                                // Preserve the direction of selection while expanding.
-                                // The key is that start and end may not be normalized
-                                // (start can be > end), and we need to preserve that
-                                // relationship while including the expanded area.
-                                let start_col = range.start.col();
-                                let start_row = range.start.row();
-                                let end_col = range.end.col();
-                                let end_row = range.end.row();
+                    if range.is_finite()
+                        && let Some(rect) = range.to_rect()
+                    {
+                        let mut expanded_rect = rect;
+                        super::helpers::expand_to_include_merge_cells(
+                            &mut expanded_rect,
+                            merge_cells,
+                        );
+                        if expanded_rect != rect {
+                            // Preserve the direction of selection while expanding.
+                            // The key is that start and end may not be normalized
+                            // (start can be > end), and we need to preserve that
+                            // relationship while including the expanded area.
+                            let start_col = range.start.col();
+                            let start_row = range.start.row();
+                            let end_col = range.end.col();
+                            let end_row = range.end.row();
 
-                                // For each axis, determine the selection direction and
-                                // expand appropriately. The start should expand in its
-                                // direction (away from end), and end should expand in
-                                // its direction (away from start).
-                                let (new_start_col, new_end_col) = if end_col < start_col {
-                                    // Selecting left: start is right, end is left
-                                    (expanded_rect.max.x, expanded_rect.min.x)
-                                } else if end_col > start_col {
-                                    // Selecting right: start is left, end is right
-                                    (expanded_rect.min.x, expanded_rect.max.x)
-                                } else {
-                                    // Same column: expand end in both directions if needed
-                                    (
-                                        start_col,
-                                        if expanded_rect.min.x < start_col {
-                                            expanded_rect.min.x
-                                        } else {
-                                            expanded_rect.max.x
-                                        },
-                                    )
-                                };
+                            // For each axis, determine the selection direction and
+                            // expand appropriately. The start should expand in its
+                            // direction (away from end), and end should expand in
+                            // its direction (away from start).
+                            let (new_start_col, new_end_col) = if end_col < start_col {
+                                // Selecting left: start is right, end is left
+                                (expanded_rect.max.x, expanded_rect.min.x)
+                            } else if end_col > start_col {
+                                // Selecting right: start is left, end is right
+                                (expanded_rect.min.x, expanded_rect.max.x)
+                            } else {
+                                // Same column: expand end in both directions if needed
+                                (
+                                    start_col,
+                                    if expanded_rect.min.x < start_col {
+                                        expanded_rect.min.x
+                                    } else {
+                                        expanded_rect.max.x
+                                    },
+                                )
+                            };
 
-                                let (new_start_row, new_end_row) = if end_row < start_row {
-                                    // Selecting up: start is below, end is above
-                                    (expanded_rect.max.y, expanded_rect.min.y)
-                                } else if end_row > start_row {
-                                    // Selecting down: start is above, end is below
-                                    (expanded_rect.min.y, expanded_rect.max.y)
-                                } else {
-                                    // Same row: expand end in both directions if needed
-                                    (
-                                        start_row,
-                                        if expanded_rect.min.y < start_row {
-                                            expanded_rect.min.y
-                                        } else {
-                                            expanded_rect.max.y
-                                        },
-                                    )
-                                };
+                            let (new_start_row, new_end_row) = if end_row < start_row {
+                                // Selecting up: start is below, end is above
+                                (expanded_rect.max.y, expanded_rect.min.y)
+                            } else if end_row > start_row {
+                                // Selecting down: start is above, end is below
+                                (expanded_rect.min.y, expanded_rect.max.y)
+                            } else {
+                                // Same row: expand end in both directions if needed
+                                (
+                                    start_row,
+                                    if expanded_rect.min.y < start_row {
+                                        expanded_rect.min.y
+                                    } else {
+                                        expanded_rect.max.y
+                                    },
+                                )
+                            };
 
-                                range.start =
-                                    CellRefRangeEnd::new_relative_xy(new_start_col, new_start_row);
-                                range.end =
-                                    CellRefRangeEnd::new_relative_xy(new_end_col, new_end_row);
-                            }
+                            range.start =
+                                CellRefRangeEnd::new_relative_xy(new_start_col, new_start_row);
+                            range.end =
+                                CellRefRangeEnd::new_relative_xy(new_end_col, new_end_row);
                         }
                     }
 
