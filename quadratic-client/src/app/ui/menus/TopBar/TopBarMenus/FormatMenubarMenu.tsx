@@ -206,6 +206,7 @@ function MenubarColorPickerSubMenu({
   action: Action.FormatTextColor | Action.FormatFillColor;
   activeColor?: string;
 }) {
+  const [open, setOpen] = useState(false);
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
@@ -221,13 +222,16 @@ function MenubarColorPickerSubMenu({
   ) : null;
 
   return (
-    <MenubarSub>
+    <MenubarSub open={open} onOpenChange={setOpen}>
       <MenubarSubTrigger>
         {iconNode}
         {label}
       </MenubarSubTrigger>
       <MenubarSubContent>
-        <MenubarItem className="color-picker-dropdown-menu flex-col gap-0 p-0 hover:bg-background focus:bg-background">
+        <MenubarItem
+          className="color-picker-dropdown-menu flex-col gap-0 p-0 hover:bg-background focus:bg-background"
+          onSelect={(e) => e.preventDefault()}
+        >
           <ColorPicker
             color={activeColor}
             onChangeComplete={(color) => {
@@ -238,6 +242,7 @@ function MenubarColorPickerSubMenu({
               actionSpec.run(undefined);
               focusGrid();
             }}
+            onClose={() => setOpen(false)}
           />
         </MenubarItem>
       </MenubarSubContent>

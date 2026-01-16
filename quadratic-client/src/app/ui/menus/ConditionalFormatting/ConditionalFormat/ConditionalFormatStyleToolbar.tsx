@@ -12,6 +12,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { useState } from 'react';
 
 interface Props {
   style: ConditionalFormatStyle;
@@ -19,6 +20,8 @@ interface Props {
 }
 
 export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
+  const [textColorOpen, setTextColorOpen] = useState(false);
+  const [fillColorOpen, setFillColorOpen] = useState(false);
   const toggleBold = () => {
     setStyle({ ...style, bold: style.bold === true ? undefined : true });
   };
@@ -115,7 +118,7 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
 
       <hr className="mx-1 h-6 w-[1px] bg-border" />
 
-      <Popover>
+      <Popover open={textColorOpen} onOpenChange={setTextColorOpen}>
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
@@ -141,11 +144,12 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
             color={style.text_color}
             onChangeComplete={(color) => setTextColor(color.hex)}
             onClear={() => setTextColor(undefined)}
+            onClose={() => setTextColorOpen(false)}
           />
         </PopoverContent>
       </Popover>
 
-      <Popover>
+      <Popover open={fillColorOpen} onOpenChange={setFillColorOpen}>
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
@@ -171,6 +175,7 @@ export const ConditionalFormatStyleToolbar = ({ style, setStyle }: Props) => {
             color={style.fill_color}
             onChangeComplete={(color) => setFillColor(color.hex)}
             onClear={() => setFillColor(undefined)}
+            onClose={() => setFillColorOpen(false)}
           />
         </PopoverContent>
       </Popover>

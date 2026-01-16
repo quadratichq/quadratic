@@ -1,9 +1,15 @@
 import type { ColorScaleThreshold } from '@/app/quadratic-core-types';
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
+import {
+  ColorScalePresets,
+  getGradientFromThresholds,
+} from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ColorScalePresets';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 // Value type options for color scale thresholds
 const VALUE_TYPE_OPTIONS: { value: string; label: string }[] = [
@@ -39,29 +45,67 @@ interface ColorScaleEditorProps {
 }
 
 export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditorProps) => {
-  const updateThreshold = (index: number, updates: Partial<ColorScaleThreshold>) => {
-    const newThresholds = [...thresholds];
-    newThresholds[index] = { ...newThresholds[index], ...updates };
-    setThresholds(newThresholds);
-  };
+  const [errors, setErrors] = useState<Record<number, string | undefined>>({});
+  const [openColorPicker, setOpenColorPicker] = useState<number | null>(null);
 
-  const updateValueType = (index: number, typeKey: string, numericValue?: number) => {
-    let newValueType: ColorScaleThreshold['value_type'];
-    if (typeKey === 'Min') {
-      newValueType = 'Min';
-    } else if (typeKey === 'Max') {
-      newValueType = 'Max';
-    } else if (typeKey === 'Number') {
-      newValueType = { Number: numericValue ?? 0 };
-    } else if (typeKey === 'Percent') {
-      newValueType = { Percent: numericValue ?? 50 };
-    } else if (typeKey === 'Percentile') {
-      newValueType = { Percentile: numericValue ?? 50 };
-    } else {
-      newValueType = 'Min';
-    }
-    updateThreshold(index, { value_type: newValueType });
-  };
+  const updateThreshold = useCallback(
+    (index: number, updates: Partial<ColorScaleThreshold>) => {
+      const newThresholds = [...thresholds];
+      newThresholds[index] = { ...newThresholds[index], ...updates };
+      setThresholds(newThresholds);
+    },
+    [thresholds, setThresholds]
+  );
+
+  const updateValueType = useCallback(
+    (index: number, typeKey: string, numericValue?: number) => {
+      let newValueType: ColorScaleThreshold['value_type'];
+      if (typeKey === 'Min') {
+        newValueType = 'Min';
+      } else if (typeKey === 'Max') {
+        newValueType = 'Max';
+      } else if (typeKey === 'Number') {
+        newValueType = { Number: numericValue ?? 0 };
+      } else if (typeKey === 'Percent') {
+        newValueType = { Percent: numericValue ?? 50 };
+      } else if (typeKey === 'Percentile') {
+        newValueType = { Percentile: numericValue ?? 50 };
+      } else {
+        newValueType = 'Min';
+      }
+      updateThreshold(index, { value_type: newValueType });
+    },
+    [updateThreshold]
+  );
+
+  const handleNumericValueChange = useCallback(
+    (index: number, typeKey: string, value: string) => {
+      const trimmed = value.trim();
+
+      if (trimmed === '') {
+        // Empty value - use default
+        setErrors((prev) => ({ ...prev, [index]: undefined }));
+        updateValueType(index, typeKey, typeKey === 'Number' ? 0 : 50);
+        return;
+      }
+
+      const parsed = parseFloat(trimmed);
+      if (isNaN(parsed)) {
+        setErrors((prev) => ({ ...prev, [index]: 'Please enter a valid number' }));
+        return;
+      }
+
+      // Validate percent/percentile range
+      if ((typeKey === 'Percent' || typeKey === 'Percentile') && (parsed < 0 || parsed > 100)) {
+        setErrors((prev) => ({ ...prev, [index]: 'Value must be between 0 and 100' }));
+        return;
+      }
+
+      setErrors((prev) => ({ ...prev, [index]: undefined }));
+      updateValueType(index, typeKey, parsed);
+    },
+    [updateValueType]
+  );
 
   const addThreshold = () => {
     // Add a new threshold in the middle with a default percentile value
@@ -81,15 +125,8 @@ export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditor
     setThresholds(newThresholds);
   };
 
-  // Generate gradient preview
-  const gradientPreview = useMemo(() => {
-    if (thresholds.length < 2) return 'transparent';
-    const stops = thresholds.map((t, i) => {
-      const percent = (i / (thresholds.length - 1)) * 100;
-      return `${t.color} ${percent}%`;
-    });
-    return `linear-gradient(to right, ${stops.join(', ')})`;
-  }, [thresholds]);
+  // Generate gradient preview using the shared helper
+  const gradientPreview = useMemo(() => getGradientFromThresholds(thresholds), [thresholds]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -99,6 +136,9 @@ export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditor
           Cells are colored based on their numeric values using a gradient between the colors below.
         </p>
       </div>
+
+      {/* Preset Selector */}
+      <ColorScalePresets currentThresholds={thresholds} onSelectPreset={setThresholds} />
 
       {/* Gradient Preview */}
       <div
@@ -122,13 +162,26 @@ export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditor
               {/* Color Picker */}
               <div className="flex flex-col">
                 <Label className="mb-1 text-xs">Color</Label>
-                <input
-                  type="color"
-                  value={threshold.color}
-                  onChange={(e) => updateThreshold(index, { color: e.target.value })}
-                  className="h-9 w-12 cursor-pointer rounded border border-border"
-                  title="Pick color"
-                />
+                <Popover
+                  open={openColorPicker === index}
+                  onOpenChange={(open) => setOpenColorPicker(open ? index : null)}
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="h-9 w-12 cursor-pointer rounded border border-border transition-all hover:ring-2 hover:ring-ring hover:ring-offset-1"
+                      style={{ backgroundColor: threshold.color }}
+                      title="Pick color"
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-fit p-1" align="start">
+                    <ColorPicker
+                      color={threshold.color}
+                      onChangeComplete={(color) => updateThreshold(index, { color: color.hex })}
+                      onClose={() => setOpenColorPicker(null)}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Value Type Selector */}
@@ -150,17 +203,14 @@ export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditor
 
               {/* Numeric Value Input (for Number, Percent, Percentile) */}
               {needsNumericInput && (
-                <div className="flex w-20 flex-col">
-                  <Label className="mb-1 text-xs">Value</Label>
-                  <Input
+                <div className="flex w-24 flex-col">
+                  <ValidationInput
+                    label="Value"
                     type="number"
-                    value={numericValue ?? ''}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      updateValueType(index, typeKey, val);
-                    }}
-                    className="h-9"
+                    value={numericValue?.toString() ?? ''}
+                    onChange={(value) => handleNumericValueChange(index, typeKey, value)}
                     placeholder={typeKey === 'Number' ? '0' : '50'}
+                    error={errors[index]}
                   />
                 </div>
               )}

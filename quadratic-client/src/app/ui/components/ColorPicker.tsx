@@ -1,7 +1,10 @@
+import { hexToRgb, normalizeColor } from '@/app/helpers/convertColor';
+import { PaletteIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import Color from 'color';
 import * as React from 'react';
+import { CustomColorPicker } from './CustomColorPicker';
 
 // ColorResult interface
 export interface ColorResult {
@@ -25,40 +28,31 @@ export type ColorChangeHandler = (color: ColorResult) => void;
 interface ColorPickerProps {
   onChangeComplete?: ColorChangeHandler;
   onClear?: () => void;
+  onClose?: () => void;
   color?: string;
   removeColor?: boolean;
   className?: string;
   clearLabel?: string;
   showClearIcon?: boolean;
-}
-
-// Helper function to convert hex to RGB
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : { r: 0, g: 0, b: 0 };
-}
-
-// Helper function to normalize color strings for comparison
-function normalizeColor(color: string): string | null {
-  try {
-    const c = Color(color);
-    return c.hex().toLowerCase();
-  } catch {
-    return null;
-  }
+  showCustomColor?: boolean;
 }
 
 export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
   (
-    { onChangeComplete, onClear, color, removeColor = false, className, clearLabel = 'Clear', showClearIcon = true },
+    {
+      onChangeComplete,
+      onClear,
+      onClose,
+      color,
+      removeColor = false,
+      className,
+      clearLabel = 'Clear',
+      showClearIcon = true,
+      showCustomColor = true,
+    },
     ref
   ) => {
+    const [showCustomPicker, setShowCustomPicker] = React.useState(false);
     const colors = [
       '#F9D2CE' /* first row of colors */,
       '#FFEAC8',
@@ -117,6 +111,12 @@ export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
       colors.push('#4d4d4d', '#737373', '#cccccc', '#dddddd', '#eeeeee', '#ffffff');
     }
 
+    // Check if current color is a custom color (not in the preset list)
+    const normalizedCurrentColor = color ? normalizeColor(color) : null;
+    const isCustomColor =
+      showCustomColor && normalizedCurrentColor && !colors.some((c) => normalizeColor(c) === normalizedCurrentColor);
+    const customColor = isCustomColor ? normalizedCurrentColor : null;
+
     const handleColorClick = (hex: string) => {
       if (onChangeComplete) {
         const rgb = hexToRgb(hex);
@@ -142,6 +142,25 @@ export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
     };
 
     const isLastColor = (index: number) => removeColor && index === colors.length - 1;
+
+    // Handle custom color selection
+    const handleCustomColorChange = (hex: string) => {
+      handleColorClick(hex);
+    };
+
+    // Show custom picker view
+    if (showCustomColor && showCustomPicker) {
+      return (
+        <div ref={ref} className={className}>
+          <CustomColorPicker
+            color={color}
+            onChange={handleCustomColorChange}
+            onBack={() => setShowCustomPicker(false)}
+            onClose={onClose}
+          />
+        </div>
+      );
+    }
 
     return (
       <div ref={ref} className={cn('w-40 p-1', className)}>
@@ -182,27 +201,54 @@ export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
             );
           })}
         </div>
-        {onClear && (
-          <div className="mt-2 flex justify-center">
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={onClear}
-              className={cn('duration-50 h-6 px-2 transition-all hover:bg-accent', showClearIcon && 'relative')}
-            >
-              {/* Clear button indicator */}
-              {showClearIcon && (
-                <>
-                  <span className="relative left-0 mr-1 h-3.5 w-3.5 rounded-md bg-white ring-1 ring-border">
+        {/* Custom color and Clear buttons */}
+        {(showCustomColor || onClear) && (
+          <div className="mt-2 flex items-center justify-center gap-1">
+            {showCustomColor && (
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setShowCustomPicker(true)}
+                className="duration-50 h-6 px-2 transition-all hover:bg-accent"
+              >
+                {/* Show custom color swatch if selected, otherwise show eyedropper icon */}
+                {customColor ? (
+                  <span
+                    className={cn(
+                      'mr-1.5 h-3.5 w-3.5 shrink-0 rounded-md ring-1 ring-border',
+                      isCustomColor && 'ring-2 ring-ring ring-offset-1'
+                    )}
+                    style={{ background: customColor }}
+                  />
+                ) : (
+                  <PaletteIcon className="mr-1 !text-sm" />
+                )}
+                Custom…
+              </Button>
+            )}
+            {onClear && (
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={onClear}
+                className={cn('duration-50 h-6 px-2 transition-all hover:bg-accent', showClearIcon && 'relative')}
+              >
+                {showClearIcon && (
+                  <span
+                    className={cn(
+                      'relative mr-1 h-3.5 w-3.5 shrink-0 rounded-md bg-white ring-1 ring-border',
+                      !color && 'ring-2 ring-ring ring-offset-1'
+                    )}
+                  >
                     <span
                       className="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 rounded-sm bg-red-500"
                       style={{ transform: 'rotate(45deg) translate(-1px, 1px)' }}
                     />
                   </span>
-                </>
-              )}
-              {clearLabel}
-            </Button>
+                )}
+                {clearLabel}
+              </Button>
+            )}
           </div>
         )}
       </div>
