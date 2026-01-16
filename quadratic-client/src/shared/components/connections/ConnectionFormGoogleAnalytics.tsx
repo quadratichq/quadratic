@@ -1,5 +1,6 @@
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -95,7 +96,17 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           name="service_account_configuration"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Service account configuration (JSON)</FormLabel>
+              <FormLabel>
+                Service account configuration (JSON){' '}
+                <a
+                  href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-normal underline hover:text-primary"
+                >
+                  Learn more
+                </a>
+              </FormLabel>
               <FormControl>
                 <Textarea autoComplete="off" {...field} className="h-48" />
               </FormControl>
