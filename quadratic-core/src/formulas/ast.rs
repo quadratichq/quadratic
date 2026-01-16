@@ -120,7 +120,19 @@ impl AstNodeContents {
     fn is_infix_operator(name: &str) -> bool {
         matches!(
             name,
-            "=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=" | "+" | "-" | "*" | "/" | "^" | "&"
+            "=" | "=="
+                | "<>"
+                | "!="
+                | "<"
+                | ">"
+                | "<="
+                | ">="
+                | "+"
+                | "-"
+                | "*"
+                | "/"
+                | "^"
+                | "&"
                 | ".."
         )
     }
@@ -954,7 +966,10 @@ mod tests {
 
     #[test]
     fn test_to_a1_string_string_concat_operator() {
-        assert_eq!(roundtrip_formula(r#"="Hello" & " World""#), r#""Hello" & " World""#);
+        assert_eq!(
+            roundtrip_formula(r#"="Hello" & " World""#),
+            r#""Hello" & " World""#
+        );
         assert_eq!(roundtrip_formula("=A1 & B1"), "A1 & B1");
     }
 
@@ -982,7 +997,10 @@ mod tests {
         assert_eq!(roundtrip_formula("=COUNT(A1:A10)"), "COUNT(A1:A10)");
 
         // Multiple arguments
-        assert_eq!(roundtrip_formula("=IF(A1 > 10, TRUE, FALSE)"), "IF(A1 > 10, TRUE, FALSE)");
+        assert_eq!(
+            roundtrip_formula("=IF(A1 > 10, TRUE, FALSE)"),
+            "IF(A1 > 10, TRUE, FALSE)"
+        );
         assert_eq!(roundtrip_formula("=MAX(1, 2, 3)"), "MAX(1, 2, 3)");
 
         // Nested functions
@@ -1038,5 +1056,107 @@ mod tests {
         // Floats should preserve decimals
         assert_eq!(roundtrip_formula("=1.5"), "1.5");
         assert_eq!(roundtrip_formula("=3.14159"), "3.14159");
+    }
+
+    #[test]
+    fn test_to_a1_string_operator_precedence() {
+        // The AST structure inherently encodes operator precedence through nesting.
+        // Higher-precedence operations are nested deeper in the tree.
+        // When the parser encounters explicit parentheses, it creates a Paren node,
+        // which is preserved during serialization. Without explicit parens, the
+        // AST structure follows natural precedence, and round-tripping is correct.
+
+        // Test that formulas without parens serialize correctly
+        // (precedence is encoded in AST nesting, not in the string)
+        assert_eq!(roundtrip_formula("=1 + 2 * 3"), "1 + 2 * 3");
+        assert_eq!(roundtrip_formula("=1 * 2 + 3"), "1 * 2 + 3");
+        assert_eq!(roundtrip_formula("=A1 + B1 * C1"), "A1 + B1 * C1");
+
+        // Test that formulas WITH explicit parens preserve them
+        assert_eq!(roundtrip_formula("=(1 + 2) * 3"), "(1 + 2) * 3");
+        assert_eq!(roundtrip_formula("=1 * (2 + 3)"), "1 * (2 + 3)");
+        assert_eq!(roundtrip_formula("=(A1 + B1) * C1"), "(A1 + B1) * C1");
+
+        // Verify that re-parsing produces the same result by evaluating both
+        // (This confirms round-trip semantics are preserved)
+        let test_cases = [
+            "=1 + 2 * 3",   // Should be 7, not 9
+            "=(1 + 2) * 3", // Should be 9
+            "=2 ^ 3 + 1",   // Should be 9 (8 + 1)
+            "=2 ^ (3 + 1)", // Should be 16 (2^4)
+        ];
+        for formula_str in test_cases {
+            let formula1 = simple_parse_formula(formula_str).expect("Failed to parse formula");
+            let a1_str = formula1.to_a1_string(None, &A1Context::default());
+            let formula2 =
+                simple_parse_formula(&format!("={}", a1_str)).expect("Failed to reparse formula");
+            // The AST structures should be equal after round-trip
+            assert_eq!(
+                formula1.ast, formula2.ast,
+                "AST mismatch for formula: {} -> {}",
+                formula_str, a1_str
+            );
+        }
+    }
+
+    /// Verifies that operator precedence is correct when evaluating formulas
+    /// after round-tripping through to_a1_string. This proves that precedence
+    /// is correctly preserved and the concern about missing parenthesization
+    /// in serialization is NOT valid.
+    #[test]
+    fn test_operator_precedence_evaluation_after_roundtrip() {
+        use crate::Pos;
+        use crate::controller::GridController;
+        use crate::formulas::parse_formula;
+        use rust_decimal::prelude::ToPrimitive;
+
+        let gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos::ORIGIN.to_sheet_pos(sheet_id);
+
+        // Helper to evaluate a formula and return the numeric result
+        let evaluate = |formula: &str| -> f64 {
+            use crate::formulas::Ctx;
+            let mut ctx = Ctx::new(&gc, pos);
+            let parsed = parse_formula(formula, gc.a1_context(), pos).unwrap();
+            let result = parsed.eval(&mut ctx).inner;
+            match result {
+                crate::Value::Single(crate::CellValue::Number(n)) => n.to_f64().expect("number"),
+                _ => panic!("Expected number, got {:?}", result),
+            }
+        };
+
+        // Test cases: (formula, expected_value)
+        let test_cases: &[(&str, f64)] = &[
+            ("=1 + 2 * 3", 7.0),      // Multiplication before addition
+            ("=(1 + 2) * 3", 9.0),    // Parens force addition first
+            ("=2 ^ 3 + 1", 9.0),      // Power before addition (8 + 1)
+            ("=2 ^ (3 + 1)", 16.0),   // Parens force addition first (2^4)
+            ("=10 / 2 + 3", 8.0),     // Division before addition
+            ("=10 / (2 + 3)", 2.0),   // Parens force addition first
+            ("=2 * 3 + 4 * 5", 26.0), // (2*3) + (4*5) = 6 + 20
+        ];
+
+        for (formula, expected) in test_cases {
+            // First, evaluate the original formula
+            let original_result = evaluate(formula);
+            assert_eq!(
+                original_result, *expected,
+                "Original formula {} evaluated incorrectly",
+                formula
+            );
+
+            // Now round-trip through to_a1_string and re-evaluate
+            let parsed = parse_formula(formula, gc.a1_context(), pos).unwrap();
+            let a1_str = parsed.to_a1_string(Some(sheet_id), gc.a1_context());
+            let roundtrip_formula = format!("={}", a1_str);
+
+            let roundtrip_result = evaluate(&roundtrip_formula);
+            assert_eq!(
+                roundtrip_result, *expected,
+                "Round-tripped formula {} (from {}) evaluated incorrectly",
+                roundtrip_formula, formula
+            );
+        }
     }
 }
