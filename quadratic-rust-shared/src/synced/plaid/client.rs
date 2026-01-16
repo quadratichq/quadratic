@@ -375,55 +375,43 @@ impl SyncedClient for PlaidClient {
     }
 
     /// Process a single stream
-    /// Returns a HashMap with one parquet file per day (key = date string like "2024-01-15")
-    /// Empty days will have empty parquet files (schema with 0 rows)
+    /// Returns `None` if the product is not supported by this connection.
+    /// Returns `Some(HashMap)` with parquet data per day (key = date string like "2024-01-15").
     async fn process(
         &self,
         stream: &str,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<HashMap<String, Bytes>> {
+    ) -> Result<Option<HashMap<String, Bytes>>> {
         match stream {
             "transactions" => {
                 let items = self.get_transactions(start_date, end_date).await?;
-                process_time_series(items, stream, start_date, end_date)
+                process_time_series(items, stream, start_date, end_date).map(Some)
             }
-            "investments" => {
-                let items = self
-                    .get_investment_transactions(start_date, end_date)
-                    .await
-                    .or_else(|e| handle_consent_error(e, stream))?;
-                process_time_series(items, stream, start_date, end_date)
-            }
-            "liabilities" => {
-                let data = self
-                    .get_liabilities()
-                    .await
-                    .or_else(|e| handle_consent_error(e, stream))?;
-                process_snapshot(data, stream, end_date)
-            }
+            "investments" => match self.get_investment_transactions(start_date, end_date).await {
+                Ok(items) => process_time_series(items, stream, start_date, end_date).map(Some),
+                Err(e) if is_stream_not_supported(&e) => Ok(None),
+                Err(e) => Err(e),
+            },
+            "liabilities" => match self.get_liabilities().await {
+                Ok(data) => process_snapshot(data, stream, end_date).map(Some),
+                Err(e) if is_stream_not_supported(&e) => Ok(None),
+                Err(e) => Err(e),
+            },
             _ => Err(SharedError::Synced(format!("Unknown stream: {}", stream))),
         }
     }
 }
 
-/// Check if error is a consent/product availability issue
-fn is_consent_error(err: &str) -> bool {
-    err.contains("ADDITIONAL_CONSENT_REQUIRED")
-        || err.contains("PRODUCT_NOT_READY")
-        || err.contains("NO_INVESTMENT_ACCOUNTS")
-        || err.contains("NO_LIABILITY_ACCOUNTS")
-}
-
-/// Handle consent errors by returning empty data instead of failing
-fn handle_consent_error<T: Default>(err: SharedError, stream: &str) -> Result<T> {
+/// Check if error indicates the stream/product is not supported by this connection.
+/// These errors mean we should skip the stream entirely without writing markers.
+fn is_stream_not_supported(err: &SharedError) -> bool {
     let err_str = err.to_string();
-    if is_consent_error(&err_str) {
-        tracing::warn!("{} not available for this connection: {}", stream, err_str);
-        Ok(T::default())
-    } else {
-        Err(err)
-    }
+    err_str.contains("ADDITIONAL_CONSENT_REQUIRED")
+        || err_str.contains("PRODUCT_NOT_READY")
+        || err_str.contains("PRODUCTS_NOT_SUPPORTED")
+        || err_str.contains("NO_INVESTMENT_ACCOUNTS")
+        || err_str.contains("NO_LIABILITY_ACCOUNTS")
 }
 
 /// Process time-series data (transactions, investments) - group by date
