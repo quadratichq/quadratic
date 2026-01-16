@@ -19,7 +19,7 @@
     "docker:up": "docker compose -f ../docker-compose.yml --profile quadratic-connection-db --profile base --profile api --profile quadratic-multiplayer --env-file ../.env.docker up -d --wait && sleep 10",
     "docker:down": "docker compose -f ../docker-compose.yml --profile quadratic-connection-db --profile redis --env-file ../.env.docker down",
     "docker:test": "docker compose kill && npm run docker:up && npm run docker:migrate && npm run test && npm run docker:down",
-    "docker:migrate": "cd ../quadratic-api && DATABASE_URL=postgresql://postgres:postgres@0.0.0.0:5432/postgres npx prisma migrate deploy",
+    "docker:migrate": "cd ../quadratic-api && DATABASE_URL=postgresql://postgres:postgres@0.0.0.0:5432/postgres npm run prisma:migrate:deploy",
     "clean": "cargo clean && npx rimraf node_modules dist build target"
   }
 }
