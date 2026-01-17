@@ -197,6 +197,10 @@ pub fn interpolate_color(color1: &str, color2: &str, t: f64) -> Option<String> {
 /// Compute the interpolated color for a value based on the color scale thresholds.
 /// `threshold_values` is a parallel array of the computed numeric values for each threshold.
 /// Returns None if the value cannot be mapped (e.g., invalid colors).
+///
+/// This function handles thresholds in any order (e.g., when Min and Max are swapped
+/// to reverse the color gradient). It sorts thresholds by their values internally
+/// to correctly interpolate colors.
 pub fn compute_color_for_value(
     color_scale: &ColorScale,
     threshold_values: &[f64],
@@ -209,18 +213,27 @@ pub fn compute_color_for_value(
     let thresholds = &color_scale.thresholds;
     let n = thresholds.len();
 
-    // Handle edge cases
-    if value <= threshold_values[0] {
-        return Some(thresholds[0].color.clone());
+    // Create sorted pairs of (value, color) to handle inverted thresholds
+    // (e.g., when user swaps Min and Max to reverse the gradient)
+    let mut sorted_pairs: Vec<(f64, &str)> = threshold_values
+        .iter()
+        .zip(thresholds.iter())
+        .map(|(val, thresh)| (*val, thresh.color.as_str()))
+        .collect();
+    sorted_pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Handle edge cases using sorted values
+    if value <= sorted_pairs[0].0 {
+        return Some(sorted_pairs[0].1.to_string());
     }
-    if value >= threshold_values[n - 1] {
-        return Some(thresholds[n - 1].color.clone());
+    if value >= sorted_pairs[n - 1].0 {
+        return Some(sorted_pairs[n - 1].1.to_string());
     }
 
-    // Find the segment this value falls into
+    // Find the segment this value falls into using sorted pairs
     for i in 0..(n - 1) {
-        let low_val = threshold_values[i];
-        let high_val = threshold_values[i + 1];
+        let (low_val, low_color) = sorted_pairs[i];
+        let (high_val, high_color) = sorted_pairs[i + 1];
 
         if value >= low_val && value <= high_val {
             // Calculate interpolation factor
@@ -231,12 +244,12 @@ pub fn compute_color_for_value(
                 0.0
             };
 
-            return interpolate_color(&thresholds[i].color, &thresholds[i + 1].color, t);
+            return interpolate_color(low_color, high_color, t);
         }
     }
 
     // Fallback (shouldn't reach here)
-    Some(thresholds[0].color.clone())
+    Some(sorted_pairs[0].1.to_string())
 }
 
 #[cfg(test)]
@@ -297,16 +310,10 @@ mod tests {
     #[test]
     fn test_threshold_constructors() {
         let t = ColorScaleThreshold::min("#ff0000");
-        assert!(matches!(
-            t.value_type,
-            ColorScaleThresholdValueType::Min
-        ));
+        assert!(matches!(t.value_type, ColorScaleThresholdValueType::Min));
 
         let t = ColorScaleThreshold::max("#00ff00");
-        assert!(matches!(
-            t.value_type,
-            ColorScaleThresholdValueType::Max
-        ));
+        assert!(matches!(t.value_type, ColorScaleThresholdValueType::Max));
 
         let t = ColorScaleThreshold::number(50.0, "#ffff00");
         assert!(matches!(
@@ -422,5 +429,93 @@ mod tests {
         let (r, g, _) = parse_hex_color(&quarter).unwrap();
         assert_eq!(r, 255); // Full red
         assert!(g > 100 && g < 150); // Partial green
+    }
+
+    #[test]
+    fn test_compute_color_for_value_inverted_thresholds() {
+        // Test when Min and Max are swapped (user wants to reverse the gradient)
+        // Thresholds: [Max (green), Min (red)] with values [100, 0]
+        let scale = ColorScale {
+            thresholds: vec![
+                ColorScaleThreshold::max("#00ff00"), // Green at max (first position)
+                ColorScaleThreshold::min("#ff0000"), // Red at min (second position)
+            ],
+        };
+        // The threshold_values will be inverted: [100.0, 0.0]
+        let threshold_values = vec![100.0, 0.0];
+
+        // At min value (0) - should be red (the color associated with Min)
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, 0.0),
+            Some("#ff0000".to_string()),
+            "Value 0 should get red (Min color)"
+        );
+
+        // At max value (100) - should be green (the color associated with Max)
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, 100.0),
+            Some("#00ff00".to_string()),
+            "Value 100 should get green (Max color)"
+        );
+
+        // In middle (50) - should interpolate between red and green
+        let mid = compute_color_for_value(&scale, &threshold_values, 50.0).unwrap();
+        let (r, g, _) = parse_hex_color(&mid).unwrap();
+        assert!(
+            r > 100 && r < 150,
+            "Middle value should have partial red: got {}",
+            r
+        );
+        assert!(
+            g > 100 && g < 150,
+            "Middle value should have partial green: got {}",
+            g
+        );
+
+        // Below min (clamped to min color)
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, -10.0),
+            Some("#ff0000".to_string()),
+            "Value below min should clamp to red"
+        );
+
+        // Above max (clamped to max color)
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, 150.0),
+            Some("#00ff00".to_string()),
+            "Value above max should clamp to green"
+        );
+    }
+
+    #[test]
+    fn test_compute_color_for_value_inverted_three_color() {
+        // Test inverted three-color scale: Max -> Mid -> Min
+        let scale = ColorScale {
+            thresholds: vec![
+                ColorScaleThreshold::max("#00ff00"), // Green at max (first)
+                ColorScaleThreshold::percentile(50.0, "#ffff00"), // Yellow at mid
+                ColorScaleThreshold::min("#ff0000"), // Red at min (last)
+            ],
+        };
+        // Threshold values will be: [100.0, 50.0, 0.0] (inverted order)
+        let threshold_values = vec![100.0, 50.0, 0.0];
+
+        // At min (0) - should be red
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, 0.0),
+            Some("#ff0000".to_string())
+        );
+
+        // At mid (50) - should be yellow
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, 50.0),
+            Some("#ffff00".to_string())
+        );
+
+        // At max (100) - should be green
+        assert_eq!(
+            compute_color_for_value(&scale, &threshold_values, 100.0),
+            Some("#00ff00".to_string())
+        );
     }
 }

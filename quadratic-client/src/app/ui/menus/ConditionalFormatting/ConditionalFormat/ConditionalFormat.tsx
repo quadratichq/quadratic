@@ -370,10 +370,11 @@ export const ConditionalFormat = () => {
     if (existingFormat?.config.type === 'ColorScale') {
       return [...existingFormat.config.color_scale.thresholds];
     }
-    // Default 2-color scale: red (min) to green (max)
+    // Default: Traffic Light (red → yellow → green)
     return [
-      { value_type: 'Min', color: '#f8696b' },
-      { value_type: 'Max', color: '#63be7b' },
+      { value_type: 'Min', color: '#ef4444' },
+      { value_type: { Percentile: 50 }, color: '#facc15' },
+      { value_type: 'Max', color: '#22c55e' },
     ];
   });
 
