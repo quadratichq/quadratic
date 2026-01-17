@@ -12,6 +12,14 @@ use quadratic_rust_shared::storage::StorageType;
 use quadratic_rust_shared::synced::plaid::client::PlaidEnvironment;
 use serde::Deserialize;
 
+fn default_max_db_connections() -> u32 {
+    50
+}
+
+fn default_max_concurrent_file_processing() -> usize {
+    40
+}
+
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
@@ -22,6 +30,13 @@ pub(crate) struct Config {
     pub(crate) truncate_file_check_s: i64,
     pub(crate) truncate_transaction_age_days: i64,
     pub(crate) environment: Environment,
+
+    /// Maximum number of database connections in the pool (default: 50)
+    #[serde(default = "default_max_db_connections")]
+    pub(crate) max_db_connections: u32,
+    /// Maximum number of files to process concurrently (default: 40)
+    #[serde(default = "default_max_concurrent_file_processing")]
+    pub(crate) max_concurrent_file_processing: usize,
 
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,

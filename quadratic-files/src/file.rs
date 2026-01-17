@@ -258,6 +258,10 @@ pub(crate) async fn get_files_to_process(
 ///
 /// The `task_tracker` is used to track spawned file processing tasks so they
 /// can be awaited during graceful shutdown.
+///
+/// Concurrency is limited by the `file_processing_semaphore` to prevent
+/// database pool exhaustion. Tasks that can't acquire a permit will wait
+/// until one becomes available.
 pub(crate) async fn process(
     state: &Arc<State>,
     active_channels: &str,
@@ -271,13 +275,23 @@ pub(crate) async fn process(
     for file_id in files.into_iter() {
         let state = Arc::clone(state);
         let active_channels = active_channels.to_owned();
+        let semaphore = Arc::clone(&state.file_processing_semaphore);
 
         // process file in a separate thread, tracked for graceful shutdown
         task_tracker.spawn(async move {
+            // Acquire semaphore permit to limit concurrent DB operations.
+            // This prevents pool exhaustion when many files need processing.
+            // Error only occurs if semaphore is closed, which we never do.
+            let Ok(_permit) = semaphore.acquire().await else {
+                tracing::error!("File processing semaphore closed, skipping file {file_id}");
+                return;
+            };
+
             // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
             if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await {
                 tracing::error!("Error processing file {file_id}: {error}");
-            };
+            }
+            // permit is dropped here, allowing another task to proceed
         });
     }
 
