@@ -1,9 +1,7 @@
 pub mod checkpoint;
 pub mod error;
-pub mod pool;
 
 // re-exports
-pub use pool::ReconnectingPool;
 pub use sqlx::PgPool;
 
 use std::time::Duration;
@@ -41,7 +39,7 @@ impl ConnectionOptions {
     }
 }
 
-/// Connect to a PostgreSQL database
+/// Connect to a PostgreSQL database (blocking until connected)
 ///
 /// # Arguments
 ///
@@ -61,6 +59,32 @@ pub async fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
         .test_before_acquire(true)
         .connect(url)
         .await
+        .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
+}
+
+/// Create a lazy PostgreSQL connection pool
+///
+/// This creates a pool that doesn't connect immediately - connections are
+/// established on first use. This allows the application to start even if
+/// the database is temporarily unavailable.
+///
+/// # Arguments
+///
+/// * `url` - The URL of the PostgreSQL database
+/// * `options` - Connection pool options (max_connections, acquire_timeout)
+///
+/// # Returns
+///
+/// A `Result` containing the PostgreSQL pool (only fails on URL parse errors)
+pub fn connect_lazy(url: &str, options: ConnectionOptions) -> Result<PgPool> {
+    PgPoolOptions::new()
+        .max_connections(options.max_connections)
+        .acquire_timeout(options.acquire_timeout)
+        // Test connections before returning them from the pool.
+        // This ensures stale connections (e.g., after database restart or
+        // network partition) are detected and replaced automatically.
+        .test_before_acquire(true)
+        .connect_lazy(url)
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
 }
 

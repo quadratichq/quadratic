@@ -108,9 +108,7 @@ pub(crate) async fn process_queue_for_room(
     let start = Utc::now();
     let channel = &file_id.to_string();
 
-    // Acquire pool connection once upfront to ensure consistency across all
-    // database operations in this function
-    let pool = state.pool.get().await?;
+    let pool = &state.pool;
 
     // When a file is created in API, a zero checkpoint is created, so we
     // should always expect a return value.
