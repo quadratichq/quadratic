@@ -291,6 +291,7 @@ impl SheetFormatUpdates {
         Self::set_format_cell_item(pos, &mut self.date_time, update.date_time);
         Self::set_format_cell_item(pos, &mut self.underline, update.underline);
         Self::set_format_cell_item(pos, &mut self.strike_through, update.strike_through);
+        Self::set_format_cell_item(pos, &mut self.font_size, update.font_size);
     }
 
     /// Returns the format for a cell within the SheetFormatUpdates.

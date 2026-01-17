@@ -9,6 +9,7 @@ pub mod clipboard;
 pub mod code_cell;
 mod csv;
 pub mod data_table;
+pub mod format_painter;
 pub mod formats;
 pub mod import;
 pub mod merge_cells;

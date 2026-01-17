@@ -197,6 +197,10 @@ interface EventTypes {
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;
+
+  // Format painter events
+  formatPainterStart: (sourceSelection: string, sourceSheetId: string) => void;
+  formatPainterEnd: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

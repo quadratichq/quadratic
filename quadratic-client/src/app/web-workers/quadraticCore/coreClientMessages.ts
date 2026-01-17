@@ -939,6 +939,14 @@ export interface ClientCorePasteFromClipboard {
   isAi: boolean;
 }
 
+export interface ClientCoreApplyFormatPainter {
+  type: 'clientCoreApplyFormatPainter';
+  sourceSelection: string;
+  targetSelection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
 //#endregion
 
 //#region Bounds
@@ -1713,6 +1721,7 @@ export type ClientCoreMessage =
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
+  | ClientCoreApplyFormatPainter
   | ClientCoreSetBorders
   | ClientCoreMergeCells
   | ClientCoreUnmergeCells

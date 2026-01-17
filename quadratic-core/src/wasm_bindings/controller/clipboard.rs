@@ -2,7 +2,7 @@ use std::str::FromStr;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
-use crate::controller::operations::clipboard::{ClipboardOperation};
+use crate::controller::operations::clipboard::ClipboardOperation;
 use crate::grid::js_types::JsClipboard;
 use crate::wasm_bindings::capture_core_error;
 use crate::{
@@ -99,6 +99,23 @@ impl GridController {
                 Err(e) => Err(e.to_string()),
             }
         })
+    }
+
+    /// Apply format painter: copy formatting from source selection to target selection
+    #[wasm_bindgen(js_name = "applyFormatPainter")]
+    pub fn js_apply_format_painter(
+        &mut self,
+        source_selection: String,
+        target_selection: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), JsValue> {
+        let source_selection = serde_json::from_str::<A1Selection>(&source_selection)
+            .map_err(|_| "Unable to parse source A1Selection")?;
+        let target_selection = serde_json::from_str::<A1Selection>(&target_selection)
+            .map_err(|_| "Unable to parse target A1Selection")?;
+        self.apply_format_painter(&source_selection, &target_selection, cursor, is_ai)
+            .map_err(|e| JsValue::from_str(&e))
     }
 
     #[allow(clippy::too_many_arguments)]

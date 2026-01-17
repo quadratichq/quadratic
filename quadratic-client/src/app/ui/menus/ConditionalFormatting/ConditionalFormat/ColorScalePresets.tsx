@@ -179,10 +179,7 @@ export const ColorScalePresets = ({ currentThresholds, onSelectPreset }: ColorSc
             )}
           >
             <div className="flex items-center gap-2">
-              <div
-                className="h-4 w-20 rounded-sm border border-border/50"
-                style={{ background: currentGradient }}
-              />
+              <div className="h-4 w-20 rounded-sm border border-border/50" style={{ background: currentGradient }} />
               <span className="text-muted-foreground">{selectedPreset?.name ?? 'Custom'}</span>
             </div>
             <ChevronDownIcon className="h-4 w-4 opacity-50" />

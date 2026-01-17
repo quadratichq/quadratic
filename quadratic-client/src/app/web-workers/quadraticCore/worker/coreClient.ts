@@ -415,6 +415,10 @@ class CoreClient {
         core.pasteFromClipboard(e.data);
         return;
 
+      case 'clientCoreApplyFormatPainter':
+        core.applyFormatPainter(e.data);
+        return;
+
       case 'clientCoreSetBorders':
         this.send({
           type: 'coreClientSetBorders',

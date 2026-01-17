@@ -107,6 +107,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientPreviewConditionalFormat,
   CoreClientRedoResponse,
   CoreClientRemoveValidationSelection,
   CoreClientRerunCodeCells,
@@ -126,7 +127,6 @@ import type {
   CoreClientUndoResponse,
   CoreClientUnmergeCellsResponse,
   CoreClientUpdateConditionalFormat,
-  CoreClientPreviewConditionalFormat,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -1199,6 +1199,16 @@ class QuadraticCore {
       },
       jsClipboard.buffer
     );
+  }
+
+  applyFormatPainter(sourceSelection: string, targetSelection: string, isAi: boolean) {
+    this.send({
+      type: 'clientCoreApplyFormatPainter',
+      sourceSelection,
+      targetSelection,
+      cursor: sheets.getCursorPosition(),
+      isAi,
+    });
   }
 
   //#endregion
