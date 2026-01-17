@@ -1,6 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type {
+  ColorScale,
+  ColorScaleThreshold,
+  ColorScaleThresholdValueType,
   ConditionalFormatClient,
   ConditionalFormatRule,
   ConditionalFormatStyle,
@@ -149,8 +152,61 @@ type ProcessedRule =
   | { type: 'update'; update: ConditionalFormatUpdate; message: string }
   | { type: 'delete'; id: string; message: string };
 
+// Convert AI color scale threshold to internal format
+const convertAIThresholdToInternal = (
+  aiThreshold: NonNullable<ConditionalFormatAction['color_scale_thresholds']>[number]
+): ColorScaleThreshold => {
+  let value_type: ColorScaleThresholdValueType;
+
+  switch (aiThreshold.value_type) {
+    case 'min':
+      value_type = 'Min';
+      break;
+    case 'max':
+      value_type = 'Max';
+      break;
+    case 'number':
+      value_type = { Number: aiThreshold.value ?? 0 };
+      break;
+    case 'percent':
+      value_type = { Percent: aiThreshold.value ?? 50 };
+      break;
+    case 'percentile':
+      value_type = { Percentile: aiThreshold.value ?? 50 };
+      break;
+    default:
+      value_type = 'Min';
+  }
+
+  return {
+    value_type,
+    color: aiThreshold.color,
+  };
+};
+
+// Convert AI color scale thresholds to internal format
+const convertAIColorScaleThresholdsToInternal = (
+  aiThresholds: NonNullable<ConditionalFormatAction['color_scale_thresholds']>
+): ColorScale => {
+  return {
+    thresholds: aiThresholds.map(convertAIThresholdToInternal),
+  };
+};
+
 const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Sheet): ProcessedRule => {
-  const { action, id, selection, rule: ruleFormula, apply_to_empty, ...styleProps } = rule;
+  const {
+    action,
+    id,
+    selection,
+    type: formatType,
+    rule: ruleFormula,
+    apply_to_empty,
+    color_scale_thresholds,
+    ...styleProps
+  } = rule;
+
+  // Determine if this is a color scale format
+  const isColorScale = formatType === 'color_scale' || (color_scale_thresholds && !ruleFormula);
 
   switch (action) {
     case 'delete': {
@@ -164,30 +220,57 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
       if (!selection) {
         throw new Error('Create action requires a selection');
       }
-      if (!ruleFormula) {
-        throw new Error('Create action requires a rule formula');
+
+      if (isColorScale) {
+        // Color scale format
+        if (!color_scale_thresholds || color_scale_thresholds.length < 2) {
+          throw new Error(
+            'Color scale create action requires color_scale_thresholds with at least 2 thresholds (e.g., min and max)'
+          );
+        }
+
+        const internalColorScale = convertAIColorScaleThresholdsToInternal(color_scale_thresholds);
+
+        const update: ConditionalFormatUpdate = {
+          id: null,
+          sheet_id: sheet.id,
+          selection,
+          config: {
+            type: 'ColorScale',
+            color_scale: internalColorScale,
+          },
+          apply_to_blank: apply_to_empty ?? null,
+        };
+
+        const colors = internalColorScale.thresholds.map((t) => t.color).join(' → ');
+        return { type: 'update', update, message: `Created color scale (${colors}) for selection "${selection}"` };
+      } else {
+        // Formula-based format
+        if (!ruleFormula) {
+          throw new Error('Formula-based create action requires a rule formula');
+        }
+
+        const style = buildStyle(styleProps);
+        if (isEmptyStyle(style)) {
+          throw new Error(
+            'Formula-based create action requires at least one style property (bold, italic, underline, strike_through, text_color, or fill_color)'
+          );
+        }
+
+        const update: ConditionalFormatUpdate = {
+          id: null,
+          sheet_id: sheet.id,
+          selection,
+          config: {
+            type: 'Formula',
+            rule: ruleFormula,
+            style,
+          },
+          apply_to_blank: apply_to_empty ?? null,
+        };
+
+        return { type: 'update', update, message: `Created conditional format for selection "${selection}"` };
       }
-
-      const style = buildStyle(styleProps);
-      if (isEmptyStyle(style)) {
-        throw new Error(
-          'Create action requires at least one style property (bold, italic, underline, strike_through, text_color, or fill_color)'
-        );
-      }
-
-      const update: ConditionalFormatUpdate = {
-        id: null,
-        sheet_id: sheet.id,
-        selection,
-        config: {
-          type: 'Formula',
-          rule: ruleFormula,
-          style,
-        },
-        apply_to_blank: apply_to_empty ?? null,
-      };
-
-      return { type: 'update', update, message: `Created conditional format for selection "${selection}"` };
     }
 
     case 'update': {
@@ -201,29 +284,45 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
         throw new Error(`Conditional format with ID "${id}" not found`);
       }
 
-      // Only support updating formula-based formats for now
-      if (existing.config.type !== 'Formula') {
-        throw new Error('Cannot update color scale conditional formats via AI');
-      }
-
-      // Merge existing with updates
-      const style = buildStyle(styleProps, existing.config.style);
       const existingSelection = sheets.A1SelectionToA1String(existing.selection, sheet.id);
 
-      const update: ConditionalFormatUpdate = {
-        id,
-        sheet_id: sheet.id,
-        selection: selection ?? existingSelection,
-        config: {
-          type: 'Formula',
-          rule: ruleFormula ?? getExistingRuleFormula(existing),
-          style,
-        },
-        // Use provided value, or keep existing value
-        apply_to_blank: apply_to_empty !== undefined ? apply_to_empty : existing.apply_to_blank,
-      };
+      if (existing.config.type === 'ColorScale') {
+        // Update color scale format
+        const existingColorScale = existing.config.color_scale;
+        const newColorScale = color_scale_thresholds
+          ? convertAIColorScaleThresholdsToInternal(color_scale_thresholds)
+          : existingColorScale;
 
-      return { type: 'update', update, message: `Updated conditional format with ID: ${id}` };
+        const update: ConditionalFormatUpdate = {
+          id,
+          sheet_id: sheet.id,
+          selection: selection ?? existingSelection,
+          config: {
+            type: 'ColorScale',
+            color_scale: newColorScale,
+          },
+          apply_to_blank: apply_to_empty !== undefined ? apply_to_empty : existing.apply_to_blank,
+        };
+
+        return { type: 'update', update, message: `Updated color scale with ID: ${id}` };
+      } else {
+        // Update formula-based format
+        const style = buildStyle(styleProps, existing.config.style);
+
+        const update: ConditionalFormatUpdate = {
+          id,
+          sheet_id: sheet.id,
+          selection: selection ?? existingSelection,
+          config: {
+            type: 'Formula',
+            rule: ruleFormula ?? getExistingRuleFormula(existing),
+            style,
+          },
+          apply_to_blank: apply_to_empty !== undefined ? apply_to_empty : existing.apply_to_blank,
+        };
+
+        return { type: 'update', update, message: `Updated conditional format with ID: ${id}` };
+      }
     }
 
     default:
@@ -232,7 +331,10 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
 };
 
 const buildStyle = (
-  styleProps: Omit<ConditionalFormatAction, 'id' | 'action' | 'selection' | 'rule' | 'apply_to_empty'>,
+  styleProps: Omit<
+    ConditionalFormatAction,
+    'id' | 'action' | 'selection' | 'type' | 'rule' | 'apply_to_empty' | 'color_scale_thresholds'
+  >,
   existing?: ConditionalFormatStyle
 ): ConditionalFormatStyle => {
   return {

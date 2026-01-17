@@ -571,6 +571,8 @@ export const AIToolsArgsSchema = {
         id: z.string().uuid().nullable().optional(),
         action: z.enum(['create', 'update', 'delete']),
         selection: z.string().nullable().optional(),
+        // Formula-based conditional format fields
+        type: z.enum(['formula', 'color_scale']).nullable().optional(),
         rule: z.string().nullable().optional(),
         bold: booleanNullableOptionalSchema,
         italic: booleanNullableOptionalSchema,
@@ -579,6 +581,17 @@ export const AIToolsArgsSchema = {
         text_color: z.string().nullable().optional(),
         fill_color: z.string().nullable().optional(),
         apply_to_empty: booleanNullableOptionalSchema,
+        // Color scale conditional format fields (flattened for schema compatibility)
+        color_scale_thresholds: z
+          .array(
+            z.object({
+              value_type: z.enum(['min', 'max', 'number', 'percent', 'percentile']),
+              value: z.number().nullable().optional(),
+              color: z.string(),
+            })
+          )
+          .nullable()
+          .optional(),
       })
     ),
   }),
@@ -2905,9 +2918,12 @@ Use this tool to understand what conditional formats already exist before creati
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool creates, updates, or deletes conditional formatting rules in a sheet.
+Supports two types of conditional formats:
+1. Formula-based: Apply styles (colors, bold, etc.) when a formula is true
+2. Color scale: Apply gradient colors based on numeric cell values
+
 Conditional formatting rules are per-sheet, so the sheet name is required.
-IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A".
-CRITICAL: When using a table column reference as the selection, the formula must reference the FIRST DATA CELL of that column (after the table name and header rows). For example, if a table starts at B2 and you target column C, the first data cell is C4, so use "C4>100".
+IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges.
 You can perform multiple operations (create/update/delete) in a single call.`,
     parameters: {
       type: 'object',
@@ -2932,45 +2948,76 @@ You can perform multiple operations (create/update/delete) in a single call.`,
                 description:
                   'The action to perform. Must be one of: "create" (new rule), "update" (modify existing rule), or "delete" (remove rule).',
               },
+              type: {
+                type: ['string', 'null'],
+                description:
+                  'The type of conditional format. "formula" (default) for formula-based rules with styles, or "color_scale" for gradient colors based on numeric values. If omitted, defaults to "formula".',
+              },
               selection: {
                 type: ['string', 'null'],
                 description:
-                  'The selection for the conditional format. IMPORTANT: When targeting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". For non-table data, use A1 notation (e.g., "A1:D10" or "A:A"). Required for create and update actions.',
+                  'The selection for the conditional format. IMPORTANT: When targeting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges. For non-table data, use A1 notation (e.g., "A1:D10" or "A:A"). Required for create and update actions.',
               },
               rule: {
                 type: ['string', 'null'],
                 description:
-                  'A formula that evaluates to true/false for each cell. Use cell references which will be evaluated relative to each cell in the selection. IMPORTANT: When using a table column reference as the selection (e.g., "Table_Name[Column]"), the formula MUST reference the first DATA cell of that column, NOT the header cells. For example, if a table starts at B2 with a table name row and column headers, and you target the second column, the first data cell is C4, so use "C4>100" not "C1>100". Examples: "A1>100", "ISBLANK(A1)", "AND(A1>=5, A1<=10)", "ISNUMBER(SEARCH(\\"hello\\", A1))". Required for create and update actions.',
+                  'For formula-based formats only. A formula that evaluates to true/false for each cell. Examples: "A1>100", "ISBLANK(A1)", "AND(A1>=5, A1<=10)". Required for formula-based create/update actions.',
               },
               bold: {
                 type: ['boolean', 'null'],
-                description: 'Whether to apply bold formatting when the rule is true.',
+                description: 'For formula-based formats. Whether to apply bold formatting when the rule is true.',
               },
               italic: {
                 type: ['boolean', 'null'],
-                description: 'Whether to apply italic formatting when the rule is true.',
+                description: 'For formula-based formats. Whether to apply italic formatting when the rule is true.',
               },
               underline: {
                 type: ['boolean', 'null'],
-                description: 'Whether to apply underline formatting when the rule is true.',
+                description: 'For formula-based formats. Whether to apply underline formatting when the rule is true.',
               },
               strike_through: {
                 type: ['boolean', 'null'],
-                description: 'Whether to apply strikethrough formatting when the rule is true.',
+                description:
+                  'For formula-based formats. Whether to apply strikethrough formatting when the rule is true.',
               },
               text_color: {
                 type: ['string', 'null'],
-                description: 'The text color to apply when the rule is true (e.g., "#FF0000" for red, "rgb(255,0,0)").',
+                description:
+                  'For formula-based formats. The text color to apply when the rule is true (e.g., "#FF0000" for red).',
               },
               fill_color: {
                 type: ['string', 'null'],
                 description:
-                  'The background/fill color to apply when the rule is true (e.g., "#00FF00" for green, "rgb(0,255,0)").',
+                  'For formula-based formats. The background/fill color to apply when the rule is true (e.g., "#00FF00" for green).',
               },
               apply_to_empty: {
                 type: ['boolean', 'null'],
                 description:
-                  'Whether to apply the format to empty/blank cells. By default, this is false for numeric comparisons (like >=0, <10) because empty cells coerce to 0 which often causes unexpected matches. Set to true if you specifically want empty cells to be included. For ISBLANK/NOT(ISBLANK) rules, this defaults to true.',
+                  'Whether to apply the format to empty/blank cells. By default, this is false for numeric comparisons because empty cells coerce to 0.',
+              },
+              color_scale_thresholds: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    value_type: {
+                      type: 'string',
+                      description:
+                        'How to determine the threshold value. "min" = minimum value in selection, "max" = maximum value, "number" = fixed numeric value, "percent" = percent of range (0-100), "percentile" = percentile of values (0-100).',
+                    },
+                    value: {
+                      type: 'number',
+                      description:
+                        'The numeric value for "number", "percent", or "percentile" value_types. Not needed for "min" or "max".',
+                    },
+                    color: {
+                      type: 'string',
+                      description: 'The hex color at this threshold (e.g., "#FF0000" for red, "#00FF00" for green).',
+                    },
+                  },
+                  required: ['value_type', 'color'],
+                  additionalProperties: false,
+                },
               },
             },
             required: ['action'],
@@ -2984,31 +3031,72 @@ You can perform multiple operations (create/update/delete) in a single call.`,
     responseSchema: AIToolsArgsSchema[AITool.UpdateConditionalFormats],
     prompt: `
 This tool creates, updates, or deletes conditional formatting rules in a sheet.
-Conditional formatting rules are per-sheet, so the sheet name is required.
+Supports two types of conditional formats:
 
-IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 range notation like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures the formatting applies correctly to the entire column as the table grows or shrinks.
+## 1. FORMULA-BASED (type: "formula" or omitted)
+Apply styles when a formula evaluates to true. Requires: selection, rule, and at least one style property.
 
-CRITICAL FOR TABLE COLUMN FORMULAS: When using a table column reference as the selection, the formula MUST reference the FIRST DATA CELL of that column, NOT the header cells. Tables have a table name row and column header row before the data starts. For example:
-- If a table named "Sales" starts at B2, it has the table name at row 2, column headers at row 3, and data starts at row 4
-- If you target the second column (column C) with selection "Sales[Revenue]", the first data cell is C4
-- So your formula should use C4 as the reference (e.g., "C4>1000"), NOT C1, C2, or C3
-
-For the rule parameter, use a formula that evaluates to true/false. Common patterns:
+Formula patterns:
 - Greater than: "A1>100"
 - Less than: "A1<50"
 - Between: "AND(A1>=5, A1<=10)"
 - Is empty: "ISBLANK(A1)"
 - Is not empty: "NOT(ISBLANK(A1))"
 - Text contains: "ISNUMBER(SEARCH(\\"text\\", A1))"
-- Text does not contain: "ISERROR(SEARCH(\\"text\\", A1))"
-- Text starts with: "LEFT(A1, 5)=\\"hello\\""
-- Text ends with: "RIGHT(A1, 5)=\\"world\\""
 - Equals: "A1=42" or "A1=\\"exact text\\""
 
-APPLY TO EMPTY CELLS: By default, numeric comparison rules (>=, >, <, <=, =, <>) do NOT apply to empty cells because empty cells coerce to 0, which often causes unexpected behavior (e.g., ">=0" would match all empty cells). Use apply_to_empty: true only if you specifically want empty cells to be included in the formatting. For ISBLANK and NOT(ISBLANK) rules, apply_to_empty defaults to true since those rules are specifically about empty cells.
+Example:
+{
+  "action": "create",
+  "type": "formula",
+  "selection": "A1:A100",
+  "rule": "A1>100",
+  "fill_color": "#FF0000",
+  "bold": true
+}
+
+## 2. COLOR SCALE (type: "color_scale")
+Apply gradient colors based on numeric cell values. Cells are colored on a gradient between threshold colors.
+
+Threshold value_types:
+- "min": Automatically uses the minimum value in the selection
+- "max": Automatically uses the maximum value in the selection
+- "number": Use a fixed numeric value (requires value field)
+- "percent": Percent of the range, 0-100 (requires value field)
+- "percentile": Percentile of values, 0-100 (requires value field)
+
+Common color scale examples:
+- Red to Green (2-color): min=#FF0000 (red), max=#00FF00 (green)
+- Traffic Light (3-color): min=#FF0000 (red), 50th percentile=#FFFF00 (yellow), max=#00FF00 (green)
+- Heat Map: min=#FFFFCC (light yellow), 50th percentile=#FD8D3C (orange), max=#800026 (dark red)
+- Blue intensity: min=#DEEBF7 (light blue), max=#08519C (dark blue)
+
+Example - 2-color scale (low=red, high=green):
+{
+  "action": "create",
+  "type": "color_scale",
+  "selection": "B1:B100",
+  "color_scale_thresholds": [
+    { "value_type": "min", "color": "#FF0000" },
+    { "value_type": "max", "color": "#00FF00" }
+  ]
+}
+
+Example - 3-color scale (red-yellow-green traffic light):
+{
+  "action": "create",
+  "type": "color_scale",
+  "selection": "C1:C100",
+  "color_scale_thresholds": [
+    { "value_type": "min", "color": "#FF0000" },
+    { "value_type": "percentile", "value": 50, "color": "#FFFF00" },
+    { "value_type": "max", "color": "#00FF00" }
+  ]
+}
+
+IMPORTANT FOR TABLE COLUMNS: Always use table column references like "Table_Name[Column Name]" instead of A1 ranges.
 
 For delete action, only the id is required.
-For create action, selection, rule, and at least one style property are required.
 For update action, id is required plus any fields you want to change.`,
   },
   [AITool.Undo]: {

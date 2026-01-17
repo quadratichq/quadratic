@@ -393,6 +393,18 @@ impl ConditionalFormats {
         bounds
     }
 
+    /// Returns all conditional formats that overlap with a selection.
+    pub fn overlaps_selection(
+        &self,
+        selection: &A1Selection,
+        a1_context: &A1Context,
+    ) -> Vec<&ConditionalFormat> {
+        self.conditional_formats
+            .iter()
+            .filter(|cf| cf.selection.overlaps_a1_selection(selection, a1_context))
+            .collect()
+    }
+
     /// Returns conditional formats that might apply to cells within the given rect.
     /// Uses the bounds cache for early rejection.
     pub fn in_rect(&mut self, rect: Rect, a1_context: &A1Context) -> Vec<&ConditionalFormat> {
@@ -732,5 +744,42 @@ mod tests {
         assert!(cf.style().is_none());
         assert!(cf.has_fill());
         assert!(!cf.has_non_fill_style());
+    }
+
+    #[test]
+    fn test_overlaps_selection() {
+        let mut formats = ConditionalFormats::new();
+        let sheet_id = SheetId::TEST;
+        let a1_context = A1Context::default();
+
+        // Add conditional formats
+        let cf1 = create_test_format("A1:B2", ConditionalFormatStyle::default());
+        let cf2 = create_test_format("D4:E5", ConditionalFormatStyle::default());
+        let cf1_id = cf1.id;
+        let cf2_id = cf2.id;
+        formats.set(cf1, sheet_id);
+        formats.set(cf2, sheet_id);
+
+        // Test overlapping selection
+        let selection = A1Selection::test_a1("B2:C3");
+        let overlapping = formats.overlaps_selection(&selection, &a1_context);
+        assert_eq!(overlapping.len(), 1);
+        assert_eq!(overlapping[0].id, cf1_id);
+
+        // Test selection that overlaps both
+        let selection = A1Selection::test_a1("A1:E5");
+        let overlapping = formats.overlaps_selection(&selection, &a1_context);
+        assert_eq!(overlapping.len(), 2);
+
+        // Test selection that overlaps neither
+        let selection = A1Selection::test_a1("G7:H8");
+        let overlapping = formats.overlaps_selection(&selection, &a1_context);
+        assert!(overlapping.is_empty());
+
+        // Test selection that overlaps only second
+        let selection = A1Selection::test_a1("D4");
+        let overlapping = formats.overlaps_selection(&selection, &a1_context);
+        assert_eq!(overlapping.len(), 1);
+        assert_eq!(overlapping[0].id, cf2_id);
     }
 }
