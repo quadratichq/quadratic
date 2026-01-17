@@ -1,5 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import { databaseUrl } from "../db/db";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -29,20 +30,23 @@ const instance = new aws.ec2.Instance("files-instance", {
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   userDataReplaceOnChange: true,
-  userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
-    runDockerImageBashScript(
-      filesECRName,
-      dockerImageTag,
-      filesPulumiEscEnvironmentName,
-      {
-        PUBSUB_HOST: host,
-        PUBSUB_PORT: port.toString(),
-        QUADRATIC_API_URI: quadraticApiUri,
-      },
-      true,
-      60, // 60 second graceful shutdown timeout for file processing
+  userData: pulumi
+    .all([redisHost, redisPort, databaseUrl])
+    .apply(([host, port, dbUrl]) =>
+      runDockerImageBashScript(
+        filesECRName,
+        dockerImageTag,
+        filesPulumiEscEnvironmentName,
+        {
+          DATABASE_URL: dbUrl,
+          PUBSUB_HOST: host,
+          PUBSUB_PORT: port.toString(),
+          QUADRATIC_API_URI: quadraticApiUri,
+        },
+        true,
+        60, // 60 second graceful shutdown timeout for file processing
+      ),
     ),
-  ),
 });
 
 // Get the hosted zone ID for domain

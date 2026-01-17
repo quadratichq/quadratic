@@ -10,10 +10,11 @@ pub mod stats;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
+use quadratic_rust_shared::quadratic_database::PgPool;
 use tokio::sync::Mutex;
 
 use crate::config::Config;
-use crate::error::Result;
+use crate::error::{FilesError, Result};
 use crate::state::settings::Settings;
 use crate::synced_connection::cache::SyncedConnectionCache;
 
@@ -26,6 +27,7 @@ pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) stats: Mutex<Stats>,
     pub(crate) synced_connection_cache: SyncedConnectionCache,
+    pub(crate) pool: PgPool,
 }
 
 impl State {
@@ -41,6 +43,9 @@ impl State {
             settings: Settings::new(config, jwks).await?,
             stats: Mutex::new(Stats::new()),
             synced_connection_cache: SyncedConnectionCache::new(),
+            pool: PgPool::connect(&config.database_url)
+                .await
+                .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?,
         })
     }
 }

@@ -273,6 +273,11 @@ export const ApiSchemas = {
         version: z.string(),
       })
     ),
+    userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id,
+      filePermissions: z.array(FilePermissionSchema),
+      teamPermissions: z.array(TeamPermissionSchema),
+    }),
   }),
   '/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
