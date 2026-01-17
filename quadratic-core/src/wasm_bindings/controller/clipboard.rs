@@ -111,9 +111,9 @@ impl GridController {
         is_ai: bool,
     ) -> Result<(), JsValue> {
         let source_selection = serde_json::from_str::<A1Selection>(&source_selection)
-            .map_err(|_| "Unable to parse source A1Selection")?;
+            .map_err(|e| format!("Unable to parse source A1Selection: {e}"))?;
         let target_selection = serde_json::from_str::<A1Selection>(&target_selection)
-            .map_err(|_| "Unable to parse target A1Selection")?;
+            .map_err(|e| format!("Unable to parse target A1Selection: {e}"))?;
         self.apply_format_painter(&source_selection, &target_selection, cursor, is_ai)
             .map_err(|e| JsValue::from_str(&e))
     }

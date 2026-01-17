@@ -1,7 +1,7 @@
 //! Draws marching ants around the format painter source selection.
 //! Similar to UICopy.ts but uses a different color to distinguish from copy.
 
-import { formatPainterAtom } from '@/app/atoms/formatPainterAtom';
+import { deactivateFormatPainter, isFormatPainterActive } from '@/app/atoms/formatPainterAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { DASHED } from '@/app/gridGL/generateTextures';
@@ -11,7 +11,6 @@ import { drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cell
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { RefRangeBounds } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
-import { getDefaultStore } from 'jotai';
 import { Graphics } from 'pixi.js';
 
 const MARCH_TIME = 80;
@@ -34,7 +33,6 @@ export class UIFormatPainter extends Graphics {
     super();
     events.on('changeSheet', this.setDirty);
     events.on('viewportChanged', this.setDirty);
-    events.on('transactionStart', this.clearFormatPainter);
     events.on('formatPainterStart', this.onFormatPainterStart);
     events.on('formatPainterEnd', this.onFormatPainterEnd);
   }
@@ -42,7 +40,6 @@ export class UIFormatPainter extends Graphics {
   destroy() {
     events.off('changeSheet', this.setDirty);
     events.off('viewportChanged', this.setDirty);
-    events.off('transactionStart', this.clearFormatPainter);
     events.off('formatPainterStart', this.onFormatPainterStart);
     events.off('formatPainterEnd', this.onFormatPainterEnd);
     super.destroy();
@@ -68,7 +65,7 @@ export class UIFormatPainter extends Graphics {
   };
 
   private onFormatPainterEnd = () => {
-    this.clearFormatPainter();
+    this.clearFormatPainter(false);
   };
 
   private updateRangesFromSelection = () => {
@@ -89,7 +86,7 @@ export class UIFormatPainter extends Graphics {
     }
   };
 
-  clearFormatPainter = () => {
+  clearFormatPainter = (emitEvent = true) => {
     if (!!this.sourceSheetId && !!this.ranges) {
       this.clear();
       this.ranges = undefined;
@@ -99,11 +96,11 @@ export class UIFormatPainter extends Graphics {
       pixiApp.setViewportDirty();
 
       // Also update the atom state
-      const store = getDefaultStore();
-      const state = store.get(formatPainterAtom);
-      if (state.active) {
-        store.set(formatPainterAtom, { active: false });
-        events.emit('formatPainterEnd');
+      if (isFormatPainterActive()) {
+        deactivateFormatPainter();
+        if (emitEvent) {
+          events.emit('formatPainterEnd');
+        }
       }
     }
   };
@@ -189,6 +186,7 @@ export class UIFormatPainter extends Graphics {
     if (drawFrame || this.dirty) {
       this.clear();
       this.draw();
+      this.dirty = false;
     }
   };
 }

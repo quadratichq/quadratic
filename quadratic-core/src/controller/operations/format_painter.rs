@@ -9,6 +9,11 @@ use anyhow::Result;
 impl GridController {
     /// Creates operations to apply format painter from source to target selection.
     /// The source formatting is tiled across the target selection if the target is larger.
+    ///
+    /// Performance: This iterates over source cells and tiles each one to target positions,
+    /// rather than iterating over every target cell. This is O(source_area) lookups instead
+    /// of O(target_area) lookups, which is much faster for large target selections with
+    /// small source patterns.
     pub fn apply_format_painter_operations(
         &self,
         source_selection: &A1Selection,
@@ -16,10 +21,13 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
-        // Get the source sheet
+        // Validate both sheets exist
         let source_sheet = self
             .try_sheet(source_selection.sheet_id)
             .ok_or_else(|| anyhow::anyhow!("Source sheet not found"))?;
+        if self.try_sheet(target_selection.sheet_id).is_none() {
+            anyhow::bail!("Target sheet not found");
+        }
 
         // Get the source rect (finite bounds)
         let source_rect = source_selection.largest_rect_finite(self.a1_context());
@@ -52,61 +60,103 @@ impl GridController {
         let mut tiled_formats = SheetFormatUpdates::default();
         let mut tiled_borders = BordersUpdates::default();
 
-        // Tile the formats across the target area
-        for ty in 0..target_height {
-            for tx in 0..target_width {
-                // Calculate source position using modulo for tiling
-                let sx = (tx % source_width) as i64 + source_rect.min.x;
-                let sy = (ty % source_height) as i64 + source_rect.min.y;
-                let source_pos = Pos { x: sx, y: sy };
+        // Calculate number of tiles needed in each direction
+        let tiles_x = target_width.div_ceil(source_width);
+        let tiles_y = target_height.div_ceil(source_height);
 
-                // Calculate target position
-                let target_x = target_rect.min.x + tx as i64;
-                let target_y = target_rect.min.y + ty as i64;
-                let target_pos = Pos {
-                    x: target_x,
-                    y: target_y,
+        // Iterate over source cells and tile each to all matching target positions.
+        // This is more efficient than iterating over every target cell because:
+        // 1. We only do O(source_area) format lookups instead of O(target_area)
+        // 2. Source cells without formatting are processed quickly (just one lookup)
+        for sy in 0..source_height {
+            for sx in 0..source_width {
+                let source_x = source_rect.min.x + sx as i64;
+                let source_y = source_rect.min.y + sy as i64;
+                let source_pos = Pos {
+                    x: source_x,
+                    y: source_y,
                 };
 
-                // Copy format from source to target position
+                // Get format once per source cell
                 let format_update = source_formats.format_update(source_pos);
-                if !format_update.is_default() {
-                    tiled_formats.set_format_cell(target_pos, format_update);
+                let has_format = !format_update.is_default();
+
+                // Check borders once per source cell
+                let top_border = source_borders
+                    .as_ref()
+                    .and_then(|b| b.top.as_ref())
+                    .and_then(|t| t.get(source_pos));
+                let bottom_border = source_borders
+                    .as_ref()
+                    .and_then(|b| b.bottom.as_ref())
+                    .and_then(|t| t.get(source_pos));
+                let left_border = source_borders
+                    .as_ref()
+                    .and_then(|b| b.left.as_ref())
+                    .and_then(|t| t.get(source_pos));
+                let right_border = source_borders
+                    .as_ref()
+                    .and_then(|b| b.right.as_ref())
+                    .and_then(|t| t.get(source_pos));
+
+                let has_borders = top_border.is_some()
+                    || bottom_border.is_some()
+                    || left_border.is_some()
+                    || right_border.is_some();
+
+                // Skip source cells with no formatting or borders
+                if !has_format && !has_borders {
+                    continue;
                 }
 
-                // Copy borders from source to target position
-                if let Some(ref borders) = source_borders {
-                    if let Some(ref top) = borders.top
-                        && let Some(border) = top.get(source_pos)
-                    {
-                        tiled_borders
-                            .top
-                            .get_or_insert_default()
-                            .set(target_pos, Some(border));
-                    }
-                    if let Some(ref bottom) = borders.bottom
-                        && let Some(border) = bottom.get(source_pos)
-                    {
-                        tiled_borders
-                            .bottom
-                            .get_or_insert_default()
-                            .set(target_pos, Some(border));
-                    }
-                    if let Some(ref left) = borders.left
-                        && let Some(border) = left.get(source_pos)
-                    {
-                        tiled_borders
-                            .left
-                            .get_or_insert_default()
-                            .set(target_pos, Some(border));
-                    }
-                    if let Some(ref right) = borders.right
-                        && let Some(border) = right.get(source_pos)
-                    {
-                        tiled_borders
-                            .right
-                            .get_or_insert_default()
-                            .set(target_pos, Some(border));
+                // Tile this source cell to all matching target positions
+                for tile_y in 0..tiles_y {
+                    for tile_x in 0..tiles_x {
+                        let target_x =
+                            target_rect.min.x + sx as i64 + (tile_x * source_width) as i64;
+                        let target_y =
+                            target_rect.min.y + sy as i64 + (tile_y * source_height) as i64;
+
+                        // Check if this tile position is within the target bounds
+                        if target_x > target_rect.max.x || target_y > target_rect.max.y {
+                            continue;
+                        }
+
+                        let target_pos = Pos {
+                            x: target_x,
+                            y: target_y,
+                        };
+
+                        // Apply format (clone needed since we apply to multiple targets)
+                        if has_format {
+                            tiled_formats.set_format_cell(target_pos, format_update.clone());
+                        }
+
+                        // Apply borders
+                        if let Some(border) = top_border {
+                            tiled_borders
+                                .top
+                                .get_or_insert_default()
+                                .set(target_pos, Some(border));
+                        }
+                        if let Some(border) = bottom_border {
+                            tiled_borders
+                                .bottom
+                                .get_or_insert_default()
+                                .set(target_pos, Some(border));
+                        }
+                        if let Some(border) = left_border {
+                            tiled_borders
+                                .left
+                                .get_or_insert_default()
+                                .set(target_pos, Some(border));
+                        }
+                        if let Some(border) = right_border {
+                            tiled_borders
+                                .right
+                                .get_or_insert_default()
+                                .set(target_pos, Some(border));
+                        }
                     }
                 }
             }
