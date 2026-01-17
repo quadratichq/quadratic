@@ -58,12 +58,25 @@ impl ReconnectingPool {
     ///
     /// The returned `PgPool` is cloned (cheap, internally `Arc`-based), so the
     /// lock is not held across database operations. This allows maximum concurrency.
+    ///
+    /// # Health Checking
+    ///
+    /// The pool is considered unhealthy and will trigger reconnection if:
+    /// - No pool exists (never connected or previously cleared)
+    /// - The pool has been explicitly closed via `is_closed()`
+    ///
+    /// Additionally, SQLx's `test_before_acquire` is enabled in the connect
+    /// function, which validates connections before returning them from the pool.
     pub async fn get(&self) -> Result<PgPool> {
-        // Fast path: check if pool exists with read lock, clone and release immediately
+        // Fast path: check if pool exists and is healthy with read lock
         {
             let pool = self.pool.read().await;
             if let Some(p) = pool.as_ref() {
-                return Ok(p.clone());
+                if !p.is_closed() {
+                    return Ok(p.clone());
+                }
+                // Pool is closed, fall through to reconnection
+                tracing::warn!("Database pool is closed, will attempt reconnection");
             }
         }
 
@@ -72,7 +85,11 @@ impl ReconnectingPool {
 
         // Double-check after acquiring write lock (another task may have reconnected)
         if let Some(p) = pool.as_ref() {
-            return Ok(p.clone());
+            if !p.is_closed() {
+                return Ok(p.clone());
+            }
+            // Pool is closed, clear it and reconnect
+            tracing::info!("Clearing closed database pool before reconnection");
         }
 
         tracing::info!("Attempting to reconnect to database pool...");
@@ -90,6 +107,9 @@ impl ReconnectingPool {
             Err(e) => {
                 tracing::error!("Failed to reconnect to database pool: {e}");
 
+                // Clear the closed pool so next attempt starts fresh
+                *pool = None;
+
                 Err(QuadraticDatabase::Connect(format!(
                     "Database pool is not available and reconnection failed: {e}"
                 ))
@@ -98,8 +118,27 @@ impl ReconnectingPool {
         }
     }
 
-    /// Check if the pool is currently connected.
+    /// Check if the pool is currently connected and healthy.
+    ///
+    /// Returns `true` only if a pool exists and has not been closed.
     pub async fn is_connected(&self) -> bool {
-        self.pool.read().await.is_some()
+        self.pool
+            .read()
+            .await
+            .as_ref()
+            .map(|p| !p.is_closed())
+            .unwrap_or(false)
+    }
+
+    /// Manually invalidate the pool, forcing reconnection on next `get()` call.
+    ///
+    /// This can be useful when you detect connection issues at the application
+    /// level and want to force a fresh connection.
+    pub async fn invalidate(&self) {
+        let mut pool = self.pool.write().await;
+        if let Some(p) = pool.take() {
+            p.close().await;
+            tracing::info!("Database pool manually invalidated");
+        }
     }
 }

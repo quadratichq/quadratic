@@ -250,7 +250,11 @@ pub(crate) async fn process_synced_connection<
                 )
                 .await?;
 
-                let parquet_data = client.process(stream, chunk_start, chunk_end).await?;
+                let parquet_data = match client.process(stream, chunk_start, chunk_end).await? {
+                    Some(data) => data,
+                    // Stream not supported (e.g., PRODUCTS_NOT_SUPPORTED) - skip entirely without markers
+                    None => break,
+                };
 
                 update_connection_status(
                     state.clone(),

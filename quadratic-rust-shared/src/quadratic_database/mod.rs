@@ -55,6 +55,10 @@ pub async fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
     PgPoolOptions::new()
         .max_connections(options.max_connections)
         .acquire_timeout(options.acquire_timeout)
+        // Test connections before returning them from the pool.
+        // This ensures stale connections (e.g., after database restart or
+        // network partition) are detected and replaced automatically.
+        .test_before_acquire(true)
         .connect(url)
         .await
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
