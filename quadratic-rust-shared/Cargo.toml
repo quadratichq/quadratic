@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-rust-shared"
-version = "0.23.3"
+version = "0.23.4"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -142,6 +142,7 @@ protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
 quadratic-api = ["bincode", "reqwest", "urlencoding"]
 quadratic-cloud = ["base64", "bincode", "quadratic-api"]
+quadratic-database = ["sqlx"]
 record-request-mock = []
 sql = [
   "arrow",
