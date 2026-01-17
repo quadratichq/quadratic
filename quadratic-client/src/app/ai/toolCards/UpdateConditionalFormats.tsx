@@ -264,37 +264,7 @@ export const UpdateConditionalFormats = memo(
 
         // For update/create actions, try to find and open the specific rule
         if (rule.action === 'update' || rule.action === 'create') {
-          console.log('[handleSelectRule] Looking for rule:', {
-            id: rule.id,
-            selection: rule.selection,
-            rule: rule.rule,
-            bold: rule.bold,
-            italic: rule.italic,
-            text_color: rule.text_color,
-            fill_color: rule.fill_color,
-          });
-
-          console.log(
-            '[handleSelectRule] Available conditional formats:',
-            sheet.conditionalFormats.map((cf) => ({
-              id: cf.id,
-              selection: (() => {
-                try {
-                  const js = sheets.A1SelectionToJsSelection(cf.selection);
-                  const str = js.toA1String(sheet.id, sheets.jsA1Context);
-                  js.free();
-                  return str;
-                } catch {
-                  return 'error';
-                }
-              })(),
-              formula: getStoredFormula(cf),
-              style: getStyle(cf),
-            }))
-          );
-
           let existingRule = rule.id ? sheet.conditionalFormats.find((cf) => cf.id === rule.id) : undefined;
-          if (existingRule) console.log('[handleSelectRule] Found by ID');
 
           // If not found by ID, try to find by matching selection + formula + styles
           if (!existingRule && rule.selection && rule.rule) {
@@ -303,17 +273,8 @@ export const UpdateConditionalFormats = memo(
               const selMatch = selectionsMatch(cf);
               const formulaMatch = storedFormula === rule.rule;
               const styleMatch = stylesMatch(cf);
-              console.log('[handleSelectRule] Check sel+formula+style:', {
-                cfId: cf.id,
-                selMatch,
-                formulaMatch,
-                styleMatch,
-                storedFormula,
-                ruleFormula: rule.rule,
-              });
               return selMatch && formulaMatch && styleMatch;
             });
-            if (existingRule) console.log('[handleSelectRule] Found by selection+formula+styles');
           }
 
           // If not found, try matching selection + formula (without style check)
@@ -322,7 +283,6 @@ export const UpdateConditionalFormats = memo(
               const storedFormula = getStoredFormula(cf);
               return selectionsMatch(cf) && storedFormula === rule.rule;
             });
-            if (existingRule) console.log('[handleSelectRule] Found by selection+formula');
           }
 
           // If still not found, try matching selection + exact styles
@@ -330,33 +290,16 @@ export const UpdateConditionalFormats = memo(
             existingRule = sheet.conditionalFormats.find((cf) => {
               const selMatch = selectionsMatch(cf);
               const styleMatch = stylesMatchExact(cf);
-              console.log('[handleSelectRule] Check sel+exactStyles:', {
-                cfId: cf.id,
-                selMatch,
-                styleMatch,
-                cfStyle: getStyle(cf),
-                ruleStyle: {
-                  bold: rule.bold,
-                  italic: rule.italic,
-                  underline: rule.underline,
-                  strike_through: rule.strike_through,
-                  text_color: rule.text_color,
-                  fill_color: rule.fill_color,
-                },
-              });
               return selMatch && styleMatch;
             });
-            if (existingRule) console.log('[handleSelectRule] Found by selection+exactStyles');
           }
 
           // Last resort: selection only (may be ambiguous)
           if (!existingRule && rule.selection) {
             existingRule = sheet.conditionalFormats.find((cf) => selectionsMatch(cf));
-            if (existingRule) console.log('[handleSelectRule] Found by selection only (ambiguous)');
           }
 
           if (existingRule) {
-            console.log('[handleSelectRule] Opening rule:', existingRule.id);
             // Highlight the selection
             try {
               const jsSelection = sheets.A1SelectionToJsSelection(existingRule.selection);
@@ -367,8 +310,6 @@ export const UpdateConditionalFormats = memo(
             // Open the specific rule for editing
             setShowConditionalFormat(existingRule.id);
             return;
-          } else {
-            console.log('[handleSelectRule] No matching rule found');
           }
         }
 

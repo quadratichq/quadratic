@@ -542,6 +542,7 @@ impl ConditionalFormatRule {
     /// - Numeric comparisons (GreaterThan, LessThan, etc.): return `false` (blank coerces to 0, which is often surprising)
     /// - Text conditions: return `false` (blank is not the same as empty string for these purposes)
     /// - Custom formulas: return `false` (user should explicitly opt-in)
+    ///
     /// Convert the rule to a formula string using the given anchor cell reference.
     /// For example, with anchor "B2", IsEmpty becomes "ISBLANK(B2)" and
     /// GreaterThan { value: 5 } becomes "B2>5".
