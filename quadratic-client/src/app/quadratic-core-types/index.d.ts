@@ -66,7 +66,7 @@ thresholds: Array<ColorScaleThreshold>,
  * When true, automatically inverts text color (white/black) based on
  * the fill color's luminance to ensure readability.
  */
-invert_text_on_dark: boolean | null, };
+invert_text_on_dark: boolean, };
 export type ColorScaleThreshold = { 
 /**
  * How to determine the threshold value.

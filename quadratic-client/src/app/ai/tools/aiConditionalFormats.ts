@@ -1,6 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
+import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import type {
+  A1Selection,
   ColorScale,
   ColorScaleThreshold,
   ColorScaleThresholdValueType,
@@ -9,6 +11,7 @@ import type {
   ConditionalFormatStyle,
   ConditionalFormatUpdate,
 } from '@/app/quadratic-core-types';
+import { conditionalFormatRuleToFormula } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
@@ -371,39 +374,36 @@ const isEmptyStyle = (style: ConditionalFormatStyle): boolean => {
   );
 };
 
+// Get the first cell (anchor) from an A1Selection for formula generation
+const getAnchorCellFromSelection = (selection: A1Selection): string => {
+  try {
+    const jsSelection = sheets.A1SelectionToJsSelection(selection);
+    const firstRangeStart = jsSelection.getFirstRangeStart(sheets.jsA1Context);
+    jsSelection.free();
+    if (firstRangeStart) {
+      return getA1Notation(Number(firstRangeStart.x), Number(firstRangeStart.y));
+    }
+  } catch {
+    // If conversion fails, fall back to cursor
+  }
+  // Fall back to cursor position
+  return getA1Notation(Number(selection.cursor.x), Number(selection.cursor.y));
+};
+
 const getExistingRuleFormula = (cf: ConditionalFormatClient): string => {
   // Only formula-based configs have rules
   if (cf.config.type !== 'Formula') {
     return 'TRUE()';
   }
-  const rule = cf.config.rule;
-  if (rule === 'IsEmpty') return 'ISBLANK(A1)';
-  if (rule === 'IsNotEmpty') return 'NOT(ISBLANK(A1))';
-  if ('TextContains' in rule) return `ISNUMBER(SEARCH("${rule.TextContains.value}", A1))`;
-  if ('TextNotContains' in rule) return `ISERROR(SEARCH("${rule.TextNotContains.value}", A1))`;
-  if ('TextStartsWith' in rule) return `LEFT(A1, ${rule.TextStartsWith.value.length})="${rule.TextStartsWith.value}"`;
-  if ('TextEndsWith' in rule) return `RIGHT(A1, ${rule.TextEndsWith.value.length})="${rule.TextEndsWith.value}"`;
-  if ('TextIsExactly' in rule) return `A1="${rule.TextIsExactly.value}"`;
-  if ('GreaterThan' in rule) return `A1>${formatValueForFormula(rule.GreaterThan.value)}`;
-  if ('GreaterThanOrEqual' in rule) return `A1>=${formatValueForFormula(rule.GreaterThanOrEqual.value)}`;
-  if ('LessThan' in rule) return `A1<${formatValueForFormula(rule.LessThan.value)}`;
-  if ('LessThanOrEqual' in rule) return `A1<=${formatValueForFormula(rule.LessThanOrEqual.value)}`;
-  if ('IsEqualTo' in rule) return `A1=${formatValueForFormula(rule.IsEqualTo.value)}`;
-  if ('IsNotEqualTo' in rule) return `A1<>${formatValueForFormula(rule.IsNotEqualTo.value)}`;
-  if ('IsBetween' in rule)
-    return `AND(A1>=${formatValueForFormula(rule.IsBetween.min)}, A1<=${formatValueForFormula(rule.IsBetween.max)})`;
-  if ('IsNotBetween' in rule)
-    return `OR(A1<${formatValueForFormula(rule.IsNotBetween.min)}, A1>${formatValueForFormula(rule.IsNotBetween.max)})`;
-  if ('Custom' in rule) return rule.Custom.formula;
-  return 'TRUE()'; // fallback
-};
 
-const formatValueForFormula = (
-  value: { Number: number } | { Text: string } | { CellRef: string } | { Bool: boolean }
-): string => {
-  if ('Number' in value) return value.Number.toString();
-  if ('Text' in value) return `"${value.Text}"`;
-  if ('CellRef' in value) return value.CellRef;
-  if ('Bool' in value) return value.Bool ? 'TRUE' : 'FALSE';
-  return '0';
+  // Get the anchor cell from the selection
+  const anchor = getAnchorCellFromSelection(cf.selection);
+
+  // Use the Rust WASM function to convert the rule to a formula string
+  try {
+    return conditionalFormatRuleToFormula(JSON.stringify(cf.config.rule), anchor);
+  } catch {
+    // Fallback if WASM function fails
+    return 'TRUE()';
+  }
 };

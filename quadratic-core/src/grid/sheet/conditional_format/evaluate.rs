@@ -1,13 +1,17 @@
 //! Conditional format evaluation for rendering.
 
+use std::collections::HashMap;
+
+use uuid::Uuid;
+
 use crate::{
     CellValue, Pos, Rect, RefAdjust, SheetPos, Value,
-    a1::A1Context,
+    a1::{A1Context, A1Selection},
     color::contrasting_text_color_hex,
     controller::GridController,
     formulas::{Ctx, adjust_references, ast::Formula, parse_formula},
     grid::{
-        SheetId,
+        Contiguous2D, SheetId,
         js_types::JsRenderCell,
         sheet::conditional_format::{
             ColorScale, ColorScaleThresholdValueType, ConditionalFormat, ConditionalFormatConfig,
@@ -236,20 +240,44 @@ impl GridController {
             .collect()
     }
 
-    /// Compute the color for a cell based on a color scale.
-    fn compute_color_scale_color(
+    /// Get or compute threshold values for a color scale, using a cache to avoid recomputation.
+    /// The cache is keyed by format ID and stores the computed threshold values.
+    fn get_or_compute_threshold_values<'a>(
         &self,
+        cache: &'a mut HashMap<Uuid, Vec<f64>>,
+        format_id: Uuid,
         color_scale: &ColorScale,
         sheet_id: SheetId,
-        selection: &crate::a1::A1Selection,
+        selection: &A1Selection,
+        a1_context: &A1Context,
+    ) -> &'a Vec<f64> {
+        cache.entry(format_id).or_insert_with(|| {
+            self.compute_color_scale_threshold_values(color_scale, sheet_id, selection, a1_context)
+        })
+    }
+
+    /// Compute the color for a cell based on a color scale, using a cache for threshold values.
+    /// This avoids recomputing threshold values for each cell in the selection (O(N²) -> O(N)).
+    fn compute_color_scale_color_cached(
+        &self,
+        cache: &mut HashMap<Uuid, Vec<f64>>,
+        format_id: Uuid,
+        color_scale: &ColorScale,
+        sheet_id: SheetId,
+        selection: &A1Selection,
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> Option<String> {
         let cell_value = self.get_cell_numeric_value(sheet_pos)?;
-        let threshold_values =
-            self.compute_color_scale_threshold_values(color_scale, sheet_id, selection, a1_context);
-
-        compute_color_for_value(color_scale, &threshold_values, cell_value)
+        let threshold_values = self.get_or_compute_threshold_values(
+            cache,
+            format_id,
+            color_scale,
+            sheet_id,
+            selection,
+            a1_context,
+        );
+        compute_color_for_value(color_scale, threshold_values, cell_value)
     }
 
     /// Evaluates all conditional formats that apply to a cell and returns
@@ -377,6 +405,9 @@ impl GridController {
             return;
         }
 
+        // Cache for color scale threshold values to avoid O(N²) recomputation
+        let mut threshold_cache: HashMap<Uuid, Vec<f64>> = HashMap::new();
+
         for cell in cells.iter_mut() {
             let pos = Pos {
                 x: cell.x,
@@ -413,9 +444,12 @@ impl GridController {
                     }
 
                     // Handle color scales with invert_text_on_dark
+                    // Uses cache to avoid recomputing thresholds for each cell
                     if let Some(color_scale) = cf.color_scale()
                         && color_scale.invert_text_on_dark
-                        && let Some(fill_color) = self.compute_color_scale_color(
+                        && let Some(fill_color) = self.compute_color_scale_color_cached(
+                            &mut threshold_cache,
+                            cf.id,
                             color_scale,
                             sheet_id,
                             &cf.selection,
@@ -457,12 +491,10 @@ impl GridController {
     /// Includes the preview format if one is set.
     pub fn get_conditional_format_fills(
         &self,
-        sheet_id: crate::grid::SheetId,
+        sheet_id: SheetId,
         rect: Rect,
         a1_context: &A1Context,
     ) -> Vec<(Rect, String)> {
-        use crate::grid::contiguous::Contiguous2D;
-
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return vec![];
         };
@@ -498,6 +530,8 @@ impl GridController {
         // Use Contiguous2D to store fill colors - later rules override earlier ones
         let mut fills: Contiguous2D<String> = Contiguous2D::new();
 
+        // Cache for color scale threshold values to avoid O(N²) recomputation
+        let mut threshold_cache: HashMap<Uuid, Vec<f64>> = HashMap::new();
         for y in rect.y_range() {
             for x in rect.x_range() {
                 let pos = Pos { x, y };
@@ -515,7 +549,10 @@ impl GridController {
                                 }
                                 ConditionalFormatConfig::ColorScale { color_scale } => {
                                     // Compute the interpolated color based on cell value
-                                    self.compute_color_scale_color(
+                                    // Uses cache to avoid recomputing thresholds for each cell
+                                    self.compute_color_scale_color_cached(
+                                        &mut threshold_cache,
+                                        cf.id,
                                         color_scale,
                                         sheet_id,
                                         &cf.selection,
