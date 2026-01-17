@@ -146,7 +146,15 @@ export const ColorScaleEditor = ({
       </div>
 
       {/* Preset Selector */}
-      <ColorScalePresets currentThresholds={thresholds} onSelectPreset={setThresholds} />
+      <ColorScalePresets
+        currentThresholds={thresholds}
+        onSelectPreset={(newThresholds, presetInvertTextOnDark) => {
+          setThresholds(newThresholds);
+          if (presetInvertTextOnDark !== undefined) {
+            setInvertTextOnDark(presetInvertTextOnDark);
+          }
+        }}
+      />
 
       {/* Gradient Preview */}
       <div
