@@ -109,10 +109,12 @@ pub async fn set_file_checkpoint(
 ) -> Result<()> {
     let s3_key = format!("{file_id}-{sequence_number}.grid");
 
-    // Use a transaction to prevent TOCTOU race conditions between insert and conflict check
-    let mut tx = pool.begin().await.map_err(QuadraticDatabase::from)?;
-
     // Try to insert, returning the id if successful
+    // Note: Not using a transaction here for better connection pool utilization.
+    // There's a small TOCTOU race window between insert and conflict check, but:
+    // - Same file's checkpoints are processed sequentially via pubsub
+    // - Checkpoints aren't deleted during normal operation
+    // - Worst case is a false conflict that self-corrects on retry
     let insert_query = "
         INSERT INTO \"FileCheckpoint\" (file_id, sequence_number, s3_bucket, s3_key, version, transactions_hash)
         SELECT f.\"id\", $2, $3, $4, $5, $6
@@ -128,17 +130,16 @@ pub async fn set_file_checkpoint(
         .bind(&s3_key)
         .bind(version)
         .bind(transactions_hash)
-        .fetch_optional(&mut *tx)
+        .fetch_optional(pool)
         .await
         .map_err(QuadraticDatabase::from)?;
 
     // If we got a row back, the insert succeeded
     if result.is_some() {
-        tx.commit().await.map_err(QuadraticDatabase::from)?;
         return Ok(());
     }
 
-    // Conflict occurred - check if the existing hash matches (within the same transaction)
+    // Conflict occurred - check if the existing hash matches
     let check_query = "
         SELECT fc.transactions_hash
         FROM \"FileCheckpoint\" fc
@@ -148,12 +149,9 @@ pub async fn set_file_checkpoint(
     let existing_hash: Option<String> = sqlx::query_scalar(check_query)
         .bind(file_id)
         .bind(sequence_number)
-        .fetch_optional(&mut *tx)
+        .fetch_optional(pool)
         .await
         .map_err(QuadraticDatabase::from)?;
-
-    // Commit the transaction (read-only at this point, but completes the transaction)
-    tx.commit().await.map_err(QuadraticDatabase::from)?;
 
     match existing_hash {
         Some(hash) if hash == transactions_hash => {
