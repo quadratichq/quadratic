@@ -3,6 +3,7 @@
 use crate::{
     CellValue, Pos, Rect, RefAdjust, SheetPos, Value,
     a1::A1Context,
+    color::contrasting_text_color_hex,
     controller::GridController,
     formulas::{Ctx, adjust_references, ast::Formula, parse_formula},
     grid::{
@@ -390,24 +391,45 @@ impl GridController {
             for cf in &overlapping_formats {
                 if cf.selection.contains_pos(pos, a1_context)
                     && self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context)
-                    && let Some(style) = cf.style()
                 {
-                    if style.bold.is_some() {
-                        combined_style.bold = style.bold;
+                    // Handle formula-based formats with explicit styles
+                    if let Some(style) = cf.style() {
+                        if style.bold.is_some() {
+                            combined_style.bold = style.bold;
+                        }
+                        if style.italic.is_some() {
+                            combined_style.italic = style.italic;
+                        }
+                        if style.underline.is_some() {
+                            combined_style.underline = style.underline;
+                        }
+                        if style.strike_through.is_some() {
+                            combined_style.strike_through = style.strike_through;
+                        }
+                        if style.text_color.is_some() {
+                            combined_style.text_color = style.text_color.clone();
+                        }
+                        any_applied = true;
                     }
-                    if style.italic.is_some() {
-                        combined_style.italic = style.italic;
+
+                    // Handle color scales with invert_text_on_dark
+                    if let Some(color_scale) = cf.color_scale()
+                        && color_scale.invert_text_on_dark
+                    {
+                        // Compute the fill color for this cell, then derive text color
+                        if let Some(fill_color) = self.compute_color_scale_color(
+                            color_scale,
+                            sheet_id,
+                            &cf.selection,
+                            sheet_pos,
+                            a1_context,
+                        ) {
+                            if let Some(text_color) = contrasting_text_color_hex(&fill_color) {
+                                combined_style.text_color = Some(text_color);
+                                any_applied = true;
+                            }
+                        }
                     }
-                    if style.underline.is_some() {
-                        combined_style.underline = style.underline;
-                    }
-                    if style.strike_through.is_some() {
-                        combined_style.strike_through = style.strike_through;
-                    }
-                    if style.text_color.is_some() {
-                        combined_style.text_color = style.text_color.clone();
-                    }
-                    any_applied = true;
                 }
             }
 
@@ -1269,6 +1291,7 @@ mod tests {
                         ColorScaleThreshold::min("#ff0000"),
                         ColorScaleThreshold::max("#00ff00"),
                     ],
+                    invert_text_on_dark: false,
                 },
             },
             apply_to_blank: None,
@@ -1338,6 +1361,7 @@ mod tests {
                         ColorScaleThreshold::min("#ff0000"), // red for min
                         ColorScaleThreshold::max("#00ff00"), // green for max
                     ],
+                    invert_text_on_dark: false,
                 },
             },
             apply_to_blank: None,

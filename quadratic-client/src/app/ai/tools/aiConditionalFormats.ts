@@ -69,6 +69,9 @@ const convertConditionalFormatToText = (cf: ConditionalFormatClient, sheetId: st
   } else if (cf.config.type === 'ColorScale') {
     const colors = cf.config.color_scale.thresholds.map((t) => t.color).join(' → ');
     response += `  Type: Color Scale (${colors})\n`;
+    if (cf.config.color_scale.invert_text_on_dark) {
+      response += `  Auto-contrast text: enabled\n`;
+    }
   }
 
   response += `  Apply to empty cells: ${cf.apply_to_blank}\n`;
@@ -186,10 +189,12 @@ const convertAIThresholdToInternal = (
 
 // Convert AI color scale thresholds to internal format
 const convertAIColorScaleThresholdsToInternal = (
-  aiThresholds: NonNullable<ConditionalFormatAction['color_scale_thresholds']>
+  aiThresholds: NonNullable<ConditionalFormatAction['color_scale_thresholds']>,
+  autoContrastText?: boolean | null
 ): ColorScale => {
   return {
     thresholds: aiThresholds.map(convertAIThresholdToInternal),
+    invert_text_on_dark: autoContrastText ?? false,
   };
 };
 
@@ -202,6 +207,7 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
     rule: ruleFormula,
     apply_to_empty,
     color_scale_thresholds,
+    auto_contrast_text,
     ...styleProps
   } = rule;
 
@@ -229,7 +235,7 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
           );
         }
 
-        const internalColorScale = convertAIColorScaleThresholdsToInternal(color_scale_thresholds);
+        const internalColorScale = convertAIColorScaleThresholdsToInternal(color_scale_thresholds, auto_contrast_text);
 
         const update: ConditionalFormatUpdate = {
           id: null,
@@ -290,8 +296,14 @@ const processConditionalFormatRule = (rule: ConditionalFormatAction, sheet: Shee
         // Update color scale format
         const existingColorScale = existing.config.color_scale;
         const newColorScale = color_scale_thresholds
-          ? convertAIColorScaleThresholdsToInternal(color_scale_thresholds)
-          : existingColorScale;
+          ? convertAIColorScaleThresholdsToInternal(color_scale_thresholds, auto_contrast_text)
+          : {
+              ...existingColorScale,
+              invert_text_on_dark:
+                auto_contrast_text !== undefined
+                  ? (auto_contrast_text ?? false)
+                  : existingColorScale.invert_text_on_dark,
+            };
 
         const update: ConditionalFormatUpdate = {
           id,

@@ -8,6 +8,8 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::color::interpolate_color;
+
 /// Determines how a color scale threshold value is calculated.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ColorScaleThresholdValueType {
@@ -91,6 +93,11 @@ pub struct ColorScale {
     /// Must have at least 2 thresholds (min and max).
     /// Thresholds should be ordered from lowest to highest value.
     pub thresholds: Vec<ColorScaleThreshold>,
+
+    /// When true, automatically inverts text color (white/black) based on
+    /// the fill color's luminance to ensure readability.
+    #[serde(default)]
+    pub invert_text_on_dark: bool,
 }
 
 impl Default for ColorScale {
@@ -108,6 +115,7 @@ impl ColorScale {
                 ColorScaleThreshold::min(min_color),
                 ColorScaleThreshold::max(max_color),
             ],
+            invert_text_on_dark: false,
         }
     }
 
@@ -123,6 +131,7 @@ impl ColorScale {
                 ColorScaleThreshold::percentile(50.0, mid_color),
                 ColorScaleThreshold::max(max_color),
             ],
+            invert_text_on_dark: false,
         }
     }
 
@@ -157,41 +166,6 @@ impl ColorScale {
             None
         }
     }
-}
-
-/// Parse a hex color string (e.g., "#ff0000" or "ff0000") into RGB components.
-fn parse_hex_color(color: &str) -> Option<(u8, u8, u8)> {
-    let hex = color.trim_start_matches('#');
-    if hex.len() != 6 {
-        return None;
-    }
-    let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-    let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-    let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-    Some((r, g, b))
-}
-
-/// Convert RGB components to a hex color string.
-fn rgb_to_hex(r: u8, g: u8, b: u8) -> String {
-    format!("#{:02x}{:02x}{:02x}", r, g, b)
-}
-
-/// Linear interpolation between two values.
-fn lerp(a: f64, b: f64, t: f64) -> f64 {
-    a + (b - a) * t
-}
-
-/// Interpolate between two colors based on a normalized value (0.0 to 1.0).
-pub fn interpolate_color(color1: &str, color2: &str, t: f64) -> Option<String> {
-    let t = t.clamp(0.0, 1.0);
-    let (r1, g1, b1) = parse_hex_color(color1)?;
-    let (r2, g2, b2) = parse_hex_color(color2)?;
-
-    let r = lerp(r1 as f64, r2 as f64, t).round() as u8;
-    let g = lerp(g1 as f64, g2 as f64, t).round() as u8;
-    let b = lerp(b1 as f64, b2 as f64, t).round() as u8;
-
-    Some(rgb_to_hex(r, g, b))
 }
 
 /// Compute the interpolated color for a value based on the color scale thresholds.
@@ -255,6 +229,7 @@ pub fn compute_color_for_value(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::color::parse_hex_color;
 
     #[test]
     fn test_color_scale_default() {
@@ -335,44 +310,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_hex_color() {
-        assert_eq!(parse_hex_color("#ff0000"), Some((255, 0, 0)));
-        assert_eq!(parse_hex_color("00ff00"), Some((0, 255, 0)));
-        assert_eq!(parse_hex_color("#0000ff"), Some((0, 0, 255)));
-        assert_eq!(parse_hex_color("#ffffff"), Some((255, 255, 255)));
-        assert_eq!(parse_hex_color("#000000"), Some((0, 0, 0)));
-        assert_eq!(parse_hex_color("invalid"), None);
-    }
-
-    #[test]
-    fn test_rgb_to_hex() {
-        assert_eq!(rgb_to_hex(255, 0, 0), "#ff0000");
-        assert_eq!(rgb_to_hex(0, 255, 0), "#00ff00");
-        assert_eq!(rgb_to_hex(0, 0, 255), "#0000ff");
-    }
-
-    #[test]
-    fn test_interpolate_color() {
-        // Interpolate from red to green
-        assert_eq!(
-            interpolate_color("#ff0000", "#00ff00", 0.0),
-            Some("#ff0000".to_string())
-        );
-        assert_eq!(
-            interpolate_color("#ff0000", "#00ff00", 1.0),
-            Some("#00ff00".to_string())
-        );
-        // 50% should give yellow-ish (127, 128, 0 due to rounding)
-        let mid = interpolate_color("#ff0000", "#00ff00", 0.5).unwrap();
-        assert!(mid.starts_with("#"));
-        // Check it's roughly in the middle
-        let (r, g, b) = parse_hex_color(&mid).unwrap();
-        assert!(r > 100 && r < 150);
-        assert!(g > 100 && g < 150);
-        assert_eq!(b, 0);
-    }
-
-    #[test]
     fn test_compute_color_for_value_two_color() {
         let scale = ColorScale::two_color("#ff0000", "#00ff00");
         let threshold_values = vec![0.0, 100.0];
@@ -440,6 +377,7 @@ mod tests {
                 ColorScaleThreshold::max("#00ff00"), // Green at max (first position)
                 ColorScaleThreshold::min("#ff0000"), // Red at min (second position)
             ],
+            invert_text_on_dark: false,
         };
         // The threshold_values will be inverted: [100.0, 0.0]
         let threshold_values = vec![100.0, 0.0];
@@ -496,6 +434,7 @@ mod tests {
                 ColorScaleThreshold::percentile(50.0, "#ffff00"), // Yellow at mid
                 ColorScaleThreshold::min("#ff0000"), // Red at min (last)
             ],
+            invert_text_on_dark: false,
         };
         // Threshold values will be: [100.0, 50.0, 0.0] (inverted order)
         let threshold_values = vec![100.0, 50.0, 0.0];

@@ -592,6 +592,7 @@ export const AIToolsArgsSchema = {
           )
           .nullable()
           .optional(),
+        auto_contrast_text: booleanNullableOptionalSchema,
       })
     ),
   }),
@@ -3019,6 +3020,11 @@ You can perform multiple operations (create/update/delete) in a single call.`,
                   additionalProperties: false,
                 },
               },
+              auto_contrast_text: {
+                type: ['boolean', 'null'],
+                description:
+                  'For color scale formats only. When true, automatically switches text color between black and white based on the background color luminance to ensure readability. Useful when using dark colors in the scale.',
+              },
             },
             required: ['action'],
             additionalProperties: false,
@@ -3065,6 +3071,8 @@ Threshold value_types:
 - "percent": Percent of the range, 0-100 (requires value field)
 - "percentile": Percentile of values, 0-100 (requires value field)
 
+Optional: "auto_contrast_text": true - Automatically switches text between black/white based on background darkness for readability.
+
 Common color scale examples:
 - Red to Green (2-color): min=#FF0000 (red), max=#00FF00 (green)
 - Traffic Light (3-color): min=#FF0000 (red), 50th percentile=#FFFF00 (yellow), max=#00FF00 (green)
@@ -3080,9 +3088,10 @@ Example - 2-color scale (low=red, high=green):
     { "value_type": "min", "color": "#FF0000" },
     { "value_type": "max", "color": "#00FF00" }
   ]
-}
+},
+"auto_contrast_text": false
 
-Example - 3-color scale (red-yellow-green traffic light):
+Example - 3-color scale with auto-contrast text:
 {
   "action": "create",
   "type": "color_scale",
@@ -3091,7 +3100,8 @@ Example - 3-color scale (red-yellow-green traffic light):
     { "value_type": "min", "color": "#FF0000" },
     { "value_type": "percentile", "value": 50, "color": "#FFFF00" },
     { "value_type": "max", "color": "#00FF00" }
-  ]
+  ],
+  "auto_contrast_text": true
 }
 
 IMPORTANT FOR TABLE COLUMNS: Always use table column references like "Table_Name[Column Name]" instead of A1 ranges.

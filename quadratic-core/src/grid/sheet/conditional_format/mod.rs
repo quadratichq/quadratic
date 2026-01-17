@@ -74,11 +74,13 @@ impl ConditionalFormatConfig {
         }
     }
 
-    /// Returns true if this config has non-fill styles (only applicable to formula-based).
+    /// Returns true if this config has non-fill styles (text styling).
+    /// For formula-based formats, checks if any text style is set.
+    /// For color scales, returns true if `invert_text_on_dark` is enabled.
     pub fn has_non_fill_style(&self) -> bool {
         match self {
             ConditionalFormatConfig::Formula { style, .. } => style.has_non_fill_style(),
-            ConditionalFormatConfig::ColorScale { .. } => false,
+            ConditionalFormatConfig::ColorScale { color_scale } => color_scale.invert_text_on_dark,
         }
     }
 }

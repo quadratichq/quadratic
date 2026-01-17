@@ -68,9 +68,7 @@ fn export_color_scale_threshold_value_type(
     }
 }
 
-fn import_color_scale_threshold(
-    schema: current::ColorScaleThresholdSchema,
-) -> ColorScaleThreshold {
+fn import_color_scale_threshold(schema: current::ColorScaleThresholdSchema) -> ColorScaleThreshold {
     ColorScaleThreshold {
         value_type: import_color_scale_threshold_value_type(schema.value_type),
         color: schema.color,
@@ -93,6 +91,7 @@ fn import_color_scale(schema: current::ColorScaleSchema) -> ColorScale {
             .into_iter()
             .map(import_color_scale_threshold)
             .collect(),
+        invert_text_on_dark: schema.invert_text_on_dark,
     }
 }
 
@@ -103,10 +102,13 @@ fn export_color_scale(color_scale: &ColorScale) -> current::ColorScaleSchema {
             .iter()
             .map(export_color_scale_threshold)
             .collect(),
+        invert_text_on_dark: color_scale.invert_text_on_dark,
     }
 }
 
-fn import_config(schema: current::ConditionalFormatConfigSchema) -> Result<ConditionalFormatConfig> {
+fn import_config(
+    schema: current::ConditionalFormatConfigSchema,
+) -> Result<ConditionalFormatConfig> {
     match schema {
         current::ConditionalFormatConfigSchema::Formula { rule, style } => {
             Ok(ConditionalFormatConfig::Formula {
