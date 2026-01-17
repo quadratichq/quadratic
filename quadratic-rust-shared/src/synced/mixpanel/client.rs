@@ -58,11 +58,11 @@ impl SyncedClient for MixpanelClient {
         stream: &str,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Option<HashMap<String, Bytes>>> {
+    ) -> Result<HashMap<String, Bytes>> {
         let params = ExportParams::new(start_date, end_date);
 
         match stream {
-            "events" => self.export_events_streaming(params).await.map(Some),
+            "events" => self.export_events_streaming(params).await,
             _ => Err(SharedError::Synced("Not implemented".to_string())),
         }
     }

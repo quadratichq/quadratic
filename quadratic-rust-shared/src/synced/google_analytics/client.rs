@@ -100,7 +100,7 @@ impl SyncedClient for GoogleAnalyticsClient {
         stream: &str,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Option<HashMap<String, Bytes>>> {
+    ) -> Result<HashMap<String, Bytes>> {
         // look up the report configuration
         let report = REPORTS
             .get(stream)
@@ -114,7 +114,6 @@ impl SyncedClient for GoogleAnalyticsClient {
             None,
         )
         .await
-        .map(Some)
     }
 }
 
