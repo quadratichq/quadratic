@@ -108,11 +108,9 @@ pub(crate) async fn process_queue_for_room(
     let start = Utc::now();
     let channel = &file_id.to_string();
 
-    let pool = &state.pool;
-
     // When a file is created in API, a zero checkpoint is created, so we
     // should always expect a return value.
-    let checkpoint_sequence_num = get_max_sequence_number(&pool, &file_id)
+    let checkpoint_sequence_num = get_max_sequence_number(&state.pool, &file_id)
         .await
         .map_err(|e| FilesError::ApiSequenceNumberNotFound(file_id, e.to_string()))?;
 
@@ -205,7 +203,7 @@ pub(crate) async fn process_queue_for_room(
 
     // update the checkpoint in quadratic-api
     set_file_checkpoint(
-        &pool,
+        &state.pool,
         &file_id,
         last_sequence_num as i32,
         &state.settings.checkpoint_bucket_name,
