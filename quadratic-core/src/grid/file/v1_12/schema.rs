@@ -142,6 +142,11 @@ pub struct ColorScaleThresholdSchema {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ColorScaleSchema {
     pub thresholds: Vec<ColorScaleThresholdSchema>,
+
+    /// When true, automatically inverts text color (white/black) based on
+    /// the fill color's luminance to ensure readability.
+    #[serde(default)]
+    pub invert_text_on_dark: bool,
 }
 
 /// Schema for a conditional format configuration (formula-based or color scale).

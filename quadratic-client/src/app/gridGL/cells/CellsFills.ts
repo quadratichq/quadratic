@@ -170,9 +170,9 @@ export class CellsFills extends Container {
       this.fillsByHash.clear();
       this.loadedHashes.clear();
       this.lastViewportHashBounds = undefined;
-      // Immediately re-request hashes for the current viewport
+      // Re-request hashes for the current viewport (needed for blank cells
+      // that may now have fills due to apply_to_blank option)
       this.updateViewportHashes();
-      this.drawCells();
     }
   };
 

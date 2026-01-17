@@ -2,9 +2,19 @@
 
 use uuid::Uuid;
 
-use crate::grid::sheet::conditional_format::ConditionalFormatUpdate;
+use crate::grid::sheet::conditional_format::{ConditionalFormatRule, ConditionalFormatUpdate};
 
 use super::*;
+
+/// Converts a ConditionalFormatRule to a formula string.
+/// Takes a JSON-serialized ConditionalFormatRule and an anchor cell reference (e.g., "A1", "B2").
+/// Returns the formula string (e.g., "ISBLANK(B2)", "B2>5").
+#[wasm_bindgen(js_name = "conditionalFormatRuleToFormula")]
+pub fn conditional_format_rule_to_formula(rule_json: String, anchor: String) -> Result<String, JsValue> {
+    let rule: ConditionalFormatRule = serde_json::from_str(&rule_json)
+        .map_err(|e| JsValue::from_str(&format!("Error parsing rule: {e}")))?;
+    Ok(rule.to_formula_string(&anchor))
+}
 
 #[wasm_bindgen]
 impl GridController {

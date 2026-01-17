@@ -10,6 +10,8 @@ export interface ColorScalePreset {
   id: string;
   name: string;
   thresholds: ColorScaleThreshold[];
+  /** When true, auto-contrast text is enabled by default for this preset */
+  invertTextOnDark?: boolean;
 }
 
 // Helper to create thresholds with Min, mid-percentile, and Max
@@ -73,11 +75,13 @@ export const COLOR_SCALE_PRESETS: ColorScalePreset[] = [
     id: 'green-intensity',
     name: 'Green',
     thresholds: createTwoPointScale('#dcfce7', '#15803d'),
+    invertTextOnDark: true,
   },
   {
     id: 'blue-intensity',
     name: 'Blue',
     thresholds: createTwoPointScale('#dbeafe', '#1d4ed8'),
+    invertTextOnDark: true,
   },
   {
     id: 'red-intensity',
@@ -116,6 +120,7 @@ export const COLOR_SCALE_PRESETS: ColorScalePreset[] = [
     id: 'purple-seq',
     name: 'Purple',
     thresholds: createTwoPointScale('#ede9fe', '#6d28d9'),
+    invertTextOnDark: true,
   },
   {
     id: 'spectrum',
@@ -126,6 +131,7 @@ export const COLOR_SCALE_PRESETS: ColorScalePreset[] = [
     id: 'ocean-depth',
     name: 'Ocean',
     thresholds: createFourPointScale('#a5f3fc', '#22d3ee', '#0891b2', '#164e63'),
+    invertTextOnDark: true,
   },
   {
     id: 'aurora',
@@ -146,7 +152,7 @@ export const getGradientFromThresholds = (thresholds: ColorScaleThreshold[]): st
 
 interface ColorScalePresetsProps {
   currentThresholds: ColorScaleThreshold[];
-  onSelectPreset: (thresholds: ColorScaleThreshold[]) => void;
+  onSelectPreset: (thresholds: ColorScaleThreshold[], invertTextOnDark?: boolean) => void;
 }
 
 export const ColorScalePresets = ({ currentThresholds, onSelectPreset }: ColorScalePresetsProps) => {
@@ -159,7 +165,7 @@ export const ColorScalePresets = ({ currentThresholds, onSelectPreset }: ColorSc
   }, [currentThresholds]);
 
   const handleSelect = (preset: ColorScalePreset) => {
-    onSelectPreset([...preset.thresholds]);
+    onSelectPreset([...preset.thresholds], preset.invertTextOnDark);
     setOpen(false);
   };
 

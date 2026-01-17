@@ -26,6 +26,12 @@ pub enum ConditionalFormatValue {
     Bool(bool),
 }
 
+/// Escape a string for use inside double quotes in a formula.
+/// Double quotes are escaped by doubling them: `"` → `""`.
+fn escape_formula_string(s: &str) -> String {
+    s.replace('"', "\"\"")
+}
+
 impl ConditionalFormatValue {
     /// Convert the value to a string for display
     pub fn to_display_string(&self) -> String {
@@ -34,6 +40,23 @@ impl ConditionalFormatValue {
             ConditionalFormatValue::Text(s) => s.clone(),
             ConditionalFormatValue::CellRef(s) => s.clone(),
             ConditionalFormatValue::Bool(b) => b.to_string().to_uppercase(),
+        }
+    }
+
+    /// Convert the value to a string suitable for use in a formula.
+    /// Text values are quoted and escaped, numbers/cell refs/bools are not.
+    pub fn to_formula_string(&self) -> String {
+        match self {
+            ConditionalFormatValue::Number(n) => n.to_string(),
+            ConditionalFormatValue::Text(s) => format!("\"{}\"", escape_formula_string(s)),
+            ConditionalFormatValue::CellRef(s) => s.clone(),
+            ConditionalFormatValue::Bool(b) => {
+                if *b {
+                    "TRUE".to_string()
+                } else {
+                    "FALSE".to_string()
+                }
+            }
         }
     }
 }
@@ -519,6 +542,89 @@ impl ConditionalFormatRule {
     /// - Numeric comparisons (GreaterThan, LessThan, etc.): return `false` (blank coerces to 0, which is often surprising)
     /// - Text conditions: return `false` (blank is not the same as empty string for these purposes)
     /// - Custom formulas: return `false` (user should explicitly opt-in)
+    /// Convert the rule to a formula string using the given anchor cell reference.
+    /// For example, with anchor "B2", IsEmpty becomes "ISBLANK(B2)" and
+    /// GreaterThan { value: 5 } becomes "B2>5".
+    pub fn to_formula_string(&self, anchor: &str) -> String {
+        match self {
+            ConditionalFormatRule::IsEmpty => format!("ISBLANK({})", anchor),
+            ConditionalFormatRule::IsNotEmpty => format!("NOT(ISBLANK({}))", anchor),
+
+            ConditionalFormatRule::TextContains { value } => {
+                format!(
+                    "ISNUMBER(SEARCH(\"{}\", {}))",
+                    escape_formula_string(value),
+                    anchor
+                )
+            }
+            ConditionalFormatRule::TextNotContains { value } => {
+                format!(
+                    "ISERROR(SEARCH(\"{}\", {}))",
+                    escape_formula_string(value),
+                    anchor
+                )
+            }
+            ConditionalFormatRule::TextStartsWith { value } => {
+                format!(
+                    "LEFT({}, {})=\"{}\"",
+                    anchor,
+                    value.len(),
+                    escape_formula_string(value)
+                )
+            }
+            ConditionalFormatRule::TextEndsWith { value } => {
+                format!(
+                    "RIGHT({}, {})=\"{}\"",
+                    anchor,
+                    value.len(),
+                    escape_formula_string(value)
+                )
+            }
+            ConditionalFormatRule::TextIsExactly { value } => {
+                format!("{}=\"{}\"", anchor, escape_formula_string(value))
+            }
+
+            ConditionalFormatRule::GreaterThan { value } => {
+                format!("{}>{}", anchor, value.to_formula_string())
+            }
+            ConditionalFormatRule::GreaterThanOrEqual { value } => {
+                format!("{}>={}", anchor, value.to_formula_string())
+            }
+            ConditionalFormatRule::LessThan { value } => {
+                format!("{}<{}", anchor, value.to_formula_string())
+            }
+            ConditionalFormatRule::LessThanOrEqual { value } => {
+                format!("{}<={}", anchor, value.to_formula_string())
+            }
+            ConditionalFormatRule::IsEqualTo { value } => {
+                format!("{}={}", anchor, value.to_formula_string())
+            }
+            ConditionalFormatRule::IsNotEqualTo { value } => {
+                format!("{}<>{}", anchor, value.to_formula_string())
+            }
+            ConditionalFormatRule::IsBetween { min, max } => {
+                format!(
+                    "AND({}>={}, {}<={})",
+                    anchor,
+                    min.to_formula_string(),
+                    anchor,
+                    max.to_formula_string()
+                )
+            }
+            ConditionalFormatRule::IsNotBetween { min, max } => {
+                format!(
+                    "OR({}<{}, {}>{})",
+                    anchor,
+                    min.to_formula_string(),
+                    anchor,
+                    max.to_formula_string()
+                )
+            }
+
+            ConditionalFormatRule::Custom { formula } => formula.clone(),
+        }
+    }
+
     pub fn default_apply_to_blank(&self) -> bool {
         match self {
             // These rules are specifically about blank cells

@@ -6,6 +6,7 @@ import {
 } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormat/ColorScalePresets';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
@@ -42,9 +43,16 @@ const getNumericValue = (valueType: ColorScaleThreshold['value_type']): number |
 interface ColorScaleEditorProps {
   thresholds: ColorScaleThreshold[];
   setThresholds: (thresholds: ColorScaleThreshold[]) => void;
+  invertTextOnDark: boolean;
+  setInvertTextOnDark: (value: boolean) => void;
 }
 
-export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditorProps) => {
+export const ColorScaleEditor = ({
+  thresholds,
+  setThresholds,
+  invertTextOnDark,
+  setInvertTextOnDark,
+}: ColorScaleEditorProps) => {
   const [errors, setErrors] = useState<Record<number, string | undefined>>({});
   const [openColorPicker, setOpenColorPicker] = useState<number | null>(null);
 
@@ -138,7 +146,15 @@ export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditor
       </div>
 
       {/* Preset Selector */}
-      <ColorScalePresets currentThresholds={thresholds} onSelectPreset={setThresholds} />
+      <ColorScalePresets
+        currentThresholds={thresholds}
+        onSelectPreset={(newThresholds, presetInvertTextOnDark) => {
+          setThresholds(newThresholds);
+          if (presetInvertTextOnDark !== undefined) {
+            setInvertTextOnDark(presetInvertTextOnDark);
+          }
+        }}
+      />
 
       {/* Gradient Preview */}
       <div
@@ -236,6 +252,22 @@ export const ColorScaleEditor = ({ thresholds, setThresholds }: ColorScaleEditor
       <Button variant="outline" size="sm" onClick={addThreshold} className="self-start">
         + Add Color Stop
       </Button>
+
+      {/* Invert Text on Dark Checkbox */}
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="invert-text-on-dark"
+          checked={invertTextOnDark}
+          onCheckedChange={(checked) => setInvertTextOnDark(checked === true)}
+        />
+        <Label htmlFor="invert-text-on-dark" className="cursor-pointer text-sm font-normal">
+          Auto-contrast text color
+        </Label>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        When enabled, text will automatically switch between black and white based on the background color to ensure
+        readability.
+      </p>
     </div>
   );
 };

@@ -61,7 +61,12 @@ export type ColorScale = {
  * Must have at least 2 thresholds (min and max).
  * Thresholds should be ordered from lowest to highest value.
  */
-thresholds: Array<ColorScaleThreshold>, };
+thresholds: Array<ColorScaleThreshold>, 
+/**
+ * When true, automatically inverts text color (white/black) based on
+ * the fill color's luminance to ensure readability.
+ */
+invert_text_on_dark: boolean, };
 export type ColorScaleThreshold = { 
 /**
  * How to determine the threshold value.

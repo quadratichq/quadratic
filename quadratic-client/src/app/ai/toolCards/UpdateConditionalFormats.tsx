@@ -31,6 +31,13 @@ const getActionColor = (action: string): string => {
 
 // Get style summary for display
 const getStyleSummary = (rule: RuleEntry): string => {
+  // Check if this is a color scale
+  if (rule.type === 'color_scale' && rule.color_scale_thresholds) {
+    const colors = rule.color_scale_thresholds.map((t) => t.color).join(' → ');
+    return `color scale: ${colors}`;
+  }
+
+  // Formula-based format
   const parts: string[] = [];
   if (rule.bold) parts.push('bold');
   if (rule.italic) parts.push('italic');
