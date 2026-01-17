@@ -223,12 +223,21 @@ impl GridController {
                     ColorScaleThresholdValueType::Max => max_val,
                     ColorScaleThresholdValueType::Number(n) => *n,
                     ColorScaleThresholdValueType::Percentile(p) => {
-                        // Compute the p-th percentile
+                        // Compute the p-th percentile using linear interpolation
+                        // (matches Excel's PERCENTILE.INC behavior)
                         if values.is_empty() {
                             0.0
                         } else {
-                            let idx = (p / 100.0 * (values.len() - 1) as f64).round() as usize;
-                            values[idx.min(values.len() - 1)]
+                            let k = p / 100.0;
+                            let n = values.len();
+                            let pos = k * (n as f64 - 1.0);
+                            let lower = pos.floor() as usize;
+                            let frac = pos - lower as f64;
+                            if lower + 1 >= n {
+                                values[lower]
+                            } else {
+                                values[lower] + frac * (values[lower + 1] - values[lower])
+                            }
                         }
                     }
                     ColorScaleThresholdValueType::Percent(p) => {
@@ -258,6 +267,7 @@ impl GridController {
 
     /// Compute the color for a cell based on a color scale, using a cache for threshold values.
     /// This avoids recomputing threshold values for each cell in the selection (O(N²) -> O(N)).
+    #[allow(clippy::too_many_arguments)]
     fn compute_color_scale_color_cached(
         &self,
         cache: &mut HashMap<Uuid, Vec<f64>>,
@@ -1442,5 +1452,83 @@ mod tests {
             a15_fill.is_none(),
             "A15 (blank) should NOT have a fill - blank cells should be excluded"
         );
+    }
+
+    #[test]
+    fn test_color_scale_percentile_uses_linear_interpolation() {
+        // Test that percentile thresholds use linear interpolation (Excel's PERCENTILE.INC)
+        // With values [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], the 50th percentile should be 5.5
+        // (interpolated between index 4 (value=5) and index 5 (value=6))
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set values 1-10 in A1:A10
+        for i in 1..=10 {
+            let pos = crate::Pos::test_a1(&format!("A{}", i));
+            gc.set_cell_value(pos.to_sheet_pos(sheet_id), i.to_string(), None, false);
+        }
+
+        // Create a color scale with percentile thresholds
+        let cf = ConditionalFormat {
+            id: uuid::Uuid::new_v4(),
+            selection: crate::a1::A1Selection::test_a1("A1:A10"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"),           // red at min (1)
+                        ColorScaleThreshold::percentile(50.0, "#ffff00"), // yellow at 50th percentile
+                        ColorScaleThreshold::max("#00ff00"),           // green at max (10)
+                    ],
+                    invert_text_on_dark: false,
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id)
+            .conditional_formats
+            .set(cf.clone(), sheet_id);
+
+        // Get fills
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a10 = crate::Pos::test_a1("A10");
+        let rect = Rect::new_span(pos_a1, pos_a10);
+        let fills = gc.get_conditional_format_fills(sheet_id, rect, gc.a1_context());
+
+        // With linear interpolation (PERCENTILE.INC), for n=10 values:
+        // pos = 0.5 * (10 - 1) = 4.5
+        // So 50th percentile = values[4] + 0.5 * (values[5] - values[4]) = 5 + 0.5 * 1 = 5.5
+        //
+        // Therefore:
+        // - Value 5 (A5) is below 50th percentile, should be red-yellow blend
+        // - Value 6 (A6) is above 50th percentile, should be yellow-green blend
+
+        let pos_a5 = crate::Pos::test_a1("A5");
+        let pos_a6 = crate::Pos::test_a1("A6");
+
+        let a5_fill = fills.iter().find(|(r, _)| r.contains(pos_a5));
+        let a6_fill = fills.iter().find(|(r, _)| r.contains(pos_a6));
+
+        assert!(a5_fill.is_some(), "A5 should have a fill");
+        assert!(a6_fill.is_some(), "A6 should have a fill");
+
+        // A5 (value=5) is in red-yellow segment, A6 (value=6) is in yellow-green segment
+        // The colors should be different since they're on opposite sides of the 50th percentile
+        let a5_color = &a5_fill.unwrap().1;
+        let a6_color = &a6_fill.unwrap().1;
+
+        assert_ne!(a5_color, a6_color, "A5 and A6 should have different colors (on opposite sides of 50th percentile)");
+
+        // A5 should have more red (it's in red-yellow segment)
+        // A6 should have more green (it's in yellow-green segment)
+        let (a5_r, _, a5_b) = crate::color::parse_hex_color(a5_color).unwrap();
+        let (a6_r, _, a6_b) = crate::color::parse_hex_color(a6_color).unwrap();
+
+        assert!(a5_r > a6_r, "A5 should have more red than A6");
+        assert!(a5_b == 0 && a6_b == 0, "Both should have no blue component");
     }
 }
