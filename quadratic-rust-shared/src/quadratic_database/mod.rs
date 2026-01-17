@@ -1,7 +1,9 @@
 pub mod checkpoint;
 pub mod error;
+pub mod pool;
 
 // re-exports
+pub use pool::Pool;
 pub use sqlx::PgPool;
 
 use std::time::Duration;
@@ -53,10 +55,6 @@ pub async fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
     PgPoolOptions::new()
         .max_connections(options.max_connections)
         .acquire_timeout(options.acquire_timeout)
-        // Test connections before returning them from the pool.
-        // This ensures stale connections (e.g., after database restart or
-        // network partition) are detected and replaced automatically.
-        .test_before_acquire(true)
         .connect(url)
         .await
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
@@ -79,7 +77,6 @@ pub async fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
 pub fn connect_lazy(url: &str, options: ConnectionOptions) -> Result<PgPool> {
     PgPoolOptions::new()
         .max_connections(options.max_connections)
-        .min_connections(options.max_connections / 2) // Pre-create half the connections
         .acquire_timeout(options.acquire_timeout)
         .connect_lazy(url)
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
