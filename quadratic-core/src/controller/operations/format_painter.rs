@@ -23,8 +23,8 @@ impl GridController {
 
         // Get the source rect (finite bounds)
         let source_rect = source_selection.largest_rect_finite(self.a1_context());
-        let source_width = source_rect.width() as u32;
-        let source_height = source_rect.height() as u32;
+        let source_width = source_rect.width();
+        let source_height = source_rect.height();
 
         if source_width == 0 || source_height == 0 {
             return Ok(ops);
@@ -41,8 +41,8 @@ impl GridController {
 
         // Get the target rect
         let target_rect = target_selection.largest_rect_finite(self.a1_context());
-        let target_width = target_rect.width() as u32;
-        let target_height = target_rect.height() as u32;
+        let target_width = target_rect.width();
+        let target_height = target_rect.height();
 
         if target_width == 0 || target_height == 0 {
             return Ok(ops);
@@ -76,37 +76,37 @@ impl GridController {
 
                 // Copy borders from source to target position
                 if let Some(ref borders) = source_borders {
-                    if let Some(ref top) = borders.top {
-                        if let Some(border) = top.get(source_pos) {
-                            tiled_borders
-                                .top
-                                .get_or_insert_default()
-                                .set(target_pos, Some(border));
-                        }
+                    if let Some(ref top) = borders.top
+                        && let Some(border) = top.get(source_pos)
+                    {
+                        tiled_borders
+                            .top
+                            .get_or_insert_default()
+                            .set(target_pos, Some(border));
                     }
-                    if let Some(ref bottom) = borders.bottom {
-                        if let Some(border) = bottom.get(source_pos) {
-                            tiled_borders
-                                .bottom
-                                .get_or_insert_default()
-                                .set(target_pos, Some(border));
-                        }
+                    if let Some(ref bottom) = borders.bottom
+                        && let Some(border) = bottom.get(source_pos)
+                    {
+                        tiled_borders
+                            .bottom
+                            .get_or_insert_default()
+                            .set(target_pos, Some(border));
                     }
-                    if let Some(ref left) = borders.left {
-                        if let Some(border) = left.get(source_pos) {
-                            tiled_borders
-                                .left
-                                .get_or_insert_default()
-                                .set(target_pos, Some(border));
-                        }
+                    if let Some(ref left) = borders.left
+                        && let Some(border) = left.get(source_pos)
+                    {
+                        tiled_borders
+                            .left
+                            .get_or_insert_default()
+                            .set(target_pos, Some(border));
                     }
-                    if let Some(ref right) = borders.right {
-                        if let Some(border) = right.get(source_pos) {
-                            tiled_borders
-                                .right
-                                .get_or_insert_default()
-                                .set(target_pos, Some(border));
-                        }
+                    if let Some(ref right) = borders.right
+                        && let Some(border) = right.get(source_pos)
+                    {
+                        tiled_borders
+                            .right
+                            .get_or_insert_default()
+                            .set(target_pos, Some(border));
                     }
                 }
             }
