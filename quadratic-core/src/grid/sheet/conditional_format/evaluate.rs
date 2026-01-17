@@ -415,20 +415,17 @@ impl GridController {
                     // Handle color scales with invert_text_on_dark
                     if let Some(color_scale) = cf.color_scale()
                         && color_scale.invert_text_on_dark
-                    {
-                        // Compute the fill color for this cell, then derive text color
-                        if let Some(fill_color) = self.compute_color_scale_color(
+                        && let Some(fill_color) = self.compute_color_scale_color(
                             color_scale,
                             sheet_id,
                             &cf.selection,
                             sheet_pos,
                             a1_context,
-                        ) {
-                            if let Some(text_color) = contrasting_text_color_hex(&fill_color) {
-                                combined_style.text_color = Some(text_color);
-                                any_applied = true;
-                            }
-                        }
+                        )
+                        && let Some(text_color) = contrasting_text_color_hex(&fill_color)
+                    {
+                        combined_style.text_color = Some(text_color);
+                        any_applied = true;
                     }
                 }
             }
