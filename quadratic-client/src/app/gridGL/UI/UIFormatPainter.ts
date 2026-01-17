@@ -31,15 +31,15 @@ export class UIFormatPainter extends Graphics {
 
   constructor() {
     super();
-    events.on('changeSheet', this.setDirty);
-    events.on('viewportChanged', this.setDirty);
+    events.on('changeSheet', this.onChangeSheet);
+    events.on('viewportChanged', this.onViewportChanged);
     events.on('formatPainterStart', this.onFormatPainterStart);
     events.on('formatPainterEnd', this.onFormatPainterEnd);
   }
 
   destroy() {
-    events.off('changeSheet', this.setDirty);
-    events.off('viewportChanged', this.setDirty);
+    events.off('changeSheet', this.onChangeSheet);
+    events.off('viewportChanged', this.onViewportChanged);
     events.off('formatPainterStart', this.onFormatPainterStart);
     events.off('formatPainterEnd', this.onFormatPainterEnd);
     super.destroy();
@@ -49,8 +49,16 @@ export class UIFormatPainter extends Graphics {
     return !!this.ranges && this.sourceSheetId === sheets.current;
   };
 
-  private setDirty = () => {
+  // Always mark dirty on sheet change so we can clear graphics when leaving source sheet
+  private onChangeSheet = () => {
     if (!!this.sourceSheetId && !!this.ranges) {
+      this.dirty = true;
+    }
+  };
+
+  // Only mark dirty on viewport changes when viewing the source sheet
+  private onViewportChanged = () => {
+    if (!!this.sourceSheetId && !!this.ranges && this.sourceSheetId === sheets.current) {
       this.dirty = true;
     }
   };
