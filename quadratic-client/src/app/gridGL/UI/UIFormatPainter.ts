@@ -194,7 +194,6 @@ export class UIFormatPainter extends Graphics {
     if (drawFrame || this.dirty) {
       this.clear();
       this.draw();
-      this.dirty = false;
     }
   };
 }
