@@ -48,6 +48,7 @@ class InlineEditorMonaco {
   private suggestionWidgetShowing: boolean = false;
   private processingEmojiConversion = false;
   private measureCanvas?: HTMLCanvasElement;
+  private verticalSelectionAbortController?: AbortController;
 
   // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
   autocompleteList?: string[];
@@ -806,10 +807,6 @@ class InlineEditorMonaco {
     // When dragging up → select toward start (left), dragging down → select toward end (right).
     this.setupVerticalSelectionHandler();
 
-    this.editor.onMouseDown(() => {
-      inlineEditorKeyboard.resetKeyboardPosition();
-      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
-    });
     this.editor.onDidChangeModelContent((e) => {
       this.convertEmojis();
       // Don't emit valueChanged if we're in the middle of emoji conversion
@@ -905,8 +902,11 @@ class InlineEditorMonaco {
     let currentDirection: 'above' | 'below' | null = null;
     let rafId: number | null = null;
 
-    // Get the click position from Monaco's mouse target
+    // Handle mouse down: reset keyboard position, set edit mode, and track selection anchor
     this.editor.onMouseDown((e) => {
+      inlineEditorKeyboard.resetKeyboardPosition();
+      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
+
       if (e.event.leftButton) {
         isSelecting = true;
         currentDirection = null;
@@ -987,8 +987,21 @@ class InlineEditorMonaco {
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    // Abort any previous listeners before adding new ones
+    this.verticalSelectionAbortController?.abort();
+    this.verticalSelectionAbortController = new AbortController();
+    const { signal } = this.verticalSelectionAbortController;
+
+    window.addEventListener('mousemove', handleMouseMove, { signal });
+    window.addEventListener('mouseup', handleMouseUp, { signal });
+  }
+
+  // Cleans up resources when the editor is destroyed
+  dispose() {
+    this.verticalSelectionAbortController?.abort();
+    this.verticalSelectionAbortController = undefined;
+    this.editor?.dispose();
+    this.editor = undefined;
   }
 
   // Converts emoji shortcodes like :smile: to actual emojis when not in formula mode
