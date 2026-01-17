@@ -7,13 +7,11 @@ pub mod pubsub;
 pub mod settings;
 pub mod stats;
 
-use std::sync::Arc;
-
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use quadratic_rust_shared::quadratic_database::{ConnectionOptions, PgPool, connect_lazy};
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::Mutex;
 
 use crate::config::Config;
 use crate::error::Result;
@@ -30,8 +28,7 @@ pub(crate) struct State {
     pub(crate) stats: Mutex<Stats>,
     pub(crate) synced_connection_cache: SyncedConnectionCache,
     pub(crate) pool: PgPool,
-    /// Limits concurrent file processing to prevent database pool exhaustion
-    pub(crate) file_processing_semaphore: Arc<Semaphore>,
+    pub(crate) batch_size: usize,
 }
 
 impl State {
@@ -48,9 +45,9 @@ impl State {
         );
 
         tracing::info!(
-            "Initializing database pool with {} max connections, {} max concurrent file processing",
+            "Initializing database pool with {} max connections, batch size {}",
             config.max_db_connections,
-            config.max_concurrent_file_processing
+            config.batch_size
         );
 
         Ok(State {
@@ -59,9 +56,7 @@ impl State {
             stats: Mutex::new(Stats::new()),
             synced_connection_cache: SyncedConnectionCache::new(),
             pool: connect_lazy(&config.database_url, connection_options)?,
-            file_processing_semaphore: Arc::new(Semaphore::new(
-                config.max_concurrent_file_processing,
-            )),
+            batch_size: config.batch_size,
         })
     }
 }
