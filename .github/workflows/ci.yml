@@ -143,6 +143,7 @@ jobs:
           PLAID_CREDENTIALS: "${{ secrets.PLAID_CREDENTIALS }}"
           SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
           SSL_CERT_DIR: /etc/ssl/certs
+          DATABASE_DSN: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}

@@ -955,6 +955,7 @@ Note: only name the code cell if it is new.\n
 If this tool created a spill you MUST delete the original code cell and recreate it at a different location to avoid multiple code cells in the sheet.
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
+Do NOT delete the source data or tables that the code cell references unless the user explicitly asks you to. The code depends on this data to function correctly.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -1007,6 +1008,7 @@ If this tool created a spill you MUST delete the original code cell and recreate
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
+Do NOT delete the source data or tables that the code cell references unless the user explicitly asks you to. The code depends on this data to function correctly.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -1271,6 +1273,7 @@ Target position is the top left corner of the target position on the current ope
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
+You MUST NOT delete cells or tables that are referenced by code cells unless the user explicitly asks you to. If code references data, deleting that data will break the code.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
 You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
@@ -1294,7 +1297,7 @@ You MUST use this tool to delete tables by providing it with the table name in A
     responseSchema: AIToolsArgsSchema[AITool.DeleteCells],
     prompt: `
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
-You MUST NOT delete cells that are referenced by code cells. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
+You MUST NOT delete cells that are referenced by code cells unless the user explicitly asks you to. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
 You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
 You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
