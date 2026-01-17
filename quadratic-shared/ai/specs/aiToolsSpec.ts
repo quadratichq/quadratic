@@ -1141,7 +1141,7 @@ When using a range, cell references in the formula will automatically adjust rel
                   'The formula which will run in the cell(s). If code_cell_position is a range or collection, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
               },
             },
-            required: ['code_cell_position', 'formula_string'],
+            required: ['sheet_name', 'code_cell_position', 'formula_string'],
             additionalProperties: false,
           },
         },
