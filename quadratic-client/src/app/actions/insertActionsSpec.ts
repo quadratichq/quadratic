@@ -139,6 +139,7 @@ export const insertActionsSpec: InsertActionSpec = {
             pos: { x: cursor.x, y: cursor.y },
             language: 'Formula',
             lastModified: 0,
+            isSingleCell: true,
           },
           showCellTypeMenu: false,
           inlineEditor: false,

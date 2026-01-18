@@ -235,7 +235,6 @@ export class Tables extends Container<Table> {
     }
 
     this.cursorPosition(true);
-    events.emit('setDirty', { singleCellOutlines: true });
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We

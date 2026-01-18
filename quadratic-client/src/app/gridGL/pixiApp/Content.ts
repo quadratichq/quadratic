@@ -20,7 +20,6 @@ import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIFormatPainter } from '@/app/gridGL/UI/UIFormatPainter';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
-import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
@@ -51,7 +50,6 @@ export class Content extends Container {
   validations = new UIValidations();
   copy = new UICopy();
   formatPainter = new UIFormatPainter();
-  private singleCellOutlines = new UISingleCellOutlines();
 
   debug = new Graphics();
 
@@ -71,7 +69,6 @@ export class Content extends Container {
       this.htmlPlaceholders,
       this.imagePlaceholders,
       this.validations,
-      this.singleCellOutlines,
 
       this.uiCursor,
       this.copy,
@@ -188,7 +185,6 @@ export class Content extends Container {
       this.validations.dirty ||
       this.copy.dirty ||
       this.formatPainter.dirty ||
-      this.singleCellOutlines.dirty ||
       this.cellImages.dirty;
 
     if (contentDirty && debugFlag('debugShowWhyRendering')) {
@@ -205,7 +201,6 @@ export class Content extends Container {
           this.validations.dirty && 'validations',
           this.copy.dirty && 'copy',
           this.formatPainter.dirty && 'formatPainter',
-          this.singleCellOutlines.dirty && 'singleCellOutlines',
           this.cellImages.dirty && 'cellImages',
         ]
           .filter(Boolean)
@@ -240,8 +235,6 @@ export class Content extends Container {
     debugTimeCheck('[Update] copy');
     this.formatPainter.update();
     debugTimeCheck('[Update] formatPainter');
-    this.singleCellOutlines.update(viewportChanged);
-    debugTimeCheck('[Update] singleCellOutlines');
     this.cellImages.update();
     debugTimeCheck('[Update] cellImages');
 

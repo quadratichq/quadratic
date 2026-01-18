@@ -1,3 +1,4 @@
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { Container, Graphics } from 'pixi.js';
 
@@ -9,6 +10,7 @@ export class CellsCodeOutlines extends Container {
   update(codeOutlines: { x: number; y: number; width: number; height: number }[]) {
     this.clear();
     if (codeOutlines.length === 0) return;
+    if (!pixiAppSettings.showCellTypeOutlines) return;
 
     const tint = getCSSVariableTint('muted-foreground');
     codeOutlines.forEach((rect) => {

@@ -199,6 +199,55 @@ impl GridController {
         }
     }
 
+    /// Updates cells_accessed_cache for CellValue::Code cells being set or removed
+    /// via SetCellValues operation.
+    pub(crate) fn update_code_cells_cache(
+        &mut self,
+        sheet_pos: SheetPos,
+        new_values: &crate::cell_values::CellValues,
+        old_values: &crate::cell_values::CellValues,
+    ) {
+        use crate::CellValue;
+
+        // Process old values - remove any CellValue::Code entries from cache
+        for (col_x, column) in old_values.columns.iter().enumerate() {
+            for (&col_y, cell_value) in column.iter() {
+                if matches!(cell_value, CellValue::Code(_)) {
+                    let pos = SheetPos::new(
+                        sheet_pos.sheet_id,
+                        sheet_pos.x + col_x as i64,
+                        sheet_pos.y + col_y as i64,
+                    );
+                    self.cells_accessed_cache.remove_pos(pos);
+                }
+            }
+        }
+
+        // Process new values - add any CellValue::Code entries to cache
+        for (col_x, column) in new_values.columns.iter().enumerate() {
+            for (&col_y, cell_value) in column.iter() {
+                if let CellValue::Code(code_cell) = cell_value {
+                    let pos = SheetPos::new(
+                        sheet_pos.sheet_id,
+                        sheet_pos.x + col_x as i64,
+                        sheet_pos.y + col_y as i64,
+                    );
+                    // First remove any existing entry
+                    self.cells_accessed_cache.remove_pos(pos);
+                    // Then add the new cells_accessed
+                    for (accessed_sheet_id, rect) in code_cell
+                        .code_run
+                        .cells_accessed
+                        .iter_rects_unbounded(&self.a1_context)
+                    {
+                        self.cells_accessed_cache
+                            .insert(pos, (accessed_sheet_id, rect));
+                    }
+                }
+            }
+        }
+    }
+
     /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0).apply_callbacks()

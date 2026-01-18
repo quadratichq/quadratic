@@ -28,6 +28,10 @@ impl GridController {
                 sheet_pos.sheet_id,
             );
 
+            // Handle CellValue::Code cells being set or removed
+            // Update cells_accessed_cache for any code cells in the values or old_values
+            self.update_code_cells_cache(sheet_pos, &values, &old_values);
+
             self.check_deleted_data_tables(transaction, &sheet_rect);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
             self.check_validations(transaction, sheet_rect);

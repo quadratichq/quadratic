@@ -569,6 +569,78 @@ impl GridController {
         }
     }
 
+    /// Adjust CellValue::Code references in cells for paste operations.
+    /// For Copy: adjusts relative references based on paste offset.
+    /// For Cut: keeps references as-is.
+    /// Returns the positions of code cells that need compute operations.
+    fn adjust_clipboard_code_cell_references(
+        &self,
+        start_pos: SheetPos,
+        clipboard: &Clipboard,
+        cells: &mut CellValues,
+    ) -> Vec<SheetPos> {
+        let mut code_cell_positions = Vec::new();
+
+        // Find all CellValue::Code cells
+        let mut code_cells_to_adjust: Vec<(u32, u32, Box<crate::CodeCell>)> = Vec::new();
+        for (col_x, column) in cells.columns.iter().enumerate() {
+            for (&col_y, cell_value) in column.iter() {
+                if let CellValue::Code(code_cell) = cell_value {
+                    code_cells_to_adjust.push((col_x as u32, col_y as u32, code_cell.clone()));
+                }
+            }
+        }
+
+        // Adjust references and track positions
+        for (col_x, col_y, mut code_cell) in code_cells_to_adjust {
+            let source_pos = Pos {
+                x: clipboard.origin.x + col_x as i64,
+                y: clipboard.origin.y + col_y as i64,
+            };
+            let target_pos = Pos {
+                x: start_pos.x + col_x as i64,
+                y: start_pos.y + col_y as i64,
+            };
+
+            // Adjust references based on operation type
+            match clipboard.operation {
+                ClipboardOperation::Cut => {
+                    // For cut, keep references as-is but update sheet context
+                    code_cell.code_run.adjust_references(
+                        start_pos.sheet_id,
+                        &self.a1_context,
+                        source_pos.to_sheet_pos(clipboard.origin.sheet_id),
+                        RefAdjust::NO_OP,
+                    );
+                }
+                ClipboardOperation::Copy => {
+                    // For copy, adjust relative references
+                    code_cell.code_run.adjust_references(
+                        start_pos.sheet_id,
+                        &self.a1_context,
+                        target_pos.to_sheet_pos(start_pos.sheet_id),
+                        RefAdjust {
+                            sheet_id: None,
+                            dx: target_pos.x - source_pos.x,
+                            dy: target_pos.y - source_pos.y,
+                            relative_only: true,
+                            x_start: 0,
+                            y_start: 0,
+                        },
+                    );
+                }
+            }
+
+            // Update the cell value in cells with the adjusted code cell
+            cells.set(col_x, col_y, CellValue::Code(code_cell));
+
+            // Track this position for compute operations
+            code_cell_positions.push(target_pos.to_sheet_pos(start_pos.sheet_id));
+        }
+
+        code_cell_positions
+    }
+
     fn clipboard_formats_tables_operations(
         &self,
         sheet_id: SheetId,
@@ -756,7 +828,14 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let cells = clipboard.cells.to_owned();
+                let mut cells = clipboard.cells.to_owned();
+
+                // Adjust CellValue::Code references and track positions for compute operations
+                let code_cell_positions = self.adjust_clipboard_code_cell_references(
+                    start_pos.to_sheet_pos(selection.sheet_id),
+                    clipboard,
+                    &mut cells,
+                );
 
                 if !cells.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
@@ -768,6 +847,11 @@ impl GridController {
                         delete_value,
                     )?;
                     ops.extend(cell_value_ops);
+                }
+
+                // Add compute operations for pasted CellValue::Code cells
+                for sheet_pos in code_cell_positions {
+                    code_ops.push(Operation::ComputeCode { sheet_pos });
                 }
 
                 code_ops.extend(self.clipboard_code_operations(
@@ -2694,10 +2778,11 @@ mod test {
         let pos_1_2 = SheetPos::new(sheet_id, 1, 2);
 
         gc.set_cell_value(pos_1_1, "1".to_string(), None, false);
-        gc.set_cell_value(pos_1_2, "=A1+1".to_string(), None, false);
+        // Use a multi-cell formula to ensure it stays as a DataTable (not CellValue::Code)
+        gc.set_cell_value(pos_1_2, "={A1+1;A1+2}".to_string(), None, false);
 
-        // copying A1:A2 and pasting on B1 should rerun the code
-        let selection_rect = SheetRect::from_numbers(1, 1, 1, 2, sheet_id);
+        // cutting A1:A3 and pasting on B1 should rerun the code because A1 is in cells_accessed
+        let selection_rect = SheetRect::from_numbers(1, 1, 1, 3, sheet_id);
         let selection = A1Selection::from_rect(selection_rect);
         let (clipboard, _) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
         let should_rerun = gc.clipboard_code_operations_should_rerun(
@@ -2707,8 +2792,9 @@ mod test {
         );
         assert!(should_rerun);
 
-        // copying A2 and pasting on B1 should not rerun the code
-        let selection_rect = SheetRect::from_numbers(1, 2, 1, 1, sheet_id);
+        // cutting just A2:A3 (the formula output) and pasting on B1 should not rerun the code
+        // because A1 is not in the cut selection
+        let selection_rect = SheetRect::from_numbers(1, 2, 1, 2, sheet_id);
         let selection = A1Selection::from_rect(selection_rect);
         let (clipboard, _) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
         let should_rerun = gc.clipboard_code_operations_should_rerun(

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    CellValue, Pos, Rect, SheetPos, Value,
+    CellValue, Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
@@ -328,33 +328,10 @@ impl Sheet {
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
-        // Check for CellValue::Code cells in the bounds
-        for y in bounds.y_range() {
-            for x in bounds.x_range() {
-                let pos = Pos { x, y };
-                if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
-                    // Convert CellValue::Code to DataTable for clipboard
-                    let data_table = DataTable::new(
-                        DataTableKind::CodeRun(code_cell.code_run.clone()),
-                        "Formula1",
-                        Value::Single((*code_cell.output).clone()),
-                        false,
-                        None,
-                        None,
-                        None,
-                    )
-                    .with_last_modified(code_cell.last_modified);
-                    if include_code_table_values {
-                        data_tables.insert(pos, data_table);
-                    } else {
-                        data_tables.insert(pos, data_table.clone_without_values());
-                    }
-                }
-            }
-        }
+        // Note: CellValue::Code cells are kept in cells (CellValues) and not
+        // converted to DataTable. They are handled separately during paste.
 
         for (output_rect, data_table) in self.iter_data_tables_in_rect(bounds.to_owned()) {
-            // only change the cells if the CellValue::Code is not in the selection box
             let data_table_pos = Pos {
                 x: output_rect.min.x,
                 y: output_rect.min.y,
