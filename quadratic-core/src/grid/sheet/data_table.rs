@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    CellValue, Pos, Rect, SheetPos,
+    CellValue, Pos, Rect, SheetPos, Value,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
@@ -26,6 +26,11 @@ impl Sheet {
     }
 
     pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
+        // First check if there's a CellValue::Code in the columns
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(*pos) {
+            return Some(&code_cell.code_run);
+        }
+        // Otherwise check the data_tables
         self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
     }
 
@@ -121,10 +126,28 @@ impl Sheet {
             .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 
-    /// Returns true if there is a data table intersecting a rect, excluding a specific position
+    /// Returns true if there is a data table or CellValue::Code intersecting a rect, excluding a specific position
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
-        self.data_tables_pos_intersect_rect(rect, false)
+        // Check for DataTables
+        if self
+            .data_tables_pos_intersect_rect(rect, false)
             .any(|pos| skip != Some(&pos))
+        {
+            return true;
+        }
+        // Check for CellValue::Code in the rect
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if skip == Some(&pos) {
+                    continue;
+                }
+                if matches!(self.cell_value_ref(pos), Some(CellValue::Code(_))) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     /// Returns a DataTable at a Pos as a result
@@ -304,6 +327,31 @@ impl Sheet {
         values: &mut Option<CellValues>,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
+
+        // Check for CellValue::Code cells in the bounds
+        for y in bounds.y_range() {
+            for x in bounds.x_range() {
+                let pos = Pos { x, y };
+                if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+                    // Convert CellValue::Code to DataTable for clipboard
+                    let data_table = DataTable::new(
+                        DataTableKind::CodeRun(code_cell.code_run.clone()),
+                        "Formula1",
+                        Value::Single((*code_cell.output).clone()),
+                        false,
+                        None,
+                        None,
+                        None,
+                    )
+                    .with_last_modified(code_cell.last_modified);
+                    if include_code_table_values {
+                        data_tables.insert(pos, data_table);
+                    } else {
+                        data_tables.insert(pos, data_table.clone_without_values());
+                    }
+                }
+            }
+        }
 
         for (output_rect, data_table) in self.iter_data_tables_in_rect(bounds.to_owned()) {
             // only change the cells if the CellValue::Code is not in the selection box
@@ -530,6 +578,11 @@ impl Sheet {
 
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
+        // First check for CellValue::Code in columns
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+            return Some(code_cell.code_run.language.clone());
+        }
+        // Otherwise check data_tables
         self.data_table_at(&pos)
             .map(|data_table| data_table.get_language())
     }
@@ -540,8 +593,13 @@ impl Sheet {
             .is_some_and(|lang| lang == CodeCellLanguage::Formula)
     }
 
-    /// Returns true if the cell at pos is a source cell
+    /// Returns true if the cell at pos is a source cell (code cell anchor or data table)
     pub fn is_source_cell(&self, pos: Pos) -> bool {
+        // Check for CellValue::Code in columns
+        if matches!(self.cell_value_ref(pos), Some(CellValue::Code(_))) {
+            return true;
+        }
+        // Check for DataTable
         self.data_table_at(&pos).is_some()
     }
 

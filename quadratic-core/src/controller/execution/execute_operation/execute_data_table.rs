@@ -1060,9 +1060,11 @@ impl GridController {
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let mut cell_values = sheet_values_array.into_cell_values_vec().into_vec();
 
+                    // Check for DataTables or CellValue::Code cells in the rect
                     if sheet
                         .data_tables
                         .has_content_except(values_rect, data_table_pos)
+                        || sheet.has_code_cell_in_rect(values_rect)
                     {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
@@ -1487,9 +1489,11 @@ impl GridController {
                     // check for code cells in neighboring cells
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
+                    // Check for DataTables or CellValue::Code cells in the rect
                     if sheet
                         .data_tables
                         .has_content_except(values_rect, data_table_pos)
+                        || sheet.has_code_cell_in_rect(values_rect)
                     {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
@@ -2265,17 +2269,21 @@ mod tests {
             false,
         );
 
-        // there should be 1 data table, the formula data table
-        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+        // 1x1 formulas are stored as CellValue::Code, not DataTable
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 0);
+        assert!(matches!(
+            gc.sheet(sheet_id).cell_value(pos![E1]),
+            Some(CellValue::Code(_))
+        ));
 
-        // expect that a data table is not created
+        // expect that a data table is not created from a CellValue::Code cell
         assert!(
             gc.grid_to_data_table(rect![sheet_id!E1:E1], None, true, None, false)
                 .is_err()
         );
 
-        // there should only be 1 data table, the formula data table
-        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+        // there should still be no DataTables (the formula is CellValue::Code)
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 0);
     }
 
     #[test]

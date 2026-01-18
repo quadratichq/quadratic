@@ -33,7 +33,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        ArraySize, CellValue, Rect,
+        CellValue, Rect,
         controller::{
             execution::run_code::get_cells::{JsCellsA1Response, JsCellsA1Value, JsCellsA1Values},
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -70,22 +70,14 @@ mod tests {
 
         assert_code_language(&gc, sheet_pos, CodeCellLanguage::Python, code);
         let pos = sheet_pos.into();
-        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
-        sheet
-            .data_tables
-            .modify_data_table_at(&pos, |dt| {
-                dt.show_name = Some(false);
-                dt.show_columns = Some(false);
-                Ok(())
-            })
-            .unwrap();
-        let data_table = sheet.data_table_at(&pos).unwrap();
-        assert_eq!(data_table.output_size(), ArraySize::_1X1);
-        assert_eq!(
-            data_table.cell_value_at(0, 1),
-            Some(CellValue::Text("test".to_string()))
-        );
-        assert!(!data_table.has_spill());
+
+        // 1x1 Python results are stored as CellValue::Code, not DataTable
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = match sheet.cell_value_ref(pos) {
+            Some(CellValue::Code(code_cell)) => code_cell,
+            _ => panic!("Expected CellValue::Code at {pos}"),
+        };
+        assert_eq!(*code_cell.output, CellValue::Text("test".to_string()));
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);

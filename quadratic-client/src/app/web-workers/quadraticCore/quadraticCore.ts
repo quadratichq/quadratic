@@ -64,6 +64,7 @@ import type {
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
   CodeOperation,
+  JsEditCell,
   CoreClientAddSheetResponse,
   CoreClientBatchUpdateConditionalFormats,
   CoreClientCodeExecutionState,
@@ -79,6 +80,7 @@ import type {
   CoreClientExport,
   CoreClientExportCsvSelection,
   CoreClientExportExcel,
+  CoreClientExportJson,
   CoreClientGetAICells,
   CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
@@ -406,6 +408,16 @@ class QuadraticCore {
     });
   }
 
+  async exportJson(): Promise<string> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientExportJson) => {
+        resolve(message.json);
+      };
+      this.send({ type: 'clientCoreExportJson', id });
+    });
+  }
+
   // Gets a code cell from a sheet
   getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
     const id = this.id++;
@@ -424,7 +436,7 @@ class QuadraticCore {
     });
   }
 
-  getEditCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+  getEditCell(sheetId: string, x: number, y: number): Promise<JsEditCell | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       const message: ClientCoreGetEditCell = {

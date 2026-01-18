@@ -359,6 +359,11 @@ class CoreClient {
         this.send({ type: 'coreClientExportExcel', id: e.data.id, excel: exportExcel }, exportExcel.buffer);
         return;
 
+      case 'clientCoreExportJson':
+        const exportJson = core.exportJson();
+        this.send({ type: 'coreClientExportJson', id: e.data.id, json: exportJson });
+        return;
+
       case 'clientCoreSearch':
         this.send({
           type: 'coreClientSearch',

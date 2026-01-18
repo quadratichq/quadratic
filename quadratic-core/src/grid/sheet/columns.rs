@@ -58,6 +58,11 @@ impl SheetColumns {
         self.columns.get(&column)
     }
 
+    /// Returns a mutable iterator over all columns. Used for file migration.
+    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = (&i64, &mut Column)> {
+        self.columns.iter_mut()
+    }
+
     /// Returns the bounds of the row at the given index.
     pub(crate) fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         if self.has_cell_value.is_row_default(row) {

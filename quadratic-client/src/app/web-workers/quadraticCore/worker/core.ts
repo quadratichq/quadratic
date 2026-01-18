@@ -48,6 +48,7 @@ import type {
 import type {
   ClientCoreAddDataTable,
   ClientCoreImportFile,
+  JsEditCell,
   ClientCoreLoad,
   ClientCoreMoveCells,
   ClientCoreMoveCodeCellHorizontally,
@@ -191,13 +192,13 @@ class Core {
     }
   }
 
-  getEditCell(sheetId: string, x: number, y: number): string {
+  getEditCell(sheetId: string, x: number, y: number): JsEditCell | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getEditCell');
       return this.gridController.getEditCell(sheetId, posToPos(x, y));
     } catch (e) {
       this.handleCoreError('getEditCell', e);
-      return '';
+      return undefined;
     }
   }
 
@@ -684,6 +685,16 @@ class Core {
     } catch (e) {
       this.handleCoreError('exportExcel', e);
       return new Uint8Array(0);
+    }
+  }
+
+  exportJson(): string {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.exportOpenGridToJson();
+    } catch (e) {
+      this.handleCoreError('exportJson', e);
+      return '';
     }
   }
 

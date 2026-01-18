@@ -218,6 +218,9 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
+            // Remove from pending positions so it can be re-added if dependencies change
+            transaction.pending_compute_positions.remove(&sheet_pos);
+
             if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
@@ -434,6 +437,7 @@ impl GridController {
 
                 // Use the cache to efficiently find all code runs in the selection
                 for rect in selection.rects_unbounded(self.a1_context()) {
+                    // Check DataTables
                     sheet
                         .data_tables
                         .get_code_runs_in_rect(rect, false)
@@ -442,11 +446,21 @@ impl GridController {
                                 sheet_pos: pos.to_sheet_pos(sheet_id),
                             });
                         });
+
+                    // Check CellValue::Code cells
+                    for pos in sheet.iter_code_cells_positions() {
+                        if rect.contains(pos) {
+                            new_ops.push(Operation::ComputeCode {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                            });
+                        }
+                    }
                 }
             } else {
                 // Recompute all code cells in all sheets. Note, the iter_mut is
                 // necessary because finite_bounds may mutate its cache.
                 for (sheet_id, sheet) in self.grid.sheets.iter_mut() {
+                    // Check DataTables
                     if let Some(bounds) = sheet.data_tables.finite_bounds() {
                         sheet
                             .data_tables
@@ -456,6 +470,13 @@ impl GridController {
                                     sheet_pos: pos.to_sheet_pos(*sheet_id),
                                 });
                             });
+                    }
+
+                    // Check CellValue::Code cells
+                    for pos in sheet.iter_code_cells_positions() {
+                        new_ops.push(Operation::ComputeCode {
+                            sheet_pos: pos.to_sheet_pos(*sheet_id),
+                        });
                     }
                 }
             }

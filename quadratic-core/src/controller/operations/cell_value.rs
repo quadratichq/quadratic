@@ -644,19 +644,15 @@ mod test {
         let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = pos![sheet_id!A2];
 
-        // SetCellValues now excludes B2 (data table position) since DeleteDataTable handles it
-        assert_eq!(operations.len(), 2);
+        // 1x1 formulas are stored as CellValue::Code, so they're deleted by SetCellValues
+        // (not DeleteDataTable), meaning a single SetCellValues covers both A2 and B2
+        assert_eq!(operations.len(), 1);
         assert_eq!(
             operations,
-            vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: CellValues::new_blank(1, 1)
-                },
-                Operation::DeleteDataTable {
-                    sheet_pos: sheet_pos_2,
-                }
-            ]
+            vec![Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::new_blank(2, 1) // Covers A2:B2
+            }]
         );
     }
 
@@ -679,22 +675,19 @@ mod test {
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
 
-        // SetCellValues excludes data table positions, and DeleteDataTable operations
-        // are deduplicated across rects (B2 is only deleted once, not twice)
-        assert_eq!(operations.len(), 3);
+        // 1x1 formulas are stored as CellValue::Code, so they're deleted by SetCellValues
+        // (not DeleteDataTable). Column B covers B1:B2 and row 2 covers A2:B2.
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
             vec![
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new_blank(1, 1)
-                },
-                Operation::DeleteDataTable {
-                    sheet_pos: sheet_pos_2,
+                    values: CellValues::new_blank(1, 2) // B1:B2
                 },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new_blank(1, 1)
+                    values: CellValues::new_blank(2, 1) // A2:B2
                 },
             ]
         );

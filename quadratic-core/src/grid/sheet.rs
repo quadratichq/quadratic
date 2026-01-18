@@ -202,10 +202,14 @@ impl Sheet {
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
-        // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
+        // Check for cell value in columns
         if let Some(cell_value) = self.cell_value_ref(pos)
             && !matches!(cell_value, CellValue::Blank)
         {
+            // For CellValue::Code, return the output, not the code cell itself
+            if let CellValue::Code(code_cell) = cell_value {
+                return Some((*code_cell.output).clone());
+            }
             return Some(cell_value.clone());
         }
 
@@ -320,6 +324,15 @@ impl Sheet {
                     ),
                     None => CellValue::Blank,
                 },
+                // For code cells, return the output value
+                CellValue::Code(code_cell) => {
+                    let output = (*code_cell.output).clone();
+                    if matches!(output, CellValue::Html(_) | CellValue::Image(_)) {
+                        CellValue::Blank
+                    } else {
+                        output
+                    }
+                }
                 other => other.clone(),
             }
         } else if let Some(value) = self.get_code_cell_value(pos) {

@@ -536,12 +536,17 @@ mod test {
             None,
             false,
         );
-        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+        // 1x1 formulas are stored as CellValue::Code, not DataTable
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 0);
+        assert!(matches!(
+            gc.sheet(sheet_id).cell_value(pos![A2]),
+            Some(CellValue::Code(_))
+        ));
 
         let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
         assert!(ops.is_err());
 
-        // there should still be just 1 data table
-        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+        // there should still be no DataTables (the formula is CellValue::Code)
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 0);
     }
 }

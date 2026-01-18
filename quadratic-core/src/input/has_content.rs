@@ -12,11 +12,9 @@ pub fn table_at<'a>(
     table_cache: &SheetDataTablesCache,
     context: &'a A1Context,
 ) -> Option<&'a TableMapEntry> {
-    let table_pos = match table_cache.multi_cell_tables.get(sheet_pos.into()) {
-        Some(pos) => pos.to_sheet_pos(sheet_pos.sheet_id),
-        None if table_cache.single_cell_tables.get(sheet_pos.into()) => sheet_pos,
-        _ => return None,
-    };
+    let table_pos = table_cache
+        .get_pos_contains(sheet_pos.into())?
+        .to_sheet_pos(sheet_pos.sheet_id);
 
     context.table_map.table_at(table_pos)
 }

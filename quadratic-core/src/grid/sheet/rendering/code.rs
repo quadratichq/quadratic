@@ -116,6 +116,31 @@ impl Sheet {
 
     // Returns a single code cell for rendering.
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
+        // First check for CellValue::Code
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+            return Some(JsRenderCodeCell {
+                x: pos.x as i32,
+                y: pos.y as i32,
+                w: 1,
+                h: 1,
+                language: code_cell.code_run.language.clone(),
+                state: JsRenderCodeCellState::Success,
+                spill_error: None,
+                name: format!("{}1", code_cell.code_run.language.as_string()),
+                columns: Vec::new(),
+                first_row_header: false,
+                show_name: false,
+                show_columns: false,
+                sort: None,
+                sort_dirty: false,
+                alternating_colors: false,
+                is_code: true,
+                is_html: false,
+                is_html_image: false,
+                last_modified: code_cell.last_modified.timestamp_millis(),
+            });
+        }
+        // Otherwise check data_tables
         let data_table = self.data_table_at(&pos)?;
         self.render_code_cell(pos, data_table)
     }
@@ -313,6 +338,7 @@ mod tests {
         let context = A1Context::default();
 
         // render rect is larger than code rect
+        // Note: DataTable cells don't populate language (table border drawn from table struct)
         let code_cells = sheet.get_render_code_cells(
             &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
@@ -321,7 +347,7 @@ mod tests {
         );
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
-        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[0].language, None);
         assert_eq!(code_cells[0].number, None);
         assert_eq!(code_cells[5].value, "6".to_string());
         assert_eq!(code_cells[5].language, None);
@@ -346,7 +372,7 @@ mod tests {
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
-        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[0].language, None);
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
@@ -377,7 +403,7 @@ mod tests {
             &context,
         );
         assert_eq!(code_cells[0].value, "1".to_string());
-        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[0].language, None); // DataTable cells don't populate language
         assert_eq!(
             code_cells[0].number,
             Some(JsNumber {

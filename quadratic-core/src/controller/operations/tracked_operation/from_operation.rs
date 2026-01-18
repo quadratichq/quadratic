@@ -142,6 +142,7 @@ impl TrackedOperation {
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
                 sheet_name: match schema.as_ref() {
+                    SheetSchema::V1_13(schema) => schema.name.to_string(),
                     SheetSchema::V1_12(schema) => schema.name.to_string(),
                     SheetSchema::V1_11(schema) => schema.name.to_string(),
                     SheetSchema::V1_10(schema) => schema.name.to_string(),

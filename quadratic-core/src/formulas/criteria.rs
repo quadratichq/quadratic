@@ -111,6 +111,7 @@ impl Criterion {
             CellValue::Html(_) => false,
             CellValue::Image(_) => false,
             CellValue::RichText(_) => false,
+            CellValue::Code(code_cell) => Self::compare(compare_fn, lhs, &code_cell.output),
         }
     }
 

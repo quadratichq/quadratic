@@ -20,7 +20,8 @@ use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
 use crate::util::unique_name;
 use crate::{
-    Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
+    Array, ArraySize, CellValue, CodeCell, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect,
+    Value,
 };
 use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
@@ -111,9 +112,13 @@ impl Grid {
             unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
 
         for sheet in self.sheets.values_mut() {
+            // Update data_tables
             sheet
                 .data_tables
                 .replace_table_name_in_code_cells(sheet.id, old_name, new_name, a1_context);
+
+            // Update CellValue::Code cells
+            sheet.replace_table_name_in_code_value_cells(old_name, new_name, a1_context);
         }
 
         let sheet = self
@@ -137,9 +142,13 @@ impl Grid {
         a1_context: &A1Context,
     ) {
         for sheet in self.sheets.values_mut() {
+            // Update data_tables
             sheet.data_tables.replace_table_column_name_in_code_cells(
                 sheet.id, table_name, old_name, new_name, a1_context,
             );
+
+            // Update CellValue::Code cells
+            sheet.replace_column_name_in_code_value_cells(table_name, old_name, new_name, a1_context);
         }
     }
 
@@ -358,6 +367,77 @@ impl DataTable {
     pub fn with_column_headers(mut self, column_headers: Vec<DataTableColumnHeader>) -> Self {
         self.column_headers = Some(column_headers);
         self
+    }
+
+    /// Returns true if this DataTable should be stored as CellValue::Code
+    /// instead of in data_tables. This is true when:
+    /// - Output is 1x1 (single value, not Blank)
+    /// - No error
+    /// - No visible table UI (show_name, show_columns, chart_output)
+    /// - Not a chart (HTML/image)
+    pub fn qualifies_as_single_code_cell(&self) -> bool {
+        // Must be a CodeRun (not Import)
+        let DataTableKind::CodeRun(code_run) = &self.kind else {
+            return false;
+        };
+
+        // Must not have an error (either runtime error or std_err)
+        if code_run.error.is_some() || code_run.std_err.is_some() {
+            return false;
+        }
+
+        // Must be 1x1 output
+        let size = self.output_size();
+        if size.w.get() != 1 || size.h.get() != 1 {
+            return false;
+        }
+
+        // Output must not be Blank (Blank is used as placeholder before formula execution)
+        let output_is_blank = match &self.value {
+            Value::Single(CellValue::Blank) => true,
+            Value::Array(arr) => arr
+                .get(0, 0)
+                .map(|v| matches!(v, CellValue::Blank))
+                .unwrap_or(true),
+            _ => false,
+        };
+        if output_is_blank {
+            return false;
+        }
+
+        // Must not be a chart (HTML/image)
+        if self.is_html_or_image() {
+            return false;
+        }
+
+        // Must not have visible UI explicitly set
+        if self.show_name == Some(true) || self.show_columns == Some(true) {
+            return false;
+        }
+        if self.chart_output.is_some() {
+            return false;
+        }
+
+        true
+    }
+
+    /// Converts this DataTable to a CodeCell. Only call if qualifies_as_single_code_cell() is true.
+    pub fn into_code_cell(self) -> Option<CodeCell> {
+        let DataTableKind::CodeRun(code_run) = self.kind else {
+            return None;
+        };
+
+        let output = match self.value {
+            Value::Single(v) => v,
+            Value::Array(arr) => arr.get(0, 0).cloned().unwrap_or(CellValue::Blank),
+            _ => CellValue::Blank,
+        };
+
+        Some(CodeCell {
+            code_run,
+            output: Box::new(output),
+            last_modified: self.last_modified,
+        })
     }
 
     pub fn is_code(&self) -> bool {

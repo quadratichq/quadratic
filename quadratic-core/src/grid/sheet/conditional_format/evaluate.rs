@@ -620,6 +620,7 @@ fn is_cell_value_truthy(value: &CellValue) -> bool {
         CellValue::Duration(_) => true,
         CellValue::RichText(_) => true,
         CellValue::Instant(_) => true,
+        CellValue::Code(code_cell) => is_cell_value_truthy(&code_cell.output),
     }
 }
 
@@ -1479,9 +1480,9 @@ mod tests {
             config: ConditionalFormatConfig::ColorScale {
                 color_scale: ColorScale {
                     thresholds: vec![
-                        ColorScaleThreshold::min("#ff0000"),           // red at min (1)
+                        ColorScaleThreshold::min("#ff0000"), // red at min (1)
                         ColorScaleThreshold::percentile(50.0, "#ffff00"), // yellow at 50th percentile
-                        ColorScaleThreshold::max("#00ff00"),           // green at max (10)
+                        ColorScaleThreshold::max("#00ff00"),              // green at max (10)
                     ],
                     invert_text_on_dark: false,
                 },
@@ -1521,7 +1522,10 @@ mod tests {
         let a5_color = &a5_fill.unwrap().1;
         let a6_color = &a6_fill.unwrap().1;
 
-        assert_ne!(a5_color, a6_color, "A5 and A6 should have different colors (on opposite sides of 50th percentile)");
+        assert_ne!(
+            a5_color, a6_color,
+            "A5 and A6 should have different colors (on opposite sides of 50th percentile)"
+        );
 
         // A5 should have more red (it's in red-yellow segment)
         // A6 should have more green (it's in yellow-green segment)

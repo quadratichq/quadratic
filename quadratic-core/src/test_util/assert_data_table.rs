@@ -1,6 +1,6 @@
 #[cfg(test)]
 use crate::{
-    Pos, SheetPos,
+    CellValue, Pos, SheetPos,
     controller::GridController,
     grid::{CodeCellLanguage, DataTable, SheetId},
 };
@@ -199,8 +199,18 @@ pub fn assert_code_language(
     code: String,
 ) {
     let pos = Pos::from(sheet_pos);
-    let Some(dt) = gc.sheet(sheet_pos.sheet_id).data_table_at(&pos) else {
-        panic!("Data table at {pos} not found");
+    let sheet = gc.sheet(sheet_pos.sheet_id);
+
+    // First check for CellValue::Code in columns
+    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
+        assert_eq!(code_cell.code_run.language, language);
+        assert_eq!(code_cell.code_run.code, code);
+        return;
+    }
+
+    // Otherwise check data_tables
+    let Some(dt) = sheet.data_table_at(&pos) else {
+        panic!("Code cell at {pos} not found (neither CellValue::Code nor DataTable)");
     };
     if let Some(code_run) = dt.code_run() {
         assert_eq!(code_run.language, language);

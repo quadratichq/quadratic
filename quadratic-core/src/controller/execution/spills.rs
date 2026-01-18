@@ -31,10 +31,11 @@ mod tests {
     use crate::{Array, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
+        // Note: DataTable cells don't have language set (border drawn from table struct)
         vec![JsRenderCell {
             x,
             y,
-            language: Some(CodeCellLanguage::Formula),
+            language: None,
             special: Some(JsRenderCellSpecial::SpillError),
             ..Default::default()
         }]
@@ -194,9 +195,10 @@ mod tests {
             sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
 
         // should be B0: "1" since spill was removed
+        // Note: DataTable cells don't have language set (border drawn from table struct)
         assert_eq!(
             render_cells,
-            output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None),
+            output_number(1, 1, "1", None, None),
         );
     }
 
@@ -225,9 +227,10 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_render_cells(rect![A1:A1], gc.a1_context());
+        // Note: DataTable cells don't have language set (border drawn from table struct)
         assert_eq!(
             render_cells,
-            output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
+            output_number(1, 1, "1", None, None)
         );
         let render_cells = sheet.get_render_cells(rect![A2:A2], gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
@@ -317,9 +320,10 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let render_cells =
             sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }), gc.a1_context());
+        // Note: DataTable cells don't have language set (border drawn from table struct)
         assert_eq!(
             render_cells,
-            output_number(12, 10, "1", Some(CodeCellLanguage::Formula), None)
+            output_number(12, 10, "1", None, None)
         );
     }
 
@@ -393,12 +397,13 @@ mod tests {
 
         let render_cells =
             sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
+        // Note: DataTable cells don't have language set (border drawn from table struct)
         assert_eq!(
             render_cells,
             vec![JsRenderCell {
                 x: 1,
                 y: 1,
-                language: Some(CodeCellLanguage::Javascript),
+                language: None,
                 special: Some(JsRenderCellSpecial::SpillError),
                 ..Default::default()
             }]

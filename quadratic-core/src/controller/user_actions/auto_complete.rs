@@ -962,14 +962,16 @@ mod tests {
     fn test_autocomplete_preserves_data_table_properties() {
         // Test that autocomplete preserves data table properties like
         // show_name, alternating_colors, etc.
+        // Note: 1x1 formulas are stored as CellValue::Code, so we use a multi-cell
+        // array formula to test DataTable property preservation.
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // Create a formula code cell
+        // Create a formula code cell with multi-cell output (1x2 array)
         gc.set_code_cell(
             pos![sheet_id!A1],
             CodeCellLanguage::Formula,
-            "1+1".to_string(),
+            "{1;2}".to_string(), // 1x2 array output
             None,
             None,
             false,
@@ -993,8 +995,8 @@ mod tests {
         // Autocomplete the formula to B1
         gc.autocomplete(
             sheet_id,
-            Rect::test_a1("A1"),
-            Rect::test_a1("A1:B1"),
+            Rect::test_a1("A1:A2"),
+            Rect::test_a1("A1:B2"),
             None,
             false,
         )
@@ -1016,7 +1018,7 @@ mod tests {
 
         // Also verify the formula was correctly adjusted
         let code_run = autocompleted_dt.code_run().unwrap();
-        assert_eq!(code_run.code, "1+1"); // Formula doesn't have references to adjust
+        assert_eq!(code_run.code, "{1;2}"); // Formula doesn't have references to adjust
     }
 
     #[test]

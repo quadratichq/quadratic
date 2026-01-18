@@ -239,7 +239,7 @@ fn export_cells_accessed(
         .collect()
 }
 
-fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
     let error = if let Some(error) = code_run.error {
         Some(RunError {
             span: error.span.map(|span| crate::Span {
@@ -452,7 +452,7 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
     }
 }
 
-fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
+pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {

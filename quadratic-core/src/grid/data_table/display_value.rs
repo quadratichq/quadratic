@@ -394,13 +394,18 @@ mod test {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let dt = test_create_formula(&mut gc, pos![sheet_id!a1], "256");
+        // Use array formula {256;512} to ensure it stays as DataTable (1x1 formulas become CellValue::Code)
+        let dt = test_create_formula(&mut gc, pos![sheet_id!a1], "{256;512}");
 
         let display_value = dt.display_value(false).unwrap().into_array().unwrap();
-        assert_eq!(display_value.size(), ArraySize::new(1, 1).unwrap());
+        assert_eq!(display_value.size(), ArraySize::new(1, 2).unwrap());
         assert_eq!(
             display_value.get(0, 0).unwrap().to_display(),
             "256".to_string()
+        );
+        assert_eq!(
+            display_value.get(0, 1).unwrap().to_display(),
+            "512".to_string()
         );
     }
 }

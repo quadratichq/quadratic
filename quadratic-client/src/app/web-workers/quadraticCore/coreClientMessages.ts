@@ -128,6 +128,17 @@ export interface CoreClientExportCsvSelection {
   id: number;
 }
 
+export interface ClientCoreExportJson {
+  type: 'clientCoreExportJson';
+  id: number;
+}
+
+export interface CoreClientExportJson {
+  type: 'coreClientExportJson';
+  json: string;
+  id: number;
+}
+
 //#endregion
 
 //#region Query
@@ -154,9 +165,23 @@ export interface ClientCoreGetEditCell {
   id: number;
 }
 
+/** Code cell info returned when editing a single-cell code cell */
+export interface JsEditCellCodeCell {
+  language: CodeCellLanguage;
+  code: string;
+}
+
+/** Result of getting a cell for editing */
+export interface JsEditCell {
+  /** The text representation of the cell value for editing */
+  text: string;
+  /** If this is a single-cell code cell, contains the language and code */
+  codeCell?: JsEditCellCodeCell;
+}
+
 export interface CoreClientGetEditCell {
   type: 'coreClientGetEditCell';
-  cell: string | undefined;
+  cell: JsEditCell | undefined;
   id: number;
 }
 
@@ -1788,7 +1813,8 @@ export type ClientCoreMessage =
   | ClientCoreUndo
   | ClientCoreRedo
   | ClientCoreSetFormula
-  | ClientCoreSetFormulas;
+  | ClientCoreSetFormulas
+  | ClientCoreExportJson;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1808,6 +1834,7 @@ export type CoreClientMessage =
   | CoreClientUpgradeFile
   | CoreClientExport
   | CoreClientExportExcel
+  | CoreClientExportJson
   | CoreClientSearch
   | CoreClientCopyToClipboard
   | CoreClientCutToClipboard

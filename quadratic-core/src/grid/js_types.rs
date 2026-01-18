@@ -91,6 +91,7 @@ impl From<CellValue> for JsCellValueKind {
             CellValue::Html(_) => JsCellValueKind::Html,
             CellValue::Image(_) => JsCellValueKind::Image,
             CellValue::RichText(_) => JsCellValueKind::RichText,
+            CellValue::Code(code_cell) => (*code_cell.output).clone().into(),
         }
     }
 }
@@ -108,6 +109,26 @@ pub struct JsCellValuePos {
     pub value: String,
     pub kind: JsCellValueKind,
     pub pos: String,
+}
+
+/// Information about a code cell for editing purposes
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsEditCellCodeCell {
+    pub language: CodeCellLanguage,
+    pub code: String,
+}
+
+/// Result of getting a cell for editing. If the cell is a single-cell code cell,
+/// the code_cell field will be populated with the language and code.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsEditCell {
+    /// The text representation of the cell value for editing
+    pub text: String,
+    /// If this is a single-cell code cell, contains the language and code
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code_cell: Option<JsEditCellCodeCell>,
 }
 
 #[derive(Serialize, Debug, PartialEq, TS)]
