@@ -219,7 +219,12 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
+
+            // Gracefully handle case where data table was already deleted
+            // (can happen with duplicate DeleteDataTable operations)
+            let Some(data_table_pos) = sheet.data_tables.get_pos_contains(pos) else {
+                return Ok(());
+            };
 
             // mark the data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;

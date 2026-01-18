@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::operation::Operation;
 use crate::cell_values::CellValues;
@@ -225,6 +225,9 @@ impl GridController {
                 .collect();
 
             let rects = expanded_rects;
+            // Track data tables already scheduled for deletion across all rects
+            // to avoid duplicate DeleteDataTable operations
+            let mut already_scheduled_for_deletion: HashSet<Pos> = HashSet::new();
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
@@ -312,19 +315,28 @@ impl GridController {
                 }
 
                 if !can_delete_column {
-                    if save_data_table_anchors.is_empty() {
+                    // Combine positions to exclude: saved anchors, data tables being deleted in this rect,
+                    // and data tables already scheduled for deletion from previous rects
+                    // (DeleteDataTable handles deletion, so we don't need SetCellValues on those cells)
+                    let positions_to_exclude: Vec<Pos> = save_data_table_anchors
+                        .into_iter()
+                        .chain(delete_data_tables.iter().copied())
+                        .chain(already_scheduled_for_deletion.iter().copied())
+                        .collect();
+
+                    if positions_to_exclude.is_empty() {
                         ops.push(Operation::SetCellValues {
                             sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
                             values: CellValues::new_blank(rect.width(), rect.height()),
                         });
                     } else {
-                        // remove all saved_data_table_anchors from the rect
+                        // remove all positions_to_exclude from the rect
                         // (which may result in multiple resulting rects)
                         let mut rects = vec![rect];
-                        for data_table_pos in save_data_table_anchors {
+                        for pos in positions_to_exclude {
                             let mut next_rects = vec![];
                             for rect in rects {
-                                let result = rect.subtract(Rect::single_pos(data_table_pos));
+                                let result = rect.subtract(Rect::single_pos(pos));
                                 next_rects.extend(result);
                             }
                             rects = next_rects;
@@ -344,11 +356,14 @@ impl GridController {
                     }
                 }
 
-                delete_data_tables.iter().for_each(|data_table_pos| {
-                    ops.push(Operation::DeleteDataTable {
-                        sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                    });
-                });
+                // Only create DeleteDataTable operations for tables not already scheduled
+                for data_table_pos in delete_data_tables {
+                    if already_scheduled_for_deletion.insert(data_table_pos) {
+                        ops.push(Operation::DeleteDataTable {
+                            sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                        });
+                    }
+                }
 
                 // need to update the selection if a table was deleted (since we
                 // can no longer use the table ref)
@@ -629,13 +644,14 @@ mod test {
         let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = pos![sheet_id!A2];
 
+        // SetCellValues now excludes B2 (data table position) since DeleteDataTable handles it
         assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
             vec![
                 Operation::SetCellValues {
                     sheet_pos,
-                    values: CellValues::new_blank(2, 1)
+                    values: CellValues::new_blank(1, 1)
                 },
                 Operation::DeleteDataTable {
                     sheet_pos: sheet_pos_2,
@@ -663,27 +679,22 @@ mod test {
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
 
-        assert_eq!(operations.len(), 4);
-
-        // FYI: this ends up with two delete data tables since we don't track
-        // which ops are already created and both A2: and B return the existing
-        // table before it's deleted. todo: maybe improve this?
+        // SetCellValues excludes data table positions, and DeleteDataTable operations
+        // are deduplicated across rects (B2 is only deleted once, not twice)
+        assert_eq!(operations.len(), 3);
         assert_eq!(
             operations,
             vec![
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new_blank(1, 2)
+                    values: CellValues::new_blank(1, 1)
                 },
                 Operation::DeleteDataTable {
                     sheet_pos: sheet_pos_2,
                 },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new_blank(2, 1)
-                },
-                Operation::DeleteDataTable {
-                    sheet_pos: sheet_pos_2,
+                    values: CellValues::new_blank(1, 1)
                 },
             ]
         );

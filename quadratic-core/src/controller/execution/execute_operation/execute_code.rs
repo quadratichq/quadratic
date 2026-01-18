@@ -31,14 +31,11 @@ impl GridController {
                     if !skip_compute
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
                     {
-                        // only add if there isn't already one pending
-                        if !transaction.operations.iter().any(|op| match op {
-                            Operation::ComputeCode { sheet_pos }
-                            | Operation::SetComputeCode { sheet_pos, .. } => {
-                                code_cell_sheet_pos == sheet_pos
-                            }
-                            _ => false,
-                        }) {
+                        // O(1) check using HashSet instead of O(n) iteration
+                        if !transaction
+                            .pending_compute_positions
+                            .contains(code_cell_sheet_pos)
+                        {
                             new_code_cell_positions.push(*code_cell_sheet_pos);
                         }
                     }
@@ -93,6 +90,12 @@ impl GridController {
         }
 
         // Add pending ComputeCode operations (their SetDataTable is in non_code_operations)
+        // Track positions before moving the ops
+        for op in &pending_compute_code_ops {
+            if let Operation::ComputeCode { sheet_pos } = op {
+                transaction.pending_compute_positions.insert(*sheet_pos);
+            }
+        }
         for op in pending_compute_code_ops {
             new_operations.push_back(op);
         }
@@ -100,6 +103,8 @@ impl GridController {
         // Add code operations with code_runs in dependency order
         for pos in ordered_positions {
             new_operations.push_back(Operation::ComputeCode { sheet_pos: pos });
+            // Track in HashSet for O(1) duplicate checking in future calls
+            transaction.pending_compute_positions.insert(pos);
         }
 
         transaction.operations = new_operations;
