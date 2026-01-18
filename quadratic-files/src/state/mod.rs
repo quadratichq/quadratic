@@ -10,11 +10,11 @@ pub mod stats;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
-use quadratic_rust_shared::quadratic_database::{ConnectionOptions, Pool};
+use quadratic_rust_shared::quadratic_database::{ConnectionOptions, PgPool, connect};
 use tokio::sync::Mutex;
 
 use crate::config::Config;
-use crate::error::Result;
+use crate::error::{FilesError, Result};
 use crate::state::settings::Settings;
 use crate::synced_connection::cache::SyncedConnectionCache;
 
@@ -27,7 +27,7 @@ pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) stats: Mutex<Stats>,
     pub(crate) synced_connection_cache: SyncedConnectionCache,
-    pub(crate) pool: Pool,
+    pub(crate) pool: PgPool,
     pub(crate) batch_size: usize,
 }
 
@@ -39,14 +39,8 @@ impl State {
             password: config.pubsub_password.to_owned(),
         });
 
-        let connection_options = ConnectionOptions::new(
-            Some(config.max_db_connections),
-            None, // use default acquire_timeout
-        );
-
         tracing::info!(
-            "Initializing database pool with {} max connections, batch size {}",
-            config.max_db_connections,
+            "Initializing database pool, batch size {}",
             config.batch_size
         );
 
@@ -55,7 +49,8 @@ impl State {
             settings: Settings::new(config, jwks).await?,
             stats: Mutex::new(Stats::new()),
             synced_connection_cache: SyncedConnectionCache::new(),
-            pool: Pool::new(&config.database_url, connection_options).await,
+            pool: connect(&config.database_url, ConnectionOptions::default())
+                .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?,
             batch_size: config.batch_size,
         })
     }

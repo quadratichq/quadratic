@@ -179,7 +179,7 @@ mod tests {
         let file_uuid = Uuid::new_v4();
         let team_uuid = Uuid::new_v4();
         let user_auth0_id = format!("test-auth0-{}", Uuid::new_v4());
-        let pool = connect_test().await.unwrap();
+        let pool = connect_test().unwrap();
 
         // Create a test User (required FK for File.creator_user_id)
         let user_id: i32 = sqlx::query_scalar(
