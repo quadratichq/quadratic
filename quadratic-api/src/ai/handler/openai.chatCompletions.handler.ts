@@ -2,17 +2,17 @@ import type OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-  AzureOpenAIModelKey,
-  BasetenModelKey,
-  FireworksModelKey,
-  OpenRouterModelKey,
-  ParsedAIResponse,
-  XAIModelKey,
+    AzureOpenAIModelKey,
+    BasetenModelKey,
+    FireworksModelKey,
+    OpenRouterModelKey,
+    ParsedAIResponse,
+    XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import {
-  getOpenAIChatCompletionsApiArgs,
-  parseOpenAIChatCompletionsResponse,
-  parseOpenAIChatCompletionsStream,
+    getOpenAIChatCompletionsApiArgs,
+    parseOpenAIChatCompletionsResponse,
+    parseOpenAIChatCompletionsStream,
 } from '../helpers/openai.chatCompletions.helper';
 import type { HandleAIRequestArgs } from './ai.handler';
 
