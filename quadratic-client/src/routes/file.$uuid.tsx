@@ -31,14 +31,14 @@ import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSc
 import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
-  Link,
-  Outlet,
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useParams,
-  useRouteError,
-  useSearchParams,
+    Link,
+    Outlet,
+    isRouteErrorResponse,
+    redirect,
+    useLoaderData,
+    useParams,
+    useRouteError,
+    useSearchParams,
 } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';

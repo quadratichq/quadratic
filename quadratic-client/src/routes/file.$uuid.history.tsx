@@ -19,13 +19,13 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Link,
-  useFetcher,
-  useLoaderData,
-  useParams,
-  useRevalidator,
-  useRouteError,
-  type LoaderFunctionArgs,
+    Link,
+    useFetcher,
+    useLoaderData,
+    useParams,
+    useRevalidator,
+    useRouteError,
+    type LoaderFunctionArgs,
 } from 'react-router';
 
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'] & {
