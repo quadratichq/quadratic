@@ -16,17 +16,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { cn } from '@/shared/shadcn/utils';
 
-const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
-  ...(debugFlag('debug') ? [['minute', 'Every minute'] as [ScheduledTaskIntervalType, string]] : []),
-  ['hour', 'Every hour'],
-  ['days', 'Every day'],
-  ['custom', 'Custom cron'],
-];
-
-const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = EVERY_ENTRY.map(([value, label]) => ({
-  value,
-  label,
-}));
+// Note: This must be a function called at runtime (not module load time) because
+// debug flags are loaded asynchronously from localforage when ?debug is in the URL.
+// We call this directly on each render (no useMemo) so that when debug flags finish
+// loading from localforage, the next render will pick up the correct options.
+const getEveryOptions = (): { value: ScheduledTaskIntervalType; label: string }[] => {
+  const entries: [ScheduledTaskIntervalType, string][] = [
+    ...(debugFlag('debug') ? [['minute', 'Every 15 minutes'] as [ScheduledTaskIntervalType, string]] : []),
+    ['hour', 'Every hour'],
+    ['days', 'Every day'],
+    ['custom', 'Custom cron'],
+  ];
+  return entries.map(([value, label]) => ({ value, label }));
+};
 
 const DAYS_STRING = ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
 const DAYS: { value: string; label: string }[] = DAYS_STRING.map((day, index) => ({
@@ -44,6 +46,9 @@ export const ScheduledTaskInterval = (props: Props) => {
   // Use file timezone or fallback to browser timezone
   const timezone = fileTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const timezoneAbbr = getTimeZoneAbbreviation(timezone);
+
+  // Get interval options at render time (debug flags are loaded async)
+  const everyOptions = getEveryOptions();
 
   const {
     cronType,
@@ -75,7 +80,7 @@ export const ScheduledTaskInterval = (props: Props) => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {EVERY.map(({ value, label }) => (
+              {everyOptions.map(({ value, label }) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>

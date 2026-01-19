@@ -38,9 +38,11 @@ impl TableMap {
     pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
         if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id))
             && let Some(table) = self.tables.get(&table_name)
-                && table.sheet_id == sheet_id && table.bounds.min == pos {
-                    self.tables.swap_remove(&table_name);
-                }
+            && table.sheet_id == sheet_id
+            && table.bounds.min == pos
+        {
+            self.tables.swap_remove(&table_name);
+        }
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
@@ -59,16 +61,20 @@ impl TableMap {
             .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
     }
 
-    /// Finds a table by name.
+    /// Finds a table by name (case-insensitive).
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
-        let table_name = case_fold_ascii(table_name);
-        self.tables.get(&table_name)
+        self.tables
+            .iter()
+            .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
+            .map(|(_, entry)| entry)
     }
 
-    /// Finds a table by name.
+    /// Finds a table by name (case-insensitive).
     pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name = case_fold_ascii(table_name);
-        self.tables.get_mut(&table_name)
+        self.tables
+            .iter_mut()
+            .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
+            .map(|(_, entry)| entry)
     }
 
     /// Returns true if the table has a column with the given name.
@@ -133,9 +139,9 @@ impl TableMap {
                 .visible_columns
                 .iter()
                 .position(|col| col == column_name)
-            {
-                table.visible_columns.remove(index);
-            }
+        {
+            table.visible_columns.remove(index);
+        }
     }
 
     pub fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {

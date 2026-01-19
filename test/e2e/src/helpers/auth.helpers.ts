@@ -3,6 +3,25 @@ import { USER_PASSWORD } from '../constants/auth';
 import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
 
+/**
+ * Dismisses the "Upgrade to Pro" dialog if it appears on the dashboard.
+ * This dialog can appear periodically for team owners on free plans.
+ */
+export const dismissUpgradeToProDialog = async (page: Page) => {
+  try {
+    // Check if the upgrade dialog is visible (it has "Upgrade to Pro" as the title)
+    const upgradeDialog = page.locator('[role="dialog"]:has-text("Upgrade to Pro")');
+    if (await upgradeDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+      // Click the close button (has sr-only text "Close")
+      await page.locator('[role="dialog"] button:has-text("Close")').click({ timeout: 5000 });
+      // Wait for the dialog to close
+      await upgradeDialog.waitFor({ state: 'hidden', timeout: 5000 });
+    }
+  } catch {
+    // Dialog not present or couldn't be closed, continue silently
+  }
+};
+
 type LogInOptions = {
   emailPrefix: string;
   teamName?: string;
@@ -159,6 +178,9 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // Wait for Filter by file or creator name...
   await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
+
+  // Dismiss the "Upgrade to Pro" dialog if it appears
+  await dismissUpgradeToProDialog(page);
 
   await cleanUpFiles(page, { fileName: 'Untitled' });
 

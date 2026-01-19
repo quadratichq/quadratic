@@ -10,10 +10,13 @@ pub mod stats;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
+use quadratic_rust_shared::quadratic_database::{
+    ConnectionOptions, PgPool, connect, get_database_settings, warm_pool,
+};
 use tokio::sync::Mutex;
 
 use crate::config::Config;
-use crate::error::Result;
+use crate::error::{FilesError, Result};
 use crate::state::settings::Settings;
 use crate::synced_connection::cache::SyncedConnectionCache;
 
@@ -26,6 +29,8 @@ pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) stats: Mutex<Stats>,
     pub(crate) synced_connection_cache: SyncedConnectionCache,
+    pub(crate) pool: PgPool,
+    pub(crate) batch_size: usize,
 }
 
 impl State {
@@ -36,11 +41,48 @@ impl State {
             password: config.pubsub_password.to_owned(),
         });
 
+        let connection_options = ConnectionOptions::new(Some(config.max_db_connections), None);
+
+        tracing::info!(
+            "Initializing database pool, max_connections: {}, batch size: {}",
+            config.max_db_connections,
+            config.batch_size
+        );
+
+        let pool = connect(&config.database_url, connection_options)
+            .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?;
+
+        // Try to pre-warm the connection pool, but don't block startup if it fails.
+        // The lazy pool will retry on actual queries.
+        match warm_pool(&pool).await {
+            Ok(()) => {
+                // Log database settings to help diagnose connection issues
+                match get_database_settings(&pool).await {
+                    Ok(settings) => {
+                        tracing::info!(
+                            "Database connection established - pool size: {}, db max_connections: {}, db current_connections: {}",
+                            pool.size(),
+                            settings.max_connections,
+                            settings.current_connections
+                        );
+                    }
+                    Err(e) => {
+                        tracing::warn!("Database connected but failed to query settings: {e}");
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Failed to pre-warm database pool (will retry on first query): {e}");
+            }
+        }
+
         Ok(State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config, jwks).await?,
             stats: Mutex::new(Stats::new()),
             synced_connection_cache: SyncedConnectionCache::new(),
+            pool,
+            batch_size: config.batch_size,
         })
     }
 }

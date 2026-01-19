@@ -95,19 +95,21 @@ model File {
 
 model FileCheckpoint {
     // Unique Identifiers
-    id             Int      @id @default(autoincrement())
-    file           File     @relation(fields: [fileId], references: [id])
-    fileId         Int      @map("file_id")
-    sequenceNumber Int      @map("sequence_number")
+    id               Int      @id @default(autoincrement())
+    file             File     @relation(fields: [fileId], references: [id])
+    fileId           Int      @map("file_id")
+    sequenceNumber   Int      @map("sequence_number")
     // Checkpoint Data
-    s3Bucket       String   @map("s3_bucket")
-    s3Key          String   @map("s3_key")
-    version        String // Quadratic file version
+    s3Bucket         String   @map("s3_bucket")
+    s3Key            String   @map("s3_key")
+    version          String // Quadratic file version
+    transactionsHash String?  @map("transactions_hash") // Hash for duplicate detection
     // Metadata
-    timestamp      DateTime @default(now())
+    timestamp        DateTime @default(now())
 
     @@unique([fileId, sequenceNumber])
     @@index([fileId, sequenceNumber])
+    @@index([fileId, transactionsHash])
 }
 
 enum SubscriptionStatus {
@@ -178,6 +180,8 @@ enum ConnectionType {
     NEON
     SUPABASE
     MIXPANEL
+    GOOGLE_ANALYTICS
+    PLAID
 }
 
 model Connection {
@@ -194,8 +198,50 @@ model Connection {
     // secretArn       String // AWS Secret Manager ARN
 
     // Type-specific details
-    type        ConnectionType
-    typeDetails Bytes // InitializationVector:Cyphertext(JSON)
+    type             ConnectionType
+    typeDetails      Bytes // InitializationVector:Cyphertext(JSON)
+    SyncedConnection SyncedConnection?
+}
+
+enum SyncedConnectionStatus {
+    ACTIVE
+    INACTIVE
+    DELETED
+}
+
+enum SyncedConnectionLogStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+    FAILED
+}
+
+model SyncedConnection {
+    id                  Int                    @id @default(autoincrement())
+    connectionId        Int                    @unique @map("connection_id")
+    connection          Connection             @relation(fields: [connectionId], references: [id])
+    percentCompleted    Int                    @default(0) @map("percent_completed")
+    status              SyncedConnectionStatus @default(ACTIVE) @map("status")
+    updatedDate         DateTime               @default(now()) @map("updated_date")
+    SyncedConnectionLog SyncedConnectionLog[]
+
+    @@index([status])
+}
+
+model SyncedConnectionLog {
+    id                 Int                       @id @default(autoincrement())
+    syncedConnectionId Int                       @map("synced_connection_id")
+    syncedConnection   SyncedConnection          @relation(fields: [syncedConnectionId], references: [id])
+    runId              String                    @map("run_id")
+    syncedDates        DateTime[]                @default([]) @map("synced_dates") @db.Date
+    status             SyncedConnectionLogStatus @default(PENDING) @map("status")
+    error              String?                   @map("error")
+    createdDate        DateTime                  @default(now()) @map("created_date")
+
+    @@index([syncedConnectionId])
+    @@index([status])
+    @@index([runId, createdDate(sort: Desc)])
+    @@index([createdDate(sort: Desc)])
 }
 
 model UserTeamRole {

@@ -13,13 +13,14 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+pub use super::single_cell_tables_cache::SingleCellTablesCache;
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct SheetDataTablesCache {
     // boolean map indicating presence of single cell data table at a position
     // this takes spills and errors into account, which are also single cell tables
-    // NOTE: the bool cannot be false
-    pub(crate) single_cell_tables: Contiguous2D<Option<bool>>,
+    pub(crate) single_cell_tables: SingleCellTablesCache,
 
     // cache of output rect and empty values for multi-cell data tables
     pub(crate) multi_cell_tables: MultiCellTablesCache,
@@ -73,7 +74,7 @@ impl SheetDataTablesCache {
     }
 
     /// Returns the finite bounds of the sheet data tables.
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub fn finite_bounds(&mut self) -> Option<Rect> {
         match (
             self.single_cell_tables.finite_bounds(),
             self.multi_cell_tables.finite_bounds(),
@@ -89,7 +90,7 @@ impl SheetDataTablesCache {
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
     pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
-        if self.single_cell_tables.get(pos).is_some() {
+        if self.single_cell_tables.get(pos) {
             Some(pos)
         } else {
             self.multi_cell_tables.get(pos)
@@ -99,7 +100,7 @@ impl SheetDataTablesCache {
     /// Returns true if the cell has content, ignoring blank cells within a
     /// multi-cell data table.
     pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
-        self.single_cell_tables.get(pos).is_some()
+        self.single_cell_tables.get(pos)
             || self
                 .multi_cell_tables
                 .get(pos)
@@ -179,7 +180,7 @@ impl SheetDataTablesCache {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct MultiCellTablesCache {
     /// position map indicating presence of multi-cell data table at a position
     /// each position value is the root cell position of the data table
@@ -190,6 +191,22 @@ pub struct MultiCellTablesCache {
     /// this is used to assist with finding the next cell with content
     /// NOTE: the bool cannot be false
     multi_cell_tables_empty: Contiguous2D<Option<bool>>,
+
+    /// Cached bounds for O(1) access - expanded on additions
+    #[serde(skip)]
+    cached_bounds: Option<Rect>,
+
+    /// Flag indicating bounds may have shrunk and need full recalc
+    #[serde(skip)]
+    bounds_dirty: bool,
+}
+
+// Manual PartialEq implementation that excludes cached fields
+impl PartialEq for MultiCellTablesCache {
+    fn eq(&self, other: &Self) -> bool {
+        self.multi_cell_tables == other.multi_cell_tables
+            && self.multi_cell_tables_empty == other.multi_cell_tables_empty
+    }
 }
 
 impl MultiCellTablesCache {
@@ -197,6 +214,8 @@ impl MultiCellTablesCache {
         Self {
             multi_cell_tables: Contiguous2D::new(),
             multi_cell_tables_empty: Contiguous2D::new(),
+            cached_bounds: None,
+            bounds_dirty: false,
         }
     }
 
@@ -206,7 +225,15 @@ impl MultiCellTablesCache {
     }
 
     pub fn set_rect(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, data_table: Option<&DataTable>) {
+        let new_rect = Rect::new(x1, y1, x2, y2);
+
         if let Some(data_table) = data_table {
+            // Update cached bounds - expand if needed (O(1))
+            self.cached_bounds = Some(match self.cached_bounds {
+                Some(existing) => existing.union(&new_rect),
+                None => new_rect,
+            });
+
             // Update output rect
             self.multi_cell_tables
                 .set_rect(x1, y1, Some(x2), Some(y2), Some((x1, y1).into()));
@@ -312,6 +339,16 @@ impl MultiCellTablesCache {
 
             self.multi_cell_tables_empty
                 .set_rect(x1, y1, Some(x2), Some(y2), None);
+
+            // Mark bounds as dirty if removal touches the edge of current bounds
+            if let Some(bounds) = &self.cached_bounds
+                && (new_rect.min.x <= bounds.min.x
+                    || new_rect.max.x >= bounds.max.x
+                    || new_rect.min.y <= bounds.min.y
+                    || new_rect.max.y >= bounds.max.y)
+            {
+                self.bounds_dirty = true;
+            }
         }
     }
 
@@ -358,9 +395,15 @@ impl MultiCellTablesCache {
         self.multi_cell_tables.row_max(row)
     }
 
-    /// Returns the finite bounds of the multi-cell data tables
-    pub fn finite_bounds(&self) -> Option<Rect> {
-        self.multi_cell_tables.finite_bounds()
+    /// Returns the finite bounds of the multi-cell data tables.
+    /// Uses cached bounds for O(1) performance when not dirty.
+    pub fn finite_bounds(&mut self) -> Option<Rect> {
+        if self.bounds_dirty {
+            // Full recalculation needed after edge removal
+            self.cached_bounds = self.multi_cell_tables.finite_bounds();
+            self.bounds_dirty = false;
+        }
+        self.cached_bounds
     }
 
     /// Returns true if the cell has an empty value

@@ -1,6 +1,10 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowConnectionsMenuAtom,
+  editorInteractionStateTeamUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { apiClient } from '@/shared/api/apiClient';
 import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -17,8 +21,64 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback } from 'react';
-import { useRecoilCallback, useSetRecoilState } from 'recoil';
+import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';
+
+const SYNCED_CONNECTION_POLL_INTERVAL_MS = 10000; // 10 seconds
+
+interface ConnectionMenuItemProps {
+  connection: ConnectionList[number];
+  teamUuid: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: ConnectionMenuItemProps) => {
+  const [percentCompleted, setPercentCompleted] = useState<number | undefined>(
+    connection.syncedConnectionPercentCompleted
+  );
+
+  // Poll for updated syncedConnectionPercentCompleted when the connection has sync data
+  useEffect(() => {
+    // Only poll if this is a synced connection
+    if (connection.syncedConnectionUpdatedDate === undefined) {
+      return;
+    }
+
+    const fetchConnection = async () => {
+      try {
+        const fetchedConnection = await apiClient.connections.get({
+          connectionUuid: connection.uuid,
+          teamUuid,
+        });
+        setPercentCompleted(fetchedConnection?.syncedConnectionPercentCompleted);
+      } catch {
+        // Silently fail - keep using existing percentCompleted value
+      }
+    };
+
+    // Fire immediately to get fresh data
+    fetchConnection();
+
+    // Then poll every interval
+    const interval = setInterval(fetchConnection, SYNCED_CONNECTION_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [connection.uuid, connection.syncedConnectionUpdatedDate, teamUuid]);
+
+  const isSyncedConnection = connection.syncedConnectionUpdatedDate !== undefined;
+  const isDisabled = isSyncedConnection && percentCompleted !== undefined && percentCompleted < 100;
+
+  return (
+    <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isDisabled}>
+      <LanguageIcon language={connection.type} className="flex-shrink-0" />
+      <span className="truncate">{connection.name}</span>
+      {isDisabled && <time className="ml-2 text-xs text-muted-foreground">(syncing, {percentCompleted}%)</time>}
+      <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
+    </DropdownMenuItem>
+  );
+});
 
 interface AIUserMessageFormConnectionsButtonProps {
   disabled: boolean;
@@ -29,6 +89,7 @@ interface AIUserMessageFormConnectionsButtonProps {
 export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
+    const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
     const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
     const handleOnClickButton = useCallback(() => {
@@ -108,20 +169,15 @@ export const AIUserMessageFormConnectionsButton = memo(
             <>
               <DropdownMenuSeparator />
 
-              {connections.map((connection) => {
-                const isActive = context.connection?.id === connection.uuid;
-                return (
-                  <DropdownMenuItem
-                    key={connection.uuid}
-                    onClick={() => handleClickConnection(connection.uuid)}
-                    className={`gap-4`}
-                  >
-                    <LanguageIcon language={connection.type} className="flex-shrink-0" />
-                    <span className="truncate">{connection.name}</span>
-                    <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
-                  </DropdownMenuItem>
-                );
-              })}
+              {connections.map((connection) => (
+                <ConnectionMenuItem
+                  key={connection.uuid}
+                  connection={connection}
+                  teamUuid={teamUuid}
+                  isActive={context.connection?.id === connection.uuid}
+                  onClick={() => handleClickConnection(connection.uuid)}
+                />
+              ))}
             </>
           )}
         </DropdownMenuContent>

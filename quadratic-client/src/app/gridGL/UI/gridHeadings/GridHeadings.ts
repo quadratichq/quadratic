@@ -1,6 +1,5 @@
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -9,6 +8,7 @@ import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation'
 import { GridHeadingsLabels } from '@/app/gridGL/UI/gridHeadings/GridHeadingsLabels';
 import { GridHeadingRows } from '@/app/gridGL/UI/gridHeadings/GridHeadingsRows';
 import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { Size } from '@/app/shared/types/size';
 import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -387,6 +387,16 @@ export class GridHeadings extends Container {
         row === start.index
       ) {
         // only show labels that will fit (unless grid lines are hidden)
+        if (
+          currentHeight === 0 ||
+          (currentHeight < halfCharacterHeight &&
+            scale >= 0.2 &&
+            content.gridLines.alpha >= colors.headerSelectedRowColumnBackgroundColorAlpha)
+        ) {
+          row++;
+          continue;
+        }
+
         let yPosition = y + currentHeight / 2;
         const top = yPosition - halfCharacterHeight / 2;
         const bottom = yPosition + halfCharacterHeight / 2;

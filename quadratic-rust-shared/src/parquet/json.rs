@@ -4,6 +4,7 @@
 //! using Arrow's built-in JSON reader, eliminating custom schema inference and
 //! type promotion logic.
 
+use arrow::array::ArrayRef;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use arrow_json::{ReaderBuilder, reader::infer_json_schema};
@@ -72,9 +73,17 @@ pub fn inferred_schema_from_json_lines(json_lines: &[&str]) -> Result<Arc<Schema
 }
 
 /// Convert JSON lines to a RecordBatch using the predefined schema
+/// If json_lines is empty, returns an empty RecordBatch with the schema (0 rows)
 pub fn json_lines_to_record_batch(schema: Arc<Schema>, json_lines: &[&str]) -> Result<RecordBatch> {
+    // Handle empty input - create empty RecordBatch with schema
     if json_lines.is_empty() {
-        return Err(error("Cannot convert empty JSON lines".to_string()));
+        let empty_columns: Vec<ArrayRef> = schema
+            .fields()
+            .iter()
+            .map(|field| arrow::array::new_empty_array(field.data_type()))
+            .collect();
+        return RecordBatch::try_new(schema, empty_columns)
+            .map_err(|e| error(format!("Failed to create empty RecordBatch: {}", e)));
     }
 
     // combine JSON lines into a single string

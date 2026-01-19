@@ -12,12 +12,15 @@ use super::*;
 ///
 /// This includes the sheet prefix, if present.
 pub(super) fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
-    match p.next()? {
-        Token::CellOrTableRef => Some(p.ctx.has_table(p.token_str())),
-        Token::InternalCellRef => Some(false),
-        Token::UnquotedSheetReference => is_table_ref(p),
-        Token::StringLiteral if p.next()? == Token::SheetRefOp => is_table_ref(p),
-        _ => None,
+    loop {
+        match p.next()? {
+            Token::CellOrTableRef => return Some(p.ctx.has_table(p.token_str())),
+            Token::InternalCellRef => return Some(false),
+            // Skip sheet prefix and continue checking
+            Token::UnquotedSheetReference => continue,
+            Token::StringLiteral if p.next()? == Token::SheetRefOp => continue,
+            _ => return None,
+        }
     }
 }
 

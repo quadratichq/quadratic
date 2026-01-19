@@ -214,9 +214,10 @@ export const AlignmentFormatting = memo(
     if (props.formatSummary?.align === 'center') AlignIcon = FormatAlignCenterIcon;
     if (props.formatSummary?.align === 'right') AlignIcon = FormatAlignRightIcon;
 
-    let VerticalAlignIcon = VerticalAlignTopIcon;
+    // the default vertical align is bottom
+    let VerticalAlignIcon = VerticalAlignBottomIcon;
     if (props.formatSummary?.verticalAlign === 'middle') VerticalAlignIcon = VerticalAlignMiddleIcon;
-    if (props.formatSummary?.verticalAlign === 'bottom') VerticalAlignIcon = VerticalAlignBottomIcon;
+    if (props.formatSummary?.verticalAlign === 'top') VerticalAlignIcon = VerticalAlignTopIcon;
 
     let TextWrapIcon = FormatTextOverflowIcon;
     if (props.formatSummary?.wrap === 'wrap') TextWrapIcon = FormatTextWrapIcon;

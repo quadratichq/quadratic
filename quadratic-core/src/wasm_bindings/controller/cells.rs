@@ -58,6 +58,26 @@ impl GridController {
         }
     }
 
+    /// Sets a cell to a RichText value with the given spans (as JSON).
+    #[wasm_bindgen(js_name = "setCellRichText")]
+    pub fn js_set_cell_rich_text(
+        &mut self,
+        sheet_id: String,
+        x: i32,
+        y: i32,
+        spans_json: String,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let pos = Pos::from((x, y));
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        let spans: Vec<crate::cellvalue::TextSpan> = serde_json::from_str(&spans_json)
+            .map_err(|e| JsValue::from_str(&format!("Failed to parse spans: {e}")))?;
+
+        self.set_cell_rich_text((pos, sheet_id).into(), spans, cursor);
+
+        Ok(())
+    }
+
     /// changes the decimal places
     #[wasm_bindgen(js_name = "setCellNumericDecimals")]
     pub fn js_set_cell_numeric_decimals(
