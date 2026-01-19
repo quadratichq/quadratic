@@ -7,6 +7,9 @@ const config = new pulumi.Config();
 // Shared VPC ID from Pulumi ESC
 const sharedVpcId = config.require("vpc-id");
 
+// Known CIDR blocks (hardcoded to avoid Output type complications)
+const API_VPC_CIDR = "10.0.0.0/16";
+
 // Create VPC Peering Connection between api-vpc and shared VPC
 export const vpcPeeringConnection = new aws.ec2.VpcPeeringConnection(
   "api-shared-vpc-peering",
@@ -19,39 +22,31 @@ export const vpcPeeringConnection = new aws.ec2.VpcPeeringConnection(
 );
 
 // Get the shared VPC to find its CIDR block
-const sharedVpc = aws.ec2.getVpc({ id: sharedVpcId });
-
-// Export CIDR blocks for use in security groups
-export const apiVpcCidr = apiVPC.cidrBlock; // 10.0.0.0/16
-export const sharedVpcCidr = pulumi.output(sharedVpc).cidrBlock;
+const sharedVpcCidr = aws.ec2.getVpcOutput({ id: sharedVpcId }).cidrBlock;
 
 // Add route from api-vpc public subnet (where files is) to shared VPC via peering
 // Get the route table associated with the public subnet
-const apiPublicRouteTable = pulumi.output(
-  aws.ec2.getRouteTable({
-    subnetId: apiPublicSubnet1.id,
-  }),
-);
+const apiPublicRouteTable = aws.ec2.getRouteTableOutput({
+  subnetId: apiPublicSubnet1.id,
+});
 
 // Add route to shared VPC CIDR via peering connection
 new aws.ec2.Route("api-to-shared-vpc-route", {
-  routeTableId: apiPublicRouteTable.id,
+  routeTableId: apiPublicRouteTable.routeTableId,
   destinationCidrBlock: sharedVpcCidr,
   vpcPeeringConnectionId: vpcPeeringConnection.id,
 });
 
 // Add route from shared VPC to api-vpc
 // Get the main route table of shared VPC
-const sharedVpcMainRouteTable = pulumi.output(
-  aws.ec2.getRouteTable({
-    vpcId: sharedVpcId,
-    filters: [{ name: "association.main", values: ["true"] }],
-  }),
-);
+const sharedVpcMainRouteTable = aws.ec2.getRouteTableOutput({
+  vpcId: sharedVpcId,
+  filters: [{ name: "association.main", values: ["true"] }],
+});
 
 new aws.ec2.Route("shared-to-api-vpc-route", {
-  routeTableId: sharedVpcMainRouteTable.id,
-  destinationCidrBlock: apiVpcCidr,
+  routeTableId: sharedVpcMainRouteTable.routeTableId,
+  destinationCidrBlock: API_VPC_CIDR,
   vpcPeeringConnectionId: vpcPeeringConnection.id,
 });
 
