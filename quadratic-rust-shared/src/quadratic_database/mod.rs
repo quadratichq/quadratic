@@ -39,7 +39,7 @@ impl ConnectionOptions {
     }
 }
 
-/// Connect to a PostgreSQL database (blocking until connected)
+/// Connect to a PostgreSQL database (lazy - connections established on first use)
 ///
 /// # Arguments
 ///
@@ -48,17 +48,12 @@ impl ConnectionOptions {
 ///
 /// # Returns
 ///
-/// A `Result` containing the PostgreSQL pool
-pub async fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
+/// A `Result` containing the PostgreSQL pool (only fails on URL parse errors)
+pub fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
     PgPoolOptions::new()
         .max_connections(options.max_connections)
         .acquire_timeout(options.acquire_timeout)
-        // Test connections before returning them from the pool.
-        // This ensures stale connections (e.g., after database restart or
-        // network partition) are detected and replaced automatically.
-        .test_before_acquire(true)
-        .connect(url)
-        .await
+        .connect_lazy(url)
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
 }
 
@@ -80,17 +75,13 @@ pub fn connect_lazy(url: &str, options: ConnectionOptions) -> Result<PgPool> {
     PgPoolOptions::new()
         .max_connections(options.max_connections)
         .acquire_timeout(options.acquire_timeout)
-        // Test connections before returning them from the pool.
-        // This ensures stale connections (e.g., after database restart or
-        // network partition) are detected and replaced automatically.
-        .test_before_acquire(true)
         .connect_lazy(url)
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
 }
 
 // For testing, we need to connect to a test database
-pub async fn connect_test() -> Result<PgPool> {
+pub fn connect_test() -> Result<PgPool> {
     let _ = dotenv::from_filename(".env.test").ok();
     let url = std::env::var("DATABASE_DSN").expect("DATABASE_DSN is not set");
-    connect(&url, ConnectionOptions::default()).await
+    connect(&url, ConnectionOptions::default())
 }
