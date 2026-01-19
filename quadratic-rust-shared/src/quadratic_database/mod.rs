@@ -6,6 +6,7 @@ pub use sqlx::PgPool;
 
 use std::time::Duration;
 
+use sqlx::Executor;
 use sqlx::postgres::PgPoolOptions;
 
 use crate::{error::Result, quadratic_database::error::QuadraticDatabase};
@@ -77,6 +78,60 @@ pub fn connect_lazy(url: &str, options: ConnectionOptions) -> Result<PgPool> {
         .acquire_timeout(options.acquire_timeout)
         .connect_lazy(url)
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
+}
+
+/// Pre-warm a connection pool by establishing at least one connection.
+///
+/// This is useful after creating a lazy pool to ensure the database is
+/// reachable before processing begins. Fails fast if the database is
+/// unavailable rather than failing on the first actual query.
+///
+/// # Arguments
+///
+/// * `pool` - The PostgreSQL connection pool to warm
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure to establish a connection
+pub async fn warm_pool(pool: &PgPool) -> Result<()> {
+    pool.execute("SELECT 1")
+        .await
+        .map_err(|e| QuadraticDatabase::Connect(format!("Failed to warm pool: {e}")).into())
+        .map(|_| ())
+}
+
+/// Database settings retrieved from PostgreSQL
+#[derive(Debug)]
+pub struct DatabaseSettings {
+    pub max_connections: i32,
+    pub current_connections: i64,
+}
+
+/// Query database settings from PostgreSQL.
+///
+/// Returns max_connections and current active connections count.
+pub async fn get_database_settings(pool: &PgPool) -> Result<DatabaseSettings> {
+    let max_connections: String = sqlx::query_scalar("SHOW max_connections")
+        .fetch_one(pool)
+        .await
+        .map_err(|e| QuadraticDatabase::Query(format!("Failed to get max_connections: {e}")))?;
+
+    let current_connections: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM pg_stat_activity WHERE state IS NOT NULL")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| {
+                QuadraticDatabase::Query(format!("Failed to get current connections: {e}"))
+            })?;
+
+    let max_connections = max_connections
+        .parse::<i32>()
+        .map_err(|e| QuadraticDatabase::Query(format!("Failed to parse max_connections: {e}")))?;
+
+    Ok(DatabaseSettings {
+        max_connections,
+        current_connections,
+    })
 }
 
 // For testing, we need to connect to a test database
