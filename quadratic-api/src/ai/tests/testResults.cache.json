@@ -1,0 +1,1295 @@
+{
+  "version": 1,
+  "results": {
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:set_cell_values": {
+      "passed": true,
+      "timestamp": 1768839078295,
+      "cost": 0.056514
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:get_cell_data": {
+      "passed": true,
+      "timestamp": 1768839078297,
+      "cost": 0.055917
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:move_cells": {
+      "passed": true,
+      "timestamp": 1768839078297,
+      "cost": 0.056895
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:delete_cells": {
+      "passed": true,
+      "timestamp": 1768839082572,
+      "cost": 0.056169
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_data_table": {
+      "passed": true,
+      "timestamp": 1768839082572,
+      "cost": 0.058239
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:convert_to_table": {
+      "passed": true,
+      "timestamp": 1768839082573,
+      "cost": 0.057573
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:table_meta": {
+      "passed": true,
+      "timestamp": 1768839087151,
+      "cost": 0.057948
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:table_column_settings": {
+      "passed": true,
+      "timestamp": 1768839087152,
+      "cost": 0.057048
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:get_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839087153,
+      "cost": 0.056601
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:set_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839091742,
+      "cost": 0.057873
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:set_formula_cell_value": {
+      "passed": true,
+      "timestamp": 1768839091743,
+      "cost": 0.056832
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:rerun_code": {
+      "passed": true,
+      "timestamp": 1768839091744,
+      "cost": 0.056136
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_sheet": {
+      "passed": true,
+      "timestamp": 1768839095392,
+      "cost": 0.056376
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:rename_sheet": {
+      "passed": true,
+      "timestamp": 1768839095392,
+      "cost": 0.055713
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:duplicate_sheet": {
+      "passed": true,
+      "timestamp": 1768839095393,
+      "cost": 0.0564
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:delete_sheet": {
+      "passed": true,
+      "timestamp": 1768839102145,
+      "cost": 0.055854
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:move_sheet": {
+      "passed": true,
+      "timestamp": 1768839102145,
+      "cost": 0.055908
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:color_sheets": {
+      "passed": true,
+      "timestamp": 1768839102146,
+      "cost": 0.059598
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:set_text_formats": {
+      "passed": true,
+      "timestamp": 1768839106154,
+      "cost": 0.056721
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:get_text_formats": {
+      "passed": true,
+      "timestamp": 1768839106154,
+      "cost": 0.056349
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:set_borders": {
+      "passed": true,
+      "timestamp": 1768839106155,
+      "cost": 0.057351
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:resize_columns": {
+      "passed": true,
+      "timestamp": 1768839116202,
+      "cost": 0.059199
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:resize_rows": {
+      "passed": true,
+      "timestamp": 1768839116203,
+      "cost": 0.06108
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:insert_columns": {
+      "passed": true,
+      "timestamp": 1768839116204,
+      "cost": 0.056685
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:insert_rows": {
+      "passed": true,
+      "timestamp": 1768839119933,
+      "cost": 0.056547
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:delete_columns": {
+      "passed": true,
+      "timestamp": 1768839119934,
+      "cost": 0.05631
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:delete_rows": {
+      "passed": true,
+      "timestamp": 1768839119935,
+      "cost": 0.05631
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:text_search": {
+      "passed": true,
+      "timestamp": 1768839124913,
+      "cost": 0.056793
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:get_validations": {
+      "passed": true,
+      "timestamp": 1768839124914,
+      "cost": 0.055761
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_logical_validation": {
+      "passed": true,
+      "timestamp": 1768839124916,
+      "cost": 0.057795
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_list_validation": {
+      "passed": true,
+      "timestamp": 1768839139449,
+      "cost": 0.066039
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_text_validation": {
+      "passed": true,
+      "timestamp": 1768839139450,
+      "cost": 0.062736
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_number_validation": {
+      "passed": true,
+      "timestamp": 1768839139451,
+      "cost": 0.062118
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_date_time_validation": {
+      "passed": true,
+      "timestamp": 1768839147244,
+      "cost": 0.062505
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:add_message": {
+      "passed": true,
+      "timestamp": 1768839147246,
+      "cost": 0.05754
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:remove_validation": {
+      "passed": true,
+      "timestamp": 1768839147247,
+      "cost": 0.056106
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:undo": {
+      "passed": true,
+      "timestamp": 1768839150814,
+      "cost": 0.055857
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:redo": {
+      "passed": true,
+      "timestamp": 1768839150816,
+      "cost": 0.056142
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:contact_us": {
+      "passed": true,
+      "timestamp": 1768839150816,
+      "cost": 0.055353
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:get_database_schemas": {
+      "passed": true,
+      "timestamp": 1768839156368,
+      "cost": 0.057
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:set_sql_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839156370,
+      "cost": 0.059343
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:pdf_import": {
+      "passed": true,
+      "timestamp": 1768839156370,
+      "cost": 0.056766
+    },
+    "vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on:web_search": {
+      "passed": true,
+      "timestamp": 1768839159840,
+      "cost": 0.055998
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:set_cell_values": {
+      "passed": true,
+      "timestamp": 1768839163876,
+      "cost": 0.093815
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:get_cell_data": {
+      "passed": true,
+      "timestamp": 1768839163877,
+      "cost": 0.09337
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:move_cells": {
+      "passed": true,
+      "timestamp": 1768839163877,
+      "cost": 0.094075
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:delete_cells": {
+      "passed": true,
+      "timestamp": 1768839168588,
+      "cost": 0.092065
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_data_table": {
+      "passed": true,
+      "timestamp": 1768839168592,
+      "cost": 0.095015
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:convert_to_table": {
+      "passed": true,
+      "timestamp": 1768839168593,
+      "cost": 0.09538
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:table_meta": {
+      "passed": true,
+      "timestamp": 1768839172806,
+      "cost": 0.094255
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:table_column_settings": {
+      "passed": true,
+      "timestamp": 1768839172807,
+      "cost": 0.094905
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:get_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839172807,
+      "cost": 0.094235
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:set_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839177904,
+      "cost": 0.09548
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:set_formula_cell_value": {
+      "passed": true,
+      "timestamp": 1768839177905,
+      "cost": 0.09452
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:rerun_code": {
+      "passed": true,
+      "timestamp": 1768839177906,
+      "cost": 0.092935
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_sheet": {
+      "passed": true,
+      "timestamp": 1768839181705,
+      "cost": 0.093135
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:rename_sheet": {
+      "passed": true,
+      "timestamp": 1768839181706,
+      "cost": 0.092205
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:duplicate_sheet": {
+      "passed": true,
+      "timestamp": 1768839181707,
+      "cost": 0.09315
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:delete_sheet": {
+      "passed": true,
+      "timestamp": 1768839186285,
+      "cost": 0.09194
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:move_sheet": {
+      "passed": true,
+      "timestamp": 1768839186286,
+      "cost": 0.09298
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:color_sheets": {
+      "passed": true,
+      "timestamp": 1768839186287,
+      "cost": 0.093405
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:set_text_formats": {
+      "passed": true,
+      "timestamp": 1768839191381,
+      "cost": 0.094135
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:get_text_formats": {
+      "passed": true,
+      "timestamp": 1768839191382,
+      "cost": 0.09344
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:set_borders": {
+      "passed": true,
+      "timestamp": 1768839191383,
+      "cost": 0.09491
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:resize_columns": {
+      "passed": true,
+      "timestamp": 1768839195160,
+      "cost": 0.093215
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:resize_rows": {
+      "passed": true,
+      "timestamp": 1768839195161,
+      "cost": 0.0933
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:insert_columns": {
+      "passed": true,
+      "timestamp": 1768839195162,
+      "cost": 0.093525
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:insert_rows": {
+      "passed": true,
+      "timestamp": 1768839198922,
+      "cost": 0.09367
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:delete_columns": {
+      "passed": true,
+      "timestamp": 1768839198924,
+      "cost": 0.092525
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:delete_rows": {
+      "passed": true,
+      "timestamp": 1768839198925,
+      "cost": 0.09235
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:text_search": {
+      "passed": true,
+      "timestamp": 1768839203066,
+      "cost": 0.094505
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:get_validations": {
+      "passed": true,
+      "timestamp": 1768839203067,
+      "cost": 0.091735
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_logical_validation": {
+      "passed": true,
+      "timestamp": 1768839203068,
+      "cost": 0.093625
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_list_validation": {
+      "passed": true,
+      "timestamp": 1768839212670,
+      "cost": 0.09509
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_text_validation": {
+      "passed": true,
+      "timestamp": 1768839212671,
+      "cost": 0.09371
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_number_validation": {
+      "passed": true,
+      "timestamp": 1768839212671,
+      "cost": 0.098555
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_date_time_validation": {
+      "passed": true,
+      "timestamp": 1768839216674,
+      "cost": 0.0938
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:add_message": {
+      "passed": true,
+      "timestamp": 1768839216675,
+      "cost": 0.094275
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:remove_validation": {
+      "passed": true,
+      "timestamp": 1768839216676,
+      "cost": 0.09281
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:undo": {
+      "passed": true,
+      "timestamp": 1768839220528,
+      "cost": 0.09152
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:redo": {
+      "passed": true,
+      "timestamp": 1768839220529,
+      "cost": 0.09157
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:contact_us": {
+      "passed": true,
+      "timestamp": 1768839220529,
+      "cost": 0.09128
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:get_database_schemas": {
+      "passed": true,
+      "timestamp": 1768839228743,
+      "cost": 0.091825
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:set_sql_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839228744,
+      "cost": 0.09878
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:pdf_import": {
+      "passed": true,
+      "timestamp": 1768839228745,
+      "cost": 0.09316
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on:web_search": {
+      "passed": true,
+      "timestamp": 1768839231747,
+      "cost": 0.09158
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:set_cell_values": {
+      "passed": true,
+      "timestamp": 1768839235900,
+      "cost": 0.092815
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:get_cell_data": {
+      "passed": true,
+      "timestamp": 1768839235901,
+      "cost": 0.093595
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:move_cells": {
+      "passed": true,
+      "timestamp": 1768839235901,
+      "cost": 0.0941
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:delete_cells": {
+      "passed": true,
+      "timestamp": 1768839240332,
+      "cost": 0.09209
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_data_table": {
+      "passed": true,
+      "timestamp": 1768839240333,
+      "cost": 0.095115
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:convert_to_table": {
+      "passed": true,
+      "timestamp": 1768839240334,
+      "cost": 0.094805
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:table_meta": {
+      "passed": true,
+      "timestamp": 1768839244753,
+      "cost": 0.094605
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:table_column_settings": {
+      "passed": true,
+      "timestamp": 1768839244754,
+      "cost": 0.094705
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:get_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839244755,
+      "cost": 0.09311
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:set_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839250079,
+      "cost": 0.095455
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:set_formula_cell_value": {
+      "passed": true,
+      "timestamp": 1768839250079,
+      "cost": 0.09432
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:rerun_code": {
+      "passed": true,
+      "timestamp": 1768839250080,
+      "cost": 0.09296
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_sheet": {
+      "passed": true,
+      "timestamp": 1768839253787,
+      "cost": 0.09221
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:rename_sheet": {
+      "passed": true,
+      "timestamp": 1768839253788,
+      "cost": 0.09223
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:duplicate_sheet": {
+      "passed": true,
+      "timestamp": 1768839253791,
+      "cost": 0.09245
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:delete_sheet": {
+      "passed": true,
+      "timestamp": 1768839257143,
+      "cost": 0.091815
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:move_sheet": {
+      "passed": true,
+      "timestamp": 1768839257144,
+      "cost": 0.093105
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:color_sheets": {
+      "passed": true,
+      "timestamp": 1768839257144,
+      "cost": 0.09238
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:set_text_formats": {
+      "passed": true,
+      "timestamp": 1768839261439,
+      "cost": 0.09411
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:get_text_formats": {
+      "passed": true,
+      "timestamp": 1768839261440,
+      "cost": 0.09264
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:set_borders": {
+      "passed": true,
+      "timestamp": 1768839261440,
+      "cost": 0.095035
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:resize_columns": {
+      "passed": true,
+      "timestamp": 1768839267914,
+      "cost": 0.093215
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:resize_rows": {
+      "passed": true,
+      "timestamp": 1768839267916,
+      "cost": 0.09735
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:insert_columns": {
+      "passed": true,
+      "timestamp": 1768839267916,
+      "cost": 0.09355
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:insert_rows": {
+      "passed": true,
+      "timestamp": 1768839271787,
+      "cost": 0.093645
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:delete_columns": {
+      "passed": true,
+      "timestamp": 1768839271788,
+      "cost": 0.092775
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:delete_rows": {
+      "passed": true,
+      "timestamp": 1768839271789,
+      "cost": 0.092975
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:text_search": {
+      "passed": true,
+      "timestamp": 1768839275807,
+      "cost": 0.094505
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:get_validations": {
+      "passed": true,
+      "timestamp": 1768839275808,
+      "cost": 0.091835
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_logical_validation": {
+      "passed": true,
+      "timestamp": 1768839275809,
+      "cost": 0.09335
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_list_validation": {
+      "passed": true,
+      "timestamp": 1768839286066,
+      "cost": 0.094965
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_text_validation": {
+      "passed": true,
+      "timestamp": 1768839286067,
+      "cost": 0.09371
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_number_validation": {
+      "passed": true,
+      "timestamp": 1768839286068,
+      "cost": 0.10218
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_date_time_validation": {
+      "passed": true,
+      "timestamp": 1768839289927,
+      "cost": 0.093525
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:add_message": {
+      "passed": true,
+      "timestamp": 1768839289928,
+      "cost": 0.0933
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:remove_validation": {
+      "passed": true,
+      "timestamp": 1768839289929,
+      "cost": 0.092085
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:undo": {
+      "passed": true,
+      "timestamp": 1768839293410,
+      "cost": 0.09157
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:redo": {
+      "passed": true,
+      "timestamp": 1768839293410,
+      "cost": 0.09157
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:contact_us": {
+      "passed": true,
+      "timestamp": 1768839293411,
+      "cost": 0.091105
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:get_database_schemas": {
+      "passed": true,
+      "timestamp": 1768839298951,
+      "cost": 0.09205
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:set_sql_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839298952,
+      "cost": 0.097655
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:pdf_import": {
+      "passed": true,
+      "timestamp": 1768839298953,
+      "cost": 0.09311
+    },
+    "vertexai-anthropic:claude-opus-4-5@20251101:web_search": {
+      "passed": true,
+      "timestamp": 1768839301759,
+      "cost": 0.09158
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:set_cell_values": {
+      "passed": true,
+      "timestamp": 1768839304188,
+      "cost": 0.018758
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:get_cell_data": {
+      "passed": true,
+      "timestamp": 1768839304189,
+      "cost": 0.018664
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:move_cells": {
+      "passed": true,
+      "timestamp": 1768839304190,
+      "cost": 0.0188
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:delete_cells": {
+      "passed": true,
+      "timestamp": 1768839306539,
+      "cost": 0.018558
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_data_table": {
+      "passed": true,
+      "timestamp": 1768839306540,
+      "cost": 0.019103
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:convert_to_table": {
+      "passed": true,
+      "timestamp": 1768839306540,
+      "cost": 0.018981
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:table_meta": {
+      "passed": true,
+      "timestamp": 1768839309540,
+      "cost": 0.018991
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:table_column_settings": {
+      "passed": true,
+      "timestamp": 1768839309541,
+      "cost": 0.019361
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:get_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839309542,
+      "cost": 0.018777
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:set_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839312556,
+      "cost": 0.019116
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:set_formula_cell_value": {
+      "passed": true,
+      "timestamp": 1768839312556,
+      "cost": 0.018864
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:rerun_code": {
+      "passed": true,
+      "timestamp": 1768839312557,
+      "cost": 0.018537
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_sheet": {
+      "passed": true,
+      "timestamp": 1768839314772,
+      "cost": 0.018612
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:rename_sheet": {
+      "passed": true,
+      "timestamp": 1768839314773,
+      "cost": 0.018571
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:duplicate_sheet": {
+      "passed": true,
+      "timestamp": 1768839314773,
+      "cost": 0.018645
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:delete_sheet": {
+      "passed": true,
+      "timestamp": 1768839317744,
+      "cost": 0.018483
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:move_sheet": {
+      "passed": true,
+      "timestamp": 1768839317745,
+      "cost": 0.018656
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:color_sheets": {
+      "passed": true,
+      "timestamp": 1768839317745,
+      "cost": 0.019356
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:set_text_formats": {
+      "passed": true,
+      "timestamp": 1768839320104,
+      "cost": 0.018832
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:get_text_formats": {
+      "passed": true,
+      "timestamp": 1768839320105,
+      "cost": 0.018673
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:set_borders": {
+      "passed": true,
+      "timestamp": 1768839320106,
+      "cost": 0.019047
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:resize_columns": {
+      "passed": true,
+      "timestamp": 1768839327479,
+      "cost": 0.020458
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:resize_rows": {
+      "passed": true,
+      "timestamp": 1768839327480,
+      "cost": 0.02186
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:insert_columns": {
+      "passed": true,
+      "timestamp": 1768839327481,
+      "cost": 0.018785
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:insert_rows": {
+      "passed": true,
+      "timestamp": 1768839330024,
+      "cost": 0.018769
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:delete_columns": {
+      "passed": true,
+      "timestamp": 1768839330025,
+      "cost": 0.018645
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:delete_rows": {
+      "passed": true,
+      "timestamp": 1768839330026,
+      "cost": 0.018795
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:text_search": {
+      "passed": true,
+      "timestamp": 1768839332994,
+      "cost": 0.019016
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:get_validations": {
+      "passed": true,
+      "timestamp": 1768839332995,
+      "cost": 0.018547
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_logical_validation": {
+      "passed": true,
+      "timestamp": 1768839332996,
+      "cost": 0.019125
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_list_validation": {
+      "passed": true,
+      "timestamp": 1768839338445,
+      "cost": 0.018898
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_text_validation": {
+      "passed": true,
+      "timestamp": 1768839338446,
+      "cost": 0.019102
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_number_validation": {
+      "passed": true,
+      "timestamp": 1768839338446,
+      "cost": 0.020411
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_date_time_validation": {
+      "passed": true,
+      "timestamp": 1768839341034,
+      "cost": 0.01915
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:add_message": {
+      "passed": true,
+      "timestamp": 1768839341034,
+      "cost": 0.01879
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:remove_validation": {
+      "passed": true,
+      "timestamp": 1768839341035,
+      "cost": 0.018587
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:undo": {
+      "passed": true,
+      "timestamp": 1768839342972,
+      "cost": 0.018359
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:redo": {
+      "passed": true,
+      "timestamp": 1768839342973,
+      "cost": 0.018319
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:contact_us": {
+      "passed": true,
+      "timestamp": 1768839342974,
+      "cost": 0.018461
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:get_database_schemas": {
+      "passed": true,
+      "timestamp": 1768839345624,
+      "cost": 0.01864
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:set_sql_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839345625,
+      "cost": 0.019511
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:pdf_import": {
+      "passed": true,
+      "timestamp": 1768839345626,
+      "cost": 0.018772
+    },
+    "vertexai-anthropic:claude-haiku-4-5@20251001:web_search": {
+      "passed": true,
+      "timestamp": 1768839347780,
+      "cost": 0.018636
+    },
+    "azure-openai:gpt-5-codex:set_cell_values": {
+      "passed": true,
+      "timestamp": 1768839352166,
+      "cost": 0.00274875
+    },
+    "azure-openai:gpt-5-codex:get_cell_data": {
+      "passed": true,
+      "timestamp": 1768839352166,
+      "cost": 0.00271
+    },
+    "azure-openai:gpt-5-codex:move_cells": {
+      "passed": true,
+      "timestamp": 1768839352166,
+      "cost": 0.00262975
+    },
+    "azure-openai:gpt-5-codex:delete_cells": {
+      "passed": true,
+      "timestamp": 1768839355585,
+      "cost": 0.002516
+    },
+    "azure-openai:gpt-5-codex:add_data_table": {
+      "passed": true,
+      "timestamp": 1768839355586,
+      "cost": 0.00278975
+    },
+    "azure-openai:gpt-5-codex:convert_to_table": {
+      "passed": true,
+      "timestamp": 1768839355586,
+      "cost": 0.00269225
+    },
+    "azure-openai:gpt-5-codex:table_meta": {
+      "passed": true,
+      "timestamp": 1768839358489,
+      "cost": 0.00280875
+    },
+    "azure-openai:gpt-5-codex:table_column_settings": {
+      "passed": true,
+      "timestamp": 1768839358490,
+      "cost": 0.00291
+    },
+    "azure-openai:gpt-5-codex:get_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839358491,
+      "cost": 0.0027625
+    },
+    "azure-openai:gpt-5-codex:set_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839362057,
+      "cost": 0.0029275
+    },
+    "azure-openai:gpt-5-codex:set_formula_cell_value": {
+      "passed": true,
+      "timestamp": 1768839362057,
+      "cost": 0.00285625
+    },
+    "azure-openai:gpt-5-codex:rerun_code": {
+      "passed": true,
+      "timestamp": 1768839362058,
+      "cost": 0.00267875
+    },
+    "azure-openai:gpt-5-codex:add_sheet": {
+      "passed": true,
+      "timestamp": 1768839365655,
+      "cost": 0.00266875
+    },
+    "azure-openai:gpt-5-codex:rename_sheet": {
+      "passed": true,
+      "timestamp": 1768839365656,
+      "cost": 0.00264
+    },
+    "azure-openai:gpt-5-codex:duplicate_sheet": {
+      "passed": true,
+      "timestamp": 1768839365657,
+      "cost": 0.0026875
+    },
+    "azure-openai:gpt-5-codex:delete_sheet": {
+      "passed": true,
+      "timestamp": 1768839370064,
+      "cost": 0.00256625
+    },
+    "azure-openai:gpt-5-codex:move_sheet": {
+      "passed": true,
+      "timestamp": 1768839370066,
+      "cost": 0.00268375
+    },
+    "azure-openai:gpt-5-codex:color_sheets": {
+      "passed": true,
+      "timestamp": 1768839370066,
+      "cost": 0.00276375
+    },
+    "azure-openai:gpt-5-codex:set_text_formats": {
+      "passed": true,
+      "timestamp": 1768839373635,
+      "cost": 0.00285625
+    },
+    "azure-openai:gpt-5-codex:get_text_formats": {
+      "passed": true,
+      "timestamp": 1768839373636,
+      "cost": 0.00270875
+    },
+    "azure-openai:gpt-5-codex:set_borders": {
+      "passed": true,
+      "timestamp": 1768839373637,
+      "cost": 0.0028475
+    },
+    "azure-openai:gpt-5-codex:resize_columns": {
+      "passed": true,
+      "timestamp": 1768839376771,
+      "cost": 0.00267375
+    },
+    "azure-openai:gpt-5-codex:resize_rows": {
+      "passed": true,
+      "timestamp": 1768839376772,
+      "cost": 0.0026875
+    },
+    "azure-openai:gpt-5-codex:insert_columns": {
+      "passed": true,
+      "timestamp": 1768839376773,
+      "cost": 0.00270875
+    },
+    "azure-openai:gpt-5-codex:insert_rows": {
+      "passed": true,
+      "timestamp": 1768839382938,
+      "cost": 0.00256225
+    },
+    "azure-openai:gpt-5-codex:delete_columns": {
+      "passed": true,
+      "timestamp": 1768839382939,
+      "cost": 0.0026475
+    },
+    "azure-openai:gpt-5-codex:delete_rows": {
+      "passed": true,
+      "timestamp": 1768839382940,
+      "cost": 0.00266875
+    },
+    "azure-openai:gpt-5-codex:text_search": {
+      "passed": true,
+      "timestamp": 1768839389803,
+      "cost": 0.00280625
+    },
+    "azure-openai:gpt-5-codex:get_validations": {
+      "passed": true,
+      "timestamp": 1768839389805,
+      "cost": 0.00257625
+    },
+    "azure-openai:gpt-5-codex:add_logical_validation": {
+      "passed": true,
+      "timestamp": 1768839389805,
+      "cost": 0.00273125
+    },
+    "azure-openai:gpt-5-codex:add_list_validation": {
+      "passed": true,
+      "timestamp": 1768839394079,
+      "cost": 0.002845
+    },
+    "azure-openai:gpt-5-codex:add_text_validation": {
+      "passed": true,
+      "timestamp": 1768839394081,
+      "cost": 0.00272625
+    },
+    "azure-openai:gpt-5-codex:add_number_validation": {
+      "passed": true,
+      "timestamp": 1768839394082,
+      "cost": 0.0027625
+    },
+    "azure-openai:gpt-5-codex:add_date_time_validation": {
+      "passed": true,
+      "timestamp": 1768839399485,
+      "cost": 0.00273375
+    },
+    "azure-openai:gpt-5-codex:add_message": {
+      "passed": true,
+      "timestamp": 1768839399486,
+      "cost": 0.02220375
+    },
+    "azure-openai:gpt-5-codex:remove_validation": {
+      "passed": true,
+      "timestamp": 1768839399487,
+      "cost": 0.00251975
+    },
+    "azure-openai:gpt-5-codex:undo": {
+      "passed": true,
+      "timestamp": 1768839405116,
+      "cost": 0.00238725
+    },
+    "azure-openai:gpt-5-codex:redo": {
+      "passed": true,
+      "timestamp": 1768839405118,
+      "cost": 0.00239725
+    },
+    "azure-openai:gpt-5-codex:contact_us": {
+      "passed": true,
+      "timestamp": 1768839405118,
+      "cost": 0.00256625
+    },
+    "azure-openai:gpt-5-codex:get_database_schemas": {
+      "passed": true,
+      "timestamp": 1768839411282,
+      "cost": 0.002426
+    },
+    "azure-openai:gpt-5-codex:set_sql_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839411283,
+      "cost": 0.00326
+    },
+    "azure-openai:gpt-5-codex:pdf_import": {
+      "passed": true,
+      "timestamp": 1768839411284,
+      "cost": 0.00268
+    },
+    "azure-openai:gpt-5-codex:web_search": {
+      "passed": true,
+      "timestamp": 1768839416027,
+      "cost": 0.002486
+    },
+    "azure-openai:gpt-5.2:set_cell_values": {
+      "passed": true,
+      "timestamp": 1768839420954,
+      "cost": 0.0443375
+    },
+    "azure-openai:gpt-5.2:get_cell_data": {
+      "passed": true,
+      "timestamp": 1768839420958,
+      "cost": 0.04426
+    },
+    "azure-openai:gpt-5.2:move_cells": {
+      "passed": true,
+      "timestamp": 1768839420958,
+      "cost": 0.0055075
+    },
+    "azure-openai:gpt-5.2:delete_cells": {
+      "passed": true,
+      "timestamp": 1768839425012,
+      "cost": 0.00528
+    },
+    "azure-openai:gpt-5.2:add_data_table": {
+      "passed": true,
+      "timestamp": 1768839425014,
+      "cost": 0.0058275
+    },
+    "azure-openai:gpt-5.2:convert_to_table": {
+      "passed": true,
+      "timestamp": 1768839425015,
+      "cost": 0.0062125
+    },
+    "azure-openai:gpt-5.2:table_meta": {
+      "passed": true,
+      "timestamp": 1768839429692,
+      "cost": 0.0055775
+    },
+    "azure-openai:gpt-5.2:table_column_settings": {
+      "passed": true,
+      "timestamp": 1768839429693,
+      "cost": 0.00578
+    },
+    "azure-openai:gpt-5.2:get_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839429694,
+      "cost": 0.005485
+    },
+    "azure-openai:gpt-5.2:set_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839434128,
+      "cost": 0.006295
+    },
+    "azure-openai:gpt-5.2:set_formula_cell_value": {
+      "passed": true,
+      "timestamp": 1768839434129,
+      "cost": 0.0056725
+    },
+    "azure-openai:gpt-5.2:rerun_code": {
+      "passed": true,
+      "timestamp": 1768839434130,
+      "cost": 0.0053175
+    },
+    "azure-openai:gpt-5.2:add_sheet": {
+      "passed": true,
+      "timestamp": 1768839439039,
+      "cost": 0.0052975
+    },
+    "azure-openai:gpt-5.2:rename_sheet": {
+      "passed": true,
+      "timestamp": 1768839439040,
+      "cost": 0.04464
+    },
+    "azure-openai:gpt-5.2:duplicate_sheet": {
+      "passed": true,
+      "timestamp": 1768839439041,
+      "cost": 0.011147
+    },
+    "azure-openai:gpt-5.2:delete_sheet": {
+      "passed": true,
+      "timestamp": 1768839444517,
+      "cost": 0.0058125
+    },
+    "azure-openai:gpt-5.2:move_sheet": {
+      "passed": true,
+      "timestamp": 1768839444518,
+      "cost": 0.0058275
+    },
+    "azure-openai:gpt-5.2:color_sheets": {
+      "passed": true,
+      "timestamp": 1768839444518,
+      "cost": 0.0054875
+    },
+    "azure-openai:gpt-5.2:set_text_formats": {
+      "passed": true,
+      "timestamp": 1768839451540,
+      "cost": 0.0056725
+    },
+    "azure-openai:gpt-5.2:get_text_formats": {
+      "passed": true,
+      "timestamp": 1768839451540,
+      "cost": 0.0053775
+    },
+    "azure-openai:gpt-5.2:set_borders": {
+      "passed": true,
+      "timestamp": 1768839451541,
+      "cost": 0.005655
+    },
+    "azure-openai:gpt-5.2:resize_columns": {
+      "passed": true,
+      "timestamp": 1768839454783,
+      "cost": 0.0053075
+    },
+    "azure-openai:gpt-5.2:resize_rows": {
+      "passed": true,
+      "timestamp": 1768839454784,
+      "cost": 0.005335
+    },
+    "azure-openai:gpt-5.2:insert_columns": {
+      "passed": true,
+      "timestamp": 1768839454785,
+      "cost": 0.0053775
+    },
+    "azure-openai:gpt-5.2:insert_rows": {
+      "passed": true,
+      "timestamp": 1768839461502,
+      "cost": 0.0053725
+    },
+    "azure-openai:gpt-5.2:delete_columns": {
+      "passed": true,
+      "timestamp": 1768839461502,
+      "cost": 0.044135
+    },
+    "azure-openai:gpt-5.2:delete_rows": {
+      "passed": true,
+      "timestamp": 1768839461504,
+      "cost": 0.0441775
+    },
+    "azure-openai:gpt-5.2:text_search": {
+      "passed": true,
+      "timestamp": 1768839465438,
+      "cost": 0.0444525
+    },
+    "azure-openai:gpt-5.2:get_validations": {
+      "passed": true,
+      "timestamp": 1768839465440,
+      "cost": 0.0051125
+    },
+    "azure-openai:gpt-5.2:add_logical_validation": {
+      "passed": true,
+      "timestamp": 1768839465440,
+      "cost": 0.0054225
+    },
+    "azure-openai:gpt-5.2:add_list_validation": {
+      "passed": true,
+      "timestamp": 1768839473523,
+      "cost": 0.00657
+    },
+    "azure-openai:gpt-5.2:add_text_validation": {
+      "passed": true,
+      "timestamp": 1768839473524,
+      "cost": 0.0055125
+    },
+    "azure-openai:gpt-5.2:add_number_validation": {
+      "passed": true,
+      "timestamp": 1768839473524,
+      "cost": 0.008965
+    },
+    "azure-openai:gpt-5.2:add_date_time_validation": {
+      "passed": true,
+      "timestamp": 1768839478047,
+      "cost": 0.0055275
+    },
+    "azure-openai:gpt-5.2:add_message": {
+      "passed": true,
+      "timestamp": 1768839478048,
+      "cost": 0.0443675
+    },
+    "azure-openai:gpt-5.2:remove_validation": {
+      "passed": true,
+      "timestamp": 1768839478049,
+      "cost": 0.0052875
+    },
+    "azure-openai:gpt-5.2:undo": {
+      "passed": true,
+      "timestamp": 1768839481636,
+      "cost": 0.0054225
+    },
+    "azure-openai:gpt-5.2:redo": {
+      "passed": true,
+      "timestamp": 1768839481637,
+      "cost": 0.0055025
+    },
+    "azure-openai:gpt-5.2:contact_us": {
+      "passed": true,
+      "timestamp": 1768839481638,
+      "cost": 0.0050925
+    },
+    "azure-openai:gpt-5.2:get_database_schemas": {
+      "passed": true,
+      "timestamp": 1768839487535,
+      "cost": 0.0051
+    },
+    "azure-openai:gpt-5.2:set_sql_code_cell_value": {
+      "passed": true,
+      "timestamp": 1768839487537,
+      "cost": 0.00724
+    },
+    "azure-openai:gpt-5.2:pdf_import": {
+      "passed": true,
+      "timestamp": 1768839487537,
+      "cost": 0.00532
+    },
+    "azure-openai:gpt-5.2:web_search": {
+      "passed": true,
+      "timestamp": 1768839490380,
+      "cost": 0.00522
+    }
+  }
+}
