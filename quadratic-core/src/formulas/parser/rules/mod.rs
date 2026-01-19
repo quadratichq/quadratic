@@ -3,6 +3,7 @@ use std::fmt;
 mod atoms;
 mod combinators;
 mod expression;
+pub mod pratt;
 mod table_ref;
 
 pub use atoms::*;
