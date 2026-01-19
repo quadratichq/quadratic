@@ -1188,7 +1188,7 @@ Examples:
 - Joining strings
 - Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
 `,
-    strict: false, // disable strict mode for OpenAI to allow nullable sheet_name in formulas array items
+    strict: false, // disable strict mode for OpenAI compatibility with nested object schemas in arrays
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],

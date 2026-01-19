@@ -16,7 +16,7 @@ import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { toolCallTestCases } from './toolCallTestCases';
 
 // Configuration (keep in sync with main test file)
-const MAX_COST_USD = 10.0;
+const MAX_COST_USD = 20.0;
 const CACHE_FILE_PATH = path.join(__dirname, 'testResults.cache.json');
 const CLEAR_CACHE = process.env.CLEAR_CACHE === 'true';
 
