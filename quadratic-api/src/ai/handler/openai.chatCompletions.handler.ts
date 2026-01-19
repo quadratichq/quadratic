@@ -58,8 +58,8 @@ export const handleOpenAIChatCompletionsRequest = async ({
       response?.setHeader('Content-Type', 'text/event-stream');
       response?.setHeader('Cache-Control', 'no-cache');
       response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
     }
-    response?.write(`stream\n\n`);
 
     apiArgs = {
       ...apiArgs,

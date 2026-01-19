@@ -70,8 +70,8 @@ export const handleAnthropicRequest = async ({
       response?.setHeader('Content-Type', 'text/event-stream');
       response?.setHeader('Cache-Control', 'no-cache');
       response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
     }
-    response?.write(`stream\n\n`);
 
     const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming, { signal });
     const parsedResponse = await parseAnthropicStream(chunks, modelKey, isOnPaidPlan, exceededBillingLimit, response);
