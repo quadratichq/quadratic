@@ -28,12 +28,13 @@ export function FilesListItemCore({
   children?: ReactNode;
 }) {
   const isGrid = viewPreferences.layout === Layout.Grid;
+  const displayName = nameFilter ? highlightMatchingString(name, nameFilter) : name;
 
   return (
     <div className={`flex w-full items-center`}>
       <div className={`flex w-full items-center justify-between gap-3`}>
         <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
-          <h2 className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}>{name}</h2>
+          <h2 className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}>{displayName}</h2>
 
           <div className="flex h-5 items-center gap-1">
             {children}
@@ -56,5 +57,23 @@ export function FilesListItemCore({
 
       {actions && <div className="flex-none">{actions}</div>}
     </div>
+  );
+}
+
+function highlightMatchingString(str: string, search: string): ReactNode {
+  if (!search) return str;
+
+  const escaped = search.replace('(', '\\(').replace(')', '\\)');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = str.split(regex);
+
+  return parts.map((part, i) =>
+    part.toLowerCase() === search.toLowerCase() ? (
+      <b key={i} className="bg-yellow-100 dark:bg-yellow-700">
+        {part}
+      </b>
+    ) : (
+      part
+    )
   );
 }

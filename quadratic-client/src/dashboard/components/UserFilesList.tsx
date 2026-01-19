@@ -14,7 +14,6 @@ import { UserFilesListEmptyState } from '@/dashboard/components/UserFilesListEmp
 import { UserFilesListFileTypeFilter } from '@/dashboard/components/UserFilesListFileTypeFilter';
 import { UserFilesListItem } from '@/dashboard/components/UserFilesListItem';
 import { UserFilesListFiltersDropdown } from '@/dashboard/components/UserFilesListOtherFiltersDropdown';
-import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
@@ -94,6 +93,9 @@ export function UserFilesList({
       // (filter makes sure there's no trailing slash to deal with)
       const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
       // We should never have a file that's duplicating that's not in the list
+      // Because we're always working off the files we have in memory.
+      // This file _could_ be deleted from the server, but the action will fail
+      // if that's the case (and this file will disappear from the UI upon revalidation)
       const file = files.find((file) => file.uuid === fileUuid) as UserFilesListFile;
       return {
         ...file,
@@ -212,7 +214,9 @@ export function UserFilesList({
         />
       )}
 
-      <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
+      {/* DRAWER_WIDTH is hard-coded here so we can use the tailwind responsive class
+          you'll have to update this if you change it */}
+      <FileDragDrop className={`lg:left-[264px] lg:w-[calc(100%-264px)]`} />
     </div>
   );
 }
