@@ -13,24 +13,28 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
     return team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE;
   }
 
-  if (team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE && !!team.stripeCurrentPeriodEnd) {
+  const needsBillingSync =
+    // If status is INCOMPLETE (checkout in progress, webhook may be delayed), sync with Stripe
+    team.stripeSubscriptionStatus === SubscriptionStatus.INCOMPLETE ||
     // If the team is on a paid plan, but the current period has ended, update the billing info
-    if (team.stripeCurrentPeriodEnd < new Date()) {
-      await updateBilling(team);
+    (team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE &&
+      !!team.stripeCurrentPeriodEnd &&
+      team.stripeCurrentPeriodEnd < new Date());
 
-      const dbTeam = await dbClient.team.findUnique({
-        where: {
-          id: team.id,
-        },
-      });
+  if (needsBillingSync) {
+    await updateBilling(team);
 
-      return dbTeam?.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE;
-    }
+    // Re-fetch team from database to get updated status
+    const dbTeam = await dbClient.team.findUnique({
+      where: {
+        id: team.id,
+      },
+    });
 
-    return true; // on a paid plan
+    return dbTeam?.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE;
   }
 
-  return false; // not on a paid plan
+  return team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE;
 };
 
 /**

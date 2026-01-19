@@ -27,7 +27,7 @@ export const RenameSheet = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Rename sheet';
+    const label = loading ? 'Renaming sheet' : 'Renamed sheet';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

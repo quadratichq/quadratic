@@ -12,7 +12,6 @@ import {
 } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
@@ -83,9 +82,8 @@ export function FilesListItemUserFile({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions, hasScheduledTasks } = file;
   const actionUrl = ROUTES.API.FILE(uuid);
-  const confirmFn = useConfirmDialog('deleteFile', { name });
 
   // Determine if the user can move files
   // If we're looking at the user's private files, make sure they have edit access to the team
@@ -136,10 +134,8 @@ export function FilesListItemUserFile({
   };
 
   const handleDelete = async () => {
-    if (await confirmFn()) {
-      const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
-      fetcherDelete.submit(data, fetcherSubmitOpts);
-    }
+    const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
+    fetcherDelete.submit(data, fetcherSubmitOpts);
   };
 
   const handleDownload = () => {
@@ -227,6 +223,7 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            hasScheduledTasks={hasScheduledTasks}
             isPrivate={file.isPrivate}
             isSharedWithMe={file.isSharedWithMe}
             isFileEditRestricted={file.isFileEditRestricted}

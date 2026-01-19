@@ -1,11 +1,14 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useTeamData } from '@/shared/hooks/useTeamData';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
@@ -43,6 +46,7 @@ export const TopBarFileNameAndLocationMenu = () => {
                 <span className={`block max-w-[50vw] truncate`}>{name}</span>
               )}
             </Type>
+            {!isEmbed && <ConnectionStatusIcon />}
           </div>
         </div>
       )}
@@ -57,9 +61,13 @@ function FileLocation() {
     team,
     userMakingRequest: { fileRole, teamRole, id: userId },
   } = useFileRouteLoaderData();
+  // Use useTeamData for reactive team name updates
+  const { teamData } = useTeamData();
+  const teamName = teamData?.activeTeam?.team.name ?? team.name;
+
   const linkProps = {
     reloadDocument: true,
-    className: 'underline:none text-inherit block max-w-40 truncate',
+    className: 'hover:text-foreground hover:underline block max-w-40 truncate',
   };
 
   // Don't show anything if they're not logged in
@@ -68,26 +76,35 @@ function FileLocation() {
   }
 
   // Determine where the file is located and where we link back to
+  // But don't allow links in embed mode (file history, etc.)
   let dashboardLink = null;
   if (ownerUserId && ownerUserId === userId) {
     // My private file
-    dashboardLink = (
+    const label = 'My files';
+    dashboardLink = isEmbed ? (
+      label
+    ) : (
       <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} data-testid="file-location-link-my-files">
-        My files
+        {label}
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {
     // Team file
-    dashboardLink = (
+    dashboardLink = isEmbed ? (
+      teamName
+    ) : (
       <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps} data-testid="file-location-link-team-files">
-        {team.name}
+        {teamName}
       </Link>
     );
   } else if (fileRole) {
     // File i was invited to
-    dashboardLink = (
+    const label = 'Shared with me';
+    dashboardLink = isEmbed ? (
+      label
+    ) : (
       <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} data-testid="file-location-link-shared-with-me">
-        Shared with me
+        {label}
       </Link>
     );
   }
@@ -99,9 +116,7 @@ function FileLocation() {
 
   return (
     <>
-      <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
-        {dashboardLink}
-      </Type>
+      <Type className="hidden text-muted-foreground md:block">{dashboardLink}</Type>
 
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /

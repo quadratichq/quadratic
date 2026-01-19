@@ -94,7 +94,7 @@ export class CellsSheet extends Container {
   }
 
   update(dirtyViewport: boolean) {
-    this.cellsFills.update();
+    this.cellsFills.update(dirtyViewport);
     this.borders.update();
     this.tables.update(dirtyViewport);
   }

@@ -154,15 +154,16 @@ export const SetSQLCodeCellValue = memo(
             }
             isLoading={true}
             className={className}
+            compact
           />
         );
       }
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError className={className} />;
+      return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard isLoading className={className} />;
+      return <ToolCard isLoading className={className} compact />;
     }
 
     const { code_cell_name, connection_kind, code_cell_position } = toolArgs.data;
@@ -209,6 +210,7 @@ export const SetSQLCodeCellValue = memo(
           ) : undefined
         }
         className={className}
+        compact
       />
     );
   }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
+import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -84,6 +85,8 @@ const FileSchema = z.object({
   lastCheckpointDataUrl: z.string().url(),
   publicLinkAccess: PublicLinkAccessSchema,
   thumbnail: z.string().url().nullable(),
+  timezone: z.string().nullable(),
+  hasScheduledTasks: z.boolean(),
 });
 
 const TeamPrivateFileSchema = FileSchema.pick({
@@ -93,6 +96,7 @@ const TeamPrivateFileSchema = FileSchema.pick({
   updatedDate: true,
   publicLinkAccess: true,
   thumbnail: true,
+  hasScheduledTasks: true,
 });
 const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
   creatorId: z.number(),
@@ -113,12 +117,14 @@ export const TeamClientDataKvSchema = z.record(z.any());
 export const UserClientDataKvSchema = z
   .object({
     knowsAboutModelPicker: z.boolean().optional(),
+    lastSeenChangelogVersion: z.string().optional(),
   })
   .strip();
 export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;
 
 const TeamSettingsSchema = z.object({
   analyticsAi: z.boolean(),
+  aiRules: z.string().nullable().optional(),
 });
 export type TeamSettings = z.infer<typeof TeamSettingsSchema>;
 
@@ -154,6 +160,8 @@ export const ApiSchemas = {
       updatedDate: true,
       publicLinkAccess: true,
       thumbnail: true,
+      timezone: true,
+      hasScheduledTasks: true,
     })
   ),
   '/v0/files.POST.request': z.object({
@@ -204,10 +212,12 @@ export const ApiSchemas = {
   '/v0/files/:uuid.PATCH.request': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
+    timezone: FileSchema.shape.timezone.optional(),
   }),
   '/v0/files/:uuid.PATCH.response': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.optional(),
+    timezone: FileSchema.shape.timezone.optional(),
   }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
@@ -262,15 +272,19 @@ export const ApiSchemas = {
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),
-        id: z.number(),
+        sequenceNumber: z.number(),
         timestamp: z.string().datetime(),
         version: z.string(),
       })
     ),
+    userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id,
+      filePermissions: z.array(FilePermissionSchema),
+      teamPermissions: z.array(TeamPermissionSchema),
+    }),
   }),
-  '/v0/files/:uuid/checkpoints/:checkpointId.GET.response': z.object({
+  '/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
-    id: z.number(),
     sequenceNumber: z.number(),
     timestamp: z.string().datetime(),
     version: z.string(),
@@ -416,6 +430,7 @@ export const ApiSchemas = {
       clientDataKv: TeamClientDataKvSchema.optional(),
       settings: TeamSettingsSchema.extend({
         showConnectionDemo: z.boolean().optional(),
+        aiRules: z.string().nullable().optional(),
       })
         .partial()
         .optional(),
@@ -440,7 +455,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.PATCH.response': z.object({
     name: TeamSchema.shape.name,
     clientDataKv: TeamClientDataKvSchema,
-    settings: TeamSettingsSchema.extend({ showConnectionDemo: z.boolean() }),
+    settings: TeamSettingsSchema.extend({ showConnectionDemo: z.boolean(), aiRules: z.string().nullable().optional() }),
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
@@ -491,6 +506,11 @@ export const ApiSchemas = {
   ...ApiSchemasConnections,
 
   /**
+   * Scheduled Tasks (which are all under `/v0/files/:uuid/scheduled-tasks/*`)
+   */
+  ...ApiSchemasScheduledTasks,
+
+  /**
    * ===========================================================================
    * User
    * ===========================================================================
@@ -508,6 +528,18 @@ export const ApiSchemas = {
   '/v0/user.POST.response': z.object({ message: z.string() }),
   '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
   '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
+  '/v0/user/client-data-kv.GET.response': z.object({
+    clientDataKv: UserClientDataKvSchema.optional(),
+  }),
+  '/v0/user/ai-rules.PATCH.request': z.object({
+    aiRules: z.string().nullable(),
+  }),
+  '/v0/user/ai-rules.PATCH.response': z.object({
+    aiRules: z.string().nullable(),
+  }),
+  '/v0/user/ai-rules.GET.response': z.object({
+    aiRules: z.string().nullable(),
+  }),
 
   /**
    *
@@ -614,6 +646,30 @@ export const ApiSchemas = {
     currentPeriodUsage: z.number().optional(),
   }),
 
+  /**
+   * ===========================================================================
+   * Team Files
+   * ===========================================================================
+   */
+  '/v0/teams/:uuid/files/deleted.GET.response': z.array(
+    z.object({
+      uuid: z.string().uuid(),
+      name: z.string(),
+      deletedDate: z.string().datetime(),
+      ownerUserId: z.number().nullable(),
+      thumbnail: z.string().url().nullable(),
+    })
+  ),
+  '/v0/files/:uuid/restore.POST.response': z.object({
+    message: z.string(),
+    file: z.object({
+      uuid: z.string().uuid(),
+      name: z.string(),
+      deleted: z.boolean(),
+      deletedDate: z.string().datetime().nullable(),
+    }),
+  }),
+
   '/v0/auth/login-with-password.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
     password: z.string(),
@@ -663,6 +719,15 @@ export const ApiSchemas = {
   }),
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
+  }),
+
+  /**
+   * ===========================================================================
+   * URL Metadata
+   * ===========================================================================
+   */
+  '/v0/url-metadata.GET.response': z.object({
+    title: z.string().optional(),
   }),
 };
 

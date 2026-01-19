@@ -29,6 +29,7 @@ async function handler(req: RequestWithUser, res: Response) {
     user: { id: userId },
   } = req;
   const {
+    file,
     userMakingRequest: { filePermissions },
   } = await getFile({ uuid, userId });
 
@@ -36,6 +37,17 @@ async function handler(req: RequestWithUser, res: Response) {
   if (!filePermissions.includes(FILE_DELETE)) {
     return res.status(403).json({ error: { message: 'Permission denied' } });
   }
+
+  // Delete all scheduled tasks associated with this file
+  await dbClient.scheduledTask.updateMany({
+    where: {
+      fileId: file.id,
+      status: { not: 'DELETED' },
+    },
+    data: {
+      status: 'DELETED',
+    },
+  });
 
   // Then mark the file as deleted
   await dbClient.file.update({

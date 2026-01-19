@@ -5,7 +5,7 @@ import { TYPE } from '@/shared/constants/appConstants';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import { ClockIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
@@ -17,6 +17,7 @@ export function FilesListItemCore({
   creator,
   hasNetworkError,
   isShared,
+  hasScheduledTasks,
   isPrivate,
   isSharedWithMe,
   isFileEditRestricted,
@@ -32,6 +33,7 @@ export function FilesListItemCore({
   creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
   isShared?: boolean;
+  hasScheduledTasks?: boolean;
   isPrivate?: boolean;
   isSharedWithMe?: boolean;
   isFileEditRestricted?: boolean;
@@ -52,7 +54,7 @@ export function FilesListItemCore({
           {hasNetworkError ? (
             <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
           ) : (
-            <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
+            <div className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
               {isSharedWithMe ? (
                 <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
                   Shared with me
@@ -63,6 +65,11 @@ export function FilesListItemCore({
                     {isPrivate ? 'Personal' : 'Team'}
                   </Badge>
                 )
+              )}
+              {hasScheduledTasks && (
+                <span className="mr-1">
+                  <ClockIcon className="relative -top-[1px] inline h-3 w-3" />
+                </span>
               )}
 
               {description}
@@ -81,7 +88,7 @@ export function FilesListItemCore({
                   </Badge>
                 </TooltipPopover>
               )}
-            </p>
+            </div>
           )}
         </div>
         {creator && creator.name && setFilterValue && (

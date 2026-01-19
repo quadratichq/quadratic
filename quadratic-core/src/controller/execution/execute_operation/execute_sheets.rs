@@ -74,7 +74,8 @@ impl GridController {
         }
 
         if transaction.is_user_ai_undo_redo() {
-            transaction.add_fill_cells(sheet_id);
+            let sheet = self.try_sheet_result(sheet_id)?;
+            transaction.add_all_fill_cells(sheet);
             transaction.sheet_borders.insert(sheet_id);
         }
 

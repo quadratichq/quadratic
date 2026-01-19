@@ -100,8 +100,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // Figure out if we're loading a specific checkpoint (for version history)
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
-  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
-  const isVersionHistoryPreview = checkpointId !== null;
+  const sequenceNumParam = searchParams.get(SEARCH_PARAMS.SEQUENCE_NUM.KEY);
+  const isVersionHistoryPreview = sequenceNumParam !== null;
 
   // Check if we're checking for subscription updates (for verification)
   const updateBilling = searchParams.get('subscription') === 'created';
@@ -123,7 +123,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     sequenceNumber: data.file.lastCheckpointSequenceNumber,
   };
   if (isVersionHistoryPreview) {
-    const { dataUrl, version, sequenceNumber } = await apiClient.files.checkpoints.get(uuid, checkpointId);
+    const { dataUrl, version, sequenceNumber } = await apiClient.files.checkpoints.getBySequenceNumber(
+      uuid,
+      Number(sequenceNumParam)
+    );
     checkpoint.url = dataUrl;
     checkpoint.version = version;
     checkpoint.sequenceNumber = sequenceNumber;
@@ -186,18 +189,30 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   handleSentryReplays(data.team.settings.analyticsAi);
 
+  // Fetch clientDataKv (team data is now loaded via useTeamData hook when needed)
+  let clientDataKv: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'] | undefined = undefined;
+  try {
+    const fetchedClientDataKv = await apiClient.user.clientDataKv.get();
+    clientDataKv = fetchedClientDataKv.clientDataKv;
+  } catch {
+    // If we can't fetch clientDataKv, continue without it
+    clientDataKv = undefined;
+  }
+
   startupTimer.end('file.loader');
-  return data;
+  return { ...data, userMakingRequest: { ...data.userMakingRequest, clientDataKv } };
 };
 
 export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
+  const loaderData = useLoaderData() as FileData;
   const {
-    file: { uuid: fileUuid },
+    file: { uuid: fileUuid, timezone: fileTimezone },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
-    userMakingRequest: { filePermissions },
-  } = useLoaderData() as FileData;
+    userMakingRequest: { filePermissions, teamPermissions },
+  } = loaderData;
+  const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -220,6 +235,30 @@ export const Component = memo(() => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
 
+  // Set timezone if not already set and user has editor rights
+  useEffect(() => {
+    const setTimezoneIfNeeded = async () => {
+      // Check if timezone is not set
+      if (fileTimezone !== null) return;
+
+      // Check if user has editor rights
+      const hasEditorRights = filePermissions.includes('FILE_EDIT');
+      if (!hasEditorRights) return;
+
+      // Get user's current timezone
+      try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (userTimezone) {
+          await apiClient.files.update(fileUuid, { timezone: userTimezone });
+        }
+      } catch (error) {
+        // Silently fail if timezone detection or update fails
+        console.error('Failed to set timezone:', error);
+      }
+    };
+
+    setTimezoneIfNeeded();
+  }, [fileTimezone, filePermissions, fileUuid]);
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
@@ -245,7 +284,7 @@ export const Component = memo(() => {
       <Outlet />
       <QuadraticAppDebugSettings />
       <FileLimitDialog />
-      <UpgradeDialog teamUuid={teamUuid} />
+      <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />
     </RecoilRoot>
   );
 });

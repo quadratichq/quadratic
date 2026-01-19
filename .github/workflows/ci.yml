@@ -27,6 +27,9 @@ jobs:
           - files
           - connection
           - rust-shared
+          - cloud-controller
+          - cloud-worker
+          - core-cloud
         include:
           - package: core
             runner: blacksmith-2vcpu-ubuntu-2404
@@ -41,6 +44,15 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
           - package: rust-shared
+            runner: blacksmith-4vcpu-ubuntu-2404
+            test_command: "npm run docker:test"
+          - package: cloud-controller
+            runner: blacksmith-4vcpu-ubuntu-2404
+            test_command: "npm run docker:test"
+          - package: core-cloud
+            runner: blacksmith-4vcpu-ubuntu-2404
+            test_command: "npm run docker:test"
+          - package: cloud-worker
             runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
     steps:
@@ -65,15 +77,61 @@ jobs:
         uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
-        run: if ! which grcov; then cargo install grcov; fi
+        uses: taiki-e/install-action@v2
+        with:
+          tool: grcov
 
       - name: Install llvm-tools-preview
         run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
 
-      - name: Install pkg-config and OpenSSL development libraries
+      - name: Install pkg-config, OpenSSL, and CA certificates
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libssl-dev
+          sudo apt-get install -y pkg-config libssl-dev ca-certificates
+          sudo update-ca-certificates
+
+      - name: Install Deno for core-cloud and cloud-worker
+        if: matrix.package == 'core-cloud' || matrix.package == 'cloud-worker'
+        run: |
+          curl -fsSL https://deno.land/install.sh | sh
+          echo "$HOME/.deno/bin" >> $GITHUB_PATH
+
+      - name: Setup Python for core-cloud tests
+        if: matrix.package == 'core-cloud'
+        uses: useblacksmith/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python development headers for core-cloud
+        if: matrix.package == 'core-cloud'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev libpython3.12-dev
+
+      - name: Install Python packages for core-cloud tests
+        if: matrix.package == 'core-cloud'
+        run: |
+          # Install uv for fast package installation
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          # Install Python packages needed for tests
+          uv pip install --system \
+            pandas \
+            numpy \
+            matplotlib \
+            seaborn \
+            scipy \
+            requests \
+            openpyxl \
+            xlsxwriter \
+            plotly \
+            scikit-learn \
+            statsmodels \
+            nltk \
+            regex \
+            faker \
+            yfinance
 
       - name: Test quadratic-${{ matrix.package }}
         env:
@@ -82,6 +140,10 @@ jobs:
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
           BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
+          PLAID_CREDENTIALS: "${{ secrets.PLAID_CREDENTIALS }}"
+          SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+          SSL_CERT_DIR: /etc/ssl/certs
+          DATABASE_DSN: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
@@ -247,6 +309,8 @@ jobs:
           npm install
           cd quadratic-api
           npm run docker:test:ci
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
   lint_rust:
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -286,6 +350,8 @@ jobs:
       - name: Install build-essential, llvm, and clang
         run: |
           sudo apt-get update
+
+
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - name: Setup Node

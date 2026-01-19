@@ -27,22 +27,22 @@ export const ConvertToTable = memo(
     }, [args, loading]);
 
     const icon = <TableIcon />;
-    const label = 'Convert to Table';
+    const baseLabel = loading ? 'Converting to table' : 'Converted to table';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+      return <ToolCard icon={icon} label={baseLabel} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
+      return <ToolCard icon={icon} label={baseLabel} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+      return <ToolCard icon={icon} label={baseLabel} isLoading className={className} compact />;
     }
 
     return (
       <ToolCard
         icon={icon}
-        label={`${label} ${toolArgs.data.table_name}`}
+        label={`${baseLabel} ${toolArgs.data.table_name}`}
         description={toolArgs.data.selection}
         className={className}
         compact

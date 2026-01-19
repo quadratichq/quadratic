@@ -16,7 +16,7 @@ export const getQuadraticContext = (source: AISource, language?: CodeCellType): 
     content: [
       createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
 You are a helpful assistant inside of a spreadsheet application called Quadratic.
-Be minimally verbose in your explanations of the code and data you produce.
+Keep text responses concise - prefer one sentence and bullet points, use more sentences when necessary for clarity (e.g., explaining errors or complex data transformations). Do not add text comments between tool calls unless necessary; only provide a brief summary after all tools have completed. No fluff or filler language.
 You are an agent - please keep going until the user's query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved.
 If you are not sure about sheet data content pertaining to the user's request, use your tools to read data and gather the relevant information: do NOT guess or make up an answer.
 Be proactive. When the user makes a request, use your tools to solve it.
@@ -38,7 +38,7 @@ ${
     : 'Choose the language of your response based on the context and user prompt.'
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.\n
-    
+
 ${['AIAnalyst', 'AIAssistant'].includes(source) ? A1Docs : ''}\n\n
 ${source === 'AIAnalyst' ? ValidationDocs : ''}
 `),
@@ -65,7 +65,7 @@ export const getToolUseContext = (source: AISource, modelKey: AIModelKey): ChatM
         createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
 Following are the tools you should use to do actions in the spreadsheet, use them to respond to the user prompt.\n
 
-Include a concise explanation of the actions you are taking to respond to the user prompt. Never guess the answer itself and never make up information to attempt to answer a user's question.\n
+Never guess the answer itself and never make up information to attempt to answer a user's question.\n
 
 Don't include tool details in your response. Reply in layman's terms what actions you are taking.\n
 
@@ -109,6 +109,40 @@ export const getCurrentDateContext = (time: string): ChatMessage[] => {
       role: 'assistant',
       content: [createTextContent(`I understand the current date and user locale.`)],
       contextType: 'currentDate',
+    },
+  ];
+};
+
+export const getAIRulesContext = (userAiRules: string | null, teamAiRules: string | null): ChatMessage[] => {
+  const rules: string[] = [];
+
+  if (teamAiRules) {
+    rules.push(`Team Rules:\n${teamAiRules}`);
+  }
+
+  if (userAiRules) {
+    rules.push(`User Rules:\n${userAiRules}`);
+  }
+
+  if (rules.length === 0) {
+    return [];
+  }
+
+  return [
+    {
+      role: 'user',
+      content: [
+        createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
+The following custom rules and instructions should guide your behavior and responses:\n\n
+${rules.join('\n\n')}
+`),
+      ],
+      contextType: 'aiRules',
+    },
+    {
+      role: 'assistant',
+      content: [createTextContent('I understand these custom rules and will follow them in my responses.')],
+      contextType: 'aiRules',
     },
   ];
 };

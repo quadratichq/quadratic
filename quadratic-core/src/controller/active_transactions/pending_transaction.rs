@@ -15,7 +15,7 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, GridBounds, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -57,7 +57,7 @@ pub struct PendingTransaction {
     pub(crate) cells_accessed: CellsAccessed,
 
     /// save code_cell info for async calls
-    pub(crate) current_sheet_pos: Option<SheetPos>,
+    pub current_sheet_pos: Option<SheetPos>,
 
     /// whether we are awaiting an async call for a code cell
     pub(crate) waiting_for_async_code_cell: bool,
@@ -98,8 +98,11 @@ pub struct PendingTransaction {
     /// image cells to update
     pub(crate) image_cells: HashMap<SheetId, HashSet<Pos>>,
 
-    /// sheets w/updated fill cells
-    pub(crate) fill_cells: HashSet<SheetId>,
+    /// dirty fill hashes per sheet (hash positions)
+    pub(crate) fill_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    /// sheets with updated meta fills (row/column/sheet fills)
+    pub(crate) sheet_meta_fills: HashSet<SheetId>,
 
     /// sheets w/updated info
     pub(crate) sheet_info: HashSet<SheetId>,
@@ -145,7 +148,8 @@ impl Default for PendingTransaction {
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
-            fill_cells: HashSet::new(),
+            fill_cells: HashMap::new(),
+            sheet_meta_fills: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
@@ -311,7 +315,7 @@ impl PendingTransaction {
         for dirty_rect in dirty_rects {
             self.add_dirty_hashes_from_sheet_rect(dirty_rect.to_sheet_rect(sheet.id));
             if let Some(dt) = sheet.data_table_at(&dirty_rect.min) {
-                dt.add_dirty_fills_and_borders(self, sheet.id);
+                dt.add_dirty_fills_and_borders(self, sheet.id, dirty_rect.min);
                 self.add_from_code_run(sheet.id, dirty_rect.min, dt.is_image(), dt.is_html());
             } else {
                 self.add_code_cell(sheet.id, dirty_rect.min);
@@ -522,13 +526,95 @@ impl PendingTransaction {
         }
     }
 
-    /// Adds a sheet id to the fill cells set.
-    pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+    /// Adds dirty fill hashes from a sheet rect.
+    pub fn add_fill_cells_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
 
-        self.fill_cells.insert(sheet_id);
+        let hashes = sheet_rect.to_hashes();
+        self.fill_cells
+            .entry(sheet_rect.sheet_id)
+            .or_default()
+            .extend(hashes);
+    }
+
+    /// Adds dirty fill hashes from a rect.
+    pub fn add_fill_cells(&mut self, sheet_id: SheetId, rect: Rect) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let hashes = rect.to_sheet_rect(sheet_id).to_hashes();
+        self.fill_cells.entry(sheet_id).or_default().extend(hashes);
+    }
+
+    /// Marks all fills for a sheet as dirty (for operations like add sheet that affect entire sheet).
+    pub fn add_all_fill_cells(&mut self, sheet: &Sheet) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        // Use bounds(false) to include formatting since fills are part of formatting
+        if let GridBounds::NonEmpty(rect) = sheet.bounds(false) {
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(rect.to_hashes());
+        }
+    }
+
+    /// Adds dirty fill hashes from a column range to end of sheet.
+    pub fn add_fill_cells_from_columns(&mut self, sheet: &Sheet, start_column: i64) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        // Use bounds(false) to include formatting since fills are part of formatting
+        if let GridBounds::NonEmpty(bounds_rect) = sheet.bounds(false) {
+            // Create rect from start_column to end of bounds
+            let rect = Rect::new(
+                start_column,
+                bounds_rect.min.y,
+                bounds_rect.max.x,
+                bounds_rect.max.y,
+            );
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(rect.to_hashes());
+        }
+    }
+
+    /// Adds dirty fill hashes from a row range to end of sheet.
+    pub fn add_fill_cells_from_rows(&mut self, sheet: &Sheet, start_row: i64) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        // Use bounds(false) to include formatting since fills are part of formatting
+        if let GridBounds::NonEmpty(bounds_rect) = sheet.bounds(false) {
+            // Create rect from start_row to end of bounds
+            let rect = Rect::new(
+                bounds_rect.min.x,
+                start_row,
+                bounds_rect.max.x,
+                bounds_rect.max.y,
+            );
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(rect.to_hashes());
+        }
+    }
+
+    /// Marks meta fills (row/column/sheet fills) as needing update for a sheet.
+    pub fn add_sheet_meta_fills(&mut self, sheet_id: SheetId) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        self.sheet_meta_fills.insert(sheet_id);
     }
 
     /// Adds a sheet id to the borders set.
@@ -829,8 +915,10 @@ mod tests {
     fn test_add_fill_cells() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
-        transaction.add_fill_cells(sheet_id);
-        assert!(transaction.fill_cells.contains(&sheet_id));
+        let rect = Rect::from_numbers(0, 0, 10, 10);
+        transaction.add_fill_cells(sheet_id, rect);
+        assert!(transaction.fill_cells.contains_key(&sheet_id));
+        assert!(!transaction.fill_cells[&sheet_id].is_empty());
     }
 
     #[test]
@@ -839,5 +927,89 @@ mod tests {
         let sheet_id = SheetId::new();
         transaction.add_borders(sheet_id);
         assert!(transaction.sheet_borders.contains(&sheet_id));
+    }
+
+    #[test]
+    fn test_add_all_fill_cells() {
+        let mut sheet = Sheet::test();
+        // Place cells to create bounds spanning multiple hashes
+        // CELL_SHEET_WIDTH = 15, CELL_SHEET_HEIGHT = 30
+        sheet.set_value(pos![1, 1], "A".to_string()); // In hash (0, 0)
+        sheet.set_value(pos![20, 40], "B".to_string()); // In hash (1, 1)
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_all_fill_cells(&sheet);
+
+        let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
+        // Should have hashes (0,0), (0,1), (1,0), (1,1)
+        assert_eq!(fill_cells.len(), 4);
+        assert!(fill_cells.contains(&Pos { x: 0, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 0, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 1 }));
+    }
+
+    #[test]
+    fn test_add_all_fill_cells_empty_sheet() {
+        let sheet = Sheet::test();
+        let mut transaction = PendingTransaction::default();
+        transaction.add_all_fill_cells(&sheet);
+
+        // Empty sheet should not add any fill cells
+        assert!(!transaction.fill_cells.contains_key(&sheet.id));
+    }
+
+    #[test]
+    fn test_add_fill_cells_from_columns() {
+        let mut sheet = Sheet::test();
+        // Place cells to create bounds
+        sheet.set_value(pos![1, 1], "A".to_string()); // In hash (0, 0)
+        sheet.set_value(pos![30, 60], "B".to_string()); // In hash (2, 2)
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_fill_cells_from_columns(&sheet, 15);
+
+        let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
+        // Should have hashes from x=1 to x=2, y=0 to y=2
+        // (1,0), (1,1), (1,2), (2,0), (2,1), (2,2)
+        assert_eq!(fill_cells.len(), 6);
+        assert!(fill_cells.contains(&Pos { x: 1, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 2 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 0 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 2 }));
+        // Should NOT contain hash x=0
+        assert!(!fill_cells.contains(&Pos { x: 0, y: 0 }));
+    }
+
+    #[test]
+    fn test_add_fill_cells_from_rows() {
+        let mut sheet = Sheet::test();
+        // Place cells to create bounds
+        sheet.set_value(pos![1, 1], "A".to_string()); // In hash (0, 0)
+        sheet.set_value(pos![30, 60], "B".to_string()); // In hash (2, 2)
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_fill_cells_from_rows(&sheet, 30);
+
+        let fill_cells = transaction.fill_cells.get(&sheet.id).unwrap();
+        // Should have hashes from x=0 to x=2, y=1 to y=2
+        // (0,1), (0,2), (1,1), (1,2), (2,1), (2,2)
+        assert_eq!(fill_cells.len(), 6);
+        assert!(fill_cells.contains(&Pos { x: 0, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 0, y: 2 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 1, y: 2 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 1 }));
+        assert!(fill_cells.contains(&Pos { x: 2, y: 2 }));
+        // Should NOT contain hash y=0
+        assert!(!fill_cells.contains(&Pos { x: 0, y: 0 }));
     }
 }

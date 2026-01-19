@@ -26,10 +26,9 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 import { memo, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-type UIModels = 'default' | 'max' | 'others';
+type UIModels = 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
-  default: { label: 'Fast', description: 'Good for everyday tasks' },
-  max: { label: 'Max', description: 'Smartest and most capable' },
+  max: { label: 'Auto', description: 'Claude Opus 4.5' },
   others: { label: 'Others', description: 'Experimental models' },
 };
 
@@ -108,7 +107,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
     );
   }
 
-  const isOthers = modelType !== 'default' && modelType !== 'max';
+  const isOthers = modelType !== 'max';
   const radioGroupValue = isOthers ? othersModelKey : modelType;
 
   if (restrictedModel) {
@@ -117,10 +116,10 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
 
   return (
     <DidYouKnowPopover
-      open={!loading && isOpenDidYouKnowDialog}
+      open={false}
       setOpen={() => setKnowsAboutModelPicker(true)}
       title="AI model choices"
-      description="Fast is our fastest model. Max is the smartest and most capable."
+      description="Auto uses Claude Opus 4.5, or choose from other available models."
     >
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         {/* Needs a min-width or it shifts as the popover closes */}
@@ -131,7 +130,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
             e.stopPropagation();
           }}
         >
-          {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Fast' : 'Max'}
+          {isOthers ? selectedModelConfig.displayName : 'Auto'}
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>
 
@@ -141,8 +140,8 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
               value={radioGroupValue}
               className="flex flex-col gap-0"
               onValueChange={(value) => {
-                // Check if the value is a quadratic model type ('default', 'max')
-                if (value === 'default' || value === 'max') {
+                // Check if the value is the recommended model type ('max')
+                if (value === 'max') {
                   setModel(value, defaultOthersModelKey);
                 } else {
                   // Otherwise set as an 'others' with the specific key
@@ -153,13 +152,12 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                 setIsPopoverOpen(false);
               }}
             >
-              <RadioGroupHeader>Quadratic AI models</RadioGroupHeader>
-              <div className="flex flex-col rounded text-sm">
-                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS)
-                  .filter(([mode]) => mode !== 'others')
-                  .map(([mode, { label, description }], i) => (
-                    <RadioGroupLineItem key={mode} value={mode} label={label} description={description} />
-                  ))}
+              <div className="flex flex-col rounded pt-2 text-sm">
+                <RadioGroupLineItem
+                  value="max"
+                  label={MODEL_MODES_LABELS_DESCRIPTIONS.max.label}
+                  description={MODEL_MODES_LABELS_DESCRIPTIONS.max.description}
+                />
               </div>
 
               <hr className="my-2 border-border" />

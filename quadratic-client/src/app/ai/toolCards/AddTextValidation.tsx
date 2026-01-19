@@ -28,7 +28,7 @@ export const AddTextValidation = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Add text validation';
+    const label = loading ? 'Adding text validation' : 'Added text validation';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

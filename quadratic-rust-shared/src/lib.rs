@@ -13,10 +13,16 @@ pub mod cache;
 #[cfg(feature = "crypto")]
 pub mod crypto;
 
+#[cfg(feature = "docker")]
+pub mod docker;
+
 #[cfg(feature = "environment")]
 pub mod environment;
 
 pub mod error;
+
+#[cfg(feature = "multiplayer")]
+pub mod multiplayer;
 
 #[cfg(feature = "net")]
 pub mod net;
@@ -32,6 +38,12 @@ pub mod pubsub;
 
 #[cfg(feature = "quadratic-api")]
 pub mod quadratic_api;
+
+#[cfg(feature = "quadratic-cloud")]
+pub mod quadratic_cloud;
+
+#[cfg(feature = "quadratic-database")]
+pub mod quadratic_database;
 
 #[cfg(feature = "sql")]
 pub mod sql;

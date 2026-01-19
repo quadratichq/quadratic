@@ -1,11 +1,12 @@
 use crate::{
-    SheetPos, SheetRect,
+    CellValue, SheetPos, SheetRect, Value,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, data_table::DataTableTemplate},
+    util::now,
     wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
 use anyhow::Result;
@@ -32,7 +33,8 @@ impl GridController {
                     {
                         // only add if there isn't already one pending
                         if !transaction.operations.iter().any(|op| match op {
-                            Operation::ComputeCode { sheet_pos } => {
+                            Operation::ComputeCode { sheet_pos }
+                            | Operation::SetComputeCode { sheet_pos, .. } => {
                                 code_cell_sheet_pos == sheet_pos
                             }
                             _ => false,
@@ -47,14 +49,23 @@ impl GridController {
             return;
         }
 
-        // Collect all existing ComputeCode operations and their positions
-        let mut existing_code_positions = Vec::new();
+        // Collect existing ComputeCode operations, separating those with code_runs
+        // from those that don't have code_runs yet (i.e., their SetDataTable hasn't executed)
+        let mut existing_code_positions_with_code_run = Vec::new();
+        let mut pending_compute_code_ops = Vec::new();
         let mut non_code_operations = Vec::new();
 
         for op in transaction.operations.iter() {
             match op {
                 Operation::ComputeCode { sheet_pos } => {
-                    existing_code_positions.push(*sheet_pos);
+                    // Only include in reordering if the code_run exists
+                    // (i.e., SetDataTable has already executed for this position)
+                    if self.code_run_at(sheet_pos).is_some() {
+                        existing_code_positions_with_code_run.push(*sheet_pos);
+                    } else {
+                        // Keep these in order - they're waiting for their SetDataTable
+                        pending_compute_code_ops.push(op.clone());
+                    }
                 }
                 _ => {
                     non_code_operations.push(op.clone());
@@ -62,8 +73,8 @@ impl GridController {
             }
         }
 
-        // Combine existing and new code positions, then reorder based on dependencies
-        let mut all_code_positions = existing_code_positions;
+        // Combine existing positions (that have code_runs) and new positions, then reorder
+        let mut all_code_positions = existing_code_positions_with_code_run;
         all_code_positions.extend(new_code_cell_positions);
 
         // Reorder all code operations based on dependencies
@@ -72,15 +83,21 @@ impl GridController {
 
         // Rebuild the operations queue:
         // 1. Add all non-code operations first (they maintain their relative order)
-        // 2. Add all code operations in dependency order after non-code operations
+        // 2. Add pending ComputeCode ops (whose SetDataTable hasn't executed yet)
+        // 3. Add code operations with code_runs in dependency order
         let mut new_operations = std::collections::VecDeque::new();
 
-        // Add non-code operations first
+        // Add non-code operations first (includes SetDataTable ops for pending formulas)
         for op in non_code_operations {
             new_operations.push_back(op);
         }
 
-        // Add code operations in dependency order after non-code operations
+        // Add pending ComputeCode operations (their SetDataTable is in non_code_operations)
+        for op in pending_compute_code_ops {
+            new_operations.push_back(op);
+        }
+
+        // Add code operations with code_runs in dependency order
         for pos in ordered_positions {
             new_operations.push_back(Operation::ComputeCode { sheet_pos: pos });
         }
@@ -258,6 +275,184 @@ impl GridController {
         }
     }
 
+    /// Executes SetComputeCode operation
+    pub(super) fn execute_set_compute_code(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetComputeCode {
+            sheet_pos,
+            language,
+            code,
+            template,
+        } = op
+        {
+            if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                dbgjs!("Only user / undo / redo / server transaction should have a SetComputeCode");
+                return;
+            }
+
+            // Clone for notification
+            let language_for_notify = language.clone();
+            let code_for_notify = code.clone();
+
+            // Execute based on language
+            match language {
+                CodeCellLanguage::Python => {
+                    // Set up data table first, then trigger async execution
+                    let data_table =
+                        Self::create_code_data_table(language, code.clone(), template.as_ref());
+                    self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
+                    self.run_python(transaction, sheet_pos, code);
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
+                }
+                CodeCellLanguage::Formula => {
+                    // Formulas execute synchronously - run_formula handles everything
+                    self.run_formula_with_template(transaction, sheet_pos, code, template.as_ref());
+                }
+                CodeCellLanguage::Connection { ref kind, ref id } => {
+                    // Set up data table first, then trigger async execution
+                    let data_table = Self::create_code_data_table(
+                        language.clone(),
+                        code.clone(),
+                        template.as_ref(),
+                    );
+                    self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
+                    self.run_connection(transaction, sheet_pos, code, *kind, id.clone());
+                }
+                CodeCellLanguage::Javascript => {
+                    // Set up data table first, then trigger async execution
+                    let data_table =
+                        Self::create_code_data_table(language, code.clone(), template.as_ref());
+                    self.finalize_data_table(transaction, sheet_pos, Some(data_table), None, true);
+                    self.run_javascript(transaction, sheet_pos, code);
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
+                    );
+                }
+                CodeCellLanguage::Import => {
+                    dbgjs!(format!("Import code run found at {sheet_pos:?}"));
+                    // no-op
+                }
+            }
+        }
+    }
+
+    /// Creates a data table for a code cell, optionally copying presentation
+    /// properties from a template (used by SetComputeCode for async languages)
+    fn create_code_data_table(
+        language: CodeCellLanguage,
+        code: String,
+        template: Option<&DataTableTemplate>,
+    ) -> DataTable {
+        // Use the same naming convention as set_code_cell_operations.
+        // finalize_data_table will fix the name if it conflicts with an
+        // existing table and we don't want to call that twice (once here and
+        // once in finalize) because it is an expensive operation.
+        let name = language.default_table_name();
+
+        // Apply template properties if provided, otherwise use defaults
+        let (
+            show_name,
+            show_columns,
+            alternating_colors,
+            header_is_first_row,
+            chart_output,
+            chart_pixel_output,
+        ) = if let Some(t) = template {
+            (
+                t.show_name,
+                t.show_columns,
+                t.alternating_colors,
+                t.header_is_first_row,
+                t.chart_output,
+                t.chart_pixel_output,
+            )
+        } else {
+            (None, None, true, false, None, None)
+        };
+
+        DataTable {
+            kind: DataTableKind::CodeRun(CodeRun {
+                language,
+                code,
+                ..Default::default()
+            }),
+            name: CellValue::Text(name),
+            header_is_first_row,
+            show_name,
+            show_columns,
+            column_headers: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            value: Value::Single(CellValue::Blank),
+            spill_value: false,
+            spill_data_table: false,
+            last_modified: now(),
+            alternating_colors,
+            formats: None,
+            borders: None,
+            chart_pixel_output,
+            chart_output,
+        }
+    }
+
+    pub(super) fn execute_compute_code_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeCodeSelection { selection } = op {
+            let mut new_ops = Vec::new();
+
+            if let Some(selection) = selection {
+                let sheet_id = selection.sheet_id;
+                let Some(sheet) = self.try_sheet(sheet_id) else {
+                    // sheet may have been deleted in a multiplayer operation
+                    return;
+                };
+
+                // Use the cache to efficiently find all code runs in the selection
+                for rect in selection.rects_unbounded(self.a1_context()) {
+                    sheet
+                        .data_tables
+                        .get_code_runs_in_rect(rect, false)
+                        .for_each(|(_, pos, _)| {
+                            new_ops.push(Operation::ComputeCode {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                            });
+                        });
+                }
+            } else {
+                // Recompute all code cells in all sheets. Note, the iter_mut is
+                // necessary because finite_bounds may mutate its cache.
+                for (sheet_id, sheet) in self.grid.sheets.iter_mut() {
+                    if let Some(bounds) = sheet.data_tables.finite_bounds() {
+                        sheet
+                            .data_tables
+                            .get_code_runs_in_rect(bounds, false)
+                            .for_each(|(_, pos, _)| {
+                                new_ops.push(Operation::ComputeCode {
+                                    sheet_pos: pos.to_sheet_pos(*sheet_id),
+                                });
+                            });
+                    }
+                }
+            }
+            transaction.operations.extend(new_ops);
+        }
+    }
+
     /// Notifies the client about all code operations (currently executing + pending)
     /// If current is None, all operations are pending. If current is Some, that operation is running.
     pub(crate) fn notify_code_running_state(
@@ -348,8 +543,12 @@ impl GridController {
 mod tests {
     use crate::{
         CellValue, SheetPos,
+        a1::A1Selection,
         controller::{
-            GridController, active_transactions::pending_transaction::PendingTransaction,
+            GridController,
+            active_transactions::{
+                pending_transaction::PendingTransaction, transaction_name::TransactionName,
+            },
             operations::operation::Operation,
         },
         grid::CodeCellLanguage,
@@ -475,5 +674,55 @@ mod tests {
             sheet.data_table_at(&pos![A1]).unwrap().chart_output,
             Some((4, 5))
         );
+    }
+
+    #[test]
+    fn test_execute_compute_code_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single code cell for testing
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "NOW()".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        let value1 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // Test execute_compute_code_selection
+        let ops = vec![Operation::ComputeCodeSelection { selection: None }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        let value2 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value2 != value1);
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let ops = vec![Operation::ComputeCodeSelection {
+            selection: Some(A1Selection::from_single_cell(pos![sheet_id!A1])),
+        }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        let value3 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value3 != value2);
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let ops = vec![Operation::ComputeCodeSelection {
+            selection: Some(A1Selection::all(sheet_id)),
+        }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value4 != value3);
     }
 }

@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use crate::Pos;
 use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
+use crate::grid::SheetId;
 
 use super::{A1Selection, CellRefRange};
 
@@ -252,16 +255,20 @@ impl A1Selection {
             selection.cursor.y = top;
         };
 
-        if is_right_click {
-            if !self.ranges.iter().any(|range| range.has_col_range(col)) {
-                select_only_column(self, col, top);
-            }
-        } else if !ctrl_key && !shift_key {
-            select_only_column(self, col, top);
-        } else if ctrl_key && !shift_key {
+        // Handle ctrl/meta key combinations first (including ctrl+right-click)
+        if ctrl_key && !shift_key {
+            // Add column to selection (works for both left-click and right-click with ctrl/meta)
             self.add_or_remove_column(col, top, a1_context);
         } else if shift_key {
             self.extend_column(col, top);
+        } else if is_right_click {
+            // Right-click without modifiers: only change selection if column not already selected
+            if !self.ranges.iter().any(|range| range.has_col_range(col)) {
+                select_only_column(self, col, top);
+            }
+        } else {
+            // Regular left-click without modifiers: select only this column
+            select_only_column(self, col, top);
         }
     }
 
@@ -304,16 +311,20 @@ impl A1Selection {
             selection.cursor.y = row;
         };
 
-        if is_right_click {
-            if !self.ranges.iter().any(|range| range.has_row_range(row)) {
-                select_only_row(self, row, left);
-            }
-        } else if !ctrl_key && !shift_key {
-            select_only_row(self, row, left);
-        } else if ctrl_key && !shift_key {
+        // Handle ctrl/meta key combinations first (including ctrl+right-click)
+        if ctrl_key && !shift_key {
+            // Add row to selection (works for both left-click and right-click with ctrl/meta)
             self.add_or_remove_row(row, left, a1_context);
         } else if shift_key {
             self.extend_row(row, left);
+        } else if is_right_click {
+            // Right-click without modifiers: only change selection if row not already selected
+            if !self.ranges.iter().any(|range| range.has_row_range(row)) {
+                select_only_row(self, row, left);
+            }
+        } else {
+            // Regular left-click without modifiers: select only this row
+            select_only_row(self, row, left);
         }
     }
 
@@ -377,13 +388,13 @@ impl A1Selection {
                             }
                             ColRange::Col(col) => {
                                 if table.show_columns
-                                    && let Some(col_index) = table.try_col_index(col) {
-                                        start = Some((
-                                            table.bounds.min.x + col_index,
-                                            table.bounds.min.y
-                                                + if table.show_name { 1 } else { 0 },
-                                        ));
-                                    }
+                                    && let Some(col_index) = table.try_col_index(col)
+                                {
+                                    start = Some((
+                                        table.bounds.min.x + col_index,
+                                        table.bounds.min.y + if table.show_name { 1 } else { 0 },
+                                    ));
+                                }
                             }
                             ColRange::ColRange(start_col, _) => {
                                 if let Some(col_index) = table.try_col_index(start_col) {
@@ -510,6 +521,15 @@ impl A1Selection {
         let mut new_selection = self.clone();
         new_selection.ranges.extend(other.ranges.clone());
         new_selection
+    }
+
+    /// Selects the entire sheet. (Note: doesn't check whether the SheetId
+    /// exists, only if it is valid)
+    pub fn select_sheet(&mut self, sheet_id: String) -> Result<(), String> {
+        self.sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        self.ranges.clear();
+        self.ranges.push(CellRefRange::ALL);
+        Ok(())
     }
 }
 
@@ -954,6 +974,14 @@ mod tests {
 
         selection.select_column(col![F], false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("F")]);
+
+        // Test Cmd+right-click on a new column should ADD to selection, not replace it
+        let mut selection = A1Selection::test_a1("A");
+        selection.select_column(col![C], true, false, true, 1, &context); // ctrl=true, right_click=true
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C")]
+        );
     }
 
     #[test]
@@ -965,6 +993,14 @@ mod tests {
 
         selection.select_row(6, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
+
+        // Test Cmd+right-click on a new row should ADD to selection, not replace it
+        let mut selection = A1Selection::test_a1("1");
+        selection.select_row(3, true, false, true, 1, &context); // ctrl=true, right_click=true
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3")]
+        );
     }
 
     #[test]
@@ -1047,5 +1083,13 @@ mod tests {
             selection.ranges,
             vec![CellRefRange::test_a1("B2"), CellRefRange::test_a1("D")]
         );
+    }
+
+    #[test]
+    fn test_select_sheet() {
+        let mut selection = A1Selection::default(SheetId::TEST);
+        selection.select_sheet(SheetId::TEST.to_string()).unwrap();
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
+        assert_eq!(selection.sheet_id, SheetId::TEST);
     }
 }

@@ -27,7 +27,7 @@ export const RerunCode = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Rerun code';
+    const label = loading ? 'Rerunning code' : 'Reran code';
 
     const description = useMemo(() => {
       if (toolArgs?.success) {

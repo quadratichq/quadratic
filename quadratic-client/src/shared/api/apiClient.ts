@@ -6,8 +6,8 @@ import { captureEvent } from '@sentry/react';
 import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
-// TODO(ddimaria): make this dynamic
-const CURRENT_FILE_VERSION = '1.6';
+// This should match the current version in quadratic-core/src/grid/file/mod.rs
+const FILE_VERSION = '1.12';
 
 export const apiClient = {
   teams: {
@@ -84,7 +84,17 @@ export const apiClient = {
         return data;
       },
     },
-
+    files: {
+      deleted: {
+        list(teamUuid: string) {
+          return fetchFromApi(
+            `/v0/teams/${teamUuid}/files/deleted`,
+            { method: 'GET' },
+            ApiSchemas['/v0/teams/:uuid/files/deleted.GET.response']
+          );
+        },
+      },
+    },
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
@@ -168,7 +178,7 @@ export const apiClient = {
       if (file === undefined) {
         file = {
           name: 'Untitled',
-          version: CURRENT_FILE_VERSION,
+          version: FILE_VERSION,
         };
       }
 
@@ -187,6 +197,14 @@ export const apiClient = {
     delete(uuid: string) {
       trackEvent('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
+    },
+
+    restore(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/restore`,
+        { method: 'POST' },
+        ApiSchemas['/v0/files/:uuid/restore.POST.response']
+      );
     },
 
     async download(uuid: string, args: { checkpointDataUrl?: string } = {}) {
@@ -267,11 +285,11 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/checkpoints.GET.response']
         );
       },
-      get(uuid: string, checkpointId: string) {
+      getBySequenceNumber(uuid: string, sequenceNumber: number) {
         return fetchFromApi(
-          `/v0/files/${uuid}/checkpoints/${checkpointId}`,
+          `/v0/files/${uuid}/checkpoints/sequences/${sequenceNumber}`,
           { method: 'GET' },
-          ApiSchemas['/v0/files/:uuid/checkpoints/:checkpointId.GET.response']
+          ApiSchemas['/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response']
         );
       },
     },
@@ -381,11 +399,30 @@ export const apiClient = {
       );
     },
     clientDataKv: {
+      get() {
+        return fetchFromApi(
+          `/v0/user/client-data-kv`,
+          { method: 'GET' },
+          ApiSchemas['/v0/user/client-data-kv.GET.response']
+        );
+      },
       update(body: ApiTypes['/v0/user/client-data-kv.POST.request']) {
         return fetchFromApi(
           `/v0/user/client-data-kv`,
           { method: 'POST', body: JSON.stringify(body) },
           ApiSchemas['/v0/user/client-data-kv.POST.response']
+        );
+      },
+    },
+    aiRules: {
+      get() {
+        return fetchFromApi(`/v0/user/ai-rules`, { method: 'GET' }, ApiSchemas['/v0/user/ai-rules.GET.response']);
+      },
+      update(body: ApiTypes['/v0/user/ai-rules.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/user/ai-rules`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/ai-rules.PATCH.response']
         );
       },
     },
@@ -444,6 +481,45 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.DELETE.response']
       );
     },
+    getLogs({
+      connectionUuid,
+      teamUuid,
+      pageNumber = 1,
+      pageSize = 10,
+    }: {
+      connectionUuid: string;
+      teamUuid: string;
+      pageNumber?: number;
+      pageSize?: number;
+    }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}/log?page=${pageNumber}&limit=${pageSize}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response']
+      );
+    },
+    plaid: {
+      createLinkToken({ teamUuid }: { teamUuid: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/plaid/link-token`,
+          {
+            method: 'POST',
+            body: JSON.stringify({}),
+          },
+          ApiSchemas['/v0/teams/:uuid/plaid/link-token.POST.response']
+        );
+      },
+      exchangeToken({ teamUuid, publicToken }: { teamUuid: string; publicToken: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/plaid/exchange-token`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ publicToken }),
+          },
+          ApiSchemas['/v0/teams/:uuid/plaid/exchange-token.POST.response']
+        );
+      },
+    },
   },
 
   ai: {
@@ -469,6 +545,16 @@ export const apiClient = {
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/feedback.POST.response']
     );
+  },
+
+  urlMetadata: {
+    get(url: string) {
+      return fetchFromApi(
+        `/v0/url-metadata?url=${encodeURIComponent(url)}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/url-metadata.GET.response']
+      );
+    },
   },
 
   getApiUrl() {

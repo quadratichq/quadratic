@@ -171,12 +171,20 @@ export const CheckBoxEmptyIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box_outline_blank</Icon>;
 };
 
+export const CheckBoxIndeterminateIcon: IconComponent = (props) => {
+  return <Icon {...props}>indeterminate_check_box</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
 
 export const CheckIcon: IconComponent = (props) => {
   return <Icon {...props}>check</Icon>;
+};
+
+export const CheckCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_circle</Icon>;
 };
 
 export const CheckSmallIcon: IconComponent = (props) => {
@@ -335,6 +343,10 @@ export const ExternalLinkIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_outward</Icon>;
 };
 
+export const InsertLinkIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_link</Icon>;
+};
+
 export const FastForwardIcon: IconComponent = (props) => {
   return <Icon {...props}>fast_forward</Icon>;
 };
@@ -357,6 +369,10 @@ export const FormatAlignRightIcon: IconComponent = (props) => {
 
 export const FormatClearIcon: IconComponent = (props) => {
   return <Icon {...props}>format_clear</Icon>;
+};
+
+export const FormatPaintIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_paint</Icon>;
 };
 
 export const FormatColorFillIcon: IconComponent = (props) => {
@@ -566,12 +582,20 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const SyncIcon: IconComponent = (props) => {
+  return <Icon {...props}>sync</Icon>;
+};
+
 export const SaveAndRunIcon: IconComponent = (props) => {
   return <Icon {...props}>play_arrow</Icon>;
 };
 
 export const SaveAndRunStopIcon: IconComponent = (props) => {
   return <Icon {...props}>stop</Icon>;
+};
+
+export const ScheduleIcon: IconComponent = (props) => {
+  return <Icon {...props}>schedule</Icon>;
 };
 
 export const ScientificIcon: IconComponent = (props) => {
@@ -587,7 +611,7 @@ export const SettingsIcon: IconComponent = (props) => {
 };
 
 export const SheetIcon: IconComponent = (props) => {
-  return <Icon {...props}>tab</Icon>;
+  return <Icon {...props}>grid_on</Icon>;
 };
 
 export const SnippetsIcon: IconComponent = (props) => {
@@ -791,10 +815,24 @@ export const WebBrowserIcon: IconComponent = (props) => {
   return <Icon {...props}>captive_portal</Icon>;
 };
 
+export const ScheduledTasksIcon: IconComponent = (props) => {
+  return <Icon {...props}>timer_play</Icon>;
+};
+
 export const WarningIcon: IconComponent = (props) => {
   return <Icon {...props}>warning</Icon>;
 };
 
 export const DesktopIcon: IconComponent = (props) => {
   return <Icon {...props}>computer</Icon>;
+};
+
+export const SyncingDoneIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_done</Icon>;
+};
+export const SyncingInProgressIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_sync</Icon>;
+};
+export const SyncingAlertIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_alert</Icon>;
 };

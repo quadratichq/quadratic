@@ -6,7 +6,7 @@ import {
 import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
 import { UI } from "./ui.js";
-import { killPort } from './utils.js';
+import { killPort } from "./utils.js";
 export class Control {
   private cli: CLI;
   private ui: UI;
@@ -24,6 +24,7 @@ export class Control {
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
   shared?: ChildProcessWithoutNullStreams;
+  cloudController?: ChildProcessWithoutNullStreams;
 
   signals: Record<string, AbortController> = {};
 
@@ -41,6 +42,7 @@ export class Control {
     postgres: false,
     redis: false,
     shared: false,
+    cloudController: false,
   };
 
   constructor(cli: CLI) {
@@ -61,6 +63,7 @@ export class Control {
       this.kill("connection"),
       this.kill("python"),
       this.kill("shared"),
+      this.kill("cloudController"),
     ]);
     process.exit(0);
   }
@@ -109,8 +112,10 @@ export class Control {
       this.isPostgresRunning(),
     ]);
 
-    const redisNotRunning = redisRunning !== true && redisRunning !== "not found";
-    const postgresNotRunning = postgresRunning !== true && postgresRunning !== "not found";
+    const redisNotRunning =
+      redisRunning !== true && redisRunning !== "not found";
+    const postgresNotRunning =
+      postgresRunning !== true && postgresRunning !== "not found";
     const redisNotFound = redisRunning === "not found";
     const postgresNotFound = postgresRunning === "not found";
     const errors: string[] = [];
@@ -118,7 +123,9 @@ export class Control {
     // Check Redis
     if (redisNotFound) {
       this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-      errors.push("redis-cli not found. Please install redis-cli or ensure it's in your PATH.");
+      errors.push(
+        "redis-cli not found. Please install redis-cli or ensure it's in your PATH.",
+      );
     } else if (redisRunning === true) {
       this.status.redis = true;
       this.ui.print("redis", "is running", "green");
@@ -129,7 +136,9 @@ export class Control {
     // Check PostgreSQL
     if (postgresNotFound) {
       this.status.postgres = "killed"; // use killed to indicate that pg_isready was not found
-      errors.push("pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.");
+      errors.push(
+        "pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.",
+      );
     } else if (postgresRunning === true) {
       this.status.postgres = true;
       this.ui.print("postgres", "is running", "green");
@@ -139,13 +148,19 @@ export class Control {
 
     // Combine "not running" errors if both are failing
     if (redisNotRunning && postgresNotRunning) {
-      errors.push("Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.");
+      errors.push(
+        "Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.",
+      );
     } else {
       if (redisNotRunning) {
-        errors.push("Redis is NOT running! Please start redis before running node dev.");
+        errors.push(
+          "Redis is NOT running! Please start redis before running node dev.",
+        );
       }
       if (postgresNotRunning) {
-        errors.push("PostgreSQL is NOT running! Please start PostgreSQL before running node dev.");
+        errors.push(
+          "PostgreSQL is NOT running! Please start PostgreSQL before running node dev.",
+        );
       }
     }
 
@@ -207,6 +222,12 @@ export class Control {
             }
             if (this.status.connection !== "killed" && !this.connection) {
               this.runConnection();
+            }
+            if (
+              this.status.cloudController !== "killed" &&
+              !this.cloudController
+            ) {
+              this.runCloudController();
             }
           }
         },
@@ -318,15 +339,11 @@ export class Control {
       { signal: this.signals.core.signal },
     );
     this.ui.printOutput("core", (data) =>
-      this.handleResponse(
-        "core",
-        data,
-        {
-          success: ["[Finished running. Exit status: 0", "ready to publish"],
-          error: "error[",
-          start: ["> quadratic", "[Running "],
-        },
-      ),
+      this.handleResponse("core", data, {
+        success: ["[Finished running. Exit status: 0", "ready to publish"],
+        error: "error[",
+        start: ["> quadratic", "[Running "],
+      }),
     );
   }
 
@@ -389,9 +406,9 @@ export class Control {
         env: { ...process.env, RUST_LOG: "info" },
       });
     } else {
-    this.multiplayer = spawn(
-      "cargo",
-      this.cli.options.multiplayer
+      this.multiplayer = spawn(
+        "cargo",
+        this.cli.options.multiplayer
           ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
           : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
         {
@@ -540,6 +557,61 @@ export class Control {
       this.status.shared = "killed";
     }
   }
+
+  async runCloudController() {
+    if (this.quitting) return;
+    if (this.status.cloudController === "killed") return;
+    this.status.cloudController = false;
+    this.ui.print("cloudController");
+    await this.kill("cloudController");
+
+    this.signals.cloudController = new AbortController();
+    if (this.cli.options.noRust) {
+      this.cloudController = spawn("./quadratic-cloud-controller", [], {
+        signal: this.signals.cloudController.signal,
+        cwd: "quadratic-cloud-controller/target/debug",
+        env: { ...process.env, RUST_LOG: "info" },
+      });
+    } else {
+      this.cloudController = spawn(
+        "cargo",
+        this.cli.options.cloudController
+          ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target"]
+          : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target"],
+        {
+          signal: this.signals.cloudController.signal,
+          cwd: "quadratic-cloud-controller",
+          env: { ...process.env, RUST_LOG: "info" },
+        },
+      );
+    }
+    this.ui.printOutput("cloudController", (data) => {
+      this.handleResponse("cloudController", data, {
+        success: ["Finished ", "Running "],
+        error: ["error[", "npm ERR!"],
+        start: "    Compiling",
+      });
+    });
+  }
+
+  async restartCloudController() {
+    this.cli.options.cloudController = !this.cli.options.cloudController;
+    this.runCloudController();
+  }
+
+  async killCloudController() {
+    if (this.status.cloudController === "killed") {
+      this.status.cloudController = false;
+      this.ui.print("cloudController", "restarting...");
+      this.runCloudController();
+    } else {
+      if (this.cloudController) {
+        await this.kill("cloudController");
+        this.ui.print("cloudController", "killed", "red");
+      }
+      this.status.cloudController = "killed";
+    }
+  }
   async runConnection() {
     if (this.quitting) return;
     if (this.status.connection === "killed") return;
@@ -579,7 +651,14 @@ export class Control {
     this.ui.printOutput("connection", (data) => {
       this.handleResponse("connection", data, {
         success: "listening on",
-        error: ["error[", "error:", "failed to compile", "npm ERR!", "Compiling failed", "Exit status: 1"],
+        error: [
+          "error[",
+          "error:",
+          "failed to compile",
+          "npm ERR!",
+          "Compiling failed",
+          "Exit status: 1",
+        ],
         start: "    Compiling",
       });
     });

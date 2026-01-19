@@ -8,6 +8,7 @@
 use std::sync::PoisonError;
 
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
 pub type Result<T, E = SharedError> = std::result::Result<T, E>;
@@ -30,6 +31,14 @@ pub enum SharedError {
     #[error("Error with Crypto: {0}")]
     Crypto(crate::crypto::error::Crypto),
 
+    #[cfg(feature = "quadratic-database")]
+    #[error("Error with Quadratic Database: {0}")]
+    QuadraticDatabase(crate::quadratic_database::error::QuadraticDatabase),
+
+    #[cfg(feature = "docker")]
+    #[error("Error with Docker: {0}")]
+    Docker(crate::docker::error::Docker),
+
     #[error("{0}")]
     Generic(String),
 
@@ -40,6 +49,11 @@ pub enum SharedError {
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
 
+    #[error("Error communicating with the Quadratic Cloud Controller: {0}")]
+    QuadraticCloudController(String),
+
+    #[error("Error with Protobuf: {0}")]
+    Protobuf(String),
     #[cfg(feature = "parquet")]
     #[error("Error with Parquet: {0}")]
     Parquet(crate::parquet::error::Parquet),
@@ -69,6 +83,23 @@ pub enum SharedError {
     Uuid(String),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display, EnumString)]
+pub enum ErrorLevel {
+    Error,
+    Warning,
+    Info,
+}
+
+impl ErrorLevel {
+    pub fn log(&self, msg: &str) {
+        match self {
+            ErrorLevel::Error => tracing::error!("{}", msg),
+            ErrorLevel::Warning => tracing::warn!("{}", msg),
+            ErrorLevel::Info => tracing::info!("{}", msg),
+        }
+    }
+}
+
 pub fn clean_errors(error: impl ToString) -> String {
     let mut cleaned = error.to_string();
     let remove = vec!["error returned from database: "];
@@ -96,6 +127,13 @@ impl From<serde_json::Error> for SharedError {
 impl From<uuid::Error> for SharedError {
     fn from(error: uuid::Error) -> Self {
         SharedError::Uuid(error.to_string())
+    }
+}
+
+#[cfg(feature = "storage")]
+impl From<crate::storage::error::Storage> for SharedError {
+    fn from(error: crate::storage::error::Storage) -> Self {
+        SharedError::Storage(error)
     }
 }
 

@@ -32,6 +32,7 @@ impl GridController {
     /// final_range: the range of cells to expand to
     ///
     /// cursor: the cursor position for the undo/redo stack
+    #[function_timer::function_timer]
     pub fn autocomplete_operations(
         &mut self,
         sheet_id: SheetId,
@@ -157,7 +158,8 @@ impl GridController {
         let mut ops = vec![];
         let selection = A1Selection::from_rect(delete_rect);
         ops.extend(self.delete_cells_operations(&selection, false));
-        ops.extend(self.clear_format_borders_operations(&selection, false));
+        // Skip RichText clearing because the cells are being deleted
+        ops.extend(self.clear_format_borders_operations(&selection, false, true));
         ops
     }
 
@@ -631,6 +633,8 @@ impl GridController {
 
                     let mut data_table = data_table.to_owned();
 
+                    let final_sheet_pos = final_pos.to_sheet_pos(sheet_id);
+
                     if let Some(code_run) = data_table.code_run_mut() {
                         code_run.adjust_references(
                             sheet_id,
@@ -645,17 +649,22 @@ impl GridController {
                                 y_start: 0,
                             },
                         );
-                        compute_code_ops.push(Operation::ComputeCode {
-                            sheet_pos: final_pos.to_sheet_pos(sheet_id),
+                        // Use SetComputeCode with template to preserve presentation properties
+                        compute_code_ops.push(Operation::SetComputeCode {
+                            sheet_pos: final_sheet_pos,
+                            language: code_run.language.clone(),
+                            code: code_run.code.clone(),
+                            template: Some((&data_table).into()),
+                        });
+                    } else {
+                        // Non-code data tables use SetDataTable
+                        data_table_ops.push(Operation::SetDataTable {
+                            sheet_pos: final_sheet_pos,
+                            data_table: Some(data_table),
+                            index: usize::MAX,
+                            ignore_old_data_table: true,
                         });
                     }
-
-                    data_table_ops.push(Operation::SetDataTable {
-                        sheet_pos: final_pos.to_sheet_pos(sheet_id),
-                        data_table: Some(data_table),
-                        index: usize::MAX,
-                        ignore_old_data_table: true,
-                    });
                 }
             }
         }

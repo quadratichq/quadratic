@@ -330,6 +330,16 @@ impl TrackedOperation {
             Operation::ComputeCode { sheet_pos, .. } => Some(Self::ComputeCode {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
+            Operation::ComputeCodeSelection { selection } => Some(Self::ComputeCode {
+                selection: selection.as_ref().map_or_else(
+                    || "*".to_string(),
+                    |selection| selection.to_string(Some(selection.sheet_id), gc.a1_context()),
+                ),
+            }),
+
+            Operation::SetComputeCode { sheet_pos, .. } => Some(Self::ComputeCode {
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
+            }),
 
             Operation::MoveDataTable {
                 old_sheet_pos,

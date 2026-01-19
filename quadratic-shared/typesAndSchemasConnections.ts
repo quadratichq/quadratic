@@ -22,8 +22,14 @@ export const ConnectionTypeSchema = z.enum([
   'SUPABASE',
   'NEON',
   'MIXPANEL',
+  'GOOGLE_ANALYTICS',
+  'PLAID',
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
+
+export function isSyncedConnectionType(type: ConnectionType): boolean {
+  return ['MIXPANEL', 'GOOGLE_ANALYTICS', 'PLAID'].includes(type);
+}
 
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {
@@ -55,7 +61,7 @@ const ConnectionPortSchema = z
     },
     { message: 'Port must be a valid number between 0 and 65535' }
   );
-const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
+export const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
@@ -65,6 +71,8 @@ const ConnectionSchema = z.object({
   semanticDescription: ConnectionSemanticDescriptionSchema,
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
+  syncedConnectionPercentCompleted: z.number().optional(),
+  syncedConnectionUpdatedDate: z.string().datetime().optional(),
 });
 const ConnectionSshSchema = z.object({
   useSsh: z.boolean(),
@@ -128,6 +136,43 @@ export const ConnectionTypeDetailsMixpanelSchema = z.object({
   start_date: z.string().date(),
 });
 
+export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
+  property_id: z.string().min(1, { message: 'Required' }),
+  service_account_configuration: z.string().min(1, { message: 'Required' }),
+  start_date: z.string().date(),
+});
+
+export const ConnectionTypeDetailsPlaidSchema = z.object({
+  access_token: z.string().min(1, { message: 'Required' }),
+  start_date: z.string().date(),
+  institution_name: z.string().optional(), // For display purposes
+});
+
+/**
+ * =============================================================================
+ * Schemas for synced connections
+ * =============================================================================
+ */
+export const SyncedConnectionSchema = z.object({
+  id: z.number(),
+  connectionId: z.number(),
+  percentCompleted: z.number(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
+  updatedDate: z.string().datetime(),
+});
+export type SyncedConnection = z.infer<typeof SyncedConnectionSchema>;
+
+export const SyncedConnectionLogSchema = z.object({
+  id: z.number(),
+  syncedConnectionId: z.number(),
+  runId: z.string(),
+  syncedDates: z.array(z.string()),
+  status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
+  error: z.string().optional(),
+  createdDate: z.string().datetime(),
+});
+export type SyncedConnectionLog = z.infer<typeof SyncedConnectionLogSchema>;
+
 /**
  * =============================================================================
  * Export
@@ -142,6 +187,8 @@ export const ConnectionListSchema = z.array(
     type: true,
     semanticDescription: true,
     isDemo: true,
+    syncedConnectionPercentCompleted: true,
+    syncedConnectionUpdatedDate: true,
   })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
@@ -186,4 +233,27 @@ export const ApiSchemasConnections = {
 
   // Get all connections (internal)
   '/v0/internal/connection.GET.response': ConnectionListSchemaInternal,
+
+  // Get synced connection
+  '/v0/synced-connection/:syncedConnectionId.GET.response': SyncedConnectionSchema,
+
+  // Get all synced connections (internal)
+  '/v0/internal/synced-connection.GET.response': SyncedConnectionSchema,
+
+  // Get synced connection logs
+  '/v0/teams/:uuid/connections/:connectionUuid/log.GET.response': z.array(SyncedConnectionLogSchema),
+
+  // Plaid integration endpoints
+  '/v0/teams/:uuid/plaid/link-token.POST.request': z.object({}),
+  '/v0/teams/:uuid/plaid/link-token.POST.response': z.object({
+    linkToken: z.string(),
+  }),
+
+  '/v0/teams/:uuid/plaid/exchange-token.POST.request': z.object({
+    publicToken: z.string(),
+  }),
+  '/v0/teams/:uuid/plaid/exchange-token.POST.response': z.object({
+    accessToken: z.string(),
+    itemId: z.string(),
+  }),
 };

@@ -6,15 +6,24 @@ use crate::{
 };
 
 impl GridController {
+    /// Generates operations to clear formatting and borders for a selection.
+    ///
+    /// If `skip_richtext_clearing` is true, the function will not generate
+    /// operations to clear RichText inline formatting. This should be set to
+    /// true when the cells are being deleted (since there's no point in
+    /// clearing formatting on cells that will be removed, and doing so would
+    /// overwrite the deletion with a modified RichText value).
     pub(crate) fn clear_format_borders_operations(
         &self,
         selection: &A1Selection,
         ignore_tables_having_anchoring_cell_in_selection: bool,
+        skip_richtext_clearing: bool,
     ) -> Vec<Operation> {
         let mut ops = self.format_ops(
             selection,
             FormatUpdate::cleared(),
             ignore_tables_having_anchoring_cell_in_selection,
+            skip_richtext_clearing,
         );
         ops.extend(self.set_borders_a1_selection_operations(
             selection.clone(),
@@ -46,7 +55,7 @@ mod tests {
 
         let sheet_id = SheetId::TEST;
         let selection = A1Selection::test_a1("A1");
-        let ops = gc.clear_format_borders_operations(&selection, false);
+        let ops = gc.clear_format_borders_operations(&selection, false, false);
 
         assert_eq!(ops.len(), 2);
         assert_eq!(

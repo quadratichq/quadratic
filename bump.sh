@@ -32,6 +32,9 @@ TYPE=$1
 RUST=(
   "Cargo.toml"
   "quadratic-connection/Cargo.toml"
+  "quadratic-cloud-controller/Cargo.toml"
+  "quadratic-cloud-worker/Cargo.toml"
+  "quadratic-core-cloud/Cargo.toml"
   "quadratic-core/Cargo.toml"
   "quadratic-files/Cargo.toml"
   "quadratic-multiplayer/Cargo.toml"
@@ -165,3 +168,16 @@ echo $NEW_VERSION > VERSION
 verify_versions
 
 echo "Version bump to $NEW_VERSION complete!"
+echo ""
+echo "=========================================="
+echo "REMINDER: Create a changelog entry!"
+echo "=========================================="
+echo ""
+echo "Use this prompt to generate the changelog:"
+echo ""
+echo "---"
+echo "Create a changelog entry for version $NEW_VERSION in quadratic-client/src/shared/constants/changelog.json. Review the git history since the last release to identify the key features, improvements, and bug fixes. Follow the existing format with version, date, changes array, and details HTML."
+echo "---"
+echo ""
+echo "After creating the changelog entry, run prettier manually on changelog.json (otherwise CI will complain):"
+echo "  npx prettier --write quadratic-client/src/shared/constants/changelog.json"

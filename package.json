@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.22.0",
+  "version": "0.23.4",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -40,6 +40,7 @@
     "build:wasm:javascript:function-timer": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js,function-timer",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
     "build:python": "./quadratic-kernels/python-wasm/package.sh",
+    "build:cloud-worker": "docker build -t quadratic-cloud-worker -f quadratic-cloud-worker/Dockerfile .",
     "build:file:blank": "cd quadratic-core && cargo run --bin generate_blank_current_file",
     "build:file:convert": "cd quadratic-core && cargo run --bin convert_grid_to_json",
     "build:file:upgrade": "cd quadratic-core && cargo run --bin upgrade_file",
@@ -79,7 +80,12 @@
     "e2e:update": "cd test/e2e && npm run docker:update",
     "e2e:ui": "cd test/e2e && npm run test:ui",
     "e2e:headed": "cd test/e2e && npm run test:headed",
-    "e2e:report": "cd test/e2e && npm run test:report"
+    "e2e:report": "cd test/e2e && npm run test:report",
+    "e2e:users": "cd test/e2e && npm run ensure-users"
+  },
+  "overrides": {
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -24,6 +24,7 @@ export type FilesListUserFile = {
   thumbnail: string | null;
   updatedDate: string;
   uuid: string;
+  hasScheduledTasks?: boolean;
   creator?: {
     name?: string;
     picture?: string;

@@ -65,4 +65,12 @@ impl Stats {
     pub(crate) fn new() -> Self {
         Stats::default()
     }
+
+    pub(crate) fn increment_num_connections_processing(&mut self) {
+        self.num_connections_processing += 1;
+    }
+
+    pub(crate) fn decrement_num_connections_processing(&mut self) {
+        let _ = self.num_connections_processing.saturating_sub(1);
+    }
 }
