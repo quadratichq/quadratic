@@ -5,10 +5,10 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
 import {
-  getActionFileDelete,
-  getActionFileDownload,
-  getActionFileDuplicate,
-  getActionFileMove,
+    getActionFileDelete,
+    getActionFileDownload,
+    getActionFileDuplicate,
+    getActionFileMove,
 } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
@@ -18,11 +18,11 @@ import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
@@ -351,9 +351,29 @@ export function FilesListItemExampleFile({
   viewPreferences: ViewPreferences;
 }) {
   const { href, thumbnail, name, description } = file;
+  const {
+    activeTeam: {
+      team: { uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
+
+  const handleClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    // Templates are always created as team files (not private)
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(activeTeamUuid, false);
+    const navigateToTemplate = () => {
+      window.location.href = href;
+    };
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, activeTeamUuid, navigateToTemplate);
+      return;
+    }
+    navigateToTemplate();
+  };
+
   return (
     <ListItem>
-      <Link to={href} className="flex w-full" reloadDocument>
+      <Link to={href} className="flex w-full" onClick={handleClick}>
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
           <FilesListItemCore
             name={name}

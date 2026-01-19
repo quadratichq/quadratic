@@ -1,6 +1,6 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { LockClosedIcon } from '@radix-ui/react-icons';
+import { WarningIcon } from '@/shared/components/Icons';
 import { useMemo } from 'react';
 
 /**
@@ -31,7 +31,7 @@ export function FileLimitBanner() {
   return (
     <div className="mb-4 mt-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted">
-        <LockClosedIcon className="h-4 w-4 text-muted-foreground" />
+        <WarningIcon className="h-5 w-5 text-warning" />
       </div>
       <p className="text-sm">
         You can edit your <strong>3 most recently created</strong> Quadratic files and the rest are view-only.{' '}

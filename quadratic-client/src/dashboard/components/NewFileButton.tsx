@@ -12,12 +12,12 @@ import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromStat
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog } from '@/shared/shadcn/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -102,23 +102,35 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
               </span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem asChild>
-              <Link
-                reloadDocument
-                to={ROUTES.CREATE_FILE(teamUuid, { state: stateToInsertAndRun, private: isPrivate })}
-              >
-                <ApiIcon className="mr-3 text-primary" />
-                <span className="flex flex-col">
-                  API
-                  <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
-                </span>
-              </Link>
+            <DropdownMenuItem
+              onClick={async () => {
+                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(
+                  teamUuid,
+                  isPrivate
+                );
+                const createApiFile = () => {
+                  window.location.href = ROUTES.CREATE_FILE(teamUuid, {
+                    state: stateToInsertAndRun,
+                    private: isPrivate,
+                  });
+                };
+                if (isOverLimit && !isPaidPlan) {
+                  showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createApiFile);
+                  return;
+                }
+                createApiFile();
+              }}
+            >
+              <ApiIcon className="mr-3 text-primary" />
+              <span className="flex flex-col">
+                API
+                <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
+              </span>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link to={ROUTES.TEMPLATES} className="flex items-center">
                 <ExamplesIcon className="mr-3 text-primary" />
-
                 <span className="flex flex-col">
                   Templates
                   <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>

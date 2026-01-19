@@ -46,22 +46,21 @@ export function FileLimitDialog() {
     <Dialog open={state.open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Document limit reached</DialogTitle>
-          <DialogDescription>Your team has reached the editable document limit for the free plan.</DialogDescription>
+          <DialogTitle>You've reached the {maxFiles} file limit</DialogTitle>
+          <DialogDescription>
+            Free teams can edit up to {maxFiles} files. You can still create this file, but your oldest files will
+            become view-only.
+          </DialogDescription>
         </DialogHeader>
 
         <Alert variant="warning">
           <WarningIcon />
-          <AlertTitle>Over the {maxFiles} document limit</AlertTitle>
+          <AlertTitle>What happens if you continue?</AlertTitle>
           <AlertDescription>
-            If you create a document anyway, you'll be able to edit your {maxFiles} most recently created documents and
-            the rest will become view-only.
+            Only your {maxFiles} most recently created files will be editable. Older files will be view-only until you
+            upgrade or delete newer files.
           </AlertDescription>
         </Alert>
-
-        <p className="text-sm text-muted-foreground">
-          Upgrade to enjoy unlimited editable documents and more team features.
-        </p>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={handleUpgrade}>

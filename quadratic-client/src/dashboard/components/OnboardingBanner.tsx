@@ -3,6 +3,7 @@ import Logo from '@/dashboard/components/quadratic-logo.svg';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -71,6 +72,34 @@ export function OnboardingBanner() {
   const tabContentClassName = 'flex flex-col gap-2';
   const contentBtnClassName = 'min-w-40 flex-shrink-0';
 
+  const handleCreateBlankFile = async () => {
+    trackEvent('[OnboardingBanner].newFileBlank');
+    // Onboarding creates team files (not private)
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, false);
+    const createFile = () => {
+      window.location.href = ROUTES.CREATE_FILE(teamUuid);
+    };
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      return;
+    }
+    createFile();
+  };
+
+  const handleFetchFromApi = async () => {
+    trackEvent('[OnboardingBanner].newFileFromApi');
+    // Onboarding creates team files (not private)
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, false);
+    const createFile = () => {
+      window.location.href = newApiFileToLink;
+    };
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      return;
+    }
+    createFile();
+  };
+
   const tabs = [
     {
       label: 'Create a file',
@@ -79,16 +108,8 @@ export function OnboardingBanner() {
         <>
           <p>Start with one of our files:</p>
           <div className="mb-2 flex gap-2">
-            <Button variant="outline" className={contentBtnClassName} asChild>
-              <Link
-                to={ROUTES.CREATE_FILE(teamUuid)}
-                reloadDocument
-                onClick={() => {
-                  trackEvent('[OnboardingBanner].newFileBlank');
-                }}
-              >
-                <PlusIcon className="mr-1" /> Create blank file
-              </Link>
+            <Button variant="outline" className={contentBtnClassName} onClick={handleCreateBlankFile}>
+              <PlusIcon className="mr-1" /> Create blank file
             </Button>
 
             <Button variant="outline" className={contentBtnClassName} asChild>
@@ -104,15 +125,8 @@ export function OnboardingBanner() {
           </div>
           <p>Or bring your own data:</p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link
-                to={newApiFileToLink}
-                onClick={() => {
-                  trackEvent('[OnboardingBanner].newFileFromApi');
-                }}
-              >
-                <RocketIcon className="mr-1" /> Fetch data from an API
-              </Link>
+            <Button variant="outline" onClick={handleFetchFromApi}>
+              <RocketIcon className="mr-1" /> Fetch data from an API
             </Button>
             <Button variant="outline" onClick={onClickImport}>
               <ArrowDownIcon className="mr-1" /> Import CSV, Excel, or Parquet file
