@@ -1,6 +1,7 @@
 import { duplicateFileAction } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -21,6 +22,7 @@ export function PermissionOverlay() {
   const {
     file: { uuid: fileUuid },
     team: { uuid: teamUuid },
+    userMakingRequest: { isFileEditRestricted },
   } = useFileRouteLoaderData();
   const location = useLocation();
 
@@ -52,7 +54,24 @@ export function PermissionOverlay() {
     );
   }
 
-  // If you can't edit the file, we've got a message for you
+  // If you can't edit the file due to file limit, show upgrade message
+  if (!permissions.includes(FILE_EDIT) && isFileEditRestricted && isOpen) {
+    return (
+      <FixedBottomAlert>
+        <Type>
+          <strong>View-only.</strong> This file exceeds your plan's limit. Upgrade for unlimited editing.
+        </Type>
+        <div className="flex flex-shrink-0 gap-2">
+          <Button onClick={() => showUpgradeDialog('fileLimitReached')}>Upgrade</Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <Cross2Icon />
+          </Button>
+        </div>
+      </FixedBottomAlert>
+    );
+  }
+
+  // If you can't edit the file for other reasons, show standard message
   if (!permissions.includes(FILE_EDIT)) {
     return (
       <FixedBottomAlert>

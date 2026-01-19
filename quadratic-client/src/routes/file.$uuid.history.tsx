@@ -19,13 +19,13 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useMemo, useState } from 'react';
 import {
-    Link,
-    useFetcher,
-    useLoaderData,
-    useParams,
-    useRevalidator,
-    useRouteError,
-    type LoaderFunctionArgs,
+  Link,
+  useFetcher,
+  useLoaderData,
+  useParams,
+  useRevalidator,
+  useRouteError,
+  type LoaderFunctionArgs,
 } from 'react-router';
 
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'] & {
@@ -93,7 +93,7 @@ export const Component = () => {
     const doDuplicate = () => {
       trackEvent('[FileVersionHistory].duplicateVersion', {
         uuid,
-        checkpointId: activeCheckpoint.id,
+        sequenceNumber: activeCheckpoint.sequenceNumber,
       });
 
       const duplicateAction = getActionFileDuplicate({
@@ -134,7 +134,7 @@ export const Component = () => {
 
   useRemoveInitialLoadingUI();
 
-    return (
+  return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
       <FileLimitDialog />
       <UpgradeDialog teamUuid={teamUuid} canManageBilling={teamPermissions.includes('TEAM_MANAGE')} />

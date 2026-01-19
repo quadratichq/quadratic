@@ -12,12 +12,12 @@ import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromStat
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog } from '@/shared/shadcn/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
