@@ -93,49 +93,50 @@ export const apiPrivateSubnet3 = new aws.ec2.Subnet("api-private-subnet-3", {
   tags: { Name: "api-private-subnet-3" },
 });
 
-// Create route tables
-const publicRouteTable = new aws.ec2.RouteTable("api-public-route-table", {
+// Create route tables (without inline routes to allow separate Route resources)
+export const publicRouteTable = new aws.ec2.RouteTable("api-public-route-table", {
   vpcId: apiVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      gatewayId: internetGateway.id,
-    },
-  ],
   tags: { Name: "api-public-route-table" },
+});
+
+// Public route to internet gateway
+new aws.ec2.Route("api-public-igw-route", {
+  routeTableId: publicRouteTable.id,
+  destinationCidrBlock: "0.0.0.0/0",
+  gatewayId: internetGateway.id,
 });
 
 const privateRouteTable1 = new aws.ec2.RouteTable("api-private-route-table-1", {
   vpcId: apiVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway1.id,
-    },
-  ],
   tags: { Name: "api-private-route-table-1" },
+});
+
+new aws.ec2.Route("api-private-nat-route-1", {
+  routeTableId: privateRouteTable1.id,
+  destinationCidrBlock: "0.0.0.0/0",
+  natGatewayId: natGateway1.id,
 });
 
 const privateRouteTable2 = new aws.ec2.RouteTable("api-private-route-table-2", {
   vpcId: apiVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway2.id,
-    },
-  ],
   tags: { Name: "api-private-route-table-2" },
+});
+
+new aws.ec2.Route("api-private-nat-route-2", {
+  routeTableId: privateRouteTable2.id,
+  destinationCidrBlock: "0.0.0.0/0",
+  natGatewayId: natGateway2.id,
 });
 
 const privateRouteTable3 = new aws.ec2.RouteTable("api-private-route-table-3", {
   vpcId: apiVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway3.id,
-    },
-  ],
   tags: { Name: "api-private-route-table-3" },
+});
+
+new aws.ec2.Route("api-private-nat-route-3", {
+  routeTableId: privateRouteTable3.id,
+  destinationCidrBlock: "0.0.0.0/0",
+  natGatewayId: natGateway3.id,
 });
 
 // Associate subnets with route tables
