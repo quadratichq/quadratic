@@ -1,52 +1,25 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, getDefaultStore, useAtom } from 'jotai';
 import { type AILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 // Atom for the AI languages state
 export const aiLanguagesAtom = atom<AILanguagePreferences>([]);
 
-// Atom for loading state
-export const aiLanguagesLoadingAtom = atom<boolean>(false);
-
-// Track if initial load has happened
-let hasLoaded = false;
-
-/**
- * Preload user AI languages. Call this early in the app lifecycle to warm the cache.
- */
-export function preloadUserAILanguages() {
-  if (hasLoaded) return;
-  hasLoaded = true;
-
-  const store = getDefaultStore();
-  store.set(aiLanguagesLoadingAtom, true);
-
-  apiClient.user.aiLanguages
-    .get()
-    .then((response) => {
-      // Store the actual value from the API (empty array = no preference)
-      store.set(aiLanguagesAtom, response.aiLanguages);
-    })
-    .catch((error) => {
-      console.error('Failed to preload AI languages:', error);
-    })
-    .finally(() => {
-      store.set(aiLanguagesLoadingAtom, false);
-    });
-}
+// Internal load state (using atom for testability/HMR)
+type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
+const loadStateAtom = atom<LoadState>('idle');
 
 /**
  * Hook to get and manage user AI language preferences.
  */
 export function useUserAILanguages() {
   const [aiLanguages, setAILanguages] = useAtom(aiLanguagesAtom);
-  const [isLoading] = useAtom(aiLanguagesLoadingAtom);
 
-  // Trigger initial load if not already done
-  if (!hasLoaded) {
+  // Trigger initial load if not already started
+  useEffect(() => {
     preloadUserAILanguages();
-  }
+  }, []);
 
   const saveAILanguages = useCallback(
     async (newLanguages: AILanguagePreferences): Promise<boolean> => {
@@ -70,7 +43,29 @@ export function useUserAILanguages() {
 
   return {
     aiLanguages,
-    isLoading,
     saveAILanguages,
   };
+}
+
+/**
+ * Preload user AI languages. Call this early in the app lifecycle to warm the cache.
+ */
+export function preloadUserAILanguages() {
+  const store = getDefaultStore();
+  const loadState = store.get(loadStateAtom);
+
+  if (loadState === 'idle') {
+    store.set(loadStateAtom, 'loading');
+
+    apiClient.user.aiLanguages
+      .get()
+      .then((response) => {
+        store.set(aiLanguagesAtom, response.aiLanguages);
+        store.set(loadStateAtom, 'loaded');
+      })
+      .catch((error) => {
+        console.error('Failed to preload AI languages:', error);
+        store.set(loadStateAtom, 'error');
+      });
+  }
 }

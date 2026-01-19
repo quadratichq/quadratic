@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { AILanguagePreferencesSchema } from 'quadratic-shared/typesAndSchemasAI';
@@ -23,7 +24,20 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user/ai
     throw new ApiError(404, 'User not found');
   }
 
+  const result = AILanguagePreferencesSchema.safeParse(user.aiLanguages);
+
+  if (!result.success) {
+    Sentry.captureEvent({
+      message: 'Invalid AI languages. This is unexpected and means data in the database is corrupt for a known user.',
+      level: 'error',
+      extra: {
+        userId,
+        aiLanguages: user.aiLanguages,
+      },
+    });
+  }
+
   return res.status(200).json({
-    aiLanguages: AILanguagePreferencesSchema.parse(user.aiLanguages),
+    aiLanguages: result.success ? result.data : [],
   });
 }

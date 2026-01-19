@@ -165,6 +165,12 @@ ${rules.join('\n\n')}
 };
 
 export const getAILanguagesContext = (enabledLanguagePreferences: AILanguagePreferences): ChatMessage[] => {
+  // We guard against this in the UI, but just in case we'll handle it too.
+  // If no languages are enabled or all languages are enabled, return empty context to avoid malformed messages
+  if (enabledLanguagePreferences.length === 0 || enabledLanguagePreferences.length === allAILanguagePreferences.length) {
+    return [];
+  }
+
   // Tell the AI about the enabled/disabled language preferences
   const disabledLanguagePreferences = allAILanguagePreferences.filter(
     (lang) => !enabledLanguagePreferences.includes(lang)
