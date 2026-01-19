@@ -123,6 +123,11 @@ impl GridController {
             TransactionSource::Unset => panic!("Expected a transaction type"),
         }
 
+        // Clear color scale threshold caches on all sheets since data may have changed
+        for sheet in self.grid.sheets().values() {
+            sheet.clear_color_scale_cache();
+        }
+
         self.send_client_render_updates(&mut transaction);
 
         transaction.send_transaction();

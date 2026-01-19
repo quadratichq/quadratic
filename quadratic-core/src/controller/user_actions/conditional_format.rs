@@ -231,6 +231,8 @@ impl GridController {
         // Now get mutable borrow and set the preview
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             sheet.preview_conditional_format = Some(preview);
+            // Clear color scale cache since the preview may affect threshold calculations
+            sheet.clear_color_scale_cache();
         }
 
         // Trigger re-render for fills (via jsSheetConditionalFormats -> client clears fill cache)
@@ -269,6 +271,8 @@ impl GridController {
 
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             sheet.preview_conditional_format = None;
+            // Clear color scale cache since the preview may have affected threshold calculations
+            sheet.clear_color_scale_cache();
         }
 
         if let Some(old_sel) = old_selection {

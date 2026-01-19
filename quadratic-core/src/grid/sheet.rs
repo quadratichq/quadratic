@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+};
 
 use anyhow::{Result, anyhow};
 use borders::Borders;
@@ -8,6 +11,7 @@ use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validations::Validations;
 
 use super::bounds::GridBounds;
@@ -95,6 +99,12 @@ pub struct Sheet {
     /// Not persisted, not in undo history. Used for live preview in the UI.
     #[serde(skip)]
     pub(crate) preview_conditional_format: Option<ConditionalFormat>,
+
+    /// Cache for color scale threshold values to avoid O(N²) recomputation.
+    /// Keyed by conditional format ID. Cleared when any transaction completes.
+    /// Uses RefCell for interior mutability since caching happens during read-only operations.
+    #[serde(skip)]
+    pub(crate) color_scale_threshold_cache: RefCell<HashMap<Uuid, Vec<f64>>>,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -116,6 +126,7 @@ impl Sheet {
             borders: Borders::default(),
             merge_cells: MergeCells::default(),
             preview_conditional_format: None,
+            color_scale_threshold_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -126,6 +137,12 @@ impl Sheet {
             format!("{}{}", SHEET_NAME.to_owned(), 1),
             String::from("a0"),
         )
+    }
+
+    /// Clears the color scale threshold cache.
+    /// Called when a transaction completes to ensure stale values are not used.
+    pub fn clear_color_scale_cache(&self) {
+        self.color_scale_threshold_cache.borrow_mut().clear();
     }
 
     /// Returns an error if a sheet name would be invalid to add.

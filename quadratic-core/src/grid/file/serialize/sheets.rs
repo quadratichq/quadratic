@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{cell::RefCell, collections::HashMap, str::FromStr};
 
 use anyhow::Result;
 
@@ -62,6 +62,7 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         format_bounds: GridBounds::Empty,
         merge_cells: import_merge_cells(sheet.merge_cells),
         preview_conditional_format: None,
+        color_scale_threshold_cache: RefCell::new(HashMap::new()),
     };
 
     Ok(sheet)

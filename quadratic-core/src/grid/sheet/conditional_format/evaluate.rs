@@ -1,7 +1,5 @@
 //! Conditional format evaluation for rendering.
 
-use std::collections::HashMap;
-
 use uuid::Uuid;
 
 use crate::{
@@ -249,28 +247,48 @@ impl GridController {
             .collect()
     }
 
-    /// Get or compute threshold values for a color scale, using a cache to avoid recomputation.
+    /// Get or compute threshold values for a color scale, using the sheet's cache.
     /// The cache is keyed by format ID and stores the computed threshold values.
-    fn get_or_compute_threshold_values<'a>(
+    /// Returns a clone of the threshold values to avoid holding the borrow across function calls.
+    fn get_or_compute_threshold_values(
         &self,
-        cache: &'a mut HashMap<Uuid, Vec<f64>>,
         format_id: Uuid,
         color_scale: &ColorScale,
         sheet_id: SheetId,
         selection: &A1Selection,
         a1_context: &A1Context,
-    ) -> &'a Vec<f64> {
-        cache.entry(format_id).or_insert_with(|| {
-            self.compute_color_scale_threshold_values(color_scale, sheet_id, selection, a1_context)
-        })
+    ) -> Vec<f64> {
+        let sheet = match self.try_sheet(sheet_id) {
+            Some(s) => s,
+            None => {
+                return self.compute_color_scale_threshold_values(
+                    color_scale,
+                    sheet_id,
+                    selection,
+                    a1_context,
+                );
+            }
+        };
+
+        // Check if already cached
+        if let Some(values) = sheet.color_scale_threshold_cache.borrow().get(&format_id) {
+            return values.clone();
+        }
+
+        // Compute and cache the values
+        let values =
+            self.compute_color_scale_threshold_values(color_scale, sheet_id, selection, a1_context);
+        sheet
+            .color_scale_threshold_cache
+            .borrow_mut()
+            .insert(format_id, values.clone());
+        values
     }
 
-    /// Compute the color for a cell based on a color scale, using a cache for threshold values.
+    /// Compute the color for a cell based on a color scale, using the sheet's cache for threshold values.
     /// This avoids recomputing threshold values for each cell in the selection (O(N²) -> O(N)).
-    #[allow(clippy::too_many_arguments)]
     fn compute_color_scale_color_cached(
         &self,
-        cache: &mut HashMap<Uuid, Vec<f64>>,
         format_id: Uuid,
         color_scale: &ColorScale,
         sheet_id: SheetId,
@@ -280,14 +298,13 @@ impl GridController {
     ) -> Option<String> {
         let cell_value = self.get_cell_numeric_value(sheet_pos)?;
         let threshold_values = self.get_or_compute_threshold_values(
-            cache,
             format_id,
             color_scale,
             sheet_id,
             selection,
             a1_context,
         );
-        compute_color_for_value(color_scale, threshold_values, cell_value)
+        compute_color_for_value(color_scale, &threshold_values, cell_value)
     }
 
     /// Evaluates all conditional formats that apply to a cell and returns
@@ -415,9 +432,6 @@ impl GridController {
             return;
         }
 
-        // Cache for color scale threshold values to avoid O(N²) recomputation
-        let mut threshold_cache: HashMap<Uuid, Vec<f64>> = HashMap::new();
-
         for cell in cells.iter_mut() {
             let pos = Pos {
                 x: cell.x,
@@ -454,11 +468,10 @@ impl GridController {
                     }
 
                     // Handle color scales with invert_text_on_dark
-                    // Uses cache to avoid recomputing thresholds for each cell
+                    // Uses sheet-level cache to avoid recomputing thresholds for each cell
                     if let Some(color_scale) = cf.color_scale()
                         && color_scale.invert_text_on_dark
                         && let Some(fill_color) = self.compute_color_scale_color_cached(
-                            &mut threshold_cache,
                             cf.id,
                             color_scale,
                             sheet_id,
@@ -540,8 +553,6 @@ impl GridController {
         // Use Contiguous2D to store fill colors - later rules override earlier ones
         let mut fills: Contiguous2D<String> = Contiguous2D::new();
 
-        // Cache for color scale threshold values to avoid O(N²) recomputation
-        let mut threshold_cache: HashMap<Uuid, Vec<f64>> = HashMap::new();
         for y in rect.y_range() {
             for x in rect.x_range() {
                 let pos = Pos { x, y };
@@ -559,9 +570,8 @@ impl GridController {
                                 }
                                 ConditionalFormatConfig::ColorScale { color_scale } => {
                                     // Compute the interpolated color based on cell value
-                                    // Uses cache to avoid recomputing thresholds for each cell
+                                    // Uses sheet-level cache to avoid recomputing thresholds for each cell
                                     self.compute_color_scale_color_cached(
-                                        &mut threshold_cache,
                                         cf.id,
                                         color_scale,
                                         sheet_id,
@@ -1479,9 +1489,9 @@ mod tests {
             config: ConditionalFormatConfig::ColorScale {
                 color_scale: ColorScale {
                     thresholds: vec![
-                        ColorScaleThreshold::min("#ff0000"),           // red at min (1)
+                        ColorScaleThreshold::min("#ff0000"), // red at min (1)
                         ColorScaleThreshold::percentile(50.0, "#ffff00"), // yellow at 50th percentile
-                        ColorScaleThreshold::max("#00ff00"),           // green at max (10)
+                        ColorScaleThreshold::max("#00ff00"),              // green at max (10)
                     ],
                     invert_text_on_dark: false,
                 },
@@ -1521,7 +1531,10 @@ mod tests {
         let a5_color = &a5_fill.unwrap().1;
         let a6_color = &a6_fill.unwrap().1;
 
-        assert_ne!(a5_color, a6_color, "A5 and A6 should have different colors (on opposite sides of 50th percentile)");
+        assert_ne!(
+            a5_color, a6_color,
+            "A5 and A6 should have different colors (on opposite sides of 50th percentile)"
+        );
 
         // A5 should have more red (it's in red-yellow segment)
         // A6 should have more green (it's in yellow-green segment)
@@ -1530,5 +1543,242 @@ mod tests {
 
         assert!(a5_r > a6_r, "A5 should have more red than A6");
         assert!(a5_b == 0 && a6_b == 0, "Both should have no blue component");
+    }
+
+    #[test]
+    fn test_color_scale_cache_populated_on_evaluation() {
+        // Test that the sheet-level cache is populated when color scale is evaluated
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a3 = crate::Pos::test_a1("A3");
+
+        // Set values
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "0".to_string(), None, false);
+        gc.set_cell_value(
+            crate::Pos::test_a1("A2").to_sheet_pos(sheet_id),
+            "50".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos_a3.to_sheet_pos(sheet_id),
+            "100".to_string(),
+            None,
+            false,
+        );
+
+        // Create a color scale format
+        let format_id = uuid::Uuid::new_v4();
+        let cf = ConditionalFormat {
+            id: format_id,
+            selection: crate::a1::A1Selection::test_a1("A1:A3"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"),
+                        ColorScaleThreshold::max("#00ff00"),
+                    ],
+                    invert_text_on_dark: false,
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Cache should be empty before evaluation
+        assert!(
+            gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be empty before evaluation"
+        );
+
+        // Evaluate fills (this should populate the cache)
+        let _fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Cache should now contain the format's threshold values
+        let cache = gc.sheet(sheet_id).color_scale_threshold_cache.borrow();
+        assert!(
+            cache.contains_key(&format_id),
+            "Cache should contain the format ID after evaluation"
+        );
+        let cached_values = cache.get(&format_id).unwrap();
+        assert_eq!(
+            cached_values.len(),
+            2,
+            "Should have 2 threshold values (min, max)"
+        );
+        assert_eq!(cached_values[0], 0.0, "Min threshold should be 0");
+        assert_eq!(cached_values[1], 100.0, "Max threshold should be 100");
+    }
+
+    #[test]
+    fn test_color_scale_cache_cleared_on_transaction() {
+        // Test that the cache is cleared when a transaction completes
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a3 = crate::Pos::test_a1("A3");
+
+        // Set initial values
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "0".to_string(), None, false);
+        gc.set_cell_value(
+            crate::Pos::test_a1("A2").to_sheet_pos(sheet_id),
+            "50".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos_a3.to_sheet_pos(sheet_id),
+            "100".to_string(),
+            None,
+            false,
+        );
+
+        // Create a color scale format
+        let format_id = uuid::Uuid::new_v4();
+        let cf = ConditionalFormat {
+            id: format_id,
+            selection: crate::a1::A1Selection::test_a1("A1:A3"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"),
+                        ColorScaleThreshold::max("#00ff00"),
+                    ],
+                    invert_text_on_dark: false,
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Evaluate fills to populate the cache
+        let _fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Verify cache is populated
+        assert!(
+            !gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be populated after evaluation"
+        );
+
+        // Perform a transaction (changing a cell value)
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
+
+        // Cache should be cleared after the transaction
+        assert!(
+            gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be cleared after transaction"
+        );
+    }
+
+    #[test]
+    fn test_color_scale_cache_reused_across_calls() {
+        // Test that cached values are reused when evaluating multiple cells
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a3 = crate::Pos::test_a1("A3");
+
+        // Set values
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "0".to_string(), None, false);
+        gc.set_cell_value(
+            crate::Pos::test_a1("A2").to_sheet_pos(sheet_id),
+            "50".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos_a3.to_sheet_pos(sheet_id),
+            "100".to_string(),
+            None,
+            false,
+        );
+
+        // Create a color scale format
+        let format_id = uuid::Uuid::new_v4();
+        let cf = ConditionalFormat {
+            id: format_id,
+            selection: crate::a1::A1Selection::test_a1("A1:A3"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"),
+                        ColorScaleThreshold::max("#00ff00"),
+                    ],
+                    invert_text_on_dark: false,
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // First evaluation - should populate cache
+        let fills1 = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Second evaluation - should use cached values
+        let fills2 = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Results should be identical (same colors computed)
+        assert_eq!(
+            fills1.len(),
+            fills2.len(),
+            "Should have same number of fills"
+        );
+        for (fill1, fill2) in fills1.iter().zip(fills2.iter()) {
+            assert_eq!(fill1.0, fill2.0, "Rects should match");
+            assert_eq!(fill1.1, fill2.1, "Colors should match");
+        }
+
+        // Cache should still have the entry
+        assert!(
+            gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .contains_key(&format_id),
+            "Cache should still contain the format ID"
+        );
     }
 }
