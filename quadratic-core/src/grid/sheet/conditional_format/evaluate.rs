@@ -1782,4 +1782,123 @@ mod tests {
             "Cache should still contain the format ID"
         );
     }
+
+    #[test]
+    fn test_color_scale_cache_cleared_on_preview() {
+        // Test that the cache is cleared when a preview conditional format is set or cleared
+        use crate::grid::sheet::conditional_format::{
+            ColorScale, ColorScaleThreshold, ConditionalFormat, ConditionalFormatConfig,
+            ConditionalFormatConfigUpdate, ConditionalFormatStyle, ConditionalFormatUpdate,
+        };
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a3 = crate::Pos::test_a1("A3");
+
+        // Set values
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "0".to_string(), None, false);
+        gc.set_cell_value(
+            crate::Pos::test_a1("A2").to_sheet_pos(sheet_id),
+            "50".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos_a3.to_sheet_pos(sheet_id),
+            "100".to_string(),
+            None,
+            false,
+        );
+
+        // Create a color scale format
+        let format_id = uuid::Uuid::new_v4();
+        let cf = ConditionalFormat {
+            id: format_id,
+            selection: crate::a1::A1Selection::test_a1("A1:A3"),
+            config: ConditionalFormatConfig::ColorScale {
+                color_scale: ColorScale {
+                    thresholds: vec![
+                        ColorScaleThreshold::min("#ff0000"),
+                        ColorScaleThreshold::max("#00ff00"),
+                    ],
+                    invert_text_on_dark: false,
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Evaluate fills to populate the cache
+        let _fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Verify cache is populated
+        assert!(
+            !gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be populated after evaluation"
+        );
+
+        // Set a preview conditional format (formula-based, not color scale)
+        let preview_update = ConditionalFormatUpdate {
+            sheet_id: sheet_id.to_string(),
+            id: None,
+            selection: "B1:B3".to_string(),
+            config: ConditionalFormatConfigUpdate::Formula {
+                rule: "=TRUE".to_string(),
+                style: ConditionalFormatStyle {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+            },
+            apply_to_blank: None,
+        };
+
+        gc.set_preview_conditional_format(preview_update).unwrap();
+
+        // Cache should be cleared after setting preview
+        assert!(
+            gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be cleared after setting preview"
+        );
+
+        // Evaluate fills again to repopulate the cache
+        let _fills = gc.get_conditional_format_fills(
+            sheet_id,
+            Rect::new_span(pos_a1, pos_a3),
+            gc.a1_context(),
+        );
+
+        // Verify cache is populated again
+        assert!(
+            !gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be populated after second evaluation"
+        );
+
+        // Clear the preview
+        gc.clear_preview_conditional_format(sheet_id);
+
+        // Cache should be cleared after clearing preview
+        assert!(
+            gc.sheet(sheet_id)
+                .color_scale_threshold_cache
+                .borrow()
+                .is_empty(),
+            "Cache should be cleared after clearing preview"
+        );
+    }
 }
