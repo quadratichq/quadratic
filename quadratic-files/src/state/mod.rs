@@ -10,7 +10,7 @@ pub mod stats;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
-use quadratic_rust_shared::quadratic_database::PgPool;
+use quadratic_rust_shared::quadratic_database::{ConnectionOptions, PgPool, connect};
 use tokio::sync::Mutex;
 
 use crate::config::Config;
@@ -28,6 +28,7 @@ pub(crate) struct State {
     pub(crate) stats: Mutex<Stats>,
     pub(crate) synced_connection_cache: SyncedConnectionCache,
     pub(crate) pool: PgPool,
+    pub(crate) batch_size: usize,
 }
 
 impl State {
@@ -38,14 +39,19 @@ impl State {
             password: config.pubsub_password.to_owned(),
         });
 
+        tracing::info!(
+            "Initializing database pool, batch size {}",
+            config.batch_size
+        );
+
         Ok(State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config, jwks).await?,
             stats: Mutex::new(Stats::new()),
             synced_connection_cache: SyncedConnectionCache::new(),
-            pool: PgPool::connect(&config.database_url)
-                .await
+            pool: connect(&config.database_url, ConnectionOptions::default())
                 .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?,
+            batch_size: config.batch_size,
         })
     }
 }

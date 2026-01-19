@@ -1,7 +1,6 @@
 use chrono::Utc;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
-use tokio_util::task::TaskTracker;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -254,34 +253,55 @@ pub(crate) async fn get_files_to_process(
     Ok(files)
 }
 
-/// Process outstanding transactions in the queue.
+/// Process a batch of files from the queue.
 ///
-/// The `task_tracker` is used to track spawned file processing tasks so they
-/// can be awaited during graceful shutdown.
-pub(crate) async fn process(
-    state: &Arc<State>,
-    active_channels: &str,
-    task_tracker: &TaskTracker,
-) -> Result<()> {
-    let files = get_files_to_process(state, active_channels).await?;
+/// Returns the number of files processed in this batch.
+/// The caller should call this repeatedly until it returns 0, then wait
+/// before checking again.
+pub(crate) async fn process_batch(state: &Arc<State>, active_channels: &str) -> Result<usize> {
+    let all_files = get_files_to_process(state, active_channels).await?;
+    let total_files = all_files.len();
 
-    // collect info for stats
-    state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
+    // Update stats with total queue size
+    state.stats.lock().await.files_to_process_in_pubsub = total_files as u64;
 
-    for file_id in files.into_iter() {
-        let state = Arc::clone(state);
-        let active_channels = active_channels.to_owned();
-
-        // process file in a separate thread, tracked for graceful shutdown
-        task_tracker.spawn(async move {
-            // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
-            if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await {
-                tracing::error!("Error processing file {file_id}: {error}");
-            };
-        });
+    if total_files == 0 {
+        return Ok(0);
     }
 
-    Ok(())
+    // Take only a batch of files to process
+    let batch: Vec<Uuid> = all_files.into_iter().take(state.batch_size).collect();
+    let batch_size = batch.len();
+
+    tracing::info!(
+        "Processing batch of {} files ({} total in queue), pool size: {}",
+        batch_size,
+        total_files,
+        state.pool.size()
+    );
+
+    // Process files sequentially to avoid overwhelming the database
+    let mut processed = 0;
+    for file_id in batch {
+        // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
+        match process_queue_for_room(state, file_id, active_channels).await {
+            Ok(Some(_)) => {
+                processed += 1;
+            }
+            Ok(None) => {
+                // No transactions to process for this file
+            }
+            Err(error) => {
+                tracing::error!("Error processing file {file_id}: {error}");
+            }
+        }
+    }
+
+    if processed > 0 {
+        tracing::info!("Batch complete: processed {} files", processed);
+    }
+
+    Ok(processed)
 }
 
 #[cfg(test)]
