@@ -30,6 +30,9 @@
     "docker:test:connections": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles --testPathPattern=connection && npm run docker:down",
     "docker:test:scheduled-tasks": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles --testPathPattern=scheduled[-_]task.*test && npm run docker:down",
     "docker:test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- jest --runInBand && npm run docker:down",
+    "test:ai-tools": "dotenv -e .env -- jest --testPathPattern=aiToolCalls.manual.test --testPathIgnorePatterns=/node_modules/,/dist/ --runInBand --testTimeout=120000",
+    "test:ai-tools:fresh": "CLEAR_CACHE=true dotenv -e .env -- jest --testPathPattern=aiToolCalls.manual.test --testPathIgnorePatterns=/node_modules/,/dist/ --runInBand --testTimeout=120000",
+    "test:ai-tools:estimate": "ts-node --project ./tsconfig.json src/ai/tests/estimateCost.ts",
     "key:generate": "openssl rand -hex 32",
     "clean": "npx rimraf node_modules dist build target"
   },

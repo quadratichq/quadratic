@@ -130,6 +130,7 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
   prompt: string; // this is sent as internal message to AI, no character limit
+  strict?: boolean; // optional per-tool override for OpenAI strict mode (defaults to model's strictParams setting)
 };
 
 const numberSchema = z.preprocess((val) => {
@@ -1187,6 +1188,7 @@ Examples:
 - Joining strings
 - Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
 `,
+    strict: false, // disable strict mode for OpenAI to allow nullable sheet_name in formulas array items
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
@@ -1433,7 +1435,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
                   'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
               },
             },
-            required: ['sheet_name', 'selection', 'bold', 'italic', 'underline', 'strike_through', 'text_color', 'fill_color', 'align', 'vertical_align', 'wrap', 'numeric_commas', 'number_type', 'currency_symbol', 'date_time', 'font_size'],
+            required: ['selection'],
             additionalProperties: false,
           },
         },
@@ -1459,6 +1461,7 @@ To clear/remove a format, set the value to null (or empty string for colors). Om
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
+    strict: false, // disable strict mode for OpenAI to allow optional formatting properties
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
@@ -1840,10 +1843,11 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: [],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool moves a sheet within the sheet list.\n
-It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
+Use this tool to reorder sheets by moving a sheet to a new position in the sheet tab bar.\n
+This is useful when users want to reorganize their sheets, such as moving a sheet to the front or placing it before another sheet.\n
+Provide the name of the sheet to move, and optionally the name of the sheet it should appear before. If no target sheet is specified, it moves to the end.\n
 `,
     parameters: {
       type: 'object',
@@ -1863,16 +1867,17 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveSheet],
     prompt: `
-This tool moves a sheet in the sheet list.\n
-It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
+Use this tool to reorder sheets by moving a sheet to a new position in the sheet tab bar.\n
+Provide the name of the sheet to move, and optionally the name of the sheet it should appear before.\n
 `,
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: [],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool colors the sheet tabs in the file.\n
-It requires a array of objects with sheet names and new colors.\n
+Use this tool to change the color of one or more sheet tabs for visual organization.\n
+This is useful when users want to color-code their sheets, such as making a sheet tab red, blue, or any CSS color.\n
+Provide an array of objects, each with a sheet_name and a color (as a CSS color string like "#FF0000" or "red").\n
 `,
     parameters: {
       type: 'object',
@@ -1888,7 +1893,7 @@ It requires a array of objects with sheet names and new colors.\n
               },
               color: {
                 type: 'string',
-                description: 'The new color of the sheet. This must be a valid CSS color string.',
+                description: 'The new color of the sheet tab. This must be a valid CSS color string (e.g., "#0000FF", "blue", "rgb(0,0,255)").',
               },
             },
             required: ['sheet_name', 'color'],
@@ -1901,8 +1906,8 @@ It requires a array of objects with sheet names and new colors.\n
     },
     responseSchema: AIToolsArgsSchema[AITool.ColorSheets],
     prompt: `
-This tool colors the sheet tabs in the file.\n
-It requires a array of objects with sheet names and new colors.\n
+Use this tool to change the color of sheet tabs for visual organization.\n
+Provide an array of objects with sheet_name and color (CSS color string).\n
 `,
   },
   [AITool.TextSearch]: {
@@ -1938,7 +1943,7 @@ This tool can only search for outputs that exist in cells within the file. This 
           description: 'The sheet name to search in. If not provided, then it searches all sheets.',
         },
       },
-      required: ['query', 'case_sensitive', 'whole_cell', 'search_code', 'sheet_name'],
+      required: ['query', 'case_sensitive', 'whole_cell', 'search_code'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
@@ -1947,6 +1952,7 @@ This tool searches for text in cells within a specific sheet or the entire file.
 Use this tool when looking for a specific piece of output in the file.\n
 This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
 `,
+    strict: false, // disable strict mode for OpenAI to allow optional sheet_name
   },
   [AITool.RerunCode]: {
     sources: ['AIAnalyst'],
@@ -2302,21 +2308,14 @@ This tool sets the meta data for a table. One or more options can be changed on 
             'The optional boolean that toggles whether the table has alternating row colors. This is true by default. If true, then the table will have alternating row colors.',
         },
       },
-      required: [
-        'sheet_name',
-        'table_location',
-        'new_table_name',
-        'first_row_is_column_names',
-        'show_name',
-        'show_columns',
-        'alternating_row_colors',
-      ],
+      required: ['table_location'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.TableMeta],
     prompt: `
 This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
 `,
+    strict: false, // disable strict mode for OpenAI to allow optional table meta properties
   },
   [AITool.TableColumnSettings]: {
     sources: ['AIAnalyst'],
@@ -2455,18 +2454,13 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
         },
         ...validationMessageErrorPrompt,
       },
-      required: [
-        'sheet_name',
-        'selection',
-        'show_checkbox',
-        'ignore_blank',
-        ...Object.keys(validationMessageErrorPrompt),
-      ],
+      required: ['selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddLogicalValidation],
     prompt: `
 This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
+    strict: false, // disable strict mode for OpenAI to allow optional validation properties
   },
   [AITool.AddListValidation]: {
     sources: ['AIAnalyst'],
@@ -2506,20 +2500,13 @@ The list should have either a list_source_list or a list_source_selection, but n
         },
         ...validationMessageErrorPrompt,
       },
-      required: [
-        'sheet_name',
-        'selection',
-        'ignore_blank',
-        'drop_down',
-        'list_source_list',
-        'list_source_selection',
-        ...Object.keys(validationMessageErrorPrompt),
-      ],
+      required: ['selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddListValidation],
     prompt: `
 This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to text rules.\n`,
+    strict: false, // disable strict mode for OpenAI to allow optional validation properties
   },
   [AITool.AddTextValidation]: {
     sources: ['AIAnalyst'],
@@ -2582,25 +2569,13 @@ This tool adds a text validation to a sheet. This validates a text string to ens
         },
         ...validationMessageErrorPrompt,
       },
-      required: [
-        'sheet_name',
-        'selection',
-        'ignore_blank',
-        'max_length',
-        'min_length',
-        'contains_case_sensitive',
-        'contains_case_insensitive',
-        'not_contains_case_sensitive',
-        'not_contains_case_insensitive',
-        'exactly_case_sensitive',
-        'exactly_case_insensitive',
-        ...Object.keys(validationMessageErrorPrompt),
-      ],
+      required: ['selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddTextValidation],
     prompt: `
 This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
+    strict: false, // disable strict mode for OpenAI to allow optional validation properties
   },
   [AITool.AddNumberValidation]: {
     sources: ['AIAnalyst'],
@@ -2640,20 +2615,13 @@ This tool adds a number validation to a sheet. This validates a number to ensure
         },
         ...validationMessageErrorPrompt,
       },
-      required: [
-        'sheet_name',
-        'selection',
-        'ignore_blank',
-        'range',
-        'equal',
-        'not_equal',
-        ...Object.keys(validationMessageErrorPrompt),
-      ],
+      required: ['selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddNumberValidation],
     prompt: `
 This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
+    strict: false, // disable strict mode for OpenAI to allow optional validation properties
   },
   [AITool.AddDateTimeValidation]: {
     sources: ['AIAnalyst'],
@@ -2724,27 +2692,13 @@ This tool adds a date time validation to a sheet. This validates a date time to 
         },
         ...validationMessageErrorPrompt,
       },
-      required: [
-        'sheet_name',
-        'selection',
-        'ignore_blank',
-        'require_date',
-        'require_time',
-        'prohibit_date',
-        'prohibit_time',
-        'date_range',
-        'time_range',
-        'date_equal',
-        'date_not_equal',
-        'time_equal',
-        'time_not_equal',
-        ...Object.keys(validationMessageErrorPrompt),
-      ],
+      required: ['selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddDateTimeValidation],
     prompt: `
 This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
+    strict: false, // disable strict mode for OpenAI to allow optional validation properties
   },
   [AITool.RemoveValidations]: {
     sources: ['AIAnalyst'],

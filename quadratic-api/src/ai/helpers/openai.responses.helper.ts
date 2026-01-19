@@ -212,12 +212,13 @@ function getOpenAITools(
   }
 
   const openaiTools: Tool[] = tools.map(
-    ([name, { description, parameters }]): Tool => ({
+    ([name, { description, parameters, strict }]): Tool => ({
       type: 'function' as const,
       name,
       description,
       parameters,
-      strict: strictParams,
+      // Use per-tool strict override if defined, otherwise use model's strictParams setting
+      strict: strict !== undefined ? strict : strictParams,
     })
   );
 

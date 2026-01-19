@@ -156,13 +156,14 @@ function getOpenAITools(
   }
 
   const openaiTools: ChatCompletionTool[] = tools.map(
-    ([name, { description, parameters }]): ChatCompletionTool => ({
+    ([name, { description, parameters, strict }]): ChatCompletionTool => ({
       type: 'function' as const,
       function: {
         name,
         description,
         parameters,
-        strict: strictParams,
+        // Use per-tool strict override if defined, otherwise use model's strictParams setting
+        strict: strict !== undefined ? strict : strictParams,
       },
     })
   );
