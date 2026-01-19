@@ -117,18 +117,6 @@ const MAX_COST_USD = 20.0; // Maximum cost allowed for the entire test run
 const TEST_TIMEOUT_MS = 120000; // 2 minutes per test
 const PARALLEL_BATCH_SIZE = 3; // Number of parallel tests per model
 
-// Fallback cost estimates per provider (based on observed actual costs)
-// Used when no cache data is available
-const FALLBACK_COST_PER_TEST: Record<string, number> = {
-  'vertexai-anthropic': 0.065, // Claude models with thinking
-  'bedrock-anthropic': 0.065,
-  anthropic: 0.065,
-  'azure-openai': 0.015,
-  openai: 0.015,
-  vertexai: 0.003, // Gemini models
-  default: 0.02,
-};
-
 // Track total cost across all tests
 let totalCost = 0;
 const costLock = { exceeded: false };
@@ -483,16 +471,7 @@ function generateReport(allResults: TestResult[]): void {
     lines.push(`  Skipped: ${skipDetails.join(', ')}`);
   }
   lines.push(`Total actual cost: $${totalCost.toFixed(4)}`);
-
-  // Compare to estimate (only for non-skipped tests)
-  if (totalRan > 0) {
-    const estimate = estimateCost();
-    const estimatedForTestsRun = (estimate.totalEstimatedCost / estimate.testCount) * totalRan;
-    lines.push(`Estimated cost (for ${totalRan} tests run): $${estimatedForTestsRun.toFixed(4)}`);
-    if (estimatedForTestsRun > 0) {
-      lines.push(`Accuracy: ${((totalCost / estimatedForTestsRun) * 100).toFixed(1)}% of estimate`);
-    }
-  }
+  lines.push(`Max cost limit: $${MAX_COST_USD}`);
 
   if (costLock.exceeded) {
     lines.push(`⚠️  Cost limit of $${MAX_COST_USD} was exceeded - some tests were skipped`);
@@ -546,9 +525,8 @@ describe('AI Tool Calls Manual Tests', () => {
   // Initialize cache
   testCache = loadCache();
 
-  // Check credentials and print cost estimate before running tests
+  // Check credentials before running tests
   checkCredentials();
-  printCostEstimate();
 
   // Create a test for each model
   for (const modelKey of enabledModels) {
@@ -581,78 +559,5 @@ describe('AI Tool Calls Manual Tests', () => {
   });
 });
 
-/**
- * Get provider prefix from model key for fallback cost lookup
- */
-function getProviderPrefix(modelKey: AIModelKey): string {
-  const parts = modelKey.split(':');
-  return parts[0] || 'default';
-}
-
-/**
- * Get fallback cost estimate for a model when no cache data exists
- */
-function getFallbackCost(modelKey: AIModelKey): number {
-  const prefix = getProviderPrefix(modelKey);
-  return FALLBACK_COST_PER_TEST[prefix] ?? FALLBACK_COST_PER_TEST['default'];
-}
-
-/**
- * Estimate the cost of running tests using cache data when available
- */
-function estimateCost(): {
-  models: { modelKey: AIModelKey; estimatedCost: number; testCount: number }[];
-  totalEstimatedCost: number;
-  testCount: number;
-} {
-  const enabledModels = getEnabledModels();
-  const testableTools = getTestableTools();
-  const testCases = toolCallTestCases.filter((tc) => testableTools.includes(tc.tool));
-
-  const modelEstimates = enabledModels.map((modelKey) => {
-    // Use historical cache data for more accurate estimates
-    let estimatedCost = 0;
-
-    for (const testCase of testCases) {
-      const key = getCacheKey(modelKey, testCase.tool);
-      const cached = testCache.results[key];
-      // Use cached cost if available, otherwise use provider-based fallback
-      estimatedCost += cached?.cost ?? getFallbackCost(modelKey);
-    }
-
-    return {
-      modelKey,
-      estimatedCost,
-      testCount: testCases.length,
-    };
-  });
-
-  const totalEstimatedCost = modelEstimates.reduce((sum, m) => sum + m.estimatedCost, 0);
-
-  return {
-    models: modelEstimates,
-    totalEstimatedCost,
-    testCount: testCases.length * enabledModels.length,
-  };
-}
-
-/**
- * Print cost estimate to console
- */
-function printCostEstimate(): void {
-  const estimate = estimateCost();
-  const lines: string[] = [];
-
-  lines.push('\n' + '='.repeat(80));
-  lines.push('AI Tool Call Test - Cost Estimate');
-  lines.push('='.repeat(80));
-  lines.push(`Models: ${estimate.models.length} | Tests per model: ${estimate.models[0]?.testCount || 0} | Total: ${estimate.testCount}`);
-  lines.push(`Estimated cost per model: ${estimate.models.map((m) => `${m.modelKey.split(':')[1]}: $${m.estimatedCost.toFixed(2)}`).join(', ')}`);
-  lines.push(`TOTAL ESTIMATED COST: $${estimate.totalEstimatedCost.toFixed(4)} | Max limit: $${MAX_COST_USD}`);
-  lines.push('='.repeat(80) + '\n');
-
-  console.log(lines.join('\n'));
-}
-
 // Export for direct execution
-export { estimateCost, generateReport, getEnabledModels, getTestableTools, printCostEstimate, runModelTests };
+export { generateReport, getEnabledModels, getTestableTools, runModelTests };

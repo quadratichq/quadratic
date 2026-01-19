@@ -6,7 +6,7 @@ Manual tests that validate all AI models can correctly execute tool calls with t
 
 These tests make real API calls to all enabled AI providers (OpenAI, Anthropic, Google, etc.) to verify that each model correctly interprets prompts and returns the expected tool calls with accurate arguments.
 
-**Important**: These tests incur actual API costs. Always run the cost estimate first.
+**Important**: These tests incur actual API costs. Use `npm run test:ai-tools:report` to view costs from previous runs.
 
 ## Files
 
@@ -14,32 +14,38 @@ These tests make real API calls to all enabled AI providers (OpenAI, Anthropic, 
 |------|-------------|
 | `aiToolCalls.manual.test.ts` | Main Jest test file that runs tool call tests across all enabled models |
 | `toolCallTestCases.ts` | Test case definitions for each AI tool (prompts, expected arguments) |
-| `estimateCost.ts` | Standalone script to estimate test costs without making API calls |
+| `reportCosts.ts` | Standalone script to report actual test costs from cache |
 | `testResults.cache.json` | Cache of passed tests (gitignored) - enables skipping previously passed tests |
 | `README.md` | This file |
 
 ## Commands
 
-### Estimate Costs (Run First!)
+### Report Costs
 
-Get a cost estimate before running the actual tests:
+View actual costs from previous test runs stored in the cache:
 
 ```bash
 cd quadratic-api
-npm run test:ai-tools:estimate
+npm run test:ai-tools:report
 ```
 
 Example output:
 ```
 ================================================================================
-AI Tool Call Test - Cost Estimate
+AI Tool Call Test - Cost Report
 ================================================================================
 
-Models to test: 5
+Models: 5
 Tool test cases: 43
-Total API calls: 215
+Total possible tests: 215
 
-TOTAL ESTIMATED COST: $1.84
+Cache status:
+  Passed: 200
+  Failed: 10
+  Never run: 5
+
+TOTAL COST FROM CACHE: $1.84
+MAX COST LIMIT: $20.0
 ================================================================================
 ```
 
@@ -72,11 +78,9 @@ This clears the cache and runs all tests from scratch. Use this when:
 Edit `aiToolCalls.manual.test.ts` to adjust:
 
 ```typescript
-const MAX_COST_USD = 5.0;            // Stop tests when this cost is exceeded
+const MAX_COST_USD = 20.0;           // Stop tests when this cost is exceeded
 const TEST_TIMEOUT_MS = 120000;      // 2 minutes per model's test suite
 const PARALLEL_BATCH_SIZE = 3;       // Concurrent tests per model
-const ESTIMATED_INPUT_TOKENS = 2000; // For cost estimation
-const ESTIMATED_OUTPUT_TOKENS = 500; // For cost estimation
 ```
 
 ## Test Result Caching
@@ -180,8 +184,7 @@ Model: azure-openai:gpt-5-codex
 Summary: 35 tests ran, 5 failed
   Skipped: 180 cached as passed, 0 never run
 Total actual cost: $0.4234
-Estimated cost (for 35 tests run): $0.3452
-Accuracy: 122.6% of estimate
+Max cost limit: $20.0
 💡 Run with 'npm run test:ai-tools:fresh' to clear cache and re-run all tests
 ================================================================================
 ```
@@ -235,7 +238,7 @@ AWS_S3_SECRET_ACCESS_KEY=...
 
 ### Cost limit exceeded
 - Increase `MAX_COST_USD` or run fewer tests
-- Use `test:ai-tools:estimate` to plan your test runs
+- Use `test:ai-tools:report` to view costs from previous runs
 
 ### Missing module errors
 - Run `npm install` in `quadratic-api`
