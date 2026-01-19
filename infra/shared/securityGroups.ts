@@ -1,9 +1,11 @@
 import * as aws from "@pulumi/aws";
 
+import { apiVPC } from "../api/api_network";
 import { cloudControllerEc2SecurityGroup } from "../cloud-controller/cloud_controller_network";
 
 // Create a Security Group for the Files EC2 instance
 export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
+  vpcId: apiVPC.id,
   ingress: [
     {
       protocol: "tcp",
@@ -15,6 +17,7 @@ export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
   egress: [
     { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
   ],
+  tags: { Name: "files-ec2-security-group" },
 });
 
 // Create a Security Group for the Multiplayer NLB

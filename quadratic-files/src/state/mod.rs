@@ -52,23 +52,27 @@ impl State {
         let pool = connect(&config.database_url, connection_options)
             .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?;
 
-        // Pre-warm the connection pool by establishing at least one connection
-        warm_pool(&pool)
-            .await
-            .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?;
-
-        // Log database settings to help diagnose connection issues
-        match get_database_settings(&pool).await {
-            Ok(settings) => {
-                tracing::info!(
-                    "Database connection established - pool size: {}, db max_connections: {}, db current_connections: {}",
-                    pool.size(),
-                    settings.max_connections,
-                    settings.current_connections
-                );
+        // Try to pre-warm the connection pool, but don't block startup if it fails.
+        // The lazy pool will retry on actual queries.
+        match warm_pool(&pool).await {
+            Ok(()) => {
+                // Log database settings to help diagnose connection issues
+                match get_database_settings(&pool).await {
+                    Ok(settings) => {
+                        tracing::info!(
+                            "Database connection established - pool size: {}, db max_connections: {}, db current_connections: {}",
+                            pool.size(),
+                            settings.max_connections,
+                            settings.current_connections
+                        );
+                    }
+                    Err(e) => {
+                        tracing::warn!("Database connected but failed to query settings: {e}");
+                    }
+                }
             }
             Err(e) => {
-                tracing::warn!("Database connected but failed to query settings: {e}");
+                tracing::warn!("Failed to pre-warm database pool (will retry on first query): {e}");
             }
         }
 
