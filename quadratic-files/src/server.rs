@@ -22,7 +22,7 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::Layer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::file::get_files_to_process;
+use crate::file::{get_files_to_process, process};
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
@@ -32,7 +32,6 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{FilesError, Result},
-    file::process,
     state::State,
     storage::upload_storage,
 };
@@ -213,6 +212,7 @@ pub(crate) async fn serve() -> Result<()> {
             tracing::info!("All file processing tasks completed");
         }
     });
+
     background_handles.push(file_process_handle);
 
     // in a separate thread, truncate streams/channels
