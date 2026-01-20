@@ -194,7 +194,7 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
-    /// Remove an a key within an active channel
+    /// Remove a key within an active channel
     async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
         let () = self.multiplex.zrem(set_key, channel).await?;
         Ok(())

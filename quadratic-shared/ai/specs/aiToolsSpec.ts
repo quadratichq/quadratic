@@ -1435,7 +1435,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
                   'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
               },
             },
-            required: ['selection'],
+            required: ['sheet_name', 'selection', 'bold', 'italic', 'underline', 'strike_through', 'text_color', 'fill_color', 'align', 'vertical_align', 'wrap', 'numeric_commas', 'number_type', 'currency_symbol', 'date_time', 'font_size'],
             additionalProperties: false,
           },
         },

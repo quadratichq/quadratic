@@ -1,6 +1,8 @@
 use chrono::Utc;
+use futures::future::join_all;
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
+use tokio_util::task::TaskTracker;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -15,8 +17,12 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
+    SharedError,
     pubsub::PubSub as PubSubTrait,
-    quadratic_database::checkpoint::{get_max_sequence_number, set_file_checkpoint},
+    quadratic_database::{
+        checkpoint::{get_max_sequence_number, set_file_checkpoint},
+        error::QuadraticDatabase,
+    },
     storage::{Storage, StorageContainer},
 };
 
@@ -109,9 +115,35 @@ pub(crate) async fn process_queue_for_room(
 
     // When a file is created in API, a zero checkpoint is created, so we
     // should always expect a return value.
-    let checkpoint_sequence_num = get_max_sequence_number(&state.pool, &file_id)
-        .await
-        .map_err(|e| FilesError::ApiSequenceNumberNotFound(file_id, e.to_string()))?;
+    let db_start = Utc::now();
+    let checkpoint_sequence_num = get_max_sequence_number(&state.pool, &file_id).await;
+
+    let checkpoint_sequence_num = match checkpoint_sequence_num {
+        Ok(sequence_num) => sequence_num,
+        Err(e) => {
+            if matches!(
+                e,
+                SharedError::QuadraticDatabase(QuadraticDatabase::NotFound(_))
+            ) {
+                // no checkpoint for this file, ack this file and return None
+                state
+                    .remove_active_channel(active_channels, channel)
+                    .await?;
+
+                return Ok(None);
+            }
+
+            tracing::error!("Error getting checkpoint sequence number for file {file_id}: {e}");
+            return Err(e.into());
+        }
+    };
+
+    let db_elapsed = (Utc::now() - db_start).num_milliseconds();
+    if db_elapsed > 1000 {
+        tracing::warn!(
+            "Slow DB query for file {file_id}: get_max_sequence_number took {db_elapsed}ms"
+        );
+    }
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut pubsub = state.pubsub.lock().await;
@@ -122,16 +154,45 @@ pub(crate) async fn process_queue_for_room(
         .subscribe(channel, GROUP_NAME, None)
         .await?;
 
-    // get all transactions for the room in the queue
-    let transactions = pubsub
+    // get stream length to understand the state
+    let stream_length = pubsub.connection.length(channel).await.unwrap_or(0);
+
+    // get transactions after checkpoint
+    let messages = pubsub
         .connection
         .get_messages_after(channel, &(checkpoint_sequence_num + 1).to_string(), false)
-        .await?
+        .await?;
+
+    let messages_after_checkpoint = messages.len();
+
+    // Count parse successes/failures separately for debugging
+    let mut parse_failures = 0;
+    let transactions: Vec<TransactionServer> = messages
         .into_iter()
-        .flat_map(|(_, message)| Transaction::process_incoming(&message))
-        .collect::<Vec<TransactionServer>>();
+        .filter_map(
+            |(id, message)| match Transaction::process_incoming(&message) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    parse_failures += 1;
+                    tracing::warn!("File {file_id}: failed to parse message id={id}: {e}");
+                    None
+                }
+            },
+        )
+        .collect();
 
     if transactions.is_empty() {
+        // Log diagnostic info to understand why no transactions were found
+        tracing::warn!(
+            "File {file_id}: checkpoint={checkpoint_sequence_num}, stream_length={stream_length}, messages_after_checkpoint={messages_after_checkpoint}, parse_failures={parse_failures}"
+        );
+
+        // No transactions to process - remove this file from active_channels
+        // so we don't keep checking it
+        state
+            .remove_active_channel(active_channels, channel)
+            .await?;
+
         return Ok(None);
     }
 
@@ -238,7 +299,7 @@ pub(crate) async fn process_queue_for_room(
 pub(crate) async fn get_files_to_process(
     state: &Arc<State>,
     active_channels: &str,
-) -> Result<Vec<Uuid>> {
+) -> Result<VecDeque<Uuid>> {
     let files = state
         .pubsub
         .lock()
@@ -248,60 +309,65 @@ pub(crate) async fn get_files_to_process(
         .await?
         .into_iter()
         .flat_map(|file_id| Uuid::parse_str(&file_id))
-        .collect::<Vec<_>>();
+        .collect::<VecDeque<Uuid>>();
 
     Ok(files)
 }
 
-/// Process a batch of files from the queue.
+/// Process outstanding transactions in the queue.
 ///
-/// Returns the number of files processed in this batch.
-/// The caller should call this repeatedly until it returns 0, then wait
-/// before checking again.
-pub(crate) async fn process_batch(state: &Arc<State>, active_channels: &str) -> Result<usize> {
-    let all_files = get_files_to_process(state, active_channels).await?;
-    let total_files = all_files.len();
+/// The `task_tracker` is used to track spawned file processing tasks so they
+/// can be awaited during graceful shutdown.
+pub(crate) async fn process(
+    state: &Arc<State>,
+    active_channels: &str,
+    task_tracker: &TaskTracker,
+) -> Result<()> {
+    let mut files = get_files_to_process(state, active_channels).await?;
 
-    // Update stats with total queue size
-    state.stats.lock().await.files_to_process_in_pubsub = total_files as u64;
+    // collect info for stats
+    state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
-    if total_files == 0 {
-        return Ok(0);
-    }
+    // Process files in batches
+    while !files.is_empty() {
+        let batch_size = state.batch_size.min(files.len());
+        let batch = files.drain(0..batch_size).collect::<Vec<Uuid>>();
+        let mut handles = Vec::with_capacity(batch.len());
 
-    // Take only a batch of files to process
-    let batch: Vec<Uuid> = all_files.into_iter().take(state.batch_size).collect();
-    let batch_size = batch.len();
+        tracing::info!(
+            "Processing batch of {batch_size} files, {} files remaining",
+            files.len()
+        );
 
-    tracing::info!(
-        "Processing batch of {} files ({} total in queue), pool size: {}",
-        batch_size,
-        total_files,
-        state.pool.size()
-    );
+        for file_id in batch {
+            let state = Arc::clone(state);
+            let active_channels = active_channels.to_owned();
 
-    // Process files sequentially to avoid overwhelming the database
-    let mut processed = 0;
-    for file_id in batch {
-        // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
-        match process_queue_for_room(state, file_id, active_channels).await {
-            Ok(Some(_)) => {
-                processed += 1;
-            }
-            Ok(None) => {
-                // No transactions to process for this file
-            }
-            Err(error) => {
-                tracing::error!("Error processing file {file_id}: {error}");
+            // process file in a separate thread, tracked for graceful shutdown
+            let handle = task_tracker.spawn(async move {
+                // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
+                if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await
+                {
+                    tracing::error!("Error processing file {file_id}: {error}");
+                };
+            });
+
+            handles.push(handle);
+        }
+
+        // wait for all tasks in this batch to complete
+        for result in join_all(handles).await {
+            if let Err(e) = result {
+                if e.is_panic() {
+                    tracing::error!("File processing task panicked: {e}");
+                } else if e.is_cancelled() {
+                    tracing::warn!("File processing task was cancelled: {e}");
+                }
             }
         }
     }
 
-    if processed > 0 {
-        tracing::info!("Batch complete: processed {} files", processed);
-    }
-
-    Ok(processed)
+    Ok(())
 }
 
 #[cfg(test)]

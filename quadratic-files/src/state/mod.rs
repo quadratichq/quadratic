@@ -8,10 +8,10 @@ pub mod settings;
 pub mod stats;
 
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
+use quadratic_rust_shared::pubsub::{Config as PubSubConfig, PubSub as PubSubTrait};
 use quadratic_rust_shared::quadratic_database::{
-    ConnectionOptions, PgPool, connect, get_database_settings, warm_pool,
+    ConnectionOptions, PgPool, connect, get_database_settings,
 };
 use tokio::sync::Mutex;
 
@@ -52,11 +52,6 @@ impl State {
         let pool = connect(&config.database_url, connection_options)
             .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?;
 
-        // Pre-warm the connection pool by establishing at least one connection
-        warm_pool(&pool)
-            .await
-            .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?;
-
         // Log database settings to help diagnose connection issues
         match get_database_settings(&pool).await {
             Ok(settings) => {
@@ -80,5 +75,19 @@ impl State {
             pool,
             batch_size: config.batch_size,
         })
+    }
+
+    pub(crate) async fn remove_active_channel(
+        &self,
+        active_channels: &str,
+        channel: &str,
+    ) -> Result<()> {
+        self.pubsub
+            .lock()
+            .await
+            .connection
+            .remove_active_channel(active_channels, channel)
+            .await
+            .map_err(|e| FilesError::PubSub(e.to_string()))
     }
 }
