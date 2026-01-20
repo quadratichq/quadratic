@@ -145,7 +145,11 @@ pub(crate) async fn process_synced_connection<
         SyncedConnectionKind::Plaid => state.settings.new_plaid_client(&connection)?,
 
         // for other connections, we can use the to_client method
-        _ => connection.to_client(state.settings.environment).await?,
+        _ => {
+            connection
+                .to_client(state.settings.environment)
+                .await?
+        }
     };
 
     // Process each stream/table
@@ -250,11 +254,7 @@ pub(crate) async fn process_synced_connection<
                 )
                 .await?;
 
-                let parquet_data = match client.process(stream, chunk_start, chunk_end).await? {
-                    Some(data) => data,
-                    // Stream not supported (e.g., PRODUCTS_NOT_SUPPORTED) - skip entirely without markers
-                    None => break,
-                };
+                let parquet_data = client.process(stream, chunk_start, chunk_end).await?;
 
                 update_connection_status(
                     state.clone(),

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.23.3"
+version = "0.23.5"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -32,6 +32,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "protobuf",
     "pubsub",
     "quadratic-api",
+    "quadratic-database",
     "storage"
 ] }
 rayon = "1.8.0"
