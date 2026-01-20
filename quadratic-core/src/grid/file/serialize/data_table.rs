@@ -284,7 +284,7 @@ pub(crate) fn import_data_table_builder(
         let mut data_table = DataTable {
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
-                    DataTableKind::CodeRun(import_code_run_builder(code_run)?)
+                    DataTableKind::CodeRun(import_code_run_builder(*code_run)?)
                 }
                 current::DataTableKindSchema::Import(import) => {
                     DataTableKind::Import(crate::cellvalue::Import {
@@ -537,7 +537,7 @@ pub(crate) fn export_data_tables(
             let kind = match data_table.kind {
                 DataTableKind::CodeRun(code_run) => {
                     let code_run = export_code_run(code_run);
-                    current::DataTableKindSchema::CodeRun(code_run)
+                    current::DataTableKindSchema::CodeRun(Box::new(code_run))
                 }
                 DataTableKind::Import(import) => {
                     current::DataTableKindSchema::Import(current::ImportSchema {
