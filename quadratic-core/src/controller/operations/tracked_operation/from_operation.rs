@@ -389,7 +389,8 @@ impl TrackedOperation {
             | Operation::SetBordersSelection { .. }
             | Operation::SetCursor { .. }
             | Operation::SetCursorSelection { .. }
-            | Operation::SetValidationWarning { .. } => None,
+            | Operation::SetValidationWarning { .. }
+            | Operation::ComputeEmbeddedCode { .. } => None,
         }
     }
 }

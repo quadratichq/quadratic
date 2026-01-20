@@ -6,7 +6,10 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::{CoreError, Result};
-use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, unique_data_table_name};
+use crate::grid::{
+    CodeCellLanguage, CodeCellLocation, CodeRun, DataTable, DataTableKind, unique_data_table_name,
+};
+use crate::values::CodeCell;
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
@@ -37,7 +40,7 @@ impl GridController {
         index: Option<usize>,
         ignore_old_data_table: bool,
     ) {
-        transaction.current_sheet_pos = None;
+        transaction.current_code_location = None;
         transaction.cells_accessed.clear();
         transaction.waiting_for_async_code_cell = false;
 
@@ -345,20 +348,26 @@ impl GridController {
         transaction: &mut PendingTransaction,
         result: JsCodeResult,
     ) -> Result<()> {
-        let current_sheet_pos = match transaction.current_sheet_pos {
-            Some(current_sheet_pos) => current_sheet_pos,
+        let current_location = match transaction.current_code_location {
+            Some(loc) => loc,
             None => {
                 return Err(CoreError::TransactionNotFound(
-                    "Expected current_sheet_pos to be defined in after_calculation_async".into(),
+                    "Expected current_code_location to be defined in after_calculation_async"
+                        .into(),
                 ));
             }
         };
 
-        match &transaction.waiting_for_async_code_cell {
-            false => {
-                return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async_code_cell to be defined in transaction::complete".into()));
-            }
-            true => {
+        if !transaction.waiting_for_async_code_cell {
+            return Err(CoreError::TransactionNotFound(
+                "Expected transaction to be waiting_for_async_code_cell in transaction::complete"
+                    .into(),
+            ));
+        }
+
+        match current_location {
+            CodeCellLocation::Sheet(current_sheet_pos) => {
+                // Handle regular sheet-level code cells
                 if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
                     let Some(code_cell) = sheet.code_run_at(&current_sheet_pos.into()) else {
                         return Err(CoreError::TransactionNotFound(
@@ -388,6 +397,10 @@ impl GridController {
                     );
                 }
             }
+            CodeCellLocation::Embedded { table_pos, x, y } => {
+                // Handle embedded code cells in DataTable arrays
+                self.finalize_embedded_code_cell(transaction, result, table_pos, x, y)?;
+            }
         }
 
         #[cfg(feature = "show-first-sheet-operations")]
@@ -401,64 +414,265 @@ impl GridController {
         Ok(())
     }
 
+    /// Finalizes an embedded code cell after async execution completes.
+    fn finalize_embedded_code_cell(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        result: JsCodeResult,
+        table_pos: SheetPos,
+        x: u32,
+        y: u32,
+    ) -> Result<()> {
+        transaction.current_code_location = None;
+        transaction.waiting_for_async_code_cell = false;
+
+        // Get existing code cell info and convert result
+        let (language, code, output_value) = {
+            let Some(sheet) = self.try_sheet_mut(table_pos.sheet_id) else {
+                transaction.cells_accessed.clear();
+                return Ok(()); // sheet may have been deleted
+            };
+
+            let Some(data_table) = sheet.data_table_at(&table_pos.into()) else {
+                transaction.cells_accessed.clear();
+                return Ok(()); // table may have been deleted
+            };
+
+            // Get the existing code cell to get language and code
+            let Value::Array(array) = &data_table.value else {
+                transaction.cells_accessed.clear();
+                return Err(CoreError::TransactionNotFound(
+                    "Data table does not have an array value".into(),
+                ));
+            };
+
+            let Ok(CellValue::Code(existing_code_cell)) = array.get(x, y) else {
+                transaction.cells_accessed.clear();
+                return Err(CoreError::TransactionNotFound(
+                    "No CellValue::Code found at embedded position".into(),
+                ));
+            };
+
+            let language = existing_code_cell.code_run.language.clone();
+            let code = existing_code_cell.code_run.code.clone();
+
+            // Convert result to output value
+            let output_value = if result.success {
+                if let Some(output) = result.output_value.clone() {
+                    let (cell_value, _ops) =
+                        CellValue::from_js(output, table_pos.into(), sheet).unwrap_or_else(|e| {
+                            dbgjs!(format!("Error parsing output value: {}", e));
+                            (CellValue::Blank, vec![])
+                        });
+                    cell_value
+                } else if let Some(ref array_output) = result.output_array {
+                    // For embedded cells, take first value from array
+                    if let Some(first_row) = array_output.first()
+                        && let Some(first_val) = first_row.first()
+                    {
+                        let (cell_value, _ops) =
+                            CellValue::from_js(first_val.clone(), table_pos.into(), sheet)
+                                .unwrap_or_else(|e| {
+                                    dbgjs!(format!("Error parsing output value: {}", e));
+                                    (CellValue::Blank, vec![])
+                                });
+                        cell_value
+                    } else {
+                        CellValue::Blank
+                    }
+                } else {
+                    CellValue::Blank
+                }
+            } else {
+                // Create error value
+                let error_msg = result
+                    .std_err
+                    .clone()
+                    .unwrap_or_else(|| "Unknown Error".into());
+                let msg = RunErrorMsg::CodeRunError(error_msg.into());
+                let span = result.line_number.map(|line_number| Span {
+                    start: line_number,
+                    end: line_number,
+                });
+                CellValue::Error(Box::new(RunError { span, msg }))
+            };
+
+            (language, code, output_value)
+        };
+
+        // Create updated code run
+        let new_code_run = CodeRun {
+            language,
+            code,
+            formula_ast: None,
+            error: (!result.success).then(|| {
+                let error_msg = result
+                    .std_err
+                    .clone()
+                    .unwrap_or_else(|| "Unknown Error".into());
+                RunError {
+                    span: result.line_number.map(|ln| Span { start: ln, end: ln }),
+                    msg: RunErrorMsg::CodeRunError(error_msg.into()),
+                }
+            }),
+            return_type: result.success.then(|| output_value.type_name().into()),
+            line_number: result.line_number,
+            output_type: result.output_display_type,
+            std_out: result.std_out,
+            std_err: result.std_err,
+            cells_accessed: std::mem::take(&mut transaction.cells_accessed),
+        };
+
+        let new_code_cell = CodeCell::new(new_code_run, output_value);
+
+        // Update the array with the new CellValue::Code
+        let Some(sheet) = self.try_sheet_mut(table_pos.sheet_id) else {
+            return Ok(());
+        };
+
+        let pos = table_pos.into();
+        let modify_result = sheet.modify_data_table_at(&pos, |data_table| {
+            let Value::Array(array) = &mut data_table.value else {
+                return Err(anyhow::anyhow!("Data table does not have an array value"));
+            };
+
+            array.set(x, y, CellValue::Code(Box::new(new_code_cell)), true)?;
+            Ok(())
+        });
+
+        if let Err(e) = modify_result {
+            dbgjs!(format!(
+                "Failed to update embedded code cell at ({}, {}) in table at {:?}: {}",
+                x, y, table_pos, e
+            ));
+            return Ok(());
+        }
+
+        let (_, dirty_rects) = modify_result.unwrap();
+
+        // Update dirty hashes for rendering
+        let sheet = self.try_sheet(table_pos.sheet_id).unwrap();
+        transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+
+        Ok(())
+    }
+
     pub(super) fn code_cell_sheet_error(
         &mut self,
         transaction: &mut PendingTransaction,
         error: &RunError,
     ) -> Result<()> {
-        let sheet_pos = match transaction.current_sheet_pos {
-            Some(sheet_pos) => sheet_pos,
+        let current_location = match transaction.current_code_location {
+            Some(loc) => loc,
             None => {
                 return Err(CoreError::TransactionNotFound(
-                    "Expected current_sheet_pos to be defined in transaction::code_cell_error"
+                    "Expected current_code_location to be defined in transaction::code_cell_error"
                         .into(),
                 ));
             }
         };
-        let sheet_id = sheet_pos.sheet_id;
-        let pos = Pos::from(sheet_pos);
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            // sheet may have been deleted before the async operation completed
-            return Ok(());
-        };
 
-        let Some(code_run) = sheet.code_run_at(&pos) else {
-            // code run may have been deleted before the async operation completed
-            return Ok(());
-        };
+        match current_location {
+            CodeCellLocation::Sheet(sheet_pos) => {
+                let sheet_id = sheet_pos.sheet_id;
+                let pos = Pos::from(sheet_pos);
+                let Some(sheet) = self.try_sheet(sheet_id) else {
+                    // sheet may have been deleted before the async operation completed
+                    return Ok(());
+                };
 
-        let new_code_run = CodeRun {
-            language: code_run.language.to_owned(),
-            code: code_run.code.to_owned(),
-            formula_ast: None,
-            error: Some(error.to_owned()),
-            return_type: None,
-            line_number: error
-                .span
-                .map(|span| span.line_number_of_str(&code_run.code) as u32),
-            output_type: code_run.output_type.clone(),
-            std_out: None,
-            std_err: Some(error.msg.to_string()),
-            cells_accessed: std::mem::take(&mut transaction.cells_accessed),
-        };
+                let Some(code_run) = sheet.code_run_at(&pos) else {
+                    // code run may have been deleted before the async operation completed
+                    return Ok(());
+                };
 
-        let table_name = match code_run.language {
-            CodeCellLanguage::Formula => "Formula1",
-            CodeCellLanguage::Javascript => "JavaScript1",
-            CodeCellLanguage::Python => "Python1",
-            _ => "Table1",
-        };
-        let new_data_table = DataTable::new(
-            DataTableKind::CodeRun(new_code_run),
-            table_name,
-            Value::Single(CellValue::Blank),
-            false,
-            None,
-            None,
-            None,
-        );
+                let new_code_run = CodeRun {
+                    language: code_run.language.to_owned(),
+                    code: code_run.code.to_owned(),
+                    formula_ast: None,
+                    error: Some(error.to_owned()),
+                    return_type: None,
+                    line_number: error
+                        .span
+                        .map(|span| span.line_number_of_str(&code_run.code) as u32),
+                    output_type: code_run.output_type.clone(),
+                    std_out: None,
+                    std_err: Some(error.msg.to_string()),
+                    cells_accessed: std::mem::take(&mut transaction.cells_accessed),
+                };
 
-        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
+                let table_name = match code_run.language {
+                    CodeCellLanguage::Formula => "Formula1",
+                    CodeCellLanguage::Javascript => "JavaScript1",
+                    CodeCellLanguage::Python => "Python1",
+                    _ => "Table1",
+                };
+                let new_data_table = DataTable::new(
+                    DataTableKind::CodeRun(new_code_run),
+                    table_name,
+                    Value::Single(CellValue::Blank),
+                    false,
+                    None,
+                    None,
+                    None,
+                );
+
+                self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
+            }
+            CodeCellLocation::Embedded { table_pos, x, y } => {
+                // For embedded cells, store the error in the CellValue::Code output
+                let Some(sheet) = self.try_sheet_mut(table_pos.sheet_id) else {
+                    return Ok(());
+                };
+
+                let Some(data_table) = sheet.data_table_at(&table_pos.into()) else {
+                    return Ok(());
+                };
+
+                let Value::Array(array) = &data_table.value else {
+                    return Ok(());
+                };
+
+                let Ok(CellValue::Code(existing_code_cell)) = array.get(x, y) else {
+                    return Ok(());
+                };
+
+                let new_code_run = CodeRun {
+                    language: existing_code_cell.code_run.language.clone(),
+                    code: existing_code_cell.code_run.code.clone(),
+                    formula_ast: None,
+                    error: Some(error.to_owned()),
+                    return_type: None,
+                    line_number: error.span.map(|span| {
+                        span.line_number_of_str(&existing_code_cell.code_run.code) as u32
+                    }),
+                    output_type: existing_code_cell.code_run.output_type.clone(),
+                    std_out: None,
+                    std_err: Some(error.msg.to_string()),
+                    cells_accessed: std::mem::take(&mut transaction.cells_accessed),
+                };
+
+                let error_value = CellValue::Error(Box::new(error.to_owned()));
+                let new_code_cell = CodeCell::new(new_code_run, error_value);
+
+                let Some(sheet) = self.try_sheet_mut(table_pos.sheet_id) else {
+                    return Ok(());
+                };
+
+                let pos = table_pos.into();
+                let _ = sheet.modify_data_table_at(&pos, |data_table| {
+                    let Value::Array(array) = &mut data_table.value else {
+                        return Err(anyhow::anyhow!("Data table does not have an array value"));
+                    };
+                    array.set(x, y, CellValue::Code(Box::new(new_code_cell)), true)?;
+                    Ok(())
+                });
+
+                transaction.current_code_location = None;
+                transaction.cells_accessed.clear();
+                transaction.waiting_for_async_code_cell = false;
+            }
+        }
 
         Ok(())
     }

@@ -100,41 +100,32 @@ export async function doubleClickCell(options: {
       }
       // editing inside data table (only applies to table code cells, not single-cell)
       else if (hasPermission && file_import && codeCell) {
-        // can't create formula inside data table
-        if (cell?.startsWith('=')) {
-          pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-        }
+        const isSpillOrError = codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
+        const isTableName = codeCell.show_name && row === codeCell.y;
+        const isColumnHeader = codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
 
-        // check column header or table value
-        else {
-          const isSpillOrError =
-            codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
-          const isTableName = codeCell.show_name && row === codeCell.y;
-          const isColumnHeader = codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
-
-          if (isSpillOrError) {
-            return;
-          } else if (isTableName) {
-            events.emit('contextMenu', {
-              type: ContextMenuType.Table,
-              table: codeCell,
-              rename: true,
-              column: codeCell.x,
-              row: codeCell.y,
-              initialValue: cell,
-            });
-          } else if (isColumnHeader) {
-            const contextMenu = {
-              type: ContextMenuType.TableColumn,
-              rename: true,
-              table: codeCell,
-              selectedColumn: Math.max(0, column - codeCell.x),
-              initialValue: cell,
-            };
-            events.emit('contextMenu', contextMenu);
-          } else {
-            pixiAppSettings.changeInput(true, cell, cursorMode);
-          }
+        if (isSpillOrError) {
+          return;
+        } else if (isTableName) {
+          events.emit('contextMenu', {
+            type: ContextMenuType.Table,
+            table: codeCell,
+            rename: true,
+            column: codeCell.x,
+            row: codeCell.y,
+            initialValue: cell,
+          });
+        } else if (isColumnHeader) {
+          const contextMenu = {
+            type: ContextMenuType.TableColumn,
+            rename: true,
+            table: codeCell,
+            selectedColumn: Math.max(0, column - codeCell.x),
+            initialValue: cell,
+          };
+          events.emit('contextMenu', contextMenu);
+        } else {
+          pixiAppSettings.changeInput(true, cell, cursorMode);
         }
       } else {
         pixiAppSettings.setCodeEditorState({

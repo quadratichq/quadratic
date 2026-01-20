@@ -95,6 +95,11 @@ impl DataTable {
 
         let cell_value = self.value.get(x, y)?;
 
+        // Unwrap CellValue::Code to its output value
+        if let CellValue::Code(code_cell) = cell_value {
+            return Ok(&code_cell.output);
+        }
+
         Ok(cell_value)
     }
 
@@ -175,13 +180,20 @@ impl DataTable {
             .collect::<Vec<_>>()
     }
 
-    /// For a given row of CellValues, return only the columns that should be displayed
+    /// For a given row of CellValues, return only the columns that should be displayed.
+    /// Unwraps CellValue::Code to its output value.
     pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
         row.iter()
-            .cloned()
             .enumerate()
             .filter(|(i, _)| columns_to_show.contains(i))
-            .map(|(_, v)| v)
+            .map(|(_, v)| {
+                // Unwrap CellValue::Code to its output value
+                if let CellValue::Code(code_cell) = v {
+                    (*code_cell.output).clone()
+                } else {
+                    v.clone()
+                }
+            })
             .collect::<Vec<CellValue>>()
     }
 

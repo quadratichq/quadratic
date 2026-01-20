@@ -9,13 +9,13 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Pos, Rect, SheetPos, SheetRect,
+    Pos, Rect, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, GridBounds, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, CodeCellLocation, GridBounds, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -56,8 +56,8 @@ pub struct PendingTransaction {
     /// used by Code Cell execution to track dependencies
     pub(crate) cells_accessed: CellsAccessed,
 
-    /// save code_cell info for async calls
-    pub current_sheet_pos: Option<SheetPos>,
+    /// save code_cell location for async calls (can be sheet-level or embedded)
+    pub current_code_location: Option<CodeCellLocation>,
 
     /// whether we are awaiting an async call for a code cell
     pub(crate) waiting_for_async_code_cell: bool,
@@ -127,8 +127,8 @@ pub struct PendingTransaction {
     /// sheets that need updated MergeCells
     pub(crate) merge_cells_updates: HashSet<SheetId>,
 
-    /// Track positions with pending ComputeCode operations for O(1) duplicate checking
-    pub(crate) pending_compute_positions: HashSet<SheetPos>,
+    /// Track locations with pending ComputeCode/ComputeEmbeddedCode operations for O(1) duplicate checking
+    pub(crate) pending_compute_locations: HashSet<CodeCellLocation>,
 }
 
 impl Default for PendingTransaction {
@@ -143,7 +143,7 @@ impl Default for PendingTransaction {
             forward_operations: Vec::new(),
             has_async: 0,
             cells_accessed: Default::default(),
-            current_sheet_pos: None,
+            current_code_location: None,
             waiting_for_async_code_cell: false,
             complete: false,
             generate_thumbnail: false,
@@ -167,7 +167,7 @@ impl Default for PendingTransaction {
             sheet_content_cache: HashSet::new(),
             sheet_data_tables_cache: HashSet::new(),
             merge_cells_updates: HashSet::new(),
-            pending_compute_positions: HashSet::new(),
+            pending_compute_locations: HashSet::new(),
         }
     }
 }

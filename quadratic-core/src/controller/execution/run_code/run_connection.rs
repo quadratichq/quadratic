@@ -4,7 +4,7 @@ use crate::{
     Pos, Rect, RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, Sheet, SheetId},
+    grid::{CodeCellLocation, ConnectionKind, HANDLEBARS_REGEX_COMPILED, Sheet, SheetId},
 };
 
 impl GridController {
@@ -108,7 +108,7 @@ impl GridController {
                         span: None,
                         msg: RunErrorMsg::CodeRunError(std::borrow::Cow::Owned(msg.to_string())),
                     };
-                    transaction.current_sheet_pos = Some(sheet_pos);
+                    transaction.current_code_location = Some(CodeCellLocation::Sheet(sheet_pos));
                     let _ = self.code_cell_sheet_error(transaction, &error);
 
                     // not ideal to clone the transaction, but we need to close it
@@ -119,7 +119,7 @@ impl GridController {
         }
 
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_code_location = Some(CodeCellLocation::Sheet(sheet_pos));
         transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
 

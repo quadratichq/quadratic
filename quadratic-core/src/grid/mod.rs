@@ -1,5 +1,6 @@
 pub use bounds::GridBounds;
 pub use cells_accessed::*;
+pub use code_cell_location::CodeCellLocation;
 pub use column::Column;
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
 pub use data_table::*;
@@ -25,6 +26,7 @@ mod block;
 mod bounds;
 mod cells_accessed;
 mod cells_accessed_cache;
+mod code_cell_location;
 pub mod column;
 pub mod contiguous;
 pub mod data_table;

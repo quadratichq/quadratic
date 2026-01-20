@@ -69,10 +69,15 @@ impl GridController {
             ));
         }
 
-        let Some(code_sheet_pos) = transaction.current_sheet_pos else {
-            return map_error(CoreError::TransactionNotFound(
-                "Transaction's position not found".into(),
-            ));
+        // Get the sheet position from the code location (use table_pos for embedded cells)
+        let code_sheet_pos = match transaction.current_code_location {
+            Some(crate::grid::CodeCellLocation::Sheet(pos)) => pos,
+            Some(crate::grid::CodeCellLocation::Embedded { table_pos, .. }) => table_pos,
+            None => {
+                return map_error(CoreError::TransactionNotFound(
+                    "Transaction's position not found".into(),
+                ));
+            }
         };
         let selection = match self.a1_selection_from_string(&a1, code_sheet_pos.sheet_id) {
             Ok(selection) => selection,
@@ -249,7 +254,7 @@ mod test {
         );
 
         let transactions = gc.transactions.async_transactions_mut();
-        transactions[0].current_sheet_pos = None;
+        transactions[0].current_code_location = None;
         let transaction_id = transactions[0].id.to_string();
         let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string());
         assert!(result.error.is_some());

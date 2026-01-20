@@ -222,10 +222,16 @@ impl Sheet {
                             table_format.combine(&sheet_format)
                         };
 
-                        // Note: language is not populated for DataTable cells because
-                        // the table border is rendered based on the table struct itself.
-                        // Only CellValue::Code cells need language for border rendering.
-                        let language = None;
+                        // Check if this cell contains embedded CellValue::Code
+                        // If so, set the language for code cell border rendering.
+                        // Note: pos.y here is relative to the table including headers,
+                        // but embedded_code_language_at needs the position relative to the data.
+                        let language = if !is_header {
+                            let data_y = pos.y as u32 - data_table.y_adjustment(true) as u32;
+                            data_table.embedded_code_language_at(pos.x as u32, data_y)
+                        } else {
+                            None
+                        };
 
                         let special = self
                             .validations

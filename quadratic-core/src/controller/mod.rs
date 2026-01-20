@@ -194,7 +194,7 @@ impl GridController {
                 .iter_rects_unbounded(&self.a1_context)
             {
                 self.cells_accessed_cache
-                    .insert(sheet_pos, (sheet_id, rect));
+                    .insert_sheet_pos(sheet_pos, (sheet_id, rect));
             }
         }
     }
@@ -241,7 +241,7 @@ impl GridController {
                         .iter_rects_unbounded(&self.a1_context)
                     {
                         self.cells_accessed_cache
-                            .insert(pos, (accessed_sheet_id, rect));
+                            .insert_sheet_pos(pos, (accessed_sheet_id, rect));
                     }
                 }
             }

@@ -5,7 +5,10 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, data_table::DataTableTemplate},
+    grid::{
+        CodeCellLanguage, CodeCellLocation, CodeRun, DataTable, DataTableKind,
+        data_table::DataTableTemplate,
+    },
     util::now,
     wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
@@ -22,27 +25,30 @@ impl GridController {
             return;
         }
 
-        // Collect new code cell positions to add
-        let mut new_code_cell_positions = Vec::new();
-        self.get_dependent_code_cells(output)
-            .iter()
-            .for_each(|sheet_positions| {
-                sheet_positions.iter().for_each(|code_cell_sheet_pos| {
-                    if !skip_compute
-                        .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
-                    {
-                        // O(1) check using HashSet instead of O(n) iteration
-                        if !transaction
-                            .pending_compute_positions
-                            .contains(code_cell_sheet_pos)
-                        {
-                            new_code_cell_positions.push(*code_cell_sheet_pos);
-                        }
-                    }
-                });
-            });
+        // Collect new code cell locations to add (both sheet-level and embedded)
+        let mut new_sheet_locations = Vec::new();
+        let mut new_embedded_locations = Vec::new();
 
-        if new_code_cell_positions.is_empty() {
+        if let Some(dependent_locs) = self.get_dependent_code_cells(output) {
+            for loc in dependent_locs {
+                // Skip if this location matches skip_compute (only for sheet-level)
+                if let CodeCellLocation::Sheet(sheet_pos) = loc {
+                    if skip_compute.is_some_and(|skip| skip == sheet_pos) {
+                        continue;
+                    }
+                }
+
+                // O(1) check using HashSet instead of O(n) iteration
+                if !transaction.pending_compute_locations.contains(&loc) {
+                    match loc {
+                        CodeCellLocation::Sheet(pos) => new_sheet_locations.push(pos),
+                        CodeCellLocation::Embedded { .. } => new_embedded_locations.push(loc),
+                    }
+                }
+            }
+        }
+
+        if new_sheet_locations.is_empty() && new_embedded_locations.is_empty() {
             return;
         }
 
@@ -50,6 +56,7 @@ impl GridController {
         // from those that don't have code_runs yet (i.e., their SetDataTable hasn't executed)
         let mut existing_code_positions_with_code_run = Vec::new();
         let mut pending_compute_code_ops = Vec::new();
+        let mut existing_embedded_ops = Vec::new();
         let mut non_code_operations = Vec::new();
 
         for op in transaction.operations.iter() {
@@ -64,6 +71,10 @@ impl GridController {
                         pending_compute_code_ops.push(op.clone());
                     }
                 }
+                Operation::ComputeEmbeddedCode { table_pos, x, y } => {
+                    // Keep embedded code ops in their existing order
+                    existing_embedded_ops.push(CodeCellLocation::embedded(*table_pos, *x, *y));
+                }
                 _ => {
                     non_code_operations.push(op.clone());
                 }
@@ -72,16 +83,21 @@ impl GridController {
 
         // Combine existing positions (that have code_runs) and new positions, then reorder
         let mut all_code_positions = existing_code_positions_with_code_run;
-        all_code_positions.extend(new_code_cell_positions);
+        all_code_positions.extend(new_sheet_locations);
 
         // Reorder all code operations based on dependencies
         // Use the order_code_cells method from operations/code_cell.rs
         let ordered_positions = self.order_code_cells(all_code_positions);
 
+        // Combine existing and new embedded locations
+        let mut all_embedded_locations = existing_embedded_ops;
+        all_embedded_locations.extend(new_embedded_locations);
+
         // Rebuild the operations queue:
         // 1. Add all non-code operations first (they maintain their relative order)
         // 2. Add pending ComputeCode ops (whose SetDataTable hasn't executed yet)
         // 3. Add code operations with code_runs in dependency order
+        // 4. Add embedded code operations
         let mut new_operations = std::collections::VecDeque::new();
 
         // Add non-code operations first (includes SetDataTable ops for pending formulas)
@@ -90,10 +106,12 @@ impl GridController {
         }
 
         // Add pending ComputeCode operations (their SetDataTable is in non_code_operations)
-        // Track positions before moving the ops
+        // Track locations before moving the ops
         for op in &pending_compute_code_ops {
             if let Operation::ComputeCode { sheet_pos } = op {
-                transaction.pending_compute_positions.insert(*sheet_pos);
+                transaction
+                    .pending_compute_locations
+                    .insert(CodeCellLocation::Sheet(*sheet_pos));
             }
         }
         for op in pending_compute_code_ops {
@@ -104,7 +122,17 @@ impl GridController {
         for pos in ordered_positions {
             new_operations.push_back(Operation::ComputeCode { sheet_pos: pos });
             // Track in HashSet for O(1) duplicate checking in future calls
-            transaction.pending_compute_positions.insert(pos);
+            transaction
+                .pending_compute_locations
+                .insert(CodeCellLocation::Sheet(pos));
+        }
+
+        // Add embedded code operations
+        for loc in all_embedded_locations {
+            if let CodeCellLocation::Embedded { table_pos, x, y } = loc {
+                new_operations.push_back(Operation::ComputeEmbeddedCode { table_pos, x, y });
+                transaction.pending_compute_locations.insert(loc);
+            }
         }
 
         transaction.operations = new_operations;
@@ -218,8 +246,10 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            // Remove from pending positions so it can be re-added if dependencies change
-            transaction.pending_compute_positions.remove(&sheet_pos);
+            // Remove from pending locations so it can be re-added if dependencies change
+            transaction
+                .pending_compute_locations
+                .remove(&CodeCellLocation::Sheet(sheet_pos));
 
             if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
@@ -281,6 +311,94 @@ impl GridController {
                 }
                 CodeCellLanguage::Import => {
                     dbgjs!(format!("Import code run found at {sheet_pos:?}"));
+                    // no-op
+                }
+            }
+        }
+    }
+
+    /// Executes a CellValue::Code cell embedded in a DataTable's value array.
+    pub(super) fn execute_compute_embedded_code(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeEmbeddedCode { table_pos, x, y } = op {
+            // Remove from pending locations so it can be re-added if dependencies change
+            let loc = CodeCellLocation::embedded(table_pos, x, y);
+            transaction.pending_compute_locations.remove(&loc);
+
+            if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                dbgjs!("Only user / undo / redo / server transaction should have a ComputeEmbeddedCode");
+                return;
+            }
+
+            let Some(sheet) = self.try_sheet(table_pos.sheet_id) else {
+                // sheet may have been deleted in a multiplayer operation
+                return;
+            };
+
+            // Get the DataTable
+            let Some(data_table) = sheet.data_table_at(&table_pos.into()) else {
+                dbgjs!(format!("No data table found at {table_pos:?}"));
+                return;
+            };
+
+            // Get the embedded code cell from the array
+            let Value::Array(array) = &data_table.value else {
+                dbgjs!(format!("Data table at {table_pos:?} does not have an array value"));
+                return;
+            };
+
+            let Ok(CellValue::Code(code_cell)) = array.get(x, y) else {
+                dbgjs!(format!(
+                    "No CellValue::Code found at ({x}, {y}) in data table at {table_pos:?}"
+                ));
+                return;
+            };
+
+            let language = code_cell.code_run.language.clone();
+            let code = code_cell.code_run.code.clone();
+            let cached_ast = code_cell.code_run.formula_ast.clone();
+
+            // Clone for notification
+            let language_for_notify = language.clone();
+            let code_for_notify = code.clone();
+
+            // Execute based on language
+            // Note: For embedded code cells, we use the table_pos as the "anchor" for execution
+            // The result will be stored back in the array at (x, y)
+            match language {
+                CodeCellLanguage::Python => {
+                    self.run_embedded_python(transaction, table_pos, x, y, code);
+                    // Notify client about code operations
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((table_pos, language_for_notify, code_for_notify)),
+                    );
+                }
+                CodeCellLanguage::Formula => {
+                    // Execute formula for embedded cell (synchronous)
+                    self.run_embedded_formula(transaction, table_pos, x, y, code, cached_ast);
+                }
+                CodeCellLanguage::Connection { .. } => {
+                    // Connections are not supported for embedded cells
+                    dbgjs!(format!(
+                        "Embedded Connection code cells are not supported at ({x}, {y}) in table at {table_pos:?}"
+                    ));
+                }
+                CodeCellLanguage::Javascript => {
+                    self.run_embedded_javascript(transaction, table_pos, x, y, code);
+                    // Notify client about code operations
+                    self.notify_code_running_state(
+                        transaction,
+                        Some((table_pos, language_for_notify, code_for_notify)),
+                    );
+                }
+                CodeCellLanguage::Import => {
+                    dbgjs!(format!(
+                        "Import code run found at ({x}, {y}) in table at {table_pos:?}"
+                    ));
                     // no-op
                 }
             }
@@ -755,5 +873,91 @@ mod tests {
 
         let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
         assert!(value4 != value3);
+    }
+
+    /// Test that a formula can be set within a data table and will execute correctly.
+    ///
+    /// Expected behavior:
+    /// 1. When setting a formula (e.g., "=J1+1") in a cell within a data table,
+    ///    the formula should be stored as CellValue::Code in the data table's array.
+    /// 2. The formula should be evaluated and display the correct result.
+    /// 3. When dependencies change, the formula should be re-evaluated.
+    #[test]
+    fn test_formula_in_data_table() {
+        use crate::Rect;
+        use crate::controller::user_actions::import::tests::simple_csv_at;
+
+        // Create a data table at position A1
+        let (mut gc, sheet_id, table_pos, _) = simple_csv_at(pos![A1]);
+
+        // Put a regular value outside the table for the formula to reference
+        gc.set_cell_value(pos![sheet_id!J1], "100".into(), None, false);
+
+        // Verify the data table exists and has expected values
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table_at(&table_pos).unwrap();
+        assert!(matches!(data_table.value, crate::Value::Array(_)));
+
+        // Print initial state for debugging
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 10, 12));
+
+        // Set a formula within the data table (at B3, which is inside the table)
+        // The formula references a cell outside the table
+        gc.set_cell_values(
+            pos![sheet_id!B3],
+            vec![vec!["=J1+1".into()]],
+            None,
+            false,
+        );
+
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 10, 12));
+
+        // Verify the formula was executed and produces the correct result
+        let sheet = gc.sheet(sheet_id);
+
+        // Check if the value at B3 shows the formula result (should be 101)
+        let display_value = sheet.display_value(pos![B3]);
+        assert_eq!(
+            display_value,
+            Some(CellValue::Number(101.into())),
+            "Expected formula result 101 at B3, got {:?}",
+            display_value
+        );
+
+        // Verify the formula is stored as CellValue::Code in the data table's array
+        let data_table = sheet.data_table_at(&table_pos).unwrap();
+        if let crate::Value::Array(array) = &data_table.value {
+            // B3 is at display position (1, 2) - column B is index 1, row 3 minus header row 1 = row 2 in data
+            let cell = array.get(1, 1); // 0-indexed: column 1, row 1 (accounting for header)
+            if let Ok(CellValue::Code(code_cell)) = cell {
+                assert_eq!(
+                    code_cell.code_run.language,
+                    CodeCellLanguage::Formula,
+                    "Expected Formula language"
+                );
+                assert_eq!(
+                    *code_cell.output,
+                    CellValue::Number(101.into()),
+                    "Expected formula output to be 101"
+                );
+            } else {
+                panic!(
+                    "Formula in data table is NOT stored as CellValue::Code, got: {:?}",
+                    cell
+                );
+            }
+        }
+
+        // Test dependency: changing J1 should update the formula result
+        gc.set_cell_value(pos![sheet_id!J1], "200".into(), None, false);
+
+        let sheet = gc.sheet(sheet_id);
+        let display_value = sheet.display_value(pos![B3]);
+        assert_eq!(
+            display_value,
+            Some(CellValue::Number(201.into())),
+            "Expected formula result 201 after dependency change, got {:?}",
+            display_value
+        );
     }
 }

@@ -208,7 +208,10 @@ impl GridController {
         let transaction_id = Uuid::parse_str(&transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
-        if let Some(current_sheet_pos) = transaction.current_sheet_pos {
+        // Connection results only support sheet-level code cells for now
+        if let Some(crate::grid::CodeCellLocation::Sheet(current_sheet_pos)) =
+            transaction.current_code_location
+        {
             // if sheet exists, proceed with processing the connection result
             // sheet may not exist if deleted by user or multiplayer during the async call
             if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {

@@ -5,7 +5,8 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{CodeCellLanguage, DataTableKind, NumericFormatKind};
+use crate::grid::{CodeCellLanguage, CodeRun, DataTableKind, NumericFormatKind};
+use crate::values::CodeCell;
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -66,15 +67,56 @@ impl GridController {
                     let value = value.trim().to_string();
 
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
-                    if let Some(value) = value.strip_prefix("=") {
-                        ops.extend(self.set_code_cell_operations(
-                            pos.to_sheet_pos(sheet.id),
-                            CodeCellLanguage::Formula,
-                            value.to_string(),
-                            None,
-                        ));
+                    let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
+
+                    // Check if position is within a data table FIRST
+                    let data_table_import_pos = sheet.data_table_import_pos_that_contains(pos);
+
+                    // Handle formulas (values starting with "=")
+                    if let Some(formula_code) = value.strip_prefix("=") {
+                        if let Some(data_table_pos) = data_table_import_pos {
+                            // Formula inside a data table: create CellValue::Code
+                            let code_run = CodeRun {
+                                language: CodeCellLanguage::Formula,
+                                code: formula_code.to_string(),
+                                formula_ast: None,
+                                std_out: None,
+                                std_err: None,
+                                cells_accessed: Default::default(),
+                                error: None,
+                                return_type: None,
+                                line_number: None,
+                                output_type: None,
+                            };
+                            let code_cell = CodeCell::new(code_run, CellValue::Blank);
+                            data_table_cell_values[x][y] =
+                                Some(CellValue::Code(Box::new(code_cell)));
+
+                            // Calculate position within the data table's array
+                            // Account for header row (y_adjustment)
+                            let data_table = sheet.data_table_at(&data_table_pos).unwrap();
+                            let array_x = (pos.x - data_table_pos.x) as u32;
+                            let array_y =
+                                (pos.y - data_table_pos.y - data_table.y_adjustment(true)) as u32;
+
+                            // Add compute operation for the embedded code cell
+                            compute_code_ops.push(Operation::ComputeEmbeddedCode {
+                                table_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                x: array_x,
+                                y: array_y,
+                            });
+                        } else {
+                            // Formula outside data table: existing behavior
+                            ops.extend(self.set_code_cell_operations(
+                                pos.to_sheet_pos(sheet.id),
+                                CodeCellLanguage::Formula,
+                                formula_code.to_string(),
+                                None,
+                            ));
+                        }
                         continue;
                     }
+
                     let user_enter_percent = from_user_input
                         && sheet
                             .cell_format(pos)
@@ -83,12 +125,6 @@ impl GridController {
 
                     let (cell_value, format_update) =
                         CellValue::string_to_cell_value(&value, user_enter_percent);
-
-                    let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
-
-                    // todo: this needs to be updated...probably adding to data tables
-                    let is_code = false;
-                    let data_table_import_pos = sheet.data_table_import_pos_that_contains(pos);
 
                     // (x,y) is within a data table (import / editable)
                     if let Some(data_table_pos) = data_table_import_pos {
@@ -122,12 +158,6 @@ impl GridController {
 
                     if !format_update.is_default() {
                         sheet_format_updates.set_format_cell(pos, format_update);
-                    }
-
-                    if is_code {
-                        compute_code_ops.push(Operation::ComputeCode {
-                            sheet_pos: current_sheet_pos,
-                        });
                     }
                 }
             }

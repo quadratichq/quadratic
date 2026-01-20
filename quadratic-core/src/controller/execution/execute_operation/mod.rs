@@ -130,6 +130,9 @@ impl GridController {
                     );
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
+                Operation::ComputeEmbeddedCode { .. } => {
+                    self.execute_compute_embedded_code(transaction, op);
+                }
                 Operation::SetComputeCode { .. } => self.execute_set_compute_code(transaction, op),
                 Operation::ComputeCodeSelection { .. } => {
                     self.execute_compute_code_selection(transaction, op);

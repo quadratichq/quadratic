@@ -1,13 +1,14 @@
 use itertools::Itertools;
 
 use crate::{
-    SheetPos,
+    CellValue, SheetPos, Value,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, Formula, find_cell_references, parse_formula},
     grid::{
-        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
+        CellsAccessed, CodeCellLanguage, CodeCellLocation, CodeRun, DataTable, DataTableKind,
         data_table::DataTableTemplate,
     },
+    values::CodeCell,
 };
 
 impl GridController {
@@ -43,7 +44,7 @@ impl GridController {
     ) {
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_code_location = Some(CodeCellLocation::Sheet(sheet_pos));
 
         // Use cached AST if available, otherwise parse
         let parsed = if let Some(ast) = cached_ast {
@@ -106,6 +107,108 @@ impl GridController {
         self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
     }
 
+    /// Runs a formula embedded within a DataTable's value array.
+    /// The result is stored back in the CellValue::Code at the specified (x, y) position.
+    pub(crate) fn run_embedded_formula(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        table_pos: SheetPos,
+        x: u32,
+        y: u32,
+        code: String,
+        cached_ast: Option<Formula>,
+    ) {
+        // Use table_pos as the evaluation context position
+        // The formula will reference cells relative to the table's position
+        let mut eval_ctx = Ctx::new(self, table_pos);
+        let parse_ctx = self.a1_context();
+        transaction.current_code_location = Some(CodeCellLocation::embedded(table_pos, x, y));
+
+        // Use cached AST if available, otherwise parse
+        let parsed = if let Some(ast) = cached_ast {
+            ast
+        } else {
+            match parse_formula(&code, parse_ctx, table_pos) {
+                Ok(p) => p,
+                Err(error) => {
+                    let _ = self.code_cell_sheet_error(transaction, &error);
+                    return;
+                }
+            }
+        };
+
+        let output = parsed.eval(&mut eval_ctx).into_non_tuple();
+        let errors = output.inner.errors();
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code,
+            formula_ast: Some(parsed),
+            std_out: None,
+            std_err: (!errors.is_empty())
+                .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+            cells_accessed: eval_ctx.take_cells_accessed(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        // For embedded formulas, we only support Single output values
+        // (embedded code cells are 1x1 by definition)
+        let output_value = match output.inner {
+            Value::Single(v) => v,
+            Value::Array(arr) => {
+                // If it's an array, take the first value
+                arr.get(0, 0).cloned().unwrap_or(CellValue::Blank)
+            }
+            // Tuple and Lambda values should not occur here (they're formula-internal)
+            Value::Tuple(_) | Value::Lambda(_) => CellValue::Blank,
+        };
+
+        // Create the updated CodeCell with the new output
+        let new_code_cell = CodeCell::new(new_code_run.clone(), output_value);
+
+        // Update the DataTable's array with the new CellValue::Code
+        let Some(sheet) = self.try_sheet_mut(table_pos.sheet_id) else {
+            return;
+        };
+
+        let pos = table_pos.into();
+        let result = sheet.modify_data_table_at(&pos, |data_table| {
+            let Value::Array(array) = &mut data_table.value else {
+                return Err(anyhow::anyhow!(
+                    "Data table at {:?} does not have an array value",
+                    table_pos
+                ));
+            };
+
+            array.set(x, y, CellValue::Code(Box::new(new_code_cell)), true)?;
+            Ok(())
+        });
+
+        if let Err(e) = result {
+            dbgjs!(format!(
+                "Failed to update embedded code cell at ({}, {}) in table at {:?}: {}",
+                x, y, table_pos, e
+            ));
+            return;
+        }
+
+        let (_, dirty_rects) = result.unwrap();
+
+        // Update dirty hashes for rendering
+        let sheet = self.try_sheet(table_pos.sheet_id).unwrap();
+        transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+
+        // Update cells_accessed cache for dependency tracking
+        let loc = CodeCellLocation::embedded(table_pos, x, y);
+        let regions: Vec<_> = new_code_run
+            .cells_accessed
+            .iter_rects_unbounded(&self.a1_context)
+            .collect();
+        self.cells_accessed_cache.set_regions_for_loc(loc, regions);
+    }
+
     pub(crate) fn add_formula_without_eval(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -114,7 +217,7 @@ impl GridController {
         name: &str,
     ) {
         let parse_ctx = self.a1_context();
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_code_location = Some(CodeCellLocation::Sheet(sheet_pos));
 
         let mut cells_accessed = CellsAccessed::default();
         let cell_references = find_cell_references(code, parse_ctx, sheet_pos);

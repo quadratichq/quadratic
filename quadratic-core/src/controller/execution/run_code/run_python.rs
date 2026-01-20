@@ -1,6 +1,7 @@
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
+    grid::CodeCellLocation,
 };
 
 impl GridController {
@@ -11,7 +12,7 @@ impl GridController {
         code: String,
     ) {
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_code_location = Some(CodeCellLocation::Sheet(sheet_pos));
         transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
 
@@ -23,6 +24,35 @@ impl GridController {
                 sheet_pos.x as i32,
                 sheet_pos.y as i32,
                 sheet_pos.sheet_id.to_string(),
+                code,
+            );
+        }
+    }
+
+    /// Runs Python for an embedded code cell in a DataTable array.
+    /// The result will be stored back in the array at (x, y).
+    pub(crate) fn run_embedded_python(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        table_pos: SheetPos,
+        x: u32,
+        y: u32,
+        code: String,
+    ) {
+        // stop the computation cycle until async returns
+        transaction.current_code_location = Some(CodeCellLocation::embedded(table_pos, x, y));
+        transaction.waiting_for_async_code_cell = true;
+        self.transactions.add_async_transaction(transaction);
+
+        // Use the table position for the callback (the code will reference cells from there)
+        if !transaction.is_server()
+            && let Some(f) = self.run_python_callback.as_mut()
+        {
+            f(
+                transaction.id.to_string(),
+                table_pos.x as i32,
+                table_pos.y as i32,
+                table_pos.sheet_id.to_string(),
                 code,
             );
         }

@@ -279,13 +279,6 @@ class InlineEditorHandler {
         }
       }
 
-      this.codeCell = content.cellsSheet.tables.getCodeCellIntersects(this.location);
-      if (this.codeCell?.language === 'Import' && changeToFormula) {
-        pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-        this.closeIfOpen();
-        return;
-      }
-
       if (cursorMode === undefined) {
         if (changeToFormula) {
           cursorMode = value.length > 1 ? CursorMode.Edit : CursorMode.Enter;
@@ -881,11 +874,6 @@ class InlineEditorHandler {
     if (this.formula === formula) return;
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
-    }
-    if (this.codeCell?.language === 'Import' && formula) {
-      pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-      this.closeIfOpen();
-      return;
     }
     this.formula = formula;
     if (formula) {

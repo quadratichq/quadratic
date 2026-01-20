@@ -718,6 +718,23 @@ impl DataTable {
         }
     }
 
+    /// Returns the language if the raw cell value at the given position is a CellValue::Code.
+    /// This is used for rendering to show the code cell border indicator.
+    /// The position is relative to the data (after y_adjustment for headers).
+    pub fn embedded_code_language_at(&self, x: u32, y: u32) -> Option<CodeCellLanguage> {
+        let cell_value = match &self.value {
+            Value::Single(v) if x == 0 && y == 0 => v,
+            Value::Array(a) => a.get(x, y).ok()?,
+            _ => return None,
+        };
+
+        if let CellValue::Code(code_cell) = cell_value {
+            Some(code_cell.code_run.language.clone())
+        } else {
+            None
+        }
+    }
+
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {

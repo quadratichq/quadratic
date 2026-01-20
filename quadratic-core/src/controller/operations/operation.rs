@@ -202,6 +202,14 @@ pub enum Operation {
     ComputeCode {
         sheet_pos: SheetPos,
     },
+    /// Runs a CellValue::Code cell embedded in a DataTable's value array.
+    ComputeEmbeddedCode {
+        /// The DataTable's anchor position
+        table_pos: SheetPos,
+        /// Position within the data array (0-indexed)
+        x: u32,
+        y: u32,
+    },
     /// Sets code and computes it in one operation (avoids double finalization).
     /// Used by autocomplete for code cells.
     SetComputeCode {

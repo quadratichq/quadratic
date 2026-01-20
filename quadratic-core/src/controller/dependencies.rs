@@ -2,54 +2,35 @@ use std::{self};
 
 use std::collections::HashSet;
 
-use crate::{CellValue, SheetPos, SheetRect};
+use crate::{CellValue, SheetPos, SheetRect, Value, grid::CodeCellLocation};
 
 use super::GridController;
 
 impl GridController {
     /// Searches all data_tables and CellValue::Code in sheets for cells that are dependent on the given sheet_rect.
-    pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
-        let all_dependent_cells = self
+    /// Returns CodeCellLocation which can be either a sheet-level code cell or an embedded code cell in a DataTable.
+    pub fn get_dependent_code_cells(
+        &self,
+        sheet_rect: SheetRect,
+    ) -> Option<HashSet<CodeCellLocation>> {
+        let all_dependent_locs = self
             .cells_accessed()
-            .get_positions_associated_with_region(sheet_rect.to_region());
+            .get_locations_associated_with_region(sheet_rect.to_region());
 
         let mut dependent_cells = HashSet::new();
 
-        for dependent_cell in all_dependent_cells {
-            let Some(sheet) = self.try_sheet(dependent_cell.sheet_id) else {
-                continue;
-            };
-
-            let pos = dependent_cell.into();
-
-            // First check for CellValue::Code in columns
-            if let Some(CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
-                // ignore code cells that have self reference
-                if !code_cell
-                    .code_run
-                    .cells_accessed
-                    .contains(dependent_cell, self.a1_context())
-                {
-                    dependent_cells.insert(dependent_cell);
+        for loc in all_dependent_locs {
+            match loc {
+                CodeCellLocation::Sheet(sheet_pos) => {
+                    if let Some(loc) = self.validate_sheet_code_cell(sheet_pos) {
+                        dependent_cells.insert(loc);
+                    }
                 }
-                continue;
-            }
-
-            // Otherwise check data_tables
-            let Some(data_table) = sheet.data_table_at(&pos) else {
-                continue;
-            };
-
-            let Some(code_run) = data_table.code_run() else {
-                continue;
-            };
-
-            // ignore code cells that have self reference
-            if !code_run
-                .cells_accessed
-                .contains(dependent_cell, self.a1_context())
-            {
-                dependent_cells.insert(dependent_cell);
+                CodeCellLocation::Embedded { table_pos, x, y } => {
+                    if let Some(loc) = self.validate_embedded_code_cell(table_pos, x, y) {
+                        dependent_cells.insert(loc);
+                    }
+                }
             }
         }
 
@@ -58,6 +39,72 @@ impl GridController {
         } else {
             Some(dependent_cells)
         }
+    }
+
+    /// Validates a sheet-level code cell exists and doesn't have self-reference.
+    /// Returns the CodeCellLocation if valid, None otherwise.
+    fn validate_sheet_code_cell(&self, sheet_pos: SheetPos) -> Option<CodeCellLocation> {
+        let sheet = self.try_sheet(sheet_pos.sheet_id)?;
+        let pos = sheet_pos.into();
+
+        // First check for CellValue::Code in columns
+        if let Some(CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
+            // ignore code cells that have self reference
+            if !code_cell
+                .code_run
+                .cells_accessed
+                .contains(sheet_pos, self.a1_context())
+            {
+                return Some(CodeCellLocation::Sheet(sheet_pos));
+            }
+            return None;
+        }
+
+        // Otherwise check data_tables (code_run-based tables)
+        let data_table = sheet.data_table_at(&pos)?;
+        let code_run = data_table.code_run()?;
+
+        // ignore code cells that have self reference
+        if !code_run
+            .cells_accessed
+            .contains(sheet_pos, self.a1_context())
+        {
+            return Some(CodeCellLocation::Sheet(sheet_pos));
+        }
+        None
+    }
+
+    /// Validates an embedded code cell exists in a DataTable and doesn't have self-reference.
+    /// Returns the CodeCellLocation if valid, None otherwise.
+    fn validate_embedded_code_cell(
+        &self,
+        table_pos: SheetPos,
+        x: u32,
+        y: u32,
+    ) -> Option<CodeCellLocation> {
+        let sheet = self.try_sheet(table_pos.sheet_id)?;
+        let data_table = sheet.data_table_at(&table_pos.into())?;
+
+        // Get the embedded code cell from the array
+        let Value::Array(array) = &data_table.value else {
+            return None;
+        };
+
+        let CellValue::Code(code_cell) = array.get(x, y).ok()? else {
+            return None;
+        };
+
+        // ignore code cells that have self reference
+        // For embedded cells, we check if the cells_accessed contains the table position
+        // (since the embedded cell doesn't have its own sheet position)
+        if !code_cell
+            .code_run
+            .cells_accessed
+            .contains(table_pos, self.a1_context())
+        {
+            return Some(CodeCellLocation::embedded(table_pos, x, y));
+        }
+        None
     }
 }
 
@@ -68,7 +115,7 @@ mod test {
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
-        grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+        grid::{CellsAccessed, CodeCellLanguage, CodeCellLocation, CodeRun, DataTable, DataTableKind},
     };
 
     #[test]
@@ -119,26 +166,13 @@ mod test {
             false,
         );
 
-        assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_11.into())
-                .unwrap()
-                .len(),
-            1
-        );
-        assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_11.into())
-                .unwrap()
-                .iter()
-                .next(),
-            Some(&sheet_pos_13)
-        );
-        assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_12.into())
-                .unwrap()
-                .iter()
-                .next(),
-            Some(&sheet_pos_13)
-        );
+        let deps = gc.get_dependent_code_cells(sheet_pos_11.into()).unwrap();
+        assert_eq!(deps.len(), 1);
+        assert!(deps.contains(&CodeCellLocation::Sheet(sheet_pos_13)));
+
+        let deps = gc.get_dependent_code_cells(sheet_pos_12.into()).unwrap();
+        assert!(deps.contains(&CodeCellLocation::Sheet(sheet_pos_13)));
+
         assert_eq!(gc.get_dependent_code_cells(sheet_pos_13.into()), None);
     }
 
@@ -175,11 +209,11 @@ mod test {
                 sheet_id
             }),
             Some(
-                vec![SheetPos {
+                vec![CodeCellLocation::Sheet(SheetPos {
                     x: 2,
                     y: 1,
                     sheet_id
-                }]
+                })]
                 .into_iter()
                 .collect()
             )
