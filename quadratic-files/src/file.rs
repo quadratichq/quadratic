@@ -109,9 +109,16 @@ pub(crate) async fn process_queue_for_room(
 
     // When a file is created in API, a zero checkpoint is created, so we
     // should always expect a return value.
+    let db_start = Utc::now();
     let checkpoint_sequence_num = get_max_sequence_number(&state.pool, &file_id)
         .await
         .map_err(|e| FilesError::ApiSequenceNumberNotFound(file_id, e.to_string()))?;
+    let db_elapsed = (Utc::now() - db_start).num_milliseconds();
+    if db_elapsed > 1000 {
+        tracing::warn!(
+            "Slow DB query for file {file_id}: get_max_sequence_number took {db_elapsed}ms"
+        );
+    }
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut pubsub = state.pubsub.lock().await;
@@ -122,16 +129,43 @@ pub(crate) async fn process_queue_for_room(
         .subscribe(channel, GROUP_NAME, None)
         .await?;
 
-    // get all transactions for the room in the queue
-    let transactions = pubsub
+    // get all messages in the queue (including those at or below checkpoint)
+    let all_messages = pubsub
         .connection
-        .get_messages_after(channel, &(checkpoint_sequence_num + 1).to_string(), false)
-        .await?
+        .get_messages_after(channel, "0", false)
+        .await?;
+
+    // separate messages into stale (at or below checkpoint) and pending (after checkpoint)
+    let (stale_keys, pending_messages): (Vec<_>, Vec<_>) =
+        all_messages.into_iter().partition(|(key, _)| {
+            key.parse::<u64>()
+                .map(|seq| seq <= checkpoint_sequence_num as u64)
+                .unwrap_or(false)
+        });
+
+    // acknowledge stale messages to clean them up from the queue
+    if !stale_keys.is_empty() {
+        let keys: Vec<String> = stale_keys.iter().map(|(k, _)| k.clone()).collect();
+        let keys_ref: Vec<&str> = keys.iter().map(|s| s.as_str()).collect();
+        tracing::debug!(
+            "File {file_id}: acking {} stale messages at or below checkpoint {checkpoint_sequence_num}",
+            keys_ref.len()
+        );
+        pubsub
+            .connection
+            .ack(channel, GROUP_NAME, keys_ref, Some(active_channels), false)
+            .await?;
+    }
+
+    let transactions = pending_messages
         .into_iter()
         .flat_map(|(_, message)| Transaction::process_incoming(&message))
         .collect::<Vec<TransactionServer>>();
 
     if transactions.is_empty() {
+        tracing::debug!(
+            "File {file_id}: checkpoint={checkpoint_sequence_num}, no pending transactions"
+        );
         return Ok(None);
     }
 
@@ -282,6 +316,8 @@ pub(crate) async fn process_batch(state: &Arc<State>, active_channels: &str) -> 
 
     // Process files sequentially to avoid overwhelming the database
     let mut processed = 0;
+    let mut skipped = 0;
+    let mut errors = 0;
     for file_id in batch {
         // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
         match process_queue_for_room(state, file_id, active_channels).await {
@@ -289,17 +325,21 @@ pub(crate) async fn process_batch(state: &Arc<State>, active_channels: &str) -> 
                 processed += 1;
             }
             Ok(None) => {
-                // No transactions to process for this file
+                skipped += 1;
             }
             Err(error) => {
+                errors += 1;
                 tracing::error!("Error processing file {file_id}: {error}");
             }
         }
     }
 
-    if processed > 0 {
-        tracing::info!("Batch complete: processed {} files", processed);
-    }
+    tracing::info!(
+        "Batch complete: processed {}, skipped {} (no new transactions), errors {}",
+        processed,
+        skipped,
+        errors
+    );
 
     Ok(processed)
 }

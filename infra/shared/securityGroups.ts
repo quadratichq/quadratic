@@ -6,7 +6,7 @@ import { cloudControllerEc2SecurityGroup } from "../cloud-controller/cloud_contr
 // api-vpc CIDR block (defined in api_network.ts)
 const API_VPC_CIDR = "10.0.0.0/16";
 
-// Create a Security Group for the Files EC2 instance
+// Create a Security Group for the Files EC2 instance (in api-vpc to access database)
 export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
   vpcId: apiVPC.id,
   ingress: [

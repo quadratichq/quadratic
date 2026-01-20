@@ -1,6 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { apiPublicSubnet1, apiVPC } from "../api/api_network";
+import { apiVPC, publicRouteTable } from "../api/api_network";
 
 const config = new pulumi.Config();
 
@@ -25,14 +25,8 @@ export const vpcPeeringConnection = new aws.ec2.VpcPeeringConnection(
 const sharedVpcCidr = aws.ec2.getVpcOutput({ id: sharedVpcId }).cidrBlock;
 
 // Add route from api-vpc public subnet (where files is) to shared VPC via peering
-// Get the route table associated with the public subnet
-const apiPublicRouteTable = aws.ec2.getRouteTableOutput({
-  subnetId: apiPublicSubnet1.id,
-});
-
-// Add route to shared VPC CIDR via peering connection
 new aws.ec2.Route("api-to-shared-vpc-route", {
-  routeTableId: apiPublicRouteTable.routeTableId,
+  routeTableId: publicRouteTable.id,
   destinationCidrBlock: sharedVpcCidr,
   vpcPeeringConnectionId: vpcPeeringConnection.id,
 });
