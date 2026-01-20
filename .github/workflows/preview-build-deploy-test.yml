@@ -106,7 +106,7 @@ jobs:
       deployments: write
     runs-on: ${{ matrix.runner }}
     if: github.head_ref != 'qa' || github.base_ref != 'main'
-    timeout-minutes: 30
+    timeout-minutes: 45
     outputs:
       version: ${{ steps.read-version.outputs.version }}
     strategy:
