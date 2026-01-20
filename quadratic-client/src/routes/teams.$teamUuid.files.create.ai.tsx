@@ -812,9 +812,9 @@ export const Component = () => {
                 <div className="mt-3 text-center">
                   <a
                     href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-                    className="text-sm text-blue-500 underline hover:text-blue-600"
+                    className="text-sm
                   >
-                    Skip straight to the spreadsheet →
+                    Skip and open the spreadsheet →
                   </a>
                 </div>
               </div>
