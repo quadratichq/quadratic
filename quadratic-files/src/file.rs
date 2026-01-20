@@ -129,43 +129,46 @@ pub(crate) async fn process_queue_for_room(
         .subscribe(channel, GROUP_NAME, None)
         .await?;
 
-    // get all messages in the queue (including those at or below checkpoint)
-    let all_messages = pubsub
+    // get stream length to understand the state
+    let stream_length = pubsub.connection.length(channel).await.unwrap_or(0);
+
+    // get transactions after checkpoint
+    let messages = pubsub
         .connection
-        .get_messages_after(channel, "0", false)
+        .get_messages_after(channel, &(checkpoint_sequence_num + 1).to_string(), false)
         .await?;
 
-    // separate messages into stale (at or below checkpoint) and pending (after checkpoint)
-    let (stale_keys, pending_messages): (Vec<_>, Vec<_>) =
-        all_messages.into_iter().partition(|(key, _)| {
-            key.parse::<u64>()
-                .map(|seq| seq <= checkpoint_sequence_num as u64)
-                .unwrap_or(false)
-        });
+    let messages_after_checkpoint = messages.len();
 
-    // acknowledge stale messages to clean them up from the queue
-    if !stale_keys.is_empty() {
-        let keys: Vec<String> = stale_keys.iter().map(|(k, _)| k.clone()).collect();
-        let keys_ref: Vec<&str> = keys.iter().map(|s| s.as_str()).collect();
-        tracing::debug!(
-            "File {file_id}: acking {} stale messages at or below checkpoint {checkpoint_sequence_num}",
-            keys_ref.len()
-        );
-        pubsub
-            .connection
-            .ack(channel, GROUP_NAME, keys_ref, Some(active_channels), false)
-            .await?;
-    }
-
-    let transactions = pending_messages
+    // Count parse successes/failures separately for debugging
+    let mut parse_failures = 0;
+    let transactions: Vec<TransactionServer> = messages
         .into_iter()
-        .flat_map(|(_, message)| Transaction::process_incoming(&message))
-        .collect::<Vec<TransactionServer>>();
+        .filter_map(
+            |(id, message)| match Transaction::process_incoming(&message) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    parse_failures += 1;
+                    tracing::warn!("File {file_id}: failed to parse message id={id}: {e}");
+                    None
+                }
+            },
+        )
+        .collect();
 
     if transactions.is_empty() {
-        tracing::debug!(
-            "File {file_id}: checkpoint={checkpoint_sequence_num}, no pending transactions"
+        // Log diagnostic info to understand why no transactions were found
+        tracing::warn!(
+            "File {file_id}: checkpoint={checkpoint_sequence_num}, stream_length={stream_length}, messages_after_checkpoint={messages_after_checkpoint}, parse_failures={parse_failures}"
         );
+
+        // No transactions to process - remove this file from active_channels
+        // so we don't keep checking it
+        pubsub
+            .connection
+            .remove_active_channel(active_channels, channel)
+            .await?;
+
         return Ok(None);
     }
 
