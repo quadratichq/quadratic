@@ -183,19 +183,22 @@ export const Component = () => {
   // When connections dialog closes, check if a new connection was added and auto-select it
   const prevConnectionsLengthRef = useRef(connections.length);
   useEffect(() => {
-    if (!showConnectionsDialog && latestConnections.length > prevConnectionsLengthRef.current) {
-      // A new connection was added, auto-select the most recent one
-      const newestConnection = latestConnections[0]; // Connections are sorted newest first
-      if (newestConnection) {
-        trackEvent('[StartWithAI].addConnection', { connectionType: newestConnection.type, source: 'dialog' });
-        setSelectedConnection({
-          uuid: newestConnection.uuid,
-          name: newestConnection.name,
-          type: newestConnection.type,
-        });
+    if (!showConnectionsDialog) {
+      if (latestConnections.length > prevConnectionsLengthRef.current) {
+        // A new connection was added, auto-select the most recent one
+        const newestConnection = latestConnections[0]; // Connections are sorted newest first
+        if (newestConnection) {
+          trackEvent('[StartWithAI].addConnection', { connectionType: newestConnection.type, source: 'dialog' });
+          setSelectedConnection({
+            uuid: newestConnection.uuid,
+            name: newestConnection.name,
+            type: newestConnection.type,
+          });
+        }
       }
+      // Only update ref when dialog is closed to avoid missing new connections created while dialog was open
+      prevConnectionsLengthRef.current = latestConnections.length;
     }
-    prevConnectionsLengthRef.current = latestConnections.length;
   }, [showConnectionsDialog, latestConnections]);
 
   const handleOpenConnectionsDialog = useCallback((initialView: 'new' | 'list' = 'list') => {
