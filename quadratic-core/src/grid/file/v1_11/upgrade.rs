@@ -105,7 +105,7 @@ fn upgrade_code_run(code_run: current::CodeRunSchema) -> v1_12::CodeRunSchema {
 fn upgrade_data_table_kind(kind: current::DataTableKindSchema) -> v1_12::DataTableKindSchema {
     match kind {
         current::DataTableKindSchema::CodeRun(code_run) => {
-            v1_12::DataTableKindSchema::CodeRun(upgrade_code_run(code_run))
+            v1_12::DataTableKindSchema::CodeRun(Box::new(upgrade_code_run(code_run)))
         }
         current::DataTableKindSchema::Import(import) => v1_12::DataTableKindSchema::Import(import),
     }

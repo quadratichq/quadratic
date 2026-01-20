@@ -204,14 +204,10 @@ impl AstNodeContents {
             AstNodeContents::CellRef(sheet_id, bounds) => {
                 if let Some(sid) = sheet_id {
                     // Include sheet name if different from default or if default is None
-                    if default_sheet_id.is_none_or(|default| default != *sid) {
-                        if let Some(sheet_name) = a1_context.try_sheet_id(*sid) {
-                            return format!(
-                                "{}!{}",
-                                crate::a1::quote_sheet_name(sheet_name),
-                                bounds
-                            );
-                        }
+                    if default_sheet_id.is_none_or(|default| default != *sid)
+                        && let Some(sheet_name) = a1_context.try_sheet_id(*sid)
+                    {
+                        return format!("{}!{}", crate::a1::quote_sheet_name(sheet_name), bounds);
                     }
                 }
                 format!("{}", bounds)

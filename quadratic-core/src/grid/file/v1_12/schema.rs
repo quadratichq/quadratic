@@ -50,7 +50,7 @@ pub type Contiguous2DSchema<T> = v1_11::Contiguous2DSchema<T>;
 /// DataTableKind schema using the new CodeRunSchema with formula_ast.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataTableKindSchema {
-    CodeRun(CodeRunSchema),
+    CodeRun(Box<CodeRunSchema>),
     Import(ImportSchema),
 }
 pub type DataTableSortOrderSchema = v1_11::DataTableSortOrderSchema;
