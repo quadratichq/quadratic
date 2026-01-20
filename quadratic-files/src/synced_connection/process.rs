@@ -12,7 +12,8 @@ use quadratic_rust_shared::{
     synced::{
         SyncedConnection, SyncedConnectionKind, chunk_date_range, dates_to_sync,
         google_analytics::client::GoogleAnalyticsConnection, mixpanel::MixpanelConnection,
-        object_store_path, plaid::PlaidConnection, upload, write_synced_markers,
+        object_store_path, plaid::PlaidConnection, stripe::StripeConnection, upload,
+        write_synced_markers,
     },
 };
 use serde::{Serialize, de::DeserializeOwned};
@@ -44,6 +45,8 @@ pub(crate) async fn process_all_synced_connections(
     )
     .await?;
     process_synced_connections::<PlaidConnection>(state.clone(), sync_kind.clone(), "PLAID")
+        .await?;
+    process_synced_connections::<StripeConnection>(state.clone(), sync_kind.clone(), "STRIPE")
         .await?;
     Ok(())
 }

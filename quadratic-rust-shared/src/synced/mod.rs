@@ -17,6 +17,7 @@ use crate::{
 pub mod google_analytics;
 pub mod mixpanel;
 pub mod plaid;
+pub mod stripe;
 
 pub const DATE_FORMAT: &str = "%Y-%m-%d";
 
@@ -25,6 +26,7 @@ pub enum SyncedConnectionKind {
     Mixpanel,
     GoogleAnalytics,
     Plaid,
+    Stripe,
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
