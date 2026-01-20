@@ -52,7 +52,7 @@ pub type Contiguous2DSchema<T> = v1_11::Contiguous2DSchema<T>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum DataTableKindSchema {
-    CodeRun(CodeRunSchema),
+    CodeRun(Box<CodeRunSchema>),
     Import(ImportSchema),
 }
 pub type DataTableSortOrderSchema = v1_11::DataTableSortOrderSchema;
