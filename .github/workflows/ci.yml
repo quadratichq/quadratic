@@ -156,6 +156,7 @@ jobs:
             yfinance
 
       - name: Test quadratic-${{ matrix.package }}
+        id: test
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
@@ -171,7 +172,7 @@ jobs:
           ${{ matrix.test_command }}
 
       - name: Generate coverage for quadratic-${{ matrix.package }}
-        if: always()
+        if: always() && steps.test.outcome != 'skipped'
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
@@ -189,7 +190,7 @@ jobs:
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-${{ matrix.package }}
-        if: always()
+        if: always() && steps.test.outcome != 'skipped'
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
