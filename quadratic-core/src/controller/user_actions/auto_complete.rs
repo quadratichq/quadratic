@@ -210,6 +210,9 @@ mod tests {
         grid.autocomplete(sheet_id, selected, range, None, false)
             .unwrap();
 
+        let sheet = grid.sheet(sheet_id);
+        dbg!(sheet.cell_value(pos![3, 3]));
+
         // Check that formulas are correct
         // Column C (x=3): formulas should adjust row references
         assert_code_cell_value(&grid, sheet_id, 3, 2, "SUM(A2:A3)");
