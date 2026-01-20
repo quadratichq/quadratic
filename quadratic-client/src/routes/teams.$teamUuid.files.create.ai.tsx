@@ -806,6 +806,14 @@ export const Component = () => {
                     </Button>
                   </div>
                 </div>
+                <div className="mt-3 text-center">
+                  <a
+                    href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                    className="text-sm text-blue-500 underline hover:text-blue-600"
+                  >
+                    Skip straight to the spreadsheet →
+                  </a>
+                </div>
               </div>
 
               {/* Spacer to reduce scroll jumping during generation */}
