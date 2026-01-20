@@ -16,13 +16,12 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::task::JoinHandle;
 use tokio::time;
 use tokio_util::sync::CancellationToken;
-use tokio_util::task::TaskTracker;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::Layer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::file::get_files_to_process;
+use crate::file::{get_files_to_process, process_batch};
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
@@ -32,7 +31,6 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{FilesError, Result},
-    file::process,
     state::State,
     storage::upload_storage,
 };
@@ -177,9 +175,6 @@ pub(crate) async fn serve() -> Result<()> {
     // Create a cancellation token for graceful shutdown
     let cancellation_token = CancellationToken::new();
 
-    // TaskTracker to track file processing tasks spawned by process()
-    let task_tracker = TaskTracker::new();
-
     // Collect handles for all background worker tasks
     let mut background_handles: Vec<JoinHandle<()>> = Vec::new();
 
@@ -187,30 +182,48 @@ pub(crate) async fn serve() -> Result<()> {
     let file_process_handle = tokio::spawn({
         let state = Arc::clone(&state);
         let token = cancellation_token.clone();
-        let tracker = task_tracker.clone();
+        let active_channels = config.pubsub_active_channels.clone();
+        let idle_interval = Duration::from_secs(config.file_check_s as u64);
 
         async move {
-            let mut interval = time::interval(Duration::from_secs(config.file_check_s as u64));
-
             loop {
-                tokio::select! {
-                    _ = token.cancelled() => {
-                        tracing::info!("File processing worker received shutdown signal");
-                        break;
+                // Check for cancellation
+                if token.is_cancelled() {
+                    tracing::info!("File processing worker received shutdown signal");
+                    break;
+                }
+
+                // Process files in batches until queue is empty
+                match process_batch(&state, &active_channels).await {
+                    Ok(processed) if processed > 0 => {
+                        // More files might be waiting, check immediately
+                        continue;
                     }
-                    _ = interval.tick() => {
-                        if let Err(error) = process(&state, &config.pubsub_active_channels, &tracker).await {
-                            tracing::error!("Error processing files: {error}");
+                    Ok(_) => {
+                        // No files to process, wait before checking again
+                        tokio::select! {
+                            _ = token.cancelled() => {
+                                tracing::info!("File processing worker received shutdown signal");
+                                break;
+                            }
+                            _ = tokio::time::sleep(idle_interval) => {}
+                        }
+                    }
+                    Err(error) => {
+                        tracing::error!("Error processing files: {error}");
+                        // Wait a bit before retrying on error
+                        tokio::select! {
+                            _ = token.cancelled() => {
+                                tracing::info!("File processing worker received shutdown signal");
+                                break;
+                            }
+                            _ = tokio::time::sleep(Duration::from_secs(5)) => {}
                         }
                     }
                 }
             }
 
-            // Wait for all in-flight file processing tasks to complete
-            tracing::info!("Waiting for in-flight file processing tasks to complete");
-            tracker.close();
-            tracker.wait().await;
-            tracing::info!("All file processing tasks completed");
+            tracing::info!("File processing worker stopped");
         }
     });
     background_handles.push(file_process_handle);

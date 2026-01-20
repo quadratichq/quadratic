@@ -1,12 +1,13 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import {
-    apiEc2SecurityGroup,
-    apiPrivateSubnet1,
-    apiPrivateSubnet2,
-    apiPrivateSubnet3,
-    apiVPC,
+  apiEc2SecurityGroup,
+  apiPrivateSubnet1,
+  apiPrivateSubnet2,
+  apiPrivateSubnet3,
+  apiVPC,
 } from "../api/api_network";
+import { filesEc2SecurityGroup } from "../shared/securityGroups";
 import { bastionSecurityGroup } from "./bastian";
 
 const config = new pulumi.Config();
@@ -70,6 +71,13 @@ const dbSecurityGroup = new aws.ec2.SecurityGroup(
         fromPort: 5432,
         toPort: 5432,
         securityGroups: [bastionSecurityGroup.id],
+      },
+      {
+        description: "Allow files service to connect to the database",
+        protocol: "tcp",
+        fromPort: 5432,
+        toPort: 5432,
+        securityGroups: [filesEc2SecurityGroup.id],
       },
     ],
     tags: { Name: "db-postgresql-security-group" },

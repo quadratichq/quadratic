@@ -451,7 +451,7 @@ mod tests {
             data_table: Some(data_table),
             index,
             ignore_old_data_table,
-        }) = transaction.operations.get(0)
+        }) = transaction.operations.front()
         else {
             panic!("Expected SetDataTable operation");
         };

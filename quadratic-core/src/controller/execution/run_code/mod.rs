@@ -186,81 +186,79 @@ impl GridController {
 
         // Check if the new data table qualifies as a single code cell (CellValue::Code)
         // If so, store it in columns instead of data_tables
-        if let Some(dt) = &new_data_table {
-            if dt.qualifies_as_single_code_cell() {
-                if let Some(code_cell) = dt.clone().into_code_cell() {
-                    let code_cell_value = CellValue::Code(Box::new(code_cell));
+        if let Some(dt) = &new_data_table
+            && dt.qualifies_as_single_code_cell()
+            && let Some(code_cell) = dt.clone().into_code_cell()
+        {
+            let code_cell_value = CellValue::Code(Box::new(code_cell));
 
-                    // Check for existing CellValue::Code at this position
-                    let old_cell_value = sheet.cell_value_ref(data_table_pos).cloned();
+            // Check for existing CellValue::Code at this position
+            let old_cell_value = sheet.cell_value_ref(data_table_pos).cloned();
 
-                    // Remove any existing DataTable at this position
-                    let old_data_table_removed = sheet.data_table_shift_remove(data_table_pos);
+            // Remove any existing DataTable at this position
+            let old_data_table_removed = sheet.data_table_shift_remove(data_table_pos);
 
-                    // Set the CellValue::Code in columns
-                    sheet.set_value(data_table_pos, code_cell_value.clone());
+            // Set the CellValue::Code in columns
+            sheet.set_value(data_table_pos, code_cell_value.clone());
 
-                    self.send_updated_bounds(transaction, sheet_pos.sheet_id);
-                    self.thumbnail_dirty_sheet_rect(transaction, sheet_rect);
+            self.send_updated_bounds(transaction, sheet_pos.sheet_id);
+            self.thumbnail_dirty_sheet_rect(transaction, sheet_rect);
 
-                    // Check for rows that need auto-resize
-                    if (cfg!(target_family = "wasm") || cfg!(test))
-                        && transaction.is_user_ai()
-                        && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
-                    {
-                        let rows_to_resize =
-                            sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
-                        if !rows_to_resize.is_empty() {
-                            transaction
-                                .resize_rows
-                                .entry(sheet_pos.sheet_id)
-                                .or_default()
-                                .extend(rows_to_resize);
-                        }
-                    }
-
-                    self.add_compute_operations(transaction, sheet_rect, Some(sheet_pos));
-
-                    if transaction.is_user_ai_undo_redo() {
-                        // Forward operation: set the CellValue::Code
-                        transaction
-                            .forward_operations
-                            .push(Operation::SetCellValues {
-                                sheet_pos,
-                                values: CellValues::from(code_cell_value),
-                            });
-
-                        // Reverse operations: restore old state
-                        if let Some((_, old_dt, _)) = old_data_table_removed {
-                            // There was an existing DataTable - restore it
-                            transaction.reverse_operations.push(Operation::SetDataTable {
-                                sheet_pos,
-                                data_table: Some(old_dt),
-                                index,
-                                ignore_old_data_table: true,
-                            });
-                        } else if let Some(old_cv) = old_cell_value {
-                            // There was an existing CellValue - restore it
-                            transaction
-                                .reverse_operations
-                                .push(Operation::SetCellValues {
-                                    sheet_pos,
-                                    values: CellValues::from(old_cv),
-                                });
-                        } else {
-                            // Nothing was there before - delete the cell
-                            transaction
-                                .reverse_operations
-                                .push(Operation::SetCellValues {
-                                    sheet_pos,
-                                    values: CellValues::from(CellValue::Blank),
-                                });
-                        }
-                    }
-
-                    return;
+            // Check for rows that need auto-resize
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && transaction.is_user_ai()
+                && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
+            {
+                let rows_to_resize = sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                if !rows_to_resize.is_empty() {
+                    transaction
+                        .resize_rows
+                        .entry(sheet_pos.sheet_id)
+                        .or_default()
+                        .extend(rows_to_resize);
                 }
             }
+
+            self.add_compute_operations(transaction, sheet_rect, Some(sheet_pos));
+
+            if transaction.is_user_ai_undo_redo() {
+                // Forward operation: set the CellValue::Code
+                transaction
+                    .forward_operations
+                    .push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: CellValues::from(code_cell_value),
+                    });
+
+                // Reverse operations: restore old state
+                if let Some((_, old_dt, _)) = old_data_table_removed {
+                    // There was an existing DataTable - restore it
+                    transaction.reverse_operations.push(Operation::SetDataTable {
+                        sheet_pos,
+                        data_table: Some(old_dt),
+                        index,
+                        ignore_old_data_table: true,
+                    });
+                } else if let Some(old_cv) = old_cell_value {
+                    // There was an existing CellValue - restore it
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetCellValues {
+                            sheet_pos,
+                            values: CellValues::from(old_cv),
+                        });
+                } else {
+                    // Nothing was there before - delete the cell
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetCellValues {
+                            sheet_pos,
+                            values: CellValues::from(CellValue::Blank),
+                        });
+                }
+            }
+
+            return;
         }
 
         if transaction.is_user_ai_undo_redo() {
