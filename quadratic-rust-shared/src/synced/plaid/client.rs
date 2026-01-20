@@ -425,7 +425,7 @@ fn process_time_series(
     use chrono::Duration;
 
     if items.is_empty() {
-        tracing::warn!(
+        tracing::trace!(
             "No {} found for date range {} to {}",
             stream,
             start_date,
