@@ -1,7 +1,7 @@
 //! Stripe Synced Connection
 //!
 //! This module contains the logic for syncing Stripe connections.
-//! Stripe connections sync customer, charge, invoice, and subscription data.
+//! Stripe connections sync customer and charge data.
 
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -15,8 +15,6 @@ use crate::synced::{DATE_FORMAT, SyncedClient, SyncedConnection, SyncedConnectio
 pub mod charges;
 pub mod client;
 pub mod customers;
-pub mod invoices;
-pub mod subscriptions;
 
 /// Stripe connection configuration stored in the database.
 #[derive(Debug, Deserialize, Serialize)]

@@ -60,7 +60,7 @@ parquet = { version = "54.2.1", default-features = false, features = [
   "snap",
 ], optional = true }
 plaid = { version = "9.0.1", optional = true }
-async-stripe = { version = "0.39", default-features = false, features = ["runtime-tokio-hyper"], optional = true }
+stripe = { package = "async-stripe", version = "0.39", default-features = false, features = ["runtime-tokio-hyper", "billing", "checkout"], optional = true }
 prost = { version = "0.13.5", optional = true, default-features = false }
 prost-reflect = { version = "0.15.1", optional = true, features = ["derive"] }
 rayon = { version = "1.8", optional = true }
@@ -166,7 +166,7 @@ storage = ["aws", "crypto", "tokio"]
 synced = [
   "arrow",
   "arrow-json",
-  "async-stripe",
+  "stripe",
   "base64",
   "dotenv",
   "environment",

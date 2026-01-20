@@ -3,14 +3,12 @@
 //! This client provides access to Stripe data export endpoints:
 //! - Customers
 //! - Charges
-//! - Invoices
-//! - Subscriptions
 
-use async_stripe::Client;
 use async_trait::async_trait;
 use bytes::Bytes;
 use chrono::NaiveDate;
 use std::collections::HashMap;
+use stripe::Client;
 
 use crate::synced::SyncedClient;
 use crate::{SharedError, error::Result};
@@ -30,22 +28,24 @@ impl StripeConfig {
 }
 
 /// Stripe client for data export
-#[derive(Debug)]
 pub struct StripeClient {
     client: Client,
     config: StripeConfig,
+}
+
+impl std::fmt::Debug for StripeClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StripeClient")
+            .field("config", &self.config)
+            .finish()
+    }
 }
 
 #[async_trait]
 impl SyncedClient for StripeClient {
     /// Get the streams available for this client
     fn streams() -> Vec<&'static str> {
-        vec![
-            "customers",
-            "charges",
-            "invoices",
-            "subscriptions",
-        ]
+        vec!["customers", "charges"]
     }
 
     /// Test the connection and authentication
@@ -64,8 +64,6 @@ impl SyncedClient for StripeClient {
         match stream {
             "customers" => self.export_customers(start_date, end_date).await,
             "charges" => self.export_charges(start_date, end_date).await,
-            "invoices" => self.export_invoices(start_date, end_date).await,
-            "subscriptions" => self.export_subscriptions(start_date, end_date).await,
             _ => Err(SharedError::Synced(format!(
                 "Unknown Stripe stream: {}",
                 stream
@@ -134,8 +132,6 @@ mod tests {
 
         assert!(streams.contains(&"customers"));
         assert!(streams.contains(&"charges"));
-        assert!(streams.contains(&"invoices"));
-        assert!(streams.contains(&"subscriptions"));
     }
 
     // Integration test that requires real credentials - kept ignored

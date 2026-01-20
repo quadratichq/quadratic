@@ -2,12 +2,12 @@
 //!
 //! This module handles exporting Stripe charge data.
 
-use async_stripe::{Charge, ListCharges};
 use bytes::Bytes;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
+use stripe::{Charge, ChargeId, ListCharges};
 
 use crate::parquet::json::grouped_json_to_parquet;
 use crate::synced::stripe::client::StripeClient;
@@ -43,25 +43,15 @@ impl StripeClient {
     /// List charges with pagination
     pub async fn list_charges_page(
         &self,
-        starting_after: Option<&str>,
+        starting_after: Option<ChargeId>,
         limit: Option<i64>,
-        created_gte: Option<i64>,
-        created_lte: Option<i64>,
     ) -> Result<Vec<Charge>> {
-        let mut params = ListCharges::default();
-        params.limit = limit.map(|l| l as u64);
-        if let Some(cursor) = starting_after {
-            params.starting_after = Some(cursor.to_string());
+        let mut params = ListCharges::new();
+        if let Some(l) = limit {
+            params.limit = Some(l as u64);
         }
-
-        // Use created filter for efficient date range queries
-        if let Some(gte) = created_gte {
-            params.created = Some(async_stripe::RangeQuery {
-                gte: Some(gte),
-                gt: None,
-                lte: created_lte,
-                lt: None,
-            });
+        if let Some(cursor) = starting_after {
+            params.starting_after = Some(cursor);
         }
 
         let charges = Charge::list(self.client(), &params)
@@ -89,27 +79,34 @@ impl StripeClient {
             .timestamp();
 
         let grouped_json = Mutex::new(HashMap::<String, Vec<String>>::new());
-        let mut starting_after: Option<String> = None;
+        let mut starting_after: Option<ChargeId> = None;
         let page_size = 100i64;
 
         loop {
             let charges = self
-                .list_charges_page(
-                    starting_after.as_deref(),
-                    Some(page_size),
-                    Some(start_timestamp),
-                    Some(end_timestamp),
-                )
+                .list_charges_page(starting_after.clone(), Some(page_size))
                 .await?;
 
             if charges.is_empty() {
                 break;
             }
 
-            let last_id = charges.last().map(|c| c.id.to_string());
+            let last_id = charges.last().map(|c| c.id.clone());
 
             for charge in charges {
-                let created = charge.created.unwrap_or(0);
+                let created = charge.created;
+
+                // Filter by date range (charges are returned newest first)
+                if created < start_timestamp {
+                    // Stop if we've gone past start_date
+                    starting_after = None;
+                    break;
+                }
+
+                if created > end_timestamp {
+                    // Skip charges created after end_date
+                    continue;
+                }
 
                 let datetime = DateTime::<Utc>::from_timestamp(created, 0)
                     .ok_or_else(|| SharedError::Synced("Invalid timestamp".to_string()))?;
@@ -147,37 +144,34 @@ impl StripeClient {
     fn flatten_charge(charge: &Charge) -> FlattenedCharge {
         FlattenedCharge {
             id: charge.id.to_string(),
-            amount: charge.amount.unwrap_or(0),
-            amount_captured: charge.amount_captured.unwrap_or(0),
-            amount_refunded: charge.amount_refunded.unwrap_or(0),
-            currency: charge.currency.map(|c| c.to_string()).unwrap_or_default(),
+            amount: charge.amount,
+            amount_captured: charge.amount_captured,
+            amount_refunded: charge.amount_refunded,
+            currency: charge.currency.to_string(),
             customer: charge.customer.as_ref().map(|c| match c {
-                async_stripe::Expandable::Id(id) => id.to_string(),
-                async_stripe::Expandable::Object(obj) => obj.id.to_string(),
+                stripe::Expandable::Id(id) => id.to_string(),
+                stripe::Expandable::Object(obj) => obj.id.to_string(),
             }),
             description: charge.description.clone(),
-            created: charge.created.unwrap_or(0),
-            paid: charge.paid.unwrap_or(false),
-            refunded: charge.refunded.unwrap_or(false),
-            status: charge
-                .status
-                .map(|s| format!("{:?}", s))
-                .unwrap_or_default(),
-            captured: charge.captured.unwrap_or(false),
-            disputed: charge.disputed.unwrap_or(false),
+            created: charge.created,
+            paid: charge.paid,
+            refunded: charge.refunded,
+            status: format!("{:?}", charge.status),
+            captured: charge.captured,
+            disputed: charge.disputed,
             failure_code: charge.failure_code.clone(),
             failure_message: charge.failure_message.clone(),
             invoice: charge.invoice.as_ref().map(|i| match i {
-                async_stripe::Expandable::Id(id) => id.to_string(),
-                async_stripe::Expandable::Object(obj) => obj.id.to_string(),
+                stripe::Expandable::Id(id) => id.to_string(),
+                stripe::Expandable::Object(obj) => obj.id.to_string(),
             }),
             payment_intent: charge.payment_intent.as_ref().map(|p| match p {
-                async_stripe::Expandable::Id(id) => id.to_string(),
-                async_stripe::Expandable::Object(obj) => obj.id.to_string(),
+                stripe::Expandable::Id(id) => id.to_string(),
+                stripe::Expandable::Object(obj) => obj.id.to_string(),
             }),
             receipt_email: charge.receipt_email.clone(),
             receipt_url: charge.receipt_url.clone(),
-            livemode: charge.livemode.unwrap_or(false),
+            livemode: charge.livemode,
         }
     }
 }
