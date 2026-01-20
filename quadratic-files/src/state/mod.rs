@@ -8,10 +8,10 @@ pub mod settings;
 pub mod stats;
 
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
+use quadratic_rust_shared::pubsub::{Config as PubSubConfig, PubSub as PubSubTrait};
 use quadratic_rust_shared::quadratic_database::{
-    ConnectionOptions, PgPool, connect, get_database_settings, warm_pool,
+    ConnectionOptions, PgPool, connect, get_database_settings,
 };
 use tokio::sync::Mutex;
 
@@ -52,27 +52,18 @@ impl State {
         let pool = connect(&config.database_url, connection_options)
             .map_err(|e| FilesError::DatabaseConnect(e.to_string()))?;
 
-        // Try to pre-warm the connection pool, but don't block startup if it fails.
-        // The lazy pool will retry on actual queries.
-        match warm_pool(&pool).await {
-            Ok(()) => {
-                // Log database settings to help diagnose connection issues
-                match get_database_settings(&pool).await {
-                    Ok(settings) => {
-                        tracing::info!(
-                            "Database connection established - pool size: {}, db max_connections: {}, db current_connections: {}",
-                            pool.size(),
-                            settings.max_connections,
-                            settings.current_connections
-                        );
-                    }
-                    Err(e) => {
-                        tracing::warn!("Database connected but failed to query settings: {e}");
-                    }
-                }
+        // Log database settings to help diagnose connection issues
+        match get_database_settings(&pool).await {
+            Ok(settings) => {
+                tracing::info!(
+                    "Database connection established - pool size: {}, db max_connections: {}, db current_connections: {}",
+                    pool.size(),
+                    settings.max_connections,
+                    settings.current_connections
+                );
             }
             Err(e) => {
-                tracing::warn!("Failed to pre-warm database pool (will retry on first query): {e}");
+                tracing::warn!("Database connected but failed to query settings: {e}");
             }
         }
 
@@ -84,5 +75,19 @@ impl State {
             pool,
             batch_size: config.batch_size,
         })
+    }
+
+    pub(crate) async fn remove_active_channel(
+        &self,
+        active_channels: &str,
+        channel: &str,
+    ) -> Result<()> {
+        self.pubsub
+            .lock()
+            .await
+            .connection
+            .remove_active_channel(active_channels, channel)
+            .await
+            .map_err(|e| FilesError::PubSub(e.to_string()))
     }
 }
