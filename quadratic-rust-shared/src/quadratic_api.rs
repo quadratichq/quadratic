@@ -61,7 +61,11 @@ pub struct Checkpoint {
 /// Check if the quadratic API server is healthy.
 pub async fn is_healthy(base_url: &str) -> bool {
     let url = format!("{base_url}/health");
-    let client = get_client(&url, "");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .unwrap_or_default()
+        .get(&url);
     let response = client.send().await;
 
     match response {
