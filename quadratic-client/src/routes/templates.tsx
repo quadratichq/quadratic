@@ -1,6 +1,5 @@
 import { DashboardHeader, DashboardHeaderTitle } from '@/dashboard/components/DashboardHeader';
-import type { FilesListTemplateFile } from '@/dashboard/components/FilesList';
-import { ExampleFilesList } from '@/dashboard/components/FilesList';
+import { ExampleFilesList, type ExampleFilesListFile } from '@/dashboard/components/ExampleFilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
@@ -19,7 +18,7 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
 
-  const files: FilesListTemplateFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
+  const files: ExampleFilesListFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
     description,
     href: ROUTES.CREATE_FILE_FROM_TEMPLATE({
       teamUuid: activeTeamUuid,

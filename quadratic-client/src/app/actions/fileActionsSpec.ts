@@ -111,7 +111,7 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileVersionHistory]: {
-    label: () => 'Open file history',
+    label: () => 'Open history',
     Icon: HistoryIcon,
     isAvailable: ({ isAuthenticated, filePermissions, teamPermissions }: ActionAvailabilityArgs) =>
       Boolean(isAuthenticated && filePermissions.includes('FILE_EDIT') && teamPermissions?.includes('TEAM_VIEW')),
