@@ -41,8 +41,8 @@ export const handleBedrockRequest = async ({
       response?.setHeader('Content-Type', 'text/event-stream');
       response?.setHeader('Cache-Control', 'no-cache');
       response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
     }
-    response?.write(`stream\n\n`);
 
     const command = new ConverseStreamCommand(apiArgs);
     const chunks = (await bedrock.send(command)).stream ?? [];

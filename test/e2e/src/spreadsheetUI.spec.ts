@@ -1095,7 +1095,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
-  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await recipientPage.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
   const recipientFileCard = recipientPage.locator(`a:has-text("${fileName}")`);
@@ -1203,7 +1203,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
-  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await recipientPage.locator(`[data-testid="file-location-link-shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
   await expect(recipientFileCard).toBeVisible();

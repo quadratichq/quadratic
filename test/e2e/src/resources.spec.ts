@@ -14,7 +14,7 @@ test.skip('Create Example', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName });
 
   // Go to private files
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName, skipFilterClear: true });
 
   //--------------------------------
@@ -55,7 +55,7 @@ test.skip('Create Example', async ({ page }) => {
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Go to private files
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
 
   // assert that the example file has been created
   await expect(page.locator(`h2:has-text("${fileName}")`)).toBeVisible();

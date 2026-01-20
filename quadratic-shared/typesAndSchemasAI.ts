@@ -236,6 +236,7 @@ const InternalContextTypeSchema = z.enum([
   'fileSummary',
   'aiUpdates',
   'aiRules',
+  'aiLanguages',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
@@ -552,6 +553,18 @@ const AIToolArgsSchema: z.ZodType<AIToolArgs> = z.lazy(() =>
 
 const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
+
+// Languages that AI can generate code in (subset of CodeCellType)
+export const AILanguagePreferenceSchema = z.enum(['Python', 'Javascript', 'Formula']);
+export type AILanguagePreference = z.infer<typeof AILanguagePreferenceSchema>;
+
+// All possible AI code languages (for iteration/validation)
+export const allAILanguagePreferences: AILanguagePreference[] = ['Formula', 'Python', 'Javascript'];
+
+// Empty = no preference (backend defaults to: Python + Formula)
+// Non-empty = user's explicit choices
+export const AILanguagePreferencesSchema = z.array(AILanguagePreferenceSchema);
+export type AILanguagePreferences = z.infer<typeof AILanguagePreferencesSchema>;
 
 const AISourceSchema = z.enum([
   'AIAssistant',
