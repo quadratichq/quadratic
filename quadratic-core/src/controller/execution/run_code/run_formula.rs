@@ -76,17 +76,17 @@ impl GridController {
         };
 
         // Apply template properties if provided, otherwise use defaults
-        let (show_name, show_columns, header_is_first_row, chart_output) =
-            if let Some(t) = template {
-                (
-                    t.show_name,
-                    t.show_columns,
-                    t.header_is_first_row,
-                    t.chart_output,
-                )
-            } else {
-                (None, None, false, None)
-            };
+        let (show_name, show_columns, header_is_first_row, chart_output) = if let Some(t) = template
+        {
+            (
+                t.show_name,
+                t.show_columns,
+                t.header_is_first_row,
+                t.chart_output,
+            )
+        } else {
+            (None, None, false, None)
+        };
 
         let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),

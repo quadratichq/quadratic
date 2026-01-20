@@ -148,7 +148,9 @@ impl Grid {
             );
 
             // Update CellValue::Code cells
-            sheet.replace_column_name_in_code_value_cells(table_name, old_name, new_name, a1_context);
+            sheet.replace_column_name_in_code_value_cells(
+                table_name, old_name, new_name, a1_context,
+            );
         }
     }
 
