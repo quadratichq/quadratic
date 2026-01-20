@@ -211,11 +211,7 @@ impl AstNodeContents {
                     if default_sheet_id.is_none_or(|default| default != *sid)
                         && let Some(sheet_name) = a1_context.try_sheet_id(*sid)
                     {
-                        return format!(
-                            "{}!{}",
-                            crate::a1::quote_sheet_name(sheet_name),
-                            bounds
-                        );
+                        return format!("{}!{}", crate::a1::quote_sheet_name(sheet_name), bounds);
                     }
                 }
                 format!("{}", bounds)

@@ -1,5 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import { apiPublicSubnet1 } from "../api/api_network";
 import { databaseUrl } from "../db/db";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
@@ -28,6 +29,7 @@ const instance = new aws.ec2.Instance("files-instance", {
   instanceType: instanceSize,
   ami: latestAmazonLinuxAmi.id,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
+  subnetId: apiPublicSubnet1.id,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   userDataReplaceOnChange: true,
   userData: pulumi
