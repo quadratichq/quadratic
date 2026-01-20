@@ -66,14 +66,14 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
         // Migrate CellValue::Code cells in columns
         for (x, column) in sheet.columns.iter_mut() {
             for (y, cell_value) in column.values.iter_mut() {
-                if let CellValue::Code(code_cell) = cell_value {
-                    if code_cell.code_run.language == CodeCellLanguage::Formula {
-                        code_cell.code_run.code = convert_a1_to_rc(
-                            &code_cell.code_run.code,
-                            &a1_context,
-                            crate::SheetPos::new(sheet.id, *x + 1, *y),
-                        );
-                    }
+                if let CellValue::Code(code_cell) = cell_value
+                    && code_cell.code_run.language == CodeCellLanguage::Formula
+                {
+                    code_cell.code_run.code = convert_a1_to_rc(
+                        &code_cell.code_run.code,
+                        &a1_context,
+                        crate::SheetPos::new(sheet.id, *x + 1, *y),
+                    );
                 }
             }
         }

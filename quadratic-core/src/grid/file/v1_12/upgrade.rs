@@ -52,7 +52,7 @@ fn get_single_output(value: &current::OutputValueSchema) -> current::CellValueSc
 /// Extracts the CodeRunSchema from a DataTableKindSchema.
 fn extract_code_run(kind: &current::DataTableKindSchema) -> Option<current::CodeRunSchema> {
     match kind {
-        current::DataTableKindSchema::CodeRun(code_run) => Some(code_run.clone()),
+        current::DataTableKindSchema::CodeRun(code_run) => Some((**code_run).clone()),
         current::DataTableKindSchema::Import(_) => None,
     }
 }
@@ -221,7 +221,7 @@ mod tests {
     fn test_is_single_cell_code_formula() {
         // A formula with 1x1 output and no UI is single-cell
         let table = current::DataTableSchema {
-            kind: current::DataTableKindSchema::CodeRun(current::CodeRunSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
                 language: current::CodeCellLanguageSchema::Formula,
                 code: "A1+B1".to_string(),
                 formula_ast: None,
@@ -232,7 +232,7 @@ mod tests {
                 return_type: None,
                 line_number: None,
                 output_type: None,
-            }),
+            })),
             name: "Formula1".to_string(),
             value: current::OutputValueSchema::Single(current::CellValueSchema::Number(
                 "42".to_string(),
@@ -258,7 +258,7 @@ mod tests {
     fn test_is_not_single_cell_with_ui() {
         // A formula with UI shown is not single-cell
         let table = current::DataTableSchema {
-            kind: current::DataTableKindSchema::CodeRun(current::CodeRunSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
                 language: current::CodeCellLanguageSchema::Formula,
                 code: "A1+B1".to_string(),
                 formula_ast: None,
@@ -269,7 +269,7 @@ mod tests {
                 return_type: None,
                 line_number: None,
                 output_type: None,
-            }),
+            })),
             name: "Formula1".to_string(),
             value: current::OutputValueSchema::Single(current::CellValueSchema::Number(
                 "42".to_string(),
@@ -295,7 +295,7 @@ mod tests {
     fn test_is_not_single_cell_array_output() {
         // A formula with array output is not single-cell
         let table = current::DataTableSchema {
-            kind: current::DataTableKindSchema::CodeRun(current::CodeRunSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
                 language: current::CodeCellLanguageSchema::Formula,
                 code: "A1:A10".to_string(),
                 formula_ast: None,
@@ -306,7 +306,7 @@ mod tests {
                 return_type: None,
                 line_number: None,
                 output_type: None,
-            }),
+            })),
             name: "Formula1".to_string(),
             value: current::OutputValueSchema::Array(current::OutputArraySchema {
                 size: current::OutputSizeSchema { w: 1, h: 10 },
