@@ -84,7 +84,7 @@ const SshRecoilSync = ({ useSsh }: { useSsh: boolean }) => {
 // Change the component signature to use the new props type
 export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
   const name = 'useSsh';
-  const useSsh: boolean = form.getValues(name);
+  const useSsh: boolean = form.watch(name);
   const { skipRecoilUpdates } = useConnectionsContext();
 
   return (
