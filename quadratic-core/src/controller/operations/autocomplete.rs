@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, Rect, RefAdjust, SheetRect,
+    CellValue, CodeCell, Pos, Rect, RefAdjust, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
@@ -619,12 +619,27 @@ impl GridController {
             &mut None,
             &mut None,
         );
+
+        // Collect CellValue::Code cells from the initial range
+        let code_cells_in_rect: Vec<(Pos, CodeCell)> = initial_range
+            .iter()
+            .filter_map(|pos| {
+                if let Some(CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
+                    Some((pos, (**code_cell).clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         let initial_range_width = initial_range.width() as usize;
         let initial_range_height = initial_range.height() as usize;
         for final_x in final_range.x_range().step_by(initial_range_width) {
             for final_y in final_range.y_range().step_by(initial_range_height) {
                 let dx = final_x - initial_range.min.x;
                 let dy = final_y - initial_range.min.y;
+
+                // Handle DataTables
                 for (original_pos, data_table) in data_tables_in_rect.iter() {
                     let final_pos = original_pos.translate(dx, dy, i64::MIN, i64::MIN);
                     if !final_range.contains(final_pos) {
@@ -665,6 +680,37 @@ impl GridController {
                             ignore_old_data_table: true,
                         });
                     }
+                }
+
+                // Handle CellValue::Code cells
+                for (original_pos, code_cell) in code_cells_in_rect.iter() {
+                    let final_pos = original_pos.translate(dx, dy, i64::MIN, i64::MIN);
+                    if !final_range.contains(final_pos) {
+                        continue;
+                    }
+
+                    let mut code_run = code_cell.code_run.clone();
+                    code_run.adjust_references(
+                        sheet_id,
+                        context,
+                        original_pos.to_sheet_pos(sheet_id),
+                        RefAdjust {
+                            sheet_id: None,
+                            relative_only: true,
+                            dx,
+                            dy,
+                            x_start: 0,
+                            y_start: 0,
+                        },
+                    );
+
+                    let final_sheet_pos = final_pos.to_sheet_pos(sheet_id);
+                    compute_code_ops.push(Operation::SetComputeCode {
+                        sheet_pos: final_sheet_pos,
+                        language: code_run.language.clone(),
+                        code: code_run.code.clone(),
+                        template: None,
+                    });
                 }
             }
         }
