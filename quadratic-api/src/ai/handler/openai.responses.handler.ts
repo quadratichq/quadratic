@@ -1,14 +1,14 @@
 import type OpenAI from 'openai';
 import type {
-  ResponseCreateParamsNonStreaming,
-  ResponseCreateParamsStreaming,
+    ResponseCreateParamsNonStreaming,
+    ResponseCreateParamsStreaming,
 } from 'openai/resources/responses/responses';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AzureOpenAIModelKey, OpenAIModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import {
-  getOpenAIResponsesApiArgs,
-  parseOpenAIResponsesResponse,
-  parseOpenAIResponsesStream,
+    getOpenAIResponsesApiArgs,
+    parseOpenAIResponsesResponse,
+    parseOpenAIResponsesStream,
 } from '../helpers/openai.responses.helper';
 import type { HandleAIRequestArgs } from './ai.handler';
 
@@ -64,8 +64,8 @@ export const handleOpenAIResponsesRequest = async ({
       response?.setHeader('Content-Type', 'text/event-stream');
       response?.setHeader('Cache-Control', 'no-cache');
       response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
     }
-    response?.write(`stream\n\n`);
 
     const responses = await openai.responses.create(apiArgs as ResponseCreateParamsStreaming, { signal });
     const parsedResponse = await parseOpenAIResponsesStream(
