@@ -129,20 +129,42 @@ pub(crate) async fn process_queue_for_room(
         .subscribe(channel, GROUP_NAME, None)
         .await?;
 
-    // get all transactions for the room in the queue
-    let messages = pubsub
+    // get all messages in the queue (including those at or below checkpoint)
+    let all_messages = pubsub
         .connection
-        .get_messages_after(channel, &(checkpoint_sequence_num + 1).to_string(), false)
+        .get_messages_after(channel, "0", false)
         .await?;
 
-    let transactions = messages
+    // separate messages into stale (at or below checkpoint) and pending (after checkpoint)
+    let (stale_keys, pending_messages): (Vec<_>, Vec<_>) =
+        all_messages.into_iter().partition(|(key, _)| {
+            key.parse::<u64>()
+                .map(|seq| seq <= checkpoint_sequence_num as u64)
+                .unwrap_or(false)
+        });
+
+    // acknowledge stale messages to clean them up from the queue
+    if !stale_keys.is_empty() {
+        let keys: Vec<String> = stale_keys.iter().map(|(k, _)| k.clone()).collect();
+        let keys_ref: Vec<&str> = keys.iter().map(|s| s.as_str()).collect();
+        tracing::debug!(
+            "File {file_id}: acking {} stale messages at or below checkpoint {checkpoint_sequence_num}",
+            keys_ref.len()
+        );
+        pubsub
+            .connection
+            .ack(channel, GROUP_NAME, keys_ref, Some(active_channels), false)
+            .await?;
+    }
+
+    let transactions = pending_messages
         .into_iter()
         .flat_map(|(_, message)| Transaction::process_incoming(&message))
         .collect::<Vec<TransactionServer>>();
 
     if transactions.is_empty() {
         tracing::debug!(
-            "File {file_id}: checkpoint={checkpoint_sequence_num}, no transactions found after checkpoint"
+            "File {file_id}: checkpoint={checkpoint_sequence_num}, no pending transactions"
         );
         return Ok(None);
     }
