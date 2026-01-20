@@ -131,27 +131,27 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
                 // After parsing LHS, check for postfix and infix operators
                 if let Some(tok) = p.peek_next() {
                     // Try postfix % operator first (highest precedence)
-                    if let Some(left_bp) = postfix_binding_power(tok) {
-                        if left_bp >= min_bp {
-                            p.next();
-                            let op = Spanned {
-                                span: p.span(),
-                                inner: p.token_str().to_string(),
-                            };
-                            let result = AstNode {
-                                span: Span::merge(lhs.span, op.span),
-                                inner: AstNodeContents::FunctionCall {
-                                    func: op,
-                                    args: vec![lhs],
-                                },
-                            };
-                            // Continue checking for more operators
-                            stack.push(StackFrame::AfterLhs {
-                                lhs: result,
-                                min_bp,
-                            });
-                            continue;
-                        }
+                    if let Some(left_bp) = postfix_binding_power(tok)
+                        && left_bp >= min_bp
+                    {
+                        p.next();
+                        let op = Spanned {
+                            span: p.span(),
+                            inner: p.token_str().to_string(),
+                        };
+                        let result = AstNode {
+                            span: Span::merge(lhs.span, op.span),
+                            inner: AstNodeContents::FunctionCall {
+                                func: op,
+                                args: vec![lhs],
+                            },
+                        };
+                        // Continue checking for more operators
+                        stack.push(StackFrame::AfterLhs {
+                            lhs: result,
+                            min_bp,
+                        });
+                        continue;
                     }
 
                     // Try lambda invoke: expression followed by (args)
@@ -188,20 +188,20 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
                     }
 
                     // Try infix (binary) operators
-                    if let Some((left_bp, right_bp)) = infix_binding_power(tok) {
-                        if left_bp >= min_bp {
-                            p.next();
-                            let op = Spanned {
-                                span: p.span(),
-                                inner: p.token_str().to_string(),
-                            };
+                    if let Some((left_bp, right_bp)) = infix_binding_power(tok)
+                        && left_bp >= min_bp
+                    {
+                        p.next();
+                        let op = Spanned {
+                            span: p.span(),
+                            inner: p.token_str().to_string(),
+                        };
 
-                            // Push frame to build binary node after RHS is parsed
-                            stack.push(StackFrame::AfterRhs { lhs, op, min_bp });
-                            // Push frame to parse the RHS
-                            stack.push(StackFrame::ParseExpr { min_bp: right_bp });
-                            continue;
-                        }
+                        // Push frame to build binary node after RHS is parsed
+                        stack.push(StackFrame::AfterRhs { lhs, op, min_bp });
+                        // Push frame to parse the RHS
+                        stack.push(StackFrame::ParseExpr { min_bp: right_bp });
+                        continue;
                     }
                 }
 
@@ -245,7 +245,7 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
 /// - Error values: `#REF!`
 ///
 /// Note: Parenthesized expressions are handled in the main loop, not here.
-fn parse_atom(p: &mut Parser<'_>, _stack: &mut Vec<StackFrame>) -> CodeResult<AstNode> {
+fn parse_atom(p: &mut Parser<'_>, _stack: &mut [StackFrame]) -> CodeResult<AstNode> {
     // Try each atom type in order of likelihood/specificity
 
     // Function call: NAME(
