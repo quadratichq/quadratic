@@ -270,6 +270,19 @@ jobs:
           pulumi config set docker-image-tag ${{ github.sha }}
 
           pulumi refresh -y
+
+          # Import any manually-created routes that aren't in Pulumi state yet
+          # This handles cases where routes were created outside of Pulumi
+          ROUTE_TABLE_ID=$(aws ec2 describe-route-tables \
+            --filters "Name=tag:Name,Values=api-public-route-table" \
+            --query "RouteTables[0].RouteTableId" \
+            --output text 2>/dev/null || true)
+          
+          if [ -n "$ROUTE_TABLE_ID" ] && [ "$ROUTE_TABLE_ID" != "None" ]; then
+            echo "Found route table: $ROUTE_TABLE_ID"
+            pulumi import aws:ec2/route:Route api-public-igw-route "${ROUTE_TABLE_ID}_0.0.0.0/0" --yes --skip-preview 2>/dev/null || true
+          fi
+
           pulumi up -y
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

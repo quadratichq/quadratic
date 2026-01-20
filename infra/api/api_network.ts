@@ -1,5 +1,4 @@
 import * as aws from "@pulumi/aws";
-import * as pulumi from "@pulumi/pulumi";
 
 // Create a new VPC
 export const apiVPC = new aws.ec2.Vpc("api-vpc", {
@@ -103,13 +102,10 @@ const publicRouteTable = new aws.ec2.RouteTable("api-public-route-table", {
 });
 
 // Internet Gateway route for public subnets (separate resource to avoid conflicts)
-// Using import option to adopt existing route if it was manually created
 new aws.ec2.Route("api-public-igw-route", {
   routeTableId: publicRouteTable.id,
   destinationCidrBlock: "0.0.0.0/0",
   gatewayId: internetGateway.id,
-}, {
-  import: pulumi.interpolate`${publicRouteTable.id}_0.0.0.0/0`,
 });
 
 // Export for use in vpc_peering.ts
