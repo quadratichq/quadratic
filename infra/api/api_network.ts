@@ -94,21 +94,19 @@ export const apiPrivateSubnet3 = new aws.ec2.Subnet("api-private-subnet-3", {
 });
 
 // Create route tables
-// Note: Using ignoreChanges on routes to allow vpc_peering.ts to add routes separately
-const publicRouteTable = new aws.ec2.RouteTable(
-  "api-public-route-table",
-  {
-    vpcId: apiVPC.id,
-    routes: [
-      {
-        cidrBlock: "0.0.0.0/0",
-        gatewayId: internetGateway.id,
-      },
-    ],
-    tags: { Name: "api-public-route-table" },
-  },
-  { ignoreChanges: ["routes"] },
-);
+// Note: Routes are defined as separate aws.ec2.Route resources to avoid conflicts
+// with vpc_peering.ts which also adds routes to this table
+const publicRouteTable = new aws.ec2.RouteTable("api-public-route-table", {
+  vpcId: apiVPC.id,
+  tags: { Name: "api-public-route-table" },
+});
+
+// Internet Gateway route for public subnets (separate resource to avoid conflicts)
+new aws.ec2.Route("api-public-igw-route", {
+  routeTableId: publicRouteTable.id,
+  destinationCidrBlock: "0.0.0.0/0",
+  gatewayId: internetGateway.id,
+});
 
 // Export for use in vpc_peering.ts
 export { publicRouteTable };

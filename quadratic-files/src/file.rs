@@ -292,7 +292,8 @@ pub(crate) async fn get_files_to_process(
 
 /// Process a batch of files from the queue.
 ///
-/// Returns the number of files processed in this batch.
+/// Returns the number of files where work was done (processed + skipped).
+/// Skipped files are stale entries that were removed from active_channels.
 /// The caller should call this repeatedly until it returns 0, then wait
 /// before checking again.
 pub(crate) async fn process_batch(state: &Arc<State>, active_channels: &str) -> Result<usize> {
@@ -344,7 +345,9 @@ pub(crate) async fn process_batch(state: &Arc<State>, active_channels: &str) -> 
         errors
     );
 
-    Ok(processed)
+    // Return total work done (processed + skipped) so caller continues immediately
+    // when there's cleanup work happening (removing stale entries from active_channels)
+    Ok(processed + skipped)
 }
 
 #[cfg(test)]
