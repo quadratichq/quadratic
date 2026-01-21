@@ -300,13 +300,11 @@ pub(crate) async fn get_files_to_process(
     state: &Arc<State>,
     active_channels: &str,
 ) -> Result<VecDeque<Uuid>> {
-    let files = state
-        .pubsub
-        .lock()
-        .await
-        .connection
-        .active_channels(active_channels)
-        .await?
+    let mut pubsub = state.pubsub.lock().await;
+    let raw_channels = pubsub.connection.active_channels(active_channels).await?;
+    drop(pubsub);
+
+    let files = raw_channels
         .into_iter()
         .flat_map(|file_id| Uuid::parse_str(&file_id))
         .collect::<VecDeque<Uuid>>();
