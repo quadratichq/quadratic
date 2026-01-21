@@ -280,6 +280,7 @@ export const AIPendingChanges = memo(() => {
       // New AI request starting - reset user changes flag
       setUserMadeChanges(false);
       lastPendingChangesLengthRef.current = 0;
+      setIsExpanded(false);
     }
     wasLoadingRef.current = loading;
   }, [loading]);
