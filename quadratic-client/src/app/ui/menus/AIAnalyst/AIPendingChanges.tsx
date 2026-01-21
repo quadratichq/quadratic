@@ -226,11 +226,12 @@ export const AIPendingChanges = memo(() => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
   const [userMadeChanges, setUserMadeChanges] = useState(false);
-  const lastPendingChangesLengthRef = useRef(0);
+  const lastToolCallCountRef = useRef(0);
 
   // Deduplicate by position - if the same cell is changed multiple times, only show the latest
-  const pendingChanges = useMemo(() => {
-    if (loading) return [];
+  // Also track total tool call count for accurate undo operations
+  const { pendingChanges, totalToolCallCount } = useMemo(() => {
+    if (loading) return { pendingChanges: [], totalToolCallCount: 0 };
 
     // Find the last user prompt message index
     let lastUserPromptIndex = -1;
@@ -246,6 +247,7 @@ export const AIPendingChanges = memo(() => {
     // Key format: "toolName:position" for position-based changes, or unique ID for others
     const changesMap = new Map<string, PendingChange>();
     let nonPositionCounter = 0;
+    let toolCallCount = 0;
 
     // Collect all modifying tool calls from AI messages after the last user prompt
     for (let i = lastUserPromptIndex + 1; i < messages.length; i++) {
@@ -253,6 +255,7 @@ export const AIPendingChanges = memo(() => {
       if (isAIPromptMessage(message)) {
         for (const toolCall of message.toolCalls) {
           if (MODIFYING_TOOLS.has(toolCall.name as AITool) && !toolCall.loading) {
+            toolCallCount++;
             const change = getToolCallLabel(toolCall);
 
             // Create a unique key based on position if available
@@ -271,7 +274,7 @@ export const AIPendingChanges = memo(() => {
       }
     }
 
-    return Array.from(changesMap.values());
+    return { pendingChanges: Array.from(changesMap.values()), totalToolCallCount: toolCallCount };
   }, [messages, loading]);
 
   // Reset state when a new AI request starts (loading becomes true)
@@ -280,23 +283,24 @@ export const AIPendingChanges = memo(() => {
     if (loading && !wasLoadingRef.current) {
       // New AI request starting - reset user changes flag
       setUserMadeChanges(false);
-      lastPendingChangesLengthRef.current = 0;
+      lastToolCallCountRef.current = 0;
       setIsExpanded(false);
     }
     wasLoadingRef.current = loading;
   }, [loading]);
 
   // Update undo count when changes come in
+  // Use totalToolCallCount (not deduplicated) for accurate undo operations
   useEffect(() => {
-    if (pendingChanges.length > 0 && !loading) {
-      setUndoCount(pendingChanges.length);
+    if (totalToolCallCount > 0 && !loading) {
+      setUndoCount(totalToolCallCount);
       // Reset user changes flag when new AI changes come in
-      if (pendingChanges.length !== lastPendingChangesLengthRef.current) {
+      if (totalToolCallCount !== lastToolCallCountRef.current) {
         setUserMadeChanges(false);
-        lastPendingChangesLengthRef.current = pendingChanges.length;
+        lastToolCallCountRef.current = totalToolCallCount;
       }
     }
-  }, [pendingChanges, loading]);
+  }, [totalToolCallCount, loading]);
 
   // Listen for transaction events to detect when user makes changes
   // after AI has made changes
