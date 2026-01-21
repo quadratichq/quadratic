@@ -203,7 +203,17 @@ impl Worker {
 
         // Wait for EnterRoom response from server before proceeding
         // This ensures the multiplayer server has registered our session
-        enter_room_notified.await;
+        // Use timeout to prevent hanging if WebSocket dies during initialization
+        let enter_room_timeout = Duration::from_secs(30);
+
+        if tokio::time::timeout(enter_room_timeout, enter_room_notified)
+            .await
+            .is_err()
+        {
+            return Err(CoreCloudError::Connection(
+                "Timeout waiting for EnterRoom response".to_string(),
+            ));
+        }
 
         // finally, get the catchup transactions
         // Request transactions starting from sequence_num + 1 since the loaded file
@@ -214,7 +224,16 @@ impl Worker {
 
         // Wait for catchup transactions to be received before proceeding
         // This ensures we don't have a race condition on the first run
-        catchup_notified.await;
+        // Use timeout to prevent hanging if WebSocket dies during initialization
+        let catchup_timeout = Duration::from_secs(60);
+        if tokio::time::timeout(catchup_timeout, catchup_notified)
+            .await
+            .is_err()
+        {
+            return Err(CoreCloudError::Connection(
+                "Timeout waiting for catchup transactions".to_string(),
+            ));
+        }
 
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
