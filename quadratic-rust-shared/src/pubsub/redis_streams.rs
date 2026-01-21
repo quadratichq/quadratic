@@ -564,6 +564,7 @@ impl RedisConnection {
                     if let Value::Array(fields) = group_info {
                         let mut is_our_group = false;
                         let mut pending_count = 0i64;
+                        let mut lag = 0i64;
 
                         // Parse the key-value pairs
                         let mut i = 0;
@@ -582,6 +583,11 @@ impl RedisConnection {
                                             pending_count = *count;
                                         }
                                     }
+                                    b"lag" => {
+                                        if let Value::Int(l) = value {
+                                            lag = *l;
+                                        }
+                                    }
                                     _ => {}
                                 }
                             }
@@ -589,11 +595,8 @@ impl RedisConnection {
                         }
 
                         if is_our_group {
-                            // Only check pending messages (messages delivered via XREADGROUP but not acked).
-                            // We don't check lag because this codebase reads via XRANGE, not XREADGROUP,
-                            // so the consumer group's last-delivered-id never advances and lag would
-                            // always be > 0 even after all messages are processed.
-                            return Ok(pending_count > 0);
+                            // Channel has messages if there are pending messages or undelivered messages (lag)
+                            return Ok(pending_count > 0 || lag > 0);
                         }
                     }
                 }

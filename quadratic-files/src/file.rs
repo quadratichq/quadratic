@@ -254,9 +254,20 @@ pub(crate) async fn process_queue_for_room(
     let keys = keys.iter().map(AsRef::as_ref).collect::<Vec<_>>();
 
     // confirm that transactions have been processed
+    // Note: We pass None for active_channels because has_pending_messages doesn't work
+    // correctly for XRANGE-based reads (lag is always > 0). Instead, we explicitly
+    // remove from active_channels after successful processing.
     pubsub
         .connection
-        .ack(channel, GROUP_NAME, keys, Some(active_channels), false)
+        .ack(channel, GROUP_NAME, keys, None, false)
+        .await?;
+
+    // Explicitly remove from active_channels since we've processed all available transactions.
+    // The has_pending_messages check in ack doesn't work for XRANGE-based reads because
+    // the consumer group's lag never decreases (XRANGE doesn't update last-delivered-id).
+    pubsub
+        .connection
+        .remove_active_channel(active_channels, channel)
         .await?;
 
     drop(pubsub);
