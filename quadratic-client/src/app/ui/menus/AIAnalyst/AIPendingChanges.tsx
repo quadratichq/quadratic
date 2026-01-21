@@ -357,6 +357,7 @@ export const AIPendingChanges = memo(() => {
         const cols = args.cell_values.reduce((max: number, row: unknown[]) => Math.max(max, row.length), 0);
         const startSelection = sheets.stringToSelection(change.position, sheetId);
         const { x, y } = startSelection.getCursor();
+        startSelection.free();
         const endX = x + cols - 1;
         const endY = y + rows - 1;
         const rangeString = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
@@ -370,6 +371,7 @@ export const AIPendingChanges = memo(() => {
         const cols = args.table_data.reduce((max: number, row: unknown[]) => Math.max(max, row.length), 0);
         const startSelection = sheets.stringToSelection(change.position, sheetId);
         const { x, y } = startSelection.getCursor();
+        startSelection.free();
         const endX = x + cols - 1;
         const endY = y + rows - 1;
         const rangeString = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
