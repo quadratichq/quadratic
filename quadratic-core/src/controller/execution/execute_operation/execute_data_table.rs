@@ -92,9 +92,17 @@ impl GridController {
             return;
         };
 
+        // Only delete CODE tables (formulas, Python, JavaScript), not import tables.
+        // Setting values within an import table modifies the table data; it should not delete the table.
+        // Import tables are only deleted when explicitly requested via DeleteDataTable operation.
         let data_tables_to_delete: Vec<Pos> = sheet
             .data_tables_pos_intersect_rect_sorted((*sheet_rect).into())
-            .filter(|pos| sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id)))
+            .filter(|pos| {
+                sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id))
+                    && sheet
+                        .data_table_at(pos)
+                        .is_some_and(|data_table| data_table.is_code())
+            })
             .collect();
 
         // delete the data tables in reverse order, so that shift_remove is less expensive
