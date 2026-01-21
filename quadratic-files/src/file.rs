@@ -1,5 +1,8 @@
 use chrono::Utc;
-use std::sync::Arc;
+use futures::future::join_all;
+use sha2::{Digest, Sha256};
+use std::{collections::VecDeque, sync::Arc};
+use tokio_util::task::TaskTracker;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -14,18 +17,34 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
+    SharedError,
     pubsub::PubSub as PubSubTrait,
-    quadratic_api::{get_file_checkpoint, set_file_checkpoint},
+    quadratic_database::{
+        checkpoint::{get_max_sequence_number, set_file_checkpoint},
+        error::QuadraticDatabase,
+    },
     storage::{Storage, StorageContainer},
 };
 
 use crate::{
     error::{FilesError, Result},
-    state::{State, settings::Settings},
+    state::State,
     truncate::{add_processed_transaction, processed_transaction_key},
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
+
+/// Compute a hash of the transactions for duplicate detection.
+/// Uses SHA-256 for stability across Rust versions and program runs.
+fn compute_transactions_hash(transactions: &[TransactionServer]) -> String {
+    let mut hasher = Sha256::new();
+    for transaction in transactions {
+        hasher.update(transaction.sequence_num.to_le_bytes());
+        hasher.update(transaction.id.as_bytes());
+        hasher.update(&transaction.operations);
+    }
+    format!("{:x}", hasher.finalize())
+}
 
 /// Load a .grid file
 pub(crate) fn load_file(key: &str, file: Vec<u8>) -> Result<Grid> {
@@ -94,18 +113,37 @@ pub(crate) async fn process_queue_for_room(
     let start = Utc::now();
     let channel = &file_id.to_string();
 
-    let Settings {
-        storage,
-        quadratic_api_uri,
-        m2m_auth_token,
-        ..
-    } = &state.settings;
+    // When a file is created in API, a zero checkpoint is created, so we
+    // should always expect a return value.
+    let db_start = Utc::now();
+    let checkpoint_sequence_num = get_max_sequence_number(&state.pool, &file_id).await;
 
-    let checkpoint_sequence_num =
-        match get_file_checkpoint(quadratic_api_uri, m2m_auth_token, &file_id).await {
-            Ok(last_checkpoint) => last_checkpoint.sequence_number,
-            Err(_) => 0,
-        };
+    let checkpoint_sequence_num = match checkpoint_sequence_num {
+        Ok(sequence_num) => sequence_num,
+        Err(e) => {
+            if matches!(
+                e,
+                SharedError::QuadraticDatabase(QuadraticDatabase::NotFound(_))
+            ) {
+                // no checkpoint for this file, ack this file and return None
+                state
+                    .remove_active_channel(active_channels, channel)
+                    .await?;
+
+                return Ok(None);
+            }
+
+            tracing::error!("Error getting checkpoint sequence number for file {file_id}: {e}");
+            return Err(e.into());
+        }
+    };
+
+    let db_elapsed = (Utc::now() - db_start).num_milliseconds();
+    if db_elapsed > 1000 {
+        tracing::warn!(
+            "Slow DB query for file {file_id}: get_max_sequence_number took {db_elapsed}ms"
+        );
+    }
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut pubsub = state.pubsub.lock().await;
@@ -116,18 +154,50 @@ pub(crate) async fn process_queue_for_room(
         .subscribe(channel, GROUP_NAME, None)
         .await?;
 
-    // get all transactions for the room in the queue
-    let transactions = pubsub
+    // get stream length to understand the state
+    let stream_length = pubsub.connection.length(channel).await.unwrap_or(0);
+
+    // get transactions after checkpoint
+    let messages = pubsub
         .connection
         .get_messages_after(channel, &(checkpoint_sequence_num + 1).to_string(), false)
-        .await?
+        .await?;
+
+    let messages_after_checkpoint = messages.len();
+
+    // Count parse successes/failures separately for debugging
+    let mut parse_failures = 0;
+    let transactions: Vec<TransactionServer> = messages
         .into_iter()
-        .flat_map(|(_, message)| Transaction::process_incoming(&message))
-        .collect::<Vec<TransactionServer>>();
+        .filter_map(
+            |(id, message)| match Transaction::process_incoming(&message) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    parse_failures += 1;
+                    tracing::warn!("File {file_id}: failed to parse message id={id}: {e}");
+                    None
+                }
+            },
+        )
+        .collect();
 
     if transactions.is_empty() {
+        // Log diagnostic info to understand why no transactions were found
+        tracing::warn!(
+            "File {file_id}: checkpoint={checkpoint_sequence_num}, stream_length={stream_length}, messages_after_checkpoint={messages_after_checkpoint}, parse_failures={parse_failures}"
+        );
+
+        // No transactions to process - remove this file from active_channels
+        // so we don't keep checking it
+        state
+            .remove_active_channel(active_channels, channel)
+            .await?;
+
         return Ok(None);
     }
+
+    // compute hash for duplicate detection
+    let transactions_hash = compute_transactions_hash(&transactions);
 
     let sequence_numbers = transactions
         .iter()
@@ -163,9 +233,9 @@ pub(crate) async fn process_queue_for_room(
     // process the transactions and save the file to S3
     let start_processing = Utc::now();
     let last_sequence_num = process_transactions(
-        storage,
+        &state.settings.storage,
         file_id,
-        checkpoint_sequence_num,
+        checkpoint_sequence_num as u64,
         last_sequence_num,
         operations,
     )
@@ -192,15 +262,13 @@ pub(crate) async fn process_queue_for_room(
     drop(pubsub);
 
     // update the checkpoint in quadratic-api
-    let key = &key(file_id, last_sequence_num);
     set_file_checkpoint(
-        quadratic_api_uri,
-        m2m_auth_token,
+        &state.pool,
         &file_id,
-        last_sequence_num,
-        CURRENT_VERSION.into(),
-        key.to_owned(),
-        storage.path().to_owned(),
+        last_sequence_num as i32,
+        &state.settings.checkpoint_bucket_name,
+        CURRENT_VERSION,
+        &transactions_hash,
     )
     .await?;
 
@@ -231,7 +299,7 @@ pub(crate) async fn process_queue_for_room(
 pub(crate) async fn get_files_to_process(
     state: &Arc<State>,
     active_channels: &str,
-) -> Result<Vec<Uuid>> {
+) -> Result<VecDeque<Uuid>> {
     let files = state
         .pubsub
         .lock()
@@ -241,29 +309,62 @@ pub(crate) async fn get_files_to_process(
         .await?
         .into_iter()
         .flat_map(|file_id| Uuid::parse_str(&file_id))
-        .collect::<Vec<_>>();
+        .collect::<VecDeque<Uuid>>();
 
     Ok(files)
 }
 
-/// Process outstanding transactions in the queue
-pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
-    let files = get_files_to_process(state, active_channels).await?;
+/// Process outstanding transactions in the queue.
+///
+/// The `task_tracker` is used to track spawned file processing tasks so they
+/// can be awaited during graceful shutdown.
+pub(crate) async fn process(
+    state: &Arc<State>,
+    active_channels: &str,
+    task_tracker: &TaskTracker,
+) -> Result<()> {
+    let mut files = get_files_to_process(state, active_channels).await?;
 
     // collect info for stats
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
-    for file_id in files.into_iter() {
-        let state = Arc::clone(state);
-        let active_channels = active_channels.to_owned();
+    // Process files in batches
+    while !files.is_empty() {
+        let batch_size = state.batch_size.min(files.len());
+        let batch = files.drain(0..batch_size).collect::<Vec<Uuid>>();
+        let mut handles = Vec::with_capacity(batch.len());
 
-        // process file in a separate thread
-        tokio::spawn(async move {
-            // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
-            if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await {
-                tracing::error!("Error processing file {file_id}: {error}");
-            };
-        });
+        tracing::info!(
+            "Processing batch of {batch_size} files, {} files remaining",
+            files.len()
+        );
+
+        for file_id in batch {
+            let state = Arc::clone(state);
+            let active_channels = active_channels.to_owned();
+
+            // process file in a separate thread, tracked for graceful shutdown
+            let handle = task_tracker.spawn(async move {
+                // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
+                if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await
+                {
+                    tracing::error!("Error processing file {file_id}: {error}");
+                };
+            });
+
+            handles.push(handle);
+        }
+
+        // wait for all tasks in this batch to complete
+        for result in join_all(handles).await {
+            if let Err(e) = result {
+                if e.is_panic() {
+                    tracing::error!("File processing task panicked: {e}");
+                } else if e.is_cancelled() {
+                    tracing::warn!("File processing task was cancelled: {e}");
+                }
+            }
+        }
     }
 
     Ok(())

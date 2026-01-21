@@ -31,6 +31,10 @@ pub enum SharedError {
     #[error("Error with Crypto: {0}")]
     Crypto(crate::crypto::error::Crypto),
 
+    #[cfg(feature = "quadratic-database")]
+    #[error("Error with Quadratic Database: {0}")]
+    QuadraticDatabase(crate::quadratic_database::error::QuadraticDatabase),
+
     #[cfg(feature = "docker")]
     #[error("Error with Docker: {0}")]
     Docker(crate::docker::error::Docker),

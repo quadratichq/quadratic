@@ -345,6 +345,11 @@ const ConnectionBreadcrumbs = memo(
 );
 
 function getInitialConnectionState(searchParams: URLSearchParams): ConnectionState {
+  const view = searchParams.get('view');
+  if (view === 'new') {
+    return { view: 'new' };
+  }
+
   const type = searchParams.get('initial-connection-type');
   const uuid = searchParams.get('initial-connection-uuid');
   if (type && isDatabaseConnection(type)) {

@@ -220,6 +220,7 @@ services:
       file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-files
     container_name: files
+    stop_grace_period: 60s
     environment:
       RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
       FILES__HOST: ${QUADRATIC_FILES_HOST}
@@ -230,6 +231,7 @@ services:
       FILES__TRUNCATE_TRANSACTION_AGE_DAYS: ${QUADRATIC_FILES_TRUNCATE_TRANSACTION_AGE_DAYS}
       FILES__ENVIRONMENT: ${ENVIRONMENT}
       FILES__JWKS_URI: ${JWKS_URI}
+      FILES__DATABASE_URL: ${DATABASE_DSN}
       FILES__QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
       FILES__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       FILES__PUBSUB_HOST: ${PUBSUB_HOST}

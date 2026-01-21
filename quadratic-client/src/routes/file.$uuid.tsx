@@ -209,8 +209,9 @@ export const Component = memo(() => {
   const {
     file: { uuid: fileUuid, timezone: fileTimezone },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
-    userMakingRequest: { filePermissions },
+    userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
+  const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -281,7 +282,7 @@ export const Component = memo(() => {
       <QuadraticApp />
       <Outlet />
       <QuadraticAppDebugSettings />
-      <UpgradeDialog teamUuid={teamUuid} />
+      <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />
     </RecoilRoot>
   );
 });
@@ -310,7 +311,7 @@ export const ErrorBoundary = () => {
       </Button>
       <Button asChild variant="default">
         <Link to={ROUTES.FILE_HISTORY(uuid)} reloadDocument>
-          Open file history
+          Open history
         </Link>
       </Button>
     </div>
