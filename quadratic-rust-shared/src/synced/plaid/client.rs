@@ -190,7 +190,7 @@ impl PlaidClient {
         total_key: &str,
         extra_options: Option<serde_json::Value>,
     ) -> Result<Vec<serde_json::Value>> {
-        tracing::info!("Starting Plaid request {endpoint}, from {start_date} to {end_date})",);
+        tracing::trace!("Starting Plaid request {endpoint}, from {start_date} to {end_date})",);
 
         let mut all_items = Vec::new();
         let mut offset = 0;
@@ -251,7 +251,7 @@ impl PlaidClient {
             offset += count;
         }
 
-        tracing::info!(
+        tracing::trace!(
             "Completed Plaid request {endpoint}, from {start_date} to {end_date} with {} records",
             all_items.len()
         );
@@ -269,7 +269,7 @@ impl PlaidClient {
         endpoint: &str,
         response_key: &str,
     ) -> Result<serde_json::Value> {
-        tracing::info!("Starting Plaid request {endpoint}",);
+        tracing::trace!("Starting Plaid request {endpoint}",);
 
         let response = self.raw_request(endpoint, serde_json::json!({})).await?;
         let value = response
@@ -277,7 +277,7 @@ impl PlaidClient {
             .cloned()
             .unwrap_or(serde_json::json!({}));
 
-        tracing::info!("Completed Plaid request {endpoint}");
+        tracing::trace!("Completed Plaid request {endpoint}");
 
         Ok(value)
     }
@@ -506,7 +506,7 @@ fn process_snapshot(
         return Ok(HashMap::new());
     }
 
-    tracing::info!(
+    tracing::trace!(
         "Processing {} {} records for {}",
         records.len(),
         stream,
