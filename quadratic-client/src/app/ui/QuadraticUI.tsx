@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
@@ -44,6 +45,7 @@ import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
+import { useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -55,6 +57,7 @@ export default function QuadraticUI() {
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const [agentMode] = useAtom(agentModeAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
@@ -117,10 +120,10 @@ export default function QuadraticUI() {
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {!presentationMode && !isEmbed && <QuadraticSidebar />}
+      {!agentMode && !presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
-        {!presentationMode && !isEmbed && <Toolbar />}
+        {!agentMode && !presentationMode && !isEmbed && <Toolbar />}
 
         <div
           style={{

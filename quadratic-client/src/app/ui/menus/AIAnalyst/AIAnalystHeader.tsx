@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
@@ -19,6 +20,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtom } from 'jotai';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -36,7 +38,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
     [debugFlags]
   );
-
+  const [agentMode] = useAtom(agentModeAtom);
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
@@ -49,7 +51,8 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     [currentUserMessagesCount, showChatHistory]
   );
   const showHistoryMsg = useMemo(
-    () => currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
+    // TODO: enable this by removing false
+    () => false && currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
     [currentUserMessagesCount, showChatHistory, loading, chatsCount]
   );
 
@@ -135,18 +138,20 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
             </Button>
           </TooltipPopover>
 
-          <TooltipPopover label="Close" side="bottom">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-muted-foreground hover:text-foreground"
-              disabled={loading}
-              onClick={() => setShowAIAnalyst(false)}
-              data-testid="close-ai-analyst"
-            >
-              <CloseIcon />
-            </Button>
-          </TooltipPopover>
+          {!agentMode && (
+            <TooltipPopover label="Close" side="bottom">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground"
+                disabled={loading}
+                onClick={() => setShowAIAnalyst(false)}
+                data-testid="close-ai-analyst"
+              >
+                <CloseIcon />
+              </Button>
+            </TooltipPopover>
+          )}
         </div>
       </div>
 

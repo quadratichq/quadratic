@@ -183,7 +183,7 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => openCodeEditor(),
   },
   [Action.ToggleAIAnalyst]: {
-    label: () => 'Sheet chat',
+    label: () => 'New chat',
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
