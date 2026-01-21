@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 use chrono::NaiveDate;
+use futures_util::stream::{FuturesUnordered, TryStreamExt};
 use httpclient::Client as HttpClient;
 use plaid::model::{CountryCode, LinkTokenCreateRequestUser, Products};
 use plaid::request::link_token_create::LinkTokenCreateRequired;
@@ -190,7 +191,7 @@ impl PlaidClient {
         total_key: &str,
         extra_options: Option<serde_json::Value>,
     ) -> Result<Vec<serde_json::Value>> {
-        tracing::info!("Starting Plaid request {endpoint}, from {start_date} to {end_date})",);
+        tracing::trace!("Starting Plaid request {endpoint}, from {start_date} to {end_date})",);
 
         let mut all_items = Vec::new();
         let mut offset = 0;
@@ -251,7 +252,7 @@ impl PlaidClient {
             offset += count;
         }
 
-        tracing::info!(
+        tracing::trace!(
             "Completed Plaid request {endpoint}, from {start_date} to {end_date} with {} records",
             all_items.len()
         );
@@ -269,7 +270,7 @@ impl PlaidClient {
         endpoint: &str,
         response_key: &str,
     ) -> Result<serde_json::Value> {
-        tracing::info!("Starting Plaid request {endpoint}",);
+        tracing::trace!("Starting Plaid request {endpoint}",);
 
         let response = self.raw_request(endpoint, serde_json::json!({})).await?;
         let value = response
@@ -277,7 +278,7 @@ impl PlaidClient {
             .cloned()
             .unwrap_or(serde_json::json!({}));
 
-        tracing::info!("Completed Plaid request {endpoint}");
+        tracing::trace!("Completed Plaid request {endpoint}");
 
         Ok(value)
     }
@@ -359,11 +360,80 @@ impl PlaidClient {
         serde_json::to_value(&response)
             .map_err(|e| SharedError::Synced(format!("Failed to serialize item response: {}", e)))
     }
+
+    /// Get the products available for this connection from the Item metadata.
+    ///
+    /// Returns the products that are billed/consented for this Item.
+    /// Checks `billed_products` first (products actively used), falls back to
+    /// `consented_products` or `products` if billed_products is empty.
+    pub async fn get_available_products(&self) -> Result<Vec<String>> {
+        let item_response = self.get_item().await?;
+
+        // The item is nested under "item" key in the response
+        let item = item_response
+            .get("item")
+            .ok_or_else(|| SharedError::Synced("Missing 'item' in response".to_string()))?;
+
+        // Check billed_products first (products actively used)
+        // Fall back to consented_products or products if billed_products is empty
+        let products = item
+            .get("billed_products")
+            .and_then(|v| v.as_array())
+            .filter(|arr| !arr.is_empty())
+            .or_else(|| {
+                item.get("consented_products")
+                    .and_then(|v| v.as_array())
+                    .filter(|arr| !arr.is_empty())
+            })
+            .or_else(|| item.get("products").and_then(|v| v.as_array()))
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Ok(products)
+    }
+
+    /// Map a Plaid product name to the corresponding stream name.
+    /// Returns None if the product doesn't map to a supported stream.
+    fn product_to_stream(product: &str) -> Option<&'static str> {
+        match product {
+            "transactions" => Some("transactions"),
+            "investments" => Some("investments"),
+            "liabilities" => Some("liabilities"),
+            _ => None,
+        }
+    }
+
+    /// Get the streams available for this specific connection.
+    ///
+    /// Queries the Plaid Item to determine which products are enabled,
+    /// then maps those to stream names. This avoids making API calls for
+    /// products that aren't available for this connection.
+    pub async fn available_streams(&self) -> Result<Vec<&'static str>> {
+        let products = self.get_available_products().await?;
+
+        let streams: Vec<&'static str> = products
+            .iter()
+            .filter_map(|p| Self::product_to_stream(p))
+            .collect();
+
+        tracing::debug!(
+            "Plaid connection has products {:?}, mapped to streams {:?}",
+            products,
+            streams
+        );
+
+        Ok(streams)
+    }
 }
 
 #[async_trait]
 impl SyncedClient for PlaidClient {
-    /// Get the streams available for this client
+    /// Get all possible streams for Plaid.
+    /// Note: Use `available_streams()` to get streams for a specific connection.
     fn streams() -> Vec<&'static str> {
         vec!["transactions", "investments", "liabilities"]
     }
@@ -400,6 +470,46 @@ impl SyncedClient for PlaidClient {
             },
             _ => Err(SharedError::Synced(format!("Unknown stream: {}", stream))),
         }
+    }
+
+    /// Process all streams in parallel, but only for products this connection supports.
+    ///
+    /// Queries the Plaid Item first to determine available products, then only
+    /// processes those streams. This avoids unnecessary API calls for products
+    /// the connection doesn't have.
+    async fn process_all(
+        &self,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, HashMap<String, Bytes>>> {
+        // Get available streams for this specific connection
+        let streams = self.available_streams().await?;
+
+        if streams.is_empty() {
+            tracing::warn!("No supported streams found for this Plaid connection");
+            return Ok(HashMap::new());
+        }
+
+        tracing::info!("Processing {} Plaid streams: {:?}", streams.len(), streams);
+
+        streams
+            .into_iter()
+            .map(|stream| async move {
+                let result = self.process(stream, start_date, end_date).await?;
+                Ok::<(String, Option<HashMap<String, Bytes>>), SharedError>((
+                    stream.to_string(),
+                    result,
+                ))
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<_>>()
+            .await
+            .map(|results| {
+                results
+                    .into_iter()
+                    .filter_map(|(stream, opt)| opt.map(|data| (stream, data)))
+                    .collect()
+            })
     }
 }
 
@@ -506,7 +616,7 @@ fn process_snapshot(
         return Ok(HashMap::new());
     }
 
-    tracing::info!(
+    tracing::trace!(
         "Processing {} {} records for {}",
         records.len(),
         stream,
@@ -524,6 +634,26 @@ mod tests {
     use plaid::model::Products;
 
     use super::*;
+
+    #[test]
+    fn test_product_to_stream() {
+        assert_eq!(
+            PlaidClient::product_to_stream("transactions"),
+            Some("transactions")
+        );
+        assert_eq!(
+            PlaidClient::product_to_stream("investments"),
+            Some("investments")
+        );
+        assert_eq!(
+            PlaidClient::product_to_stream("liabilities"),
+            Some("liabilities")
+        );
+        assert_eq!(PlaidClient::product_to_stream("auth"), None);
+        assert_eq!(PlaidClient::product_to_stream("balance"), None);
+        assert_eq!(PlaidClient::product_to_stream("identity"), None);
+        assert_eq!(PlaidClient::product_to_stream("unknown"), None);
+    }
 
     #[tokio::test]
     async fn test_plaid_client() {
