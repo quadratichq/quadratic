@@ -13,6 +13,7 @@ import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { AIGetFileName } from '@/app/ui/components/AIGetFileName';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
+import { FullPageFileDropZone } from '@/app/ui/components/FullPageFileDropZone';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
 import { FloatingTopLeftPosition } from '@/app/ui/components/FloatingTopLeftPosition';
@@ -166,6 +167,7 @@ export default function QuadraticUI() {
       <UserMessage />
       <SettingsDialog />
       <ChangelogDialog />
+      {canEditFile && <FullPageFileDropZone />}
     </div>
   );
 }

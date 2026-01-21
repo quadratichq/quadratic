@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { useImmediateFileImport, type ImportFile } from '@/app/ai/hooks/useImmediateFileImport';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
@@ -7,6 +8,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
@@ -15,11 +17,11 @@ import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubm
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useState } from 'react';
+import { forwardRef, memo, useCallback, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
-const IMPORT_FILE_TYPES = ['.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
+const IMPORT_FILE_TYPES = ['.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt', '.grid'];
 const ALL_FILE_TYPES = [...ANALYST_FILE_TYPES, ...IMPORT_FILE_TYPES];
 
 export const AIAnalystUserMessageForm = memo(
@@ -30,6 +32,7 @@ export const AIAnalystUserMessageForm = memo(
     const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+    const { immediateImportFile } = useImmediateFileImport();
 
     const handleSubmit = useRecoilCallback(
       ({ snapshot }) =>
@@ -50,6 +53,23 @@ export const AIAnalystUserMessageForm = memo(
           }
         },
       [props.initialContext, props.messageIndex, submitPrompt]
+    );
+
+    // Callback for immediate file import when files are dropped
+    // For CSV/Parquet imports, add a reference to the created table in the prompt
+    const handleImmediateImport = useCallback(
+      async (importFile: ImportFile) => {
+        trackEvent('[AIAnalyst].immediateFileImport', { fileName: importFile.name });
+        const result = await immediateImportFile(importFile);
+
+        // If a table was created (CSV/Parquet), add a reference to it in the prompt
+        if (result.success && result.tableName) {
+          events.emit('aiAnalystAddReference', result.tableName);
+        }
+
+        return result;
+      },
+      [immediateImportFile]
     );
 
     const formOnKeyDown = useRecoilCallback(
@@ -81,7 +101,8 @@ export const AIAnalystUserMessageForm = memo(
           formOnKeyDown={formOnKeyDown}
           waitingOnMessageIndex={waitingOnMessageIndex}
           maxHeight="275px"
-          filesSupportedText="PDF, Image, CSV, Excel and Parquet"
+          filesSupportedText="PDF, Image, CSV, Excel, Parquet and Grid"
+          onImmediateImport={handleImmediateImport}
         />
       </div>
     );

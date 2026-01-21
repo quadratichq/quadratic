@@ -1,5 +1,5 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import type { ImmediateImportResult, ImportFile } from '@/app/ai/hooks/useImmediateFileImport';
 import { events } from '@/app/events/events';
 import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -40,6 +40,9 @@ import {
 } from 'react';
 import type { SetterOrUpdater } from 'recoil';
 
+// Re-export ImportFile type for use by other components
+export type { ImportFile } from '@/app/ai/hooks/useImmediateFileImport';
+
 export interface AIUserMessageFormWrapperProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
@@ -72,6 +75,8 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   maxHeight?: string;
   waitingOnMessageIndex?: number;
   filesSupportedText: string;
+  /** Optional callback for immediate file import (used in AI Analyst) */
+  onImmediateImport?: (importFile: ImportFile) => Promise<ImmediateImportResult>;
 }
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -98,6 +103,7 @@ export const AIUserMessageForm = memo(
       waitingOnMessageIndex,
       filesSupportedText,
       uiContext,
+      onImmediateImport,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
@@ -221,7 +227,15 @@ export const AIUserMessageForm = memo(
           for (const newFile of newFiles) {
             const mimeType = newFile.type;
             const extension = getExtension(newFile.name);
-            if (isSupportedMimeType(mimeType) && isChatFileSupported(mimeType)) {
+
+            // Check if this is a chat context file (images, PDFs) - add to context, don't import
+            const isChatFile = isSupportedMimeType(mimeType) && isChatFileSupported(mimeType);
+
+            // Check if this is an importable data file (CSV, Excel, Parquet, Grid)
+            // Explicitly exclude chat files from import even if extension matches
+            const isImportable = !isChatFile && isImportFileSupported(`.${extension}`);
+
+            if (isChatFile) {
               const reader = new FileReader();
               reader.onloadend = (e) => {
                 const dataUrl = e.target?.result as string;
@@ -232,10 +246,18 @@ export const AIUserMessageForm = memo(
                 console.error('Error reading file', e);
               };
               reader.readAsDataURL(newFile);
-            } else if (isImportFileSupported(`.${extension}`)) {
+            } else if (isImportable) {
               try {
                 const data = await newFile.arrayBuffer();
-                setImportFiles((prev) => [...prev, { name: newFile.name, size: newFile.size, data }]);
+                const importFile: ImportFile = { name: newFile.name, size: newFile.size, data };
+
+                // If immediate import callback is provided, import immediately
+                // Otherwise, store for later import on prompt submission
+                if (onImmediateImport) {
+                  await onImmediateImport(importFile);
+                } else {
+                  setImportFiles((prev) => [...prev, importFile]);
+                }
               } catch (error) {
                 console.error('Error reading file', error);
               }
@@ -243,7 +265,7 @@ export const AIUserMessageForm = memo(
           }
         }
       },
-      [files, handleFilesChange, isChatFileSupported, isImportFileSupported]
+      [files, handleFilesChange, isChatFileSupported, isImportFileSupported, onImmediateImport]
     );
 
     const handlePasteOrDrop = useCallback(

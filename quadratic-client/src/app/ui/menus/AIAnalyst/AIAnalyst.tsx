@@ -14,7 +14,7 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = memo(() => {
@@ -57,9 +57,61 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
+  const [dragOver, setDragOver] = useState(false);
+  const [fullPageDragActive, setFullPageDragActive] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  // Listen for full-page file drag events (Excel/Grid files)
+  useEffect(() => {
+    const handleFullPageDrag = (active: boolean) => {
+      setFullPageDragActive(active);
+      if (active) {
+        // Deactivate our drag state when full-page drag is active
+        dragCounterRef.current = 0;
+        setDragOver(false);
+      }
+    };
+    events.on('fullPageFileDrag', handleFullPageDrag);
+    return () => {
+      events.off('fullPageFileDrag', handleFullPageDrag);
+    };
+  }, []);
+
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Skip if full-page drag is active (Excel/Grid files)
+      if (fullPageDragActive) return;
+
+      dragCounterRef.current++;
+      if (dragCounterRef.current === 1) {
+        setDragOver(true);
+      }
+    },
+    [fullPageDragActive]
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    dragCounterRef.current = 0;
+    setDragOver(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       events.emit('aiAnalystDroppedFiles', files);
@@ -81,9 +133,25 @@ export const AIAnalyst = memo(() => {
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
-        onDragOver={handleDrop}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {dragOver && (
+          <div
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/90"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
+            <div className="pointer-events-none flex h-[calc(100%-16px)] w-[calc(100%-16px)] select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
+              <span className="text-sm font-bold">Drop files here</span>
+              <span className="px-4 text-center text-xs text-muted-foreground">
+                PDF, Image, CSV, Excel, Parquet and Grid supported
+              </span>
+            </div>
+          </div>
+        )}
         <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
         <div

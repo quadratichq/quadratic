@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -21,6 +22,7 @@ interface UserMessage {
 export const FileDragDropWrapper = (props: PropsWithChildren) => {
   // drag state
   const [dragActive, setDragActive] = useState(false);
+  const [fullPageDragActive, setFullPageDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
 
   const handleFileImport = useFileImport();
@@ -64,6 +66,22 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
     const targetRectangle = new Rectangle(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
     setUserMessage({ targetRectangle, message, table: table?.codeCell });
   }, []);
+
+  // Listen for full-page file drag events (Excel/Grid files)
+  useEffect(() => {
+    const handleFullPageDrag = (active: boolean) => {
+      setFullPageDragActive(active);
+      if (active) {
+        // Deactivate our drag state when full-page drag is active
+        setDragActive(false);
+        setScreenUserMessage(undefined);
+      }
+    };
+    events.on('fullPageFileDrag', handleFullPageDrag);
+    return () => {
+      events.off('fullPageFileDrag', handleFullPageDrag);
+    };
+  }, [setScreenUserMessage]);
 
   const moveCursor = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -111,27 +129,32 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
 
       if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
+      // Skip if full-page drag is active (Excel/Grid files handled separately)
+      if (fullPageDragActive) return;
+
       if (e.type === 'dragenter' && e.dataTransfer.types.includes('Files')) {
+        // Don't activate for Excel files - they're handled by full-page drop zone
+        const mimeType = e.dataTransfer.items[0]?.type;
+        if (isExcelMimeType(mimeType)) return;
+        // Don't activate for empty MIME (might be .grid file)
+        if (mimeType === '') return;
+
         setDragActive(true);
       } else if (e.type === 'dragover') {
-        const mimeType = e.dataTransfer.items[0].type;
-        if (isExcelMimeType(mimeType)) {
-          setScreenUserMessage('Dropped Excel file(s) will be imported as new sheet(s) in this file.');
-          // todo: add support for multiple files
-          // } else if (e.dataTransfer.items.length > 1) {
-          //   setScreenUserMessage('Dropped multiple files will be imported as new sheets in this file.');
-        } else {
-          setScreenUserMessage(undefined);
-          if (!isSupportedPdfMimeType(mimeType) && !isSupportedImageMimeType(mimeType)) {
-            moveCursor(e);
-          }
+        const mimeType = e.dataTransfer.items[0]?.type;
+        // Excel and empty MIME files are handled by full-page drop zone
+        if (isExcelMimeType(mimeType) || mimeType === '') return;
+
+        setScreenUserMessage(undefined);
+        if (!isSupportedPdfMimeType(mimeType) && !isSupportedImageMimeType(mimeType)) {
+          moveCursor(e);
         }
       } else if (e.type === 'dragleave') {
         setDragActive(false);
         setScreenUserMessage(undefined);
       }
     },
-    [moveCursor, setScreenUserMessage]
+    [fullPageDragActive, moveCursor, setScreenUserMessage]
   );
 
   // triggers when file is dropped

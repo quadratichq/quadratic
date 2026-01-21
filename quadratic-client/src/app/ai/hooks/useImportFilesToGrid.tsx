@@ -1,3 +1,4 @@
+import type { ImportFile } from '@/app/ai/hooks/useImmediateFileImport';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystImportFilesToGridAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -13,11 +14,8 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
-export interface ImportFile {
-  name: string;
-  size: number;
-  data: ArrayBuffer;
-}
+// Re-export ImportFile from the immediate import hook for backwards compatibility
+export type { ImportFile } from '@/app/ai/hooks/useImmediateFileImport';
 export const useImportFilesToGrid = () => {
   const importFilesToGrid = useRecoilCallback(
     ({ snapshot, set }) =>

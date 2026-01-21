@@ -191,6 +191,9 @@ interface EventTypes {
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
 
+  // Full-page file drag state (for Excel/Grid files)
+  fullPageFileDrag: (active: boolean) => void;
+
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;
 }
