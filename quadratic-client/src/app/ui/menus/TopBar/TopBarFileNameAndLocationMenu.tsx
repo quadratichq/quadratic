@@ -80,7 +80,7 @@ function FileLocation() {
   let dashboardLink = null;
   if (ownerUserId && ownerUserId === userId) {
     // My private file
-    const label = 'Private';
+    const label = 'Personal';
     dashboardLink = isEmbed ? (
       label
     ) : (

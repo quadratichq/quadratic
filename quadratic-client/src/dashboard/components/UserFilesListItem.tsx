@@ -291,7 +291,7 @@ export function UserFilesListItem({
 }
 
 function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
-  const label = type === 'shared' ? 'Shared with me' : type === 'private' ? 'Private' : 'Team';
+  const label = type === 'shared' ? 'Shared with me' : type === 'private' ? 'Personal' : 'Team';
 
   return (
     <div className={'flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground'}>

@@ -12,7 +12,7 @@ import { useAtom } from 'jotai';
 const fileTypeOptions: { label: string; value: UserFilesListType }[] = [
   { label: 'All', value: null },
   { label: 'Team', value: 'team' },
-  { label: 'Private', value: 'private' },
+  { label: 'Personal', value: 'private' },
   { label: 'Shared with me', value: 'shared' },
 ];
 
