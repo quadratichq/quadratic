@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use axum::{Extension, Json};
-use quadratic_rust_shared::{pubsub::PubSub, quadratic_api::is_healthy};
+use quadratic_rust_shared::pubsub::PubSub;
+use quadratic_rust_shared::quadratic_database::is_healthy as db_is_healthy;
 use serde::{Deserialize, Serialize};
 
 use crate::state::State;
@@ -22,7 +23,7 @@ pub(crate) async fn healthcheck() -> Json<HealthResponse> {
 pub struct FullHealthResponse {
     pub version: String,
     pub redis_is_healthy: bool,
-    pub api_is_healthy: bool,
+    pub db_is_healthy: bool,
 }
 
 pub(crate) async fn full_healthcheck(
@@ -30,12 +31,12 @@ pub(crate) async fn full_healthcheck(
 ) -> Json<FullHealthResponse> {
     let version = env!("CARGO_PKG_VERSION").into();
     let redis_is_healthy = state.pubsub.lock().await.connection.is_healthy().await;
-    let api_is_healthy = is_healthy(&state.settings.quadratic_api_uri).await;
+    let db_is_healthy = db_is_healthy(&state.pool).await;
 
     FullHealthResponse {
         version,
         redis_is_healthy,
-        api_is_healthy,
+        db_is_healthy,
     }
     .into()
 }

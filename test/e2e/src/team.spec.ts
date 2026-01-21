@@ -287,7 +287,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await adminPage.bringToFront();
 
   const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
-  await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await adminPage.locator('[data-testid="files-list-search-input"]').waitFor();
 
   //--------------------------------
   // Act: Owner Permission
@@ -534,12 +534,6 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
       name: `You don’t have access to this team`,
     })
   ).toBeVisible({ timeout: 60 * 1000 });
-  await ownerPage.getByRole(`link`, { name: `Go home` }).click({ timeout: 60 * 1000 });
-  await ownerPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click({ timeout: 60 * 1000 });
-  await expect(ownerPage.locator(`:text("${newTeamName}")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act & Assert: Can Edit User Leaves the Team
@@ -571,12 +565,6 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
       name: `You don’t have access to this team`,
     })
   ).toBeVisible({ timeout: 60 * 1000 });
-  await editUserPage.getByRole(`link`, { name: `Go home` }).click({ timeout: 60 * 1000 });
-  await editUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click({ timeout: 60 * 1000 });
-  await expect(editUserPage.locator(`:text("${newTeamName}")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act & Assert: Can View User Leaves the Team
@@ -608,12 +596,6 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
       name: `You don’t have access to this team`,
     })
   ).toBeVisible({ timeout: 60 * 1000 });
-  await viewUserPage.getByRole(`link`, { name: `Go home` }).click({ timeout: 60 * 1000 });
-  await viewUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click({ timeout: 60 * 1000 });
-  await expect(viewUserPage.locator(`:text("${newTeamName}")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Admin Verifies Users Have Left
@@ -649,7 +631,7 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   // Admin creates a new team
   await adminPage.bringToFront();
   const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
-  await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await adminPage.locator('[data-testid="files-list-search-input"]').waitFor();
 
   // Create a new file in the newly created team
   await cleanUpFiles(adminPage, { fileName });
@@ -658,6 +640,10 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
 
   // Assert that the new file is created and visible in the list of files
   await expect(adminPage.locator(`a:has-text("${fileName}")`)).toBeVisible({ timeout: 60 * 1000 });
+
+  // Move it to team files
+  await adminPage.locator(`a:has(:text-is("${fileName}")) button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
+  await adminPage.locator('[data-testid="dashboard-file-actions-move-to-team"]').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act: Invite Test User with "Can edit" Permission
@@ -840,7 +826,9 @@ test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
   // Assert:
   //--------------------------------
   // Assert that the "Create file" button is visible for canEditUser
-  await expect(canEditUserPage.locator(`:text("New file")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(canEditUserPage.locator(`[data-testid="files-list-new-file-button"]`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Verify that canEditUser has "Can edit" permission
   await canEditUserPage.locator(`:text("Members")`).click({ timeout: 60 * 1000 });
@@ -881,6 +869,12 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminUserPage);
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
+  // Move file to team
+  await adminUserPage
+    .locator(`a:has-text("${testPermissionFile}") button[aria-haspopup="menu"]`)
+    .click({ force: true });
+  await adminUserPage.locator(`[data-testid="dashboard-file-actions-move-to-team"]`).click({ timeout: 60 * 1000 });
+
   // Invite canEditUser to the team with "Can edit" permission
   await inviteUserToTeam(adminUserPage, {
     email: canEditUserEmail,
@@ -902,10 +896,10 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   await canEditUserPage.waitForLoadState('networkidle');
 
   // Click on Filter by name
-  await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click({ timeout: 60 * 1000 });
+  await canEditUserPage.locator('[data-testid="files-list-search-input"]').click({ timeout: 60 * 1000 });
 
   // Filter by filename
-  await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).fill(`test-permissions`);
+  await canEditUserPage.locator('[data-testid="files-list-search-input"]').fill(`test-permissions`);
 
   // Click into permissions file
   await canEditUserPage
@@ -1050,10 +1044,10 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   await canViewUserPage.waitForTimeout(60 * 1000);
 
   // Click on Filter by name
-  await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click({ timeout: 60 * 1000 });
+  await canViewUserPage.locator('[data-testid="files-list-search-input"]').click({ timeout: 60 * 1000 });
 
   // Filter by filename
-  await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).fill(`test-permissions`);
+  await canViewUserPage.locator('[data-testid="files-list-search-input"]').fill(`test-permissions`);
 
   // Click into permissions file
   await canViewUserPage

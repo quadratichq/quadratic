@@ -8,10 +8,11 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 pub use tokio_tungstenite::tungstenite::protocol::Message;
 use tokio_tungstenite::{
-    MaybeTlsStream, WebSocketStream, connect_async,
+    MaybeTlsStream, WebSocketStream, connect_async_with_config,
     tungstenite::{
         client::IntoClientRequest,
         http::{HeaderName, Response},
+        protocol::WebSocketConfig,
     },
 };
 use uuid::Uuid;
@@ -21,6 +22,10 @@ use crate::{SharedError, multiplayer::message::request::MessageRequest};
 use crate::{error::Result, multiplayer::message::CellEdit};
 
 pub type WebSocketTcpStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
+
+/// Default maximum WebSocket message size (1GB)
+/// This matches the multiplayer server configuration
+pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 1024 * 1024 * 1000;
 
 pub struct WebsocketClient {
     url: String,
@@ -38,13 +43,18 @@ pub struct WebSocketReceiver {
 impl WebsocketClient {
     /// Connect to a websocket server
     pub async fn connect(url: &str) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
-        Self::connect_with_headers(url, vec![]).await
+        Self::connect_with_headers(url, vec![], None).await
     }
 
-    /// Connect to a websocket server with custom headers
+    /// Connect to a websocket server with custom headers and optional max message size
+    ///
+    /// * `url` - The websocket URL to connect to
+    /// * `headers` - Custom headers to include in the connection request
+    /// * `max_message_size` - Maximum message size in bytes. If `None`, uses `DEFAULT_MAX_MESSAGE_SIZE` (1GB)
     pub async fn connect_with_headers(
         url: &str,
         headers: Vec<(String, String)>,
+        max_message_size: Option<usize>,
     ) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
         let mut request = url.into_client_request().map_err(Self::error)?;
 
@@ -55,7 +65,12 @@ impl WebsocketClient {
             );
         }
 
-        let (ws_stream, response) = connect_async(request).await.map_err(Self::error)?;
+        let mut config = WebSocketConfig::default();
+        config.max_message_size = Some(max_message_size.unwrap_or(DEFAULT_MAX_MESSAGE_SIZE));
+
+        let (ws_stream, response) = connect_async_with_config(request, Some(config), false)
+            .await
+            .map_err(Self::error)?;
 
         Ok((
             WebsocketClient {
@@ -419,7 +434,7 @@ mod tests {
             ("X-Custom-Header".to_string(), "test-value".to_string()),
         ];
 
-        let (result, response) = WebsocketClient::connect_with_headers(&url, headers)
+        let (result, response) = WebsocketClient::connect_with_headers(&url, headers, None)
             .await
             .expect("Failed to connect to test server");
 

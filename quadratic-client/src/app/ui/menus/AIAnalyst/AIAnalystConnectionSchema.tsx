@@ -61,7 +61,6 @@ export const AIAnalystConnectionSchema = memo(() => {
 
       <div className="h-full w-full pt-0.5">
         <ConnectionSchemaBrowser
-          hideRefreshButton={true}
           additionalActions={
             <Button
               onClick={() => setAIAnalystActiveSchemaConnectionUuid(undefined)}
