@@ -8,6 +8,8 @@ import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
 const sizes = {
+  // xxs: '12',
+  // xs: '16',
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
@@ -243,6 +245,10 @@ export const CropFreeIcon: IconComponent = (props) => {
   return <Icon {...props}>crop_free</Icon>;
 };
 
+export const CancelIcon: IconComponent = (props) => {
+  return <Icon {...props}>cancel</Icon>;
+};
+
 export const DatabaseIcon: IconComponent = (props) => {
   return <Icon {...props}>database</Icon>;
 };
@@ -355,6 +361,10 @@ export const FileIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };
 
+export const FiltersIcon: IconComponent = (props) => {
+  return <Icon {...props}>filter_list</Icon>;
+};
+
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };
@@ -465,6 +475,10 @@ export const GroupIcon: IconComponent = (props) => {
 
 export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
+};
+
+export const GroupSearchIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_search</Icon>;
 };
 
 export const GroupAddIcon: IconComponent = (props) => {
@@ -783,16 +797,16 @@ export const LightedBulbIcon: IconComponent = (props) => {
   );
 };
 
+export const PublicIcon: IconComponent = (props) => {
+  return <Icon {...props}>public</Icon>;
+};
+
 export const SheetComeFromIcon: IconComponent = (props) => {
   return <Icon {...props}>step_out</Icon>;
 };
 
 export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
-};
-
-export const TeamIcon: IconComponent = (props) => {
-  return <Icon {...props}>groups</Icon>;
 };
 
 export const GenericLanguageIcon: IconComponent = (props) => {

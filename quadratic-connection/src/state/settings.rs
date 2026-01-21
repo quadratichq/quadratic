@@ -103,11 +103,23 @@ pub fn new_datafusion_connection(
         StorageType::FileSystem => ObjectStoreKind::FileSystem,
     };
 
-    let path = config.synced_data_storage_dir.as_ref().ok_or_else(|| {
-        ConnectionError::CreateObjectStore(
-            "Expected AWS_S3_SYNCED_DATA_BUCKET_NAME to have a value".to_string(),
-        )
-    })?;
+    // For S3, use the bucket name; for FileSystem, use the storage directory
+    let path = match config.storage_type {
+        StorageType::S3 => config
+            .aws_s3_synced_data_bucket_name
+            .as_ref()
+            .ok_or_else(|| {
+                ConnectionError::CreateObjectStore(
+                    "Expected AWS_S3_SYNCED_DATA_BUCKET_NAME to have a value".to_string(),
+                )
+            })?,
+        StorageType::FileSystem => config.synced_data_storage_dir.as_ref().ok_or_else(|| {
+            ConnectionError::CreateObjectStore(
+                "Expected SYNCED_DATA_STORAGE_DIR to have a value".to_string(),
+            )
+        })?,
+    };
+
     let object_store_url = object_store_url(kind, path)?;
 
     Ok(DatafusionConnection::new(object_store, object_store_url))
