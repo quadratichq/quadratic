@@ -10,11 +10,9 @@ import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FormatMenub
 import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/HelpMenubarMenu';
 import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenubarMenu';
 import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
-import { Badge } from '@/shared/shadcn/ui/badge';
+import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Label } from '@/shared/shadcn/ui/label';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
-import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
 import { useAtom } from 'jotai';
 import { useEffect, useMemo } from 'react';
@@ -42,17 +40,15 @@ export const TopBarMenus = () => {
           <BackToDashboardLogo />
         </div>
       )}
-      <div className="mr-2 flex items-center gap-2">
-        <Switch id="agent-mode" checked={agentMode} onCheckedChange={setAgentMode} />
-        {/* TODO: fix this */}
-        <Label
-          htmlFor="agent-mode"
-          className={cn('hidden cursor-pointer text-sm font-medium', agentMode ? 'text-primary' : 'hidden')}
-        >
-          Agent mode
-        </Label>
-        {agentMode && <Badge variant="primary">Agent mode</Badge>}
-      </div>
+      <Button
+        size={agentMode ? 'default' : 'icon'}
+        variant={agentMode ? 'default' : 'outline'}
+        className={cn('mr-1 rounded-full', agentMode ? 'py-1 pl-2.5' : '!text-primary')}
+        onClick={() => setAgentMode((prev) => !prev)}
+      >
+        <AIIcon className={cn(agentMode ? 'mr-2' : '')} />
+        {agentMode ? 'Agent mode' : ''}
+      </Button>
       {!agentMode && (
         <>
           <Menubar className="p-0 pr-1">
