@@ -20,6 +20,7 @@ const MODIFYING_TOOLS = new Set([
   AITool.SetCodeCellValue,
   AITool.SetSQLCodeCellValue,
   AITool.SetFormulaCellValue,
+  AITool.UpdateCodeCell,
   AITool.DeleteCells,
   AITool.MoveCells,
   AITool.InsertRows,
@@ -83,6 +84,10 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
         label = 'Wrote formula';
         position = args.code_cell_position;
         icon = <LanguageIcon language="Formula" />;
+        break;
+      case AITool.UpdateCodeCell:
+        label = 'Updated code';
+        icon = <GridActionIcon />;
         break;
       case AITool.SetCellValues:
         label = 'Inserted data';
