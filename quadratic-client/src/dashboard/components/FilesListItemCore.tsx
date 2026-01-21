@@ -46,10 +46,10 @@ export function FilesListItemCore({
           </div>
         </div>
 
-        {creator?.name && creator?.email && (
-          <TooltipPopover label={`Created by ${creator.name}`}>
-            <Avatar alt={creator.name} src={creator.picture}>
-              {creator.name?.[0] ? creator.name?.[0] : creator.email?.[0]}
+        {creator?.email && (
+          <TooltipPopover label={`Created by ${creator.name || creator.email}`}>
+            <Avatar alt={creator.name || creator.email} src={creator.picture}>
+              {creator.name?.[0] || creator.email[0]}
             </Avatar>
           </TooltipPopover>
         )}
