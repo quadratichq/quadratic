@@ -52,24 +52,16 @@ interface PendingChange {
   toolCall: AIToolCall;
   label: string;
   name?: string;
-  description?: string;
   position?: string;
   icon?: React.ReactNode;
-  codeSnippet?: string;
-  language?: string;
-  dataPreview?: string;
 }
 
 function getToolCallLabel(toolCall: AIToolCall): PendingChange {
   const toolName = toolCall.name as AITool;
   let label = toolName.replace(/([A-Z])/g, ' $1').trim();
   let name: string | undefined;
-  let description: string | undefined;
   let position: string | undefined;
   let icon: React.ReactNode | undefined;
-  let codeSnippet: string | undefined;
-  let language: string | undefined;
-  let dataPreview: string | undefined;
 
   try {
     const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
@@ -79,34 +71,23 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
         label = 'Wrote code';
         name = args.code_cell_name;
         position = args.code_cell_position;
-        language = args.code_cell_language;
-        codeSnippet = args.code_string;
         icon = <LanguageIcon language={args.code_cell_language || ''} />;
         break;
       case AITool.SetSQLCodeCellValue:
         label = 'Wrote SQL';
         name = args.code_cell_name;
         position = args.code_cell_position;
-        language = args.connection_kind || 'SQL';
-        codeSnippet = args.sql_code_string;
         icon = <LanguageIcon language={args.connection_kind || 'SQL'} />;
         break;
       case AITool.SetFormulaCellValue:
         label = 'Wrote formula';
         position = args.code_cell_position;
-        language = 'Formula';
-        codeSnippet = args.formula_string;
         icon = <LanguageIcon language="Formula" />;
         break;
       case AITool.SetCellValues:
         label = 'Inserted data';
         position = args.top_left_position;
         icon = <TableRowsIcon className="text-success" />;
-        // Extract data preview from cell values
-        if (args.cell_values && Array.isArray(args.cell_values)) {
-          const flatValues = args.cell_values.flat().slice(0, 10);
-          dataPreview = flatValues.join(', ');
-        }
         break;
       case AITool.DeleteCells:
         label = 'Deleted cells';
@@ -116,39 +97,32 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
       case AITool.MoveCells:
         label = 'Moved cells';
         position = args.target_top_left_position;
-        description = `${args.source_selection_rect} → ${args.target_top_left_position}`;
         icon = <GridActionIcon />;
         break;
       case AITool.InsertRows:
         label = 'Inserted rows';
-        description = `${args.count || 1} row${(args.count || 1) > 1 ? 's' : ''} at row ${args.row}`;
         icon = <GridActionIcon className="text-success" />;
         break;
       case AITool.InsertColumns:
         label = 'Inserted columns';
-        description = `${args.count || 1} column${(args.count || 1) > 1 ? 's' : ''} at ${args.column}`;
         icon = <GridActionIcon className="text-success" />;
         break;
       case AITool.DeleteRows:
         label = 'Deleted rows';
-        description = args.rows?.join(', ');
         icon = <GridActionIcon className="text-destructive" />;
         break;
       case AITool.DeleteColumns:
         label = 'Deleted columns';
-        description = args.columns?.join(', ');
         icon = <GridActionIcon className="text-destructive" />;
         break;
       case AITool.ResizeRows:
         label = 'Resized rows';
         position = args.selection;
-        description = `${args.selection} to ${args.size}px`;
         icon = <GridActionIcon />;
         break;
       case AITool.ResizeColumns:
         label = 'Resized columns';
         position = args.selection;
-        description = `${args.selection} to ${args.size}px`;
         icon = <GridActionIcon />;
         break;
       case AITool.AddSheet:
@@ -181,13 +155,6 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
         name = args.table_name;
         position = args.top_left_position;
         icon = <TableIcon className="text-success" />;
-        // Include first few values as preview
-        if (args.table_data && Array.isArray(args.table_data)) {
-          const headers = args.table_data[0];
-          if (Array.isArray(headers)) {
-            dataPreview = `Columns: ${headers.slice(0, 5).join(', ')}`;
-          }
-        }
         break;
       case AITool.TableMeta:
         label = 'Table changes';
@@ -217,7 +184,7 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
     // Keep default label if parsing fails
   }
 
-  return { toolCall, label, name, description, position, icon, codeSnippet, language, dataPreview };
+  return { toolCall, label, name, position, icon };
 }
 
 export const AIPendingChanges = memo(() => {
