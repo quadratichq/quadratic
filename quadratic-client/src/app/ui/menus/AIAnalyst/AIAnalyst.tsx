@@ -108,7 +108,6 @@ export const AIAnalyst = memo(() => {
                 )}
               >
                 <AIPendingChanges />
-                {messagesCount === 0 && <div className="relative flex items-center justify-center" />}
                 <div className="px-2 pb-2">
                   <AIAnalystUserMessageForm
                     ref={textareaRef}
