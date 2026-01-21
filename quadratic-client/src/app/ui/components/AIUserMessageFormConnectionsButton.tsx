@@ -67,7 +67,8 @@ const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: Co
     return () => clearInterval(interval);
   }, [connection.uuid, connection.syncedConnectionUpdatedDate, teamUuid]);
 
-  const isDisabled = percentCompleted !== undefined && percentCompleted < 100;
+  const isSyncedConnection = connection.syncedConnectionUpdatedDate !== undefined;
+  const isDisabled = isSyncedConnection && percentCompleted !== undefined && percentCompleted < 100;
 
   return (
     <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isDisabled}>
@@ -146,14 +147,13 @@ export const AIUserMessageFormConnectionsButton = memo(
         <TooltipPopover label="Chat with a connected data source" fastMode={true}>
           <DropdownMenuTrigger asChild>
             <Button
-              size="sm"
-              className="h-7 w-7 gap-1.5 rounded-full px-0 shadow-none hover:bg-border @[450px]:w-auto @[450px]:px-2"
+              size="icon-sm"
+              className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
               variant="ghost"
               disabled={disabled}
               onClick={handleOnClickButton}
             >
-              <DatabaseIcon className="" />
-              <span className="hidden text-xs @[450px]:inline">Connections</span>
+              <DatabaseIcon />
             </Button>
           </DropdownMenuTrigger>
         </TooltipPopover>

@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.23.2",
+  "version": "0.23.5",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -82,6 +82,10 @@
     "e2e:headed": "cd test/e2e && npm run test:headed",
     "e2e:report": "cd test/e2e && npm run test:report",
     "e2e:users": "cd test/e2e && npm run ensure-users"
+  },
+  "overrides": {
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
