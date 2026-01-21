@@ -302,7 +302,7 @@ pub async fn create_synced_connection_log(
     status: SyncedConnectionLogStatus,
     error: Option<String>,
 ) -> Result<SyncedConnectionLogResponse> {
-    tracing::info!(
+    tracing::trace!(
         "Creating synced connection log, run_id: {run_id}, synced_connection_id: {synced_connection_id}, status: {status:?}"
     );
 
@@ -525,7 +525,7 @@ pub async fn create_scheduled_task_log(
     status: ScheduledTaskLogStatus,
     error: Option<String>,
 ) -> Result<ScheduledTaskLogResponse> {
-    tracing::info!(
+    tracing::trace!(
         "Creating scheduled task log, run_id: {run_id}, scheduled_task_id: {scheduled_task_id}, status: {status:?}"
     );
 

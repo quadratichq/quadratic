@@ -1,4 +1,5 @@
 import { connectionFormSshAtom } from '@/shared/atom/connectionFormSshAtom';
+import { useConnectionsContext } from '@/shared/components/connections/ConnectionsContext';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Switch } from '@/shared/shadcn/ui/switch';
@@ -65,11 +66,8 @@ const Children = ({ form }: ConnectionFormSshProps) => {
   );
 };
 
-// Change the component signature to use the new props type
-export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
-  const name = 'useSsh';
-  const useSsh: boolean = form.getValues(name);
-
+// Component to sync SSH state to Recoil (only used when inside RecoilRoot)
+const SshRecoilSync = ({ useSsh }: { useSsh: boolean }) => {
   const setUseSsh = useSetRecoilState(connectionFormSshAtom);
 
   useEffect(() => {
@@ -80,8 +78,18 @@ export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
     };
   }, [setUseSsh, useSsh]);
 
+  return null;
+};
+
+// Change the component signature to use the new props type
+export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
+  const name = 'useSsh';
+  const useSsh: boolean = form.watch(name);
+  const { skipRecoilUpdates } = useConnectionsContext();
+
   return (
     <>
+      {!skipRecoilUpdates && <SshRecoilSync useSsh={useSsh} />}
       <FormField
         control={form.control}
         name={name}
