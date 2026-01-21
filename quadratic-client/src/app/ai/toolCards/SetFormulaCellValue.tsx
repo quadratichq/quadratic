@@ -1,13 +1,18 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
-import { cn } from '@/shared/shadcn/utils';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
+import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
 type SetFormulaCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetFormulaCellValue]['responseSchema']>;
