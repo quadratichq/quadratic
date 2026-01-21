@@ -1,4 +1,3 @@
-import { useGenerateAISummary, type ChangeContext } from '@/app/ai/hooks/useGenerateAISummary';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -223,34 +222,10 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
 export const AIPendingChanges = memo(() => {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const { generateSummary, cancelSummary } = useGenerateAISummary();
   const [isExpanded, setIsExpanded] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
   const [userMadeChanges, setUserMadeChanges] = useState(false);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summary, setSummary] = useState('');
   const lastPendingChangesLengthRef = useRef(0);
-
-  // TODO: remove before merge if we don't do summary
-  console.log(summary, summaryLoading);
-
-  // Get the pending changes from the latest AI response chain
-  // (all AI messages after the last user message)
-  // Extract the last user prompt text for context
-  const lastUserPrompt = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const message = messages[i];
-      if (isUserPromptMessage(message)) {
-        // Extract text from the message content
-        const textContent = message.content.find((c) => 'text' in c);
-        if (textContent && 'text' in textContent) {
-          return textContent.text;
-        }
-        break;
-      }
-    }
-    return undefined;
-  }, [messages]);
 
   // Deduplicate by position - if the same cell is changed multiple times, only show the latest
   const pendingChanges = useMemo(() => {
@@ -309,40 +284,17 @@ export const AIPendingChanges = memo(() => {
     wasLoadingRef.current = loading;
   }, [loading]);
 
-  // Update undo count and generate summary when changes come in
+  // Update undo count when changes come in
   useEffect(() => {
     if (pendingChanges.length > 0 && !loading) {
       setUndoCount(pendingChanges.length);
-      // Reset user changes flag and show summary loading when new AI changes come in
+      // Reset user changes flag when new AI changes come in
       if (pendingChanges.length !== lastPendingChangesLengthRef.current) {
         setUserMadeChanges(false);
-        setSummaryLoading(true);
         lastPendingChangesLengthRef.current = pendingChanges.length;
-
-        // Generate AI summary with rich context
-        const changeContexts: ChangeContext[] = pendingChanges.map((change) => ({
-          label: change.label,
-          name: change.name,
-          language: change.language,
-          codeSnippet: change.codeSnippet,
-          dataPreview: change.dataPreview,
-        }));
-        generateSummary(changeContexts, lastUserPrompt)
-          .then((result) => {
-            setSummary(result);
-            setSummaryLoading(false);
-          })
-          .catch(() => {
-            setSummary(`${pendingChanges.length} changes made`);
-            setSummaryLoading(false);
-          });
       }
     }
-
-    return () => {
-      cancelSummary();
-    };
-  }, [pendingChanges, loading, generateSummary, cancelSummary, lastUserPrompt]);
+  }, [pendingChanges, loading]);
 
   // Listen for transaction events to detect when user makes changes
   // after AI has made changes
