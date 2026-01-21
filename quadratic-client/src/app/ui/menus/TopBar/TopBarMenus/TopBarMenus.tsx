@@ -3,7 +3,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { BackToDashboardLogo } from '@/app/ui/menus/TopBar/BackToDashboardLogo';
+import { AgentModeDropdownMenu } from '@/app/ui/menus/TopBar/AgentModeDropdownMenu';
 import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/EditMenubarMenu';
 import { FileMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FileMenubarMenu';
 import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FormatMenubarMenu';
@@ -37,7 +37,7 @@ export const TopBarMenus = () => {
     <div className="flex items-center">
       {agentMode && (
         <div className="-ml-0.5 flex w-12 items-center">
-          <BackToDashboardLogo />
+          <AgentModeDropdownMenu />
         </div>
       )}
       <Button

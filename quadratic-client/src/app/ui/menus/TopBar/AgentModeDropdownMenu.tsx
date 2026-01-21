@@ -16,7 +16,7 @@ import {
 import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
-export function BackToDashboardLogo() {
+export function AgentModeDropdownMenu() {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   return (
     <DropdownMenu>
