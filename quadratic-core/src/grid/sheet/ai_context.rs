@@ -482,6 +482,7 @@ mod tests {
                 }),
                 cells_accessed: Some(Default::default()),
                 last_modified: js_errored_code_cells.as_ref().unwrap()[0].last_modified,
+                table_pos: None,
             },
             JsCodeCell {
                 x: 9,
@@ -500,6 +501,7 @@ mod tests {
                 }),
                 cells_accessed: Some(Default::default()),
                 last_modified: js_errored_code_cells.as_ref().unwrap()[1].last_modified,
+                table_pos: None,
             },
         ];
 

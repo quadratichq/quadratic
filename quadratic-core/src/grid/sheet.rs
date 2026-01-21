@@ -43,6 +43,7 @@ pub mod conditional_format;
 mod content;
 pub mod data_table;
 pub mod data_tables;
+pub mod table_pos;
 mod format_summary;
 pub mod formats;
 pub mod merge_cells;

@@ -35,6 +35,7 @@ use strum_macros::Display;
 pub use code_run::*;
 
 use super::sheet::borders::Borders;
+use super::sheet::data_tables::SheetDataTables;
 use super::{Grid, SheetFormatting, SheetId};
 
 #[cfg(test)]
@@ -263,6 +264,11 @@ pub struct DataTable {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    /// Nested tables for in-table code cells.
+    /// This allows code cells within a data table to have their own outputs.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub tables: Option<SheetDataTables>,
 }
 
 impl From<(Import, Array, &A1Context)> for DataTable {
@@ -315,6 +321,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
+            tables: None,
         };
 
         if header_is_first_row {
@@ -347,6 +354,7 @@ impl DataTable {
             show_columns: self.show_columns,
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
+            tables: None, // Don't clone nested tables
         }
     }
 

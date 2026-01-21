@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    CellValue, Pos, Rect, SheetPos,
+    CellValue, MultiPos, Pos, Rect, SheetPos, TablePos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
@@ -154,6 +154,108 @@ impl Sheet {
     pub fn data_table_result(&self, pos: &Pos) -> Result<&DataTable> {
         self.data_table_at(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_result()", pos))
+    }
+
+    // -------------------------------------------------------------------------
+    // MultiPos accessors for nested table support
+    // -------------------------------------------------------------------------
+
+    /// Returns a DataTable at a MultiPos.
+    ///
+    /// For `MultiPos::Pos`, returns the top-level data table.
+    /// For `MultiPos::TablePos`, returns the nested data table within the parent.
+    pub fn data_table_at_multi_pos(&self, multi_pos: &MultiPos) -> Option<&DataTable> {
+        self.data_tables.get_at_multi_pos(multi_pos)
+    }
+
+    /// Returns a DataTable at a MultiPos as a result.
+    pub fn data_table_at_multi_pos_result(&self, multi_pos: &MultiPos) -> Result<&DataTable> {
+        self.data_table_at_multi_pos(multi_pos)
+            .ok_or_else(|| anyhow!("Data table not found at {:?}", multi_pos))
+    }
+
+    /// Returns a CodeRun at a MultiPos.
+    ///
+    /// For `MultiPos::Pos`, checks both CellValue::Code and data_tables.
+    /// For `MultiPos::TablePos`, checks nested data tables.
+    pub fn code_run_at_multi_pos(&self, multi_pos: &MultiPos) -> Option<&CodeRun> {
+        match multi_pos {
+            MultiPos::Pos(pos) => self.code_run_at(pos),
+            MultiPos::TablePos(table_pos) => {
+                self.data_tables
+                    .get_nested_table(table_pos)
+                    .and_then(|dt| dt.code_run())
+            }
+        }
+    }
+
+    /// Returns the code cell value at a TablePos (within a table).
+    ///
+    /// This retrieves the value from a cell within a data table's
+    /// nested tables structure.
+    pub fn table_pos_code_value(&self, table_pos: &TablePos) -> Option<CellValue> {
+        let parent = self.data_tables.get_at(&table_pos.parent_pos)?;
+        let nested_tables = parent.tables.as_ref()?;
+        let nested_table = nested_tables.get_at(&table_pos.sub_table_pos)?;
+
+        // Return the single value from the nested table
+        nested_table.cell_value_at(0, 0)
+    }
+
+    /// Modifies the data table at the given MultiPos.
+    pub fn modify_data_table_at_multi_pos(
+        &mut self,
+        multi_pos: &MultiPos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<HashSet<Rect>> {
+        self.data_tables.modify_data_table_at_multi_pos(multi_pos, f)
+    }
+
+    /// Inserts a data table at the given MultiPos.
+    pub fn insert_data_table_at_multi_pos(
+        &mut self,
+        multi_pos: &MultiPos,
+        data_table: DataTable,
+    ) -> Result<HashSet<Rect>> {
+        self.data_tables.insert_at_multi_pos(multi_pos, data_table)
+    }
+
+    /// Removes a data table at the given MultiPos.
+    pub fn remove_data_table_at_multi_pos(
+        &mut self,
+        multi_pos: &MultiPos,
+    ) -> Option<(DataTable, HashSet<Rect>)> {
+        self.data_tables.remove_at_multi_pos(multi_pos)
+    }
+
+    /// Checks if the position is inside a table (but not the anchor).
+    pub fn is_inside_table(&self, pos: Pos) -> bool {
+        self.display_pos_to_table_pos(pos).is_some()
+    }
+
+    /// Returns true if the MultiPos has an in-table code cell.
+    pub fn has_in_table_code(&self, multi_pos: &MultiPos) -> bool {
+        self.data_tables.has_in_table_code_multi_pos(multi_pos)
+    }
+
+    /// Adds a code cell to the in-table code cache.
+    pub fn add_in_table_code(&mut self, table_pos: &TablePos) {
+        self.data_tables.add_in_table_code(table_pos);
+    }
+
+    /// Removes a code cell from the in-table code cache.
+    pub fn remove_in_table_code(&mut self, table_pos: &TablePos) -> bool {
+        self.data_tables.remove_in_table_code(table_pos)
+    }
+
+    /// Returns all code cells within the given parent table.
+    pub fn code_cells_in_table(&self, parent_pos: &Pos) -> impl Iterator<Item = TablePos> + '_ {
+        self.data_tables.code_cells_in_table(parent_pos)
+    }
+
+    /// Returns all in-table code cells across all tables.
+    pub fn all_in_table_code_cells(&self) -> impl Iterator<Item = TablePos> + '_ {
+        self.data_tables.all_in_table_code_cells()
     }
 
     /// Checks spill due to values on sheet

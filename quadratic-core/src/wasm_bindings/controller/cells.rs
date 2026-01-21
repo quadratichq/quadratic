@@ -97,7 +97,8 @@ impl GridController {
     /// returns a JsEditCell with text and optional code_cell info
     #[wasm_bindgen(js_name = "getEditCell")]
     pub fn js_get_cell_edit(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
-        use crate::grid::js_types::{JsEditCell, JsEditCellCodeCell};
+        use crate::grid::js_types::{JsEditCell, JsEditCellCodeCell, JsTablePos};
+        use crate::grid::DataTableKind;
 
         let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self
@@ -111,6 +112,28 @@ impl GridController {
                 code_cell: Some(JsEditCellCodeCell {
                     language: code_cell.code_run.language.clone(),
                     code: code_cell.code_run.code.clone(),
+                    table_pos: None,
+                }),
+            };
+            return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+        }
+
+        // Check for in-table code cells
+        if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos)
+            && let Some(nested_table) = sheet.data_tables.get_nested_table(&table_pos)
+            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+        {
+            // Get the first cell value as the edit text, or empty string
+            let text = nested_table
+                .cell_value_at(0, 0)
+                .map(|cv| cv.to_edit())
+                .unwrap_or_default();
+            let result = JsEditCell {
+                text,
+                code_cell: Some(JsEditCellCodeCell {
+                    language: code_run.language.clone(),
+                    code: code_run.code.clone(),
+                    table_pos: Some(JsTablePos::from(table_pos)),
                 }),
             };
             return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);

@@ -390,6 +390,11 @@ impl TrackedOperation {
             | Operation::SetCursor { .. }
             | Operation::SetCursorSelection { .. }
             | Operation::SetValidationWarning { .. } => None,
+
+            // In-table code operations - internal operations, not tracked
+            Operation::ComputeCodeMultiPos { .. }
+            | Operation::SetDataTableMultiPos { .. }
+            | Operation::SetComputeCodeMultiPos { .. } => None,
         }
     }
 }

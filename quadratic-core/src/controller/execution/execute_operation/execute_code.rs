@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, SheetPos, SheetRect, Value,
+    CellValue, MultiPos, MultiSheetPos, SheetPos, SheetRect, Value,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -417,6 +417,7 @@ impl GridController {
             borders: None,
             chart_pixel_output,
             chart_output,
+            tables: None,
         }
     }
 
@@ -567,6 +568,300 @@ impl GridController {
             let code_ops_json = serde_json::to_string(&state).unwrap_or_default();
             crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // MultiSheetPos operations for in-table code cells
+    // -------------------------------------------------------------------------
+
+    /// Executes ComputeCodeMultiPos operation.
+    /// Handles code execution at both sheet positions and in-table positions.
+    pub(super) fn execute_compute_code_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeCodeMultiPos { multi_sheet_pos } = op {
+            match multi_sheet_pos.multi_pos {
+                MultiPos::Pos(pos) => {
+                    // Delegate to existing sheet-level code execution
+                    let sheet_pos = SheetPos::new(multi_sheet_pos.sheet_id, pos.x, pos.y);
+                    self.execute_compute_code(
+                        transaction,
+                        Operation::ComputeCode { sheet_pos },
+                    );
+                }
+                MultiPos::TablePos(table_pos) => {
+                    // Handle in-table code execution
+                    if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                        dbgjs!("Only user / undo / redo / server transaction should have a ComputeCodeMultiPos");
+                        return;
+                    }
+
+                    let Some(sheet) = self.try_sheet(multi_sheet_pos.sheet_id) else {
+                        return;
+                    };
+
+                    // Get the code run from the nested table
+                    let Some(code_run) = sheet.data_tables.get_nested_table(&table_pos)
+                        .and_then(|dt| dt.code_run())
+                    else {
+                        dbgjs!(format!("No code run found at {:?}", multi_sheet_pos));
+                        return;
+                    };
+
+                    let language = code_run.language.clone();
+                    let code = code_run.code.clone();
+                    let cached_ast = code_run.formula_ast.clone();
+
+                    // For now, only formulas are supported in-table
+                    // Python/JS would require more infrastructure changes
+                    match language {
+                        CodeCellLanguage::Formula => {
+                            self.run_formula_multi_pos(transaction, multi_sheet_pos, code, cached_ast);
+                        }
+                        _ => {
+                            dbgjs!(format!("In-table code execution not yet supported for {:?}", language));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Executes SetDataTableMultiPos operation.
+    /// Handles setting data tables at both sheet positions and in-table positions.
+    pub(super) fn execute_set_data_table_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::SetDataTableMultiPos {
+            multi_sheet_pos,
+            data_table,
+            index,
+        } = op.clone()
+        {
+            match multi_sheet_pos.multi_pos {
+                MultiPos::Pos(pos) => {
+                    // Delegate to existing sheet-level data table handling
+                    let sheet_pos = SheetPos::new(multi_sheet_pos.sheet_id, pos.x, pos.y);
+                    return self.execute_set_data_table(
+                        transaction,
+                        Operation::SetDataTable {
+                            sheet_pos,
+                            data_table,
+                            index,
+                            ignore_old_data_table: false,
+                        },
+                    );
+                }
+                MultiPos::TablePos(table_pos) => {
+                    // Handle nested data table
+                    let sheet = self.try_sheet_mut_result(multi_sheet_pos.sheet_id)?;
+
+                    if let Some(dt) = data_table {
+                        // Insert nested table
+                        let dirty_rects = sheet.data_tables.insert_at_multi_pos(
+                            &multi_sheet_pos.multi_pos,
+                            dt,
+                        )?;
+
+                        // Add to in-table code cache if it's a code table
+                        if sheet.data_tables.get_nested_table(&table_pos)
+                            .is_some_and(|t| t.is_code())
+                        {
+                            sheet.data_tables.add_in_table_code(&table_pos);
+                        }
+
+                        transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+                    } else {
+                        // Remove nested table
+                        sheet.data_tables.remove_in_table_code(&table_pos);
+                        if let Some((_, dirty_rects)) = sheet.data_tables.remove_at_multi_pos(
+                            &multi_sheet_pos.multi_pos,
+                        ) {
+                            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+                        }
+                    }
+
+                    // For undo/redo, we'd need to track the forward/reverse operations
+                    // This is simplified for now
+                    if transaction.is_user_ai_undo_redo() {
+                        transaction.forward_operations.push(op);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Executes SetComputeCodeMultiPos operation.
+    /// Sets code and computes it at a MultiSheetPos.
+    pub(super) fn execute_set_compute_code_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetComputeCodeMultiPos {
+            multi_sheet_pos,
+            language,
+            code,
+            template,
+        } = op
+        {
+            match multi_sheet_pos.multi_pos {
+                MultiPos::Pos(pos) => {
+                    // Delegate to existing sheet-level handling
+                    let sheet_pos = SheetPos::new(multi_sheet_pos.sheet_id, pos.x, pos.y);
+                    self.execute_set_compute_code(
+                        transaction,
+                        Operation::SetComputeCode {
+                            sheet_pos,
+                            language,
+                            code,
+                            template,
+                        },
+                    );
+                }
+                MultiPos::TablePos(_table_pos) => {
+                    // Handle in-table code setting and computation
+                    if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                        dbgjs!("Only user / undo / redo / server transaction should have a SetComputeCodeMultiPos");
+                        return;
+                    }
+
+                    // For now, only formulas are supported in-table
+                    match language {
+                        CodeCellLanguage::Formula => {
+                            self.run_formula_multi_pos(transaction, multi_sheet_pos, code, None);
+                        }
+                        _ => {
+                            dbgjs!(format!("In-table code execution not yet supported for {:?}", language));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Runs a formula at a MultiSheetPos (for in-table formulas).
+    fn run_formula_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        multi_sheet_pos: MultiSheetPos,
+        code: String,
+        cached_ast: Option<crate::formulas::ast::Formula>,
+    ) {
+        use crate::formulas::{Ctx, parse_formula};
+        use itertools::Itertools;
+
+        let sheet_id = multi_sheet_pos.sheet_id;
+
+        let MultiPos::TablePos(table_pos) = multi_sheet_pos.multi_pos else {
+            // For regular Pos, just run the formula normally
+            if let Some(sheet_pos) = multi_sheet_pos.to_sheet_pos() {
+                self.run_formula_with_cached_ast(transaction, sheet_pos, code, cached_ast);
+            }
+            return;
+        };
+
+        // For in-table formulas:
+        // 1. Parse and evaluate the formula using the sub-table position as context
+        // 2. Store the result in the nested table within the parent
+
+        // Get the display position for formula evaluation context
+        let Some(sheet) = self.grid.try_sheet(sheet_id) else {
+            return;
+        };
+
+        // Convert table_pos to a sheet position for evaluation context
+        let Some(eval_sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos) else {
+            return;
+        };
+
+        // Parse and evaluate the formula
+        let parse_ctx = self.a1_context();
+        let mut eval_ctx = Ctx::new(self, eval_sheet_pos);
+
+        let parsed = if let Some(ast) = cached_ast {
+            ast
+        } else {
+            match parse_formula(&code, parse_ctx, eval_sheet_pos) {
+                Ok(p) => p,
+                Err(error) => {
+                    // Store error in the nested table
+                    let error_run = CodeRun {
+                        language: CodeCellLanguage::Formula,
+                        code,
+                        error: Some(error),
+                        ..CodeRun::default()
+                    };
+                    let error_table = DataTable::new(
+                        DataTableKind::CodeRun(error_run),
+                        "Formula1",
+                        Value::Single(CellValue::Blank),
+                        false,
+                        None,
+                        None,
+                        None,
+                    );
+                    self.store_nested_data_table(sheet_id, table_pos, error_table);
+                    return;
+                }
+            }
+        };
+
+        let output = parsed.eval(&mut eval_ctx).into_non_tuple();
+        let errors = output.inner.errors();
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code,
+            formula_ast: Some(parsed),
+            std_out: None,
+            std_err: (!errors.is_empty())
+                .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+            cells_accessed: eval_ctx.take_cells_accessed(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            "Formula1",
+            output.inner,
+            false,
+            None,
+            None,
+            None,
+        );
+
+        // Store the result in the nested table
+        self.store_nested_data_table(sheet_id, table_pos, new_data_table);
+
+        // Mark the in-table code in the cache
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+            sheet.data_tables.add_in_table_code(&table_pos);
+        }
+    }
+
+    /// Stores a data table as a nested table within a parent table.
+    fn store_nested_data_table(
+        &mut self,
+        sheet_id: crate::grid::SheetId,
+        table_pos: crate::TablePos,
+        data_table: DataTable,
+    ) {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+            return;
+        };
+
+        // Use the existing insert_at_multi_pos method
+        let multi_pos = MultiPos::TablePos(table_pos);
+        let _ = sheet.data_tables.insert_at_multi_pos(&multi_pos, data_table);
     }
 }
 
@@ -755,5 +1050,54 @@ mod tests {
 
         let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
         assert!(value4 != value3);
+    }
+
+    #[test]
+    fn test_in_table_formula_execution() {
+        use crate::{MultiPos, MultiSheetPos, TablePos};
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 2x3 output
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 2, 3);
+
+        // Verify the parent table exists
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.data_table_at(&pos![A1]).is_some());
+
+        // Create a TablePos for an in-table formula
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(0, 1));
+        let _multi_sheet_pos = MultiSheetPos::new(sheet_id, MultiPos::TablePos(table_pos));
+
+        // Execute the formula operations
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+        );
+
+        // Should generate MultiPos operations
+        assert_eq!(ops.len(), 2, "Should generate 2 operations for in-table code");
+        assert!(matches!(&ops[0], Operation::SetDataTableMultiPos { .. }));
+        assert!(matches!(&ops[1], Operation::ComputeCodeMultiPos { .. }));
+
+        // Execute the operations in a transaction
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the in-table code was added to the cache
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            sheet.data_tables.has_in_table_code(&table_pos),
+            "In-table code should be tracked in cache"
+        );
+
+        // Verify the nested table exists in the parent
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        assert!(
+            parent_table.tables.is_some(),
+            "Parent table should have nested tables"
+        );
     }
 }

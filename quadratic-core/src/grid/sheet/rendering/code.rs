@@ -4,7 +4,7 @@ use crate::{
     CellValue, Pos, Value,
     grid::{
         CodeCellLanguage, DataTable, DataTableKind, Sheet,
-        js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
+        js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState, JsTablePos},
     },
 };
 
@@ -111,6 +111,7 @@ impl Sheet {
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
             last_modified: data_table.last_modified.timestamp_millis(),
+            table_pos: None,
         })
     }
 
@@ -137,9 +138,47 @@ impl Sheet {
                 is_code: true,
                 is_html: false,
                 is_html_image: false,
+                table_pos: None,
                 last_modified: code_cell.last_modified.timestamp_millis(),
             });
         }
+
+        // Check for nested in-table code cells
+        if let Some(table_pos) = self.display_pos_to_in_table_code_pos(pos)
+            && let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
+            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+        {
+            let state = if code_run.error.is_some() {
+                JsRenderCodeCellState::RunError
+            } else {
+                JsRenderCodeCellState::Success
+            };
+
+            // Nested code cells have 1x1 output (they don't spill outside their cell)
+            return Some(JsRenderCodeCell {
+                x: pos.x as i32,
+                y: pos.y as i32,
+                w: 1,
+                h: 1,
+                language: code_run.language.clone(),
+                state,
+                spill_error: None,
+                name: nested_table.name().to_string(),
+                columns: Vec::new(),
+                first_row_header: false,
+                show_name: false,
+                show_columns: false,
+                sort: None,
+                sort_dirty: false,
+                alternating_colors: false,
+                is_code: true,
+                is_html: nested_table.is_html(),
+                is_html_image: nested_table.is_html() || nested_table.is_image(),
+                table_pos: Some(JsTablePos::from(table_pos)),
+                last_modified: nested_table.last_modified.timestamp_millis(),
+            });
+        }
+
         // Otherwise check data_tables
         let data_table = self.data_table_at(&pos)?;
         self.render_code_cell(pos, data_table)
@@ -151,11 +190,21 @@ impl Sheet {
             return;
         }
 
-        let code = self
+        // Collect top-level code cells
+        let mut code: Vec<JsRenderCodeCell> = self
             .data_tables
             .expensive_iter()
             .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
-            .collect::<Vec<_>>();
+            .collect();
+
+        // Also collect in-table code cells
+        for table_pos in self.data_tables.all_in_table_code_cells() {
+            if let Some(sheet_pos) = self.table_pos_to_sheet_pos(table_pos)
+                && let Some(nested_render) = self.get_render_code_cell(sheet_pos.into())
+            {
+                code.push(nested_render);
+            }
+        }
 
         if !code.is_empty()
             && let Ok(render_code_cells) = serde_json::to_vec(&code)
@@ -467,6 +516,7 @@ mod tests {
                 is_html: false,
                 is_html_image: false,
                 last_modified,
+                table_pos: None,
             })
         );
     }

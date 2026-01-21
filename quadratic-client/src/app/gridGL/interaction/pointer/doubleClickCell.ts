@@ -6,7 +6,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, JsTablePos } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
@@ -40,12 +40,16 @@ export async function doubleClickCell(options: {
 
   // If not found in client-side cache, check if it's a single-cell code cell via core API
   // We also capture the code so we can pass it as initialCode (avoids a second API call)
+  // This also detects in-table code cells via the tablePos field
   let singleCellCode: string | undefined;
+  let editCellTablePos: JsTablePos | undefined;
   if (!language) {
     const editCell = await quadraticCore.getEditCell(sheets.current, column, row);
     if (editCell?.codeCell) {
       language = editCell.codeCell.language;
       singleCellCode = editCell.codeCell.code;
+      editCellTablePos = editCell.codeCell.tablePos;
+      // In-table code cells are also single-cell from a UI perspective
       isSingleCell = true;
     }
   }
@@ -82,6 +86,7 @@ export async function doubleClickCell(options: {
             language,
             lastModified,
             isSingleCell,
+            tablePos: editCellTablePos ?? codeCell?.table_pos ?? undefined,
           },
           showCellTypeMenu: false,
           initialCode: singleCellCode ?? '',
@@ -156,6 +161,7 @@ export async function doubleClickCell(options: {
               language,
               lastModified,
               isSingleCell,
+              tablePos: editCellTablePos ?? codeCell?.table_pos ?? undefined,
             },
             initialCode: singleCellCode ?? '',
             showCellTypeMenu: false,

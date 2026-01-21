@@ -65,6 +65,7 @@ export const openCodeEditor = async () => {
             language: codeCell.language,
             lastModified: Number(codeCell.last_modified),
             isSingleCell,
+            tablePos: codeCell.table_pos ?? undefined,
           },
           showCellTypeMenu: false,
           initialCode: '',

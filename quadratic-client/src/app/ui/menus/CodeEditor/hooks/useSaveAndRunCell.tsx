@@ -65,6 +65,7 @@ export const useSaveAndRunCell = () => {
                   show_name: false,
                   show_columns: false,
                   last_modified: BigInt(0),
+                  table_pos: null,
                 },
               },
             ]);

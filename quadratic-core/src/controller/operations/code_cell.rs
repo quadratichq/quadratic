@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, RefAdjust, SheetPos, Value,
+    CellValue, MultiPos, MultiSheetPos, RefAdjust, SheetPos, Value,
     a1::A1Selection,
     controller::GridController,
     formulas::convert_rc_to_a1,
@@ -14,6 +14,10 @@ use crate::{
 
 impl GridController {
     /// Adds operations to compute a CellValue::Code at the sheet_pos.
+    ///
+    /// This method handles both:
+    /// - Sheet-level code cells (traditional behavior)
+    /// - In-table code cells (code within a code table's output area)
     pub fn set_code_cell_operations(
         &self,
         sheet_pos: SheetPos,
@@ -30,6 +34,17 @@ impl GridController {
 
         let pos = sheet_pos.into();
 
+        // Check if this is an in-table code position (within a code table's output area)
+        if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos) {
+            // This is an in-table code cell - generate MultiPos operations
+            return self.set_in_table_code_cell_operations(
+                sheet_pos.sheet_id,
+                table_pos,
+                language,
+                code,
+            );
+        }
+
         // Check if it's an anchor cell (source cell)
         if sheet.is_source_cell(pos) {
             // Block if it's an import cell (imports don't have anchors)
@@ -44,7 +59,7 @@ impl GridController {
             }
             // Otherwise it's a code cell anchor - allowed
         } else if sheet.data_table_pos_that_contains(pos).is_some() {
-            // It's in the output area - block it (can't write to output area without overwriting anchor)
+            // It's in an import table's output area - block it
             if cfg!(target_family = "wasm") || cfg!(test) {
                 crate::wasm_bindings::js::jsClientMessage(
                     "Cannot add code cell to table".to_string(),
@@ -108,6 +123,7 @@ impl GridController {
                     borders: None,
                     chart_pixel_output: None,
                     chart_output: None,
+                    tables: None,
                 }),
                 index: usize::MAX,
                 ignore_old_data_table: false,
@@ -143,6 +159,7 @@ impl GridController {
                     borders: None,
                     chart_pixel_output: None,
                     chart_output: None,
+                    tables: None,
                 }),
                 index: usize::MAX,
                 ignore_old_data_table: false,
@@ -150,6 +167,135 @@ impl GridController {
         }
 
         ops.push(Operation::ComputeCode { sheet_pos });
+        ops
+    }
+
+    /// Generates operations to create/update an in-table code cell.
+    ///
+    /// This creates a nested code table within the parent table's output area.
+    fn set_in_table_code_cell_operations(
+        &self,
+        sheet_id: SheetId,
+        table_pos: crate::TablePos,
+        language: CodeCellLanguage,
+        code: String,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return ops;
+        };
+
+        // Convert code if needed (R1C1 to A1 for formulas)
+        let code = match language {
+            CodeCellLanguage::Formula => {
+                // Use the parent table's anchor position for reference conversion
+                let anchor_sheet_pos = SheetPos::new(
+                    sheet_id,
+                    table_pos.parent_pos.x,
+                    table_pos.parent_pos.y,
+                );
+                convert_rc_to_a1(&code, self.a1_context(), anchor_sheet_pos)
+            }
+            _ => code,
+        };
+
+        let multi_sheet_pos = MultiSheetPos::new(
+            sheet_id,
+            MultiPos::TablePos(table_pos),
+        );
+
+        // Check if there's already a nested code table at this position
+        let existing_nested = sheet.data_tables
+            .get_nested_table(&table_pos)
+            .and_then(|dt| dt.code_run().map(|cr| (dt.clone(), cr.clone())));
+
+        if let Some((existing_dt, existing_code_run)) = existing_nested {
+            if existing_code_run.language == language {
+                // Update existing code table
+                ops.push(Operation::SetDataTableMultiPos {
+                    multi_sheet_pos,
+                    data_table: Some(DataTable {
+                        kind: DataTableKind::CodeRun(CodeRun {
+                            language,
+                            code,
+                            ..existing_code_run
+                        }),
+                        ..existing_dt
+                    }),
+                    index: 0,
+                });
+            } else {
+                // Different language - replace the table
+                let name = CellValue::Text(format!("{}1", language.as_string()));
+                ops.push(Operation::SetDataTableMultiPos {
+                    multi_sheet_pos,
+                    data_table: Some(DataTable {
+                        kind: DataTableKind::CodeRun(CodeRun {
+                            language,
+                            code,
+                            ..Default::default()
+                        }),
+                        name,
+                        header_is_first_row: false,
+                        show_name: None,
+                        show_columns: None,
+                        column_headers: None,
+                        sort: None,
+                        sort_dirty: false,
+                        display_buffer: None,
+                        value: Value::Single(CellValue::Blank),
+                        spill_value: false,
+                        spill_data_table: false,
+                        spill_merged_cell: false,
+                        last_modified: now(),
+                        alternating_colors: false, // In-table code cells don't need alternating colors
+                        formats: None,
+                        borders: None,
+                        chart_pixel_output: None,
+                        chart_output: None,
+                        tables: None,
+                    }),
+                    index: 0,
+                });
+            }
+        } else {
+            // Create new nested code table
+            let name = CellValue::Text(format!("{}1", language.as_string()));
+            ops.push(Operation::SetDataTableMultiPos {
+                multi_sheet_pos,
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..Default::default()
+                    }),
+                    name,
+                    header_is_first_row: false,
+                    show_name: None,
+                    show_columns: None,
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single(CellValue::Blank),
+                    spill_value: false,
+                    spill_data_table: false,
+                    spill_merged_cell: false,
+                    last_modified: now(),
+                    alternating_colors: false, // In-table code cells don't need alternating colors
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                    tables: None,
+                }),
+                index: 0,
+            });
+        }
+
+        // Compute the code
+        ops.push(Operation::ComputeCodeMultiPos { multi_sheet_pos });
         ops
     }
 
@@ -294,6 +440,7 @@ impl GridController {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let rects = sheet.selection_to_rects(&selection, false, false, true, self.a1_context());
             rects.iter().for_each(|rect| {
+                // Get top-level code runs
                 sheet
                     .data_tables
                     .get_code_runs_in_rect(*rect, false)
@@ -302,6 +449,23 @@ impl GridController {
                             sheet_pos: pos.to_sheet_pos(sheet_id),
                         });
                     });
+
+                // Get in-table code cells that fall within the selection rect
+                if sheet.data_tables.has_in_table_code_in_rect(*rect) {
+                    for table_pos in sheet.data_tables.all_in_table_code_cells() {
+                        // Convert table pos to sheet pos and check if it's in the rect
+                        if let Some(sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos) {
+                            let pos: crate::Pos = sheet_pos.into();
+                            if rect.contains(pos) {
+                                let multi_sheet_pos = MultiSheetPos::new(
+                                    sheet_id,
+                                    MultiPos::TablePos(table_pos),
+                                );
+                                ops.push(Operation::ComputeCodeMultiPos { multi_sheet_pos });
+                            }
+                        }
+                    }
+                }
             });
         }
 
@@ -315,6 +479,8 @@ impl GridController {
     /// Reruns all code cells in all Sheets.
     pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
+        let mut in_table_code_ops = Vec::new();
+
         for (sheet_id, sheet) in self.grid().sheets() {
             // Check data_tables
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
@@ -324,9 +490,19 @@ impl GridController {
             for pos in sheet.iter_code_cells_positions() {
                 code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
             }
+            // Check in-table code cells
+            for table_pos in sheet.data_tables.all_in_table_code_cells() {
+                let multi_sheet_pos = MultiSheetPos::new(
+                    *sheet_id,
+                    MultiPos::TablePos(table_pos),
+                );
+                in_table_code_ops.push(Operation::ComputeCodeMultiPos { multi_sheet_pos });
+            }
         }
 
-        self.get_code_run_ops_from_positions(code_cell_positions)
+        let mut ops = self.get_code_run_ops_from_positions(code_cell_positions);
+        ops.extend(in_table_code_ops);
+        ops
     }
 
     /// Reruns all code cells in a Sheet.
@@ -335,6 +511,8 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
+        let mut in_table_code_ops = Vec::new();
+
         // Check data_tables
         for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
             code_cell_positions.push(pos.to_sheet_pos(sheet_id));
@@ -343,8 +521,18 @@ impl GridController {
         for pos in sheet.iter_code_cells_positions() {
             code_cell_positions.push(pos.to_sheet_pos(sheet_id));
         }
+        // Check in-table code cells
+        for table_pos in sheet.data_tables.all_in_table_code_cells() {
+            let multi_sheet_pos = MultiSheetPos::new(
+                sheet_id,
+                MultiPos::TablePos(table_pos),
+            );
+            in_table_code_ops.push(Operation::ComputeCodeMultiPos { multi_sheet_pos });
+        }
 
-        self.get_code_run_ops_from_positions(code_cell_positions)
+        let mut ops = self.get_code_run_ops_from_positions(code_cell_positions);
+        ops.extend(in_table_code_ops);
+        ops
     }
 
     fn get_code_run_ops_from_positions(
@@ -549,7 +737,7 @@ mod test {
     }
 
     #[test]
-    fn test_set_code_cell_blocks_output_area() {
+    fn test_set_code_cell_in_code_table_output_area() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -557,16 +745,23 @@ mod test {
         use crate::test_util::test_create_code_table;
         test_create_code_table(&mut gc, sheet_id, pos![A1], 1, 3);
 
-        // Should block setting code cell in output area (A2, which is not the anchor)
+        // Should now generate in-table code operations for code table output area
         let ops = gc.set_code_cell_operations(
             pos![sheet_id!A2],
-            CodeCellLanguage::Python,
-            "print('hello')".to_string(),
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
             None,
         );
+
+        // Should have SetDataTableMultiPos and ComputeCodeMultiPos operations
+        assert_eq!(ops.len(), 2, "Should generate in-table code operations");
         assert!(
-            ops.is_empty(),
-            "Should block setting code cell in output area"
+            matches!(&ops[0], Operation::SetDataTableMultiPos { .. }),
+            "First op should be SetDataTableMultiPos"
+        );
+        assert!(
+            matches!(&ops[1], Operation::ComputeCodeMultiPos { .. }),
+            "Second op should be ComputeCodeMultiPos"
         );
     }
 
@@ -1096,5 +1291,69 @@ mod test {
             result.is_empty(),
             "Should return empty when position was already seen"
         );
+    }
+
+    #[test]
+    fn test_in_table_code_multi_pos_operations() {
+        use crate::test_util::test_create_code_table;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 2x3 output
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 2, 3);
+
+        // Verify the table exists
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.data_table_at(&pos![A1]).is_some());
+
+        // Get operations to create an in-table code cell at A2 (row 1 of the table)
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "=1+1".to_string(),
+            None,
+        );
+
+        // Should generate SetDataTableMultiPos and ComputeCodeMultiPos
+        assert_eq!(ops.len(), 2, "Should generate 2 operations for in-table code");
+
+        // Verify the MultiPos in the operations
+        if let Operation::SetDataTableMultiPos { multi_sheet_pos, .. } = &ops[0] {
+            assert_eq!(multi_sheet_pos.sheet_id, sheet_id);
+            assert!(multi_sheet_pos.multi_pos.is_table_pos());
+        } else {
+            panic!("Expected SetDataTableMultiPos");
+        }
+
+        if let Operation::ComputeCodeMultiPos { multi_sheet_pos } = &ops[1] {
+            assert_eq!(multi_sheet_pos.sheet_id, sheet_id);
+            assert!(multi_sheet_pos.multi_pos.is_table_pos());
+        } else {
+            panic!("Expected ComputeCodeMultiPos");
+        }
+    }
+
+    #[test]
+    fn test_in_table_code_rerun_includes_nested() {
+        use crate::test_util::test_create_code_table;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 1, 3);
+
+        // Manually add an in-table code entry to the cache (simulating a nested code cell)
+        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
+        let table_pos = crate::TablePos::new(pos![A1], crate::Pos::new(0, 1));
+        sheet.data_tables.add_in_table_code(&table_pos);
+
+        // Rerun all code cells operations should include the in-table code
+        let ops = gc.rerun_all_code_cells_operations();
+
+        // Should have at least one ComputeCodeMultiPos operation
+        let multi_pos_ops = ops.iter().filter(|op| matches!(op, Operation::ComputeCodeMultiPos { .. })).count();
+        assert!(multi_pos_ops >= 1, "Should include ComputeCodeMultiPos for in-table code cells");
     }
 }

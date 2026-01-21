@@ -9,7 +9,7 @@ use crate::{
     grid::{
         CodeCellLanguage, DataTableKind,
         data_table::DataTable,
-        js_types::{JsCodeCell, JsReturnInfo},
+        js_types::{JsCodeCell, JsReturnInfo, JsTablePos},
     },
 };
 
@@ -269,6 +269,47 @@ impl Sheet {
                 return_info,
                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
                 last_modified: chrono::Utc::now().timestamp_millis(), // Single-cell codes don't track last_modified yet
+                table_pos: None,
+            });
+        }
+
+        // Check for nested in-table code cells
+        if let Some(table_pos) = self.display_pos_to_in_table_code_pos(pos)
+            && let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
+            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+        {
+            let mut code: String = code_run.code.clone();
+
+            // replace internal cell references with a1 notation
+            if matches!(code_run.language, CodeCellLanguage::Formula) {
+                let anchor_pos = table_pos.parent_pos.to_sheet_pos(self.id);
+                let replaced = convert_rc_to_a1(&code, a1_context, anchor_pos);
+                code = replaced;
+            }
+
+            let evaluation_result = match &code_run.error {
+                Some(error) => Some(serde_json::to_string(error).unwrap_or("".into())),
+                None => Some(serde_json::to_string(&nested_table.value).unwrap_or("".into())),
+            };
+
+            let return_info = Some(JsReturnInfo {
+                line_number: code_run.line_number,
+                output_type: code_run.output_type.clone(),
+            });
+
+            return Some(JsCodeCell {
+                x: pos.x,
+                y: pos.y,
+                code_string: code,
+                language: code_run.language.clone(),
+                std_err: code_run.std_err.clone(),
+                std_out: code_run.std_out.clone(),
+                evaluation_result,
+                spill_error: None, // Nested code cells don't spill outside their parent
+                return_info,
+                cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                last_modified: nested_table.last_modified.timestamp_millis(),
+                table_pos: Some(JsTablePos::from(table_pos)),
             });
         }
 
@@ -315,6 +356,7 @@ impl Sheet {
                 return_info,
                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
                 last_modified: data_table.last_modified.timestamp_millis(),
+                table_pos: None,
             })
         } else {
             None
@@ -376,6 +418,7 @@ mod test {
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
                 cells_accessed: Some(Default::default()),
                 last_modified,
+                table_pos: None,
             })
         );
         let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 }, gc.a1_context());
@@ -394,6 +437,7 @@ mod test {
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
                 cells_accessed: Some(Default::default()),
                 last_modified,
+                table_pos: None,
             })
         );
         assert_eq!(
