@@ -103,8 +103,8 @@ export const AIAnalyst = memo(() => {
 
               <div
                 className={cn(
-                  'relative grid pt-0.5',
-                  messagesCount === 0 ? 'grid-rows-[auto_1fr_auto_auto]' : 'grid-rows-[auto_auto]'
+                  'grid pt-0.5',
+                  messagesCount === 0 ? 'grid-rows-[auto_1fr_auto_auto]' : 'relative grid-rows-[auto_auto]'
                 )}
               >
                 <AIPendingChanges />
