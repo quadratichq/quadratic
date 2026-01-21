@@ -2,7 +2,6 @@ import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
@@ -17,15 +16,11 @@ import {
   ExamplesIcon,
   ExternalLinkIcon,
   FileIcon,
-  FilePrivateIcon,
-  FileSharedWithMeIcon,
   GroupIcon,
-  HomeIcon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
   SettingsIcon,
-  TeamIcon,
 } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
@@ -52,7 +47,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -81,7 +76,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const { loggedInUser } = useRootRouteLoaderData();
   const submit = useSubmit();
   const {
-    userMakingRequest: { id: ownerUserId },
     eduStatus,
     activeTeam: {
       userMakingRequest: { teamPermissions },
@@ -107,34 +101,17 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <TeamSwitcher appIsLoading={isLoading} />
       </div>
       <div className={`flex flex-col px-3`}>
-        <div className="mb-4 grid gap-0.5">
-          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)}>
-            <HomeIcon className={classNameIcons} />
-            Home
-          </SidebarNavLink>
-        </div>
-        <Type
-          as="h3"
-          variant="overline"
-          className={`mb-2 mt-1 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Team
-        </Type>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink
-              to={ROUTES.TEAM_FILES(activeTeamUuid)}
-              dropTarget={canEditTeam ? null : undefined}
-              data-testid="dashboard-sidebar-team-files-link"
-            >
+            <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} data-testid="dashboard-sidebar-team-files-link">
               <FileIcon className={classNameIcons} />
               Files
+              {canEditTeam && (
+                <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
+                  New file
+                </SidebarNavLinkCreateButton>
+              )}
             </SidebarNavLink>
-            {canEditTeam && (
-              <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
-                New file
-              </SidebarNavLinkCreateButton>
-            )}
           </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
@@ -152,39 +129,33 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               Settings
             </SidebarNavLink>
           )}
-        </div>
+          {!isOnPaidPlan && !isSettingsPage && (
+            <div className="mt-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
+              <div className="flex gap-2">
+                <RocketIcon className="h-5 w-5 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                  <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
+                </div>
+              </div>
 
-        <Type
-          as="h3"
-          variant="overline"
-          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Personal
-        </Type>
-        <div className="relative">
-          <SidebarNavLink
-            to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)}
-            dropTarget={ownerUserId}
-            data-testid="dashboard-sidebar-personal-files-link"
-          >
-            <FilePrivateIcon className={classNameIcons} />
-            My files
-          </SidebarNavLink>
-          <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
-            New personal file
-          </SidebarNavLinkCreateButton>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
+                    team_uuid: activeTeamUuid,
+                  });
+                  setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
+                }}
+              >
+                Upgrade to Pro
+              </Button>
+            </div>
+          )}
         </div>
-        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME} data-testid="dashboard-sidebar-shared-with-me-link">
-          <FileSharedWithMeIcon className={classNameIcons} />
-          Shared with me
-        </SidebarNavLink>
-
-        <Type
-          as="h3"
-          className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Resources
-        </Type>
+      </div>
+      <div className="-mb-3 mt-auto flex flex-col gap-1 bg-accent px-3">
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEMPLATES}>
@@ -205,32 +176,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
-      </div>
-      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
-        {!isOnPaidPlan && !isSettingsPage && (
-          <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
-            <div className="flex gap-2">
-              <RocketIcon className="h-5 w-5 text-primary" />
-              <div className="flex flex-col">
-                <span className="font-semibold">Upgrade to Quadratic Pro</span>
-                <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                trackEvent('[DashboardSidebar].upgradeToProClicked', {
-                  team_uuid: activeTeamUuid,
-                });
-                setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
-              }}
-            >
-              Upgrade to Pro
-            </Button>
-          </div>
-        )}
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -258,36 +203,36 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Labs
           </SidebarNavLink>
         )}
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
-              <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
-                {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
-              </Avatar>
-              <p className={`truncate text-xs`}>{loggedInUser?.email}</p>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-60" side="top" align="start">
-              <DropdownMenuItem disabled className="flex-col items-start">
-                {loggedInUser?.name || 'You'}
-                <span className="text-xs">{loggedInUser?.email}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  submit(null, {
-                    method: 'post',
-                    action: ROUTES.LOGOUT,
-                  });
-                }}
-              >
-                <LogoutIcon className="mr-2 text-muted-foreground" /> Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <div className="flex flex-shrink-0 items-center">
-            <ThemePickerMenu />
-          </div>
+      </div>
+      <div className="sticky bottom-0 flex items-center gap-2 bg-accent px-3 pb-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 pl-2.5 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
+            <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
+              {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
+            </Avatar>
+            <p className={`truncate text-xs`}>{loggedInUser?.email}</p>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-60" side="top" align="start">
+            <DropdownMenuItem disabled className="flex-col items-start">
+              {loggedInUser?.name || 'You'}
+              <span className="text-xs">{loggedInUser?.email}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                submit(null, {
+                  method: 'post',
+                  action: ROUTES.LOGOUT,
+                });
+              }}
+            >
+              <LogoutIcon className="mr-2 text-muted-foreground" /> Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="flex flex-shrink-0 items-center">
+          <ThemePickerMenu />
         </div>
       </div>
     </nav>
@@ -303,42 +248,46 @@ function SidebarNavLinkCreateButton({
   isPrivate: boolean;
   teamUuid: string;
 }) {
+  const handleClick = async () => {
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
+    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+  };
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
-          onClick={async (e) => {
-            e.preventDefault();
-            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-            if (hasReachedLimit) {
-              showUpgradeDialog('fileLimitReached');
-              return;
-            }
-            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
-          }}
-        >
-          <AddIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{children}</TooltipContent>
-    </Tooltip>
+    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="!bg-transparent opacity-30 hover:opacity-100"
+            onClick={handleClick}
+          >
+            <AddIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent>{children}</TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
+    </div>
   );
 }
 
 const sidebarItemClasses = {
   base: `dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
   active: `bg-accent dark:brightness-125 brightness-95 saturate-150 dark:saturate-100`,
-  dragging: `bg-primary text-primary-foreground`,
 };
 
 function SidebarNavLink({
   to,
   children,
   className,
-  dropTarget,
+
   isLogo,
   onClick,
   target,
@@ -347,8 +296,7 @@ function SidebarNavLink({
   to: string;
   children: ReactNode;
   className?: string;
-  // number = assigning to a user, null = assigning to a team
-  dropTarget?: number | null;
+
   isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
@@ -356,8 +304,6 @@ function SidebarNavLink({
 }) {
   const location = useLocation();
   const navigation = useNavigation();
-  const submit = useSubmit();
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
@@ -365,44 +311,7 @@ function SidebarNavLink({
     // We're navigating to this page
     to === navigation.location?.pathname;
 
-  const isDroppable = dropTarget !== undefined && to !== location.pathname;
-  const dropProps = isDroppable
-    ? {
-        onDragLeave: (event: React.DragEvent<HTMLAnchorElement>) => {
-          setIsDraggingOver(false);
-        },
-        onDragOver: (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (!event.dataTransfer.types.includes('application/quadratic-file-uuid')) return;
-
-          event.preventDefault();
-          event.dataTransfer.dropEffect = 'move';
-          setIsDraggingOver(true);
-        },
-        onDrop: async (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (!event.dataTransfer.types.includes('application/quadratic-file-uuid')) return;
-
-          event.preventDefault();
-          const uuid = event.dataTransfer.getData('application/quadratic-file-uuid');
-          setIsDraggingOver(false);
-          const data = getActionFileMove(dropTarget);
-          submit(data, {
-            method: 'POST',
-            action: ROUTES.API.FILE(uuid),
-            encType: 'application/json',
-            navigate: false,
-            fetcherKey: `move-file:${uuid}`,
-          });
-        },
-      }
-    : {};
-
-  const classes = cn(
-    sidebarItemClasses.base,
-    isActive && sidebarItemClasses.active,
-    isDraggingOver && sidebarItemClasses.dragging,
-    TYPE.body2,
-    className
-  );
+  const classes = cn(sidebarItemClasses.base, isActive && sidebarItemClasses.active, TYPE.body2, className);
 
   return (
     <NavLink
@@ -410,7 +319,6 @@ function SidebarNavLink({
       className={classes}
       {...(onClick ? { onClick } : {})}
       {...(target ? { target } : {})}
-      {...dropProps}
       {...(dataTestId ? { 'data-testid': dataTestId } : {})}
     >
       {children}
@@ -547,7 +455,7 @@ function CreateTeamAlert({ children }: { children: ReactNode }) {
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent className="max-w-sm">
         <AlertDialogHeader>
-          <TeamIcon size="lg" />
+          <GroupIcon size="lg" />
           <AlertDialogTitle>Teams in Quadratic</AlertDialogTitle>
           <AlertDialogDescription>
             Teams are a collaborative space for working with other people. Create a new team and answer a few onboarding

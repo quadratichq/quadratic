@@ -14,8 +14,11 @@ interface AIUserMessageFormAttachFileButtonProps {
 export const AIUserMessageFormAttachFileButton = memo(
   ({ disabled, handleFiles, fileTypes, filesSupportedText }: AIUserMessageFormAttachFileButtonProps) => {
     const handleUploadFiles = useCallback(async () => {
-      trackEvent('[AIAttachFile].click');
       const files = await uploadFile(fileTypes);
+      if (files.length > 0) {
+        const fileExtensions = files.map((file) => file.name.split('.').pop()?.toLowerCase() ?? 'unknown');
+        trackEvent('[AIAttachFile].click', { fileTypes: fileExtensions });
+      }
       handleFiles(files);
     }, [handleFiles, fileTypes]);
 

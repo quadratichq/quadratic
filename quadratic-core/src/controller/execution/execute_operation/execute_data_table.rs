@@ -289,6 +289,21 @@ impl GridController {
                 true,
                 &mut rows_to_resize,
             );
+
+            // Also check if the new values contain multiline text (newlines)
+            // that would require row resizing
+            for column in values.columns.iter() {
+                for (&y, cell_value) in column.iter() {
+                    if let CellValue::Text(text) = cell_value
+                        && (text.contains('\n') || text.contains('\r'))
+                    {
+                        // Calculate the actual row in sheet coordinates
+                        let sheet_row = pos.y + y as i64;
+                        rows_to_resize.insert(sheet_row);
+                    }
+                }
+            }
+
             if !rows_to_resize.is_empty() {
                 transaction
                     .resize_rows
@@ -832,7 +847,7 @@ impl GridController {
                         let data_table_rect = dt
                             .output_rect(data_table_pos, false)
                             .to_sheet_rect(sheet_id);
-                        dt.add_dirty_fills_and_borders(transaction, sheet_id);
+                        dt.add_dirty_fills_and_borders(transaction, sheet_id, data_table_pos);
                         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
                         sheet_rect_for_compute_and_spills = Some(data_table_rect);
                     }
@@ -1296,7 +1311,7 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id, data_table_pos);
 
             let remove_selection =
                 A1Selection::from_rects(rects_to_remove, sheet_id, &self.a1_context);
@@ -1698,7 +1713,7 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id, data_table_pos);
 
             // delete table formats
             if let Some(formats_selection) =

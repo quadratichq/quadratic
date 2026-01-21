@@ -24,12 +24,12 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeErrorContext,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
-  JsRenderFill,
   JsResponse,
   JsSheetFill,
   JsSheetNameToColor,
@@ -43,6 +43,7 @@ import type {
   SheetBounds,
   SheetInfo,
   SheetRect,
+  TextSpan,
   TrackedTransaction,
   Validation,
   ValidationUpdate,
@@ -110,7 +111,9 @@ import type {
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetFormatsA1,
   CoreClientSetFormula,
+  CoreClientSetFormulas,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
@@ -152,8 +155,11 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetsInfo') {
       events.emit('sheetsInfo', fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
       return;
-    } else if (e.data.type === 'coreClientSheetFills') {
-      events.emit('sheetFills', e.data.sheetId, fromUint8Array<JsRenderFill[]>(e.data.fills));
+    } else if (e.data.type === 'coreClientHashRenderFills') {
+      events.emit('hashRenderFills', e.data.hashRenderFills);
+      return;
+    } else if (e.data.type === 'coreClientHashesDirtyFills') {
+      events.emit('hashesDirtyFills', e.data.dirtyHashes);
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
@@ -495,6 +501,21 @@ class QuadraticCore {
     });
   }
 
+  /**
+   * Sets a cell to a RichText value with the given spans.
+   * Each span can have: text, link, bold, italic, underline, strike_through, text_color, font_size
+   */
+  setCellRichText(sheetId: string, x: number, y: number, spans: TextSpan[]) {
+    this.send({
+      type: 'clientCoreSetCellRichText',
+      sheetId,
+      x,
+      y,
+      spansJson: JSON.stringify(spans),
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
   setCellValues(sheetId: string, x: number, y: number, values: string[][], isAi: boolean) {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -546,12 +567,7 @@ class QuadraticCore {
     });
   }
 
-  setFormula(options: {
-    sheetId: string;
-    selection: string;
-    codeString: string;
-    codeCellName?: string;
-  }): Promise<string | undefined> {
+  setFormula(options: { sheetId: string; selection: string; codeString: string }): Promise<string | undefined> {
     const id = this.id++;
     return new Promise((resolve, reject) => {
       this.waitingForResponse[id] = (message: CoreClientSetFormula) => {
@@ -566,7 +582,31 @@ class QuadraticCore {
         sheetId: options.sheetId,
         selection: options.selection,
         codeString: options.codeString,
-        codeCellName: options.codeCellName,
+        cursor: sheets.getCursorPosition(),
+      });
+    });
+  }
+
+  // Sets multiple formulas in a single transaction (batched)
+  setFormulas(options: {
+    sheetId: string;
+    formulas: Array<{ selection: string; codeString: string }>;
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve, reject) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormulas) => {
+        if (message.error) {
+          reject(new Error(message.error));
+        }
+        resolve(message.transactionId);
+      };
+      // Convert to tuple format expected by Rust: [selection, code_string]
+      const formulas: Array<[string, string]> = options.formulas.map((f) => [f.selection, f.codeString]);
+      this.send({
+        type: 'clientCoreSetFormulas',
+        id,
+        sheetId: options.sheetId,
+        formulas,
         cursor: sheets.getCursorPosition(),
       });
     });
@@ -673,6 +713,21 @@ class QuadraticCore {
       fillColor,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  getRenderFillsForHashes(sheetId: string, hashes: JsCoordinate[]) {
+    this.send({
+      type: 'clientCoreGetRenderFillsForHashes',
+      sheetId,
+      hashes,
+    });
+  }
+
+  getSheetMetaFills(sheetId: string) {
+    this.send({
+      type: 'clientCoreGetSheetMetaFills',
+      sheetId,
     });
   }
 
@@ -849,6 +904,25 @@ class QuadraticCore {
         sheetId,
         selection,
         formats,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  setFormatsA1(
+    formatEntries: { sheetId: string; selection: string; formats: FormatUpdate }[],
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormatsA1) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetFormatsA1',
+        id,
+        formatEntries,
         cursor: sheets.getCursorPosition(),
         isAi,
       });

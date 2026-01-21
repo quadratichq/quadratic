@@ -1,0 +1,42 @@
+[package]
+name = "quadratic-core-cloud"
+version = "0.23.5"
+edition = "2024"
+authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
+
+[dependencies]
+bytes = "1.6.1"
+futures-util = "0.3.30"
+http = "1.1.0"
+# openssl = { version = "0.10.72", features = ["vendored"] }
+prost = "0.13.5"
+# prost-reflect = "0.15.2"
+# prost-types = "0.13.5"
+pyo3 = { version = "0.25.1", features = ["auto-initialize"] }
+quadratic-core = { path = "../quadratic-core", default-features = false, features = [
+    "console_error_panic_hook",
+    "js",
+] }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+    "auth",
+    "environment",
+    "multiplayer",
+    "net",
+    "protobuf",
+    "pubsub",
+    "quadratic-api",
+    "storage",
+] }
+reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+thiserror = "2.0.12"
+tokio = { version = "1.44.2", features = ["full"] }
+# tonic = { version = "0.12", features = [] }
+tracing = "0.1.40"
+uuid = { version = "1.6.1", features = ["serde", "v4"] }
+urlencoding = "2.1.3"
+
+[dev-dependencies]
+dotenv = "0.15.0"
+serial_test = "3.2.0"

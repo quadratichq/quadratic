@@ -35,7 +35,6 @@ runs:
 
     - name: Run Playwright tests
       id: run-tests
-      continue-on-error: true
       run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       shell: bash
       env:
@@ -54,3 +53,8 @@ runs:
         overwrite: true
         include-hidden-files: true
         if-no-files-found: warn
+
+    - name: Fail if tests failed
+      if: steps.run-tests.outcome == 'failure'
+      run: exit 1
+      shell: bash

@@ -26,10 +26,12 @@ model User {
 
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
-    clientDataKv Json @default("{}") @map("client_data_kv")
+    clientDataKv  Json            @default("{}") @map("client_data_kv")
+    ScheduledTask ScheduledTask[]
 
     // AI Settings
-    aiRules String? @map("ai_rules") // User-specific AI rules/instructions
+    aiRules     String?  @map("ai_rules") // User-specific AI rules/instructions
+    aiLanguages String[] @default([]) @map("ai_languages") // Empty = no preference, non-empty = explicit preferences
 
     @@index([auth0Id])
     @@index([email])
@@ -77,12 +79,14 @@ model File {
     ownerTeamId Int   @map("owner_team_id")
 
     publicLinkAccess LinkPermission    @default(NOT_SHARED) @map("public_link_access")
+    timezone         String?           @map("timezone")
     times_updated    Int               @default(1) // unused to delete
     version          String? // unused to delete
     FileCheckpoint   FileCheckpoint[]
     UserFileRole     UserFileRole[]
     FileInvite       FileInvite[]
     AnalyticsAIChat  AnalyticsAIChat[]
+    ScheduledTask    ScheduledTask[]
 
     @@index([uuid])
     @@index([ownerTeamId])
@@ -91,19 +95,21 @@ model File {
 
 model FileCheckpoint {
     // Unique Identifiers
-    id             Int      @id @default(autoincrement())
-    file           File     @relation(fields: [fileId], references: [id])
-    fileId         Int      @map("file_id")
-    sequenceNumber Int      @map("sequence_number")
+    id               Int      @id @default(autoincrement())
+    file             File     @relation(fields: [fileId], references: [id])
+    fileId           Int      @map("file_id")
+    sequenceNumber   Int      @map("sequence_number")
     // Checkpoint Data
-    s3Bucket       String   @map("s3_bucket")
-    s3Key          String   @map("s3_key")
-    version        String // Quadratic file version
+    s3Bucket         String   @map("s3_bucket")
+    s3Key            String   @map("s3_key")
+    version          String // Quadratic file version
+    transactionsHash String?  @map("transactions_hash") // Hash for duplicate detection
     // Metadata
-    timestamp      DateTime @default(now())
+    timestamp        DateTime @default(now())
 
     @@unique([fileId, sequenceNumber])
     @@index([fileId, sequenceNumber])
+    @@index([fileId, transactionsHash])
 }
 
 enum SubscriptionStatus {
@@ -174,6 +180,8 @@ enum ConnectionType {
     NEON
     SUPABASE
     MIXPANEL
+    GOOGLE_ANALYTICS
+    PLAID
 }
 
 model Connection {
@@ -190,8 +198,50 @@ model Connection {
     // secretArn       String // AWS Secret Manager ARN
 
     // Type-specific details
-    type        ConnectionType
-    typeDetails Bytes // InitializationVector:Cyphertext(JSON)
+    type             ConnectionType
+    typeDetails      Bytes // InitializationVector:Cyphertext(JSON)
+    SyncedConnection SyncedConnection?
+}
+
+enum SyncedConnectionStatus {
+    ACTIVE
+    INACTIVE
+    DELETED
+}
+
+enum SyncedConnectionLogStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+    FAILED
+}
+
+model SyncedConnection {
+    id                  Int                    @id @default(autoincrement())
+    connectionId        Int                    @unique @map("connection_id")
+    connection          Connection             @relation(fields: [connectionId], references: [id])
+    percentCompleted    Int                    @default(0) @map("percent_completed")
+    status              SyncedConnectionStatus @default(ACTIVE) @map("status")
+    updatedDate         DateTime               @default(now()) @map("updated_date")
+    SyncedConnectionLog SyncedConnectionLog[]
+
+    @@index([status])
+}
+
+model SyncedConnectionLog {
+    id                 Int                       @id @default(autoincrement())
+    syncedConnectionId Int                       @map("synced_connection_id")
+    syncedConnection   SyncedConnection          @relation(fields: [syncedConnectionId], references: [id])
+    runId              String                    @map("run_id")
+    syncedDates        DateTime[]                @default([]) @map("synced_dates") @db.Date
+    status             SyncedConnectionLogStatus @default(PENDING) @map("status")
+    error              String?                   @map("error")
+    createdDate        DateTime                  @default(now()) @map("created_date")
+
+    @@index([syncedConnectionId])
+    @@index([status])
+    @@index([runId, createdDate(sort: Desc)])
+    @@index([createdDate(sort: Desc)])
 }
 
 model UserTeamRole {
@@ -335,4 +385,55 @@ model AnalyticsAIChatMessage {
     @@index([chatId, messageIndex])
     @@index([chatId])
     @@index([model])
+}
+
+// Scheduled Tasks
+
+enum ScheduledTaskStatus {
+    ACTIVE
+    INACTIVE
+    DELETED
+}
+
+enum ScheduledTaskLogStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+    FAILED
+}
+
+model ScheduledTask {
+    id               Int                 @id @default(autoincrement())
+    uuid             String              @unique @default(uuid())
+    fileId           Int                 @map("file_id")
+    file             File                @relation(fields: [fileId], references: [id])
+    userId           Int                 @map("user_id")
+    user             User                @relation(fields: [userId], references: [id])
+    cronExpression   String              @map("cron_expression")
+    nextRunTime      DateTime            @map("next_run_time")
+    lastRunTime      DateTime?           @map("last_run_time")
+    status           ScheduledTaskStatus @default(ACTIVE) @map("status")
+    operations       Bytes
+    createdDate      DateTime            @default(now()) @map("created_date")
+    updatedDate      DateTime            @default(now()) @map("updated_date")
+    ScheduledTaskLog ScheduledTaskLog[]
+
+    @@index([uuid])
+    @@index([fileId])
+    @@index([userId])
+}
+
+model ScheduledTaskLog {
+    id              Int                    @id @default(autoincrement())
+    scheduledTaskId Int                    @map("scheduled_task_id")
+    scheduledTask   ScheduledTask          @relation(fields: [scheduledTaskId], references: [id])
+    runId           String                 @map("run_id")
+    status          ScheduledTaskLogStatus @default(PENDING) @map("status")
+    error           String?                @map("error")
+    createdDate     DateTime               @default(now()) @map("created_date")
+
+    @@index([scheduledTaskId])
+    @@index([status])
+    @@index([runId, createdDate(sort: Desc)])
+    @@index([createdDate(sort: Desc)])
 }

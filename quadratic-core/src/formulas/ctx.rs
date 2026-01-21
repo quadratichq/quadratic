@@ -1,3 +1,7 @@
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
+
 use itertools::Itertools;
 use smallvec::{SmallVec, smallvec};
 
@@ -18,10 +22,21 @@ pub struct Ctx<'ctx> {
     /// Position in the grid from which the formula is being evaluated.
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
-    pub cells_accessed: CellsAccessed,
+    /// Shared between parent and child contexts via Rc<RefCell<>> so that
+    /// cells accessed in child contexts (e.g., LAMBDA bodies, LET calculations)
+    /// are automatically tracked in the parent for proper dependency tracking.
+    cells_accessed: Rc<RefCell<CellsAccessed>>,
 
     /// Whether to only parse, skipping expensive computations.
     pub skip_computation: bool,
+
+    /// Variable bindings for LAMBDA parameters.
+    /// Maps variable names (case-insensitive, stored uppercase) to their values.
+    pub variables: HashMap<String, Value>,
+
+    /// Set of omitted variable names (case-insensitive, stored uppercase).
+    /// Used by ISOMITTED to check if a LAMBDA parameter was not provided.
+    pub omitted_variables: HashSet<String>,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -29,8 +44,10 @@ impl<'ctx> Ctx<'ctx> {
         Ctx {
             grid_controller,
             sheet_pos,
-            cells_accessed: Default::default(),
+            cells_accessed: Rc::new(RefCell::new(CellsAccessed::default())),
             skip_computation: false,
+            variables: HashMap::new(),
+            omitted_variables: HashSet::new(),
         }
     }
 
@@ -41,8 +58,85 @@ impl<'ctx> Ctx<'ctx> {
         Ctx {
             grid_controller,
             sheet_pos: Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
-            cells_accessed: Default::default(),
+            cells_accessed: Rc::new(RefCell::new(CellsAccessed::default())),
             skip_computation: true,
+            variables: HashMap::new(),
+            omitted_variables: HashSet::new(),
+        }
+    }
+
+    /// Returns the cells accessed during formula evaluation.
+    /// This consumes the shared reference and returns the owned CellsAccessed.
+    pub fn take_cells_accessed(self) -> CellsAccessed {
+        Rc::try_unwrap(self.cells_accessed)
+            .map(|cell| cell.into_inner())
+            .unwrap_or_else(|rc| (*rc.borrow()).clone())
+    }
+
+    /// Returns a reference to the cells accessed for reading.
+    pub fn cells_accessed(&self) -> std::cell::Ref<'_, CellsAccessed> {
+        self.cells_accessed.borrow()
+    }
+
+    /// Looks up a variable by name (case-insensitive).
+    /// Returns `None` if the variable is not defined.
+    pub fn lookup_variable(&self, name: &str) -> Option<&Value> {
+        self.variables.get(&name.to_ascii_uppercase())
+    }
+
+    /// Checks if a variable was omitted (not provided) in a LAMBDA call.
+    /// Returns `true` if the variable is in the omitted set.
+    pub fn is_variable_omitted(&self, name: &str) -> bool {
+        self.omitted_variables.contains(&name.to_ascii_uppercase())
+    }
+
+    /// Creates a child context with additional variable bindings.
+    /// The child context shares the same grid_controller, sheet_pos, and cells_accessed,
+    /// but has its own variable scope that includes both parent variables
+    /// and the new bindings.
+    ///
+    /// Because cells_accessed is shared via Rc<RefCell<>>, any cells accessed
+    /// in the child context are automatically tracked in the parent.
+    pub fn with_bindings(&self, bindings: &[(String, Value)]) -> Self {
+        let mut variables = self.variables.clone();
+        for (name, value) in bindings {
+            variables.insert(name.to_ascii_uppercase(), value.clone());
+        }
+        Ctx {
+            grid_controller: self.grid_controller,
+            sheet_pos: self.sheet_pos,
+            cells_accessed: Rc::clone(&self.cells_accessed),
+            skip_computation: self.skip_computation,
+            variables,
+            omitted_variables: self.omitted_variables.clone(),
+        }
+    }
+
+    /// Creates a child context with additional variable bindings and omitted variables.
+    /// Used by LAMBDA invocation to track which parameters were not provided.
+    ///
+    /// Because cells_accessed is shared via Rc<RefCell<>>, any cells accessed
+    /// in the child context are automatically tracked in the parent.
+    pub fn with_bindings_and_omitted(
+        &self,
+        bindings: &[(String, Value)],
+        omitted: &[String],
+    ) -> Self {
+        let mut variables = self.variables.clone();
+        for (name, value) in bindings {
+            variables.insert(name.to_ascii_uppercase(), value.clone());
+        }
+        let mut omitted_variables = self.omitted_variables.clone();
+        for name in omitted {
+            omitted_variables.insert(name.to_ascii_uppercase());
+        }
+        Ctx {
+            grid_controller: self.grid_controller,
+            sheet_pos: self.sheet_pos,
+            cells_accessed: Rc::clone(&self.cells_accessed),
+            skip_computation: self.skip_computation,
+            variables,
+            omitted_variables,
         }
     }
 
@@ -103,7 +197,7 @@ impl<'ctx> Ctx<'ctx> {
         }
 
         if add_cells_accessed {
-            self.cells_accessed.add_sheet_pos(pos);
+            self.cells_accessed.borrow_mut().add_sheet_pos(pos);
         }
 
         let value = sheet.get_cell_for_formula(pos.into());
@@ -122,7 +216,7 @@ impl<'ctx> Ctx<'ctx> {
         };
         let bounds = sheet.bounds(true);
 
-        self.cells_accessed.add_sheet_rect(rect);
+        self.cells_accessed.borrow_mut().add_sheet_rect(rect);
 
         let mut bounded_rect = rect;
 
@@ -270,5 +364,252 @@ impl<'ctx> Ctx<'ctx> {
                 .try_collect()?;
             f(ctx, eval_ranges_and_criteria)
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::a1::A1Context;
+    use crate::formulas::parse_formula;
+
+    /// Helper to evaluate a formula and return the cells_accessed and result
+    fn eval_and_get_cells_accessed_with_result(
+        gc: &GridController,
+        formula: &str,
+    ) -> (CellsAccessed, crate::Value) {
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos::ORIGIN.to_sheet_pos(sheet_id);
+        let mut ctx = Ctx::new(gc, pos);
+        let parsed = parse_formula(formula, gc.a1_context(), pos).unwrap();
+        let result = parsed.eval(&mut ctx);
+        (ctx.take_cells_accessed(), result.inner)
+    }
+
+    /// Helper to evaluate a formula and return the cells_accessed
+    fn eval_and_get_cells_accessed(gc: &GridController, formula: &str) -> CellsAccessed {
+        eval_and_get_cells_accessed_with_result(gc, formula).0
+    }
+
+    /// Helper to check if cells_accessed contains a specific cell reference
+    fn cells_accessed_contains(
+        cells_accessed: &CellsAccessed,
+        sheet_id: crate::grid::SheetId,
+        x: i64,
+        y: i64,
+        a1_context: &A1Context,
+    ) -> bool {
+        cells_accessed.contains(SheetPos::new(sheet_id, x, y), a1_context)
+    }
+
+    #[test]
+    fn test_cells_accessed_simple_reference() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+
+        let cells_accessed = eval_and_get_cells_accessed(&gc, "A1 + 5");
+        let a1_context = gc.a1_context();
+
+        assert!(cells_accessed_contains(
+            &cells_accessed,
+            sheet_id,
+            1,
+            1,
+            a1_context
+        ));
+    }
+
+    #[test]
+    fn test_cells_accessed_in_lambda_body() {
+        // Verify that cell references inside a LAMBDA body are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "20".into(), None, false);
+
+        // Define and immediately invoke a LAMBDA that references A1
+        let cells_accessed = eval_and_get_cells_accessed(&gc, "LAMBDA(x, x + A1)(B1)");
+        let a1_context = gc.a1_context();
+
+        // Both A1 (inside lambda body) and B1 (passed as argument) should be tracked
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 inside LAMBDA body should be tracked"
+        );
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 2, 1, a1_context),
+            "B1 passed as argument should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_in_let_variable() {
+        // Verify that cell references in LET variable values are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "20".into(), None, false);
+
+        let cells_accessed = eval_and_get_cells_accessed(&gc, "LET(x, A1, y, B1, x + y)");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 in LET variable should be tracked"
+        );
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 2, 1, a1_context),
+            "B1 in LET variable should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_in_let_calculation() {
+        // Verify that cell references in LET calculation expression are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "20".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!C1], "30".into(), None, false);
+
+        // C1 is referenced in the calculation, not in variables
+        let cells_accessed = eval_and_get_cells_accessed(&gc, "LET(x, A1, x + C1)");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 in LET variable should be tracked"
+        );
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 3, 1, a1_context),
+            "C1 in LET calculation should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_in_map() {
+        // Verify that cell references inside MAP lambda are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "2".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B3], "3".into(), None, false);
+
+        // A1 is referenced inside the MAP lambda body
+        let cells_accessed = eval_and_get_cells_accessed(&gc, "MAP(B1:B3, LAMBDA(x, x + A1))");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 inside MAP lambda should be tracked"
+        );
+        // The range B1:B3 should also be tracked
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 2, 1, a1_context),
+            "B1 in MAP range should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_in_reduce() {
+        // Verify that cell references inside REDUCE lambda are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "100".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "2".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B3], "3".into(), None, false);
+
+        // A1 is referenced inside the REDUCE lambda body
+        let cells_accessed =
+            eval_and_get_cells_accessed(&gc, "REDUCE(0, B1:B3, LAMBDA(acc, x, acc + x + A1))");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 inside REDUCE lambda should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_nested_lambda() {
+        // Verify that cell references in deeply nested LAMBDA/LET are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "20".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!C1], "30".into(), None, false);
+
+        // First, test a simpler case: direct lambda invocation with cell ref arg
+        let cells_accessed_simple = eval_and_get_cells_accessed(&gc, "LAMBDA(y, y + C1)(B1)");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed_simple, sheet_id, 2, 1, a1_context),
+            "B1 passed to LAMBDA should be tracked (simple case)"
+        );
+        assert!(
+            cells_accessed_contains(&cells_accessed_simple, sheet_id, 3, 1, a1_context),
+            "C1 in LAMBDA body should be tracked (simple case)"
+        );
+
+        // Nested: LET contains a LAMBDA that references C1
+        let (cells_accessed, _result) = eval_and_get_cells_accessed_with_result(
+            &gc,
+            "LET(x, A1, f, LAMBDA(y, y + C1), f(B1) + x)",
+        );
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 in outer LET should be tracked"
+        );
+        // B1 is evaluated as an argument to f(), so it should be tracked
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 2, 1, a1_context),
+            "B1 passed to nested LAMBDA should be tracked"
+        );
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 3, 1, a1_context),
+            "C1 in nested LAMBDA body should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_in_scan() {
+        // Verify that cell references inside SCAN lambda are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "5".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "2".into(), None, false);
+
+        let cells_accessed =
+            eval_and_get_cells_accessed(&gc, "SCAN(0, B1:B2, LAMBDA(acc, x, acc + x * A1))");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 inside SCAN lambda should be tracked"
+        );
+    }
+
+    #[test]
+    fn test_cells_accessed_in_makearray() {
+        // Verify that cell references inside MAKEARRAY lambda are tracked
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
+
+        // MAKEARRAY creates a 2x2 array, each cell references A1
+        let cells_accessed =
+            eval_and_get_cells_accessed(&gc, "MAKEARRAY(2, 2, LAMBDA(r, c, r + c + A1))");
+        let a1_context = gc.a1_context();
+
+        assert!(
+            cells_accessed_contains(&cells_accessed, sheet_id, 1, 1, a1_context),
+            "A1 inside MAKEARRAY lambda should be tracked"
+        );
     }
 }

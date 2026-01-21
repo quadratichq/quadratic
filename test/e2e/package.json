@@ -5,7 +5,7 @@
   "description": "E2E tests for Quadratic",
   "main": "index.js",
   "scripts": {
-    "lint:ts": "npm install --no-audit --no-fund && tsc --noemit",
+    "lint:ts": "tsc --noemit",
     "ensure-users": "tsx scripts/ensureUserExists.ts",
     "test": "npm run lint:ts && npx playwright test",
     "test:bail": "npm run lint:ts && npx playwright test -x",
@@ -24,7 +24,7 @@
   },
   "type": "module",
   "devDependencies": {
-    "@playwright/test": "1.55.0",
+    "@playwright/test": "^1.57.0",
     "@types/node": "^24.3.1",
     "@workos-inc/node": "^7.70.0",
     "dotenv": "^16.4.7",

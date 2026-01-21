@@ -1,6 +1,6 @@
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
-import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
+import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirect } from 'react-router';
 
 /**
  * When adding a new first level route, make sure to add it to the cloudflare as well for both QA and Prod
@@ -121,11 +121,6 @@ export const router = createBrowserRouter(
         <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
         <Route path="teams/:teamUuid/onboarding" lazy={() => import('./routes/teams.$teamUuid.onboarding')} />
         <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
-          <Route
-            path={ROUTES.FILES_SHARED_WITH_ME}
-            lazy={() => import('./routes/files.shared-with-me')}
-            shouldRevalidate={dontRevalidateDialogs}
-          />
           {/* Redirect /examples to /templates - we add this because examples is linked in lots of places we're not aware about */}
           <Route path="/examples" element={<Navigate to={ROUTES.TEMPLATES} replace />} />
           <Route
@@ -138,9 +133,8 @@ export const router = createBrowserRouter(
           <Route path="teams">
             <Route index element={<Navigate to="/" replace />} />
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
-              <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+              <Route index loader={() => redirect('./files')} />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
-              <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
               <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />

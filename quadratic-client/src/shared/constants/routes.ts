@@ -1,4 +1,5 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { UserFilesListType } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -14,7 +15,6 @@ export const ROUTES = {
   VERIFY_EMAIL: '/verify-email',
   SEND_RESET_PASSWORD: '/send-reset-password',
   RESET_PASSWORD: '/reset-password',
-  FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
@@ -71,12 +71,15 @@ export const ROUTES = {
   TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
   TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
+  TEAM_CONNECTIONS_NEW: (teamUuid: string) => `/teams/${teamUuid}/connections?view=new`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
   TEAM_CONNECTION: (teamUuid: string, connectionUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
-  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}/files`,
-  TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
+  TEAM_FILES: (teamUuid: string, { type }: { type?: UserFilesListType } = {}) =>
+    `/teams/${teamUuid}/files${type ? `?type=${type}` : ''}`,
+  TEAM_FILES_PRIVATE: (teamUuid: string) => ROUTES.TEAM_FILES(teamUuid, { type: 'private' }),
+  TEAM_FILES_SHARED_WITH_ME: (teamUuid: string) => ROUTES.TEAM_FILES(teamUuid, { type: 'shared' }),
   TEAM_FILES_DELETED: (teamUuid: string) => `/teams/${teamUuid}/files/deleted`,
   TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
@@ -112,8 +115,8 @@ export const SEARCH_PARAMS = {
   DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
-  // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
-  CHECKPOINT: { KEY: 'checkpoint' },
+  // Used to load a specific checkpoint (version history), e.g. /file/123?sequence_num=456
+  SEQUENCE_NUM: { KEY: 'sequence_num' },
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
 } as const;

@@ -9,15 +9,18 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { useLoadScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
+import { preloadUserAILanguages } from '@/shared/hooks/useUserAILanguages';
 import { preloadUserAIRules } from '@/shared/hooks/useUserAIRules';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
-// Preload user AI rules early so they're ready when settings menu opens
+// Preload user AI preferences early so they're ready when settings menu opens
 preloadUserAIRules();
+preloadUserAILanguages();
 
 export const QuadraticApp = memo(() => {
   // ensure GridSettings are loaded before app starts
@@ -26,17 +29,20 @@ export const QuadraticApp = memo(() => {
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [searchParams] = useSearchParams();
-  const checkpointId = useMemo(() => searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY), [searchParams]);
+  const sequenceNum = useMemo(() => searchParams.get(SEARCH_PARAMS.SEQUENCE_NUM.KEY), [searchParams]);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
   const [multiplayerLoading, setMultiplayerLoading] = useState(true);
 
+  // Load scheduled tasks
+  useLoadScheduledTasks();
+
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
         // If we're loading a specific checkpoint (version history), don't load multiplayer
-        if (checkpointId) {
+        if (sequenceNum !== null) {
           setMultiplayerLoading(false);
           setOfflineLoading(false);
           return;
@@ -50,7 +56,7 @@ export const QuadraticApp = memo(() => {
         }
       });
     }
-  }, [fileUuid, loggedInUser, checkpointId]);
+  }, [fileUuid, loggedInUser, sequenceNum]);
 
   // wait for offline sync
   useEffect(() => {

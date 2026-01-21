@@ -1,6 +1,6 @@
 {
   "name": "quadratic-shared",
-  "version": "0.22.0",
+  "version": "0.23.5",
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "clean": "npx rimraf node_modules dist build target"
   },
   "dependencies": {
+    "cron-parser": "^5.4.0",
     "zod": "^3.25.3"
   },
   "devDependencies": {

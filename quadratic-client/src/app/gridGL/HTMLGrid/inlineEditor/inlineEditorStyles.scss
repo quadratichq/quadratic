@@ -1,23 +1,31 @@
-#cell-edit .monaco-editor[data-text-align='left'] .view-lines .view-line span {
+// Text alignment - only apply when NOT in clip overflow mode
+// When content overflows in clip mode, horizontal scrolling is enabled which
+// conflicts with CSS text-align (text gets positioned outside visible scroll area)
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='left'] .view-lines .view-line span {
   width: 100%;
   text-align: left;
 }
 
-#cell-edit .monaco-editor[data-text-align='right'] .view-lines .view-line span {
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='right'] .view-lines .view-line span {
   width: 100%;
   text-align: right;
 }
 
-#cell-edit .monaco-editor[data-text-align='center'] .view-lines .view-line span {
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='center'] .view-lines .view-line span {
   width: 100%;
   text-align: center;
 }
 
-#cell-edit .monaco-editor[data-text-align='justify'] .view-lines .view-line span {
+#cell-edit .monaco-editor:not([data-clip-overflow='true'])[data-text-align='justify'] .view-lines .view-line span {
   width: 100%;
   text-align: justify;
 }
 
+// Cell-level underline/strike-through formatting
+// Note: These styles are intentionally lower specificity than span-level formatting,
+// which is applied via Monaco decorations with classes like .inline-underline.
+// When span formatting is applied, it uses !important and accounts for cell-level
+// formatting to properly combine text-decoration values.
 #cell-edit .monaco-editor[data-underline='true'] .view-lines .view-line span {
   text-decoration: underline;
 }
@@ -28,4 +36,23 @@
 
 #cell-edit .monaco-editor[data-underline='true'][data-strike-through='true'] .view-lines .view-line span {
   text-decoration: underline line-through;
+}
+
+// Cell-level text color formatting
+// Uses CSS custom property --cell-text-color set by inlineEditorMonaco.setTextColor()
+// Span-level text color (via Monaco decorations) uses !important to override
+#cell-edit .monaco-editor[data-has-text-color='true'] .view-lines .view-line span {
+  color: var(--cell-text-color);
+}
+
+// Cell-level italic formatting
+// Span-level italic/not-italic can override via !important
+#cell-edit .monaco-editor[data-italic='true'] .view-lines .view-line span {
+  font-style: italic;
+}
+
+// Cell-level bold formatting
+// Span-level bold/not-bold can override via !important
+#cell-edit .monaco-editor[data-bold='true'] .view-lines .view-line span {
+  font-weight: bold;
 }

@@ -8,6 +8,8 @@ import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
 const sizes = {
+  // xxs: '12',
+  // xs: '16',
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
@@ -171,12 +173,20 @@ export const CheckBoxEmptyIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box_outline_blank</Icon>;
 };
 
+export const CheckBoxIndeterminateIcon: IconComponent = (props) => {
+  return <Icon {...props}>indeterminate_check_box</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
 
 export const CheckIcon: IconComponent = (props) => {
   return <Icon {...props}>check</Icon>;
+};
+
+export const CheckCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_circle</Icon>;
 };
 
 export const CheckSmallIcon: IconComponent = (props) => {
@@ -233,6 +243,10 @@ export const CutIcon: IconComponent = (props) => {
 
 export const CropFreeIcon: IconComponent = (props) => {
   return <Icon {...props}>crop_free</Icon>;
+};
+
+export const CancelIcon: IconComponent = (props) => {
+  return <Icon {...props}>cancel</Icon>;
 };
 
 export const DatabaseIcon: IconComponent = (props) => {
@@ -335,12 +349,20 @@ export const ExternalLinkIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_outward</Icon>;
 };
 
+export const InsertLinkIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_link</Icon>;
+};
+
 export const FastForwardIcon: IconComponent = (props) => {
   return <Icon {...props}>fast_forward</Icon>;
 };
 
 export const FileIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
+};
+
+export const FiltersIcon: IconComponent = (props) => {
+  return <Icon {...props}>filter_list</Icon>;
 };
 
 export const FormatAlignCenterIcon: IconComponent = (props) => {
@@ -453,6 +475,10 @@ export const GroupIcon: IconComponent = (props) => {
 
 export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
+};
+
+export const GroupSearchIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_search</Icon>;
 };
 
 export const GroupAddIcon: IconComponent = (props) => {
@@ -582,6 +608,10 @@ export const SaveAndRunStopIcon: IconComponent = (props) => {
   return <Icon {...props}>stop</Icon>;
 };
 
+export const ScheduleIcon: IconComponent = (props) => {
+  return <Icon {...props}>schedule</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
@@ -644,6 +674,10 @@ export const ThumbUpIcon: IconComponent = (props) => {
 
 export const ThumbDownIcon: IconComponent = (props) => {
   return <Icon {...props}>thumb_down_alt</Icon>;
+};
+
+export const TuneIcon: IconComponent = (props) => {
+  return <Icon {...props}>tune</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
@@ -763,16 +797,16 @@ export const LightedBulbIcon: IconComponent = (props) => {
   );
 };
 
+export const PublicIcon: IconComponent = (props) => {
+  return <Icon {...props}>public</Icon>;
+};
+
 export const SheetComeFromIcon: IconComponent = (props) => {
   return <Icon {...props}>step_out</Icon>;
 };
 
 export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
-};
-
-export const TeamIcon: IconComponent = (props) => {
-  return <Icon {...props}>groups</Icon>;
 };
 
 export const GenericLanguageIcon: IconComponent = (props) => {
@@ -797,6 +831,10 @@ export const RadioButtonCheckedIcon: IconComponent = (props) => {
 
 export const WebBrowserIcon: IconComponent = (props) => {
   return <Icon {...props}>captive_portal</Icon>;
+};
+
+export const ScheduledTasksIcon: IconComponent = (props) => {
+  return <Icon {...props}>timer_play</Icon>;
 };
 
 export const WarningIcon: IconComponent = (props) => {

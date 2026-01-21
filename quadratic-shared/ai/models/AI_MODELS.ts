@@ -5,7 +5,7 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // used when `restrictedCountry` is true, in model router
-export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-5.2';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
@@ -405,7 +405,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
+    backupModelKey: 'azure-openai:gpt-5.2',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -422,7 +422,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
-    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
+    backupModelKey: 'azure-openai:gpt-5.2',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 1,
@@ -471,6 +471,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-opus-4.5:thinking-toggle-off': {
     ...AI_RATES.claude_opus_4_5_20251101_rate,
     model: 'claude-opus-4-5-20251101',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -487,6 +488,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-opus-4.5:thinking-toggle-on': {
     ...AI_RATES.claude_opus_4_5_20251101_rate,
     model: 'claude-opus-4-5-20251101',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 1,
@@ -502,7 +504,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-codex': {
     model: 'gpt-5-codex',
-    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
+    backupModelKey: 'vertexai:gemini-2.5-pro',
     displayName: 'GPT-5-Codex',
     displayProvider: 'OpenAI',
     temperature: 1,
@@ -521,10 +523,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:gpt-5-2025-08-07': {
-    model: 'gpt-5-2025-08-07',
-    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
-    displayName: 'GPT-5',
+  'openai:gpt-5.2-2025-12-12': {
+    model: 'gpt-5.2-2025-12-12',
+    backupModelKey: 'vertexai:gemini-2.5-pro',
+    displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
@@ -619,10 +621,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
-  'azure-openai:gpt-5': {
-    model: 'gpt-5',
-    backupModelKey: 'openai:gpt-5-2025-08-07',
-    displayName: 'GPT-5',
+  'azure-openai:gpt-5.2': {
+    model: 'gpt-5.2',
+    backupModelKey: 'openai:gpt-5.2-2025-12-12',
+    displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,

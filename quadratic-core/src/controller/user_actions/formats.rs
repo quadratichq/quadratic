@@ -4,12 +4,59 @@
 
 use wasm_bindgen::JsValue;
 
+use crate::Pos;
+use crate::Rect;
 use crate::a1::{A1Selection, CellRefRange};
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
+use crate::grid::DataTable;
+use crate::grid::SheetId;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
+
+/// Handles format migration for single-value tables.
+///
+/// For single-value tables, formatting is applied to the sheet instead of the table
+/// to avoid issues with format merging. If the table has existing formats, they are
+/// migrated to the sheet and combined with the new format, then the table formats
+/// are cleared.
+///
+/// Returns `true` if the table was handled as a single-value table (caller should continue).
+fn handle_single_value_table_format(
+    data_table: &DataTable,
+    data_table_pos: Pos,
+    format_update: FormatUpdate,
+    sheet_id: SheetId,
+    sheet_format_update: &mut SheetFormatUpdates,
+    ops: &mut Vec<Operation>,
+) -> bool {
+    if !data_table.is_single_value() {
+        return false;
+    }
+
+    if data_table.formats.is_some() {
+        let existing_table_format = data_table.get_format(pos![A1]);
+        // Combine new format with existing table format (new values take precedence where set, existing values preserved otherwise)
+        let combined_format: FormatUpdate = format_update.combine(&existing_table_format.into());
+        sheet_format_update.set_format_cell(data_table_pos, combined_format);
+
+        // Clear the table formats since we've migrated them to the sheet
+        let table_format_updates = SheetFormatUpdates::from_selection(
+            &A1Selection::from_rect(Rect::single_pos(pos![A1]).to_sheet_rect(sheet_id)),
+            FormatUpdate::cleared(),
+        );
+        ops.push(Operation::DataTableFormats {
+            sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+            formats: table_format_updates,
+        });
+    } else {
+        // No existing table formats, just apply to sheet
+        sheet_format_update.set_format_cell(data_table_pos, format_update);
+    }
+
+    true
+}
 
 impl GridController {
     pub(crate) fn clear_format_borders(
@@ -18,16 +65,22 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        let ops = self.clear_format_borders_operations(selection, false);
+        let ops = self.clear_format_borders_operations(selection, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
     /// Separately apply sheet and table formats.
+    ///
+    /// If `skip_richtext_clearing` is true, the function will not generate
+    /// operations to clear RichText inline formatting. This should be set to
+    /// true when the cells are being deleted (since there's no point in
+    /// clearing formatting on cells that will be removed).
     pub(crate) fn format_ops(
         &self,
         selection: &A1Selection,
         format_update: FormatUpdate,
         ignore_tables_having_anchoring_cell_in_selection: bool,
+        skip_richtext_clearing: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -50,6 +103,19 @@ impl GridController {
                         if ignore_tables_having_anchoring_cell_in_selection
                             && intersection_rect.contains(data_table_pos)
                         {
+                            continue;
+                        }
+
+                        // For single-value tables, apply formatting to the sheet instead of the table
+                        let cell_format_update = sheet_format_update.format_update(data_table_pos);
+                        if handle_single_value_table_format(
+                            data_table,
+                            data_table_pos,
+                            cell_format_update,
+                            selection.sheet_id,
+                            &mut sheet_format_update,
+                            &mut ops,
+                        ) {
                             continue;
                         }
 
@@ -83,6 +149,18 @@ impl GridController {
                     let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
                         continue;
                     };
+
+                    // For single-value tables, apply formatting to the sheet instead of the table
+                    if handle_single_value_table_format(
+                        data_table,
+                        data_table_pos,
+                        format_update.clone(),
+                        selection.sheet_id,
+                        &mut sheet_format_update,
+                        &mut ops,
+                    ) {
+                        continue;
+                    }
 
                     let y_adjustment = data_table.y_adjustment(true);
 
@@ -127,6 +205,16 @@ impl GridController {
         }
 
         if !sheet_format_update.is_default() {
+            // Add operations to clear RichText inline formatting when cell-level
+            // formatting is being SET. Skip this when cells are being deleted
+            // since there's no point in clearing formatting on deleted cells,
+            // and doing so would overwrite the deletion with a modified RichText.
+            if !skip_richtext_clearing {
+                let richtext_ops =
+                    sheet.get_richtext_format_clearing_operations(&sheet_format_update);
+                ops.extend(richtext_ops);
+            }
+
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: selection.sheet_id,
                 formats: sheet_format_update,
@@ -147,7 +235,7 @@ impl GridController {
             align: Some(Some(align)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -163,7 +251,7 @@ impl GridController {
             vertical_align: Some(Some(vertical_align)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -190,7 +278,7 @@ impl GridController {
             bold: Some(Some(bold)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -217,7 +305,7 @@ impl GridController {
             italic: Some(Some(italic)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -233,7 +321,7 @@ impl GridController {
             font_size: Some(Some(font_size)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -249,7 +337,7 @@ impl GridController {
             wrap: Some(Some(wrap)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -280,7 +368,7 @@ impl GridController {
             numeric_decimals: Some(Some(2)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -306,7 +394,7 @@ impl GridController {
             numeric_format: Some(Some(NumericFormat { kind, symbol })),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -333,7 +421,7 @@ impl GridController {
             numeric_commas: Some(Some(commas)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -349,7 +437,7 @@ impl GridController {
             text_color: Some(color),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -365,7 +453,7 @@ impl GridController {
             fill_color: Some(color),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -380,7 +468,7 @@ impl GridController {
             numeric_format: Some(None),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -404,7 +492,7 @@ impl GridController {
             numeric_decimals: Some(Some(new_precision)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -420,7 +508,7 @@ impl GridController {
             date_time: Some(date_time),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -447,7 +535,7 @@ impl GridController {
             underline: Some(Some(underline)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -474,7 +562,7 @@ impl GridController {
             strike_through: Some(Some(strike_through)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
@@ -486,8 +574,24 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        let ops = self.format_ops(selection, format_update, false);
+        let ops = self.format_ops(selection, format_update, false, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
+    }
+
+    /// Sets multiple format updates in a single transaction.
+    /// Each entry is a (selection, format_update) pair.
+    pub(crate) fn set_formats_a1(
+        &mut self,
+        format_entries: Vec<(A1Selection, FormatUpdate)>,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let mut all_ops = vec![];
+        for (selection, format_update) in format_entries {
+            let ops = self.format_ops(&selection, format_update, false, false);
+            all_ops.extend(ops);
+        }
+        self.start_user_ai_transaction(all_ops, cursor, TransactionName::SetFormats, is_ai);
     }
 }
 
@@ -956,6 +1060,7 @@ mod test {
             &A1Selection::test_a1_context("Table1", gc.a1_context()),
             format_update.clone(),
             false,
+            false,
         );
         assert_eq!(ops.len(), 1);
 
@@ -979,6 +1084,107 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let format = sheet.cell_format(pos![F7]);
         assert_eq!(format.bold, Some(true));
+    }
+
+    #[test]
+    fn test_single_cell_table_format_preserves_existing_formats() {
+        // Test that setting bold on a single-cell table doesn't clear existing fill color
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single-cell table (1x1) at E5
+        gc.test_set_data_table(
+            pos!(E5).to_sheet_pos(sheet_id),
+            1,
+            1,
+            false,
+            Some(false),
+            Some(false),
+        );
+
+        // First, set fill color on the table
+        gc.set_fill_color(
+            &A1Selection::test_a1_context("Table1", gc.a1_context()),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify fill color was applied
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(format.fill_color, Some("red".to_string()));
+
+        // Now set bold on the same table
+        gc.set_bold(
+            &A1Selection::test_a1_context("Table1", gc.a1_context()),
+            Some(true),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify that BOTH fill color AND bold are present
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(
+            format.fill_color,
+            Some("red".to_string()),
+            "Fill color should be preserved after setting bold"
+        );
+        assert_eq!(format.bold, Some(true), "Bold should be set");
+    }
+
+    #[test]
+    fn test_single_cell_table_format_preserves_existing_formats_sheet_path() {
+        // Test that setting bold on a single-cell table via sheet reference (CellRefRange::Sheet)
+        // doesn't clear existing fill color. This complements the test above which uses
+        // CellRefRange::Table path.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single-cell table (1x1) at E5
+        gc.test_set_data_table(
+            pos!(E5).to_sheet_pos(sheet_id),
+            1,
+            1,
+            false,
+            Some(false),
+            Some(false),
+        );
+
+        // First, set fill color using sheet reference "E5" (CellRefRange::Sheet path)
+        gc.set_fill_color(
+            &A1Selection::test_a1("E5"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify fill color was applied
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(format.fill_color, Some("blue".to_string()));
+
+        // Now set bold using sheet reference "E5" (CellRefRange::Sheet path)
+        gc.set_bold(&A1Selection::test_a1("E5"), Some(true), None, false)
+            .unwrap();
+
+        // Verify that BOTH fill color AND bold are present
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![E5]);
+        assert_eq!(
+            format.fill_color,
+            Some("blue".to_string()),
+            "Fill color should be preserved after setting bold via sheet reference"
+        );
+        assert_eq!(
+            format.bold,
+            Some(true),
+            "Bold should be set via sheet reference"
+        );
     }
 
     #[test]
@@ -1144,5 +1350,107 @@ mod test {
                 symbol: None
             })
         );
+    }
+
+    #[test]
+    fn test_set_formats_a1() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create multiple format entries for different selections
+        let format_entries = vec![
+            (
+                A1Selection::test_a1("A1:B2"),
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+            ),
+            (
+                A1Selection::test_a1("C1:D2"),
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    fill_color: Some(Some("red".to_string())),
+                    ..Default::default()
+                },
+            ),
+            (
+                A1Selection::test_a1("E1"),
+                FormatUpdate {
+                    underline: Some(Some(true)),
+                    text_color: Some(Some("blue".to_string())),
+                    ..Default::default()
+                },
+            ),
+        ];
+
+        // Apply all formats in a single transaction
+        gc.set_formats_a1(format_entries, None, false);
+
+        // Verify the changes were applied to the first selection
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![A1]);
+        assert_eq!(format.bold, Some(true));
+        assert_eq!(format.italic, None);
+
+        let format = sheet.cell_format(pos![B2]);
+        assert_eq!(format.bold, Some(true));
+
+        // Verify the changes were applied to the second selection
+        let format = sheet.cell_format(pos![C1]);
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.fill_color, Some("red".to_string()));
+        assert_eq!(format.bold, None);
+
+        let format = sheet.cell_format(pos![D2]);
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.fill_color, Some("red".to_string()));
+
+        // Verify the changes were applied to the third selection
+        let format = sheet.cell_format(pos![E1]);
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.text_color, Some("blue".to_string()));
+        assert_eq!(format.bold, None);
+        assert_eq!(format.italic, None);
+    }
+
+    #[test]
+    fn test_set_formats_a1_single_undo() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create multiple format entries
+        let format_entries = vec![
+            (
+                A1Selection::test_a1("A1"),
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+            ),
+            (
+                A1Selection::test_a1("B1"),
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    ..Default::default()
+                },
+            ),
+        ];
+
+        // Apply all formats in a single transaction
+        gc.set_formats_a1(format_entries, None, false);
+
+        // Verify both formats were applied
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.cell_format(pos![A1]).bold, Some(true));
+        assert_eq!(sheet.cell_format(pos![B1]).italic, Some(true));
+
+        // Undo should revert both changes in one operation
+        gc.undo(1, None, false);
+
+        // Verify both formats were reverted
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.cell_format(pos![A1]).bold, None);
+        assert_eq!(sheet.cell_format(pos![B1]).italic, None);
     }
 }

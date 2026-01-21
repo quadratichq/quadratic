@@ -165,7 +165,6 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
-                      expandedDefault={false}
                     />
                   ) : isContentText(item) ? (
                     <AICodeBlockParser key={`${index}-${contentIndex}-${item.type}`} input={item.text} />

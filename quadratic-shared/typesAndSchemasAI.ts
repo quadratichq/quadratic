@@ -38,12 +38,12 @@ const AnthropicModelSchema = z.enum([
 ]);
 const OpenAIModelSchema = z.enum([
   'gpt-5-codex',
-  'gpt-5-2025-08-07',
+  'gpt-5.2-2025-12-12',
   'gpt-4.1-2025-04-14',
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
-const AzureOpenAIModelSchema = z.enum(['gpt-5-codex', 'gpt-5', 'gpt-4.1', 'gpt-4.1-mini', 'o3']);
+const AzureOpenAIModelSchema = z.enum(['gpt-5-codex', 'gpt-5.2', 'gpt-4.1', 'gpt-4.1-mini', 'o3']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum([
   'Qwen/Qwen3-Coder-480B-A35B-Instruct',
@@ -126,7 +126,7 @@ export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
   'openai:gpt-5-codex',
-  'openai:gpt-5-2025-08-07',
+  'openai:gpt-5.2-2025-12-12',
   'openai:gpt-4.1-2025-04-14',
   'openai:o4-mini-2025-04-16',
   'openai:o3-2025-04-16',
@@ -135,7 +135,7 @@ export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const AzureOpenAIModelKeySchema = z.enum([
   'azure-openai:gpt-5-codex',
-  'azure-openai:gpt-5',
+  'azure-openai:gpt-5.2',
   'azure-openai:gpt-4.1',
   'azure-openai:gpt-4.1-mini',
   'azure-openai:o3',
@@ -236,6 +236,7 @@ const InternalContextTypeSchema = z.enum([
   'fileSummary',
   'aiUpdates',
   'aiRules',
+  'aiLanguages',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
@@ -552,6 +553,18 @@ const AIToolArgsSchema: z.ZodType<AIToolArgs> = z.lazy(() =>
 
 const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
+
+// Languages that AI can generate code in (subset of CodeCellType)
+export const AILanguagePreferenceSchema = z.enum(['Python', 'Javascript', 'Formula']);
+export type AILanguagePreference = z.infer<typeof AILanguagePreferenceSchema>;
+
+// All possible AI code languages (for iteration/validation)
+export const allAILanguagePreferences: AILanguagePreference[] = ['Formula', 'Python', 'Javascript'];
+
+// Empty = no preference (backend defaults to: Python + Formula)
+// Non-empty = user's explicit choices
+export const AILanguagePreferencesSchema = z.array(AILanguagePreferenceSchema);
+export type AILanguagePreferences = z.infer<typeof AILanguagePreferencesSchema>;
 
 const AISourceSchema = z.enum([
   'AIAssistant',

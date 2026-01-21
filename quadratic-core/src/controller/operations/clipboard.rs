@@ -453,7 +453,8 @@ impl GridController {
                 }
 
                 // adjust the code_runs if necessary
-                let data_table = if let Some(code_run) = data_table.code_run() {
+                let (data_table, adjusted_code_run) = if let Some(code_run) = data_table.code_run()
+                {
                     let mut adjusted_code_run = code_run.clone();
                     match clipboard.operation {
                         ClipboardOperation::Cut => adjusted_code_run.adjust_references(
@@ -480,23 +481,19 @@ impl GridController {
                     }
 
                     if &adjusted_code_run != code_run {
-                        DataTable {
-                            kind: DataTableKind::CodeRun(adjusted_code_run),
-                            ..data_table.clone()
-                        }
+                        (
+                            DataTable {
+                                kind: DataTableKind::CodeRun(adjusted_code_run.clone()),
+                                ..data_table.clone()
+                            },
+                            Some(adjusted_code_run),
+                        )
                     } else {
-                        data_table.to_owned()
+                        (data_table.to_owned(), Some(code_run.clone()))
                     }
                 } else {
-                    data_table.to_owned()
+                    (data_table.to_owned(), None)
                 };
-
-                ops.push(Operation::SetDataTable {
-                    sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
-                    data_table: Some(data_table),
-                    index: usize::MAX,
-                    ignore_old_data_table: true,
-                });
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
                 // with the data table's cells accessed or if the paste rectangle
@@ -504,9 +501,30 @@ impl GridController {
                 let should_rerun =
                     self.clipboard_code_operations_should_rerun(clipboard, source_pos, start_pos);
 
-                if should_rerun {
-                    ops.push(Operation::ComputeCode {
+                if let Some(code_run) = &adjusted_code_run
+                    && should_rerun
+                {
+                    // Use SetComputeCode to re-execute the code and get fresh results.
+                    // SetComputeCode internally creates an empty data table (via finalize_data_table)
+                    // then triggers execution. We intentionally don't use SetDataTable here
+                    // because we want new output, not the cached results from the clipboard.
+                    // Pass the template to preserve presentation properties (show_name, show_columns,
+                    // alternating_colors, etc.) from the original data table, consistent with autocomplete.
+                    ops.push(Operation::SetComputeCode {
                         sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                        language: code_run.language.clone(),
+                        code: code_run.code.clone(),
+                        template: Some((&data_table).into()),
+                    });
+                } else {
+                    // When should_rerun is false (or this isn't a code cell), preserve the
+                    // existing data table with its cached results. For code cells, this means
+                    // the output won't change even though the code isn't re-executed.
+                    ops.push(Operation::SetDataTable {
+                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                        data_table: Some(data_table),
+                        index: usize::MAX,
+                        ignore_old_data_table: true,
                     });
                 }
             }
@@ -834,13 +852,17 @@ impl GridController {
         // collect the plain text clipboard cells
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
-                if value.chars().next().unwrap_or(' ') == '=' {
-                    // code cell
-                    let sheet_pos = SheetPos::new(start_pos.sheet_id, x as i64, y as i64);
+                if let Some(formula_code) = value.strip_prefix('=') {
+                    // code cell - store without the leading '='
+                    let sheet_pos = SheetPos::new(
+                        start_pos.sheet_id,
+                        start_pos.x + x as i64,
+                        start_pos.y + y as i64,
+                    );
                     compute_code_ops.push(Operation::SetDataTable {
                         sheet_pos,
                         data_table: Some(DataTable::new(
-                            DataTableKind::CodeRun(CodeRun::new_formula(value.to_string())),
+                            DataTableKind::CodeRun(CodeRun::new_formula(formula_code.to_string())),
                             "Formula1",
                             Value::Single(CellValue::Blank),
                             false,
@@ -920,6 +942,7 @@ impl GridController {
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
+    #[function_timer::function_timer]
     pub fn paste_html_operations(
         &mut self,
         insert_at: Pos,
@@ -2583,5 +2606,48 @@ mod test {
 
         assert_fill_color(&gc, pos![sheet_id!B10], "red");
         dbg!(&gc.sheet(sheet_id).formats.fill_color);
+    }
+
+    #[test]
+    fn test_paste_formula_strips_equals_prefix() {
+        use crate::grid::js_types::JsClipboard;
+
+        // Test that when pasting a formula from plain text clipboard,
+        // the '=' prefix is stripped before storing (matching direct entry behavior)
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Paste a formula as plain text (like copying from external source)
+        let clipboard = JsClipboard {
+            plain_text: "=1+2".to_string(),
+            html: String::new(),
+        };
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("A1"),
+            clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Get the stored formula code
+        let a1_context = gc.a1_context();
+        let code_cell = gc
+            .sheet(sheet_id)
+            .edit_code_value(pos![A1], a1_context)
+            .expect("Should have a code cell at A1");
+
+        // The stored code should NOT have the '=' prefix
+        assert_eq!(
+            code_cell.code_string, "1+2",
+            "Formula should be stored without '=' prefix"
+        );
+
+        // FORMULATEXT should add the '=' back when returning
+        let result = crate::formulas::tests::eval_to_string(&gc, "FORMULATEXT(A1)");
+        assert_eq!(
+            result, "=1+2",
+            "FORMULATEXT should return formula with '=' prefix"
+        );
     }
 }

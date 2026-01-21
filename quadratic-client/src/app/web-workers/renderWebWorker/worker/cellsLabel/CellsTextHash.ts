@@ -12,9 +12,11 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
 import type { Link } from '@/app/shared/types/links';
 import type { DrawRects } from '@/app/shared/types/size';
+import { colors } from '@/app/theme/colors';
 import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { CellsTextHashSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -254,6 +256,10 @@ export class CellsTextHash {
     const columnsMax = new Map<number, number>();
     const rowsMax = new Map<number, number>();
     this.labels.forEach((label) => {
+      // Only count visible labels for sizing (invisible labels haven't had
+      // their text processed, so their heights are not accurate)
+      if (!label.visible) return;
+
       let column = label.location.x;
       let row = label.location.y;
 
@@ -261,7 +267,9 @@ export class CellsTextHash {
       let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
       columnsMax.set(column, maxWidth);
 
-      let height = label.textHeight;
+      // Use textHeightWithDescenders for row sizing to ensure characters
+      // with descenders (g, y, p, q, j) aren't clipped
+      let height = label.textHeightWithDescenders;
       let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
       rowsMax.set(row, maxHeight);
     });
@@ -300,10 +308,41 @@ export class CellsTextHash {
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
       }
-      if (cellLabel.link) {
-        this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
+      // Push link rectangles for both full links and partial hyperlinks
+      if (cellLabel.linkRectangles.length > 0) {
+        for (const linkRect of cellLabel.linkRectangles) {
+          this.links.push({
+            pos: cellLabel.location,
+            textRectangle: linkRect.rect,
+            url: linkRect.url,
+            linkText: linkRect.linkText,
+            isNakedUrl: linkRect.isNakedUrl,
+            spanStart: linkRect.spanStart,
+            spanEnd: linkRect.spanEnd,
+          });
+        }
       }
-      this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
+      // Group horizontal lines by tint color for proper rendering
+      const linesByTint = new Map<number, Rectangle[]>();
+      for (const { rect, tint } of cellLabel.horizontalLines) {
+        const rects = linesByTint.get(tint);
+        if (rects) {
+          rects.push(rect);
+        } else {
+          linesByTint.set(tint, [rect]);
+        }
+      }
+      for (const [tint, rects] of linesByTint) {
+        this.drawRects.push({ rects, tint });
+      }
+      // Add link underlines with link color (for partial hyperlinks)
+      // Use the pre-calculated underlineY position from linkRectangles
+      if (!cellLabel.link && cellLabel.linkRectangles.length > 0) {
+        const linkUnderlines = cellLabel.linkRectangles.map(
+          (lr) => new Rectangle(lr.rect.x, lr.underlineY, lr.rect.width, 1)
+        );
+        this.drawRects.push({ rects: linkUnderlines, tint: convertColorStringToTint(colors.link) });
+      }
       this.special.addEmojis(cellLabel.emojis);
 
       // Re-add checkboxes and dropdowns that were cleared above
@@ -511,7 +550,10 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.columnsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
+    // Update the hash if it's dirty (needs cell fetch), has dirty cells (array),
+    // or just needs text recalculation. This ensures correct width measurement
+    // for auto-resize.
+    if (visibleOrNeighbor && (this.dirty || this.dirtyText)) {
       await this.update(true);
     }
     return this.columnsMaxCache ?? new Map();
@@ -526,7 +568,10 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.rowsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
+    // Update the hash if it's dirty (needs cell fetch), has dirty cells (array),
+    // or just needs text recalculation. This ensures correct height measurement
+    // for auto-resize, including cells with newlines.
+    if (visibleOrNeighbor && (this.dirty || this.dirtyText)) {
       await this.update(true);
     }
     return this.rowsMaxCache ?? new Map();
