@@ -1,6 +1,7 @@
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FormatPaintIcon, GridActionIcon, TableIcon, TableRowsIcon, UndoIcon } from '@/shared/components/Icons';
@@ -339,7 +340,12 @@ export const AIPendingChanges = memo(() => {
 
   const handleUndo = useCallback(async () => {
     if (undoCount > 0 && !userMadeChanges) {
-      await quadraticCore.undo(undoCount, false);
+      try {
+        await quadraticCore.undo(undoCount, false);
+      } catch (e) {
+        console.error('Failed to undo AI changes:', e);
+        pixiAppSettings.addGlobalSnackbar?.('Failed to undo AI changes', { severity: 'error' });
+      }
     }
   }, [undoCount, userMadeChanges]);
 
