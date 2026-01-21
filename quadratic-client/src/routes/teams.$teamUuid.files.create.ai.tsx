@@ -810,10 +810,7 @@ export const Component = () => {
                   </div>
                 </div>
                 <div className="mt-3 text-center">
-                  <a
-                    href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-                    className="text-sm
-                  >
+                  <a href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} className="text-sm">
                     Skip and open the spreadsheet →
                   </a>
                 </div>
