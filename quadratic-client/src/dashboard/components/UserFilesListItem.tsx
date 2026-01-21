@@ -291,11 +291,11 @@ export function UserFilesListItem({
 }
 
 function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
-  if (type === 'team') return null;
+  const label = type === 'shared' ? 'Shared with me' : type === 'private' ? 'Private' : 'Team';
 
   return (
-    <div className={'flex items-center gap-1 rounded-md bg-accent py-0.5 pl-1 pr-1.5 text-xs text-muted-foreground'}>
-      {type === 'shared' ? 'Shared with me' : 'Private'}
+    <div className={'flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground'}>
+      {label}
     </div>
   );
 }
