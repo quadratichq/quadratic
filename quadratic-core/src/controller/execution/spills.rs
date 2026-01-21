@@ -461,7 +461,7 @@ mod tests {
         // The pasted table would output A1:C5, which overlaps with the original at C3:C5
         let clipboard = gc.sheet(sheet_id).copy_to_clipboard(
             &A1Selection::test_a1("C3:E10"),
-            &a1_context,
+            a1_context,
             ClipboardOperation::Copy,
             true,
         );
