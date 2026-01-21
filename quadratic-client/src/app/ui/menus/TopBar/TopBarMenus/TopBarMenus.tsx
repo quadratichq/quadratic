@@ -10,10 +10,12 @@ import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FormatMenub
 import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/HelpMenubarMenu';
 import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenubarMenu';
 import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
 import { Switch } from '@/shared/shadcn/ui/switch';
+import { cn } from '@/shared/shadcn/utils';
 import { useAtom } from 'jotai';
 import { useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -42,9 +44,14 @@ export const TopBarMenus = () => {
       )}
       <div className="mr-2 flex items-center gap-2">
         <Switch id="agent-mode" checked={agentMode} onCheckedChange={setAgentMode} />
-        <Label htmlFor="agent-mode" className="hidden cursor-pointer text-sm font-medium">
+        {/* TODO: fix this */}
+        <Label
+          htmlFor="agent-mode"
+          className={cn('hidden cursor-pointer text-sm font-medium', agentMode ? 'text-primary' : 'hidden')}
+        >
           Agent mode
         </Label>
+        {agentMode && <Badge variant="primary">Agent mode</Badge>}
       </div>
       {!agentMode && (
         <>

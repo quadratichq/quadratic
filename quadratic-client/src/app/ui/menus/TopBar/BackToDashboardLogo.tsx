@@ -20,7 +20,7 @@ export function BackToDashboardLogo() {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   return (
     <DropdownMenu>
-      <SidebarTooltip label="Back to dashboard">
+      <SidebarTooltip label="Menu">
         <DropdownMenuTrigger asChild>
           <div
             className="group relative flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-border"
@@ -37,7 +37,7 @@ export function BackToDashboardLogo() {
           </div>
         </DropdownMenuTrigger>
       </SidebarTooltip>
-      <DropdownMenuContent>
+      <DropdownMenuContent className="w-48">
         <DropdownMenuItem>
           <Link to="/" reloadDocument>
             Back to dashboard
@@ -52,6 +52,8 @@ export function BackToDashboardLogo() {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         ))}
+        <DropdownMenuSeparator className="!block" />
+        <DropdownMenuItem>Feedback</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
