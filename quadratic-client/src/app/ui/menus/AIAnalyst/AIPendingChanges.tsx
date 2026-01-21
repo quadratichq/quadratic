@@ -101,7 +101,7 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
       case AITool.SetCellValues:
         label = 'Inserted data';
         position = args.top_left_position;
-        icon = <TableRowsIcon />;
+        icon = <TableRowsIcon className="text-success" />;
         // Extract data preview from cell values
         if (args.cell_values && Array.isArray(args.cell_values)) {
           const flatValues = args.cell_values.flat().slice(0, 10);
@@ -111,7 +111,7 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
       case AITool.DeleteCells:
         label = 'Deleted cells';
         position = args.selection;
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-destructive" />;
         break;
       case AITool.MoveCells:
         label = 'Moved cells';
@@ -122,22 +122,22 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
       case AITool.InsertRows:
         label = 'Inserted rows';
         description = `${args.count || 1} row${(args.count || 1) > 1 ? 's' : ''} at row ${args.row}`;
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-success" />;
         break;
       case AITool.InsertColumns:
         label = 'Inserted columns';
         description = `${args.count || 1} column${(args.count || 1) > 1 ? 's' : ''} at ${args.column}`;
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-success" />;
         break;
       case AITool.DeleteRows:
         label = 'Deleted rows';
         description = args.rows?.join(', ');
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-destructive" />;
         break;
       case AITool.DeleteColumns:
         label = 'Deleted columns';
         description = args.columns?.join(', ');
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-destructive" />;
         break;
       case AITool.ResizeRows:
         label = 'Resized rows';
@@ -154,12 +154,12 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
       case AITool.AddSheet:
         label = 'Created sheet';
         name = args.sheet_name;
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-success" />;
         break;
       case AITool.DeleteSheet:
         label = 'Deleted sheet';
         name = args.sheet_name;
-        icon = <GridActionIcon />;
+        icon = <GridActionIcon className="text-destructive" />;
         break;
       case AITool.RenameSheet:
         label = 'Renamed sheet';
@@ -180,7 +180,7 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
         label = 'Inserted table';
         name = args.table_name;
         position = args.top_left_position;
-        icon = <TableIcon />;
+        icon = <TableIcon className="text-success" />;
         // Include first few values as preview
         if (args.table_data && Array.isArray(args.table_data)) {
           const headers = args.table_data[0];
@@ -445,9 +445,9 @@ export const AIPendingChanges = memo(() => {
         className="flex cursor-pointer items-center justify-between gap-2 px-1 py-1"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex min-w-0 items-center gap-1.5 text-sm text-success">
+        <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
           {isExpanded ? <ChevronDownIcon className="ml-1 mr-0.5" /> : <ChevronRightIcon className="ml-1 mr-0.5" />}
-          {pendingChanges.length} new change{pendingChanges.length === 1 ? '' : 's'}
+          {pendingChanges.length} change{pendingChanges.length === 1 ? '' : 's'}
         </div>
 
         <div className="flex items-center gap-1">
