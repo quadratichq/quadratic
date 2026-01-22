@@ -21,4 +21,7 @@ pub(crate) enum WorkerError {
 
     #[error("Shutdown worker error: {0}")]
     ShutdownWorker(String),
+
+    #[error("WebSocket error: {0}")]
+    WebSocket(String),
 }

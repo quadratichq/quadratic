@@ -12,6 +12,7 @@ import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatN
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef } from 'react';
@@ -100,17 +101,24 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="relative grid grid-rows-[1fr_auto_auto] px-2 pb-2 pt-0.5">
-                {messagesCount === 0 && <div className="relative flex items-center justify-center" />}
-                <AIAnalystUserMessageForm
-                  ref={textareaRef}
-                  autoFocusRef={autoFocusRef}
-                  textareaRef={textareaRef}
-                  messageIndex={messagesCount}
-                  showEmptyChatPromptSuggestions={messagesCount === 0}
-                  uiContext="analyst-new-chat"
-                />
-                <AIMessageCounterBar />
+              <div
+                className={cn(
+                  'grid pt-0.5',
+                  messagesCount === 0 ? 'grid-rows-[auto_1fr_auto_auto]' : 'relative grid-rows-[auto_auto]'
+                )}
+              >
+                <AIPendingChanges />
+                <div className="px-2 pb-2">
+                  <AIAnalystUserMessageForm
+                    ref={textareaRef}
+                    autoFocusRef={autoFocusRef}
+                    textareaRef={textareaRef}
+                    messageIndex={messagesCount}
+                    showEmptyChatPromptSuggestions={messagesCount === 0}
+                    uiContext="analyst-new-chat"
+                  />
+                  <AIMessageCounterBar />
+                </div>
               </div>
             </>
           )}

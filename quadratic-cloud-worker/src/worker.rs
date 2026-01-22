@@ -237,7 +237,23 @@ impl Worker {
 
             let mut wait_count = 0;
 
-            while !self.core.status.lock().await.is_complete() {
+            loop {
+                let status = self.core.status.lock().await;
+
+                if status.is_complete() {
+                    break;
+                }
+
+                // If WebSocket disconnected before completion, shut down
+                if status.is_disconnected() {
+                    error!("WebSocket disconnected before completion, shutting down");
+                    return Err(WorkerError::WebSocket(
+                        "WebSocket disconnected before completion".to_string(),
+                    ));
+                }
+
+                drop(status); // Release lock before sleeping
+
                 wait_count += 1;
 
                 if wait_count % 5 == 0 {
