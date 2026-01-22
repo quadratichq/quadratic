@@ -8,7 +8,7 @@ import { createScheduledTask } from '../../utils/scheduledTasks';
 // Mock FREE_EDITABLE_FILE_LIMIT for testing
 jest.mock('../../env-vars', () => ({
   ...jest.requireActual('../../env-vars'),
-  FREE_EDITABLE_FILE_LIMIT: 3,
+  FREE_EDITABLE_FILE_LIMIT: 5,
 }));
 
 beforeAll(async () => {
@@ -327,7 +327,7 @@ describe('DELETE - DELETE /v0/files/:uuid with scheduled tasks', () => {
 
 describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
   it('returns isFileEditRestricted=false for files within the soft limit', async () => {
-    // The test setup creates only 2 files, which is under the limit of 3
+    // The test setup creates only 2 files, which is under the limit of 5
     await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000001')
       .set('Accept', 'application/json')
@@ -364,7 +364,7 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
       },
     });
 
-    // Files 2, 3, 4 (newer) - within the limit of 3
+    // Files 2, 3, 4 (newer) - within the limit of 5
     for (let i = 0; i < 3; i++) {
       await createFile({
         data: {

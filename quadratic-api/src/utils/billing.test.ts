@@ -7,7 +7,7 @@ import type { DecryptedTeam } from './teams';
 // Mock FREE_EDITABLE_FILE_LIMIT for testing
 jest.mock('../env-vars', () => ({
   ...jest.requireActual('../env-vars'),
-  FREE_EDITABLE_FILE_LIMIT: 3,
+  FREE_EDITABLE_FILE_LIMIT: 5,
 }));
 
 let userId: number;
@@ -24,7 +24,7 @@ afterEach(clearDb);
 
 describe('getFreeEditableFileLimit', () => {
   it('returns the configured limit', () => {
-    expect(getFreeEditableFileLimit()).toBe(3);
+    expect(getFreeEditableFileLimit()).toBe(5);
   });
 });
 
@@ -39,7 +39,7 @@ describe('getEditableFileIds', () => {
     team = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!team) throw new Error('Team not found');
 
-    // Create 5 files (more than the free limit of 3)
+    // Create 5 files (at the free limit of 5)
     const fileIds: number[] = [];
     for (let i = 0; i < 5; i++) {
       const file = await createFile({
@@ -64,9 +64,9 @@ describe('getEditableFileIds', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 5 files with staggered creation dates
+    // Create 7 files with staggered creation dates (more than limit of 5)
     const files = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const file = await createFile({
         data: {
           uuid: `00000000-0000-0000-0002-00000000000${i}`,
@@ -80,10 +80,10 @@ describe('getEditableFileIds', () => {
     }
 
     const editableIds = await getEditableFileIds(team);
-    expect(editableIds).toHaveLength(3);
+    expect(editableIds).toHaveLength(5);
 
-    // Should contain the 3 most recent files (files 4, 3, 2)
-    const expectedIds = [files[4].id, files[3].id, files[2].id];
+    // Should contain the 5 most recent files (files 6, 5, 4, 3, 2)
+    const expectedIds = [files[6].id, files[5].id, files[4].id, files[3].id, files[2].id];
     expect(editableIds.sort()).toEqual(expectedIds.sort());
   });
 
@@ -178,9 +178,9 @@ describe('isFileEditRestricted', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 5 files with staggered creation dates
+    // Create 7 files with staggered creation dates (more than limit of 5)
     const files = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const file = await createFile({
         data: {
           uuid: `00000000-0000-0000-0011-00000000000${i}`,
@@ -197,10 +197,12 @@ describe('isFileEditRestricted', () => {
     expect(await isFileEditRestricted(team, files[0].id)).toBe(true);
     expect(await isFileEditRestricted(team, files[1].id)).toBe(true);
 
-    // Newest 3 files (files[2], files[3], files[4]) should NOT be restricted
+    // Newest 5 files (files[2], files[3], files[4], files[5], files[6]) should NOT be restricted
     expect(await isFileEditRestricted(team, files[2].id)).toBe(false);
     expect(await isFileEditRestricted(team, files[3].id)).toBe(false);
     expect(await isFileEditRestricted(team, files[4].id)).toBe(false);
+    expect(await isFileEditRestricted(team, files[5].id)).toBe(false);
+    expect(await isFileEditRestricted(team, files[6].id)).toBe(false);
   });
 
   it('returns false for all files when under the limit', async () => {
@@ -209,9 +211,9 @@ describe('isFileEditRestricted', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create only 2 files (under limit of 3)
+    // Create only 4 files (under limit of 5)
     const files = [];
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 4; i++) {
       const file = await createFile({
         data: {
           uuid: `00000000-0000-0000-0012-00000000000${i}`,
@@ -223,7 +225,7 @@ describe('isFileEditRestricted', () => {
       files.push(file);
     }
 
-    // Both files should be editable
+    // All files should be editable
     for (const file of files) {
       expect(await isFileEditRestricted(team, file.id)).toBe(false);
     }
@@ -237,8 +239,8 @@ describe('getFileLimitInfo', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 2 files (under limit of 3)
-    for (let i = 0; i < 2; i++) {
+    // Create 4 files (under limit of 5)
+    for (let i = 0; i < 4; i++) {
       await createFile({
         data: {
           uuid: `00000000-0000-0000-0020-00000000000${i}`,
@@ -251,9 +253,9 @@ describe('getFileLimitInfo', () => {
 
     const info = await getFileLimitInfo(team);
     expect(info.isOverLimit).toBe(false);
-    expect(info.totalFiles).toBe(2);
-    expect(info.maxEditableFiles).toBe(3);
-    expect(info.editableFileIds).toHaveLength(2);
+    expect(info.totalFiles).toBe(4);
+    expect(info.maxEditableFiles).toBe(5);
+    expect(info.editableFileIds).toHaveLength(4);
   });
 
   it('returns correct info for free team at limit', async () => {
@@ -262,8 +264,8 @@ describe('getFileLimitInfo', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create exactly 3 files (at limit)
-    for (let i = 0; i < 3; i++) {
+    // Create exactly 5 files (at limit)
+    for (let i = 0; i < 5; i++) {
       await createFile({
         data: {
           uuid: `00000000-0000-0000-0021-00000000000${i}`,
@@ -276,9 +278,9 @@ describe('getFileLimitInfo', () => {
 
     const info = await getFileLimitInfo(team);
     expect(info.isOverLimit).toBe(true); // At limit counts as "at or over"
-    expect(info.totalFiles).toBe(3);
-    expect(info.maxEditableFiles).toBe(3);
-    expect(info.editableFileIds).toHaveLength(3);
+    expect(info.totalFiles).toBe(5);
+    expect(info.maxEditableFiles).toBe(5);
+    expect(info.editableFileIds).toHaveLength(5);
   });
 
   it('returns correct info for free team over limit', async () => {
@@ -287,8 +289,8 @@ describe('getFileLimitInfo', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 5 files (over limit of 3)
-    for (let i = 0; i < 5; i++) {
+    // Create 7 files (over limit of 5)
+    for (let i = 0; i < 7; i++) {
       await createFile({
         data: {
           uuid: `00000000-0000-0000-0022-00000000000${i}`,
@@ -301,9 +303,9 @@ describe('getFileLimitInfo', () => {
 
     const info = await getFileLimitInfo(team);
     expect(info.isOverLimit).toBe(true);
-    expect(info.totalFiles).toBe(5);
-    expect(info.maxEditableFiles).toBe(3);
-    expect(info.editableFileIds).toHaveLength(3); // Only 3 are editable
+    expect(info.totalFiles).toBe(7);
+    expect(info.maxEditableFiles).toBe(5);
+    expect(info.editableFileIds).toHaveLength(5); // Only 5 are editable
   });
 
   it('returns correct info for paid team (no limit)', async () => {
@@ -341,8 +343,8 @@ describe('getFileLimitInfo', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 5 files, delete 3
-    for (let i = 0; i < 5; i++) {
+    // Create 7 files, delete 3
+    for (let i = 0; i < 7; i++) {
       await createFile({
         data: {
           uuid: `00000000-0000-0000-0024-00000000000${i}`,
@@ -356,8 +358,8 @@ describe('getFileLimitInfo', () => {
     }
 
     const info = await getFileLimitInfo(team);
-    expect(info.totalFiles).toBe(2); // Only 2 non-deleted files
-    expect(info.isOverLimit).toBe(false); // 2 < 3, so under limit
-    expect(info.editableFileIds).toHaveLength(2);
+    expect(info.totalFiles).toBe(4); // Only 4 non-deleted files
+    expect(info.isOverLimit).toBe(false); // 4 < 5, so under limit
+    expect(info.editableFileIds).toHaveLength(4);
   });
 });

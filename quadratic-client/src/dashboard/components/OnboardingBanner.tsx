@@ -69,7 +69,7 @@ export function OnboardingBanner() {
       window.location.href = ROUTES.CREATE_FILE(teamUuid);
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
       return;
     }
     createFile();
@@ -83,7 +83,7 @@ export function OnboardingBanner() {
       window.location.href = newApiFileToLink;
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
       return;
     }
     createFile();

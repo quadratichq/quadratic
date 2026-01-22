@@ -85,7 +85,7 @@ export const Component = () => {
     // Check file limit before duplicating
     const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(selectedTeamUuid, true);
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, selectedTeamUuid, () => doDuplicate(selectedTeamUuid));
+      showFileLimitDialog(maxEditableFiles ?? 5, selectedTeamUuid, () => doDuplicate(selectedTeamUuid));
       return;
     }
     doDuplicate(selectedTeamUuid);
@@ -100,7 +100,7 @@ export const Component = () => {
       // We're here because single team was over limit
       // Show the dialog with option to duplicate anyway
       apiClient.teams.fileLimit(singleTeamUuid, true).then(({ maxEditableFiles }) => {
-        showFileLimitDialog(maxEditableFiles ?? 3, singleTeamUuid, () => doDuplicate(singleTeamUuid));
+        showFileLimitDialog(maxEditableFiles ?? 5, singleTeamUuid, () => doDuplicate(singleTeamUuid));
       });
     }
   }, [singleTeamUuid, doDuplicate]);

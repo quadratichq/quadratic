@@ -1,7 +1,7 @@
 // Mock FREE_EDITABLE_FILE_LIMIT for testing
 jest.mock('../../env-vars', () => ({
   ...jest.requireActual('../../env-vars'),
-  FREE_EDITABLE_FILE_LIMIT: 3,
+  FREE_EDITABLE_FILE_LIMIT: 5,
 }));
 
 import { workosMock } from '../../tests/workosMock';
@@ -291,7 +291,7 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body.files).toHaveLength(1);
           expect(res.body.files[0]).toHaveProperty('userMakingRequest');
           expect(res.body.files[0].userMakingRequest).toHaveProperty('isFileEditRestricted');
-          // With only 1 file, it should not be restricted (under limit of 3)
+          // With only 1 file, it should not be restricted (under limit of 5)
           expect(res.body.files[0].userMakingRequest.isFileEditRestricted).toBe(false);
         });
     });
@@ -304,9 +304,9 @@ describe('GET /v0/teams/:uuid', () => {
         where: { auth0Id: 'team_1_owner' },
       });
 
-      // Create 4 more files (total 5, with limit of 3)
+      // Create 6 more files (total 7, with limit of 5)
       // Use different creation dates to control order
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 6; i++) {
         await createFile({
           data: {
             name: `Extra File ${i}`,
@@ -322,7 +322,7 @@ describe('GET /v0/teams/:uuid', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.files).toHaveLength(5);
+          expect(res.body.files).toHaveLength(7);
 
           // Count restricted vs unrestricted files
           const restrictedFiles = res.body.files.filter(
@@ -332,9 +332,9 @@ describe('GET /v0/teams/:uuid', () => {
             (f: any) => f.userMakingRequest.isFileEditRestricted === false
           );
 
-          // With limit of 3, 2 should be restricted (oldest ones)
+          // With limit of 5, 2 should be restricted (oldest ones)
           expect(restrictedFiles).toHaveLength(2);
-          expect(unrestrictedFiles).toHaveLength(3);
+          expect(unrestrictedFiles).toHaveLength(5);
 
           // Restricted files should not have FILE_EDIT permission
           for (const file of restrictedFiles) {

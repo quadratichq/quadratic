@@ -270,7 +270,7 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
         if (isOverLimit && !isPaidPlan) {
           // Store the import props and show dialog
           pendingImportRef.current = props;
-          showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, () => {
+          showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, () => {
             if (pendingImportRef.current) {
               doImport(pendingImportRef.current);
               pendingImportRef.current = null;

@@ -76,7 +76,7 @@ export const createNewFileAction = {
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
       return;
     }
     createFile();
@@ -95,7 +95,7 @@ export const duplicateFileAction = {
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, duplicateFile);
+      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, duplicateFile);
       return;
     }
     duplicateFile();

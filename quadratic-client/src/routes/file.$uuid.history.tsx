@@ -112,7 +112,7 @@ export const Component = () => {
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, doDuplicate);
+      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, doDuplicate);
       return;
     }
 

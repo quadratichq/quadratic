@@ -10,7 +10,7 @@ const ANOTHER_TEAM_UUID = '00000000-0000-4000-8000-000000000002';
 // Mock FREE_EDITABLE_FILE_LIMIT for testing
 jest.mock('../../env-vars', () => ({
   ...jest.requireActual('../../env-vars'),
-  FREE_EDITABLE_FILE_LIMIT: 3,
+  FREE_EDITABLE_FILE_LIMIT: 5,
 }));
 
 beforeEach(async () => {
@@ -46,7 +46,7 @@ beforeEach(async () => {
     ],
   });
 
-  // Create 2 team files (below limit of 3)
+  // Create 3 team files (below limit of 5)
   await createFile({
     data: {
       name: 'Team File 1',
@@ -63,8 +63,16 @@ beforeEach(async () => {
       ownerUserId: null,
     },
   });
+  await createFile({
+    data: {
+      name: 'Team File 3',
+      ownerTeamId: team.id,
+      creatorUserId: user_1.id,
+      ownerUserId: null,
+    },
+  });
 
-  // Create 1 private file for user_1 (below limit of 2)
+  // Create 1 private file for user_1
   await createFile({
     data: {
       name: 'Private File 1',
@@ -88,14 +96,14 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
           expect(res.body.hasReachedLimit).toBe(false);
           expect(res.body.isOverLimit).toBe(false);
           expect(res.body.isPaidPlan).toBe(false);
-          expect(res.body.totalFiles).toBe(3); // 2 team files + 1 private file
-          expect(res.body.maxEditableFiles).toBe(3);
+          expect(res.body.totalFiles).toBe(4); // 3 team files + 1 private file
+          expect(res.body.maxEditableFiles).toBe(5);
         });
     });
 
     it('returns hasReachedLimit=true when team has reached the limit', async () => {
-      // Add one more team file to reach the limit of 3 (we already have 3 total: 2 team + 1 private)
-      // So now we'll have 4 total files
+      // Add one more team file to reach the limit of 5 (we already have 4 total: 3 team + 1 private)
+      // So now we'll have 5 total files
       const team = await dbClient.team.findUniqueOrThrow({
         where: { uuid: TEAM_UUID },
       });
@@ -105,7 +113,7 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
 
       await createFile({
         data: {
-          name: 'Team File 3',
+          name: 'Team File 4',
           ownerTeamId: team.id,
           creatorUserId: user.id,
           ownerUserId: null,
@@ -120,8 +128,8 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
           expect(res.body.hasReachedLimit).toBe(true);
           expect(res.body.isOverLimit).toBe(true);
           expect(res.body.isPaidPlan).toBe(false);
-          expect(res.body.totalFiles).toBe(4);
-          expect(res.body.maxEditableFiles).toBe(3);
+          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.maxEditableFiles).toBe(5);
         });
     });
 
@@ -136,7 +144,7 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
 
       await createFile({
         data: {
-          name: 'Team File 3',
+          name: 'Team File 4',
           ownerTeamId: team.id,
           creatorUserId: user.id,
           ownerUserId: null,
@@ -144,7 +152,15 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
       });
       await createFile({
         data: {
-          name: 'Team File 4',
+          name: 'Team File 5',
+          ownerTeamId: team.id,
+          creatorUserId: user.id,
+          ownerUserId: null,
+        },
+      });
+      await createFile({
+        data: {
+          name: 'Team File 6',
           ownerTeamId: team.id,
           creatorUserId: user.id,
           ownerUserId: null,
@@ -168,7 +184,7 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
           expect(res.body.hasReachedLimit).toBe(false);
           expect(res.body.isOverLimit).toBe(false);
           expect(res.body.isPaidPlan).toBe(true);
-          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.totalFiles).toBe(7);
           expect(res.body.maxEditableFiles).toBeUndefined(); // Paid teams don't have a limit
         });
     });
@@ -181,10 +197,10 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         where: { auth0Id: 'team_1_owner' },
       });
 
-      // Create 2 more files to exceed the limit (we already have 3 total)
-      const file4 = await createFile({
+      // Create 3 more files to exceed the limit (we already have 4 total)
+      const file5 = await createFile({
         data: {
-          name: 'Team File 3',
+          name: 'Team File 4',
           ownerTeamId: team.id,
           creatorUserId: user.id,
           ownerUserId: null,
@@ -192,7 +208,15 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
       });
       await createFile({
         data: {
-          name: 'Team File 4',
+          name: 'Team File 5',
+          ownerTeamId: team.id,
+          creatorUserId: user.id,
+          ownerUserId: null,
+        },
+      });
+      await createFile({
+        data: {
+          name: 'Team File 6',
           ownerTeamId: team.id,
           creatorUserId: user.id,
           ownerUserId: null,
@@ -201,11 +225,11 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
 
       // Mark one as deleted
       await dbClient.file.update({
-        where: { uuid: file4.uuid },
+        where: { uuid: file5.uuid },
         data: { deleted: true },
       });
 
-      // Should have 4 non-deleted files (exceeds limit of 3)
+      // Should have 6 non-deleted files (exceeds limit of 5)
       await request(app)
         .get(`/v0/teams/${TEAM_UUID}/file-limit?private=false`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -214,8 +238,8 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
           expect(res.body.hasReachedLimit).toBe(true);
           expect(res.body.isOverLimit).toBe(true);
           expect(res.body.isPaidPlan).toBe(false);
-          expect(res.body.totalFiles).toBe(4); // 5 created - 1 deleted = 4
-          expect(res.body.maxEditableFiles).toBe(3);
+          expect(res.body.totalFiles).toBe(6); // 7 created - 1 deleted = 6
+          expect(res.body.maxEditableFiles).toBe(5);
         });
     });
   });
@@ -225,17 +249,17 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
     // The private=true query param is kept for backward compatibility but doesn't change behavior.
 
     it('returns same result as private=false (soft limit counts all files)', async () => {
-      // With 3 files (2 team + 1 private), we're at the limit
+      // With 4 files (3 team + 1 private), we're under the limit
       await request(app)
         .get(`/v0/teams/${TEAM_UUID}/file-limit?private=true`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.hasReachedLimit).toBe(true); // At exactly 3 files = at limit
-          expect(res.body.isOverLimit).toBe(true);
+          expect(res.body.hasReachedLimit).toBe(false); // 4 files < 5 limit
+          expect(res.body.isOverLimit).toBe(false);
           expect(res.body.isPaidPlan).toBe(false);
-          expect(res.body.totalFiles).toBe(3);
-          expect(res.body.maxEditableFiles).toBe(3);
+          expect(res.body.totalFiles).toBe(4);
+          expect(res.body.maxEditableFiles).toBe(5);
         });
     });
 
@@ -264,6 +288,14 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
           ownerUserId: user.id,
         },
       });
+      await createFile({
+        data: {
+          name: 'Private File 4',
+          ownerTeamId: team.id,
+          creatorUserId: user.id,
+          ownerUserId: user.id,
+        },
+      });
 
       // Update team to be on paid plan
       await dbClient.team.update({
@@ -282,7 +314,7 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
           expect(res.body.hasReachedLimit).toBe(false);
           expect(res.body.isOverLimit).toBe(false);
           expect(res.body.isPaidPlan).toBe(true);
-          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.totalFiles).toBe(7);
           expect(res.body.maxEditableFiles).toBeUndefined();
         });
     });

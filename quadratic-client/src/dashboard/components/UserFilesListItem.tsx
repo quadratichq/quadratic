@@ -156,7 +156,7 @@ export function UserFilesListItem({
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, activeTeamUuid, doDuplicate);
+      showFileLimitDialog(maxEditableFiles ?? 5, activeTeamUuid, doDuplicate);
       return;
     }
     doDuplicate();

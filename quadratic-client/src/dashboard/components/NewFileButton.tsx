@@ -63,7 +63,7 @@ export function NewFileButton() {
           const navigateToAI = () =>
             navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
           if (isOverLimit && !isPaidPlan) {
-            showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, navigateToAI);
+            showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, navigateToAI);
             return;
           }
           navigateToAI();
@@ -83,7 +83,7 @@ export function NewFileButton() {
             window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
           };
           if (isOverLimit && !isPaidPlan) {
-            showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+            showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
             return;
           }
           createFile();
@@ -135,7 +135,7 @@ export function NewFileButton() {
                   });
                 };
                 if (isOverLimit && !isPaidPlan) {
-                  showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createApiFile);
+                  showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createApiFile);
                   return;
                 }
                 createApiFile();

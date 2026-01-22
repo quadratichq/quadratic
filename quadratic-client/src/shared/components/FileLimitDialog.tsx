@@ -40,7 +40,7 @@ export function FileLimitDialog() {
     closeFileLimitDialog();
   }, [state]);
 
-  const maxFiles = state.maxEditableFiles ?? 3;
+  const maxFiles = state.maxEditableFiles ?? 5;
 
   return (
     <Dialog open={state.open} onOpenChange={(open) => !open && handleClose()}>

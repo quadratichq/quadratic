@@ -254,7 +254,7 @@ function SidebarNavLinkCreateButton({
       window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
       return;
     }
     createFile();

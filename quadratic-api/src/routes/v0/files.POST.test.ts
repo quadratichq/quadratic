@@ -153,8 +153,8 @@ describe('POST /v0/files', () => {
 
       // Don't upgrade team - keep it as unpaid/free plan
 
-      // Create 3 files (the soft limit)
-      for (let i = 0; i < 3; i++) {
+      // Create 5 files (the soft limit)
+      for (let i = 0; i < 5; i++) {
         await createFileData({
           data: {
             uuid: `00000000-0000-0000-0000-0000000000${i.toString().padStart(2, '0')}`,
@@ -165,7 +165,7 @@ describe('POST /v0/files', () => {
         });
       }
 
-      // Creating a 4th file should succeed (soft limit allows creation)
+      // Creating a 6th file should succeed (soft limit allows creation)
       // The oldest file will become read-only instead
       await request(app)
         .post('/v0/files')
@@ -204,8 +204,8 @@ describe('POST /v0/files', () => {
       // Upgrade team to paid plan
       await upgradeTeamToPro(paidTeam.id);
 
-      // Create 3 files (which would be the limit for unpaid)
-      for (let i = 0; i < 3; i++) {
+      // Create 5 files (which would be the limit for unpaid)
+      for (let i = 0; i < 5; i++) {
         await createFileData({
           data: {
             uuid: `00000000-0000-0000-0001-0000000000${i.toString().padStart(2, '0')}`,
@@ -255,8 +255,8 @@ describe('POST /v0/files', () => {
         },
       });
 
-      // User 1 creates 3 files (the soft limit)
-      for (let i = 0; i < 3; i++) {
+      // User 1 creates 5 files (the soft limit)
+      for (let i = 0; i < 5; i++) {
         await createFileData({
           data: {
             uuid: `00000000-0000-0000-0002-00000000000${i}`,
