@@ -2,28 +2,101 @@
 
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, useAtom } from 'jotai';
-import type { Connection, SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
+import type {
+  Connection,
+  SyncedConnectionLatestLogStatus,
+  SyncedConnectionLog,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const SYNCED_CONNECTION_UPDATE_INTERVAL_MS = 10000; // 10 seconds
 
+/**
+ * Sync state machine:
+ * - not_synced: Initial state (never synced). Once in syncing/synced, never returns to this.
+ * - syncing: Actively syncing (percentCompleted > 0 and < 100)
+ * - synced: Synced and not actively syncing (percentCompleted >= 100, latest log not FAILED)
+ * - failed: Error in latest sync (latest log status is FAILED)
+ */
+export type SyncState = 'not_synced' | 'syncing' | 'synced' | 'failed';
+
 export interface SyncedConnection {
   percentCompleted: number;
   updatedDate: string | null;
+  latestLogStatus: SyncedConnectionLatestLogStatus | null;
+  latestLogError: string | null;
   logs: SyncedConnectionLog[];
 }
 
 const defaultSyncedConnection: SyncedConnection = {
   percentCompleted: 0,
   updatedDate: null,
+  latestLogStatus: null,
+  latestLogError: null,
   logs: [],
 };
 
 // Store synced connection state per-connection, keyed by connectionUuid
 export const syncedConnectionsAtom = atom<Record<string, SyncedConnection>>({});
 
+/**
+ * Core sync state derivation logic.
+ * Rules:
+ * - not_synced: Never synced (updatedDate is null/undefined AND never started syncing)
+ * - syncing: Actively syncing (percentCompleted > 0 and < 100, or latest log is PENDING/RUNNING)
+ * - synced: Completed sync, no error (percentCompleted >= 100, latest log not FAILED)
+ * - failed: Error in latest sync (latest log status is FAILED)
+ */
+export function deriveSyncState(params: {
+  percentCompleted?: number;
+  updatedDate?: string | null;
+  latestLogStatus?: SyncedConnectionLatestLogStatus | null;
+}): SyncState {
+  const { percentCompleted, updatedDate, latestLogStatus } = params;
+
+  // If currently syncing (between 0 and 100), return syncing
+  if (percentCompleted !== undefined && percentCompleted > 0 && percentCompleted < 100) {
+    return 'syncing';
+  }
+
+  // Check if latest log failed - takes priority over synced state
+  if (latestLogStatus === 'FAILED') {
+    return 'failed';
+  }
+
+  // If latest log is PENDING or RUNNING, it's syncing
+  if (latestLogStatus === 'PENDING' || latestLogStatus === 'RUNNING') {
+    return 'syncing';
+  }
+
+  // If completed (100%) or has an updatedDate (was synced at some point)
+  if ((percentCompleted !== undefined && percentCompleted >= 100) || (updatedDate !== undefined && updatedDate !== null)) {
+    return 'synced';
+  }
+
+  // Initial state - never synced
+  return 'not_synced';
+}
+
+/**
+ * Derives the sync state from ConnectionList data.
+ * This is a convenience wrapper for components using ConnectionList items.
+ */
+export function deriveSyncStateFromConnectionList(connection: {
+  syncedConnectionPercentCompleted?: number;
+  syncedConnectionUpdatedDate?: string;
+  syncedConnectionLatestLogStatus?: SyncedConnectionLatestLogStatus;
+}): SyncState {
+  return deriveSyncState({
+    percentCompleted: connection.syncedConnectionPercentCompleted,
+    updatedDate: connection.syncedConnectionUpdatedDate,
+    latestLogStatus: connection.syncedConnectionLatestLogStatus,
+  });
+}
+
 interface SyncedConnectionActions {
   syncedConnection: SyncedConnection;
+  syncState: SyncState;
   getConnection: () => Promise<Connection | null>;
   getLogs: (pageNumber?: number, pageSize?: number) => Promise<SyncedConnectionLog[]>;
   showLogs: boolean;
@@ -66,6 +139,8 @@ export const useSyncedConnection = (connectionUuid: string, teamUuid: string): S
           ...(prev[connectionUuid] ?? defaultSyncedConnection),
           percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted ?? 0,
           updatedDate: fetchedConnection?.syncedConnectionUpdatedDate ?? null,
+          latestLogStatus: fetchedConnection?.syncedConnectionLatestLogStatus ?? null,
+          latestLogError: fetchedConnection?.syncedConnectionLatestLogError ?? null,
         },
       }));
     };
@@ -79,8 +154,20 @@ export const useSyncedConnection = (connectionUuid: string, teamUuid: string): S
     return () => clearInterval(interval);
   }, [connectionUuid, teamUuid, getConnection, setSyncedConnections]);
 
+  // Derive the sync state from the synced connection data
+  const syncState = useMemo(
+    () =>
+      deriveSyncState({
+        percentCompleted: syncedConnection.percentCompleted,
+        updatedDate: syncedConnection.updatedDate,
+        latestLogStatus: syncedConnection.latestLogStatus,
+      }),
+    [syncedConnection]
+  );
+
   return {
     syncedConnection,
+    syncState,
     getConnection,
     getLogs,
     showLogs,
