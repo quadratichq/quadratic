@@ -69,7 +69,7 @@ export const AddDataTable = memo(
       <ToolCard
         icon={icon}
         label={label}
-        description={`${table_name} • ${getRowColSentence({ rows, cols })} at ${top_left_position}`}
+        description={`${table_name} · ${getRowColSentence({ rows, cols })} at ${top_left_position}`}
         className={className}
         compact
         onClick={handleClick}
