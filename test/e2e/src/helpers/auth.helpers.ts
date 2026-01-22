@@ -4,13 +4,25 @@ import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
 
 /**
+ * Asserts that the Quadratic dashboard page is loaded and the user is logged in.
+ * Checks for the user's email, page title, and "Suggested files" heading.
+ */
+export const assertDashboardLoaded = async (page: Page, options: { email: string }) => {
+  const { email } = options;
+
+  await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page).toHaveTitle(/Files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Files`, exact: true })).toBeVisible();
+};
+
+/**
  * Dismisses the "Upgrade to Pro" dialog if it appears on the dashboard.
  * This dialog can appear periodically for team owners on free plans.
  */
 export const dismissUpgradeToProDialog = async (page: Page) => {
   try {
     // Check if the upgrade dialog is visible (it has "Upgrade to Pro" as the title)
-    const upgradeDialog = page.locator('[role="dialog"]:has-text("Upgrade to Pro")');
+    const upgradeDialog = page.locator('[data-testid="upgrade-to-pro-dialog"]');
     if (await upgradeDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
       // Click the close button (has sr-only text "Close")
       await page.locator('[role="dialog"] button:has-text("Close")').click({ timeout: 5000 });
@@ -162,7 +174,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await handleStartWithAi(page);
 
   // wait for shared with me visibility on dashboard
-  await page.locator('[data-testid="dashboard-sidebar-shared-with-me-link"]').waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator('[data-testid="dashboard-sidebar-team-files-link"]').waitFor({ timeout: 2 * 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
@@ -176,8 +188,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       .click({ timeout: 60 * 1000 });
   }
 
-  // Wait for Filter by file or creator name...
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
+  // Wait for Filter
+  await page.locator('[data-testid="files-list-search-input"]').waitFor({ timeout: 60 * 1000 });
 
   // Dismiss the "Upgrade to Pro" dialog if it appears
   await dismissUpgradeToProDialog(page);
@@ -237,7 +249,7 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   }
 
   // Wait for shared with me visibility on dashboard
-  await page.locator(`[data-testid="dashboard-sidebar-shared-with-me-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).waitFor({ timeout: 2 * 60 * 1000 });
 
   // Assert we are on the teams page
   await expect(page).toHaveURL(/teams/, { timeout: 60 * 1000 });

@@ -1,14 +1,17 @@
 import { aiChatFilesDirect } from '@/app/ai/aiChatFilesDirect';
 import { getExtension, uploadFile } from '@/app/helpers/files';
 import { authClient, requireAuth } from '@/auth/auth';
+import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
-import { DatabaseIcon, FileIcon, SearchIcon } from '@/shared/components/Icons';
+import { Connections } from '@/shared/components/connections/Connections';
+import { DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/shadcn/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +23,10 @@ import {
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { ArrowRightIcon, ChevronLeftIcon, UploadIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { ArrowRightIcon, ChevronLeftIcon, Cross1Icon, UploadIcon } from '@radix-ui/react-icons';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { Link, redirect, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, redirect, useFetcher, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 type Step = 'connection' | 'describe';
 
@@ -114,12 +117,13 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   return {
     connections: teamData.connections,
     teamUuid: teamData.team.uuid,
+    sshPublicKey: teamData.team.sshPublicKey,
   };
 };
 
 export const Component = () => {
   useRemoveInitialLoadingUI();
-  const { connections, teamUuid } = useLoaderData<typeof loader>();
+  const { connections, teamUuid, sshPublicKey } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -147,6 +151,69 @@ export const Component = () => {
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const dragCounterRef = useRef(0);
+
+  // Connections dialog state
+  const [showConnectionsDialog, setShowConnectionsDialog] = useState(false);
+  const [connectionsDialogInitialView, setConnectionsDialogInitialView] = useState<'new' | 'list'>('list');
+  const connectionsFetcher = useFetcher<GetConnections>({ key: 'START_WITH_AI_CONNECTIONS_FETCHER' });
+
+  // Connections helper dismissed state (persisted to localStorage)
+  const [connectionsHelperDismissed, setConnectionsHelperDismissed] = useState(() => {
+    return localStorage.getItem('startWithAI.connectionsHelperDismissed') === 'true';
+  });
+  const handleDismissConnectionsHelper = () => {
+    setConnectionsHelperDismissed(true);
+    localStorage.setItem('startWithAI.connectionsHelperDismissed', 'true');
+  };
+
+  // Fetch connections when dialog opens
+  useEffect(() => {
+    if (showConnectionsDialog && connectionsFetcher.state === 'idle' && connectionsFetcher.data === undefined) {
+      connectionsFetcher.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
+    }
+  }, [showConnectionsDialog, connectionsFetcher, teamUuid]);
+
+  // Get the latest connections list (from fetcher or loader)
+  const latestConnections = useMemo(
+    () => connectionsFetcher.data?.connections ?? connections,
+    [connectionsFetcher.data?.connections, connections]
+  );
+  const staticIps = useMemo(() => connectionsFetcher.data?.staticIps ?? [], [connectionsFetcher.data?.staticIps]);
+
+  // When connections dialog closes, check if a new connection was added and auto-select it
+  const prevConnectionsLengthRef = useRef(connections.length);
+  useEffect(() => {
+    if (!showConnectionsDialog) {
+      if (latestConnections.length > prevConnectionsLengthRef.current) {
+        // A new connection was added, auto-select the most recent one
+        const newestConnection = latestConnections[0]; // Connections are sorted newest first
+        if (newestConnection) {
+          trackEvent('[StartWithAI].addConnection', { connectionType: newestConnection.type, source: 'dialog' });
+          setSelectedConnection({
+            uuid: newestConnection.uuid,
+            name: newestConnection.name,
+            type: newestConnection.type,
+          });
+        }
+      }
+      // Only update ref when dialog is closed to avoid missing new connections created while dialog was open
+      prevConnectionsLengthRef.current = latestConnections.length;
+    }
+  }, [showConnectionsDialog, latestConnections]);
+
+  const handleOpenConnectionsDialog = useCallback((initialView: 'new' | 'list' = 'list') => {
+    trackEvent('[StartWithAI].openConnectionsDialog', { initialView });
+    setConnectionsDialogInitialView(initialView);
+    setShowConnectionsDialog(true);
+  }, []);
+
+  // Reset initial view when dialog closes
+  const handleConnectionsDialogChange = useCallback((open: boolean) => {
+    setShowConnectionsDialog(open);
+    if (!open) {
+      setConnectionsDialogInitialView('list');
+    }
+  }, []);
 
   // Generate contextual suggestions when files or connections change
   useEffect(() => {
@@ -539,30 +606,36 @@ export const Component = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                      <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {connections.length > 0 ? (
-                        connections.map((connection) => (
-                          <DropdownMenuItem
-                            key={connection.uuid}
-                            onClick={() => {
-                              setSelectedConnection({
-                                uuid: connection.uuid,
-                                name: connection.name,
-                                type: connection.type,
-                              });
-                            }}
-                          >
-                            <LanguageIcon language={connection.type} className="mr-2" />
-                            {connection.name}
-                          </DropdownMenuItem>
-                        ))
-                      ) : (
-                        <DropdownMenuItem asChild>
-                          <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-4">
-                            Add Connection
-                          </Link>
-                        </DropdownMenuItem>
+                      <DropdownMenuLabel>Connections</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
+                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                        <span className="truncate">Add connection</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
+                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                        <span className="truncate">Manage connections</span>
+                      </DropdownMenuItem>
+                      {latestConnections.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          {latestConnections.map((connection) => (
+                            <DropdownMenuItem
+                              key={connection.uuid}
+                              onClick={() => {
+                                trackEvent('[StartWithAI].addConnection', { connectionType: connection.type });
+                                setSelectedConnection({
+                                  uuid: connection.uuid,
+                                  name: connection.name,
+                                  type: connection.type,
+                                });
+                              }}
+                              className="gap-4"
+                            >
+                              <LanguageIcon language={connection.type} className="flex-shrink-0" />
+                              <span className="truncate">{connection.name}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -603,6 +676,59 @@ export const Component = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Connections helper - show when no connections exist and not dismissed */}
+                {latestConnections.length === 0 && !selectedConnection && !connectionsHelperDismissed && (
+                  <div className="relative mt-4 rounded-lg border border-border p-4">
+                    <button
+                      onClick={handleDismissConnectionsHelper}
+                      className="absolute right-2 top-2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      aria-label="Dismiss"
+                    >
+                      <Cross1Icon className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="pr-4">
+                      <h4 className="mb-1 text-sm font-semibold">Connect Quadratic to your data</h4>
+                      <p className="mb-3 text-sm text-muted-foreground">
+                        Pull data from services like Google Analytics and Mixpanel, as well as databases like Postgres
+                        and BigQuery.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="POSTGRES" />
+                          <span>Postgres</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="MYSQL" />
+                          <span>MySQL</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="SNOWFLAKE" />
+                          <span>Snowflake</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="GOOGLE_ANALYTICS" />
+                          <span>Analytics</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="PLAID" />
+                          <span>Banks and Brokerages</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">& more</span>
+                      </div>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        <Button
+                          variant="link"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => handleOpenConnectionsDialog('new')}
+                        >
+                          Add a connection
+                        </Button>{' '}
+                        to get started.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Suggestions - above the chat */}
@@ -683,6 +809,15 @@ export const Component = () => {
                     </Button>
                   </div>
                 </div>
+                <div className="mt-3 text-center">
+                  <a
+                    href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                    className="text-sm"
+                    onClick={() => trackEvent('[StartWithAI].skip')}
+                  >
+                    Skip and open the spreadsheet →
+                  </a>
+                </div>
               </div>
 
               {/* Spacer to reduce scroll jumping during generation */}
@@ -691,6 +826,32 @@ export const Component = () => {
           )}
         </div>
       </main>
+
+      {/* Connections Dialog */}
+      <Dialog open={showConnectionsDialog} onOpenChange={handleConnectionsDialogChange}>
+        <DialogContent
+          className="max-w-4xl"
+          onPointerDownOutside={(event) => {
+            event.preventDefault();
+          }}
+          aria-describedby={undefined}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
+          </DialogHeader>
+          {showConnectionsDialog && (
+            <Connections
+              connections={latestConnections}
+              connectionsAreLoading={connectionsFetcher.state === 'loading'}
+              teamUuid={teamUuid}
+              sshPublicKey={sshPublicKey}
+              staticIps={staticIps}
+              hideSidebar
+              initialView={connectionsDialogInitialView}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -313,7 +313,7 @@ export const ErrorBoundary = () => {
       </Button>
       <Button asChild variant="default">
         <Link to={ROUTES.FILE_HISTORY(uuid)} reloadDocument>
-          Open file history
+          Open history
         </Link>
       </Button>
     </div>

@@ -90,6 +90,14 @@ pub async fn get_database_settings(pool: &PgPool) -> Result<DatabaseSettings> {
     })
 }
 
+/// Check if the database is healthy by executing a simple query.
+pub async fn is_healthy(pool: &PgPool) -> bool {
+    sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(pool)
+        .await
+        .is_ok()
+}
+
 // For testing, we need to connect to a test database
 pub fn connect_test() -> Result<PgPool> {
     let _ = dotenv::from_filename(".env.test").ok();

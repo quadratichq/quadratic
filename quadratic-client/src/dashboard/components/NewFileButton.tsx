@@ -5,27 +5,36 @@ import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import {
+  AddIcon,
+  AIIcon,
+  ApiIcon,
+  ArrowDropDownIcon,
+  DatabaseIcon,
+  ExamplesIcon,
+  FileIcon,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog } from '@/shared/shadcn/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRef } from 'react';
+import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
 
-export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
+export function NewFileButton() {
   const {
     activeTeam: {
       connections,
@@ -37,8 +46,15 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
 
+  // Sets the creation of new files as private by default
+  const isPrivate = true;
+
+  if (isMobile) {
+    return null;
+  }
+
   return (
-    <div className="flex gap-2">
+    <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
         variant="default"
         className="gap-2"
@@ -53,9 +69,12 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           navigateToAI();
         }}
       >
-        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
+        <AIIcon className="mr-0" />
+        Start with AI
       </Button>
+
       <Button
+        data-testid="files-list-new-file-button"
         variant="outline"
         onClick={async (e) => {
           e.preventDefault();
@@ -72,6 +91,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
       >
         New file
       </Button>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -95,7 +115,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           <DropdownMenuContent>
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <FileIcon className="mr-3 text-primary" />
+              <FileIcon className="mr-3" />
               <span className="flex flex-col">
                 Local file
                 <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid</span>
@@ -121,7 +141,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 createApiFile();
               }}
             >
-              <ApiIcon className="mr-3 text-primary" />
+              <ApiIcon className="mr-3" />
               <span className="flex flex-col">
                 API
                 <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
