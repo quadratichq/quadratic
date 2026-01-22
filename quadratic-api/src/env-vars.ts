@@ -42,6 +42,13 @@ export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
     ? undefined
     : Number(process.env.BILLING_AI_USAGE_LIMIT)
   : undefined;
+
+// Maximum number of editable files for free teams (defaults to 5)
+export const FREE_EDITABLE_FILE_LIMIT = process.env.FREE_EDITABLE_FILE_LIMIT
+  ? Number(process.env.FREE_EDITABLE_FILE_LIMIT)
+  : 5;
+
+// @deprecated - Use FREE_EDITABLE_FILE_LIMIT instead. Kept for backward compatibility with hasReachedFileLimit.
 export const MAX_FILE_COUNT_FOR_PAID_PLAN = process.env.MAX_FILE_COUNT_FOR_PAID_PLAN
   ? process.env.MAX_FILE_COUNT_FOR_PAID_PLAN.split(',').map(Number)
   : undefined;

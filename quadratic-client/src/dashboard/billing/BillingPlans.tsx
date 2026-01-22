@@ -47,7 +47,7 @@ export const FreePlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>Files</span>
-          <span className="font-medium">3 team + 3 personal</span>
+          <span className="font-medium">5 files editable</span>
         </div>
       </div>
 

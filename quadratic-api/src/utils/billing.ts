@@ -1,12 +1,9 @@
 import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
 import dbClient from '../dbClient';
-import { isRunningInTest, MAX_FILE_COUNT_FOR_PAID_PLAN } from '../env-vars';
+import { FREE_EDITABLE_FILE_LIMIT, isRunningInTest, MAX_FILE_COUNT_FOR_PAID_PLAN } from '../env-vars';
 import { updateBilling } from '../stripe/stripe';
 import type { DecryptedTeam } from '../utils/teams';
-
-// Default number of editable files for free teams
-const DEFAULT_FREE_EDITABLE_FILE_LIMIT = 3;
 
 export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
   if (isRunningInTest) {
@@ -39,14 +36,9 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
 
 /**
  * Get the maximum number of editable files for free teams.
- * Supports both new format (single number "3") and legacy format ("3,2").
  */
 export const getFreeEditableFileLimit = (): number => {
-  if (!MAX_FILE_COUNT_FOR_PAID_PLAN) {
-    return DEFAULT_FREE_EDITABLE_FILE_LIMIT;
-  }
-  // Use the first value (which was previously totalTeamFiles limit)
-  return MAX_FILE_COUNT_FOR_PAID_PLAN[0] ?? DEFAULT_FREE_EDITABLE_FILE_LIMIT;
+  return FREE_EDITABLE_FILE_LIMIT;
 };
 
 /**

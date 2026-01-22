@@ -16,11 +16,15 @@ export function FileLimitBanner() {
     },
   } = useDashboardRouteLoaderData();
 
-  // Check if any files are edit-restricted due to billing limits
-  const hasEditRestrictedFiles = useMemo(() => {
-    const teamFilesRestricted = teamFiles.some(({ userMakingRequest }) => userMakingRequest.isFileEditRestricted);
-    const privateFilesRestricted = filesPrivate.some(({ userMakingRequest }) => userMakingRequest.isFileEditRestricted);
-    return teamFilesRestricted || privateFilesRestricted;
+  // Check if any files are edit-restricted and count editable files
+  const { hasEditRestrictedFiles, editableFileCount } = useMemo(() => {
+    const allFiles = [...teamFiles, ...filesPrivate];
+    const restrictedCount = allFiles.filter(({ userMakingRequest }) => userMakingRequest.isFileEditRestricted).length;
+    const editableCount = allFiles.length - restrictedCount;
+    return {
+      hasEditRestrictedFiles: restrictedCount > 0,
+      editableFileCount: editableCount,
+    };
   }, [teamFiles, filesPrivate]);
 
   // Don't show banner if on paid plan or no restricted files
@@ -29,12 +33,13 @@ export function FileLimitBanner() {
   }
 
   return (
-    <div className="mb-4 mt-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
+    <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted">
         <WarningIcon className="h-5 w-5 text-warning" />
       </div>
       <p className="text-sm">
-        You can edit your <strong>3 most recently created</strong> Quadratic files and the rest are view-only.{' '}
+        You can edit your <strong>{editableFileCount} most recently created</strong> Quadratic files and the rest are
+        view-only.{' '}
         <button
           className="text-primary underline hover:text-primary/80"
           onClick={() => showUpgradeDialog('fileLimitReached')}

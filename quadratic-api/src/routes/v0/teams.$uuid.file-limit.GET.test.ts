@@ -7,9 +7,11 @@ import { clearDb, createFile, createTeam, createUser } from '../../tests/testDat
 const TEAM_UUID = '00000000-0000-4000-8000-000000000001';
 const ANOTHER_TEAM_UUID = '00000000-0000-4000-8000-000000000002';
 
-// Mock MAX_FILE_COUNT_FOR_PAID_PLAN to be [3, 2] (3 team files, 2 private files)
+// Mock FREE_EDITABLE_FILE_LIMIT for testing
 jest.mock('../../env-vars', () => ({
   ...jest.requireActual('../../env-vars'),
+  FREE_EDITABLE_FILE_LIMIT: 3,
+  // Keep MAX_FILE_COUNT_FOR_PAID_PLAN for deprecated hasReachedFileLimit function
   MAX_FILE_COUNT_FOR_PAID_PLAN: [3, 2],
 }));
 

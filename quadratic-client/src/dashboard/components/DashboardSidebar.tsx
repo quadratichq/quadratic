@@ -129,33 +129,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               Settings
             </SidebarNavLink>
           )}
-          {!isOnPaidPlan && !isSettingsPage && (
-            <div className="mt-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
-              <div className="flex gap-2">
-                <RocketIcon className="h-5 w-5 text-primary" />
-                <div className="flex flex-col">
-                  <span className="font-semibold">Upgrade to Quadratic Pro</span>
-                  <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
-                </div>
-              </div>
-
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
-                    team_uuid: activeTeamUuid,
-                  });
-                  setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
-                }}
-              >
-                Upgrade to Pro
-              </Button>
-            </div>
-          )}
         </div>
       </div>
-      <div className="-mb-3 mt-auto flex flex-col gap-1 bg-accent px-3">
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEMPLATES}>
@@ -176,8 +152,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
-      </div>
-      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {!isOnPaidPlan && !isSettingsPage && (
           <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
             <div className="flex gap-2">

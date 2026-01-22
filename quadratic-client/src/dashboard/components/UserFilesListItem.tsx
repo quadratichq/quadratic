@@ -175,7 +175,12 @@ export function UserFilesListItem({
         reloadDocument
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
       >
-        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
+        <ListItemView
+          viewPreferences={viewPreferences}
+          thumbnail={thumbnail}
+          lazyLoad={lazyLoad}
+          overlay={file.isFileEditRestricted ? <FileEditRestrictedBadge /> : undefined}
+        >
           <FilesListItemCore
             key={uuid}
             creator={file.creator}
@@ -184,12 +189,7 @@ export function UserFilesListItem({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             viewPreferences={viewPreferences}
-            children={
-              <>
-                <FileTypeBadge type={fileType} />
-                {file.isFileEditRestricted && <FileEditRestrictedBadge />}
-              </>
-            }
+            children={<FileTypeBadge type={fileType} />}
             actions={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -314,7 +314,9 @@ function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
 function FileEditRestrictedBadge() {
   return (
     <div
-      className={'flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground'}
+      className={
+        'flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-xs text-muted-foreground shadow-sm'
+      }
       title="View-only due to file limit. Upgrade to edit."
     >
       View-only
