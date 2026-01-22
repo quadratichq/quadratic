@@ -376,6 +376,17 @@ impl SheetDataTables {
         let (index, _, parent_table) = self.data_tables.get_full_mut(&parent_pos).ok_or_else(err)?;
         let old_output_rect = Some(parent_table.output_rect(parent_pos, false));
 
+        // Calculate the display position of the nested cell for dirty rect
+        // Note: sub_pos is in data coordinates; we need to convert to display coordinates
+        let y_adjustment = parent_table.y_adjustment(true);
+        let display_col = parent_table.get_display_index_from_column_index(sub_pos.x as u32, true);
+        // For rows, without sorting the display index equals the data index
+        let display_row = sub_pos.y;
+        let cell_display_pos = Pos::new(
+            parent_pos.x + display_col as i64,
+            parent_pos.y + y_adjustment + display_row,
+        );
+
         // Get or create the nested tables
         let nested_tables = parent_table.tables.get_or_insert_with(SheetDataTables::new);
 
@@ -383,7 +394,10 @@ impl SheetDataTables {
         nested_tables.data_tables.insert(sub_pos, data_table);
 
         // Update spill and cache for the parent table
-        let dirty_rects = self.update_spill_and_cache(index, parent_pos, old_output_rect);
+        let mut dirty_rects = self.update_spill_and_cache(index, parent_pos, old_output_rect);
+
+        // Also mark the specific cell as dirty so it re-renders
+        dirty_rects.insert(Rect::single_pos(cell_display_pos));
 
         Ok(dirty_rects)
     }

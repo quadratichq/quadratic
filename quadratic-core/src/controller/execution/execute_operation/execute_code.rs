@@ -594,7 +594,6 @@ impl GridController {
                 MultiPos::TablePos(table_pos) => {
                     // Handle in-table code execution
                     if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
-                        dbgjs!("Only user / undo / redo / server transaction should have a ComputeCodeMultiPos");
                         return;
                     }
 
@@ -606,7 +605,6 @@ impl GridController {
                     let Some(code_run) = sheet.data_tables.get_nested_table(&table_pos)
                         .and_then(|dt| dt.code_run())
                     else {
-                        dbgjs!(format!("No code run found at {:?}", multi_sheet_pos));
                         return;
                     };
 
@@ -620,9 +618,7 @@ impl GridController {
                         CodeCellLanguage::Formula => {
                             self.run_formula_multi_pos(transaction, multi_sheet_pos, code, cached_ast);
                         }
-                        _ => {
-                            dbgjs!(format!("In-table code execution not yet supported for {:?}", language));
-                        }
+                        _ => {}
                     }
                 }
             }
@@ -829,6 +825,7 @@ impl GridController {
             output_type: None,
         };
 
+        // Store the result in the nested table
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
             "Formula1",
@@ -839,7 +836,6 @@ impl GridController {
             None,
         );
 
-        // Store the result in the nested table
         self.store_nested_data_table(sheet_id, table_pos, new_data_table);
 
         // Mark the in-table code in the cache

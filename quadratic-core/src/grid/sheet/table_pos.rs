@@ -81,23 +81,19 @@ impl Sheet {
 
     /// Converts a display position to a TablePos for in-table code cell placement.
     ///
-    /// Unlike `display_pos_to_table_pos`, this method DOES allow conversion within
-    /// code tables, as it's specifically for placing code cells within a table's output area.
+    /// Unlike `display_pos_to_table_pos`, this method allows conversion within
+    /// any table type (code tables, import tables, etc.) for placing code cells
+    /// within a table's output area.
     ///
     /// Returns None if:
-    /// - The position is not within any code table
-    /// - The position is the table's anchor cell
-    /// - The parent table is not a code table (use `display_pos_to_table_pos` instead)
+    /// - The position is not within any table
+    /// - The position is the table's anchor cell (for code tables only)
     pub fn display_pos_to_in_table_code_pos(&self, display_pos: Pos) -> Option<TablePos> {
         let (data_table_pos, data_table) = self.data_table_that_contains(display_pos)?;
 
-        // Only allow in-table code within code tables, not import tables
-        if !data_table.is_code() {
-            return None;
-        }
-
-        // Anchor cell cannot contain in-table code (it IS the code cell)
-        if data_table_pos == display_pos {
+        // For code tables, anchor cell cannot contain in-table code (it IS the code cell)
+        // For import tables, anchor cell CAN contain in-table code
+        if data_table.is_code() && data_table_pos == display_pos {
             return None;
         }
 
@@ -107,8 +103,8 @@ impl Sheet {
 
         // Calculate the row index in the table data
         let y_adjustment = data_table.y_adjustment(true);
-        let display_row_offset =
-            u64::try_from(display_pos.y - data_table_pos.y - y_adjustment).ok()?;
+        let row_offset_raw = display_pos.y - data_table_pos.y - y_adjustment;
+        let display_row_offset = u64::try_from(row_offset_raw).ok()?;
         let table_row = data_table.get_row_index_from_display_index(display_row_offset);
 
         Some(TablePos::new(

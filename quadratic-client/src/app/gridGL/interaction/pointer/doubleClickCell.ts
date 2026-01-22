@@ -105,13 +105,10 @@ export async function doubleClickCell(options: {
       }
       // editing inside data table (only applies to table code cells, not single-cell)
       else if (hasPermission && file_import && codeCell) {
-        // can't create formula inside data table
-        if (cell?.startsWith('=')) {
-          pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-        }
-
         // check column header or table value
-        else {
+        if (cell?.startsWith('=')) {
+          pixiAppSettings.changeInput(true, cell, cursorMode);
+        } else {
           const isSpillOrError =
             codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
           const isTableName = codeCell.show_name && row === codeCell.y;

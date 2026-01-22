@@ -718,10 +718,26 @@ impl DataTable {
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
+    /// If there's a nested code cell at this position, returns its output instead.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.has_spill() || self.has_error() {
             Some(CellValue::Blank)
         } else {
+            // Check for nested code cell at this position first
+            // The nested table position is stored using data coordinates (after header adjustment)
+            if let Some(nested_tables) = &self.tables {
+                let y_adjustment = self.y_adjustment(true) as u32;
+                if y >= y_adjustment {
+                    // Convert display position to data position
+                    let data_col = self.get_column_index_from_display_index(x, true);
+                    let data_row = self.get_row_index_from_display_index((y - y_adjustment) as u64);
+                    let sub_pos = Pos::new(data_col as i64, data_row as i64);
+                    if let Some(nested_table) = nested_tables.get_at(&sub_pos) {
+                        // Return the nested code cell's output value
+                        return nested_table.cell_value_at(0, 0);
+                    }
+                }
+            }
             self.display_value_at((x, y).into()).ok().cloned()
         }
     }
@@ -738,10 +754,19 @@ impl DataTable {
 
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
+    /// If there's a nested code cell at this position, returns its output instead.
     pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
         if self.has_spill() {
             CellValue::Blank
         } else {
+            // Check for nested code cell at this position first
+            if let Some(nested_tables) = &self.tables {
+                let sub_pos = Pos::new(x as i64, y as i64);
+                if let Some(nested_table) = nested_tables.get_at(&sub_pos) {
+                    // Return the nested code cell's output value
+                    return nested_table.get_cell_for_formula(0, 0);
+                }
+            }
             match &self.value {
                 Value::Single(v) => match v {
                     CellValue::Image(_) => CellValue::Blank,

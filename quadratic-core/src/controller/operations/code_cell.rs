@@ -35,7 +35,9 @@ impl GridController {
         let pos = sheet_pos.into();
 
         // Check if this is an in-table code position (within a code table's output area)
-        if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos) {
+        let table_pos_result = sheet.display_pos_to_in_table_code_pos(pos);
+
+        if let Some(table_pos) = table_pos_result {
             // This is an in-table code cell - generate MultiPos operations
             return self.set_in_table_code_cell_operations(
                 sheet_pos.sheet_id,
@@ -46,9 +48,13 @@ impl GridController {
         }
 
         // Check if it's an anchor cell (source cell)
-        if sheet.is_source_cell(pos) {
+        let is_source = sheet.is_source_cell(pos);
+        let is_data_table = sheet.is_data_table_cell(pos);
+        let contains_pos = sheet.data_table_pos_that_contains(pos);
+
+        if is_source {
             // Block if it's an import cell (imports don't have anchors)
-            if sheet.is_data_table_cell(pos) {
+            if is_data_table {
                 if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsClientMessage(
                         "Cannot add code cell to table".to_string(),
@@ -58,7 +64,7 @@ impl GridController {
                 return ops;
             }
             // Otherwise it's a code cell anchor - allowed
-        } else if sheet.data_table_pos_that_contains(pos).is_some() {
+        } else if contains_pos.is_some() {
             // It's in an import table's output area - block it
             if cfg!(target_family = "wasm") || cfg!(test) {
                 crate::wasm_bindings::js::jsClientMessage(
@@ -296,6 +302,7 @@ impl GridController {
 
         // Compute the code
         ops.push(Operation::ComputeCodeMultiPos { multi_sheet_pos });
+
         ops
     }
 
