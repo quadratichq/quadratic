@@ -1,3 +1,4 @@
+import { apiClient } from '@/shared/api/apiClient';
 import type { DataAssetType } from 'quadratic-shared/typesAndSchemas';
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { DataPickerDialog } from './DataPickerDialog';
@@ -20,10 +21,20 @@ export interface ConnectionItem {
 
 export type DataPickerResultType = 'data-asset' | 'connection' | 'uploaded';
 
+// File content for AI chat (base64 encoded)
+export interface DataAssetFileContent {
+  name: string;
+  mimeType: string;
+  size: number;
+  data: ArrayBuffer;
+}
+
 export interface DataPickerResult {
   type: DataPickerResultType;
   dataAsset?: DataAssetItem;
   connection?: ConnectionItem;
+  /** File content if downloadContent option was set */
+  fileContent?: DataAssetFileContent;
 }
 
 export interface DataPickerOptions {
@@ -39,6 +50,40 @@ export interface DataPickerOptions {
   title?: string;
   /** Initial tab to show */
   initialTab?: 'personal' | 'team' | 'connections';
+  /** Download file content when selecting a data asset */
+  downloadContent?: boolean;
+}
+
+// MIME type mapping for data asset types
+const DATA_ASSET_MIME_TYPES: Record<DataAssetType, string> = {
+  CSV: 'text/csv',
+  EXCEL: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  PARQUET: 'application/vnd.apache.parquet',
+  PDF: 'application/pdf',
+  JSON: 'application/json',
+  OTHER: 'application/octet-stream',
+};
+
+/** Download a data asset and return its content */
+export async function downloadDataAssetContent(
+  teamUuid: string,
+  dataAsset: DataAssetItem
+): Promise<DataAssetFileContent | null> {
+  try {
+    const { downloadUrl } = await apiClient.data.getDownloadUrl({ teamUuid, dataUuid: dataAsset.uuid });
+    const response = await fetch(downloadUrl);
+    const arrayBuffer = await response.arrayBuffer();
+
+    return {
+      name: dataAsset.name,
+      mimeType: DATA_ASSET_MIME_TYPES[dataAsset.type] || 'application/octet-stream',
+      size: dataAsset.size,
+      data: arrayBuffer,
+    };
+  } catch (error) {
+    console.error('Failed to download data asset:', error);
+    return null;
+  }
 }
 
 interface DataPickerContextType {
@@ -55,21 +100,38 @@ export function DataPickerProvider({ children }: { children: ReactNode }) {
   const [teamUuid, setTeamUuid] = useState<string>('');
   const [options, setOptions] = useState<DataPickerOptions>({});
   const resolveRef = useRef<((result: DataPickerResult | null) => void) | null>(null);
+  const optionsRef = useRef<DataPickerOptions>({});
 
   const open = useCallback((teamUuid: string, opts: DataPickerOptions = {}) => {
     return new Promise<DataPickerResult | null>((resolve) => {
       resolveRef.current = resolve;
+      optionsRef.current = opts;
       setTeamUuid(teamUuid);
       setOptions(opts);
       setIsOpen(true);
     });
   }, []);
 
-  const handleSelect = useCallback((result: DataPickerResult) => {
-    resolveRef.current?.(result);
-    resolveRef.current = null;
-    setIsOpen(false);
-  }, []);
+  const handleSelect = useCallback(
+    async (result: DataPickerResult) => {
+      // If downloadContent is enabled and we have a data asset, download the file
+      if (optionsRef.current.downloadContent && result.dataAsset) {
+        const fileContent = await downloadDataAssetContent(teamUuid, result.dataAsset);
+
+        if (fileContent) {
+          resolveRef.current?.({ ...result, fileContent });
+        } else {
+          // Download failed, still return the result without content
+          resolveRef.current?.(result);
+        }
+      } else {
+        resolveRef.current?.(result);
+      }
+      resolveRef.current = null;
+      setIsOpen(false);
+    },
+    [teamUuid]
+  );
 
   const handleCancel = useCallback(() => {
     resolveRef.current?.(null);

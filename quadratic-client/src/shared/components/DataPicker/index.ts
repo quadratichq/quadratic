@@ -1,2 +1,8 @@
-export { DataPickerProvider, useDataPicker } from './DataPickerContext';
-export type { DataAssetItem, ConnectionItem, DataPickerOptions, DataPickerResult } from './DataPickerContext';
+export { DataPickerProvider, useDataPicker, downloadDataAssetContent } from './DataPickerContext';
+export type {
+  DataAssetItem,
+  DataAssetFileContent,
+  ConnectionItem,
+  DataPickerOptions,
+  DataPickerResult,
+} from './DataPickerContext';
