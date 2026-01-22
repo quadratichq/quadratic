@@ -23,10 +23,13 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
+    use crate::a1::A1Selection;
     use crate::controller::GridController;
+    use crate::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
     use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
+    use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
     use crate::{Array, Pos, Rect, SheetPos, Value};
 
@@ -654,5 +657,118 @@ mod tests {
         );
         // Should contain A2 (anchor of the A2:A3 merged cell)
         assert!(reasons.contains(&Pos { x: 1, y: 2 })); // A2 anchor
+    }
+    /// Test: deleting cells that include the full range of an import table
+    /// should delete the table.
+    #[test]
+    fn test_delete_full_import_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create import table at C3 (outputs C3:E7)
+        test_create_data_table(&mut gc, sheet_id, pos![C3], 3, 3);
+
+        // Verify table exists
+        assert!(
+            gc.sheet(sheet_id).data_table_at(&pos![C3]).is_some(),
+            "Table at C3 should exist before delete"
+        );
+
+        // Delete the full table range
+        gc.delete_cells(
+            &A1Selection::test_a1_sheet_id("C3:E7", sheet_id),
+            None,
+            false,
+        );
+
+        // Table should be deleted
+        assert!(
+            gc.sheet(sheet_id).data_table_at(&pos![C3]).is_none(),
+            "Table at C3 should be deleted after deleting full range"
+        );
+
+        // Undo should restore the table
+        gc.undo(1, None, false);
+        assert!(
+            gc.sheet(sheet_id).data_table_at(&pos![C3]).is_some(),
+            "Table at C3 should be restored after undo"
+        );
+    }
+
+    /// Test: copying and pasting a data table to a location whose output overlaps
+    /// with an existing table should cause the pasted table to spill, NOT delete
+    /// the original table.
+    #[test]
+    fn test_spill_copied_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create original table at C3 (outputs C3:E7)
+        test_create_data_table(&mut gc, sheet_id, pos![C3], 3, 3);
+
+        let a1_context = gc.a1_context();
+
+        // Copy the table and paste at A1
+        // The pasted table would output A1:C5, which overlaps with the original at C3:C5
+        let clipboard = gc.sheet(sheet_id).copy_to_clipboard(
+            &A1Selection::test_a1("C3:E10"),
+            a1_context,
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("A1"),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Check that BOTH tables exist
+        let table_at_a1 = gc.sheet(sheet_id).data_table_at(&pos![A1]);
+        let table_at_c3 = gc.sheet(sheet_id).data_table_at(&pos![C3]);
+
+        assert!(
+            table_at_c3.is_some(),
+            "Original table at C3 should still exist after paste"
+        );
+        assert!(table_at_a1.is_some(), "Pasted table at A1 should exist");
+
+        // The original table should NOT have a spill (it was created first)
+        assert!(
+            !table_at_c3.unwrap().has_spill(),
+            "Original table at C3 should NOT have spill"
+        );
+
+        // The pasted table should have a spill error (its output overlaps with C3)
+        assert!(
+            table_at_a1.unwrap().has_spill(),
+            "Pasted table at A1 should have spill because its output overlaps with C3"
+        );
+
+        // Now delete the original table at C3 by deleting its selection
+        gc.delete_cells(
+            &A1Selection::test_a1_sheet_id("C3:E7", sheet_id),
+            None,
+            false,
+        );
+
+        // The pasted table should now unspill
+        let table_at_a1 = gc.sheet(sheet_id).data_table_at(&pos![A1]);
+        let table_at_c3 = gc.sheet(sheet_id).data_table_at(&pos![C3]);
+
+        assert!(
+            table_at_c3.is_none(),
+            "Original table at C3 should be deleted"
+        );
+        assert!(
+            table_at_a1.is_some(),
+            "Pasted table at A1 should still exist after deleting C3"
+        );
+        assert!(
+            !table_at_a1.unwrap().has_spill(),
+            "Pasted table at A1 should no longer have spill after C3 is deleted"
+        );
     }
 }

@@ -61,7 +61,11 @@ pub struct Checkpoint {
 /// Check if the quadratic API server is healthy.
 pub async fn is_healthy(base_url: &str) -> bool {
     let url = format!("{base_url}/health");
-    let client = get_client(&url, "");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .unwrap_or_default()
+        .get(&url);
     let response = client.send().await;
 
     match response {
@@ -298,7 +302,7 @@ pub async fn create_synced_connection_log(
     status: SyncedConnectionLogStatus,
     error: Option<String>,
 ) -> Result<SyncedConnectionLogResponse> {
-    tracing::info!(
+    tracing::trace!(
         "Creating synced connection log, run_id: {run_id}, synced_connection_id: {synced_connection_id}, status: {status:?}"
     );
 
@@ -521,7 +525,7 @@ pub async fn create_scheduled_task_log(
     status: ScheduledTaskLogStatus,
     error: Option<String>,
 ) -> Result<ScheduledTaskLogResponse> {
-    tracing::info!(
+    tracing::trace!(
         "Creating scheduled task log, run_id: {run_id}, scheduled_task_id: {scheduled_task_id}, status: {status:?}"
     );
 
