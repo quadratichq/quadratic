@@ -1,3 +1,4 @@
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystShowChatHistoryAtom,
@@ -7,7 +8,6 @@ import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid } from '@/app/helpers/files';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
@@ -17,7 +17,9 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -30,6 +32,7 @@ export const AIAnalyst = memo(() => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
   const [dragOver, setDragOver] = useState(false);
+  const agentMode = useAtomValue(agentModeAtom);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -171,7 +174,12 @@ export const AIAnalyst = memo(() => {
           </div>
         )}
 
-        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
+        <ResizeControl
+          className={agentMode ? 'resize-control--vertical-condensed' : ''}
+          position="VERTICAL"
+          style={{ left: `${panelWidth - 1}px` }}
+          setState={handleResize}
+        />
 
         <div
           className={cn(

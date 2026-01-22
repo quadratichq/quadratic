@@ -584,6 +584,10 @@ export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
 };
 
+export const PromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>chat_paste_go</Icon>;
+};
+
 export const PersonAddIcon: IconComponent = (props) => {
   return <Icon {...props}>person_add</Icon>;
 };

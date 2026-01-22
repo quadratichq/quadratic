@@ -1,3 +1,4 @@
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
@@ -7,6 +8,7 @@ import { ConnectionSchemaBrowser } from '@/shared/components/connections/Connect
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -21,6 +23,7 @@ export const AIAnalystConnectionSchema = memo(() => {
     aiAnalystActiveSchemaConnectionUuidAtom
   );
   const { connections } = useConnectionsFetcher();
+  const agentMode = useAtomValue(agentModeAtom);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
@@ -57,7 +60,12 @@ export const AIAnalystConnectionSchema = memo(() => {
       className="relative hidden h-full shrink-0 overflow-hidden md:block"
       style={{ width: `${panelWidth}px` }}
     >
-      <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
+      <ResizeControl
+        className={agentMode ? 'resize-control--vertical-condensed' : ''}
+        position="VERTICAL"
+        style={{ left: `${panelWidth - 1}px` }}
+        setState={handleResize}
+      />
 
       <div className="h-full w-full pt-0.5">
         <ConnectionSchemaBrowser

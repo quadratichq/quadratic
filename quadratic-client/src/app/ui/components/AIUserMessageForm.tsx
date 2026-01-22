@@ -381,6 +381,7 @@ export const AIUserMessageForm = memo(
           <AIAnalystEmptyChatPromptSuggestions
             submit={handleSubmit}
             context={context}
+            setContext={setContext}
             files={files}
             importFiles={importFiles}
           />

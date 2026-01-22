@@ -3,22 +3,21 @@ import {
   type EmptyChatPromptSuggestions,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { EmptyChatSection } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AddIcon } from '@/shared/components/Icons';
+import { AddIcon, PromptIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // label and prompt are identical here, but the type requires both fields
 // for compatibility with AI-generated suggestions which may have different values
@@ -43,11 +42,12 @@ const ALL_IMPORT_FILE_TYPES = ['image/*', '.pdf', '.xlsx', '.xls', '.csv', '.par
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
   context: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   importFiles: ImportFile[];
 }
 export const AIAnalystEmptyChatPromptSuggestions = memo(
-  ({ submit, context, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
+  ({ submit, context, setContext, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | undefined>(undefined);
@@ -170,20 +170,20 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
         setLoading(true);
 
         try {
-          const promptSuggestions = await getEmptyChatPromptSuggestionsRef.current({
+          const newSuggestions = await getEmptyChatPromptSuggestionsRef.current({
             context,
             files,
             importFiles,
             sheetHasData: sheetHasData ?? true, // Treat undefined as having data
             abortController,
           });
-          // Only update state if this request wasn't aborted
-          if (!abortController.signal.aborted) {
-            setPromptSuggestions(promptSuggestions);
+          // Only update state if this request wasn't aborted and we got valid suggestions
+          if (!abortController.signal.aborted && newSuggestions) {
+            setPromptSuggestions(newSuggestions);
           }
         } catch (error) {
+          // Keep existing suggestions on error, just log the warning
           if (!abortController.signal.aborted) {
-            setPromptSuggestions(undefined);
             console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
           }
         }
@@ -209,6 +209,22 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading]);
 
     const connections = useConnectionsFetcher();
+    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
+
+    const handleClickConnection = useCallback(
+      (connectionUuid: string) => {
+        trackEvent('[AIAnalyst].selectConnectionFromEmptyChat');
+        const connection = connections.connections.find((c) => c.uuid === connectionUuid);
+        if (!connection) return;
+
+        setContext?.((prev) => ({
+          ...prev,
+          connection: { type: connection.type, id: connection.uuid, name: connection.name },
+        }));
+        setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+      },
+      [connections.connections, setContext, setAIAnalystActiveSchemaConnectionUuid]
+    );
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
@@ -219,7 +235,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
               <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
               <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
             </div>
-            <p className="text-xs text-muted-foreground">Excel, CSV, PDF, PQT, image</p>
+            <p className="text-xs text-muted-foreground">Excel, CSV, PDF, PQT, or image</p>
             <p className="text-xs text-muted-foreground">
               Drag and drop, or{' '}
               <button
@@ -232,51 +248,38 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           </div>
         </div>
 
-        {/* Prompt Suggestions */}
-        <div className="flex flex-col gap-3">
-          <h2 className="text-xs font-semibold text-muted-foreground">Suggested prompts</h2>
-          <div className="flex max-w-lg flex-col">
-            {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
-              <div key={`${index}-${prompt}`}>
-                <Button
-                  disabled={loading}
-                  variant="ghost"
-                  className="relative h-auto w-full justify-start whitespace-normal px-0 text-left text-sm font-normal text-foreground hover:text-foreground"
-                  onClick={() => {
-                    trackEvent('[AIAnalyst].submitExamplePrompt');
-                    submit(prompt);
-                  }}
-                >
-                  {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
-                  <span className={cn(loading && 'opacity-0')}>{prompt}</span>
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <EmptyChatSection
+          header="Suggestions"
+          isLoading={loading}
+          items={(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => ({
+            key: `${index}-${prompt}`,
+            icon: <PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />,
+            text: prompt,
+            onClick: () => {
+              trackEvent('[AIAnalyst].submitExamplePrompt');
+              submit(prompt);
+            },
+          }))}
+        />
 
-        {/* Connections Section */}
-        <div className="flex w-full max-w-lg flex-col gap-3">
-          <h2 className="text-xs font-semibold text-muted-foreground">Connections</h2>
-          <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
-            {connections.connections.length > 0 ? (
-              connections.connections.map((connection) => (
-                <div key={connection.uuid} className="flex items-center gap-2 text-sm">
-                  <LanguageIcon language={connection.type} />
-                  <p>{connection.name}</p>
-                </div>
-              ))
-            ) : (
-              <Button
-                variant="ghost"
-                className="relative h-auto w-full justify-start whitespace-normal px-0 py-2 text-left text-sm font-normal text-foreground text-muted-foreground hover:text-foreground"
-              >
-                <AddIcon />
-                Add a connection
-              </Button>
-            )}
-          </div>
-        </div>
+        <EmptyChatSection
+          header="Connections"
+          items={connections.connections.map((connection) => ({
+            key: connection.uuid,
+            icon: <LanguageIcon language={connection.type} className="flex-shrink-0" />,
+            text: connection.name,
+            onClick: () => handleClickConnection(connection.uuid),
+          }))}
+          emptyState={
+            <Button
+              variant="ghost"
+              className="h-auto w-full justify-start gap-2 whitespace-normal px-2 text-left text-sm font-normal text-muted-foreground hover:text-foreground"
+            >
+              <AddIcon className="flex-shrink-0" />
+              <span>Add a connection</span>
+            </Button>
+          }
+        />
       </div>
     );
   }
