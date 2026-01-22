@@ -113,12 +113,13 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         <ConnectionFormSemantic form={form} />
 
         {connection && (
-          <div className="flex items-center gap-2 pt-2 text-sm">
+          <div className="flex items-start gap-2 pt-2 text-sm">
             <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
               teamUuid={teamUuid}
               createdDate={connection.createdDate}
+              error={connection.syncedConnectionLatestLogError}
             />
           </div>
         )}

@@ -28,10 +28,12 @@ export const SyncedConnection = ({
   connectionUuid,
   teamUuid,
   createdDate,
+  error,
 }: {
   connectionUuid: string;
   teamUuid: string;
   createdDate?: string;
+  error?: string;
 }) => {
   const { syncedConnection, syncState } = useSyncedConnection(connectionUuid, teamUuid);
 
@@ -40,7 +42,7 @@ export const SyncedConnection = ({
       case 'not_synced':
         return 'Not synced';
       case 'syncing':
-        return `${syncedConnection.percentCompleted}% synced`;
+        return 'Syncing';
       case 'synced':
         return syncedConnection.updatedDate ? `Last synced ${timeAgo(syncedConnection.updatedDate)}` : 'Synced';
       case 'failed':
@@ -49,9 +51,12 @@ export const SyncedConnection = ({
   };
 
   return (
-    <>
-      {renderSyncStatus()}
-      {createdDate && ` · Created ${timeAgo(createdDate)}`}
-    </>
+    <div className="flex flex-col">
+      <span>
+        {renderSyncStatus()}
+        {createdDate && ` · Created ${timeAgo(createdDate)}`}
+      </span>
+      {error && <span className="mt-1 text-destructive">Error: {error}</span>}
+    </div>
   );
 };

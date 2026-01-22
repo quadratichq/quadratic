@@ -70,7 +70,10 @@ export function deriveSyncState(params: {
   }
 
   // If completed (100%) or has an updatedDate (was synced at some point)
-  if ((percentCompleted !== undefined && percentCompleted >= 100) || (updatedDate !== undefined && updatedDate !== null)) {
+  if (
+    (percentCompleted !== undefined && percentCompleted >= 100) ||
+    (updatedDate !== undefined && updatedDate !== null)
+  ) {
     return 'synced';
   }
 
