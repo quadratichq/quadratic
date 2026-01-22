@@ -1,6 +1,8 @@
-import type { FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
+import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import type { UserFilesListFile } from '@/dashboard/components/UserFilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
@@ -14,7 +16,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
+import { MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
@@ -24,47 +26,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { useEffect, useRef, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useEffect, useState } from 'react';
 import type { SubmitOptions } from 'react-router';
-import { Link, useFetcher, useMatch, useSubmit } from 'react-router';
+import { Link, useFetcher, useSubmit } from 'react-router';
 
-export function FilesListItems({
-  children,
-  viewPreferences,
-}: {
-  children: React.ReactNode;
-  viewPreferences: ViewPreferences;
-}) {
-  return (
-    <ul
-      className={cn(
-        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4'
-      )}
-    >
-      {children}
-    </ul>
-  );
-}
-
-export function FilesListItemUserFile({
+export function UserFilesListItem({
   file,
-  filterValue,
-  setFilterValue,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
 }: {
-  file: FilesListUserFile;
-  filterValue: string;
-  setFilterValue: Function;
-  setActiveShareMenuFileId: Function;
+  file: UserFilesListFile;
+  setActiveShareMenuFileId: React.Dispatch<React.SetStateAction<string>>;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
+  const filters = useAtomValue(userFilesListFiltersAtom);
   const submit = useSubmit();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -73,7 +54,6 @@ export function FilesListItemUserFile({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
-  const fileDragRef = useRef<HTMLDivElement>(null);
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     activeTeam: {
@@ -82,18 +62,13 @@ export function FilesListItemUserFile({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions, hasScheduledTasks } = file;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  let { fileType } = file;
+
   const actionUrl = ROUTES.API.FILE(uuid);
 
   // Determine if the user can move files
-  // If we're looking at the user's private files, make sure they have edit access to the team
-  // If we're looking at a team, make sure they have edit access to the current team
-  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
-  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES(activeTeamUuid)));
-  const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
-
-  // Determine if this is a private/personal file (for duplicate and move logic)
-  const isFilePrivate = file.isPrivate ?? isTeamPrivateFilesRoute;
+  const canMoveFiles = permissions.includes('FILE_MOVE');
 
   const description =
     viewPreferences.sort === Sort.Created
@@ -122,10 +97,31 @@ export function FilesListItemUserFile({
     }
   }, [addGlobalSnackbar, fetcherMove.data]);
 
-  // Optimistically hide this file if it's being deleted or moved
-  if (fetcherDelete.state !== 'idle' || fetcherMove.state !== 'idle') {
+  // TODO:(jimniels) enhancement
+  // optimistic updates should probably be moved up to UserFilesList
+  // so all updates flow down from there.
+
+  // Optimistically hide this file if it's being deleted
+  if (fetcherDelete.state !== 'idle') {
     return null;
   }
+
+  // Optimistically hide the file if it's being moved _and_ you're on private or team listings
+  if (fetcherMove.state !== 'idle' && (filters.fileType === 'private' || filters.fileType === 'team')) {
+    return null;
+  }
+
+  // Optimistically update file type if it's being moved
+  if (fetcherMove.state !== 'idle') {
+    const ownerUserId = (fetcherMove.json as FileAction['request.move']).ownerUserId;
+    fileType = ownerUserId ? 'private' : 'team';
+  }
+
+  // Determine if this is a private/personal file (for duplicate and move logic)
+  const isFilePrivate = fileType === 'private';
+
+  const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
+  const isDisabled = uuid.includes('duplicate');
 
   const renameFile = (value: string) => {
     // Update on the server and optimistically in the UI
@@ -164,61 +160,24 @@ export function FilesListItemUserFile({
     trackEvent('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
-  const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
-  const isDisabled = uuid.includes('duplicate');
-
-  const dragProps = canMoveFiles
-    ? {
-        draggable: true,
-        onDragStart: (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (fileDragRef.current) {
-            fileDragRef.current.style.opacity = '1';
-            event.dataTransfer.setDragImage(fileDragRef.current, 16, 16);
-          }
-          event.dataTransfer.dropEffect = 'move';
-          event.dataTransfer.setData('application/quadratic-file-uuid', uuid);
-        },
-        onDragEnd: (event: React.DragEvent<HTMLAnchorElement>) => {
-          if (fileDragRef.current) {
-            fileDragRef.current.style.opacity = '0';
-          }
-        },
-      }
-    : {};
-
   return (
     <ListItem>
-      <div
-        ref={fileDragRef}
-        // FYI: There's some trickery to get this displaying right across all browser
-        // Basically this is hidden behind the file itself and when it's dragged
-        // it becomes visible.
-        className="absolute -top-[1px] left-0 z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-0.5 text-sm text-primary-foreground opacity-0"
-      >
-        <FileIcon />
-        {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
-      </div>
       <Link
         key={uuid}
         to={ROUTES.FILE({ uuid, searchParams: '' })}
         reloadDocument
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
-        {...dragProps}
       >
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
           <FilesListItemCore
             key={uuid}
             creator={file.creator}
-            filterValue={filterValue}
-            setFilterValue={setFilterValue}
-            filterMatch={file.filterMatch}
             name={displayName}
+            nameFilter={filters.fileName}
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
-            hasScheduledTasks={hasScheduledTasks}
-            isPrivate={file.isPrivate}
-            isSharedWithMe={file.isSharedWithMe}
+            children={<FileTypeBadge type={fileType} />}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>
@@ -261,7 +220,7 @@ export function FilesListItemUserFile({
                         window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
                       }}
                     >
-                      Open file history
+                      Open history
                     </DropdownMenuItem>
                   )}
                   {canMoveFiles && (
@@ -281,7 +240,7 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to Personal
+                          Move to Private
                         </DropdownMenuItem>
                       )}
                       {isFilePrivate && (
@@ -331,106 +290,12 @@ export function FilesListItemUserFile({
   );
 }
 
-export function FilesListItemExampleFile({
-  file,
-  filterValue,
-  lazyLoad,
-  viewPreferences,
-}: {
-  file: FilesListTemplateFile;
-  filterValue: string;
-  lazyLoad: boolean;
-  viewPreferences: ViewPreferences;
-}) {
-  const { href, thumbnail, name, description } = file;
+function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
+  const label = type === 'shared' ? 'Shared with me' : type === 'private' ? 'Personal' : 'Team';
+
   return (
-    <ListItem>
-      <Link to={href} className="flex w-full" reloadDocument>
-        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
-          <FilesListItemCore
-            name={name}
-            description={description}
-            filterValue={filterValue}
-            viewPreferences={viewPreferences}
-          />
-        </ListItemView>
-      </Link>
-    </ListItem>
-  );
-}
-
-function ListItem({ children }: { children: React.ReactNode }) {
-  return <li className="relative flex">{children}</li>;
-}
-
-function ListItemView({
-  viewPreferences,
-  thumbnail,
-  lazyLoad,
-  children,
-}: {
-  viewPreferences: ViewPreferences;
-  thumbnail: FilesListUserFile['thumbnail'];
-  lazyLoad: boolean;
-  children: React.ReactNode;
-}) {
-  const { layout } = viewPreferences;
-
-  return layout === Layout.Grid ? (
-    <div className="border border-border p-2 hover:bg-accent">
-      <div className="flex aspect-video items-center justify-center bg-background">
-        {thumbnail ? (
-          <img
-            loading={lazyLoad ? 'lazy' : 'eager'}
-            src={thumbnail}
-            crossOrigin="anonymous"
-            alt="File thumbnail screenshot"
-            className="dark-mode-hack object-cover"
-            draggable="false"
-          />
-        ) : (
-          <div className="flex items-center justify-center">
-            <img
-              src={'/favicon.ico'}
-              alt="File thumbnail placeholder"
-              className={`opacity-10 brightness-0 grayscale`}
-              width="24"
-              height="24"
-              draggable="false"
-            />
-          </div>
-        )}
-      </div>
-      <Separator className="border-accent" />
-      <div className="pt-2">{children}</div>
-    </div>
-  ) : (
-    <div className={`flex w-full flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
-      <div className={`hidden border border-border shadow-sm md:block`}>
-        {thumbnail ? (
-          <img
-            loading={lazyLoad ? 'lazy' : 'eager'}
-            src={thumbnail}
-            crossOrigin="anonymous"
-            alt="File thumbnail screenshot"
-            className={`aspect-video object-fill`}
-            width="80"
-            draggable="false"
-          />
-        ) : (
-          <div className="flex aspect-video w-20 items-center justify-center bg-background">
-            <img
-              src={'/favicon.ico'}
-              alt="File thumbnail placeholder"
-              className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
-              width="16"
-              height="16"
-              draggable="false"
-            />
-          </div>
-        )}
-      </div>
-      <div className="flex-grow">{children}</div>
+    <div className={'flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground'}>
+      {label}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   potentialConnectionsByType,
   type PotentialConnectionType,
 } from '@/shared/components/connections/connectionsByType';
+import { ConnectionsProvider } from '@/shared/components/connections/ConnectionsContext';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
 import { ConnectionsPotential } from '@/shared/components/connections/ConnectionsPotential';
@@ -26,6 +27,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/shadcn/ui/breadcrumb';
+import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -41,6 +43,10 @@ type Props = {
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
+  /** Hide the sidebar (useful when rendering outside of RecoilRoot) */
+  hideSidebar?: boolean;
+  /** Open directly to the 'new' view */
+  initialView?: 'new' | 'list';
 };
 
 export type NavigateToListView = () => void;
@@ -56,13 +62,22 @@ type ConnectionState =
   | { view: 'create-potential'; type: PotentialConnectionType }
   | { view: 'list' };
 
-export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, sshPublicKey }: Props) => {
+export const Connections = ({
+  connections,
+  connectionsAreLoading,
+  teamUuid,
+  staticIps,
+  sshPublicKey,
+  hideSidebar,
+  initialView,
+}: Props) => {
   const submit = useSubmit();
 
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
-  const initialConnectionState = getInitialConnectionState(searchParams);
+  const initialConnectionState =
+    initialView === 'new' ? { view: 'new' as const } : getInitialConnectionState(searchParams);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
   const [activeConnectionState, setActiveConnectionState] = useState<ConnectionState>(initialConnectionState);
@@ -188,104 +203,110 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   );
 
   return (
-    <div className={'grid-cols-12 gap-12 md:grid'}>
-      <div className="col-span-8">
-        {activeConnectionState.view === 'edit' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                {
-                  label: `Edit`,
-                  onClick: handleNavigateToListView,
-                },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionFormEdit
-              connectionUuid={activeConnectionState.uuid}
-              connectionType={activeConnectionState.type}
-              handleNavigateToListView={handleNavigateToListView}
-              teamUuid={teamUuid}
-            />
-          </>
-        ) : activeConnectionState.view === 'details' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                {
-                  label: 'Browse',
-                  onClick: handleNavigateToListView,
-                },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionDetails
-              connectionUuid={activeConnectionState.uuid}
-              connectionType={activeConnectionState.type}
-              teamUuid={teamUuid}
-            />
-          </>
-        ) : activeConnectionState.view === 'new' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[connectionsBreadcrumb, { label: `New`, onClick: handleNavigateToListView }]}
-            />
-            <ConnectionsNew
-              handleNavigateToCreateView={handleNavigateToCreateView}
-              handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
-            />
-          </>
-        ) : activeConnectionState.view === 'create' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                connectionsNewBreadcrumb,
-                { label: connectionsByType[activeConnectionState.type].name },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionFormCreate
-              teamUuid={teamUuid}
-              type={activeConnectionState.type}
-              handleNavigateToListView={handleNavigateToListView}
-              handleNavigateToNewView={handleNavigateToNewView}
-            />
-          </>
-        ) : activeConnectionState.view === 'create-potential' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                connectionsNewBreadcrumb,
-                { label: potentialConnectionsByType[activeConnectionState.type].name },
-              ]}
-              Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionsPotential
-              handleNavigateToNewView={handleNavigateToNewView}
-              connectionType={activeConnectionState.type}
-            />
-          </>
-        ) : (
-          <ConnectionsList
-            connections={connections}
-            teamUuid={teamUuid}
-            connectionsAreLoading={connectionsAreLoading}
-            handleNavigateToNewView={handleNavigateToNewView}
-            handleNavigateToCreateView={handleNavigateToCreateView}
-            handleNavigateToEditView={handleNavigateToEditView}
-            handleNavigateToDetailsView={handleNavigateToDetailsView}
-            handleShowConnectionDemo={handleShowConnectionDemo}
-          />
-        )}
-      </div>
-      <div className="col-span-4 mt-12 md:mt-0">
-        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
-      </div>
-    </div>
+    <ConnectionsProvider skipRecoilUpdates={hideSidebar}>
+      <TooltipProvider>
+        <div className={hideSidebar ? '' : 'grid-cols-12 gap-12 md:grid'}>
+          <div className={hideSidebar ? '' : 'col-span-8'}>
+            {activeConnectionState.view === 'edit' ? (
+              <>
+                <ConnectionBreadcrumbs
+                  breadcrumbs={[
+                    connectionsBreadcrumb,
+                    {
+                      label: `Edit`,
+                      onClick: handleNavigateToListView,
+                    },
+                  ]}
+                  Logo={connectionsByType[activeConnectionState.type].Logo}
+                />
+                <ConnectionFormEdit
+                  connectionUuid={activeConnectionState.uuid}
+                  connectionType={activeConnectionState.type}
+                  handleNavigateToListView={handleNavigateToListView}
+                  teamUuid={teamUuid}
+                />
+              </>
+            ) : activeConnectionState.view === 'details' ? (
+              <>
+                <ConnectionBreadcrumbs
+                  breadcrumbs={[
+                    connectionsBreadcrumb,
+                    {
+                      label: 'Browse',
+                      onClick: handleNavigateToListView,
+                    },
+                  ]}
+                  Logo={connectionsByType[activeConnectionState.type].Logo}
+                />
+                <ConnectionDetails
+                  connectionUuid={activeConnectionState.uuid}
+                  connectionType={activeConnectionState.type}
+                  teamUuid={teamUuid}
+                />
+              </>
+            ) : activeConnectionState.view === 'new' ? (
+              <>
+                <ConnectionBreadcrumbs
+                  breadcrumbs={[connectionsBreadcrumb, { label: `New`, onClick: handleNavigateToListView }]}
+                />
+                <ConnectionsNew
+                  handleNavigateToCreateView={handleNavigateToCreateView}
+                  handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
+                />
+              </>
+            ) : activeConnectionState.view === 'create' ? (
+              <>
+                <ConnectionBreadcrumbs
+                  breadcrumbs={[
+                    connectionsBreadcrumb,
+                    connectionsNewBreadcrumb,
+                    { label: connectionsByType[activeConnectionState.type].name },
+                  ]}
+                  Logo={connectionsByType[activeConnectionState.type].Logo}
+                />
+                <ConnectionFormCreate
+                  teamUuid={teamUuid}
+                  type={activeConnectionState.type}
+                  handleNavigateToListView={handleNavigateToListView}
+                  handleNavigateToNewView={handleNavigateToNewView}
+                />
+              </>
+            ) : activeConnectionState.view === 'create-potential' ? (
+              <>
+                <ConnectionBreadcrumbs
+                  breadcrumbs={[
+                    connectionsBreadcrumb,
+                    connectionsNewBreadcrumb,
+                    { label: potentialConnectionsByType[activeConnectionState.type].name },
+                  ]}
+                  Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
+                />
+                <ConnectionsPotential
+                  handleNavigateToNewView={handleNavigateToNewView}
+                  connectionType={activeConnectionState.type}
+                />
+              </>
+            ) : (
+              <ConnectionsList
+                connections={connections}
+                teamUuid={teamUuid}
+                connectionsAreLoading={connectionsAreLoading}
+                handleNavigateToNewView={handleNavigateToNewView}
+                handleNavigateToCreateView={handleNavigateToCreateView}
+                handleNavigateToEditView={handleNavigateToEditView}
+                handleNavigateToDetailsView={handleNavigateToDetailsView}
+                handleShowConnectionDemo={handleShowConnectionDemo}
+              />
+            )}
+          </div>
+          {!hideSidebar && (
+            <div className="col-span-4 mt-12 md:mt-0">
+              <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+            </div>
+          )}
+        </div>
+      </TooltipProvider>
+    </ConnectionsProvider>
   );
 };
 

@@ -53,7 +53,10 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
 
   return (
     <Dialog open={state.open} onOpenChange={() => setState({ open: false, eventSource: null })}>
-      <DialogContent className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}>
+      <DialogContent
+        className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}
+        data-testid="upgrade-to-pro-dialog"
+      >
         <DialogHeader>
           <DialogTitle>{upgradeTitle}</DialogTitle>
           <DialogDescription>Be sure to unlock all the individual and team features of Quadratic.</DialogDescription>

@@ -1,11 +1,9 @@
 //! This is a Jotai atom that manages the state of synced connections.
 
-import { editorInteractionStateShowLogsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, useAtom } from 'jotai';
 import type { Connection, SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const SYNCED_CONNECTION_UPDATE_INTERVAL_MS = 10000; // 10 seconds
 
@@ -21,7 +19,8 @@ const defaultSyncedConnection: SyncedConnection = {
   logs: [],
 };
 
-export const syncedConnectionAtom = atom<SyncedConnection>(defaultSyncedConnection);
+// Store synced connection state per-connection, keyed by connectionUuid
+export const syncedConnectionsAtom = atom<Record<string, SyncedConnection>>({});
 
 interface SyncedConnectionActions {
   syncedConnection: SyncedConnection;
@@ -32,8 +31,14 @@ interface SyncedConnectionActions {
 }
 
 export const useSyncedConnection = (connectionUuid: string, teamUuid: string): SyncedConnectionActions => {
-  const [syncedConnection, setSyncedConnection] = useAtom(syncedConnectionAtom);
-  const [showLogs, setShowLogs] = useRecoilState(editorInteractionStateShowLogsAtom);
+  const [syncedConnections, setSyncedConnections] = useAtom(syncedConnectionsAtom);
+  const [showLogs, setShowLogs] = useState(false);
+
+  // Get the synced connection for this specific connectionUuid, or default if not found
+  const syncedConnection = useMemo(
+    () => syncedConnections[connectionUuid] ?? defaultSyncedConnection,
+    [syncedConnections, connectionUuid]
+  );
 
   const getConnection = useCallback(async () => {
     if (!connectionUuid || !teamUuid) return null;
@@ -54,10 +59,14 @@ export const useSyncedConnection = (connectionUuid: string, teamUuid: string): S
     const fetchConnection = async () => {
       const fetchedConnection = await getConnection();
 
-      setSyncedConnection((prev) => ({
+      // Update only this connection's state in the map
+      setSyncedConnections((prev) => ({
         ...prev,
-        percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted ?? 0,
-        updatedDate: fetchedConnection?.syncedConnectionUpdatedDate ?? null,
+        [connectionUuid]: {
+          ...(prev[connectionUuid] ?? defaultSyncedConnection),
+          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted ?? 0,
+          updatedDate: fetchedConnection?.syncedConnectionUpdatedDate ?? null,
+        },
       }));
     };
 
@@ -68,7 +77,7 @@ export const useSyncedConnection = (connectionUuid: string, teamUuid: string): S
     const interval = setInterval(fetchConnection, SYNCED_CONNECTION_UPDATE_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [connectionUuid, teamUuid, getConnection, setSyncedConnection]);
+  }, [connectionUuid, teamUuid, getConnection, setSyncedConnections]);
 
   return {
     syncedConnection,
