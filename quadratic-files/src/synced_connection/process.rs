@@ -23,7 +23,7 @@ use crate::{
     state::State,
     synced_connection::{
         SyncKind, SyncedConnectionStatus, can_process_connection, complete_connection_status,
-        start_connection_status, update_connection_status,
+        failed_connection_status, start_connection_status, update_connection_status,
     },
 };
 
@@ -37,14 +37,17 @@ pub(crate) async fn process_all_synced_connections(
 ) -> Result<()> {
     process_synced_connections::<MixpanelConnection>(state.clone(), sync_kind.clone(), "MIXPANEL")
         .await?;
+
     process_synced_connections::<GoogleAnalyticsConnection>(
         state.clone(),
         sync_kind.clone(),
         "GOOGLE_ANALYTICS",
     )
     .await?;
+
     process_synced_connections::<PlaidConnection>(state.clone(), sync_kind.clone(), "PLAID")
         .await?;
+
     Ok(())
 }
 
@@ -95,12 +98,32 @@ pub(crate) async fn process_synced_connections<
                     .delete(connection.uuid)
                     .await;
 
-                tracing::error!(
+                let error_message = format!(
                     "Error processing {} connection {}: {}",
-                    connection_name,
-                    connection.uuid,
-                    e
+                    connection_name, connection.uuid, e
                 );
+
+                tracing::warn!("{}", error_message);
+
+                // Send a failure log with the error message
+                let run_id = Uuid::new_v4();
+                if let Err(log_err) = failed_connection_status(
+                    state,
+                    connection.uuid,
+                    connection.id,
+                    run_id,
+                    Vec::new(),
+                    error_message,
+                )
+                .await
+                {
+                    tracing::error!(
+                        "Failed to send failure log for {} connection {}: {}",
+                        connection_name,
+                        connection.uuid,
+                        log_err
+                    );
+                }
             }
         });
     }
