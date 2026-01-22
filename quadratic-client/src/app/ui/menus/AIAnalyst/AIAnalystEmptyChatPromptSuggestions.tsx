@@ -8,7 +8,10 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { AddIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
@@ -205,42 +208,40 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       }
     }, [aiAnalystLoading]);
 
+    const connections = useConnectionsFetcher();
+
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
         {/* Import Data Section - always shown, with different text based on sheet content */}
         <div className="flex w-full max-w-lg flex-col items-center gap-3">
-          <h2 className="text-xl font-semibold">
-            {sheetHasData === false ? 'Start by importing data' : 'Import data'}
-          </h2>
-          <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-6">
-            <div className="mb-2 flex items-center justify-center gap-2">
-              <img src="/images/icon-excel.svg" alt="Excel" className="h-12 w-12" />
-              <img src="/images/icon-pdf.svg" alt="PDF" className="h-10 w-10" />
+          <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-10">
+            <div className="mb-3 flex items-center justify-center gap-1">
+              <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
+              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
             </div>
-            <p className="text-sm font-medium">Excel, CSV, PDF, PQT, or Image</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">Excel, CSV, PDF, PQT, image</p>
+            <p className="text-xs text-muted-foreground">
               Drag and drop, or{' '}
-              <Button
-                variant="link"
+              <button
                 onClick={handleChooseFile}
-                className="h-auto p-0 text-sm text-muted-foreground underline hover:text-foreground"
+                className="h-auto p-0 text-xs font-normal text-muted-foreground underline hover:text-foreground"
               >
                 choose a file
-              </Button>
+              </button>
             </p>
           </div>
         </div>
 
         {/* Prompt Suggestions */}
-        <div className="flex flex-col items-center gap-3">
-          <h2 className="text-xl font-semibold">Suggested prompts</h2>
-          <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold text-muted-foreground">Suggested prompts</h2>
+          <div className="flex max-w-lg flex-col">
             {(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => (
               <div key={`${index}-${prompt}`}>
                 <Button
                   disabled={loading}
                   variant="ghost"
-                  className="relative h-auto w-full justify-start whitespace-normal px-3 py-2 text-left text-sm font-normal text-foreground hover:text-foreground"
+                  className="relative h-auto w-full justify-start whitespace-normal px-0 text-left text-sm font-normal text-foreground hover:text-foreground"
                   onClick={() => {
                     trackEvent('[AIAnalyst].submitExamplePrompt');
                     submit(prompt);
@@ -251,6 +252,29 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
                 </Button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Connections Section */}
+        <div className="flex w-full max-w-lg flex-col gap-3">
+          <h2 className="text-xs font-semibold text-muted-foreground">Connections</h2>
+          <div className="flex max-w-lg flex-col [&>*:not(:first-child)]:border-t [&>*:not(:first-child)]:border-border">
+            {connections.connections.length > 0 ? (
+              connections.connections.map((connection) => (
+                <div key={connection.uuid} className="flex items-center gap-2 text-sm">
+                  <LanguageIcon language={connection.type} />
+                  <p>{connection.name}</p>
+                </div>
+              ))
+            ) : (
+              <Button
+                variant="ghost"
+                className="relative h-auto w-full justify-start whitespace-normal px-0 py-2 text-left text-sm font-normal text-foreground text-muted-foreground hover:text-foreground"
+              >
+                <AddIcon />
+                Add a connection
+              </Button>
+            )}
           </div>
         </div>
       </div>
