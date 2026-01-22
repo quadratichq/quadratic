@@ -11,6 +11,7 @@ import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/HelpMenubarMe
 import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenubarMenu';
 import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
 import { AIIcon } from '@/shared/components/Icons';
+import { AI_GRADIENT } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
 import { cn } from '@/shared/shadcn/utils';
@@ -43,7 +44,14 @@ export const TopBarMenus = () => {
       <Button
         size={agentMode ? 'default' : 'icon'}
         variant={agentMode ? 'default' : 'outline'}
-        className={cn('mr-1 rounded-full', agentMode ? 'py-1 pl-2.5' : '!text-primary')}
+        className={cn(
+          'mr-1 rounded-full',
+          agentMode
+            ? `bg-gradient-to-r ${AI_GRADIENT} py-1 pl-2.5`
+            : `bg-gradient-to-r ${AI_GRADIENT} bg-clip-text !text-transparent`
+          // variant={agentMode ? 'outline' : 'outline'}
+          // agentMode && 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text !text-transparent'
+        )}
         onClick={() => setAgentMode((prev) => !prev)}
       >
         <AIIcon className={cn(agentMode ? 'mr-2' : '')} />
