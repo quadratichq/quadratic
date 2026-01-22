@@ -44,7 +44,7 @@ export function FileLimitBanner() {
           className="text-primary underline hover:text-primary/80"
           onClick={() => showUpgradeDialog('fileLimitReached')}
         >
-          Upgrade for unlimited editing.
+          Upgrade for unlimited editable files.
         </button>
       </p>
     </div>

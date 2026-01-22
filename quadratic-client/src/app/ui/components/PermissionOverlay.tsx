@@ -59,7 +59,7 @@ export function PermissionOverlay() {
     return (
       <FixedBottomAlert>
         <Type>
-          <strong>View-only.</strong> This file exceeds your plan's limit. Upgrade for unlimited editing.
+          <strong>View-only.</strong> This file exceeds your plan's limit. Upgrade for unlimited editable files.
         </Type>
         <div className="flex flex-shrink-0 gap-2">
           <Button onClick={() => showUpgradeDialog('fileLimitReached')}>Upgrade</Button>
