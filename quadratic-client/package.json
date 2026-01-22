@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.23.4",
+  "version": "0.23.5",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -153,8 +153,8 @@
     "@rollup/rollup-linux-x64-gnu": "^4.12.0"
   },
   "overrides": {
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5"
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7"
   },
   "browserslist": {
     "production": [
