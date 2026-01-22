@@ -119,46 +119,86 @@ impl GridController {
         }
 
         // Check for in-table code cells (direct anchor position)
-        if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos)
-            && let Some(nested_table) = sheet.data_tables.get_nested_table(&table_pos)
-            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
-        {
-            // Get the first cell value as the edit text, or empty string
-            let text = nested_table
-                .cell_value_at(0, 0)
-                .map(|cv| cv.to_edit())
-                .unwrap_or_default();
-            let result = JsEditCell {
-                text,
-                code_cell: Some(JsEditCellCodeCell {
-                    language: code_run.language.clone(),
-                    code: code_run.code.clone(),
-                    table_pos: Some(JsTablePos::from(table_pos)),
-                }),
-            };
-            return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+        if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos) {
+            // First check for CellValue::Code in the parent's value array (1x1 code cells)
+            if let Some(parent_table) = sheet.data_tables.get_at(&table_pos.parent_pos)
+                && let Some(crate::CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
+                    table_pos.sub_table_pos.x as u32,
+                    table_pos.sub_table_pos.y as u32,
+                )
+            {
+                let result = JsEditCell {
+                    text: code_cell.output.to_edit(),
+                    code_cell: Some(JsEditCellCodeCell {
+                        language: code_cell.code_run.language.clone(),
+                        code: code_cell.code_run.code.clone(),
+                        table_pos: Some(JsTablePos::from(table_pos)),
+                    }),
+                };
+                return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+            }
+
+            // Fall back to nested DataTable for multi-cell outputs
+            if let Some(nested_table) = sheet.data_tables.get_nested_table(&table_pos)
+                && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+            {
+                // Get the first cell value as the edit text, or empty string
+                let text = nested_table
+                    .cell_value_at(0, 0)
+                    .map(|cv| cv.to_edit())
+                    .unwrap_or_default();
+                let result = JsEditCell {
+                    text,
+                    code_cell: Some(JsEditCellCodeCell {
+                        language: code_run.language.clone(),
+                        code: code_run.code.clone(),
+                        table_pos: Some(JsTablePos::from(table_pos)),
+                    }),
+                };
+                return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+            }
         }
 
         // Check if this position is covered by a nested code cell's multi-cell output
         // (i.e., clicking on a cell that's part of the output but not the anchor)
-        if let Some(anchor_table_pos) = sheet.find_covering_nested_code_cell(pos)
-            && let Some(nested_table) = sheet.data_tables.get_nested_table(&anchor_table_pos)
-            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
-        {
-            // Return the anchor's code for editing
-            let text = nested_table
-                .cell_value_at(0, 0)
-                .map(|cv| cv.to_edit())
-                .unwrap_or_default();
-            let result = JsEditCell {
-                text,
-                code_cell: Some(JsEditCellCodeCell {
-                    language: code_run.language.clone(),
-                    code: code_run.code.clone(),
-                    table_pos: Some(JsTablePos::from(anchor_table_pos)),
-                }),
-            };
-            return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+        if let Some(anchor_table_pos) = sheet.find_covering_nested_code_cell(pos) {
+            // First check for CellValue::Code in the parent's value array
+            if let Some(parent_table) = sheet.data_tables.get_at(&anchor_table_pos.parent_pos)
+                && let Some(crate::CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
+                    anchor_table_pos.sub_table_pos.x as u32,
+                    anchor_table_pos.sub_table_pos.y as u32,
+                )
+            {
+                let result = JsEditCell {
+                    text: code_cell.output.to_edit(),
+                    code_cell: Some(JsEditCellCodeCell {
+                        language: code_cell.code_run.language.clone(),
+                        code: code_cell.code_run.code.clone(),
+                        table_pos: Some(JsTablePos::from(anchor_table_pos)),
+                    }),
+                };
+                return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+            }
+
+            // Fall back to nested DataTable for multi-cell outputs
+            if let Some(nested_table) = sheet.data_tables.get_nested_table(&anchor_table_pos)
+                && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+            {
+                // Return the anchor's code for editing
+                let text = nested_table
+                    .cell_value_at(0, 0)
+                    .map(|cv| cv.to_edit())
+                    .unwrap_or_default();
+                let result = JsEditCell {
+                    text,
+                    code_cell: Some(JsEditCellCodeCell {
+                        language: code_run.language.clone(),
+                        code: code_run.code.clone(),
+                        table_pos: Some(JsTablePos::from(anchor_table_pos)),
+                    }),
+                };
+                return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+            }
         }
 
         // Otherwise, return the normal cell value for editing

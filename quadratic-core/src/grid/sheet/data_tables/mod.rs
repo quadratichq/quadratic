@@ -79,6 +79,11 @@ impl SheetDataTables {
         self.data_tables.get(pos)
     }
 
+    /// Returns a mutable reference to the data table at the given position, if it exists.
+    pub fn get_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(pos)
+    }
+
     /// Finds a nested table whose output covers the given position (in data coordinates).
     /// Returns the anchor position of the nested table and the offset into its output.
     ///

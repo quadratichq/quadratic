@@ -782,6 +782,7 @@ impl DataTable {
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
     /// If there's a nested code cell at this position, returns its output instead.
+    /// For CellValue::Code in the value array, returns the output value.
     pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
         if self.has_spill() {
             CellValue::Blank
@@ -797,19 +798,45 @@ impl DataTable {
                     return nested_table.get_cell_for_formula(offset_x, offset_y);
                 }
             }
+
+            // Helper to extract output from CellValue, handling CellValue::Code
+            let extract_output = |v: &CellValue| -> CellValue {
+                match v {
+                    CellValue::Image(_) | CellValue::Html(_) => CellValue::Blank,
+                    CellValue::Code(code_cell) => {
+                        let output = (*code_cell.output).clone();
+                        if matches!(output, CellValue::Html(_) | CellValue::Image(_)) {
+                            CellValue::Blank
+                        } else {
+                            output
+                        }
+                    }
+                    other => other.clone(),
+                }
+            };
+
             match &self.value {
-                Value::Single(v) => match v {
-                    CellValue::Image(_) => CellValue::Blank,
-                    CellValue::Html(_) => CellValue::Blank,
-                    _ => v.clone(),
-                },
-                Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                Value::Single(v) => extract_output(v),
+                Value::Array(a) => {
+                    a.get(x, y).map(extract_output).unwrap_or(CellValue::Blank)
+                }
                 Value::Tuple(_) | Value::Lambda(_) => CellValue::Error(Box::new(
                     // should never happen
                     RunErrorMsg::InternalError("tuple or lambda saved as code run result".into())
                         .without_span(),
                 )),
             }
+        }
+    }
+
+    /// Returns the raw value at a position in the parent's value array,
+    /// bypassing any nested table checks. Used for undo/redo to capture
+    /// the original value before nested tables are created.
+    pub fn raw_value_at(&self, x: u32, y: u32) -> Option<&CellValue> {
+        match &self.value {
+            Value::Single(v) => Some(v),
+            Value::Array(arr) => arr.get(x, y).ok(),
+            Value::Tuple(_) | Value::Lambda(_) => None,
         }
     }
 

@@ -437,30 +437,112 @@ impl GridController {
                 }
             }
             MultiPos::TablePos(table_pos) => {
-                // In-table code cell - store result in nested table
+                // In-table code cell - check for CellValue::Code in parent's value array first
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    let nested_table = sheet.data_tables.get_nested_table(&table_pos);
-                    if let Some(nested_table) = nested_table {
-                        if let Some(code_run) = nested_table.code_run() {
-                            let language = code_run.language.clone();
-                            let code = code_run.code.clone();
+                    // Get a fallback sheet_pos for the conversion function
+                    let sheet_pos = sheet
+                        .table_pos_to_sheet_pos(table_pos)
+                        .unwrap_or_else(|| {
+                            SheetPos::new(sheet_id, table_pos.parent_pos.x, table_pos.parent_pos.y)
+                        });
 
-                            // Get a fallback sheet_pos for the conversion function
-                            let sheet_pos = sheet.table_pos_to_sheet_pos(table_pos)
-                                .unwrap_or_else(|| SheetPos::new(sheet_id, table_pos.parent_pos.x, table_pos.parent_pos.y));
+                    // First, check if there's a CellValue::Code in the parent's value array
+                    let code_run_from_code_cell = sheet
+                        .data_tables
+                        .get_at(&table_pos.parent_pos)
+                        .and_then(|parent_table| {
+                            parent_table
+                                .cell_value_ref_at(
+                                    table_pos.sub_table_pos.x as u32,
+                                    table_pos.sub_table_pos.y as u32,
+                                )
+                                .and_then(|cv| {
+                                    if let CellValue::Code(code_cell) = cv {
+                                        Some(code_cell.code_run.clone())
+                                    } else {
+                                        None
+                                    }
+                                })
+                        });
 
-                            let new_data_table = self.js_code_result_to_code_cell_value(
-                                transaction,
-                                result,
-                                sheet_pos,
-                                language,
-                                code,
-                            );
+                    // Fall back to nested table if no CellValue::Code found
+                    let code_run_info = code_run_from_code_cell.or_else(|| {
+                        sheet
+                            .data_tables
+                            .get_nested_table(&table_pos)
+                            .and_then(|nested_table| nested_table.code_run().cloned())
+                    });
 
-                            // Get the output size for cache update
+                    if let Some(code_run) = code_run_info {
+                        let language = code_run.language.clone();
+                        let code = code_run.code.clone();
+
+                        let new_data_table = self.js_code_result_to_code_cell_value(
+                            transaction,
+                            result,
+                            sheet_pos,
+                            language,
+                            code,
+                        );
+
+                        // Check if this is a 1x1 output that should be stored as CellValue::Code
+                        if new_data_table.qualifies_as_single_code_cell() {
+                            if let Some(code_cell) = new_data_table.into_code_cell() {
+                                let code_cell_value = CellValue::Code(Box::new(code_cell));
+
+                                // Convert TablePos to display SheetPos for SetDataTableAt
+                                if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                                    if let Some(display_sheet_pos) =
+                                        sheet.table_pos_to_sheet_pos(table_pos.clone())
+                                    {
+                                        // Create CellValues with the single code cell value
+                                        let mut values = CellValues::new(1, 1);
+                                        values.set(0, 0, code_cell_value);
+
+                                        // Execute SetDataTableAt for proper undo/redo support
+                                        let _ = self.execute_set_data_table_at(
+                                            transaction,
+                                            Operation::SetDataTableAt {
+                                                sheet_pos: display_sheet_pos,
+                                                values,
+                                            },
+                                        );
+                                    }
+                                }
+                            }
+                        } else {
+                            // Multi-cell output - store as nested DataTable
                             let output_size = new_data_table.output_size();
 
-                            // Store the result in the nested table
+                            // Clear any existing CellValue::Code at this position first
+                            // Use SetDataTableAt for proper undo/redo
+                            if let Some(sheet) = self.grid.try_sheet(sheet_id)
+                                && let Some(parent_table) =
+                                    sheet.data_tables.get_at(&table_pos.parent_pos)
+                                && matches!(
+                                    parent_table.cell_value_ref_at(
+                                        table_pos.sub_table_pos.x as u32,
+                                        table_pos.sub_table_pos.y as u32,
+                                    ),
+                                    Some(CellValue::Code(_))
+                                )
+                            {
+                                if let Some(display_sheet_pos) =
+                                    sheet.table_pos_to_sheet_pos(table_pos.clone())
+                                {
+                                    let mut values = CellValues::new(1, 1);
+                                    values.set(0, 0, CellValue::Blank);
+
+                                    let _ = self.execute_set_data_table_at(
+                                        transaction,
+                                        Operation::SetDataTableAt {
+                                            sheet_pos: display_sheet_pos,
+                                            values,
+                                        },
+                                    );
+                                }
+                            }
+
                             self.store_nested_data_table(sheet_id, table_pos, new_data_table);
 
                             // Update the in-table code cache with actual output size

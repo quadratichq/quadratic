@@ -1,6 +1,7 @@
 use crate::{
-    CellValue, MultiPos, MultiSheetPos, SheetPos, SheetRect, Value,
+    CellValue, CodeCell, MultiPos, MultiSheetPos, SheetPos, SheetRect, Value,
     a1::A1Selection,
+    cell_values::CellValues,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -805,23 +806,41 @@ impl GridController {
             match parse_formula(&code, parse_ctx, eval_sheet_pos) {
                 Ok(p) => p,
                 Err(error) => {
-                    // Store error in the nested table
+                    // Store error as CellValue::Code in parent table's value array
                     let error_run = CodeRun {
                         language: CodeCellLanguage::Formula,
                         code,
-                        error: Some(error),
+                        error: Some(error.clone()),
                         ..CodeRun::default()
                     };
-                    let error_table = DataTable::new(
-                        DataTableKind::CodeRun(error_run),
-                        "Formula1",
-                        Value::Single(CellValue::Blank),
-                        false,
-                        None,
-                        None,
-                        None,
+                    let code_cell = CodeCell::with_error(error_run, error);
+                    let code_cell_value = CellValue::Code(Box::new(code_cell));
+
+                    // Convert TablePos to display SheetPos for SetDataTableAt
+                    let MultiPos::TablePos(table_pos) = &multi_sheet_pos.multi_pos else {
+                        return;
+                    };
+                    let Some(sheet) = self.grid.try_sheet(multi_sheet_pos.sheet_id) else {
+                        return;
+                    };
+                    let Some(display_sheet_pos) =
+                        sheet.table_pos_to_sheet_pos(table_pos.clone())
+                    else {
+                        return;
+                    };
+
+                    // Create CellValues with the single code cell value
+                    let mut values = CellValues::new(1, 1);
+                    values.set(0, 0, code_cell_value);
+
+                    // Execute SetDataTableAt for proper undo/redo support
+                    let _ = self.execute_set_data_table_at(
+                        transaction,
+                        Operation::SetDataTableAt {
+                            sheet_pos: display_sheet_pos,
+                            values,
+                        },
                     );
-                    self.store_nested_data_table(sheet_id, table_pos, error_table);
                     return;
                 }
             }
@@ -843,29 +862,69 @@ impl GridController {
             output_type: None,
         };
 
-        // Store the result in the nested table
-        let new_data_table = DataTable::new(
-            DataTableKind::CodeRun(new_code_run),
-            "Formula1",
-            output.inner,
-            false,
-            None,
-            None,
-            None,
-        );
+        // Check if this is a 1x1 output that should be stored as CellValue::Code
+        let is_1x1 = matches!(&output.inner, Value::Single(_))
+            || matches!(&output.inner, Value::Array(arr) if arr.width() == 1 && arr.height() == 1);
 
-        // Get the output size before storing
-        let output_size = new_data_table.output_size();
+        if is_1x1 {
+            // Store as CellValue::Code in the parent table's value array
+            let output_value = match &output.inner {
+                Value::Single(v) => v.clone(),
+                Value::Array(arr) => arr.get(0, 0).cloned().unwrap_or(CellValue::Blank),
+                _ => CellValue::Blank,
+            };
 
-        self.store_nested_data_table(sheet_id, table_pos, new_data_table);
+            let code_cell = CodeCell::new(new_code_run, output_value);
+            let code_cell_value = CellValue::Code(Box::new(code_cell));
 
-        // Mark the in-table code in the cache with actual output size
-        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-            sheet.data_tables.add_in_table_code_with_size(
-                &table_pos,
-                output_size.w.get(),
-                output_size.h.get(),
+            // Convert TablePos to display SheetPos for SetDataTableAt
+            let MultiPos::TablePos(table_pos) = &multi_sheet_pos.multi_pos else {
+                return;
+            };
+            let Some(sheet) = self.grid.try_sheet(multi_sheet_pos.sheet_id) else {
+                return;
+            };
+            let Some(display_sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos.clone()) else {
+                return;
+            };
+
+            // Create CellValues with the single code cell value
+            let mut values = CellValues::new(1, 1);
+            values.set(0, 0, code_cell_value);
+
+            // Execute SetDataTableAt for proper undo/redo support
+            let _ = self.execute_set_data_table_at(
+                transaction,
+                Operation::SetDataTableAt {
+                    sheet_pos: display_sheet_pos,
+                    values,
+                },
             );
+        } else {
+            // Store as nested DataTable for multi-cell outputs
+            let new_data_table = DataTable::new(
+                DataTableKind::CodeRun(new_code_run),
+                "Formula1",
+                output.inner,
+                false,
+                None,
+                None,
+                None,
+            );
+
+            // Get the output size before storing
+            let output_size = new_data_table.output_size();
+
+            self.store_nested_data_table(sheet_id, table_pos, new_data_table);
+
+            // Mark the in-table code in the cache with actual output size
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+                sheet.data_tables.add_in_table_code_with_size(
+                    &table_pos,
+                    output_size.w.get(),
+                    output_size.h.get(),
+                );
+            }
         }
     }
 
@@ -884,6 +943,7 @@ impl GridController {
         let multi_pos = MultiPos::TablePos(table_pos);
         let _ = sheet.data_tables.insert_at_multi_pos(&multi_pos, data_table);
     }
+
 }
 
 #[cfg(test)]
@@ -1114,11 +1174,231 @@ mod tests {
             "In-table code should be tracked in cache"
         );
 
-        // Verify the nested table exists in the parent
+        // For 1x1 formulas, the result is stored as CellValue::Code in the parent's value array
+        // (not as a nested DataTable)
         let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value = parent_table.cell_value_ref_at(0, 1);
+        assert!(
+            matches!(cell_value, Some(CellValue::Code(_))),
+            "1x1 in-table code should be stored as CellValue::Code in parent's value array"
+        );
+
+        // Verify the value is correct (1 + 1 = 2)
+        if let Some(CellValue::Code(code_cell)) = cell_value {
+            assert_eq!(*code_cell.output, CellValue::Number(2.into()));
+            assert_eq!(code_cell.code_run.language, CodeCellLanguage::Formula);
+            assert_eq!(code_cell.code_run.code, "1 + 1");
+        }
+    }
+
+    #[test]
+    fn test_in_table_1x1_code_as_cell_value_code() {
+        use crate::TablePos;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 3x3 output (no header, show_name=false)
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        // For a 3x3 table at A1 with show_name=false:
+        // - B2 corresponds to data position (1, 1)
+        // - The display position B2 = (2, 2) maps to table data position (1, 1)
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(1, 1));
+
+        // Execute a 1x1 formula at B2 (which is data position (1, 1))
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!B2],
+            CodeCellLanguage::Formula,
+            "42".to_string(),
+            None,
+        );
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the code is stored as CellValue::Code
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+
+        // Access the cell at the sub_table_pos
+        let cell_value = parent_table.cell_value_ref_at(
+            table_pos.sub_table_pos.x as u32,
+            table_pos.sub_table_pos.y as u32,
+        );
+
+        assert!(
+            matches!(cell_value, Some(CellValue::Code(_))),
+            "1x1 code should be stored as CellValue::Code, got {:?}",
+            cell_value
+        );
+
+        // Verify the output value
+        if let Some(CellValue::Code(code_cell)) = cell_value {
+            assert_eq!(
+                *code_cell.output,
+                CellValue::Number(42.into()),
+                "Output should be 42"
+            );
+        }
+
+        // Verify the cache tracks this code cell
+        assert!(
+            sheet.data_tables.has_in_table_code(&table_pos),
+            "In-table code should be tracked in cache"
+        );
+
+        // Verify get_cell_for_formula returns the output value (not the CodeCell)
+        let formula_value = parent_table.get_cell_for_formula(
+            table_pos.sub_table_pos.x as u32,
+            table_pos.sub_table_pos.y as u32,
+        );
+        assert_eq!(
+            formula_value,
+            CellValue::Number(42.into()),
+            "get_cell_for_formula should return the output value"
+        );
+    }
+
+    #[test]
+    fn test_in_table_multi_cell_code_as_nested_table() {
+        use crate::TablePos;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 5x5 output (no header, show_name=false)
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 5, 5);
+
+        // For a 5x5 table at A1 with show_name=false:
+        // - B2 corresponds to data position (1, 1)
+        // The anchor cell (A1) cannot have in-table code, so we use B2
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(1, 1));
+
+        // Execute a multi-cell formula (array output) at B2 (data position (1, 1))
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!B2],
+            CodeCellLanguage::Formula,
+            "{1, 2; 3, 4}".to_string(), // 2x2 array
+            None,
+        );
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the code is stored as a nested DataTable (not CellValue::Code)
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+
+        // For multi-cell output, it should be stored as a nested table
         assert!(
             parent_table.tables.is_some(),
-            "Parent table should have nested tables"
+            "Multi-cell code should be stored as nested DataTable"
         );
+
+        // Verify the nested table exists
+        let nested_table = sheet.data_tables.get_nested_table(&table_pos);
+        assert!(
+            nested_table.is_some(),
+            "Nested table should exist for multi-cell output"
+        );
+    }
+
+    #[test]
+    fn test_in_table_1x1_code_undo_redo() {
+        use crate::TablePos;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 3x3 output
+        // Initial values: 0, 1, 2, 3, 4, 5, 6, 7, 8
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        // Position B2 corresponds to data position (1, 1) which initially has value 4
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(1, 1));
+
+        // Verify initial value
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let initial_value = parent_table
+            .cell_value_ref_at(1, 1)
+            .cloned()
+            .unwrap_or(CellValue::Blank);
+        assert_eq!(
+            initial_value,
+            CellValue::Number(4.into()),
+            "Initial value at (1,1) should be 4"
+        );
+
+        // Execute a 1x1 formula at B2
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!B2],
+            CodeCellLanguage::Formula,
+            "100".to_string(),
+            None,
+        );
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the code is stored as CellValue::Code
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value = parent_table.cell_value_ref_at(1, 1);
+        assert!(
+            matches!(cell_value, Some(CellValue::Code(_))),
+            "After formula, should be CellValue::Code, got {:?}",
+            cell_value
+        );
+
+        // Verify the output value is 100
+        if let Some(CellValue::Code(code_cell)) = cell_value {
+            assert_eq!(
+                *code_cell.output,
+                CellValue::Number(100.into()),
+                "Output should be 100"
+            );
+        }
+
+        // Verify the cache tracks this code cell
+        assert!(
+            sheet.data_tables.has_in_table_code(&table_pos),
+            "In-table code should be tracked in cache after formula execution"
+        );
+
+        // Perform undo
+        gc.undo(1, None, false);
+
+        // After undo, the value should be restored to the original value (4)
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value_after_undo = parent_table
+            .cell_value_ref_at(1, 1)
+            .cloned()
+            .unwrap_or(CellValue::Blank);
+
+        // The undo should restore the original value (not CellValue::Code)
+        assert_eq!(
+            cell_value_after_undo,
+            CellValue::Number(4.into()),
+            "After undo, value should be restored to original 4, got {:?}",
+            cell_value_after_undo
+        );
+
+        // Perform redo
+        gc.redo(1, None, false);
+
+        // After redo, the value should be back to CellValue::Code with output 100
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value_after_redo = parent_table.cell_value_ref_at(1, 1);
+        assert!(
+            matches!(cell_value_after_redo, Some(CellValue::Code(_))),
+            "After redo, should be CellValue::Code again, got {:?}",
+            cell_value_after_redo
+        );
+
+        if let Some(CellValue::Code(code_cell)) = cell_value_after_redo {
+            assert_eq!(
+                *code_cell.output,
+                CellValue::Number(100.into()),
+                "After redo, output should be 100"
+            );
+        }
     }
 }

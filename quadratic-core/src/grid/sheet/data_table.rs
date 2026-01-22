@@ -177,11 +177,22 @@ impl Sheet {
     /// Returns a CodeRun at a MultiPos.
     ///
     /// For `MultiPos::Pos`, checks both CellValue::Code and data_tables.
-    /// For `MultiPos::TablePos`, checks nested data tables.
+    /// For `MultiPos::TablePos`, checks CellValue::Code in parent's value array first,
+    /// then falls back to nested data tables.
     pub fn code_run_at_multi_pos(&self, multi_pos: &MultiPos) -> Option<&CodeRun> {
         match multi_pos {
             MultiPos::Pos(pos) => self.code_run_at(pos),
             MultiPos::TablePos(table_pos) => {
+                // First check for CellValue::Code in parent's value array
+                if let Some(parent_table) = self.data_tables.get_at(&table_pos.parent_pos) {
+                    if let Some(CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
+                        table_pos.sub_table_pos.x as u32,
+                        table_pos.sub_table_pos.y as u32,
+                    ) {
+                        return Some(&code_cell.code_run);
+                    }
+                }
+                // Fall back to nested data tables
                 self.data_tables
                     .get_nested_table(table_pos)
                     .and_then(|dt| dt.code_run())

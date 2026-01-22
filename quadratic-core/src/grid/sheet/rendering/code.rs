@@ -144,42 +144,90 @@ impl Sheet {
         }
 
         // Check for nested in-table code cells
-        if let Some(table_pos) = self.display_pos_to_in_table_code_pos(pos)
-            && let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
-            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
-        {
-            let output_size = nested_table.output_size();
-            let (state, w, h) = if nested_table.has_spill() {
-                // Nested tables can spill within parent bounds
-                (JsRenderCodeCellState::SpillError, output_size.w.get(), output_size.h.get())
-            } else if code_run.error.is_some() {
-                (JsRenderCodeCellState::RunError, 1, 1)
-            } else {
-                (JsRenderCodeCellState::Success, output_size.w.get(), output_size.h.get())
-            };
+        if let Some(table_pos) = self.display_pos_to_in_table_code_pos(pos) {
+            // First check for CellValue::Code in parent's value array
+            if let Some(parent_table) = self.data_tables.get_at(&table_pos.parent_pos)
+                && let Some(CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
+                    table_pos.sub_table_pos.x as u32,
+                    table_pos.sub_table_pos.y as u32,
+                )
+            {
+                let code_run = &code_cell.code_run;
+                let state = if code_run.error.is_some() {
+                    JsRenderCodeCellState::RunError
+                } else {
+                    JsRenderCodeCellState::Success
+                };
 
-            return Some(JsRenderCodeCell {
-                x: pos.x as i32,
-                y: pos.y as i32,
-                w,
-                h,
-                language: code_run.language.clone(),
-                state,
-                spill_error: None,
-                name: nested_table.name().to_string(),
-                columns: nested_table.send_columns(),
-                first_row_header: nested_table.header_is_first_row,
-                show_name: nested_table.get_show_name(),
-                show_columns: nested_table.get_show_columns(),
-                sort: nested_table.sort.clone(),
-                sort_dirty: nested_table.sort_dirty,
-                alternating_colors: nested_table.alternating_colors,
-                is_code: true,
-                is_html: nested_table.is_html(),
-                is_html_image: nested_table.is_html() || nested_table.is_image(),
-                table_pos: Some(JsTablePos::from(table_pos)),
-                last_modified: nested_table.last_modified.timestamp_millis(),
-            });
+                return Some(JsRenderCodeCell {
+                    x: pos.x as i32,
+                    y: pos.y as i32,
+                    w: 1,
+                    h: 1,
+                    language: code_run.language.clone(),
+                    state,
+                    spill_error: None,
+                    name: String::new(),
+                    columns: vec![],
+                    first_row_header: false,
+                    show_name: false,
+                    show_columns: false,
+                    sort: None,
+                    sort_dirty: false,
+                    alternating_colors: false,
+                    is_code: true,
+                    is_html: false,
+                    is_html_image: false,
+                    table_pos: Some(JsTablePos::from(table_pos)),
+                    last_modified: code_cell.last_modified.timestamp_millis(),
+                });
+            }
+
+            // Fall back to nested DataTable for multi-cell outputs
+            if let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
+                && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+            {
+                let output_size = nested_table.output_size();
+                let (state, w, h) = if nested_table.has_spill() {
+                    // Nested tables can spill within parent bounds
+                    (
+                        JsRenderCodeCellState::SpillError,
+                        output_size.w.get(),
+                        output_size.h.get(),
+                    )
+                } else if code_run.error.is_some() {
+                    (JsRenderCodeCellState::RunError, 1, 1)
+                } else {
+                    (
+                        JsRenderCodeCellState::Success,
+                        output_size.w.get(),
+                        output_size.h.get(),
+                    )
+                };
+
+                return Some(JsRenderCodeCell {
+                    x: pos.x as i32,
+                    y: pos.y as i32,
+                    w,
+                    h,
+                    language: code_run.language.clone(),
+                    state,
+                    spill_error: None,
+                    name: nested_table.name().to_string(),
+                    columns: nested_table.send_columns(),
+                    first_row_header: nested_table.header_is_first_row,
+                    show_name: nested_table.get_show_name(),
+                    show_columns: nested_table.get_show_columns(),
+                    sort: nested_table.sort.clone(),
+                    sort_dirty: nested_table.sort_dirty,
+                    alternating_colors: nested_table.alternating_colors,
+                    is_code: true,
+                    is_html: nested_table.is_html(),
+                    is_html_image: nested_table.is_html() || nested_table.is_image(),
+                    table_pos: Some(JsTablePos::from(table_pos)),
+                    last_modified: nested_table.last_modified.timestamp_millis(),
+                });
+            }
         }
 
         // Otherwise check data_tables

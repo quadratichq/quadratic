@@ -119,11 +119,11 @@ impl Sheet {
     /// (not just the anchor) to redirect editing to the anchor cell.
     ///
     /// Returns the TablePos of the nested code cell's anchor if found.
+    /// Checks both CellValue::Code in the parent's value array and nested DataTables.
     pub fn find_covering_nested_code_cell(&self, display_pos: Pos) -> Option<TablePos> {
-        let (data_table_pos, data_table) = self.data_table_that_contains(display_pos)?;
+        use crate::CellValue;
 
-        // Get nested tables
-        let nested_tables = data_table.tables.as_ref()?;
+        let (data_table_pos, data_table) = self.data_table_that_contains(display_pos)?;
 
         // Calculate the data position within the parent table
         let display_col_offset = u32::try_from(display_pos.x - data_table_pos.x).ok()?;
@@ -138,6 +138,16 @@ impl Sheet {
         let table_row = data_table.get_row_index_from_display_index(display_row_offset);
 
         let data_pos = Pos::new(table_col as i64, table_row as i64);
+
+        // First, check for CellValue::Code in the parent's value array
+        if let Some(CellValue::Code(_)) = data_table.cell_value_ref_at(table_col, table_row as u32)
+        {
+            // This is a 1x1 code cell stored in the value array
+            return Some(TablePos::new(data_table_pos, data_pos));
+        }
+
+        // Fall back to checking nested tables for multi-cell outputs
+        let nested_tables = data_table.tables.as_ref()?;
 
         // Find if any nested code cell covers this position
         let (anchor, nested_table, _, _) = nested_tables.find_nested_table_covering(data_pos)?;

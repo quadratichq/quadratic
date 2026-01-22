@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
+    ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect, TablePos,
     a1::A1Selection,
     cell_values::CellValues,
     cellvalue::Import,
@@ -261,7 +261,7 @@ impl GridController {
         bail!("Expected Operation::DeleteDataTable in execute_delete_data_table");
     }
 
-    pub(super) fn execute_set_data_table_at(
+    pub(crate) fn execute_set_data_table_at(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
@@ -277,9 +277,19 @@ impl GridController {
             let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
 
-            if data_table.is_code() {
-                dbgjs!(format!("Data table {} is readonly", data_table.name));
-                return Ok(());
+            // Code tables are normally read-only, but we allow writing:
+            // - CellValue::Code (for in-table code cells)
+            // - CellValue::Blank (for clearing them)
+            // - Any value during undo/redo (to restore original values)
+            if data_table.is_code() && !transaction.is_undo_redo() {
+                let all_code_or_blank = values.columns.iter().all(|col| {
+                    col.values()
+                        .all(|v| matches!(v, CellValue::Code(_) | CellValue::Blank))
+                });
+                if !all_code_or_blank {
+                    dbgjs!(format!("Data table {} is readonly", data_table.name));
+                    return Ok(());
+                }
             }
 
             let display_rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
@@ -320,6 +330,7 @@ impl GridController {
             pos.y -= data_table.y_adjustment(true);
 
             let is_sorted = data_table.display_buffer.is_some();
+            let is_code_table = data_table.is_code();
 
             // if there is a display buffer, use it to find the row index for all the values
             // this is used when the data table has sorted columns, maps input to actual coordinates
@@ -348,9 +359,19 @@ impl GridController {
                         // account for hidden columns
                         let column_index =
                             data_table.get_column_index_from_display_index(display_column, true);
-                        if let Ok(value) = data_table.value.get(column_index, actual_row) {
-                            old_values.set(display_column, display_row, value.to_owned());
-                        }
+                        // For code tables, use raw_value_at to get the actual CellValue
+                        // (could be CellValue::Code), not the display value
+                        let old_value = if is_code_table {
+                            data_table
+                                .raw_value_at(column_index, actual_row)
+                                .cloned()
+                                .unwrap_or(CellValue::Blank)
+                        } else if let Ok(value) = data_table.value.get(column_index, actual_row) {
+                            value.to_owned()
+                        } else {
+                            CellValue::Blank
+                        };
+                        old_values.set(display_column, display_row, old_value);
                     }
                 }
 
@@ -361,6 +382,22 @@ impl GridController {
                     data_table_pos.x,
                     data_table_pos.y + data_table.y_adjustment(true),
                 );
+                old_values
+            } else if is_code_table {
+                // For code tables without sorting, get raw values to capture CellValue::Code properly
+                let mut old_values = CellValues::new(0, 0);
+                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
+                for y in rect.y_range() {
+                    for x in rect.x_range() {
+                        let col = u32::try_from(x - data_table_pos.x)?;
+                        let row = u32::try_from(y - data_table_pos.y)?;
+                        if let Some(value) = data_table.raw_value_at(col, row) {
+                            let value_x = u32::try_from(x - pos.x)?;
+                            let value_y = u32::try_from(y - pos.y)?;
+                            old_values.set(value_x, value_y, value.clone());
+                        }
+                    }
+                }
                 old_values
             } else {
                 sheet.get_code_cell_values(display_rect)
@@ -397,6 +434,9 @@ impl GridController {
                 values = actual_values;
             }
 
+            // Collect CellValue::Code positions and values for cache updates
+            let mut code_cell_positions: Vec<(TablePos, CellValue)> = Vec::new();
+
             // set the new value, and sort if necessary
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let (_, dirty_rects) =
@@ -409,6 +449,14 @@ impl GridController {
                                 let new_x = u32::try_from(pos.x - data_table_pos.x + x)?;
                                 let new_y = u32::try_from(pos.y - data_table_pos.y + y)?;
                                 if let Some(value) = values.remove(x as u32, y as u32) {
+                                    // Track CellValue::Code positions for cache updates
+                                    if matches!(&value, CellValue::Code(_) | CellValue::Blank) {
+                                        let table_pos = TablePos::new(
+                                            data_table_pos,
+                                            Pos::new(new_x as i64, new_y as i64),
+                                        );
+                                        code_cell_positions.push((table_pos, value.clone()));
+                                    }
                                     data_table.set_cell_value_at(new_x, new_y, value);
                                 }
                             }
@@ -420,6 +468,25 @@ impl GridController {
 
                         Ok(())
                     })?;
+
+            // Update in-table code cache for any CellValue::Code values
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            for (table_pos, value) in code_cell_positions {
+                // Remove any existing nested table at this position
+                let _ = sheet
+                    .data_tables
+                    .remove_at_multi_pos(&crate::MultiPos::TablePos(table_pos.clone()));
+
+                // Update the in-table code cache
+                if matches!(&value, CellValue::Code(_)) {
+                    sheet
+                        .data_tables
+                        .add_in_table_code_with_size(&table_pos, 1, 1);
+                } else {
+                    // CellValue::Blank - remove from cache
+                    sheet.data_tables.remove_in_table_code(&table_pos);
+                }
+            }
 
             self.send_updated_bounds(transaction, sheet_id);
 
