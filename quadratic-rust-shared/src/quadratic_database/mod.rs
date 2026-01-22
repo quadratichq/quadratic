@@ -4,10 +4,8 @@ pub mod error;
 // re-exports
 pub use sqlx::PgPool;
 
-use std::time::Duration;
-
-use sqlx::Executor;
 use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
 
 use crate::{error::Result, quadratic_database::error::QuadraticDatabase};
 
@@ -58,48 +56,6 @@ pub fn connect(url: &str, options: ConnectionOptions) -> Result<PgPool> {
         .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
 }
 
-/// Create a lazy PostgreSQL connection pool
-///
-/// This creates a pool that doesn't connect immediately - connections are
-/// established on first use. This allows the application to start even if
-/// the database is temporarily unavailable.
-///
-/// # Arguments
-///
-/// * `url` - The URL of the PostgreSQL database
-/// * `options` - Connection pool options (max_connections, acquire_timeout)
-///
-/// # Returns
-///
-/// A `Result` containing the PostgreSQL pool (only fails on URL parse errors)
-pub fn connect_lazy(url: &str, options: ConnectionOptions) -> Result<PgPool> {
-    PgPoolOptions::new()
-        .max_connections(options.max_connections)
-        .acquire_timeout(options.acquire_timeout)
-        .connect_lazy(url)
-        .map_err(|e| QuadraticDatabase::Connect(e.to_string()).into())
-}
-
-/// Pre-warm a connection pool by establishing at least one connection.
-///
-/// This is useful after creating a lazy pool to ensure the database is
-/// reachable before processing begins. Fails fast if the database is
-/// unavailable rather than failing on the first actual query.
-///
-/// # Arguments
-///
-/// * `pool` - The PostgreSQL connection pool to warm
-///
-/// # Returns
-///
-/// A `Result` indicating success or failure to establish a connection
-pub async fn warm_pool(pool: &PgPool) -> Result<()> {
-    pool.execute("SELECT 1")
-        .await
-        .map_err(|e| QuadraticDatabase::Connect(format!("Failed to warm pool: {e}")).into())
-        .map(|_| ())
-}
-
 /// Database settings retrieved from PostgreSQL
 #[derive(Debug)]
 pub struct DatabaseSettings {
@@ -132,6 +88,14 @@ pub async fn get_database_settings(pool: &PgPool) -> Result<DatabaseSettings> {
         max_connections,
         current_connections,
     })
+}
+
+/// Check if the database is healthy by executing a simple query.
+pub async fn is_healthy(pool: &PgPool) -> bool {
+    sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(pool)
+        .await
+        .is_ok()
 }
 
 // For testing, we need to connect to a test database

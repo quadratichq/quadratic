@@ -1,17 +1,17 @@
 import type AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import type Anthropic from '@anthropic-ai/sdk';
 import type {
-  MessageCreateParamsNonStreaming,
-  MessageCreateParamsStreaming,
-  ThinkingConfigParam,
+    MessageCreateParamsNonStreaming,
+    MessageCreateParamsStreaming,
+    ThinkingConfigParam,
 } from '@anthropic-ai/sdk/resources';
 import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-  AnthropicModelKey,
-  BedrockAnthropicModelKey,
-  ParsedAIResponse,
-  VertexAIAnthropicModelKey,
+    AnthropicModelKey,
+    BedrockAnthropicModelKey,
+    ParsedAIResponse,
+    VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 import type { HandleAIRequestArgs } from './ai.handler';
@@ -70,8 +70,8 @@ export const handleAnthropicRequest = async ({
       response?.setHeader('Content-Type', 'text/event-stream');
       response?.setHeader('Cache-Control', 'no-cache');
       response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
     }
-    response?.write(`stream\n\n`);
 
     const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming, { signal });
     const parsedResponse = await parseAnthropicStream(chunks, modelKey, isOnPaidPlan, exceededBillingLimit, response);

@@ -48,6 +48,7 @@ class InlineEditorMonaco {
   private suggestionWidgetShowing: boolean = false;
   private processingEmojiConversion = false;
   private measureCanvas?: HTMLCanvasElement;
+  private verticalSelectionAbortController?: AbortController;
 
   // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
   autocompleteList?: string[];
@@ -269,10 +270,37 @@ class InlineEditorMonaco {
    * Measure text width accounting for span formatting.
    * Bold text is wider than regular text, so we need to measure each span separately.
    * Uses cell-level formatting for text between spans.
+   * For multi-line text, returns the maximum width of any single line.
    */
   private measureTextWithSpans = (
     context: CanvasRenderingContext2D,
     text: string,
+    fontSize: number,
+    defaultFontFamily: string
+  ): number => {
+    // Split text into lines and measure each separately, returning max width
+    const lines = text.split('\n');
+    let maxWidth = 0;
+    let lineStartOffset = 0;
+
+    for (const line of lines) {
+      const lineWidth = this.measureLineWithSpans(context, line, lineStartOffset, fontSize, defaultFontFamily);
+      maxWidth = Math.max(maxWidth, lineWidth);
+      // +1 for the newline character
+      lineStartOffset += line.length + 1;
+    }
+
+    return maxWidth;
+  };
+
+  /**
+   * Measure a single line of text width accounting for span formatting.
+   * @param lineStartOffset The character offset where this line starts in the full text
+   */
+  private measureLineWithSpans = (
+    context: CanvasRenderingContext2D,
+    lineText: string,
+    lineStartOffset: number,
     fontSize: number,
     defaultFontFamily: string
   ): number => {
@@ -281,7 +309,7 @@ class InlineEditorMonaco {
     // If no spans or spans are inactive, measure with default font
     if (!inlineEditorSpans.isActive() || spans.length === 0) {
       context.font = `${fontSize}px ${defaultFontFamily}`;
-      return context.measureText(text).width;
+      return context.measureText(lineText).width;
     }
 
     // Get cell-level bold/italic state
@@ -299,24 +327,30 @@ class InlineEditorMonaco {
     // Use CSS-style font specification to match how Monaco renders text
     const cellFont = this.getFontForSpan(defaultBold, defaultItalic, fontSize);
 
+    const lineEndOffset = lineStartOffset + lineText.length;
     let totalWidth = 0;
-    let lastEnd = 0;
+    let lastEnd = 0; // Position within this line (0-based)
 
-    // Sort spans by start position
-    const sortedSpans = [...spans].sort((a, b) => a.start - b.start);
+    // Sort spans by start position and filter to only those that overlap this line
+    const sortedSpans = [...spans]
+      .filter((span) => span.start < lineEndOffset && span.end > lineStartOffset)
+      .sort((a, b) => a.start - b.start);
 
     for (const span of sortedSpans) {
+      // Convert span positions to line-relative positions
+      const spanStartInLine = Math.max(0, span.start - lineStartOffset);
+      const spanEndInLine = Math.min(lineText.length, span.end - lineStartOffset);
+
       // Measure any gap before this span with cell-level formatting
-      if (span.start > lastEnd) {
-        const gapText = text.slice(lastEnd, span.start);
+      if (spanStartInLine > lastEnd) {
+        const gapText = lineText.slice(lastEnd, spanStartInLine);
         context.font = cellFont;
         totalWidth += context.measureText(gapText).width;
       }
 
       // Measure the span with its appropriate font
       // Span formatting overrides cell defaults, undefined means use cell default
-      const clampedEnd = Math.min(span.end, text.length);
-      const spanText = text.slice(span.start, clampedEnd);
+      const spanText = lineText.slice(spanStartInLine, spanEndInLine);
       if (spanText) {
         const spanBold = span.bold !== undefined ? span.bold : defaultBold;
         const spanItalic = span.italic !== undefined ? span.italic : defaultItalic;
@@ -325,12 +359,12 @@ class InlineEditorMonaco {
         totalWidth += context.measureText(spanText).width;
       }
 
-      lastEnd = Math.max(lastEnd, clampedEnd);
+      lastEnd = Math.max(lastEnd, spanEndInLine);
     }
 
     // Measure any remaining text after the last span with cell-level formatting
-    if (lastEnd < text.length) {
-      const remainingText = text.slice(lastEnd);
+    if (lastEnd < lineText.length) {
+      const remainingText = lineText.slice(lastEnd);
       context.font = cellFont;
       totalWidth += context.measureText(remainingText).width;
     }
@@ -768,10 +802,11 @@ class InlineEditorMonaco {
     this.editor.onDidChangeCursorSelection(() => {
       inlineEditorHandler.updateSelectionFormatting();
     });
-    this.editor.onMouseDown(() => {
-      inlineEditorKeyboard.resetKeyboardPosition();
-      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
-    });
+
+    // Handle vertical mouse movement for selection in single-line editor.
+    // When dragging up → select toward start (left), dragging down → select toward end (right).
+    this.setupVerticalSelectionHandler();
+
     this.editor.onDidChangeModelContent((e) => {
       this.convertEmojis();
       // Don't emit valueChanged if we're in the middle of emoji conversion
@@ -849,6 +884,124 @@ class InlineEditorMonaco {
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F3,
       },
     ]);
+  }
+
+  // Handle vertical mouse movement for selection when mouse goes outside editor bounds.
+  // When dragging up (above editor) → select toward absolute start (line 1, column 1)
+  // When dragging down (below editor) → select toward absolute end (last line, last column)
+  // This provides consistent behavior for both single-line and multi-line content.
+  private setupVerticalSelectionHandler() {
+    if (!this.editor) return;
+
+    const domNode = this.editor.getDomNode();
+    if (!domNode) return;
+
+    let isSelecting = false;
+    let anchorLine = 1;
+    let anchorColumn = 1;
+    let currentDirection: 'above' | 'below' | null = null;
+    let rafId: number | null = null;
+
+    // Handle mouse down: reset keyboard position, set edit mode, and track selection anchor
+    this.editor.onMouseDown((e) => {
+      inlineEditorKeyboard.resetKeyboardPosition();
+      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
+
+      if (e.event.leftButton) {
+        isSelecting = true;
+        currentDirection = null;
+        // Get the position from where the user clicked
+        if (e.target.position) {
+          anchorLine = e.target.position.lineNumber;
+          anchorColumn = e.target.position.column;
+        } else {
+          const position = this.editor?.getPosition();
+          if (position) {
+            anchorLine = position.lineNumber;
+            anchorColumn = position.column;
+          }
+        }
+      }
+    });
+
+    const applyVerticalSelection = () => {
+      if (!this.editor || currentDirection === null) return;
+
+      const model = this.editor.getModel();
+      if (!model) return;
+
+      const lineCount = model.getLineCount();
+      const lastLineMaxColumn = model.getLineMaxColumn(lineCount);
+
+      if (currentDirection === 'above') {
+        // Mouse is above → select from anchor toward absolute start (line 1, column 1)
+        const newSelection = new monaco.Selection(anchorLine, anchorColumn, 1, 1);
+        this.editor.setSelection(newSelection);
+      } else {
+        // Mouse is below → select from anchor toward absolute end (last line, last column)
+        const newSelection = new monaco.Selection(anchorLine, anchorColumn, lineCount, lastLineMaxColumn);
+        this.editor.setSelection(newSelection);
+      }
+
+      // Schedule another frame if still selecting vertically
+      if (isSelecting && currentDirection !== null) {
+        rafId = requestAnimationFrame(applyVerticalSelection);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isSelecting || !this.editor) return;
+
+      const editorRect = domNode.getBoundingClientRect();
+
+      // Check if mouse is above or below the editor
+      const isAbove = e.clientY < editorRect.top;
+      const isBelow = e.clientY > editorRect.bottom;
+
+      if (isAbove || isBelow) {
+        const newDirection = isAbove ? 'above' : 'below';
+
+        // Start the RAF loop if we're entering vertical selection mode
+        if (currentDirection === null) {
+          currentDirection = newDirection;
+          rafId = requestAnimationFrame(applyVerticalSelection);
+        } else {
+          currentDirection = newDirection;
+        }
+      } else {
+        // Mouse returned to within bounds
+        currentDirection = null;
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      isSelecting = false;
+      currentDirection = null;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    };
+
+    // Abort any previous listeners before adding new ones
+    this.verticalSelectionAbortController?.abort();
+    this.verticalSelectionAbortController = new AbortController();
+    const { signal } = this.verticalSelectionAbortController;
+
+    window.addEventListener('mousemove', handleMouseMove, { signal });
+    window.addEventListener('mouseup', handleMouseUp, { signal });
+  }
+
+  // Cleans up resources when the editor is destroyed
+  dispose() {
+    this.verticalSelectionAbortController?.abort();
+    this.verticalSelectionAbortController = undefined;
+    this.editor?.dispose();
+    this.editor = undefined;
   }
 
   // Converts emoji shortcodes like :smile: to actual emojis when not in formula mode

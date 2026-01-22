@@ -572,11 +572,11 @@ export const aiToolsActions: AIToolActionsRecord = {
         return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
       }
       const { x, y } = targetSelection.getCursor();
+      const rangeWidth = Number(sourceRect.max.x - sourceRect.min.x);
+      const rangeHeight = Number(sourceRect.max.y - sourceRect.min.y);
 
       // Move AI cursor to show the target destination
       try {
-        const rangeWidth = Number(sourceRect.max.x - sourceRect.min.x);
-        const rangeHeight = Number(sourceRect.max.y - sourceRect.min.y);
         const targetRange = `${xyToA1(x, y)}:${xyToA1(x + rangeWidth, y + rangeHeight)}`;
         const jsSelection = sheets.stringToSelection(targetRange, sheetId);
         const selectionString = jsSelection.save();
@@ -586,6 +586,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       await quadraticCore.moveCells(sheetRect, x, y, sheetId, false, false, true);
+
+      // Move viewport to the target destination so the user can see where the content was moved
+      ensureRectVisible(sheetId, { x, y }, { x: x + rangeWidth, y: y + rangeHeight });
 
       return [createTextContent('Executed move cells tool successfully.')];
     } catch (e) {
