@@ -345,6 +345,16 @@ impl GridController {
         transaction: &mut PendingTransaction,
         result: JsCodeResult,
     ) -> Result<()> {
+        if !transaction.waiting_for_async_code_cell {
+            return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async_code_cell to be defined in transaction::complete".into()));
+        }
+
+        // Check if this is an in-table code cell
+        if let Some(multi_sheet_pos) = transaction.current_multi_sheet_pos.take() {
+            return self.after_calculation_async_multi_pos(transaction, result, multi_sheet_pos);
+        }
+
+        // Regular sheet-level code cell
         let current_sheet_pos = match transaction.current_sheet_pos {
             Some(current_sheet_pos) => current_sheet_pos,
             None => {
@@ -354,45 +364,122 @@ impl GridController {
             }
         };
 
-        match &transaction.waiting_for_async_code_cell {
-            false => {
-                return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async_code_cell to be defined in transaction::complete".into()));
+        if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
+            let Some(code_cell) = sheet.code_run_at(&current_sheet_pos.into()) else {
+                return Err(CoreError::TransactionNotFound(
+                    "Expected code_cell to be defined in after_calculation_async".into(),
+                ));
+            };
+            if !code_cell.language.is_code_language() {
+                return Err(CoreError::UnhandledLanguage(
+                    "Transaction.complete called for an unhandled language".into(),
+                ));
             }
-            true => {
-                if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
-                    let Some(code_cell) = sheet.code_run_at(&current_sheet_pos.into()) else {
-                        return Err(CoreError::TransactionNotFound(
-                            "Expected code_cell to be defined in after_calculation_async".into(),
-                        ));
-                    };
-                    if !code_cell.language.is_code_language() {
-                        return Err(CoreError::UnhandledLanguage(
-                            "Transaction.complete called for an unhandled language".into(),
-                        ));
+
+            let new_data_table = self.js_code_result_to_code_cell_value(
+                transaction,
+                result,
+                current_sheet_pos,
+                code_cell.language.clone(),
+                code_cell.code.clone(),
+            );
+
+            self.finalize_data_table(
+                transaction,
+                current_sheet_pos,
+                Some(new_data_table),
+                None,
+                false,
+            );
+        }
+
+        #[cfg(feature = "show-first-sheet-operations")]
+        {
+            println!("\n========= After calculation async =========");
+            print_first_sheet!(&self);
+        }
+
+        // continue the compute loop after a successful async call
+        self.start_transaction(transaction);
+        Ok(())
+    }
+
+    /// Handles async calculation completion for in-table code cells.
+    fn after_calculation_async_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        result: JsCodeResult,
+        multi_sheet_pos: crate::MultiSheetPos,
+    ) -> Result<()> {
+        use crate::MultiPos;
+
+        transaction.current_sheet_pos = None;
+        transaction.cells_accessed.clear();
+        transaction.waiting_for_async_code_cell = false;
+
+        let sheet_id = multi_sheet_pos.sheet_id;
+
+        match multi_sheet_pos.multi_pos {
+            MultiPos::Pos(pos) => {
+                // Shouldn't happen - regular positions should use current_sheet_pos
+                let sheet_pos = SheetPos::new(sheet_id, pos.x, pos.y);
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let Some(code_cell) = sheet.code_run_at(&pos) {
+                        let new_data_table = self.js_code_result_to_code_cell_value(
+                            transaction,
+                            result,
+                            sheet_pos,
+                            code_cell.language.clone(),
+                            code_cell.code.clone(),
+                        );
+                        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
                     }
+                }
+            }
+            MultiPos::TablePos(table_pos) => {
+                // In-table code cell - store result in nested table
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    let nested_table = sheet.data_tables.get_nested_table(&table_pos);
+                    if let Some(nested_table) = nested_table {
+                        if let Some(code_run) = nested_table.code_run() {
+                            let language = code_run.language.clone();
+                            let code = code_run.code.clone();
 
-                    let new_data_table = self.js_code_result_to_code_cell_value(
-                        transaction,
-                        result,
-                        current_sheet_pos,
-                        code_cell.language.clone(),
-                        code_cell.code.clone(),
-                    );
+                            // Get a fallback sheet_pos for the conversion function
+                            let sheet_pos = sheet.table_pos_to_sheet_pos(table_pos)
+                                .unwrap_or_else(|| SheetPos::new(sheet_id, table_pos.parent_pos.x, table_pos.parent_pos.y));
 
-                    self.finalize_data_table(
-                        transaction,
-                        current_sheet_pos,
-                        Some(new_data_table),
-                        None,
-                        false,
-                    );
+                            let new_data_table = self.js_code_result_to_code_cell_value(
+                                transaction,
+                                result,
+                                sheet_pos,
+                                language,
+                                code,
+                            );
+
+                            // Get the output size for cache update
+                            let output_size = new_data_table.output_size();
+
+                            // Store the result in the nested table
+                            self.store_nested_data_table(sheet_id, table_pos, new_data_table);
+
+                            // Update the in-table code cache with actual output size
+                            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+                                sheet.data_tables.add_in_table_code_with_size(
+                                    &table_pos,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
 
         #[cfg(feature = "show-first-sheet-operations")]
         {
-            println!("\n========= After calculation async =========");
+            println!("\n========= After calculation async (multi-pos) =========");
             print_first_sheet!(&self);
         }
 

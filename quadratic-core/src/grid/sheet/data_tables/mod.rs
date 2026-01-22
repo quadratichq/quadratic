@@ -15,7 +15,7 @@ use anyhow::{Result, anyhow};
 pub mod cache;
 pub mod in_table_code;
 
-pub use in_table_code::InTableCodeCache;
+pub use in_table_code::{InTableCodeCache, NestedCodeOutput};
 
 use cache::SheetDataTablesCache;
 
@@ -77,6 +77,34 @@ impl SheetDataTables {
     /// Returns the data table at the given position, if it exists.
     pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
+    }
+
+    /// Finds a nested table whose output covers the given position (in data coordinates).
+    /// Returns the anchor position of the nested table and the offset into its output.
+    ///
+    /// This iterates through all nested tables and checks if the position falls within
+    /// any of their output bounds.
+    pub fn find_nested_table_covering(
+        &self,
+        data_pos: Pos,
+    ) -> Option<(Pos, &DataTable, u32, u32)> {
+        for (anchor, nested_table) in self.data_tables.iter() {
+            let output_size = nested_table.output_size();
+            let width = output_size.w.get();
+            let height = output_size.h.get();
+
+            // Check if data_pos falls within this nested table's output
+            if data_pos.x >= anchor.x
+                && data_pos.x < anchor.x + width as i64
+                && data_pos.y >= anchor.y
+                && data_pos.y < anchor.y + height as i64
+            {
+                let offset_x = (data_pos.x - anchor.x) as u32;
+                let offset_y = (data_pos.y - anchor.y) as u32;
+                return Some((*anchor, nested_table, offset_x, offset_y));
+            }
+        }
+        None
     }
 
     /// Returns the data table at the given position, if it exists, along with its index and position.
@@ -362,7 +390,7 @@ impl SheetDataTables {
     fn insert_nested_table(
         &mut self,
         table_pos: &TablePos,
-        data_table: DataTable,
+        mut data_table: DataTable,
     ) -> Result<HashSet<Rect>> {
         let parent_pos = table_pos.parent_pos;
         let sub_pos = table_pos.sub_table_pos;
@@ -386,6 +414,55 @@ impl SheetDataTables {
             parent_pos.x + display_col as i64,
             parent_pos.y + y_adjustment + display_row,
         );
+
+        // Check for spill conditions:
+        // 1. Nested output would exceed parent table bounds
+        // 2. Nested output would overlap with another nested table's output
+        let nested_output_size = data_table.output_size();
+        let nested_width = nested_output_size.w.get() as i64;
+        let nested_height = nested_output_size.h.get() as i64;
+
+        // Get parent table data dimensions
+        let parent_width = parent_table.width() as i64;
+        let parent_height = parent_table.height(true) as i64;
+
+        // Check if nested output exceeds parent bounds
+        let exceeds_bounds = sub_pos.x + nested_width > parent_width
+            || sub_pos.y + nested_height > parent_height;
+
+        // Check if nested output overlaps with existing nested tables
+        let mut overlaps_existing = false;
+        if let Some(nested_tables) = &parent_table.tables {
+            let nested_rect = Rect::new(
+                sub_pos.x,
+                sub_pos.y,
+                sub_pos.x + nested_width - 1,
+                sub_pos.y + nested_height - 1,
+            );
+
+            for (other_anchor, other_table) in nested_tables.data_tables.iter() {
+                // Skip self
+                if *other_anchor == sub_pos {
+                    continue;
+                }
+
+                let other_size = other_table.output_size();
+                let other_rect = Rect::new(
+                    other_anchor.x,
+                    other_anchor.y,
+                    other_anchor.x + other_size.w.get() as i64 - 1,
+                    other_anchor.y + other_size.h.get() as i64 - 1,
+                );
+
+                if nested_rect.intersects(other_rect) {
+                    overlaps_existing = true;
+                    break;
+                }
+            }
+        }
+
+        // Set spill_nested flag if there's a spill condition
+        data_table.spill_nested = exceeds_bounds || overlaps_existing;
 
         // Get or create the nested tables
         let nested_tables = parent_table.tables.get_or_insert_with(SheetDataTables::new);
@@ -443,9 +520,57 @@ impl SheetDataTables {
     // In-table code cache methods
     // -------------------------------------------------------------------------
 
-    /// Adds a code cell to the in-table code cache.
+    /// Adds a code cell to the in-table code cache with default 1x1 output size.
     pub(crate) fn add_in_table_code(&mut self, table_pos: &TablePos) {
         self.in_table_code_cache.add(table_pos);
+    }
+
+    /// Adds a code cell to the in-table code cache with specified output size.
+    pub(crate) fn add_in_table_code_with_size(
+        &mut self,
+        table_pos: &TablePos,
+        width: u32,
+        height: u32,
+    ) {
+        self.in_table_code_cache.add_with_size(table_pos, width, height);
+    }
+
+    /// Updates the output size for an existing in-table code cell.
+    pub(crate) fn update_in_table_code_output_size(
+        &mut self,
+        table_pos: &TablePos,
+        width: u32,
+        height: u32,
+    ) -> bool {
+        self.in_table_code_cache.update_output_size(table_pos, width, height)
+    }
+
+    /// Returns the output bounds for an in-table code cell.
+    pub fn get_in_table_code_output_bounds(
+        &self,
+        table_pos: &TablePos,
+    ) -> Option<&NestedCodeOutput> {
+        self.in_table_code_cache.get_output_bounds(table_pos)
+    }
+
+    /// Finds the code cell whose output covers the given position within a parent table.
+    /// Returns the TablePos of the code cell and the offset into its output.
+    pub fn find_covering_in_table_code(
+        &self,
+        parent_pos: &Pos,
+        data_pos: Pos,
+    ) -> Option<(TablePos, u32, u32)> {
+        self.in_table_code_cache.find_covering_code_cell(parent_pos, data_pos)
+    }
+
+    /// Checks if adding a code cell with the given output size would overlap with existing outputs.
+    pub fn would_in_table_code_overlap(
+        &self,
+        table_pos: &TablePos,
+        width: u32,
+        height: u32,
+    ) -> Option<Pos> {
+        self.in_table_code_cache.would_overlap(table_pos, width, height)
     }
 
     /// Removes a code cell from the in-table code cache.
@@ -807,9 +932,30 @@ impl SheetDataTables {
     }
 
     /// Returns true if the sheet data tables are empty.
-    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.data_tables.is_empty()
+    }
+
+    /// Rebuilds the in-table code cache from nested tables.
+    /// This should be called after importing data tables from a file.
+    pub(crate) fn rebuild_in_table_code_cache(&mut self) {
+        self.in_table_code_cache = InTableCodeCache::new();
+
+        for (parent_pos, data_table) in self.data_tables.iter() {
+            if let Some(nested_tables) = &data_table.tables {
+                for (anchor_pos, nested_table) in nested_tables.data_tables.iter() {
+                    if nested_table.is_code() {
+                        let table_pos = crate::TablePos::new(*parent_pos, *anchor_pos);
+                        let output_size = nested_table.output_size();
+                        self.in_table_code_cache.add_with_size(
+                            &table_pos,
+                            output_size.w.get(),
+                            output_size.h.get(),
+                        );
+                    }
+                }
+            }
+        }
     }
 
     /// Returns the data table at the given position, if it exists.
@@ -847,6 +993,7 @@ mod tests {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             alternating_colors: true,
             formats: None,
             borders: None,

@@ -118,7 +118,7 @@ impl GridController {
             return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
         }
 
-        // Check for in-table code cells
+        // Check for in-table code cells (direct anchor position)
         if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos)
             && let Some(nested_table) = sheet.data_tables.get_nested_table(&table_pos)
             && let DataTableKind::CodeRun(code_run) = &nested_table.kind
@@ -134,6 +134,28 @@ impl GridController {
                     language: code_run.language.clone(),
                     code: code_run.code.clone(),
                     table_pos: Some(JsTablePos::from(table_pos)),
+                }),
+            };
+            return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+        }
+
+        // Check if this position is covered by a nested code cell's multi-cell output
+        // (i.e., clicking on a cell that's part of the output but not the anchor)
+        if let Some(anchor_table_pos) = sheet.find_covering_nested_code_cell(pos)
+            && let Some(nested_table) = sheet.data_tables.get_nested_table(&anchor_table_pos)
+            && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+        {
+            // Return the anchor's code for editing
+            let text = nested_table
+                .cell_value_at(0, 0)
+                .map(|cv| cv.to_edit())
+                .unwrap_or_default();
+            let result = JsEditCell {
+                text,
+                code_cell: Some(JsEditCellCodeCell {
+                    language: code_run.language.clone(),
+                    code: code_run.code.clone(),
+                    table_pos: Some(JsTablePos::from(anchor_table_pos)),
                 }),
             };
             return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);

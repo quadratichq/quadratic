@@ -273,8 +273,14 @@ impl Sheet {
             });
         }
 
-        // Check for nested in-table code cells
-        if let Some(table_pos) = self.display_pos_to_in_table_code_pos(pos)
+        // Check for nested in-table code cells (direct anchor or within multi-cell output)
+        // First check if clicked position is the anchor of a nested code cell
+        let nested_code_table_pos = self.display_pos_to_in_table_code_pos(pos)
+            .filter(|tp| self.data_tables.get_nested_table(tp).is_some_and(|t| t.is_code()))
+            // If not, check if the position is covered by a nested code cell's output
+            .or_else(|| self.find_covering_nested_code_cell(pos));
+
+        if let Some(table_pos) = nested_code_table_pos
             && let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
             && let DataTableKind::CodeRun(code_run) = &nested_table.kind
         {
@@ -297,9 +303,15 @@ impl Sheet {
                 output_type: code_run.output_type.clone(),
             });
 
+            // Get the anchor's sheet position for the x, y coordinates
+            let anchor_sheet_pos = self.table_pos_to_sheet_pos(table_pos);
+            let (anchor_x, anchor_y) = anchor_sheet_pos
+                .map(|sp| (sp.x, sp.y))
+                .unwrap_or((pos.x, pos.y));
+
             return Some(JsCodeCell {
-                x: pos.x,
-                y: pos.y,
+                x: anchor_x,
+                y: anchor_y,
                 code_string: code,
                 language: code_run.language.clone(),
                 std_err: code_run.std_err.clone(),

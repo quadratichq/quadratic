@@ -319,6 +319,7 @@ mod test {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             tables: None,
         };
         sheet.set_data_table(pos, Some(t.clone()));
@@ -375,6 +376,7 @@ mod test {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             tables: None,
         };
         t.apply_default_header();

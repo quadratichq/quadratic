@@ -193,6 +193,10 @@ pub struct DataTableSchema {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    /// Nested tables within this data table (for in-table code cells)
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub tables: Option<DataTablesSchema>,
 }
 
 pub type DataTablesSchema = Vec<(PosSchema, DataTableSchema)>;

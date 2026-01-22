@@ -148,29 +148,32 @@ impl Sheet {
             && let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
             && let DataTableKind::CodeRun(code_run) = &nested_table.kind
         {
-            let state = if code_run.error.is_some() {
-                JsRenderCodeCellState::RunError
+            let output_size = nested_table.output_size();
+            let (state, w, h) = if nested_table.has_spill() {
+                // Nested tables can spill within parent bounds
+                (JsRenderCodeCellState::SpillError, output_size.w.get(), output_size.h.get())
+            } else if code_run.error.is_some() {
+                (JsRenderCodeCellState::RunError, 1, 1)
             } else {
-                JsRenderCodeCellState::Success
+                (JsRenderCodeCellState::Success, output_size.w.get(), output_size.h.get())
             };
 
-            // Nested code cells have 1x1 output (they don't spill outside their cell)
             return Some(JsRenderCodeCell {
                 x: pos.x as i32,
                 y: pos.y as i32,
-                w: 1,
-                h: 1,
+                w,
+                h,
                 language: code_run.language.clone(),
                 state,
                 spill_error: None,
                 name: nested_table.name().to_string(),
-                columns: Vec::new(),
-                first_row_header: false,
-                show_name: false,
-                show_columns: false,
-                sort: None,
-                sort_dirty: false,
-                alternating_colors: false,
+                columns: nested_table.send_columns(),
+                first_row_header: nested_table.header_is_first_row,
+                show_name: nested_table.get_show_name(),
+                show_columns: nested_table.get_show_columns(),
+                sort: nested_table.sort.clone(),
+                sort_dirty: nested_table.sort_dirty,
+                alternating_colors: nested_table.alternating_colors,
                 is_code: true,
                 is_html: nested_table.is_html(),
                 is_html_image: nested_table.is_html() || nested_table.is_image(),

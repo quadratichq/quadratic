@@ -59,6 +59,9 @@ pub struct PendingTransaction {
     /// save code_cell info for async calls
     pub current_sheet_pos: Option<SheetPos>,
 
+    /// save multi_sheet_pos info for async calls to in-table code cells
+    pub current_multi_sheet_pos: Option<crate::MultiSheetPos>,
+
     /// whether we are awaiting an async call for a code cell
     pub(crate) waiting_for_async_code_cell: bool,
 
@@ -144,6 +147,7 @@ impl Default for PendingTransaction {
             has_async: 0,
             cells_accessed: Default::default(),
             current_sheet_pos: None,
+            current_multi_sheet_pos: None,
             waiting_for_async_code_cell: false,
             complete: false,
             generate_thumbnail: false,

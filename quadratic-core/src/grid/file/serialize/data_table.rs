@@ -343,12 +343,17 @@ pub(crate) fn import_data_table_builder(
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             alternating_colors: data_table.alternating_colors,
             formats: data_table.formats.map(import_formats),
             borders: data_table.borders.map(import_borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
-            tables: None, // TODO: Import nested tables when file schema supports them
+            // Recursively import nested tables
+            tables: data_table.tables.map(|nested_tables| {
+                // Note: nested tables don't need column spill checking since they exist within the parent
+                import_data_table_builder(nested_tables, &SheetColumns::default()).unwrap_or_default()
+            }).filter(|t| !t.is_empty()),
         };
 
         let output_rect = data_table.output_rect(pos, true);
@@ -563,6 +568,11 @@ pub(crate) fn export_data_tables(
                 }
             });
 
+            // Recursively export nested tables
+            let tables = data_table.tables.map(|nested_tables| {
+                export_data_tables(nested_tables)
+            });
+
             let data_table = current::DataTableSchema {
                 kind,
                 name,
@@ -580,6 +590,7 @@ pub(crate) fn export_data_tables(
                 borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
+                tables,
             };
 
             (current::PosSchema::from(pos), data_table)

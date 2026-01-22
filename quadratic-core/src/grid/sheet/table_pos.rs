@@ -113,6 +113,43 @@ impl Sheet {
         ))
     }
 
+    /// Finds the nested code cell that covers the given display position.
+    ///
+    /// This is used when clicking on any cell within a nested code cell's output
+    /// (not just the anchor) to redirect editing to the anchor cell.
+    ///
+    /// Returns the TablePos of the nested code cell's anchor if found.
+    pub fn find_covering_nested_code_cell(&self, display_pos: Pos) -> Option<TablePos> {
+        let (data_table_pos, data_table) = self.data_table_that_contains(display_pos)?;
+
+        // Get nested tables
+        let nested_tables = data_table.tables.as_ref()?;
+
+        // Calculate the data position within the parent table
+        let display_col_offset = u32::try_from(display_pos.x - data_table_pos.x).ok()?;
+        let table_col = data_table.get_column_index_from_display_index(display_col_offset, true);
+
+        let y_adjustment = data_table.y_adjustment(true);
+        let row_offset_raw = display_pos.y - data_table_pos.y - y_adjustment;
+        if row_offset_raw < 0 {
+            return None; // In UI rows (name/columns), not data
+        }
+        let display_row_offset = u64::try_from(row_offset_raw).ok()?;
+        let table_row = data_table.get_row_index_from_display_index(display_row_offset);
+
+        let data_pos = Pos::new(table_col as i64, table_row as i64);
+
+        // Find if any nested code cell covers this position
+        let (anchor, nested_table, _, _) = nested_tables.find_nested_table_covering(data_pos)?;
+
+        // Only return if it's actually a code cell
+        if nested_table.is_code() {
+            Some(TablePos::new(data_table_pos, anchor))
+        } else {
+            None
+        }
+    }
+
     /// Converts a SheetPos to a MultiSheetPos.
     ///
     /// If the position is within a table (and not the anchor cell), returns a MultiSheetPos
@@ -175,6 +212,7 @@ mod tests {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             alternating_colors: true,
             formats: None,
             borders: None,

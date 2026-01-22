@@ -243,6 +243,10 @@ pub struct DataTable {
     #[serde(skip_serializing_if = "is_false", default)]
     pub spill_merged_cell: bool,
 
+    // spill due to overlapping with another nested code output or exceeding parent bounds
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub spill_nested: bool,
+
     #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,
 
@@ -314,6 +318,7 @@ impl DataTable {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             alternating_colors: true,
             formats: None,
             borders: None,
@@ -347,6 +352,7 @@ impl DataTable {
             spill_value: self.spill_value,
             spill_data_table: self.spill_data_table,
             spill_merged_cell: self.spill_merged_cell,
+            spill_nested: self.spill_nested,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
             borders: self.borders.clone(),
@@ -666,7 +672,7 @@ impl DataTable {
 
     /// Helper function to determine if the DataTable has an spill error.
     pub fn has_spill(&self) -> bool {
-        self.spill_value || self.spill_data_table || self.spill_merged_cell
+        self.spill_value || self.spill_data_table || self.spill_merged_cell || self.spill_nested
     }
 
     /// Helper function to determine if the DataTable's CodeRun has an error.
@@ -731,10 +737,13 @@ impl DataTable {
                     // Convert display position to data position
                     let data_col = self.get_column_index_from_display_index(x, true);
                     let data_row = self.get_row_index_from_display_index((y - y_adjustment) as u64);
-                    let sub_pos = Pos::new(data_col as i64, data_row as i64);
-                    if let Some(nested_table) = nested_tables.get_at(&sub_pos) {
-                        // Return the nested code cell's output value
-                        return nested_table.cell_value_at(0, 0);
+                    let data_pos = Pos::new(data_col as i64, data_row as i64);
+
+                    // Check if any nested code cell's output covers this position
+                    if let Some((_anchor, nested_table, offset_x, offset_y)) =
+                        nested_tables.find_nested_table_covering(data_pos)
+                    {
+                        return nested_table.cell_value_at(offset_x, offset_y);
                     }
                 }
             }
@@ -744,10 +753,28 @@ impl DataTable {
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
+    /// If there's a nested code cell at this position, returns its output instead.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.has_spill() || self.has_error() {
             None
         } else {
+            // Check for nested code cell at this position first
+            if let Some(nested_tables) = &self.tables {
+                let y_adjustment = self.y_adjustment(true) as u32;
+                if y >= y_adjustment {
+                    // Convert display position to data position
+                    let data_col = self.get_column_index_from_display_index(x, true);
+                    let data_row = self.get_row_index_from_display_index((y - y_adjustment) as u64);
+                    let data_pos = Pos::new(data_col as i64, data_row as i64);
+
+                    // Check if any nested code cell's output covers this position
+                    if let Some((_anchor, nested_table, offset_x, offset_y)) =
+                        nested_tables.find_nested_table_covering(data_pos)
+                    {
+                        return nested_table.cell_value_ref_at(offset_x, offset_y);
+                    }
+                }
+            }
             self.display_value_at((x, y).into()).ok()
         }
     }
@@ -761,10 +788,13 @@ impl DataTable {
         } else {
             // Check for nested code cell at this position first
             if let Some(nested_tables) = &self.tables {
-                let sub_pos = Pos::new(x as i64, y as i64);
-                if let Some(nested_table) = nested_tables.get_at(&sub_pos) {
-                    // Return the nested code cell's output value
-                    return nested_table.get_cell_for_formula(0, 0);
+                let data_pos = Pos::new(x as i64, y as i64);
+
+                // Check if any nested code cell's output covers this position
+                if let Some((_anchor, nested_table, offset_x, offset_y)) =
+                    nested_tables.find_nested_table_covering(data_pos)
+                {
+                    return nested_table.get_cell_for_formula(offset_x, offset_y);
                 }
             }
             match &self.value {

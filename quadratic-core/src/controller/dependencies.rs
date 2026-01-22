@@ -7,7 +7,8 @@ use crate::{CellValue, SheetPos, SheetRect};
 use super::GridController;
 
 impl GridController {
-    /// Searches all data_tables and CellValue::Code in sheets for cells that are dependent on the given sheet_rect.
+    /// Searches all data_tables, CellValue::Code, and nested code cells in sheets
+    /// for cells that are dependent on the given sheet_rect.
     pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
         let all_dependent_cells = self
             .cells_accessed()
@@ -50,6 +51,31 @@ impl GridController {
                 .contains(dependent_cell, self.a1_context())
             {
                 dependent_cells.insert(dependent_cell);
+            }
+        }
+
+        // Also check for in-table code cells that might depend on the sheet_rect
+        // by looking at the in-table code cache
+        for (_, sheet) in self.grid.sheets() {
+            for (parent_pos, in_table_codes) in sheet.data_tables.in_table_code_cache().iter() {
+                for anchor_pos in in_table_codes {
+                    // Get the nested table to check its cells_accessed
+                    let table_pos = crate::TablePos {
+                        parent_pos: *parent_pos,
+                        sub_table_pos: *anchor_pos,
+                    };
+                    if let Some(nested_table) = sheet.data_tables.get_nested_table(&table_pos) {
+                        if let Some(code_run) = nested_table.code_run() {
+                            // Check if the nested code cell accesses the changed region
+                            if code_run.cells_accessed.intersects(&sheet_rect, self.a1_context()) {
+                                // Convert table position to sheet position for tracking
+                                if let Some(sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos) {
+                                    dependent_cells.insert(sheet_pos);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

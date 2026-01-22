@@ -411,6 +411,7 @@ impl GridController {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             last_modified: now(),
             alternating_colors,
             formats: None,
@@ -612,13 +613,20 @@ impl GridController {
                     let code = code_run.code.clone();
                     let cached_ast = code_run.formula_ast.clone();
 
-                    // For now, only formulas are supported in-table
-                    // Python/JS would require more infrastructure changes
+                    // Execute based on language type
                     match language {
                         CodeCellLanguage::Formula => {
                             self.run_formula_multi_pos(transaction, multi_sheet_pos, code, cached_ast);
                         }
-                        _ => {}
+                        CodeCellLanguage::Python => {
+                            self.run_python_multi_pos(transaction, multi_sheet_pos, code);
+                        }
+                        CodeCellLanguage::Javascript => {
+                            self.run_javascript_multi_pos(transaction, multi_sheet_pos, code);
+                        }
+                        _ => {
+                            // Connection and Import are not supported in-table
+                        }
                     }
                 }
             }
@@ -656,7 +664,10 @@ impl GridController {
                     // Handle nested data table
                     let sheet = self.try_sheet_mut_result(multi_sheet_pos.sheet_id)?;
 
-                    if let Some(dt) = data_table {
+                    // Get old nested table for undo operation
+                    let old_nested_table = sheet.data_tables.get_nested_table(&table_pos).cloned();
+
+                    if let Some(dt) = data_table.clone() {
                         // Insert nested table
                         let dirty_rects = sheet.data_tables.insert_at_multi_pos(
                             &multi_sheet_pos.multi_pos,
@@ -681,11 +692,18 @@ impl GridController {
                         }
                     }
 
-                    // For undo/redo, we'd need to track the forward/reverse operations
-                    // This is simplified for now
-                    if transaction.is_user_ai_undo_redo() {
-                        transaction.forward_operations.push(op);
-                    }
+                    // Track forward/reverse operations for undo/redo
+                    transaction.forward_operations.push(Operation::SetDataTableMultiPos {
+                        multi_sheet_pos: multi_sheet_pos.clone(),
+                        data_table,
+                        index,
+                    });
+
+                    transaction.reverse_operations.push(Operation::SetDataTableMultiPos {
+                        multi_sheet_pos,
+                        data_table: old_nested_table,
+                        index,
+                    });
                 }
             }
         }
@@ -836,16 +854,23 @@ impl GridController {
             None,
         );
 
+        // Get the output size before storing
+        let output_size = new_data_table.output_size();
+
         self.store_nested_data_table(sheet_id, table_pos, new_data_table);
 
-        // Mark the in-table code in the cache
+        // Mark the in-table code in the cache with actual output size
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-            sheet.data_tables.add_in_table_code(&table_pos);
+            sheet.data_tables.add_in_table_code_with_size(
+                &table_pos,
+                output_size.w.get(),
+                output_size.h.get(),
+            );
         }
     }
 
     /// Stores a data table as a nested table within a parent table.
-    fn store_nested_data_table(
+    pub(crate) fn store_nested_data_table(
         &mut self,
         sheet_id: crate::grid::SheetId,
         table_pos: crate::TablePos,

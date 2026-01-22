@@ -123,6 +123,7 @@ impl GridController {
                     spill_value: false,
                     spill_data_table: false,
                     spill_merged_cell: false,
+                    spill_nested: false,
                     last_modified: existing_code_cell.last_modified,
                     alternating_colors: true,
                     formats: None,
@@ -159,6 +160,7 @@ impl GridController {
                     spill_value: false,
                     spill_data_table: false,
                     spill_merged_cell: false,
+                    spill_nested: false,
                     last_modified: now(),
                     alternating_colors: true,
                     formats: None,
@@ -179,6 +181,8 @@ impl GridController {
     /// Generates operations to create/update an in-table code cell.
     ///
     /// This creates a nested code table within the parent table's output area.
+    /// Note: Nested tables cannot have UI elements (show_name, show_columns, etc.)
+    /// as they exist within another table's data region.
     fn set_in_table_code_cell_operations(
         &self,
         sheet_id: SheetId,
@@ -233,6 +237,7 @@ impl GridController {
                 });
             } else {
                 // Different language - replace the table
+                // Note: Nested tables cannot have UI, so show_name and show_columns are false
                 let name = CellValue::Text(format!("{}1", language.as_string()));
                 ops.push(Operation::SetDataTableMultiPos {
                     multi_sheet_pos,
@@ -244,8 +249,8 @@ impl GridController {
                         }),
                         name,
                         header_is_first_row: false,
-                        show_name: None,
-                        show_columns: None,
+                        show_name: Some(false),    // Nested tables cannot have UI
+                        show_columns: Some(false), // Nested tables cannot have UI
                         column_headers: None,
                         sort: None,
                         sort_dirty: false,
@@ -254,6 +259,7 @@ impl GridController {
                         spill_value: false,
                         spill_data_table: false,
                         spill_merged_cell: false,
+                        spill_nested: false,
                         last_modified: now(),
                         alternating_colors: false, // In-table code cells don't need alternating colors
                         formats: None,
@@ -267,6 +273,7 @@ impl GridController {
             }
         } else {
             // Create new nested code table
+            // Note: Nested tables cannot have UI, so show_name and show_columns are false
             let name = CellValue::Text(format!("{}1", language.as_string()));
             ops.push(Operation::SetDataTableMultiPos {
                 multi_sheet_pos,
@@ -278,8 +285,8 @@ impl GridController {
                     }),
                     name,
                     header_is_first_row: false,
-                    show_name: None,
-                    show_columns: None,
+                    show_name: Some(false),    // Nested tables cannot have UI
+                    show_columns: Some(false), // Nested tables cannot have UI
                     column_headers: None,
                     sort: None,
                     sort_dirty: false,
@@ -288,6 +295,7 @@ impl GridController {
                     spill_value: false,
                     spill_data_table: false,
                     spill_merged_cell: false,
+                    spill_nested: false,
                     last_modified: now(),
                     alternating_colors: false, // In-table code cells don't need alternating colors
                     formats: None,
