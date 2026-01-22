@@ -1,0 +1,263 @@
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { apiClient } from '@/shared/api/apiClient';
+import {
+  AccountIcon,
+  DeleteIcon,
+  DownloadIcon,
+  FileIcon,
+  GroupIcon,
+  MoreHorizIcon,
+  SearchIcon,
+  UploadIcon,
+} from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
+import { Input } from '@/shared/shadcn/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { cn } from '@/shared/shadcn/utils';
+import { formatBytes } from '@/shared/utils/formatBytes';
+import type { DataAssetType } from 'quadratic-shared/typesAndSchemas';
+import { useCallback, useMemo, useState } from 'react';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Navigate, useLoaderData, useRevalidator } from 'react-router';
+import { ROUTES } from '@/shared/constants/routes';
+
+interface DataAssetItem {
+  uuid: string;
+  name: string;
+  type: DataAssetType;
+  size: number;
+  createdDate: string;
+  updatedDate: string;
+}
+
+export const loader = async ({ params }: LoaderFunctionArgs) => {
+  const { teamUuid } = params;
+  if (!teamUuid) throw new Error('No team UUID provided');
+
+  const dataResponse = await apiClient.data.list(teamUuid);
+  return { teamUuid, ...dataResponse };
+};
+
+export const Component = () => {
+  const { teamUuid, data: teamData, dataPrivate: personalData } = useLoaderData<typeof loader>();
+  const {
+    activeTeam: {
+      userMakingRequest: { teamPermissions },
+    },
+  } = useDashboardRouteLoaderData();
+  const revalidator = useRevalidator();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'personal' | 'team'>('personal');
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Filter data by search query
+  const filterItems = useCallback(
+    (items: DataAssetItem[]) => {
+      if (!searchQuery) return items;
+      return items.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    },
+    [searchQuery]
+  );
+
+  const filteredPersonalData = useMemo(() => filterItems(personalData), [personalData, filterItems]);
+  const filteredTeamData = useMemo(() => filterItems(teamData), [teamData, filterItems]);
+
+  // Check permissions - must be after all hooks
+  if (!teamPermissions?.includes('TEAM_EDIT')) {
+    return <Navigate to={ROUTES.TEAM(teamUuid)} />;
+  }
+
+  // Handle file upload
+  const handleUpload = async (files: FileList | null, isPrivate: boolean) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        await apiClient.data.upload({
+          teamUuid,
+          file,
+          isPrivate,
+        });
+      }
+      // Refresh data
+      revalidator.revalidate();
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async (dataUuid: string) => {
+    try {
+      await apiClient.data.delete({ teamUuid, dataUuid });
+      revalidator.revalidate();
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  };
+
+  const handleDownload = async (dataUuid: string, name: string) => {
+    try {
+      const { downloadUrl } = await apiClient.data.getDownloadUrl({ teamUuid, dataUuid });
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = name;
+      link.click();
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
+  return (
+    <>
+      <DashboardHeader
+        title="Data"
+        actions={
+          <label>
+            <Button disabled={isUploading} className="gap-2">
+              <UploadIcon />
+              {isUploading ? 'Uploading...' : 'Upload'}
+            </Button>
+            <input
+              type="file"
+              className="hidden"
+              multiple
+              onChange={(e) => handleUpload(e.target.files, activeTab === 'personal')}
+              disabled={isUploading}
+            />
+          </label>
+        }
+      />
+
+      <div className="max-w-4xl space-y-4">
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search data..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+          <TabsList>
+            <TabsTrigger value="personal" className="gap-2">
+              <AccountIcon />
+              Personal ({personalData.length})
+            </TabsTrigger>
+            <TabsTrigger value="team" className="gap-2">
+              <GroupIcon />
+              Team ({teamData.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="personal" className="mt-4">
+            <DataList items={filteredPersonalData} onDelete={handleDelete} onDownload={handleDownload} />
+          </TabsContent>
+
+          <TabsContent value="team" className="mt-4">
+            <DataList items={filteredTeamData} onDelete={handleDelete} onDownload={handleDownload} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
+  );
+};
+
+function DataList({
+  items,
+  onDelete,
+  onDownload,
+}: {
+  items: DataAssetItem[];
+  onDelete: (uuid: string) => void;
+  onDownload: (uuid: string, name: string) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-12 text-muted-foreground">
+        <FileIcon className="mb-2 h-12 w-12" />
+        <p className="text-lg font-medium">No data yet</p>
+        <p className="text-sm">Upload files to get started</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border bg-muted/50 text-left text-sm text-muted-foreground">
+            <th className="px-4 py-3 font-medium">Name</th>
+            <th className="px-4 py-3 font-medium">Type</th>
+            <th className="px-4 py-3 font-medium">Size</th>
+            <th className="px-4 py-3 font-medium">Updated</th>
+            <th className="w-12 px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.uuid} className="border-b border-border last:border-0 hover:bg-muted/30">
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <DataTypeIcon type={item.type} />
+                  <span className="font-medium">{item.name}</span>
+                </div>
+              </td>
+              <td className="px-4 py-3 text-sm text-muted-foreground">{item.type}</td>
+              <td className="px-4 py-3 text-sm text-muted-foreground">{formatBytes(item.size)}</td>
+              <td className="px-4 py-3 text-sm text-muted-foreground">
+                {new Date(item.updatedDate).toLocaleDateString()}
+              </td>
+              <td className="px-4 py-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon-sm">
+                      <MoreHorizIcon />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onDownload(item.uuid, item.name)} className="gap-2">
+                      <DownloadIcon />
+                      Download
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete(item.uuid)} className="gap-2 text-destructive">
+                      <DeleteIcon />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DataTypeIcon({ type }: { type: DataAssetType }) {
+  const iconClass = 'h-5 w-5';
+
+  switch (type) {
+    case 'EXCEL':
+      return <img src="/images/icon-excel.svg" alt="Excel" className={iconClass} />;
+    case 'PDF':
+      return <img src="/images/icon-pdf.svg" alt="PDF" className={iconClass} />;
+    default:
+      return <FileIcon className={cn(iconClass, 'text-muted-foreground')} />;
+  }
+}

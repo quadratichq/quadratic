@@ -573,6 +573,85 @@ export const apiClient = {
     },
   },
 
+  data: {
+    list(teamUuid: string) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/data`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/data.GET.response']
+      );
+    },
+
+    upload({
+      teamUuid,
+      file,
+      name,
+      isPrivate,
+      onUploadProgress,
+    }: {
+      teamUuid: string;
+      file: File;
+      name?: string;
+      isPrivate?: boolean;
+      onUploadProgress?: (progress: number) => void;
+    }) {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (name) formData.append('name', name);
+      if (isPrivate) formData.append('isPrivate', 'true');
+
+      return xhrFromApi(
+        `/v0/teams/${teamUuid}/data`,
+        {
+          method: 'POST',
+          data: formData,
+          onUploadProgress,
+        },
+        ApiSchemas['/v0/teams/:uuid/data.POST.response']
+      );
+    },
+
+    get({ teamUuid, dataUuid }: { teamUuid: string; dataUuid: string }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/data/${dataUuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/data/:dataUuid.GET.response']
+      );
+    },
+
+    update({
+      teamUuid,
+      dataUuid,
+      body,
+    }: {
+      teamUuid: string;
+      dataUuid: string;
+      body: ApiTypes['/v0/teams/:uuid/data/:dataUuid.PATCH.request'];
+    }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/data/${dataUuid}`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams/:uuid/data/:dataUuid.PATCH.response']
+      );
+    },
+
+    delete({ teamUuid, dataUuid }: { teamUuid: string; dataUuid: string }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/data/${dataUuid}`,
+        { method: 'DELETE' },
+        ApiSchemas['/v0/teams/:uuid/data/:dataUuid.DELETE.response']
+      );
+    },
+
+    getDownloadUrl({ teamUuid, dataUuid }: { teamUuid: string; dataUuid: string }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/data/${dataUuid}/download`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/data/:dataUuid/download.GET.response']
+      );
+    },
+  },
+
   getApiUrl() {
     const url = import.meta.env.VITE_QUADRATIC_API_URL;
     if (!url) {

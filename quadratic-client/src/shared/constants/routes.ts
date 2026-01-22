@@ -81,6 +81,7 @@ export const ROUTES = {
   TEAM_FILES_PRIVATE: (teamUuid: string) => ROUTES.TEAM_FILES(teamUuid, { type: 'private' }),
   TEAM_FILES_SHARED_WITH_ME: (teamUuid: string) => ROUTES.TEAM_FILES(teamUuid, { type: 'shared' }),
   TEAM_FILES_DELETED: (teamUuid: string) => `/teams/${teamUuid}/files/deleted`,
+  TEAM_DATA: (teamUuid: string) => `/teams/${teamUuid}/data`,
   TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
@@ -98,6 +99,9 @@ export const ROUTES = {
       LIST: (teamUuid: string) => `/api/connections?team-uuid=${teamUuid}`,
       GET: ({ teamUuid, connectionUuid }: { teamUuid: string; connectionUuid: string }) =>
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
+    },
+    DATA: {
+      LIST: (teamUuid: string) => `/api/teams/${teamUuid}/data`,
     },
   },
 

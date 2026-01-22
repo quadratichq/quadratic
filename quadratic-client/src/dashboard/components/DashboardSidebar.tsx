@@ -21,6 +21,7 @@ import {
   LogoutIcon,
   RefreshIcon,
   SettingsIcon,
+  StorageIcon,
 } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
@@ -117,6 +118,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
               Connections
+            </SidebarNavLink>
+          )}
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_DATA(activeTeamUuid)}>
+              <StorageIcon className={classNameIcons} />
+              Data
             </SidebarNavLink>
           )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>

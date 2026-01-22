@@ -1,6 +1,7 @@
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { ConfirmProvider } from '@/shared/components/ConfirmProvider';
+import { DataPickerProvider } from '@/shared/components/DataPicker';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
@@ -40,11 +41,13 @@ export const Component = () => {
     <MuiTheme>
       <GlobalSnackbarProvider>
         <ConfirmProvider>
-          <>
-            <Outlet />
-            <ThemeAppearanceModeEffects />
-            <ThemeAccentColorEffects />
-          </>
+          <DataPickerProvider>
+            <>
+              <Outlet />
+              <ThemeAppearanceModeEffects />
+              <ThemeAccentColorEffects />
+            </>
+          </DataPickerProvider>
         </ConfirmProvider>
       </GlobalSnackbarProvider>
     </MuiTheme>
