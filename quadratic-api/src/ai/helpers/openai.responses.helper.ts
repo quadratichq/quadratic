@@ -86,6 +86,20 @@ export function getOpenAIResponsesApiArgs(
   const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
+
+  // First pass: collect all valid tool call IDs from assistant messages
+  // This is needed to filter out orphaned tool results (e.g., when user aborts mid-tool-call)
+  const validToolCallIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isAIPromptMessage(message)) {
+      for (const toolCall of message.toolCalls) {
+        // Handle both formats: with and without 'call_' prefix
+        validToolCallIds.add(toolCall.id);
+        validToolCallIds.add(toolCall.id.startsWith('call_') ? toolCall.id : `call_${toolCall.id}`);
+      }
+    }
+  }
+
   const messages: Array<ResponseInputItem> = promptMessages.reduce<Array<ResponseInputItem>>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -148,7 +162,19 @@ export function getOpenAIResponsesApiArgs(
       ] as ResponseInputItem[];
       return [...acc, ...openaiMessages];
     } else if (isToolResultMessage(message)) {
-      const openaiMessages: ResponseInputItem[] = message.content.map((toolResult) => ({
+      // Filter out tool results that reference non-existent tool call IDs
+      // This can happen when user aborts mid-tool-call and tool calls are cleared
+      const validToolResults = message.content.filter((toolResult) => {
+        const callId = toolResult.id.startsWith('call_') ? toolResult.id : `call_${toolResult.id}`;
+        return validToolCallIds.has(toolResult.id) || validToolCallIds.has(callId);
+      });
+
+      // Skip entirely if no valid tool results remain
+      if (validToolResults.length === 0) {
+        return acc;
+      }
+
+      const openaiMessages: ResponseInputItem[] = validToolResults.map((toolResult) => ({
         call_id: toolResult.id.startsWith('call_') ? toolResult.id : `call_${toolResult.id}`,
         type: 'function_call_output' as const,
         output: JSON.stringify(convertInputContent(toolResult.content, false)),
