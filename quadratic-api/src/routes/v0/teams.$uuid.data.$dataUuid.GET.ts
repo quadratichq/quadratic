@@ -34,7 +34,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Do you have permission to view team?
   if (!permissions.includes('TEAM_VIEW')) {
-    throw new ApiError(403, 'You don't have access to this team');
+    throw new ApiError(403, "You don't have access to this team");
   }
 
   // Get the data asset
@@ -66,7 +66,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Check access - if it's personal data (ownerUserId is set), only the owner can access
   if (dataAsset.ownerUserId !== null && dataAsset.ownerUserId !== userId) {
-    throw new ApiError(403, 'You don't have access to this data asset');
+    throw new ApiError(403, "You don't have access to this data asset");
   }
 
   // Generate presigned download URL

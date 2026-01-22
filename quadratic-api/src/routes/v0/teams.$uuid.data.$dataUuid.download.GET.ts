@@ -37,7 +37,7 @@ async function handler(
 
   // Do you have permission to view team?
   if (!permissions.includes('TEAM_VIEW')) {
-    throw new ApiError(403, 'You don't have access to this team');
+    throw new ApiError(403, "You don't have access to this team");
   }
 
   // Get the data asset
@@ -59,7 +59,7 @@ async function handler(
 
   // Check access - if it's personal data, only the owner can access
   if (dataAsset.ownerUserId !== null && dataAsset.ownerUserId !== userId) {
-    throw new ApiError(403, 'You don't have access to this data asset');
+    throw new ApiError(403, "You don't have access to this data asset");
   }
 
   // Generate presigned download URL (7 days expiry)

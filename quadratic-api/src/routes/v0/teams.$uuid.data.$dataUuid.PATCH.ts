@@ -38,7 +38,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Do you have permission?
   if (!permissions.includes('TEAM_VIEW')) {
-    throw new ApiError(403, 'You don't have access to this team');
+    throw new ApiError(403, "You don't have access to this team");
   }
 
   // Get the data asset
@@ -68,7 +68,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     (dataAsset.ownerUserId === null && (role === 'OWNER' || role === 'EDITOR'));
 
   if (!canEdit) {
-    throw new ApiError(403, 'You don't have permission to edit this data asset');
+    throw new ApiError(403, "You don't have permission to edit this data asset");
   }
 
   // Update the data asset

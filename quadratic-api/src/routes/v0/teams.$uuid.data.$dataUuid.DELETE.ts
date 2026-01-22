@@ -36,7 +36,7 @@ async function handler(
 
   // Do you have permission?
   if (!permissions.includes('TEAM_VIEW')) {
-    throw new ApiError(403, 'You don't have access to this team');
+    throw new ApiError(403, "You don't have access to this team");
   }
 
   // Get the data asset
@@ -66,7 +66,7 @@ async function handler(
     (dataAsset.ownerUserId === null && (role === 'OWNER' || role === 'EDITOR'));
 
   if (!canDelete) {
-    throw new ApiError(403, 'You don't have permission to delete this data asset');
+    throw new ApiError(403, "You don't have permission to delete this data asset");
   }
 
   // Soft delete the data asset

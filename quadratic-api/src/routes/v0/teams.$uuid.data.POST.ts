@@ -60,7 +60,7 @@ async function handler(req: RequestWithUser & RequestWithFile, res: Response) {
 
   // Do you have permission to add data?
   if (!permissions.includes('TEAM_EDIT')) {
-    throw new ApiError(403, 'You don't have permission to upload data to this team');
+    throw new ApiError(403, "You don't have permission to upload data to this team");
   }
 
   // Validate file was uploaded

@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tab
 import { cn } from '@/shared/shadcn/utils';
 import { formatBytes } from '@/shared/utils/formatBytes';
 import type { DataAssetType } from 'quadratic-shared/typesAndSchemas';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Navigate, useLoaderData, useRevalidator } from 'react-router';
 import { ROUTES } from '@/shared/constants/routes';
@@ -57,6 +57,7 @@ export const Component = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'personal' | 'team'>('personal');
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter data by search query
   const filterItems = useCallback(
@@ -123,19 +124,24 @@ export const Component = () => {
       <DashboardHeader
         title="Data"
         actions={
-          <label>
-            <Button disabled={isUploading} className="gap-2">
+          <>
+            <Button disabled={isUploading} className="gap-2" onClick={() => fileInputRef.current?.click()}>
               <UploadIcon />
               {isUploading ? 'Uploading...' : 'Upload'}
             </Button>
             <input
+              ref={fileInputRef}
               type="file"
               className="hidden"
               multiple
-              onChange={(e) => handleUpload(e.target.files, activeTab === 'personal')}
+              onChange={(e) => {
+                handleUpload(e.target.files, activeTab === 'personal');
+                // Reset input so same file can be uploaded again
+                e.target.value = '';
+              }}
               disabled={isUploading}
             />
-          </label>
+          </>
         }
       />
 
