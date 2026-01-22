@@ -188,8 +188,11 @@ pub(crate) async fn process_queue_for_room(
         );
 
         // No transactions to process - remove this file from active_channels
-        // so we don't keep checking it
-        state
+        // so we don't keep checking it.
+        // Note: Use pubsub directly since we already hold the lock - calling
+        // state.remove_active_channel() would cause a deadlock.
+        pubsub
+            .connection
             .remove_active_channel(active_channels, channel)
             .await?;
 
