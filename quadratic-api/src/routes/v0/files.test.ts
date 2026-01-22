@@ -1,8 +1,15 @@
+import { SubscriptionStatus } from '@prisma/client';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { clearDb, createFile, createUsers } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
+
+// Mock FREE_EDITABLE_FILE_LIMIT for testing
+jest.mock('../../env-vars', () => ({
+  ...jest.requireActual('../../env-vars'),
+  FREE_EDITABLE_FILE_LIMIT: 3,
+}));
 
 beforeAll(async () => {
   // Create a test user
@@ -315,5 +322,124 @@ describe('DELETE - DELETE /v0/files/:uuid with scheduled tasks', () => {
     });
     expect(taskAfter).toBeTruthy();
     expect(taskAfter?.status).toBe('DELETED');
+  });
+});
+
+describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
+  it('returns isFileEditRestricted=false for files within the soft limit', async () => {
+    // The test setup creates only 2 files, which is under the limit of 3
+    await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000001')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.userMakingRequest).toHaveProperty('isFileEditRestricted');
+        expect(res.body.userMakingRequest.isFileEditRestricted).toBe(false);
+        expect(res.body.userMakingRequest.filePermissions).toContain('FILE_EDIT');
+      });
+  });
+
+  it('returns isFileEditRestricted=true and removes FILE_EDIT for files beyond the soft limit', async () => {
+    const user = await dbClient.user.findFirst({ where: { auth0Id: 'test_user_1' } });
+    const team = await dbClient.team.findFirst();
+
+    if (!user || !team) {
+      throw new Error('Test setup failed: user or team not found');
+    }
+
+    // Create files with specific creation dates to control which are "newest"
+    // File 1 (oldest) - will be restricted
+    const oldFile = await createFile({
+      data: {
+        creatorUserId: user.id,
+        ownerTeamId: team.id,
+        ownerUserId: user.id,
+        name: 'oldest_file',
+        contents: Buffer.from('contents'),
+        uuid: '00000000-0000-4000-8000-000000000010',
+        publicLinkAccess: 'NOT_SHARED',
+        createdDate: new Date(Date.now() - 4000),
+      },
+    });
+
+    // Files 2, 3, 4 (newer) - within the limit of 3
+    for (let i = 0; i < 3; i++) {
+      await createFile({
+        data: {
+          creatorUserId: user.id,
+          ownerTeamId: team.id,
+          ownerUserId: user.id,
+          name: `newer_file_${i}`,
+          contents: Buffer.from('contents'),
+          uuid: `00000000-0000-4000-8000-00000000001${i + 1}`,
+          publicLinkAccess: 'NOT_SHARED',
+          createdDate: new Date(Date.now() - (3000 - i * 1000)),
+        },
+      });
+    }
+
+    // The oldest file should be restricted
+    await request(app)
+      .get(`/v0/files/${oldFile.uuid}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.userMakingRequest.isFileEditRestricted).toBe(true);
+        expect(res.body.userMakingRequest.filePermissions).not.toContain('FILE_EDIT');
+      });
+  });
+
+  it('returns isFileEditRestricted=false for all files on paid teams', async () => {
+    const user = await dbClient.user.findFirst({ where: { auth0Id: 'test_user_1' } });
+    const team = await dbClient.team.findFirst();
+
+    if (!user || !team) {
+      throw new Error('Test setup failed: user or team not found');
+    }
+
+    // Create 5 files (more than the soft limit)
+    const files = [];
+    for (let i = 0; i < 5; i++) {
+      const file = await createFile({
+        data: {
+          creatorUserId: user.id,
+          ownerTeamId: team.id,
+          ownerUserId: user.id,
+          name: `paid_team_file_${i}`,
+          contents: Buffer.from('contents'),
+          uuid: `00000000-0000-4000-8000-00000000002${i}`,
+          publicLinkAccess: 'NOT_SHARED',
+          createdDate: new Date(Date.now() + i * 1000),
+        },
+      });
+      files.push(file);
+    }
+
+    // Upgrade team to paid
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: {
+        stripeSubscriptionStatus: SubscriptionStatus.ACTIVE,
+        stripeCurrentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // All files should be editable
+    for (const file of files) {
+      await request(app)
+        .get(`/v0/files/${file.uuid}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken test_user_1`)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.userMakingRequest.isFileEditRestricted).toBe(false);
+          expect(res.body.userMakingRequest.filePermissions).toContain('FILE_EDIT');
+        });
+    }
   });
 });

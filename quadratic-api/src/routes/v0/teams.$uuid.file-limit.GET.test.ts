@@ -11,8 +11,6 @@ const ANOTHER_TEAM_UUID = '00000000-0000-4000-8000-000000000002';
 jest.mock('../../env-vars', () => ({
   ...jest.requireActual('../../env-vars'),
   FREE_EDITABLE_FILE_LIMIT: 3,
-  // Keep MAX_FILE_COUNT_FOR_PAID_PLAN for deprecated hasReachedFileLimit function
-  MAX_FILE_COUNT_FOR_PAID_PLAN: [3, 2],
 }));
 
 beforeEach(async () => {
@@ -87,12 +85,17 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: false });
+          expect(res.body.hasReachedLimit).toBe(false);
+          expect(res.body.isOverLimit).toBe(false);
+          expect(res.body.isPaidPlan).toBe(false);
+          expect(res.body.totalFiles).toBe(3); // 2 team files + 1 private file
+          expect(res.body.maxEditableFiles).toBe(3);
         });
     });
 
     it('returns hasReachedLimit=true when team has reached the limit', async () => {
-      // Add one more team file to reach the limit of 3
+      // Add one more team file to reach the limit of 3 (we already have 3 total: 2 team + 1 private)
+      // So now we'll have 4 total files
       const team = await dbClient.team.findUniqueOrThrow({
         where: { uuid: TEAM_UUID },
       });
@@ -114,7 +117,11 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: true });
+          expect(res.body.hasReachedLimit).toBe(true);
+          expect(res.body.isOverLimit).toBe(true);
+          expect(res.body.isPaidPlan).toBe(false);
+          expect(res.body.totalFiles).toBe(4);
+          expect(res.body.maxEditableFiles).toBe(3);
         });
     });
 
@@ -158,7 +165,11 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: false });
+          expect(res.body.hasReachedLimit).toBe(false);
+          expect(res.body.isOverLimit).toBe(false);
+          expect(res.body.isPaidPlan).toBe(true);
+          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.maxEditableFiles).toBeUndefined(); // Paid teams don't have a limit
         });
     });
 
@@ -170,8 +181,8 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         where: { auth0Id: 'team_1_owner' },
       });
 
-      // Create 3 more files to exceed the limit
-      const file3 = await createFile({
+      // Create 2 more files to exceed the limit (we already have 3 total)
+      const file4 = await createFile({
         data: {
           name: 'Team File 3',
           ownerTeamId: team.id,
@@ -190,102 +201,41 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
 
       // Mark one as deleted
       await dbClient.file.update({
-        where: { uuid: file3.uuid },
+        where: { uuid: file4.uuid },
         data: { deleted: true },
       });
 
-      // Should still be at limit (3 non-deleted files)
+      // Should have 4 non-deleted files (exceeds limit of 3)
       await request(app)
         .get(`/v0/teams/${TEAM_UUID}/file-limit?private=false`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: true });
+          expect(res.body.hasReachedLimit).toBe(true);
+          expect(res.body.isOverLimit).toBe(true);
+          expect(res.body.isPaidPlan).toBe(false);
+          expect(res.body.totalFiles).toBe(4); // 5 created - 1 deleted = 4
+          expect(res.body.maxEditableFiles).toBe(3);
         });
     });
   });
 
   describe('private files (private=true)', () => {
-    it('returns hasReachedLimit=false when user has not reached private file limit', async () => {
+    // Note: The new soft limit counts ALL files (both team and private) together.
+    // The private=true query param is kept for backward compatibility but doesn't change behavior.
+
+    it('returns same result as private=false (soft limit counts all files)', async () => {
+      // With 3 files (2 team + 1 private), we're at the limit
       await request(app)
         .get(`/v0/teams/${TEAM_UUID}/file-limit?private=true`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: false });
-        });
-    });
-
-    it('returns hasReachedLimit=true when user has reached private file limit', async () => {
-      // Add one more private file to reach the limit of 2
-      const team = await dbClient.team.findUniqueOrThrow({
-        where: { uuid: TEAM_UUID },
-      });
-      const user = await dbClient.user.findUniqueOrThrow({
-        where: { auth0Id: 'team_1_owner' },
-      });
-
-      await createFile({
-        data: {
-          name: 'Private File 2',
-          ownerTeamId: team.id,
-          creatorUserId: user.id,
-          ownerUserId: user.id,
-        },
-      });
-
-      await request(app)
-        .get(`/v0/teams/${TEAM_UUID}/file-limit?private=true`)
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: true });
-        });
-    });
-
-    it('only counts private files for the requesting user', async () => {
-      const team = await dbClient.team.findUniqueOrThrow({
-        where: { uuid: TEAM_UUID },
-      });
-
-      const user_2 = await dbClient.user.findUniqueOrThrow({
-        where: { auth0Id: 'team_1_editor' },
-      });
-
-      // Add 2 private files for user_2
-      await createFile({
-        data: {
-          name: 'Private File for User 2 - 1',
-          ownerTeamId: team.id,
-          creatorUserId: user_2.id,
-          ownerUserId: user_2.id,
-        },
-      });
-      await createFile({
-        data: {
-          name: 'Private File for User 2 - 2',
-          ownerTeamId: team.id,
-          creatorUserId: user_2.id,
-          ownerUserId: user_2.id,
-        },
-      });
-
-      // User 1 should still be below the limit (only has 1 private file)
-      await request(app)
-        .get(`/v0/teams/${TEAM_UUID}/file-limit?private=true`)
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: false });
-        });
-
-      // User 2 should have reached the limit (has 2 private files)
-      await request(app)
-        .get(`/v0/teams/${TEAM_UUID}/file-limit?private=true`)
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: true });
+          expect(res.body.hasReachedLimit).toBe(true); // At exactly 3 files = at limit
+          expect(res.body.isOverLimit).toBe(true);
+          expect(res.body.isPaidPlan).toBe(false);
+          expect(res.body.totalFiles).toBe(3);
+          expect(res.body.maxEditableFiles).toBe(3);
         });
     });
 
@@ -329,7 +279,11 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toEqual({ hasReachedLimit: false });
+          expect(res.body.hasReachedLimit).toBe(false);
+          expect(res.body.isOverLimit).toBe(false);
+          expect(res.body.isPaidPlan).toBe(true);
+          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.maxEditableFiles).toBeUndefined();
         });
     });
   });
@@ -342,11 +296,17 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .expect(400);
     });
 
-    it('returns 400 for missing private query parameter', async () => {
+    it('works without private query parameter (it is now optional)', async () => {
       await request(app)
         .get(`/v0/teams/${TEAM_UUID}/file-limit`)
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect(400);
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('hasReachedLimit');
+          expect(res.body).toHaveProperty('isOverLimit');
+          expect(res.body).toHaveProperty('totalFiles');
+          expect(res.body).toHaveProperty('isPaidPlan');
+        });
     });
 
     it('returns 400 for invalid private query parameter', async () => {
@@ -376,6 +336,9 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('hasReachedLimit');
+          expect(res.body).toHaveProperty('isOverLimit');
+          expect(res.body).toHaveProperty('totalFiles');
+          expect(res.body).toHaveProperty('isPaidPlan');
         });
     });
   });

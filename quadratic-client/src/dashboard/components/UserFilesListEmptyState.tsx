@@ -1,12 +1,13 @@
 import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { apiClient } from '@/shared/api/apiClient';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useAtomValue } from 'jotai';
-import { Link } from 'react-router';
 
 export const UserFilesListEmptyState = ({ filesToRenderCount }: { filesToRenderCount: number }) => {
   const {
@@ -88,22 +89,28 @@ const CreateFileEmptyState = ({ isPrivate = false, title }: { isPrivate?: boolea
     },
   } = useDashboardRouteLoaderData();
 
+  const handleCreateFile = async () => {
+    trackEvent('[FilesEmptyState].clickCreateBlankFile');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    const createFile = () => {
+      window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    };
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
+      return;
+    }
+    createFile();
+  };
+
   return (
     <WrapperEmptyState className="border-dashed border-border">
       <EmptyState
         title={title ? title : 'No files'}
         description={
           <>
-            <Link
-              to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-              reloadDocument
-              className="underline hover:text-primary"
-              onClick={() => {
-                trackEvent('[FilesEmptyState].clickCreateBlankFile');
-              }}
-            >
+            <button onClick={handleCreateFile} className="underline hover:text-primary">
               Create a new file
-            </Link>{' '}
+            </button>{' '}
             or drag and drop a CSV, Excel, Parquet, or Quadratic file here.
           </>
         }

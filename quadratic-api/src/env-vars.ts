@@ -48,11 +48,6 @@ export const FREE_EDITABLE_FILE_LIMIT = process.env.FREE_EDITABLE_FILE_LIMIT
   ? Number(process.env.FREE_EDITABLE_FILE_LIMIT)
   : 5;
 
-// @deprecated - Use FREE_EDITABLE_FILE_LIMIT instead. Kept for backward compatibility with hasReachedFileLimit.
-export const MAX_FILE_COUNT_FOR_PAID_PLAN = process.env.MAX_FILE_COUNT_FOR_PAID_PLAN
-  ? process.env.MAX_FILE_COUNT_FOR_PAID_PLAN.split(',').map(Number)
-  : undefined;
-
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
 export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;

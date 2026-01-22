@@ -1,7 +1,7 @@
 import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
 import dbClient from '../dbClient';
-import { FREE_EDITABLE_FILE_LIMIT, isRunningInTest, MAX_FILE_COUNT_FOR_PAID_PLAN } from '../env-vars';
+import { FREE_EDITABLE_FILE_LIMIT, isRunningInTest } from '../env-vars';
 import { updateBilling } from '../stripe/stripe';
 import type { DecryptedTeam } from '../utils/teams';
 
@@ -145,52 +145,3 @@ export const getFileLimitInfo = async (
   };
 };
 
-// Legacy functions below - kept for backward compatibility during migration
-
-export const fileCountForTeam = async (
-  team: Team | DecryptedTeam,
-  userId: number
-): Promise<{ totalTeamFiles: number; userPrivateFiles: number }> => {
-  const totalTeamFiles = await dbClient.file.count({
-    where: {
-      ownerTeamId: team.id,
-      deleted: false,
-      ownerUserId: null,
-    },
-  });
-
-  const userPrivateFiles = await dbClient.file.count({
-    where: {
-      ownerTeamId: team.id,
-      ownerUserId: userId,
-      deleted: false,
-    },
-  });
-
-  return { totalTeamFiles, userPrivateFiles };
-};
-
-/**
- * @deprecated Use getFileLimitInfo instead for new soft limit behavior.
- * This function is kept for backward compatibility.
- * Returns true if the team has reached the file limit (for blocking behavior).
- */
-export const hasReachedFileLimit = async (
-  team: Team | DecryptedTeam,
-  userId: number,
-  isPrivate?: boolean
-): Promise<boolean> => {
-  const isPaidPlan = await getIsOnPaidPlan(team);
-  if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
-    return false;
-  }
-
-  const { totalTeamFiles, userPrivateFiles } = await fileCountForTeam(team, userId);
-  const [maxTotalFiles, maxUserPrivateFiles] = MAX_FILE_COUNT_FOR_PAID_PLAN;
-
-  if (!isPrivate) {
-    return totalTeamFiles >= maxTotalFiles;
-  }
-
-  return userPrivateFiles >= maxUserPrivateFiles;
-};

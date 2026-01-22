@@ -1,3 +1,9 @@
+// Mock FREE_EDITABLE_FILE_LIMIT for testing
+jest.mock('../../env-vars', () => ({
+  ...jest.requireActual('../../env-vars'),
+  FREE_EDITABLE_FILE_LIMIT: 3,
+}));
+
 import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () =>
   workosMock([
@@ -273,6 +279,72 @@ describe('GET /v0/teams/:uuid', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body.team.settings.aiRules).toBeNull();
+        });
+    });
+
+    it('returns isFileEditRestricted field on files', async () => {
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.files).toHaveLength(1);
+          expect(res.body.files[0]).toHaveProperty('userMakingRequest');
+          expect(res.body.files[0].userMakingRequest).toHaveProperty('isFileEditRestricted');
+          // With only 1 file, it should not be restricted (under limit of 3)
+          expect(res.body.files[0].userMakingRequest.isFileEditRestricted).toBe(false);
+        });
+    });
+
+    it('marks older files as edit-restricted when over the soft limit', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+      const user = await dbClient.user.findUniqueOrThrow({
+        where: { auth0Id: 'team_1_owner' },
+      });
+
+      // Create 4 more files (total 5, with limit of 3)
+      // Use different creation dates to control order
+      for (let i = 0; i < 4; i++) {
+        await createFile({
+          data: {
+            name: `Extra File ${i}`,
+            ownerTeamId: team.id,
+            creatorUserId: user.id,
+            createdDate: new Date(Date.now() + (i + 1) * 1000), // Newer than existing file
+          },
+        });
+      }
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.files).toHaveLength(5);
+
+          // Count restricted vs unrestricted files
+          const restrictedFiles = res.body.files.filter(
+            (f: any) => f.userMakingRequest.isFileEditRestricted === true
+          );
+          const unrestrictedFiles = res.body.files.filter(
+            (f: any) => f.userMakingRequest.isFileEditRestricted === false
+          );
+
+          // With limit of 3, 2 should be restricted (oldest ones)
+          expect(restrictedFiles).toHaveLength(2);
+          expect(unrestrictedFiles).toHaveLength(3);
+
+          // Restricted files should not have FILE_EDIT permission
+          for (const file of restrictedFiles) {
+            expect(file.userMakingRequest.filePermissions).not.toContain('FILE_EDIT');
+          }
+
+          // Unrestricted files should have FILE_EDIT permission
+          for (const file of unrestrictedFiles) {
+            expect(file.userMakingRequest.filePermissions).toContain('FILE_EDIT');
+          }
         });
     });
   });

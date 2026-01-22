@@ -5,7 +5,8 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -248,12 +249,15 @@ function SidebarNavLinkCreateButton({
   teamUuid: string;
 }) {
   const handleClick = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    const createFile = () => {
+      window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    };
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? 3, teamUuid, createFile);
       return;
     }
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    createFile();
   };
 
   return (
