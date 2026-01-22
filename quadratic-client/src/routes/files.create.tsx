@@ -45,6 +45,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     private: url.searchParams.get('private') === 'false' ? false : true,
     // File to be fetched from iframe indexeddb for this chat-id from marketing site
     chatId: url.searchParams.get('chat-id') || null,
+    // Connection context for AI analyst
+    connectionUuid: url.searchParams.get('connection-uuid'),
+    connectionType: url.searchParams.get('connection-type'),
+    connectionName: url.searchParams.get('connection-name'),
   });
   return redirect(redirectUrl);
 };

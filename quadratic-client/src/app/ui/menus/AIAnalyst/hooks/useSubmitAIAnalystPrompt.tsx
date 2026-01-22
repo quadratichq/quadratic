@@ -182,16 +182,20 @@ export function useSubmitAIAnalystPrompt() {
           });
         }
 
+        // Look up connection from connections array if available, otherwise use the context directly
+        // (context.connection may already have complete info from URL params)
         const connectionInContext = connections.find((connection) => connection.uuid === context.connection?.id);
+        const resolvedConnection = connectionInContext
+          ? {
+              type: connectionInContext.type,
+              id: connectionInContext.uuid,
+              name: connectionInContext.name,
+            }
+          : context.connection; // Use the connection from context directly if lookup fails (e.g., connections not loaded yet)
+
         context = {
           codeCell: context.codeCell,
-          connection: connectionInContext
-            ? {
-                type: connectionInContext.type,
-                id: connectionInContext.uuid,
-                name: connectionInContext.name,
-              }
-            : undefined,
+          connection: resolvedConnection,
           importFiles:
             importFiles.length > 0
               ? {

@@ -448,6 +448,9 @@ export const Component = () => {
           prompt: promptText,
           private: isPrivate,
           chatId,
+          connectionUuid: selectedConnection?.uuid,
+          connectionType: selectedConnection?.type,
+          connectionName: selectedConnection?.name,
         })
       );
     },
