@@ -12,7 +12,7 @@ import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 
 export class UrlParamsUser {
   private pixiAppSettingsInitialized = false;
@@ -152,10 +152,11 @@ export class UrlParamsUser {
     }
     filesFromIframe.dbFiles = [];
 
-    // Build connection context if connection params are present
+    // Build connection context if connection params are present and connection type is valid
+    const parsedConnectionType = connectionType ? ConnectionTypeSchema.safeParse(connectionType) : null;
     const connection =
-      connectionUuid && connectionType && connectionName
-        ? { id: connectionUuid, type: connectionType as ConnectionType, name: connectionName }
+      connectionUuid && parsedConnectionType?.success && connectionName
+        ? { id: connectionUuid, type: parsedConnectionType.data, name: connectionName }
         : undefined;
 
     // submit the prompt and files to the ai analyst

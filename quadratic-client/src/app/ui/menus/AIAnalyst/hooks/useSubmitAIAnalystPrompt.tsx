@@ -54,6 +54,7 @@ import type {
   ToolResultMessage,
   UserMessagePrompt,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -191,7 +192,9 @@ export function useSubmitAIAnalystPrompt() {
               id: connectionInContext.uuid,
               name: connectionInContext.name,
             }
-          : context.connection; // Use the connection from context directly if lookup fails (e.g., connections not loaded yet)
+          : context.connection && ConnectionTypeSchema.safeParse(context.connection.type).success
+            ? context.connection
+            : undefined; // Only use fallback if connection type is valid
 
         context = {
           codeCell: context.codeCell,

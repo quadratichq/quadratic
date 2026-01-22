@@ -36,7 +36,7 @@ export const ROUTES = {
       private?: boolean;
       chatId?: string | null;
       connectionUuid?: string | null;
-      connectionType?: string | null;
+      connectionType?: ConnectionType | null;
       connectionName?: string | null;
     } = {}
   ) => {
