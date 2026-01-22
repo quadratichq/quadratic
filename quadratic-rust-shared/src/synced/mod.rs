@@ -52,14 +52,18 @@ pub trait SyncedClient: Send + Sync {
     async fn test_connection(&self) -> bool;
 
     /// Process a single stream.
+    /// Returns `None` if the stream is not supported (e.g., product not available for this connection).
+    /// Returns `Some(HashMap::new())` if no data exists for the date range (markers should be written).
+    /// Returns `Some(HashMap with data)` if data exists (parquet files should be uploaded).
     async fn process(
         &self,
         stream: &str,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<HashMap<String, Bytes>>;
+    ) -> Result<Option<HashMap<String, Bytes>>>;
 
     /// Process all streams in parallel and collect results in one pass.
+    /// Streams that return `None` (not supported) are excluded from results.
     async fn process_all(
         &self,
         start_date: NaiveDate,
@@ -72,11 +76,20 @@ pub trait SyncedClient: Send + Sync {
             .into_iter()
             .map(|stream| async move {
                 let result = self.process(stream, start_date, end_date).await?;
-                Ok::<(String, HashMap<String, Bytes>), SharedError>((stream.to_string(), result))
+                Ok::<(String, Option<HashMap<String, Bytes>>), SharedError>((
+                    stream.to_string(),
+                    result,
+                ))
             })
             .collect::<FuturesUnordered<_>>()
-            .try_collect()
+            .try_collect::<Vec<_>>()
             .await
+            .map(|results| {
+                results
+                    .into_iter()
+                    .filter_map(|(stream, opt)| opt.map(|data| (stream, data)))
+                    .collect()
+            })
     }
 }
 

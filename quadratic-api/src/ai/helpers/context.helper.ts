@@ -1,7 +1,15 @@
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AILanguagePreferences,
+  AIModelKey,
+  AISource,
+  ChatMessage,
+  CodeCellType,
+} from 'quadratic-shared/typesAndSchemasAI';
+import { allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
+
 import { A1Docs } from '../docs/A1Docs';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
@@ -10,7 +18,16 @@ import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
 import { ValidationDocs } from '../docs/ValidationDocs';
 
-export const getQuadraticContext = (source: AISource, language?: CodeCellType): ChatMessage[] => [
+/**
+ * By default, the AI will respond with Python + Formulas, which is why we
+ * include them in the context. Additionally, if the user has expressed a
+ * preference for Javascript, we will include the Javascript docs in the context
+ */
+export const getQuadraticContext = (
+  source: AISource,
+  language?: CodeCellType,
+  prefersJavascript?: boolean
+): ChatMessage[] => [
   {
     role: 'user',
     content: [
@@ -29,7 +46,7 @@ Be proactive. When the user makes a request, use your tools to solve it.
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
 ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
-${language === 'Javascript' ? JavascriptDocs : ''}\n
+${language === 'Javascript' || prefersJavascript ? JavascriptDocs : ''}\n
 ${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
 ${language === 'Connection' ? ConnectionDocs : ''}\n
 ${
@@ -143,6 +160,51 @@ ${rules.join('\n\n')}
       role: 'assistant',
       content: [createTextContent('I understand these custom rules and will follow them in my responses.')],
       contextType: 'aiRules',
+    },
+  ];
+};
+
+export const getAILanguagesContext = (enabledLanguagePreferences: AILanguagePreferences): ChatMessage[] => {
+  // We guard against this in the UI, but just in case we'll handle it too.
+  // If no languages are enabled or all languages are enabled, return empty context to avoid malformed messages
+  if (enabledLanguagePreferences.length === 0 || enabledLanguagePreferences.length === allAILanguagePreferences.length) {
+    return [];
+  }
+
+  // Tell the AI about the enabled/disabled language preferences
+  const disabledLanguagePreferences = allAILanguagePreferences.filter(
+    (lang) => !enabledLanguagePreferences.includes(lang)
+  );
+  const enabledText = enabledLanguagePreferences.join(' and ');
+  const disabledText = disabledLanguagePreferences.join(' and ');
+
+  // If it's formulas only, allow charts in python
+  const chartException =
+    enabledLanguagePreferences.includes('Formula') && enabledLanguagePreferences.length === 1
+      ? ' Exception: If the user asks for a chart, use Python even though it is disabled.'
+      : '';
+
+  return [
+    {
+      role: 'user',
+      content: [
+        createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
+The user only wants to use ${enabledText} and NOT ${disabledText} unless they explicitly ask for the disabled language.${chartException}\n\n
+However, if the user is working with a connection, it’s ok to use SQL for the connection.
+`),
+      ],
+      contextType: 'aiLanguages',
+    },
+    {
+      role: 'assistant',
+      content: [
+        createTextContent(
+          `I understand. I will only use ${enabledText} in my responses unless you explicitly ask me to use ${disabledText}.${
+            chartException ? ' I will use Python for charts.' : ''
+          }. And if the user is working with a connection, it’s ok to use SQL for the connection.`
+        ),
+      ],
+      contextType: 'aiLanguages',
     },
   ];
 };
