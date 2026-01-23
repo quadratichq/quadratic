@@ -16,7 +16,7 @@ Open Quadratic [app.QuadraticHQ.com](https://app.quadratichq.com)
 ## Documentation
 
 Read the documentation [docs.QuadraticHQ.com](https://docs.quadratichq.com)
-
+ // testing
 ## Want to contribute?
 
 Feature request or bug report? Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/)
