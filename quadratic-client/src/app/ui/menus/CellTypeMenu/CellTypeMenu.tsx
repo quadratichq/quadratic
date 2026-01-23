@@ -96,6 +96,9 @@ export const CellTypeMenu = memo(() => {
             pos: { x, y },
             language,
             lastModified: 0,
+            // Preserve tablePos and isSingleCell for in-table code cells
+            isSingleCell: prev.codeCell.tablePos ? true : undefined,
+            tablePos: prev.codeCell.tablePos,
           },
           showCellTypeMenu: false,
           initialCode: '',

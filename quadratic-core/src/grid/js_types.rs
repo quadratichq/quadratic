@@ -15,7 +15,31 @@ use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat, SheetId};
 use crate::controller::execution::TransactionSource;
 use crate::controller::operations::tracked_operation::TrackedOperation;
-use crate::{CellValue, Pos};
+use crate::{CellValue, Pos, TablePos};
+
+/// JavaScript-friendly representation of a table position.
+/// Used for in-table code cells to indicate the parent table and sub-position.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsTablePos {
+    /// The parent table's anchor position
+    pub parent_x: i64,
+    pub parent_y: i64,
+    /// The position within the parent table
+    pub sub_x: i64,
+    pub sub_y: i64,
+}
+
+impl From<TablePos> for JsTablePos {
+    fn from(table_pos: TablePos) -> Self {
+        JsTablePos {
+            parent_x: table_pos.parent_pos.x,
+            parent_y: table_pos.parent_pos.y,
+            sub_x: table_pos.sub_table_pos.x,
+            sub_y: table_pos.sub_table_pos.y,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
@@ -117,6 +141,9 @@ pub struct JsCellValuePos {
 pub struct JsEditCellCodeCell {
     pub language: CodeCellLanguage,
     pub code: String,
+    /// For in-table code cells, the position within the parent table
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_pos: Option<JsTablePos>,
 }
 
 /// Result of getting a cell for editing. If the cell is a single-cell code cell,
@@ -407,6 +434,9 @@ pub struct JsCodeCell {
     pub return_info: Option<JsReturnInfo>,
     pub cells_accessed: Option<Vec<JsCellsAccessed>>,
     pub last_modified: i64,
+    /// For in-table code cells, the position within the parent table
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_pos: Option<JsTablePos>,
 }
 
 #[derive(Serialize, Debug, PartialEq, TS)]
@@ -430,6 +460,9 @@ pub struct JsRenderCodeCell {
     pub show_name: bool,
     pub show_columns: bool,
     pub last_modified: i64,
+    /// For in-table code cells, the position within the parent table
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_pos: Option<JsTablePos>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

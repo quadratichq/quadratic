@@ -25,6 +25,7 @@ import type {
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsSummaryContext,
+  JsTablePos,
   Pos,
   SearchOptions,
   SheetRect,
@@ -169,6 +170,8 @@ export interface ClientCoreGetEditCell {
 export interface JsEditCellCodeCell {
   language: CodeCellLanguage;
   code: string;
+  /** For in-table code cells, the position within the parent table */
+  tablePos?: JsTablePos;
 }
 
 /** Result of getting a cell for editing */

@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    MultiPos, MultiSheetPos, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
 };
 
@@ -23,6 +23,50 @@ impl GridController {
                 sheet_pos.x as i32,
                 sheet_pos.y as i32,
                 sheet_pos.sheet_id.to_string(),
+                code,
+            );
+        }
+    }
+
+    /// Runs Python code for an in-table code cell.
+    /// The result will be stored in the nested table when calculation completes.
+    pub(crate) fn run_python_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        multi_sheet_pos: MultiSheetPos,
+        code: String,
+    ) {
+        // For in-table code, we need to track the multi_sheet_pos
+        transaction.current_multi_sheet_pos = Some(multi_sheet_pos.clone());
+        transaction.waiting_for_async_code_cell = true;
+        self.transactions.add_async_transaction(transaction);
+
+        // Get the display position for the Python callback
+        // For in-table code, we use the parent table's position as a fallback
+        let (x, y) = match &multi_sheet_pos.multi_pos {
+            MultiPos::Pos(pos) => (pos.x as i32, pos.y as i32),
+            MultiPos::TablePos(table_pos) => {
+                // Convert table pos to sheet coordinates
+                if let Some(sheet) = self.try_sheet(multi_sheet_pos.sheet_id) {
+                    if let Some(sheet_pos) = sheet.table_pos_to_sheet_pos(*table_pos) {
+                        (sheet_pos.x as i32, sheet_pos.y as i32)
+                    } else {
+                        (table_pos.parent_pos.x as i32, table_pos.parent_pos.y as i32)
+                    }
+                } else {
+                    (table_pos.parent_pos.x as i32, table_pos.parent_pos.y as i32)
+                }
+            }
+        };
+
+        if !transaction.is_server()
+            && let Some(f) = self.run_python_callback.as_mut()
+        {
+            f(
+                transaction.id.to_string(),
+                x,
+                y,
+                multi_sheet_pos.sheet_id.to_string(),
                 code,
             );
         }

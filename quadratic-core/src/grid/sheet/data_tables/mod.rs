@@ -5,7 +5,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, Rect, SheetPos,
+    MultiPos, Pos, Rect, SheetPos, TablePos,
     a1::A1Context,
     grid::{CodeRun, DataTable, SheetId, SheetRegionMap},
 };
@@ -13,6 +13,9 @@ use crate::{
 use anyhow::{Result, anyhow};
 
 pub mod cache;
+pub mod in_table_code;
+
+pub use in_table_code::{InTableCodeCache, NestedCodeOutput};
 
 use cache::SheetDataTablesCache;
 
@@ -29,6 +32,10 @@ pub struct SheetDataTables {
     // single cell output values are not stored here, check `has_data_table_anchor` map for single cell values
     // this is used for spill calculation and when spill is ignored
     un_spilled_output_rects: SheetRegionMap,
+
+    // cache of code cells within tables (for in-table formulas/code)
+    #[serde(default)]
+    in_table_code_cache: InTableCodeCache,
 }
 
 impl Default for SheetDataTables {
@@ -53,6 +60,7 @@ impl SheetDataTables {
             data_tables: IndexMap::new(),
             cache: SheetDataTablesCache::default(),
             un_spilled_output_rects: SheetRegionMap::new(),
+            in_table_code_cache: InTableCodeCache::new(),
         }
     }
 
@@ -69,6 +77,39 @@ impl SheetDataTables {
     /// Returns the data table at the given position, if it exists.
     pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
+    }
+
+    /// Returns a mutable reference to the data table at the given position, if it exists.
+    pub fn get_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(pos)
+    }
+
+    /// Finds a nested table whose output covers the given position (in data coordinates).
+    /// Returns the anchor position of the nested table and the offset into its output.
+    ///
+    /// This iterates through all nested tables and checks if the position falls within
+    /// any of their output bounds.
+    pub fn find_nested_table_covering(
+        &self,
+        data_pos: Pos,
+    ) -> Option<(Pos, &DataTable, u32, u32)> {
+        for (anchor, nested_table) in self.data_tables.iter() {
+            let output_size = nested_table.output_size();
+            let width = output_size.w.get();
+            let height = output_size.h.get();
+
+            // Check if data_pos falls within this nested table's output
+            if data_pos.x >= anchor.x
+                && data_pos.x < anchor.x + width as i64
+                && data_pos.y >= anchor.y
+                && data_pos.y < anchor.y + height as i64
+            {
+                let offset_x = (data_pos.x - anchor.x) as u32;
+                let offset_y = (data_pos.y - anchor.y) as u32;
+                return Some((*anchor, nested_table, offset_x, offset_y));
+            }
+        }
+        None
     }
 
     /// Returns the data table at the given position, if it exists, along with its index and position.
@@ -230,6 +271,352 @@ impl SheetDataTables {
 
         let data_table = self.data_tables.get(pos).ok_or_else(err)?;
         Ok((data_table, dirty_rects))
+    }
+
+    // -------------------------------------------------------------------------
+    // MultiPos accessors for nested table support
+    // -------------------------------------------------------------------------
+
+    /// Returns the data table at the given MultiPos.
+    ///
+    /// For `MultiPos::Pos`, returns the top-level data table.
+    /// For `MultiPos::TablePos`, returns the nested data table within the parent table.
+    pub fn get_at_multi_pos(&self, multi_pos: &MultiPos) -> Option<&DataTable> {
+        match multi_pos {
+            MultiPos::Pos(pos) => self.get_at(pos),
+            MultiPos::TablePos(table_pos) => self.get_nested_table(table_pos),
+        }
+    }
+
+    /// Returns a nested data table at the given TablePos.
+    pub fn get_nested_table(&self, table_pos: &TablePos) -> Option<&DataTable> {
+        let parent = self.get_at(&table_pos.parent_pos)?;
+        let nested_tables = parent.tables.as_ref()?;
+        nested_tables.get_at(&table_pos.sub_table_pos)
+    }
+
+    /// Returns the index of the data table at the given MultiPos.
+    ///
+    /// For `MultiPos::Pos`, returns the top-level index.
+    /// For `MultiPos::TablePos`, returns the index in the nested tables.
+    #[allow(dead_code)] // Part of MultiPos API, will be used when full in-table code support is added
+    pub(crate) fn get_index_of_multi_pos(&self, multi_pos: &MultiPos) -> Option<usize> {
+        match multi_pos {
+            MultiPos::Pos(pos) => self.get_index_of(pos),
+            MultiPos::TablePos(table_pos) => {
+                let parent = self.get_at(&table_pos.parent_pos)?;
+                let nested_tables = parent.tables.as_ref()?;
+                nested_tables.get_index_of(&table_pos.sub_table_pos)
+            }
+        }
+    }
+
+    /// Modifies the data table at the given MultiPos, updating its spill and cache.
+    ///
+    /// For `MultiPos::Pos`, modifies the top-level data table.
+    /// For `MultiPos::TablePos`, modifies the nested data table within the parent table.
+    pub(crate) fn modify_data_table_at_multi_pos(
+        &mut self,
+        multi_pos: &MultiPos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<HashSet<Rect>> {
+        match multi_pos {
+            MultiPos::Pos(pos) => {
+                let (_, dirty_rects) = self.modify_data_table_at(pos, f)?;
+                Ok(dirty_rects)
+            }
+            MultiPos::TablePos(table_pos) => self.modify_nested_table(table_pos, f),
+        }
+    }
+
+    /// Modifies a nested data table at the given TablePos.
+    fn modify_nested_table(
+        &mut self,
+        table_pos: &TablePos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<HashSet<Rect>> {
+        let parent_pos = table_pos.parent_pos;
+        let sub_pos = table_pos.sub_table_pos;
+
+        // We need to modify the parent table to get access to its nested tables
+        let mut dirty_rects = HashSet::new();
+
+        let err = || {
+            anyhow!(
+                "Data table not found at {:?} in modify_nested_table",
+                parent_pos
+            )
+        };
+        let (index, _, parent_table) = self.data_tables.get_full_mut(&parent_pos).ok_or_else(err)?;
+        let old_output_rect = Some(parent_table.output_rect(parent_pos, false));
+
+        // Get or create the nested tables
+        let nested_tables = parent_table.tables.get_or_insert_with(SheetDataTables::new);
+
+        // Modify the nested table
+        let nested_err = || {
+            anyhow!(
+                "Nested data table not found at {:?} in modify_nested_table",
+                sub_pos
+            )
+        };
+        let nested_table = nested_tables
+            .data_tables
+            .get_mut(&sub_pos)
+            .ok_or_else(nested_err)?;
+
+        f(nested_table)?;
+
+        // Update spill and cache for the parent table
+        dirty_rects.extend(self.update_spill_and_cache(index, parent_pos, old_output_rect));
+
+        Ok(dirty_rects)
+    }
+
+    /// Inserts a data table at the given MultiPos.
+    ///
+    /// For `MultiPos::Pos`, inserts at top-level.
+    /// For `MultiPos::TablePos`, inserts into the parent table's nested tables.
+    pub(crate) fn insert_at_multi_pos(
+        &mut self,
+        multi_pos: &MultiPos,
+        data_table: DataTable,
+    ) -> Result<HashSet<Rect>> {
+        match multi_pos {
+            MultiPos::Pos(pos) => {
+                let (_, _, dirty_rects) = self.insert_full(*pos, data_table);
+                Ok(dirty_rects)
+            }
+            MultiPos::TablePos(table_pos) => self.insert_nested_table(table_pos, data_table),
+        }
+    }
+
+    /// Inserts a nested data table at the given TablePos.
+    fn insert_nested_table(
+        &mut self,
+        table_pos: &TablePos,
+        mut data_table: DataTable,
+    ) -> Result<HashSet<Rect>> {
+        let parent_pos = table_pos.parent_pos;
+        let sub_pos = table_pos.sub_table_pos;
+
+        let err = || {
+            anyhow!(
+                "Parent data table not found at {:?} in insert_nested_table",
+                parent_pos
+            )
+        };
+        let (index, _, parent_table) = self.data_tables.get_full_mut(&parent_pos).ok_or_else(err)?;
+        let old_output_rect = Some(parent_table.output_rect(parent_pos, false));
+
+        // Calculate the display position of the nested cell for dirty rect
+        // Note: sub_pos is in data coordinates; we need to convert to display coordinates
+        let y_adjustment = parent_table.y_adjustment(true);
+        let display_col = parent_table.get_display_index_from_column_index(sub_pos.x as u32, true);
+        // For rows, without sorting the display index equals the data index
+        let display_row = sub_pos.y;
+        let cell_display_pos = Pos::new(
+            parent_pos.x + display_col as i64,
+            parent_pos.y + y_adjustment + display_row,
+        );
+
+        // Check for spill conditions:
+        // 1. Nested output would exceed parent table bounds
+        // 2. Nested output would overlap with another nested table's output
+        let nested_output_size = data_table.output_size();
+        let nested_width = nested_output_size.w.get() as i64;
+        let nested_height = nested_output_size.h.get() as i64;
+
+        // Get parent table data dimensions
+        let parent_width = parent_table.width() as i64;
+        let parent_height = parent_table.height(true) as i64;
+
+        // Check if nested output exceeds parent bounds
+        let exceeds_bounds = sub_pos.x + nested_width > parent_width
+            || sub_pos.y + nested_height > parent_height;
+
+        // Check if nested output overlaps with existing nested tables
+        let mut overlaps_existing = false;
+        if let Some(nested_tables) = &parent_table.tables {
+            let nested_rect = Rect::new(
+                sub_pos.x,
+                sub_pos.y,
+                sub_pos.x + nested_width - 1,
+                sub_pos.y + nested_height - 1,
+            );
+
+            for (other_anchor, other_table) in nested_tables.data_tables.iter() {
+                // Skip self
+                if *other_anchor == sub_pos {
+                    continue;
+                }
+
+                let other_size = other_table.output_size();
+                let other_rect = Rect::new(
+                    other_anchor.x,
+                    other_anchor.y,
+                    other_anchor.x + other_size.w.get() as i64 - 1,
+                    other_anchor.y + other_size.h.get() as i64 - 1,
+                );
+
+                if nested_rect.intersects(other_rect) {
+                    overlaps_existing = true;
+                    break;
+                }
+            }
+        }
+
+        // Set spill_nested flag if there's a spill condition
+        data_table.spill_nested = exceeds_bounds || overlaps_existing;
+
+        // Get or create the nested tables
+        let nested_tables = parent_table.tables.get_or_insert_with(SheetDataTables::new);
+
+        // Insert the nested table
+        nested_tables.data_tables.insert(sub_pos, data_table);
+
+        // Update spill and cache for the parent table
+        let mut dirty_rects = self.update_spill_and_cache(index, parent_pos, old_output_rect);
+
+        // Also mark the specific cell as dirty so it re-renders
+        dirty_rects.insert(Rect::single_pos(cell_display_pos));
+
+        Ok(dirty_rects)
+    }
+
+    /// Removes a data table at the given MultiPos.
+    ///
+    /// For `MultiPos::Pos`, removes from top-level.
+    /// For `MultiPos::TablePos`, removes from the parent table's nested tables.
+    pub(crate) fn remove_at_multi_pos(
+        &mut self,
+        multi_pos: &MultiPos,
+    ) -> Option<(DataTable, HashSet<Rect>)> {
+        match multi_pos {
+            MultiPos::Pos(pos) => {
+                let (_, data_table, dirty_rects) = self.shift_remove(pos)?;
+                Some((data_table, dirty_rects))
+            }
+            MultiPos::TablePos(table_pos) => self.remove_nested_table(table_pos),
+        }
+    }
+
+    /// Removes a nested data table at the given TablePos.
+    fn remove_nested_table(&mut self, table_pos: &TablePos) -> Option<(DataTable, HashSet<Rect>)> {
+        let parent_pos = table_pos.parent_pos;
+        let sub_pos = table_pos.sub_table_pos;
+
+        let (index, _, parent_table) = self.data_tables.get_full_mut(&parent_pos)?;
+        let old_output_rect = Some(parent_table.output_rect(parent_pos, false));
+
+        // Get the nested tables
+        let nested_tables = parent_table.tables.as_mut()?;
+
+        // Remove the nested table
+        let removed_table = nested_tables.data_tables.shift_remove(&sub_pos)?;
+
+        // Update spill and cache for the parent table
+        let dirty_rects = self.update_spill_and_cache(index, parent_pos, old_output_rect);
+
+        Some((removed_table, dirty_rects))
+    }
+
+    // -------------------------------------------------------------------------
+    // In-table code cache methods
+    // -------------------------------------------------------------------------
+
+    /// Adds a code cell to the in-table code cache with default 1x1 output size.
+    pub(crate) fn add_in_table_code(&mut self, table_pos: &TablePos) {
+        self.in_table_code_cache.add(table_pos);
+    }
+
+    /// Adds a code cell to the in-table code cache with specified output size.
+    pub(crate) fn add_in_table_code_with_size(
+        &mut self,
+        table_pos: &TablePos,
+        width: u32,
+        height: u32,
+    ) {
+        self.in_table_code_cache.add_with_size(table_pos, width, height);
+    }
+
+    /// Updates the output size for an existing in-table code cell.
+    pub(crate) fn update_in_table_code_output_size(
+        &mut self,
+        table_pos: &TablePos,
+        width: u32,
+        height: u32,
+    ) -> bool {
+        self.in_table_code_cache.update_output_size(table_pos, width, height)
+    }
+
+    /// Returns the output bounds for an in-table code cell.
+    pub fn get_in_table_code_output_bounds(
+        &self,
+        table_pos: &TablePos,
+    ) -> Option<&NestedCodeOutput> {
+        self.in_table_code_cache.get_output_bounds(table_pos)
+    }
+
+    /// Finds the code cell whose output covers the given position within a parent table.
+    /// Returns the TablePos of the code cell and the offset into its output.
+    pub fn find_covering_in_table_code(
+        &self,
+        parent_pos: &Pos,
+        data_pos: Pos,
+    ) -> Option<(TablePos, u32, u32)> {
+        self.in_table_code_cache.find_covering_code_cell(parent_pos, data_pos)
+    }
+
+    /// Checks if adding a code cell with the given output size would overlap with existing outputs.
+    pub fn would_in_table_code_overlap(
+        &self,
+        table_pos: &TablePos,
+        width: u32,
+        height: u32,
+    ) -> Option<Pos> {
+        self.in_table_code_cache.would_overlap(table_pos, width, height)
+    }
+
+    /// Removes a code cell from the in-table code cache.
+    pub(crate) fn remove_in_table_code(&mut self, table_pos: &TablePos) -> bool {
+        self.in_table_code_cache.remove(table_pos)
+    }
+
+    /// Returns true if the given TablePos has a code cell.
+    pub fn has_in_table_code(&self, table_pos: &TablePos) -> bool {
+        self.in_table_code_cache.contains(table_pos)
+    }
+
+    /// Returns true if the given MultiPos has an in-table code cell.
+    pub fn has_in_table_code_multi_pos(&self, multi_pos: &MultiPos) -> bool {
+        self.in_table_code_cache.contains_multi_pos(multi_pos)
+    }
+
+    /// Returns all code cells within the given parent table.
+    pub fn code_cells_in_table(&self, parent_pos: &Pos) -> impl Iterator<Item = TablePos> + '_ {
+        self.in_table_code_cache.code_cells_in_table(parent_pos)
+    }
+
+    /// Returns all in-table code cells across all tables.
+    pub fn all_in_table_code_cells(&self) -> impl Iterator<Item = TablePos> + '_ {
+        self.in_table_code_cache.all_code_cells()
+    }
+
+    /// Clears all code cells for a specific table.
+    #[allow(dead_code)] // Part of in-table code API, will be used when full support is added
+    pub(crate) fn clear_table_code(&mut self, parent_pos: &Pos) -> Option<HashSet<Pos>> {
+        self.in_table_code_cache.clear_table(parent_pos)
+    }
+
+    /// Returns true if any tables in the rect have code cells.
+    pub fn has_in_table_code_in_rect(&self, rect: Rect) -> bool {
+        self.in_table_code_cache.has_code_in_rect(rect)
+    }
+
+    /// Returns a reference to the in-table code cache.
+    pub fn in_table_code_cache(&self) -> &InTableCodeCache {
+        &self.in_table_code_cache
     }
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
@@ -550,14 +937,167 @@ impl SheetDataTables {
     }
 
     /// Returns true if the sheet data tables are empty.
-    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.data_tables.is_empty()
+    }
+
+    /// Rebuilds the in-table code cache from nested tables.
+    /// This should be called after importing data tables from a file.
+    pub(crate) fn rebuild_in_table_code_cache(&mut self) {
+        self.in_table_code_cache = InTableCodeCache::new();
+
+        for (parent_pos, data_table) in self.data_tables.iter() {
+            if let Some(nested_tables) = &data_table.tables {
+                for (anchor_pos, nested_table) in nested_tables.data_tables.iter() {
+                    if nested_table.is_code() {
+                        let table_pos = crate::TablePos::new(*parent_pos, *anchor_pos);
+                        let output_size = nested_table.output_size();
+                        self.in_table_code_cache.add_with_size(
+                            &table_pos,
+                            output_size.w.get(),
+                            output_size.h.get(),
+                        );
+                    }
+                }
+            }
+        }
     }
 
     /// Returns the data table at the given position, if it exists.
     #[cfg(test)]
     pub(crate) fn get_at_index(&self, index: usize) -> Option<(&Pos, &DataTable)> {
         self.data_tables.get_index(index)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Array, CellValue, Value,
+        cellvalue::Import,
+        grid::data_table::{DataTable, DataTableKind},
+    };
+    use chrono::Utc;
+
+    fn create_test_table(name: &str) -> DataTable {
+        let values = vec![CellValue::Text("A".to_string())];
+        let size = crate::ArraySize::new(1, 1).unwrap();
+        let array = Array::new_row_major(size, values.into()).unwrap();
+
+        DataTable {
+            kind: DataTableKind::Import(Import::new("test.csv".to_string())),
+            name: CellValue::Text(name.to_string()),
+            value: Value::Array(array),
+            last_modified: Utc::now(),
+            header_is_first_row: false,
+            column_headers: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            spill_value: false,
+            spill_data_table: false,
+            spill_merged_cell: false,
+            spill_nested: false,
+            alternating_colors: true,
+            formats: None,
+            borders: None,
+            show_name: None,
+            show_columns: None,
+            chart_pixel_output: None,
+            chart_output: None,
+            tables: None,
+        }
+    }
+
+    #[test]
+    fn test_get_at_multi_pos_regular() {
+        let mut tables = SheetDataTables::new();
+        let pos = Pos::new(1, 1);
+        let table = create_test_table("Table1");
+
+        tables.insert_full(pos, table);
+
+        // Should find table at regular Pos
+        let multi_pos = MultiPos::Pos(pos);
+        assert!(tables.get_at_multi_pos(&multi_pos).is_some());
+
+        // Should not find table at different Pos
+        let other_pos = MultiPos::Pos(Pos::new(5, 5));
+        assert!(tables.get_at_multi_pos(&other_pos).is_none());
+    }
+
+    #[test]
+    fn test_nested_table_operations() {
+        let mut tables = SheetDataTables::new();
+        let parent_pos = Pos::new(1, 1);
+
+        // Create parent table
+        let mut parent_table = create_test_table("ParentTable");
+        parent_table.tables = Some(SheetDataTables::new());
+        tables.insert_full(parent_pos, parent_table);
+
+        // Insert nested table
+        let table_pos = TablePos::new(parent_pos, Pos::new(0, 0));
+        let nested_table = create_test_table("NestedTable");
+
+        let result = tables.insert_at_multi_pos(&MultiPos::TablePos(table_pos), nested_table);
+        assert!(result.is_ok());
+
+        // Verify nested table exists
+        assert!(tables.get_at_multi_pos(&MultiPos::TablePos(table_pos)).is_some());
+
+        // Get the nested table
+        let nested = tables.get_nested_table(&table_pos);
+        assert!(nested.is_some());
+        assert_eq!(nested.unwrap().name, CellValue::Text("NestedTable".to_string()));
+
+        // Remove nested table
+        let removed = tables.remove_at_multi_pos(&MultiPos::TablePos(table_pos));
+        assert!(removed.is_some());
+        let (removed_table, _) = removed.unwrap();
+        assert_eq!(removed_table.name, CellValue::Text("NestedTable".to_string()));
+
+        // Verify nested table is gone
+        assert!(tables.get_at_multi_pos(&MultiPos::TablePos(table_pos)).is_none());
+    }
+
+    #[test]
+    fn test_in_table_code_cache_integration() {
+        let mut tables = SheetDataTables::new();
+
+        // Add code cells to cache
+        let table_pos1 = TablePos::from_coords(1, 1, 0, 0);
+        let table_pos2 = TablePos::from_coords(1, 1, 1, 0);
+        let table_pos3 = TablePos::from_coords(5, 5, 0, 0);
+
+        tables.add_in_table_code(&table_pos1);
+        tables.add_in_table_code(&table_pos2);
+        tables.add_in_table_code(&table_pos3);
+
+        // Verify they're in the cache
+        assert!(tables.has_in_table_code(&table_pos1));
+        assert!(tables.has_in_table_code(&table_pos2));
+        assert!(tables.has_in_table_code(&table_pos3));
+
+        // Check multi_pos version
+        assert!(tables.has_in_table_code_multi_pos(&MultiPos::TablePos(table_pos1)));
+        assert!(!tables.has_in_table_code_multi_pos(&MultiPos::Pos(Pos::new(1, 1))));
+
+        // Get code cells in table at (1,1)
+        let cells: Vec<_> = tables.code_cells_in_table(&Pos::new(1, 1)).collect();
+        assert_eq!(cells.len(), 2);
+
+        // Get all code cells
+        let all_cells: Vec<_> = tables.all_in_table_code_cells().collect();
+        assert_eq!(all_cells.len(), 3);
+
+        // Remove one
+        assert!(tables.remove_in_table_code(&table_pos1));
+        assert!(!tables.has_in_table_code(&table_pos1));
+
+        // Check has_in_table_code_in_rect
+        assert!(tables.has_in_table_code_in_rect(Rect::new(0, 0, 10, 10)));
+        assert!(!tables.has_in_table_code_in_rect(Rect::new(20, 20, 30, 30)));
     }
 }

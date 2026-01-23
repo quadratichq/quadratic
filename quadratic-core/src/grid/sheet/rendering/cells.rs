@@ -208,6 +208,16 @@ impl Sheet {
                     let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                     if let Some(value) = value {
+                        // Handle CellValue::Code - extract output and language for rendering
+                        let (render_value, language) = if let CellValue::Code(code_cell) = &value {
+                            (
+                                (*code_cell.output).clone(),
+                                Some(code_cell.code_run.language.clone()),
+                            )
+                        } else {
+                            (value, None)
+                        };
+
                         let mut format = if is_header {
                             // column headers are always clipped and bold
                             Format {
@@ -222,15 +232,10 @@ impl Sheet {
                             table_format.combine(&sheet_format)
                         };
 
-                        // Note: language is not populated for DataTable cells because
-                        // the table border is rendered based on the table struct itself.
-                        // Only CellValue::Code cells need language for border rendering.
-                        let language = None;
-
                         let special = self
                             .validations
                             .render_special_pos(Pos { x, y }, context)
-                            .or(match value {
+                            .or(match &render_value {
                                 CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
                                 _ => None,
                             });
@@ -238,7 +243,7 @@ impl Sheet {
                         Self::ensure_lists_are_clipped(&mut format, &special);
 
                         let mut render_cell =
-                            Self::get_render_cell(x, y, &value, format, language, special);
+                            Self::get_render_cell(x, y, &render_value, format, language, special);
 
                         if is_table_name {
                             render_cell.table_name = Some(true);

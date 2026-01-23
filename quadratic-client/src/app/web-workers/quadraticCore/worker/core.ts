@@ -48,13 +48,13 @@ import type {
 import type {
   ClientCoreAddDataTable,
   ClientCoreImportFile,
-  JsEditCell,
   ClientCoreLoad,
   ClientCoreMoveCells,
   ClientCoreMoveCodeCellHorizontally,
   ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
   CoreClientImportFile,
+  JsEditCell,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
@@ -568,9 +568,6 @@ class Core {
   ): string | { error: string } | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      if (this.gridController.cellIntersectsDataTable(sheetId, posToPos(x, y))) {
-        return { error: 'Error in set code cell: Cannot add code cell to a data table' };
-      }
       return this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, codeCellName, cursor, isAi);
     } catch (e) {
       this.handleCoreError('setCodeCellValue', e);

@@ -50,7 +50,8 @@ use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsClipboard, JsCodeCell,
     JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellLinkSpan,
     JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo,
-    JsRowHeight, JsSheetFill, JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
+    JsRowHeight, JsSheetFill, JsSnackbarSeverity, JsSummarizeSelectionResult, JsTablePos,
+    JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::BorderSelection;
 use quadratic_core::grid::sheet::borders::BorderSide;
@@ -204,6 +205,7 @@ fn main() {
         JsSummarizeSelectionResult,
         JsSummaryContext,
         JsTableInfo,
+        JsTablePos,
         JsUpdateCodeCell,
         JsValidationWarning,
         NumberRange,

@@ -1,5 +1,5 @@
 use crate::{
-    RefAdjust,
+    MultiPos, MultiSheetPos, RefAdjust,
     a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -139,6 +139,16 @@ impl Pos {
             x: self.x.max(other.x),
             y: self.y.max(other.y),
         }
+    }
+
+    /// Converts this Pos to a MultiPos.
+    pub fn to_multi_pos(self) -> MultiPos {
+        MultiPos::Pos(self)
+    }
+
+    /// Converts this Pos to a MultiSheetPos with the given sheet ID.
+    pub fn to_multi_sheet_pos(self, sheet_id: SheetId) -> MultiSheetPos {
+        MultiSheetPos::from_pos(sheet_id, self)
     }
 }
 
@@ -291,6 +301,16 @@ impl fmt::Debug for Pos {
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
+    }
+
+    /// Converts this SheetPos to a MultiPos (always a Pos variant).
+    pub fn to_multi_pos(self) -> MultiPos {
+        MultiPos::Pos(self.into())
+    }
+
+    /// Converts this SheetPos to a MultiSheetPos.
+    pub fn to_multi_sheet_pos(self) -> MultiSheetPos {
+        self.into()
     }
 }
 

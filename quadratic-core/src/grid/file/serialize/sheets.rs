@@ -42,7 +42,10 @@ fn export_merge_cells(merge_cells: &MergeCells) -> current::MergeCellsSchema {
 
 pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
     let columns = import_column_builder(sheet.columns);
-    let data_tables = import_data_table_builder(sheet.data_tables, &columns)?;
+    let mut data_tables = import_data_table_builder(sheet.data_tables, &columns)?;
+
+    // Rebuild the in-table code cache for any nested code tables
+    data_tables.rebuild_in_table_code_cache();
 
     let sheet = Sheet {
         id: SheetId::from_str(&sheet.id.id)?,

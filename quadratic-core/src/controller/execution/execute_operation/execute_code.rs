@@ -1,6 +1,7 @@
 use crate::{
-    CellValue, SheetPos, SheetRect, Value,
+    CellValue, CodeCell, MultiPos, MultiSheetPos, SheetPos, SheetRect, Value,
     a1::A1Selection,
+    cell_values::CellValues,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -411,12 +412,14 @@ impl GridController {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             last_modified: now(),
             alternating_colors,
             formats: None,
             borders: None,
             chart_pixel_output,
             chart_output,
+            tables: None,
         }
     }
 
@@ -568,6 +571,379 @@ impl GridController {
             crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
         }
     }
+
+    // -------------------------------------------------------------------------
+    // MultiSheetPos operations for in-table code cells
+    // -------------------------------------------------------------------------
+
+    /// Executes ComputeCodeMultiPos operation.
+    /// Handles code execution at both sheet positions and in-table positions.
+    pub(super) fn execute_compute_code_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeCodeMultiPos { multi_sheet_pos } = op {
+            match multi_sheet_pos.multi_pos {
+                MultiPos::Pos(pos) => {
+                    // Delegate to existing sheet-level code execution
+                    let sheet_pos = SheetPos::new(multi_sheet_pos.sheet_id, pos.x, pos.y);
+                    self.execute_compute_code(
+                        transaction,
+                        Operation::ComputeCode { sheet_pos },
+                    );
+                }
+                MultiPos::TablePos(table_pos) => {
+                    // Handle in-table code execution
+                    if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                        return;
+                    }
+
+                    let Some(sheet) = self.try_sheet(multi_sheet_pos.sheet_id) else {
+                        return;
+                    };
+
+                    // Get the code run from the nested table
+                    let Some(code_run) = sheet.data_tables.get_nested_table(&table_pos)
+                        .and_then(|dt| dt.code_run())
+                    else {
+                        return;
+                    };
+
+                    let language = code_run.language.clone();
+                    let code = code_run.code.clone();
+                    let cached_ast = code_run.formula_ast.clone();
+
+                    // Execute based on language type
+                    match language {
+                        CodeCellLanguage::Formula => {
+                            self.run_formula_multi_pos(transaction, multi_sheet_pos, code, cached_ast);
+                        }
+                        CodeCellLanguage::Python => {
+                            self.run_python_multi_pos(transaction, multi_sheet_pos, code);
+                        }
+                        CodeCellLanguage::Javascript => {
+                            self.run_javascript_multi_pos(transaction, multi_sheet_pos, code);
+                        }
+                        _ => {
+                            // Connection and Import are not supported in-table
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Executes SetDataTableMultiPos operation.
+    /// Handles setting data tables at both sheet positions and in-table positions.
+    pub(super) fn execute_set_data_table_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::SetDataTableMultiPos {
+            multi_sheet_pos,
+            data_table,
+            index,
+        } = op.clone()
+        {
+            match multi_sheet_pos.multi_pos {
+                MultiPos::Pos(pos) => {
+                    // Delegate to existing sheet-level data table handling
+                    let sheet_pos = SheetPos::new(multi_sheet_pos.sheet_id, pos.x, pos.y);
+                    return self.execute_set_data_table(
+                        transaction,
+                        Operation::SetDataTable {
+                            sheet_pos,
+                            data_table,
+                            index,
+                            ignore_old_data_table: false,
+                        },
+                    );
+                }
+                MultiPos::TablePos(table_pos) => {
+                    // Handle nested data table
+                    let sheet = self.try_sheet_mut_result(multi_sheet_pos.sheet_id)?;
+
+                    // Get old nested table for undo operation
+                    let old_nested_table = sheet.data_tables.get_nested_table(&table_pos).cloned();
+
+                    if let Some(dt) = data_table.clone() {
+                        // Insert nested table
+                        let dirty_rects = sheet.data_tables.insert_at_multi_pos(
+                            &multi_sheet_pos.multi_pos,
+                            dt,
+                        )?;
+
+                        // Add to in-table code cache if it's a code table
+                        if sheet.data_tables.get_nested_table(&table_pos)
+                            .is_some_and(|t| t.is_code())
+                        {
+                            sheet.data_tables.add_in_table_code(&table_pos);
+                        }
+
+                        transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+                    } else {
+                        // Remove nested table
+                        sheet.data_tables.remove_in_table_code(&table_pos);
+                        if let Some((_, dirty_rects)) = sheet.data_tables.remove_at_multi_pos(
+                            &multi_sheet_pos.multi_pos,
+                        ) {
+                            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+                        }
+                    }
+
+                    // Track forward/reverse operations for undo/redo
+                    transaction.forward_operations.push(Operation::SetDataTableMultiPos {
+                        multi_sheet_pos: multi_sheet_pos.clone(),
+                        data_table,
+                        index,
+                    });
+
+                    transaction.reverse_operations.push(Operation::SetDataTableMultiPos {
+                        multi_sheet_pos,
+                        data_table: old_nested_table,
+                        index,
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Executes SetComputeCodeMultiPos operation.
+    /// Sets code and computes it at a MultiSheetPos.
+    pub(super) fn execute_set_compute_code_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetComputeCodeMultiPos {
+            multi_sheet_pos,
+            language,
+            code,
+            template,
+        } = op
+        {
+            match multi_sheet_pos.multi_pos {
+                MultiPos::Pos(pos) => {
+                    // Delegate to existing sheet-level handling
+                    let sheet_pos = SheetPos::new(multi_sheet_pos.sheet_id, pos.x, pos.y);
+                    self.execute_set_compute_code(
+                        transaction,
+                        Operation::SetComputeCode {
+                            sheet_pos,
+                            language,
+                            code,
+                            template,
+                        },
+                    );
+                }
+                MultiPos::TablePos(_table_pos) => {
+                    // Handle in-table code setting and computation
+                    if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                        dbgjs!("Only user / undo / redo / server transaction should have a SetComputeCodeMultiPos");
+                        return;
+                    }
+
+                    // For now, only formulas are supported in-table
+                    match language {
+                        CodeCellLanguage::Formula => {
+                            self.run_formula_multi_pos(transaction, multi_sheet_pos, code, None);
+                        }
+                        _ => {
+                            dbgjs!(format!("In-table code execution not yet supported for {:?}", language));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Runs a formula at a MultiSheetPos (for in-table formulas).
+    fn run_formula_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        multi_sheet_pos: MultiSheetPos,
+        code: String,
+        cached_ast: Option<crate::formulas::ast::Formula>,
+    ) {
+        use crate::formulas::{Ctx, parse_formula};
+        use itertools::Itertools;
+
+        let sheet_id = multi_sheet_pos.sheet_id;
+
+        let MultiPos::TablePos(table_pos) = multi_sheet_pos.multi_pos else {
+            // For regular Pos, just run the formula normally
+            if let Some(sheet_pos) = multi_sheet_pos.to_sheet_pos() {
+                self.run_formula_with_cached_ast(transaction, sheet_pos, code, cached_ast);
+            }
+            return;
+        };
+
+        // For in-table formulas:
+        // 1. Parse and evaluate the formula using the sub-table position as context
+        // 2. Store the result in the nested table within the parent
+
+        // Get the display position for formula evaluation context
+        let Some(sheet) = self.grid.try_sheet(sheet_id) else {
+            return;
+        };
+
+        // Convert table_pos to a sheet position for evaluation context
+        let Some(eval_sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos) else {
+            return;
+        };
+
+        // Parse and evaluate the formula
+        let parse_ctx = self.a1_context();
+        let mut eval_ctx = Ctx::new(self, eval_sheet_pos);
+
+        let parsed = if let Some(ast) = cached_ast {
+            ast
+        } else {
+            match parse_formula(&code, parse_ctx, eval_sheet_pos) {
+                Ok(p) => p,
+                Err(error) => {
+                    // Store error as CellValue::Code in parent table's value array
+                    let error_run = CodeRun {
+                        language: CodeCellLanguage::Formula,
+                        code,
+                        error: Some(error.clone()),
+                        ..CodeRun::default()
+                    };
+                    let code_cell = CodeCell::with_error(error_run, error);
+                    let code_cell_value = CellValue::Code(Box::new(code_cell));
+
+                    // Convert TablePos to display SheetPos for SetDataTableAt
+                    let MultiPos::TablePos(table_pos) = &multi_sheet_pos.multi_pos else {
+                        return;
+                    };
+                    let Some(sheet) = self.grid.try_sheet(multi_sheet_pos.sheet_id) else {
+                        return;
+                    };
+                    let Some(display_sheet_pos) =
+                        sheet.table_pos_to_sheet_pos(table_pos.clone())
+                    else {
+                        return;
+                    };
+
+                    // Create CellValues with the single code cell value
+                    let mut values = CellValues::new(1, 1);
+                    values.set(0, 0, code_cell_value);
+
+                    // Execute SetDataTableAt for proper undo/redo support
+                    let _ = self.execute_set_data_table_at(
+                        transaction,
+                        Operation::SetDataTableAt {
+                            sheet_pos: display_sheet_pos,
+                            values,
+                        },
+                    );
+                    return;
+                }
+            }
+        };
+
+        let output = parsed.eval(&mut eval_ctx).into_non_tuple();
+        let errors = output.inner.errors();
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code,
+            formula_ast: Some(parsed),
+            std_out: None,
+            std_err: (!errors.is_empty())
+                .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+            cells_accessed: eval_ctx.take_cells_accessed(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        // Check if this is a 1x1 output that should be stored as CellValue::Code
+        let is_1x1 = matches!(&output.inner, Value::Single(_))
+            || matches!(&output.inner, Value::Array(arr) if arr.width() == 1 && arr.height() == 1);
+
+        if is_1x1 {
+            // Store as CellValue::Code in the parent table's value array
+            let output_value = match &output.inner {
+                Value::Single(v) => v.clone(),
+                Value::Array(arr) => arr.get(0, 0).cloned().unwrap_or(CellValue::Blank),
+                _ => CellValue::Blank,
+            };
+
+            let code_cell = CodeCell::new(new_code_run, output_value);
+            let code_cell_value = CellValue::Code(Box::new(code_cell));
+
+            // Convert TablePos to display SheetPos for SetDataTableAt
+            let MultiPos::TablePos(table_pos) = &multi_sheet_pos.multi_pos else {
+                return;
+            };
+            let Some(sheet) = self.grid.try_sheet(multi_sheet_pos.sheet_id) else {
+                return;
+            };
+            let Some(display_sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos.clone()) else {
+                return;
+            };
+
+            // Create CellValues with the single code cell value
+            let mut values = CellValues::new(1, 1);
+            values.set(0, 0, code_cell_value);
+
+            // Execute SetDataTableAt for proper undo/redo support
+            let _ = self.execute_set_data_table_at(
+                transaction,
+                Operation::SetDataTableAt {
+                    sheet_pos: display_sheet_pos,
+                    values,
+                },
+            );
+        } else {
+            // Store as nested DataTable for multi-cell outputs
+            let new_data_table = DataTable::new(
+                DataTableKind::CodeRun(new_code_run),
+                "Formula1",
+                output.inner,
+                false,
+                None,
+                None,
+                None,
+            );
+
+            // Get the output size before storing
+            let output_size = new_data_table.output_size();
+
+            self.store_nested_data_table(sheet_id, table_pos, new_data_table);
+
+            // Mark the in-table code in the cache with actual output size
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+                sheet.data_tables.add_in_table_code_with_size(
+                    &table_pos,
+                    output_size.w.get(),
+                    output_size.h.get(),
+                );
+            }
+        }
+    }
+
+    /// Stores a data table as a nested table within a parent table.
+    pub(crate) fn store_nested_data_table(
+        &mut self,
+        sheet_id: crate::grid::SheetId,
+        table_pos: crate::TablePos,
+        data_table: DataTable,
+    ) {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+            return;
+        };
+
+        // Use the existing insert_at_multi_pos method
+        let multi_pos = MultiPos::TablePos(table_pos);
+        let _ = sheet.data_tables.insert_at_multi_pos(&multi_pos, data_table);
+    }
+
 }
 
 #[cfg(test)]
@@ -755,5 +1131,274 @@ mod tests {
 
         let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
         assert!(value4 != value3);
+    }
+
+    #[test]
+    fn test_in_table_formula_execution() {
+        use crate::{MultiPos, MultiSheetPos, TablePos};
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 2x3 output
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 2, 3);
+
+        // Verify the parent table exists
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.data_table_at(&pos![A1]).is_some());
+
+        // Create a TablePos for an in-table formula
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(0, 1));
+        let _multi_sheet_pos = MultiSheetPos::new(sheet_id, MultiPos::TablePos(table_pos));
+
+        // Execute the formula operations
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+        );
+
+        // Should generate MultiPos operations
+        assert_eq!(ops.len(), 2, "Should generate 2 operations for in-table code");
+        assert!(matches!(&ops[0], Operation::SetDataTableMultiPos { .. }));
+        assert!(matches!(&ops[1], Operation::ComputeCodeMultiPos { .. }));
+
+        // Execute the operations in a transaction
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the in-table code was added to the cache
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            sheet.data_tables.has_in_table_code(&table_pos),
+            "In-table code should be tracked in cache"
+        );
+
+        // For 1x1 formulas, the result is stored as CellValue::Code in the parent's value array
+        // (not as a nested DataTable)
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value = parent_table.cell_value_ref_at(0, 1);
+        assert!(
+            matches!(cell_value, Some(CellValue::Code(_))),
+            "1x1 in-table code should be stored as CellValue::Code in parent's value array"
+        );
+
+        // Verify the value is correct (1 + 1 = 2)
+        if let Some(CellValue::Code(code_cell)) = cell_value {
+            assert_eq!(*code_cell.output, CellValue::Number(2.into()));
+            assert_eq!(code_cell.code_run.language, CodeCellLanguage::Formula);
+            assert_eq!(code_cell.code_run.code, "1 + 1");
+        }
+    }
+
+    #[test]
+    fn test_in_table_1x1_code_as_cell_value_code() {
+        use crate::TablePos;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 3x3 output (no header, show_name=false)
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        // For a 3x3 table at A1 with show_name=false:
+        // - B2 corresponds to data position (1, 1)
+        // - The display position B2 = (2, 2) maps to table data position (1, 1)
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(1, 1));
+
+        // Execute a 1x1 formula at B2 (which is data position (1, 1))
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!B2],
+            CodeCellLanguage::Formula,
+            "42".to_string(),
+            None,
+        );
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the code is stored as CellValue::Code
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+
+        // Access the cell at the sub_table_pos
+        let cell_value = parent_table.cell_value_ref_at(
+            table_pos.sub_table_pos.x as u32,
+            table_pos.sub_table_pos.y as u32,
+        );
+
+        assert!(
+            matches!(cell_value, Some(CellValue::Code(_))),
+            "1x1 code should be stored as CellValue::Code, got {:?}",
+            cell_value
+        );
+
+        // Verify the output value
+        if let Some(CellValue::Code(code_cell)) = cell_value {
+            assert_eq!(
+                *code_cell.output,
+                CellValue::Number(42.into()),
+                "Output should be 42"
+            );
+        }
+
+        // Verify the cache tracks this code cell
+        assert!(
+            sheet.data_tables.has_in_table_code(&table_pos),
+            "In-table code should be tracked in cache"
+        );
+
+        // Verify get_cell_for_formula returns the output value (not the CodeCell)
+        let formula_value = parent_table.get_cell_for_formula(
+            table_pos.sub_table_pos.x as u32,
+            table_pos.sub_table_pos.y as u32,
+        );
+        assert_eq!(
+            formula_value,
+            CellValue::Number(42.into()),
+            "get_cell_for_formula should return the output value"
+        );
+    }
+
+    #[test]
+    fn test_in_table_multi_cell_code_as_nested_table() {
+        use crate::TablePos;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 5x5 output (no header, show_name=false)
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 5, 5);
+
+        // For a 5x5 table at A1 with show_name=false:
+        // - B2 corresponds to data position (1, 1)
+        // The anchor cell (A1) cannot have in-table code, so we use B2
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(1, 1));
+
+        // Execute a multi-cell formula (array output) at B2 (data position (1, 1))
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!B2],
+            CodeCellLanguage::Formula,
+            "{1, 2; 3, 4}".to_string(), // 2x2 array
+            None,
+        );
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the code is stored as a nested DataTable (not CellValue::Code)
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+
+        // For multi-cell output, it should be stored as a nested table
+        assert!(
+            parent_table.tables.is_some(),
+            "Multi-cell code should be stored as nested DataTable"
+        );
+
+        // Verify the nested table exists
+        let nested_table = sheet.data_tables.get_nested_table(&table_pos);
+        assert!(
+            nested_table.is_some(),
+            "Nested table should exist for multi-cell output"
+        );
+    }
+
+    #[test]
+    fn test_in_table_1x1_code_undo_redo() {
+        use crate::TablePos;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table at A1 with 3x3 output
+        // Initial values: 0, 1, 2, 3, 4, 5, 6, 7, 8
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        // Position B2 corresponds to data position (1, 1) which initially has value 4
+        let table_pos = TablePos::new(pos![A1], crate::Pos::new(1, 1));
+
+        // Verify initial value
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let initial_value = parent_table
+            .cell_value_ref_at(1, 1)
+            .cloned()
+            .unwrap_or(CellValue::Blank);
+        assert_eq!(
+            initial_value,
+            CellValue::Number(4.into()),
+            "Initial value at (1,1) should be 4"
+        );
+
+        // Execute a 1x1 formula at B2
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!B2],
+            CodeCellLanguage::Formula,
+            "100".to_string(),
+            None,
+        );
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify the code is stored as CellValue::Code
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value = parent_table.cell_value_ref_at(1, 1);
+        assert!(
+            matches!(cell_value, Some(CellValue::Code(_))),
+            "After formula, should be CellValue::Code, got {:?}",
+            cell_value
+        );
+
+        // Verify the output value is 100
+        if let Some(CellValue::Code(code_cell)) = cell_value {
+            assert_eq!(
+                *code_cell.output,
+                CellValue::Number(100.into()),
+                "Output should be 100"
+            );
+        }
+
+        // Verify the cache tracks this code cell
+        assert!(
+            sheet.data_tables.has_in_table_code(&table_pos),
+            "In-table code should be tracked in cache after formula execution"
+        );
+
+        // Perform undo
+        gc.undo(1, None, false);
+
+        // After undo, the value should be restored to the original value (4)
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value_after_undo = parent_table
+            .cell_value_ref_at(1, 1)
+            .cloned()
+            .unwrap_or(CellValue::Blank);
+
+        // The undo should restore the original value (not CellValue::Code)
+        assert_eq!(
+            cell_value_after_undo,
+            CellValue::Number(4.into()),
+            "After undo, value should be restored to original 4, got {:?}",
+            cell_value_after_undo
+        );
+
+        // Perform redo
+        gc.redo(1, None, false);
+
+        // After redo, the value should be back to CellValue::Code with output 100
+        let sheet = gc.sheet(sheet_id);
+        let parent_table = sheet.data_table_at(&pos![A1]).unwrap();
+        let cell_value_after_redo = parent_table.cell_value_ref_at(1, 1);
+        assert!(
+            matches!(cell_value_after_redo, Some(CellValue::Code(_))),
+            "After redo, should be CellValue::Code again, got {:?}",
+            cell_value_after_redo
+        );
+
+        if let Some(CellValue::Code(code_cell)) = cell_value_after_redo {
+            assert_eq!(
+                *code_cell.output,
+                CellValue::Number(100.into()),
+                "After redo, output should be 100"
+            );
+        }
     }
 }

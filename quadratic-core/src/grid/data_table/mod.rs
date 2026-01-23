@@ -35,6 +35,7 @@ use strum_macros::Display;
 pub use code_run::*;
 
 use super::sheet::borders::Borders;
+use super::sheet::data_tables::SheetDataTables;
 use super::{Grid, SheetFormatting, SheetId};
 
 #[cfg(test)]
@@ -148,7 +149,9 @@ impl Grid {
             );
 
             // Update CellValue::Code cells
-            sheet.replace_column_name_in_code_value_cells(table_name, old_name, new_name, a1_context);
+            sheet.replace_column_name_in_code_value_cells(
+                table_name, old_name, new_name, a1_context,
+            );
         }
     }
 
@@ -242,6 +245,10 @@ pub struct DataTable {
     #[serde(skip_serializing_if = "is_false", default)]
     pub spill_merged_cell: bool,
 
+    // spill due to overlapping with another nested code output or exceeding parent bounds
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub spill_nested: bool,
+
     #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,
 
@@ -263,6 +270,11 @@ pub struct DataTable {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    /// Nested tables for in-table code cells.
+    /// This allows code cells within a data table to have their own outputs.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub tables: Option<SheetDataTables>,
 }
 
 impl From<(Import, Array, &A1Context)> for DataTable {
@@ -308,6 +320,7 @@ impl DataTable {
             spill_value: false,
             spill_data_table: false,
             spill_merged_cell: false,
+            spill_nested: false,
             alternating_colors: true,
             formats: None,
             borders: None,
@@ -315,6 +328,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
+            tables: None,
         };
 
         if header_is_first_row {
@@ -340,6 +354,7 @@ impl DataTable {
             spill_value: self.spill_value,
             spill_data_table: self.spill_data_table,
             spill_merged_cell: self.spill_merged_cell,
+            spill_nested: self.spill_nested,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
             borders: self.borders.clone(),
@@ -347,6 +362,7 @@ impl DataTable {
             show_columns: self.show_columns,
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
+            tables: None, // Don't clone nested tables
         }
     }
 
@@ -658,7 +674,7 @@ impl DataTable {
 
     /// Helper function to determine if the DataTable has an spill error.
     pub fn has_spill(&self) -> bool {
-        self.spill_value || self.spill_data_table || self.spill_merged_cell
+        self.spill_value || self.spill_data_table || self.spill_merged_cell || self.spill_nested
     }
 
     /// Helper function to determine if the DataTable's CodeRun has an error.
@@ -710,43 +726,139 @@ impl DataTable {
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
+    /// If there's a nested code cell at this position, returns its output instead.
+    /// CellValue::Code in the value array takes precedence over nested table outputs.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.has_spill() || self.has_error() {
             Some(CellValue::Blank)
         } else {
+            // First check if there's a CellValue::Code in the value array at this position.
+            // CellValue::Code always takes precedence over nested table outputs, because
+            // users may place new code cells in positions that were previously covered
+            // by another code cell's multi-row output.
+            if let Some(cell_value) = self.display_value_at((x, y).into()).ok() {
+                if matches!(cell_value, CellValue::Code(_)) {
+                    return Some(cell_value.clone());
+                }
+            }
+
+            // Then check for nested code cell outputs
+            // The nested table position is stored using data coordinates (after header adjustment)
+            if let Some(nested_tables) = &self.tables {
+                let y_adjustment = self.y_adjustment(true) as u32;
+                if y >= y_adjustment {
+                    // Convert display position to data position
+                    let data_col = self.get_column_index_from_display_index(x, true);
+                    let data_row = self.get_row_index_from_display_index((y - y_adjustment) as u64);
+                    let data_pos = Pos::new(data_col as i64, data_row as i64);
+
+                    // Check if any nested code cell's output covers this position
+                    if let Some((_anchor, nested_table, offset_x, offset_y)) =
+                        nested_tables.find_nested_table_covering(data_pos)
+                    {
+                        return nested_table.cell_value_at(offset_x, offset_y);
+                    }
+                }
+            }
             self.display_value_at((x, y).into()).ok().cloned()
         }
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
+    /// If there's a nested code cell at this position, returns its output instead.
+    /// CellValue::Code in the value array takes precedence over nested table outputs.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.has_spill() || self.has_error() {
             None
         } else {
+            // First check if there's a CellValue::Code in the value array at this position.
+            // CellValue::Code always takes precedence over nested table outputs, because
+            // users may place new code cells in positions that were previously covered
+            // by another code cell's multi-row output.
+            if let Some(cell_value) = self.display_value_at((x, y).into()).ok() {
+                if matches!(cell_value, CellValue::Code(_)) {
+                    return Some(cell_value);
+                }
+            }
+
+            // Then check for nested code cell outputs
+            if let Some(nested_tables) = &self.tables {
+                let y_adjustment = self.y_adjustment(true) as u32;
+                if y >= y_adjustment {
+                    // Convert display position to data position
+                    let data_col = self.get_column_index_from_display_index(x, true);
+                    let data_row = self.get_row_index_from_display_index((y - y_adjustment) as u64);
+                    let data_pos = Pos::new(data_col as i64, data_row as i64);
+
+                    // Check if any nested code cell's output covers this position
+                    if let Some((_anchor, nested_table, offset_x, offset_y)) =
+                        nested_tables.find_nested_table_covering(data_pos)
+                    {
+                        return nested_table.cell_value_ref_at(offset_x, offset_y);
+                    }
+                }
+            }
             self.display_value_at((x, y).into()).ok()
         }
     }
 
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
+    /// If there's a nested code cell at this position, returns its output instead.
+    /// For CellValue::Code in the value array, returns the output value.
     pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
         if self.has_spill() {
             CellValue::Blank
         } else {
+            // Check for nested code cell at this position first
+            if let Some(nested_tables) = &self.tables {
+                let data_pos = Pos::new(x as i64, y as i64);
+
+                // Check if any nested code cell's output covers this position
+                if let Some((_anchor, nested_table, offset_x, offset_y)) =
+                    nested_tables.find_nested_table_covering(data_pos)
+                {
+                    return nested_table.get_cell_for_formula(offset_x, offset_y);
+                }
+            }
+
+            // Helper to extract output from CellValue, handling CellValue::Code
+            let extract_output = |v: &CellValue| -> CellValue {
+                match v {
+                    CellValue::Image(_) | CellValue::Html(_) => CellValue::Blank,
+                    CellValue::Code(code_cell) => {
+                        let output = (*code_cell.output).clone();
+                        if matches!(output, CellValue::Html(_) | CellValue::Image(_)) {
+                            CellValue::Blank
+                        } else {
+                            output
+                        }
+                    }
+                    other => other.clone(),
+                }
+            };
+
             match &self.value {
-                Value::Single(v) => match v {
-                    CellValue::Image(_) => CellValue::Blank,
-                    CellValue::Html(_) => CellValue::Blank,
-                    _ => v.clone(),
-                },
-                Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                Value::Single(v) => extract_output(v),
+                Value::Array(a) => a.get(x, y).map(extract_output).unwrap_or(CellValue::Blank),
                 Value::Tuple(_) | Value::Lambda(_) => CellValue::Error(Box::new(
                     // should never happen
                     RunErrorMsg::InternalError("tuple or lambda saved as code run result".into())
                         .without_span(),
                 )),
             }
+        }
+    }
+
+    /// Returns the raw value at a position in the parent's value array,
+    /// bypassing any nested table checks. Used for undo/redo to capture
+    /// the original value before nested tables are created.
+    pub fn raw_value_at(&self, x: u32, y: u32) -> Option<&CellValue> {
+        match &self.value {
+            Value::Single(v) => Some(v),
+            Value::Array(arr) => arr.get(x, y).ok(),
+            Value::Tuple(_) | Value::Lambda(_) => None,
         }
     }
 

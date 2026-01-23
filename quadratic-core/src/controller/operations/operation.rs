@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, ClearOption, CopyFormats, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, MultiSheetPos, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -218,6 +218,32 @@ pub enum Operation {
     /// Currently just used for scheduled tasks.
     ComputeCodeSelection {
         selection: Option<A1Selection>,
+    },
+
+    // -------------------------------------------------------------------------
+    // MultiSheetPos operations for in-table code cells
+    // -------------------------------------------------------------------------
+
+    /// Runs the code cell at a MultiSheetPos (sheet or in-table position).
+    ComputeCodeMultiPos {
+        multi_sheet_pos: MultiSheetPos,
+    },
+
+    /// Sets a data table at a MultiSheetPos (supports nested tables).
+    SetDataTableMultiPos {
+        multi_sheet_pos: MultiSheetPos,
+        data_table: Option<DataTable>,
+        index: usize,
+    },
+
+    /// Sets code and computes it at a MultiSheetPos.
+    /// Used for in-table code cells.
+    SetComputeCodeMultiPos {
+        multi_sheet_pos: MultiSheetPos,
+        language: CodeCellLanguage,
+        code: String,
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        template: Option<DataTableTemplate>,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.

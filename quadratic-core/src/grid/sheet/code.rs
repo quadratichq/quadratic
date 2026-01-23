@@ -9,7 +9,7 @@ use crate::{
     grid::{
         CodeCellLanguage, DataTableKind,
         data_table::DataTable,
-        js_types::{JsCodeCell, JsReturnInfo},
+        js_types::{JsCodeCell, JsReturnInfo, JsTablePos},
     },
 };
 
@@ -269,7 +269,131 @@ impl Sheet {
                 return_info,
                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
                 last_modified: chrono::Utc::now().timestamp_millis(), // Single-cell codes don't track last_modified yet
+                table_pos: None,
             });
+        }
+
+        // Check for nested in-table code cells (direct anchor or within multi-cell output)
+        // First check if clicked position is the anchor of a nested code cell
+        // cell_value_ref_at expects display coordinates (relative to table top-left, including headers)
+        let nested_code_table_pos = self.display_pos_to_in_table_code_pos(pos)
+            .filter(|tp| {
+                // Check for CellValue::Code in parent's value array OR nested DataTable
+                // Use display coordinates for cell_value_ref_at
+                let dx = (pos.x - tp.parent_pos.x) as u32;
+                let dy = (pos.y - tp.parent_pos.y) as u32;
+                self.data_tables.get_at(&tp.parent_pos).is_some_and(|parent| {
+                    matches!(
+                        parent.cell_value_ref_at(dx, dy),
+                        Some(CellValue::Code(_))
+                    )
+                }) || self.data_tables.get_nested_table(tp).is_some_and(|t| t.is_code())
+            })
+            // If not, check if the position is covered by a nested code cell's output
+            .or_else(|| self.find_covering_nested_code_cell(pos));
+
+        if let Some(table_pos) = nested_code_table_pos {
+            // First check for CellValue::Code in parent's value array
+            // Convert table coordinates to display coordinates for cell_value_ref_at
+            let anchor_display_coords = self
+                .table_pos_to_sheet_pos(table_pos)
+                .map(|sp| {
+                    (
+                        (sp.x - table_pos.parent_pos.x) as u32,
+                        (sp.y - table_pos.parent_pos.y) as u32,
+                    )
+                });
+            if let Some((display_x, display_y)) = anchor_display_coords
+                && let Some(parent_table) = self.data_tables.get_at(&table_pos.parent_pos)
+                && let Some(CellValue::Code(code_cell)) =
+                    parent_table.cell_value_ref_at(display_x, display_y)
+            {
+                let code_run = &code_cell.code_run;
+                let mut code: String = code_run.code.clone();
+
+                // replace internal cell references with a1 notation
+                if matches!(code_run.language, CodeCellLanguage::Formula) {
+                    let anchor_pos = table_pos.parent_pos.to_sheet_pos(self.id);
+                    let replaced = convert_rc_to_a1(&code, a1_context, anchor_pos);
+                    code = replaced;
+                }
+
+                let evaluation_result = match &code_run.error {
+                    Some(error) => Some(serde_json::to_string(error).unwrap_or("".into())),
+                    None => Some(serde_json::to_string(&*code_cell.output).unwrap_or("".into())),
+                };
+
+                let return_info = Some(JsReturnInfo {
+                    line_number: code_run.line_number,
+                    output_type: code_run.output_type.clone(),
+                });
+
+                // Get the anchor's sheet position for the x, y coordinates
+                let anchor_sheet_pos = self.table_pos_to_sheet_pos(table_pos);
+                let (anchor_x, anchor_y) = anchor_sheet_pos
+                    .map(|sp| (sp.x, sp.y))
+                    .unwrap_or((pos.x, pos.y));
+
+                return Some(JsCodeCell {
+                    x: anchor_x,
+                    y: anchor_y,
+                    code_string: code,
+                    language: code_run.language.clone(),
+                    std_err: code_run.std_err.clone(),
+                    std_out: code_run.std_out.clone(),
+                    evaluation_result,
+                    spill_error: None, // 1x1 code cells don't spill
+                    return_info,
+                    cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                    last_modified: code_cell.last_modified.timestamp_millis(),
+                    table_pos: Some(JsTablePos::from(table_pos)),
+                });
+            }
+
+            // Fall back to nested DataTable for multi-cell outputs
+            if let Some(nested_table) = self.data_tables.get_nested_table(&table_pos)
+                && let DataTableKind::CodeRun(code_run) = &nested_table.kind
+            {
+                let mut code: String = code_run.code.clone();
+
+                // replace internal cell references with a1 notation
+                if matches!(code_run.language, CodeCellLanguage::Formula) {
+                    let anchor_pos = table_pos.parent_pos.to_sheet_pos(self.id);
+                    let replaced = convert_rc_to_a1(&code, a1_context, anchor_pos);
+                    code = replaced;
+                }
+
+                let evaluation_result = match &code_run.error {
+                    Some(error) => Some(serde_json::to_string(error).unwrap_or("".into())),
+                    None => Some(serde_json::to_string(&nested_table.value).unwrap_or("".into())),
+                };
+
+                let return_info = Some(JsReturnInfo {
+                    line_number: code_run.line_number,
+                    output_type: code_run.output_type.clone(),
+                });
+
+                // Get the anchor's sheet position for the x, y coordinates
+                let anchor_sheet_pos = self.table_pos_to_sheet_pos(table_pos);
+                let (anchor_x, anchor_y) = anchor_sheet_pos
+                    .map(|sp| (sp.x, sp.y))
+                    .unwrap_or((pos.x, pos.y));
+
+                return Some(JsCodeCell {
+                    x: anchor_x,
+                    y: anchor_y,
+                    code_string: code,
+                    language: code_run.language.clone(),
+                    std_err: code_run.std_err.clone(),
+                    std_out: code_run.std_out.clone(),
+                    evaluation_result,
+                    spill_error: None, // Nested code cells don't spill outside their parent
+                    return_info,
+                    cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                    last_modified: nested_table.last_modified.timestamp_millis(),
+                    table_pos: Some(JsTablePos::from(table_pos)),
+                });
+            }
         }
 
         // Otherwise check data_tables
@@ -315,6 +439,7 @@ impl Sheet {
                 return_info,
                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
                 last_modified: data_table.last_modified.timestamp_millis(),
+                table_pos: None,
             })
         } else {
             None
@@ -376,6 +501,7 @@ mod test {
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
                 cells_accessed: Some(Default::default()),
                 last_modified,
+                table_pos: None,
             })
         );
         let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 }, gc.a1_context());
@@ -394,6 +520,7 @@ mod test {
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
                 cells_accessed: Some(Default::default()),
                 last_modified,
+                table_pos: None,
             })
         );
         assert_eq!(

@@ -134,6 +134,18 @@ impl GridController {
                 Operation::ComputeCodeSelection { .. } => {
                     self.execute_compute_code_selection(transaction, op);
                 }
+                // MultiSheetPos operations for in-table code
+                Operation::ComputeCodeMultiPos { .. } => {
+                    self.execute_compute_code_multi_pos(transaction, op);
+                }
+                Operation::SetDataTableMultiPos { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_set_data_table_multi_pos(transaction, op),
+                    );
+                }
+                Operation::SetComputeCodeMultiPos { .. } => {
+                    self.execute_set_compute_code_multi_pos(transaction, op);
+                }
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);

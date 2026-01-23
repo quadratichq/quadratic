@@ -6,7 +6,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, JsTablePos } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
@@ -38,14 +38,21 @@ export async function doubleClickCell(options: {
   let isSingleCell =
     codeCell !== undefined && codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
 
-  // If not found in client-side cache, check if it's a single-cell code cell via core API
-  // We also capture the code so we can pass it as initialCode (avoids a second API call)
+  // Always check via core API to get the actual code for any code cell.
+  // This ensures we have the code for:
+  // - Cells not in client-side cache
+  // - Import tables (to detect in-table code cells)
+  // - Cached in-table code cells (need to fetch code each time)
+  // - Any other code cell (for consistent behavior)
   let singleCellCode: string | undefined;
-  if (!language) {
-    const editCell = await quadraticCore.getEditCell(sheets.current, column, row);
-    if (editCell?.codeCell) {
-      language = editCell.codeCell.language;
-      singleCellCode = editCell.codeCell.code;
+  let editCellTablePos: JsTablePos | undefined;
+  const editCell = await quadraticCore.getEditCell(sheets.current, column, row);
+  if (editCell?.codeCell) {
+    language = editCell.codeCell.language;
+    singleCellCode = editCell.codeCell.code;
+    editCellTablePos = editCell.codeCell.tablePos;
+    // In-table code cells are also single-cell from a UI perspective
+    if (editCellTablePos) {
       isSingleCell = true;
     }
   }
@@ -57,10 +64,11 @@ export async function doubleClickCell(options: {
     const formula = language === 'Formula';
     const file_import = language === 'Import';
 
-    // For single-cell code cells detected via getEditCell, use the clicked position
-    // For table code cells, use the table's anchor position
-    const codeCellX = codeCell?.x ?? column;
-    const codeCellY = codeCell?.y ?? row;
+    // For in-table code cells (detected via getEditCell with tablePos), use the clicked position
+    // so getCodeCell can find the correct nested code cell.
+    // For regular table code cells, use the table's anchor position.
+    const codeCellX = editCellTablePos ? column : (codeCell?.x ?? column);
+    const codeCellY = editCellTablePos ? row : (codeCell?.y ?? row);
     const lastModified = codeCell ? Number(codeCell.last_modified) : Date.now();
 
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
@@ -82,6 +90,7 @@ export async function doubleClickCell(options: {
             language,
             lastModified,
             isSingleCell,
+            tablePos: editCellTablePos ?? codeCell?.table_pos ?? undefined,
           },
           showCellTypeMenu: false,
           initialCode: singleCellCode ?? '',
@@ -100,13 +109,10 @@ export async function doubleClickCell(options: {
       }
       // editing inside data table (only applies to table code cells, not single-cell)
       else if (hasPermission && file_import && codeCell) {
-        // can't create formula inside data table
-        if (cell?.startsWith('=')) {
-          pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-        }
-
         // check column header or table value
-        else {
+        if (cell?.startsWith('=')) {
+          pixiAppSettings.changeInput(true, cell, cursorMode);
+        } else {
           const isSpillOrError =
             codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
           const isTableName = codeCell.show_name && row === codeCell.y;
@@ -156,6 +162,7 @@ export async function doubleClickCell(options: {
               language,
               lastModified,
               isSingleCell,
+              tablePos: editCellTablePos ?? codeCell?.table_pos ?? undefined,
             },
             initialCode: singleCellCode ?? '',
             showCellTypeMenu: false,
