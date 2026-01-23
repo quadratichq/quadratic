@@ -149,7 +149,9 @@ impl Grid {
             );
 
             // Update CellValue::Code cells
-            sheet.replace_column_name_in_code_value_cells(table_name, old_name, new_name, a1_context);
+            sheet.replace_column_name_in_code_value_cells(
+                table_name, old_name, new_name, a1_context,
+            );
         }
     }
 
@@ -725,11 +727,22 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     /// If there's a nested code cell at this position, returns its output instead.
+    /// CellValue::Code in the value array takes precedence over nested table outputs.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.has_spill() || self.has_error() {
             Some(CellValue::Blank)
         } else {
-            // Check for nested code cell at this position first
+            // First check if there's a CellValue::Code in the value array at this position.
+            // CellValue::Code always takes precedence over nested table outputs, because
+            // users may place new code cells in positions that were previously covered
+            // by another code cell's multi-row output.
+            if let Some(cell_value) = self.display_value_at((x, y).into()).ok() {
+                if matches!(cell_value, CellValue::Code(_)) {
+                    return Some(cell_value.clone());
+                }
+            }
+
+            // Then check for nested code cell outputs
             // The nested table position is stored using data coordinates (after header adjustment)
             if let Some(nested_tables) = &self.tables {
                 let y_adjustment = self.y_adjustment(true) as u32;
@@ -754,11 +767,22 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
     /// If there's a nested code cell at this position, returns its output instead.
+    /// CellValue::Code in the value array takes precedence over nested table outputs.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.has_spill() || self.has_error() {
             None
         } else {
-            // Check for nested code cell at this position first
+            // First check if there's a CellValue::Code in the value array at this position.
+            // CellValue::Code always takes precedence over nested table outputs, because
+            // users may place new code cells in positions that were previously covered
+            // by another code cell's multi-row output.
+            if let Some(cell_value) = self.display_value_at((x, y).into()).ok() {
+                if matches!(cell_value, CellValue::Code(_)) {
+                    return Some(cell_value);
+                }
+            }
+
+            // Then check for nested code cell outputs
             if let Some(nested_tables) = &self.tables {
                 let y_adjustment = self.y_adjustment(true) as u32;
                 if y >= y_adjustment {
@@ -817,9 +841,7 @@ impl DataTable {
 
             match &self.value {
                 Value::Single(v) => extract_output(v),
-                Value::Array(a) => {
-                    a.get(x, y).map(extract_output).unwrap_or(CellValue::Blank)
-                }
+                Value::Array(a) => a.get(x, y).map(extract_output).unwrap_or(CellValue::Blank),
                 Value::Tuple(_) | Value::Lambda(_) => CellValue::Error(Box::new(
                     // should never happen
                     RunErrorMsg::InternalError("tuple or lambda saved as code run result".into())
