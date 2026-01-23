@@ -633,7 +633,7 @@ export class Control {
       this.connection = spawn("./quadratic-connection", [], {
         signal: this.signals.connection.signal,
         cwd: "quadratic-connection/target/debug",
-        env: { ...process.env, RUST_LOG: "info" },
+        env: { ...process.env, RUST_LOG: "info,object_store=warn" },
       });
     } else {
       this.connection = spawn(
@@ -644,7 +644,7 @@ export class Control {
         {
           signal: this.signals.connection.signal,
           cwd: "quadratic-connection",
-          env: { ...process.env, RUST_LOG: "info" },
+          env: { ...process.env, RUST_LOG: "info,object_store=warn" },
         },
       );
     }

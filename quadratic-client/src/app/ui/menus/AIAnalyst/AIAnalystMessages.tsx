@@ -334,7 +334,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   }, [promptSuggestionsCount, scrollToBottom]);
 
   if (messagesCount === 0) {
-    return null;
+    // Return an empty placeholder to maintain grid layout structure
+    // This ensures the form stays at the bottom in the correct grid row
+    return <div />;
   }
 
   return (

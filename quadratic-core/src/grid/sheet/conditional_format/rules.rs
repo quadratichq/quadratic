@@ -569,7 +569,7 @@ impl ConditionalFormatRule {
                 format!(
                     "LEFT({}, {})=\"{}\"",
                     anchor,
-                    value.len(),
+                    value.chars().count(),
                     escape_formula_string(value)
                 )
             }
@@ -577,7 +577,7 @@ impl ConditionalFormatRule {
                 format!(
                     "RIGHT({}, {})=\"{}\"",
                     anchor,
-                    value.len(),
+                    value.chars().count(),
                     escape_formula_string(value)
                 )
             }
