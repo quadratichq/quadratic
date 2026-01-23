@@ -117,6 +117,7 @@ fn upgrade_output_value(value: current::OutputValueSchema) -> v1_13::OutputValue
 
 fn upgrade_table(table: current::DataTableSchema) -> v1_13::DataTableSchema {
     v1_13::DataTableSchema {
+        id: None, // Will be generated during import
         kind: table.kind,
         name: table.name,
         value: upgrade_output_value(table.value),

@@ -1,7 +1,5 @@
 //! Display TableRef as a string.
 
-use std::fmt;
-
 use super::*;
 
 impl TableRef {
@@ -9,12 +7,14 @@ impl TableRef {
     pub fn is_default(&self) -> bool {
         self.data && !self.headers && !self.totals && self.col_range == ColRange::All
     }
-}
 
-impl fmt::Display for TableRef {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    /// Converts the TableRef to a string using the A1Context to resolve the table name.
+    /// Returns None if the table is not found in the context.
+    pub fn to_string_with_context(&self, a1_context: &A1Context) -> Option<String> {
+        let table_name = self.table_name(a1_context)?;
+
         if self.is_default() {
-            return write!(f, "{}", self.table_name);
+            return Some(table_name.to_string());
         }
 
         let mut entries = vec![];
@@ -35,14 +35,15 @@ impl fmt::Display for TableRef {
                 }
             }
         }
+
         if entries.is_empty() && matches!(self.col_range, ColRange::Col(_)) {
-            write!(f, "{}{}", self.table_name, self.col_range)
+            Some(format!("{}{}", table_name, self.col_range))
         } else {
             let col = self.col_range.to_string();
             if !col.is_empty() {
                 entries.push(col);
             }
-            write!(f, "{}[{}]", self.table_name, entries.join(","))
+            Some(format!("{}[{}]", table_name, entries.join(",")))
         }
     }
 }
@@ -59,7 +60,10 @@ mod tests {
         let table_ref = TableRef::parse("Table1", &context).unwrap_or_else(|e| {
             panic!("Failed to parse Table1: {e}");
         });
-        assert_eq!(table_ref.to_string(), "Table1");
+        assert_eq!(
+            table_ref.to_string_with_context(&context),
+            Some("Table1".to_string())
+        );
     }
 
     #[test]
@@ -85,7 +89,11 @@ mod tests {
         for test in tests {
             let table_ref = TableRef::parse(test, &context)
                 .unwrap_or_else(|e| panic!("Failed to parse {test}: {e}"));
-            assert_eq!(table_ref.to_string(), test, "{test}");
+            assert_eq!(
+                table_ref.to_string_with_context(&context),
+                Some(test.to_string()),
+                "{test}"
+            );
         }
     }
 }

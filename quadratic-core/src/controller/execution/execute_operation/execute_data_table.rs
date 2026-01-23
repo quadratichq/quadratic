@@ -29,7 +29,7 @@ impl GridController {
     ) {
         if transaction.is_user_ai_undo_redo() {
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
-            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.id));
         }
     }
 

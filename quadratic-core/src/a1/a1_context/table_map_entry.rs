@@ -2,11 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, Rect, SheetPos,
-    grid::{CodeCellLanguage, DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId, TableId},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMapEntry {
+    pub table_id: TableId,
     pub sheet_id: SheetId,
     pub table_name: String,
     pub visible_columns: Vec<String>,
@@ -23,6 +24,7 @@ impl TableMapEntry {
     pub fn from_table(sheet_id: SheetId, pos: Pos, table: &DataTable) -> Self {
         if table.has_spill() || table.has_error() {
             Self {
+                table_id: table.id,
                 sheet_id,
                 table_name: table.name().to_string(),
                 visible_columns: table.columns_map(false),
@@ -36,6 +38,7 @@ impl TableMapEntry {
             }
         } else {
             Self {
+                table_id: table.id,
                 sheet_id,
                 table_name: table.name().to_string(),
                 visible_columns: table.columns_map(false),
@@ -201,6 +204,7 @@ impl TableMapEntry {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
+            table_id: TableId::new(),
             sheet_id: SheetId::TEST,
             table_name: table_name.to_string(),
             visible_columns,

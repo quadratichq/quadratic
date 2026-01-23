@@ -149,6 +149,9 @@ pub struct DataTableColumnSchema {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableSchema {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub id: Option<IdSchema>,
+
     pub kind: DataTableKindSchema,
 
     pub name: String,

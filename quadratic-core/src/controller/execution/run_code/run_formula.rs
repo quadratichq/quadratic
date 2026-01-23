@@ -306,6 +306,7 @@ mod test {
                 None,
                 None,
             )
+            .with_id(result.id)
             .with_last_modified(result.last_modified)
         );
     }
@@ -396,6 +397,7 @@ mod test {
             expected_result.default_header_with_name(|i| format!("{}", i - 1), None);
         expected_result = expected_result
             .with_column_headers(column_headers)
+            .with_id(result.id)
             .with_last_modified(result.last_modified);
 
         pretty_print_data_table(&result, None, None);

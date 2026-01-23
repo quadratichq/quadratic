@@ -214,7 +214,7 @@ mod test {
     use crate::{
         Array, Pos,
         cellvalue::Import,
-        grid::{DataTableKind, Sheet, data_table::test_util::new_data_table},
+        grid::{DataTableKind, Sheet, TableId, data_table::test_util::new_data_table},
     };
     use chrono::Utc;
 
@@ -300,6 +300,7 @@ mod test {
         let array = Array::from_str_vec(vec![vec!["first"], vec!["second"]], true).unwrap();
         let pos = Pos { x: 1, y: 1 };
         let t = DataTable {
+            id: TableId::new(),
             kind: DataTableKind::Import(Import::new("test.csv".to_string())),
             name: "Table 1".into(),
             column_headers: None,
@@ -355,6 +356,7 @@ mod test {
                 .unwrap();
         let pos = Pos { x: 1, y: 1 };
         let mut t = DataTable {
+            id: TableId::new(),
             kind: DataTableKind::Import(Import::new("test.csv".to_string())),
             name: "Table 1".into(),
             column_headers: None,

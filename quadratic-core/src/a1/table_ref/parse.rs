@@ -23,10 +23,7 @@ impl TableRef {
         Err(A1Error::InvalidTableRef("Invalid table name".into()))
     }
 
-    /// Parse a table reference and returns a list of TableRefs. A list is
-    /// required because we break non-rectangular regions into multiple
-    /// TableRefs, For example: `Table1[[Column 1],[Column 3]]` will become
-    /// `Table1[Column 1]` and `Table1[Column 3]`.
+    /// Parse a table reference and returns a TableRef.
     pub fn parse(s: &str, a1_context: &A1Context) -> Result<TableRef, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
         let Some(table) = a1_context.try_table(&table_name) else {
@@ -36,7 +33,7 @@ impl TableRef {
         // if it's just the table name, return the entire TableRef
         if remaining.trim().is_empty() {
             return Ok(Self {
-                table_name: table.table_name.to_owned(),
+                table_id: table.table_id,
                 data: true,
                 headers: false,
                 totals: false,
@@ -113,7 +110,7 @@ impl TableRef {
         }
 
         Ok(TableRef {
-            table_name: table.table_name.to_owned(),
+            table_id: table.table_id,
             data: data.unwrap_or(true),
             headers,
             totals,
@@ -139,7 +136,7 @@ mod tests {
     fn test_simple_table_ref() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         let table_ref = TableRef::parse("Table1", &context).unwrap();
-        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.table_name(&context), Some("Table1"));
         assert!(table_ref.data);
         assert!(!table_ref.headers);
         assert_eq!(table_ref.col_range, ColRange::All);
@@ -150,7 +147,7 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         println!("context: {context:?}");
         let table_ref = TableRef::parse("table1", &context).unwrap();
-        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.table_name(&context), Some("Table1"));
     }
 
     #[test]
@@ -171,7 +168,7 @@ mod tests {
             &[("Table1", &["Column 1", "Column 2"], Rect::test_a1("A1:B2"))],
         );
         let table_ref = TableRef::parse("Table1[Column 1]", &context).unwrap();
-        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.table_name(&context), Some("Table1"));
         assert_eq!(table_ref.col_range, ColRange::Col("Column 1".to_string()));
     }
 
@@ -179,7 +176,7 @@ mod tests {
     fn test_table_with_headers() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         let table_ref = TableRef::parse("Table1[[#HEADERS]]", &context).unwrap();
-        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.table_name(&context), Some("Table1"));
         assert!(table_ref.headers);
     }
 
@@ -194,7 +191,7 @@ mod tests {
             )],
         );
         let table_ref = TableRef::parse("Table1[[#DATA],[#HEADERS],[Column 1]]", &context).unwrap();
-        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.table_name(&context), Some("Table1"));
         assert!(table_ref.data);
         assert!(table_ref.headers);
         assert_eq!(table_ref.col_range, ColRange::Col("Column 1".to_string()));
@@ -204,7 +201,7 @@ mod tests {
     fn test_table_parameters_all() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         let table_ref = TableRef::parse("Table1[#ALL]", &context).unwrap();
-        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.table_name(&context), Some("Table1"));
         assert!(table_ref.data);
         assert!(table_ref.headers);
         assert!(table_ref.totals);
@@ -222,7 +219,7 @@ mod tests {
         for case in cases {
             let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
             let table_ref = TableRef::parse(case, &context).unwrap();
-            assert_eq!(table_ref.table_name, "Table1");
+            assert_eq!(table_ref.table_name(&context), Some("Table1"));
             assert!(!table_ref.data);
             assert!(table_ref.headers);
             assert!(!table_ref.totals);

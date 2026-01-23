@@ -3,6 +3,7 @@ use itertools::Itertools;
 use crate::{
     OldSelection, Rect, SheetPos, SheetRect,
     a1::{A1Context, ColRange, RefRangeBounds, TableRef},
+    grid::TableId,
 };
 
 use super::*;
@@ -77,18 +78,12 @@ impl A1Selection {
     }
 
     /// Creates a selection with a table (only data)
-    pub fn table(pos: SheetPos, name: &str) -> Self {
+    pub fn table(pos: SheetPos, table_id: TableId) -> Self {
         Self {
             sheet_id: pos.sheet_id,
             cursor: pos.into(),
             ranges: vec![CellRefRange::Table {
-                range: TableRef {
-                    table_name: name.to_string(),
-                    data: true,
-                    headers: false,
-                    totals: false,
-                    col_range: ColRange::All,
-                },
+                range: TableRef::new(table_id),
             }],
         }
     }
@@ -144,13 +139,13 @@ impl A1Selection {
                 cursor,
                 ranges: ranges
                     .into_iter()
-                    .map(|range| CellRefRange::Table {
+                    .map(|col_range| CellRefRange::Table {
                         range: TableRef {
-                            table_name: table_entry.table_name.clone(),
+                            table_id: table_entry.table_id,
                             data: true,
                             headers: false,
                             totals: false,
-                            col_range: range,
+                            col_range,
                         },
                     })
                     .collect(),

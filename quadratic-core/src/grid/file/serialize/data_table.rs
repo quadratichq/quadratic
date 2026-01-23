@@ -10,7 +10,7 @@ use crate::{
     ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
-        CellsAccessed, CodeRun, DataTable, DataTableKind, SheetId,
+        CellsAccessed, CodeRun, DataTable, DataTableKind, SheetId, TableId,
         block::SameValue,
         data_table::{
             column_header::DataTableColumnHeader,
@@ -281,7 +281,12 @@ pub(crate) fn import_data_table_builder(
 
     for (pos, data_table) in data_tables.into_iter() {
         let pos = Pos { x: pos.x, y: pos.y };
+        let id = data_table
+            .id
+            .and_then(|id| id.id.parse().ok())
+            .unwrap_or_else(TableId::new);
         let mut data_table = DataTable {
+            id,
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
                     DataTableKind::CodeRun(import_code_run_builder(*code_run)?)
@@ -563,6 +568,9 @@ pub(crate) fn export_data_tables(
             });
 
             let data_table = current::DataTableSchema {
+                id: Some(current::IdSchema {
+                    id: data_table.id.to_string(),
+                }),
                 kind,
                 name,
                 value,

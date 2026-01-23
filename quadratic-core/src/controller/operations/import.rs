@@ -1488,6 +1488,7 @@ mod test {
             Operation::SetDataTable { data_table, .. } => data_table,
             _ => panic!("Expected SetDataTable operation"),
         };
+        expected_data_table.id = data_table.as_ref().unwrap().id;
         expected_data_table.last_modified = data_table.as_ref().unwrap().last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 

@@ -7,7 +7,8 @@ use crate::{
     controller::GridController,
     formulas::convert_rc_to_a1,
     grid::{
-        CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId, js_types::JsSnackbarSeverity,
+        CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId, TableId,
+        js_types::JsSnackbarSeverity,
     },
     util::now,
 };
@@ -85,6 +86,7 @@ impl GridController {
             ops.push(Operation::SetDataTable {
                 sheet_pos,
                 data_table: Some(DataTable {
+                    id: TableId::new(),
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
@@ -120,6 +122,7 @@ impl GridController {
             ops.push(Operation::SetDataTable {
                 sheet_pos,
                 data_table: Some(DataTable {
+                    id: TableId::new(),
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,

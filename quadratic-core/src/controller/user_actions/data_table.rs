@@ -482,11 +482,13 @@ mod tests {
         );
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 5);
 
+        let table_id = gc.sheet(sheet_id).data_table_at(&pos).unwrap().id;
         expect_js_call(
             "jsSetCursor",
-            serde_json::to_string(&A1Selection::table(sheet_pos, file_name)).unwrap(),
+            serde_json::to_string(&A1Selection::table(sheet_pos, table_id)).unwrap(),
             true,
         );
+        let _ = file_name; // silence unused warning
 
         // let data_table = sheet.data_table_mut_at(&data_table_pos).unwrap();
         // data_table.insert_column(0, "Column 1".into());

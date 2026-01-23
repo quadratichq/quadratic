@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{CodeCellLanguage, DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId, TableId},
     util::case_fold_ascii,
 };
 
@@ -13,21 +13,28 @@ use super::{JsTableInfo, TableMapEntry};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
-    tables: IndexMap<String, TableMapEntry>,
+    /// Primary storage by TableId
+    tables_by_id: HashMap<TableId, TableMapEntry>,
 
-    sheet_pos_to_table: HashMap<SheetPos, String>,
+    /// Case-folded table name → TableId lookup
+    name_to_id: IndexMap<String, TableId>,
+
+    /// SheetPos (table anchor) → TableId lookup
+    sheet_pos_to_id: HashMap<SheetPos, TableId>,
 }
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
+        let table_id = table_map_entry.table_id;
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
         let sheet_pos = table_map_entry
             .bounds
             .min
             .to_sheet_pos(table_map_entry.sheet_id);
-        self.sheet_pos_to_table
-            .insert(sheet_pos, table_name_folded.clone());
-        self.tables.insert(table_name_folded, table_map_entry);
+
+        self.sheet_pos_to_id.insert(sheet_pos, table_id);
+        self.name_to_id.insert(table_name_folded, table_id);
+        self.tables_by_id.insert(table_id, table_map_entry);
     }
 
     pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
@@ -36,45 +43,69 @@ impl TableMap {
     }
 
     pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id))
-            && let Some(table) = self.tables.get(&table_name)
+        if let Some(table_id) = self.sheet_pos_to_id.remove(&pos.to_sheet_pos(sheet_id))
+            && let Some(table) = self.tables_by_id.get(&table_id)
             && table.sheet_id == sheet_id
             && table.bounds.min == pos
         {
-            self.tables.swap_remove(&table_name);
+            let table_name_folded = case_fold_ascii(&table.table_name);
+            self.name_to_id.swap_remove(&table_name_folded);
+            self.tables_by_id.remove(&table_id);
         }
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        self.sheet_pos_to_table.retain(|sheet_pos, name| {
-            if sheet_pos.sheet_id == sheet_id {
-                self.tables.swap_remove(name);
-                false
-            } else {
-                true
+        let ids_to_remove: Vec<TableId> = self
+            .sheet_pos_to_id
+            .iter()
+            .filter(|(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
+            .map(|(_, id)| *id)
+            .collect();
+
+        for table_id in ids_to_remove {
+            if let Some(table) = self.tables_by_id.remove(&table_id) {
+                let table_name_folded = case_fold_ascii(&table.table_name);
+                self.name_to_id.swap_remove(&table_name_folded);
+                self.sheet_pos_to_id
+                    .remove(&table.bounds.min.to_sheet_pos(table.sheet_id));
             }
-        });
+        }
     }
 
     pub fn sort(&mut self) {
-        self.tables
+        self.name_to_id
             .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
+    }
+
+    /// Finds a table by TableId.
+    pub fn try_table_by_id(&self, table_id: TableId) -> Option<&TableMapEntry> {
+        self.tables_by_id.get(&table_id)
     }
 
     /// Finds a table by name (case-insensitive).
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
-        self.tables
+        self.name_to_id
             .iter()
             .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
-            .map(|(_, entry)| entry)
+            .and_then(|(_, id)| self.tables_by_id.get(id))
     }
 
     /// Finds a table by name (case-insensitive).
     pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        self.tables
-            .iter_mut()
+        let table_id = self
+            .name_to_id
+            .iter()
             .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
-            .map(|(_, entry)| entry)
+            .map(|(_, id)| *id)?;
+        self.tables_by_id.get_mut(&table_id)
+    }
+
+    /// Finds the TableId for a table name (case-insensitive).
+    pub fn try_table_id(&self, table_name: &str) -> Option<TableId> {
+        self.name_to_id
+            .iter()
+            .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
+            .map(|(_, id)| *id)
     }
 
     /// Returns true if the table has a column with the given name.
@@ -93,17 +124,20 @@ impl TableMap {
 
     /// Returns an iterator over the table names in the table map.
     pub fn iter_table_names(&self) -> impl Iterator<Item = &String> {
-        self.tables.keys()
+        self.tables_by_id.values().map(|t| &t.table_name)
     }
 
     /// Returns an iterator over the table names in the table map in reverse order.
     pub fn iter_rev_table_names(&self) -> impl Iterator<Item = &String> {
-        self.tables.keys().rev()
+        self.name_to_id
+            .keys()
+            .rev()
+            .filter_map(|name| self.try_table(name).map(|t| &t.table_name))
     }
 
     /// Returns an iterator over the TableMapEntry in the table map.
     pub fn iter_table_values(&self) -> impl Iterator<Item = &TableMapEntry> {
-        self.tables.values()
+        self.tables_by_id.values()
     }
 
     /// Returns an iterator over the TableMapEntry in a sheet.
@@ -111,23 +145,26 @@ impl TableMap {
         &self,
         sheet_id: SheetId,
     ) -> impl Iterator<Item = &TableMapEntry> {
-        self.sheet_pos_to_table
+        self.sheet_pos_to_id
             .iter()
             .filter(move |(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
-            .flat_map(|(_, table_name)| self.tables.get(table_name))
+            .filter_map(|(_, table_id)| self.tables_by_id.get(table_id))
     }
 
     /// Returns a list of all table names in the table map.
     pub fn table_names(&self) -> Vec<String> {
-        self.tables.values().map(|t| t.table_name.clone()).collect()
+        self.tables_by_id
+            .values()
+            .map(|t| t.table_name.clone())
+            .collect()
     }
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        if let Some(table_name) = self.sheet_pos_to_table.get(&sheet_pos) {
-            self.tables.get(table_name)
+        if let Some(table_id) = self.sheet_pos_to_id.get(&sheet_pos) {
+            self.tables_by_id.get(table_id)
         } else {
-            self.tables.values().find(|table| {
+            self.tables_by_id.values().find(|table| {
                 table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
             })
         }
@@ -177,9 +214,9 @@ impl TableMap {
 
     /// Finds a table by position.
     pub fn table_at(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.sheet_pos_to_table
+        self.sheet_pos_to_id
             .get(&sheet_pos)
-            .and_then(|table_name| self.tables.get(table_name))
+            .and_then(|table_id| self.tables_by_id.get(table_id))
     }
 
     /// Inserts a test table into the table map.
@@ -207,13 +244,14 @@ impl TableMap {
     #[cfg(test)]
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
-        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
-            self.sheet_pos_to_table.remove(&sheet_pos);
-            Some(table)
-        } else {
-            None
+        if let Some(table_id) = self.name_to_id.swap_remove(&table_name_folded) {
+            if let Some(table) = self.tables_by_id.remove(&table_id) {
+                let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
+                self.sheet_pos_to_id.remove(&sheet_pos);
+                return Some(table);
+            }
         }
+        None
     }
 }
 
@@ -501,5 +539,69 @@ mod tests {
         assert_eq!(table3_info.sheet_id, SheetId::TEST.to_string());
         assert!(!table3_info.chart);
         assert_eq!(table3_info.language, CodeCellLanguage::Import);
+    }
+
+    #[test]
+    fn test_try_table_id() {
+        let mut map = TableMap::default();
+        map.test_insert(
+            "TestTable",
+            &["Col1", "Col2"],
+            None,
+            Rect::new(1, 1, 2, 3),
+            CodeCellLanguage::Import,
+        );
+
+        // Get the table and its ID
+        let table = map.try_table("TestTable").unwrap();
+        let table_id = table.table_id;
+
+        // Test try_table_id
+        assert_eq!(map.try_table_id("TestTable"), Some(table_id));
+        assert_eq!(map.try_table_id("testtable"), Some(table_id)); // Case insensitive
+        assert_eq!(map.try_table_id("TESTTABLE"), Some(table_id)); // Case insensitive
+        assert_eq!(map.try_table_id("NonExistent"), None);
+    }
+
+    #[test]
+    fn test_try_table_by_id() {
+        let mut map = TableMap::default();
+        map.test_insert(
+            "TestTable",
+            &["Col1", "Col2"],
+            None,
+            Rect::new(1, 1, 2, 3),
+            CodeCellLanguage::Import,
+        );
+
+        // Get the table ID
+        let table_id = map.try_table_id("TestTable").unwrap();
+
+        // Test try_table_by_id
+        let table = map.try_table_by_id(table_id).unwrap();
+        assert_eq!(table.table_name, "TestTable");
+        assert_eq!(table.table_id, table_id);
+
+        // Test with non-existent ID
+        assert!(map.try_table_by_id(TableId::new()).is_none());
+    }
+
+    #[test]
+    fn test_table_id_consistency() {
+        let mut map = TableMap::default();
+        map.test_insert(
+            "Table1",
+            &["A", "B"],
+            None,
+            Rect::new(1, 1, 2, 3),
+            CodeCellLanguage::Python,
+        );
+
+        // Get table by name and by ID should return the same entry
+        let table_by_name = map.try_table("Table1").unwrap();
+        let table_id = table_by_name.table_id;
+        let table_by_id = map.try_table_by_id(table_id).unwrap();
+
+        assert_eq!(table_by_name, table_by_id);
     }
 }

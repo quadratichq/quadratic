@@ -2660,7 +2660,7 @@ mod test {
         let sheet_id = first_sheet_id(&gc);
 
         let dt = test_create_html_chart(&mut gc, sheet_id, pos![A1], 5, 5);
-        let mut selection = A1Selection::table(pos![sheet_id!A1], dt.name());
+        let mut selection = A1Selection::table(pos![sheet_id!A1], dt.id);
         selection.cursor = pos![A1];
         let sheet = gc.sheet(sheet_id);
         let js_clipboard = sheet

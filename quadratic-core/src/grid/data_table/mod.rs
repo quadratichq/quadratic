@@ -35,7 +35,7 @@ use strum_macros::Display;
 pub use code_run::*;
 
 use super::sheet::borders::Borders;
-use super::{Grid, SheetFormatting, SheetId};
+use super::{Grid, SheetFormatting, SheetId, TableId};
 
 #[cfg(test)]
 mod test_util;
@@ -210,6 +210,7 @@ pub enum DataTableKind {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTable {
+    pub id: TableId,
     pub kind: DataTableKind,
     pub name: CellValue,
     pub value: Value,
@@ -296,6 +297,7 @@ impl DataTable {
         chart_output: Option<(u32, u32)>,
     ) -> Self {
         let mut data_table = DataTable {
+            id: TableId::new(),
             kind,
             name: name.into(),
             value,
@@ -328,6 +330,7 @@ impl DataTable {
 
     pub fn clone_without_values(&self) -> Self {
         Self {
+            id: self.id,
             kind: self.kind.clone(),
             name: self.name.clone(),
             value: Value::Single(CellValue::Blank),
@@ -360,6 +363,12 @@ impl DataTable {
     /// Apply a new last modified date to the DataTable.
     pub fn with_last_modified(mut self, last_modified: DateTime<Utc>) -> Self {
         self.last_modified = last_modified;
+        self
+    }
+
+    /// Apply a specific TableId to the DataTable (useful for testing).
+    pub fn with_id(mut self, id: TableId) -> Self {
+        self.id = id;
         self
     }
 
@@ -1020,6 +1029,7 @@ mod test {
             None,
             None,
         )
+        .with_id(data_table.id)
         .with_last_modified(data_table.last_modified);
 
         let expected_array_size = ArraySize::new(4, 6).unwrap();

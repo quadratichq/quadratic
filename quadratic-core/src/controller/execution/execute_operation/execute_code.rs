@@ -5,7 +5,10 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, data_table::DataTableTemplate},
+    grid::{
+        CodeCellLanguage, CodeRun, DataTable, DataTableKind, TableId,
+        data_table::DataTableTemplate,
+    },
     util::now,
     wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
@@ -131,7 +134,7 @@ impl GridController {
                 Ok(())
             })?;
 
-            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.id));
 
             transaction.forward_operations.push(op);
             transaction
@@ -175,7 +178,7 @@ impl GridController {
                 Ok(())
             })?;
 
-            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.id));
 
             transaction.add_from_code_run(
                 sheet_pos.sheet_id,
@@ -394,6 +397,7 @@ impl GridController {
         };
 
         DataTable {
+            id: TableId::new(),
             kind: DataTableKind::CodeRun(CodeRun {
                 language,
                 code,
