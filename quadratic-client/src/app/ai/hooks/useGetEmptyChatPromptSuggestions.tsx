@@ -17,6 +17,12 @@ export type EmptyChatPromptSuggestions = z.infer<
   (typeof AIToolsArgsSchema)[AITool.EmptyChatPromptSuggestions]
 >['prompt_suggestions'];
 
+export type CategorizedEmptyChatPromptSuggestions = z.infer<
+  (typeof AIToolsArgsSchema)[AITool.CategorizedEmptyChatPromptSuggestions]
+>;
+
+export type SuggestionCategory = keyof CategorizedEmptyChatPromptSuggestions;
+
 export const useGetEmptyChatPromptSuggestions = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { connections, isLoading: isConnectionsLoading } = useConnectionsFetcher();
@@ -138,5 +144,92 @@ ${
     [handleAIRequestToAPI, connections, isConnectionsLoading, getSummaryContext]
   );
 
-  return { getEmptyChatPromptSuggestions };
+  const getCategorizedEmptyChatPromptSuggestions = useRecoilCallback(
+    ({ snapshot }) =>
+      async ({
+        abortController,
+      }: {
+        abortController: AbortController;
+      }): Promise<CategorizedEmptyChatPromptSuggestions | undefined> => {
+        try {
+          // Get sheet data summary
+          const sheetDataSummary = await getSummaryContext();
+
+          // Check if the summary indicates empty file - don't request categorized suggestions for empty files
+          const firstMessage = sheetDataSummary[0];
+          if (firstMessage?.content && Array.isArray(firstMessage.content)) {
+            const firstContent = firstMessage.content[0];
+            if (firstContent && 'text' in firstContent && firstContent.text.includes('Empty file with no data')) {
+              return;
+            }
+          }
+
+          const messages: ChatMessage[] = [
+            // Include sheet data summary context first
+            ...sheetDataSummary,
+            {
+              role: 'user',
+              content: [
+                createTextContent(
+                  `Based on the spreadsheet data above, call the categorized_empty_chat_prompt_suggestions tool with exactly 3 suggestions per category. Each suggestion needs a short label (max 7 words) and a detailed prompt.
+
+The four categories are:
+1. enrich - Add derived columns, combine fields, look up related data
+2. clean - Fix formatting, remove duplicates, standardize values  
+3. visualize - Create charts and graphs
+4. analyze - Calculate statistics, find patterns, derive insights
+
+Make all suggestions specific to the actual data columns and values shown above.`
+                ),
+              ],
+              contextType: 'userPrompt',
+            },
+          ];
+
+          console.log('[getCategorizedEmptyChatPromptSuggestions] Making API request...');
+
+          const response = await handleAIRequestToAPI({
+            chatId: v4(),
+            source: 'GetEmptyChatPromptSuggestions',
+            messageSource: 'GetCategorizedEmptyChatPromptSuggestions',
+            modelKey: DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL,
+            messages,
+            signal: abortController.signal,
+            useStream: false,
+            toolName: AITool.CategorizedEmptyChatPromptSuggestions,
+            useToolsPrompt: false,
+            language: undefined,
+            useQuadraticContext: true,
+          });
+
+          console.log('[getCategorizedEmptyChatPromptSuggestions] Response:', response);
+          console.log('[getCategorizedEmptyChatPromptSuggestions] Tool calls:', response.toolCalls);
+          console.log(
+            '[getCategorizedEmptyChatPromptSuggestions] Looking for tool:',
+            AITool.CategorizedEmptyChatPromptSuggestions
+          );
+
+          const categorizedToolCall = response.toolCalls.find(
+            (toolCall) => toolCall.name === AITool.CategorizedEmptyChatPromptSuggestions
+          );
+
+          console.log('[getCategorizedEmptyChatPromptSuggestions] Found tool call:', categorizedToolCall);
+
+          if (categorizedToolCall) {
+            const argsObject = JSON.parse(categorizedToolCall.arguments);
+            console.log('[getCategorizedEmptyChatPromptSuggestions] Parsed args:', argsObject);
+            const args = aiToolsSpec[AITool.CategorizedEmptyChatPromptSuggestions].responseSchema.parse(argsObject);
+            console.log('[getCategorizedEmptyChatPromptSuggestions] Validated args:', args);
+            return args;
+          } else {
+            console.warn('[getCategorizedEmptyChatPromptSuggestions] No matching tool call found in response');
+          }
+        } catch (error) {
+          console.error('[getCategorizedEmptyChatPromptSuggestions] error: ', error);
+        }
+      },
+    [handleAIRequestToAPI, getSummaryContext]
+  );
+
+  return { getEmptyChatPromptSuggestions, getCategorizedEmptyChatPromptSuggestions };
 };

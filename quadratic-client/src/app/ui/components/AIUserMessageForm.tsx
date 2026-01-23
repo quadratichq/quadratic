@@ -378,13 +378,7 @@ export const AIUserMessageForm = memo(
     return (
       <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
-          <AIAnalystEmptyChatPromptSuggestions
-            submit={handleSubmit}
-            context={context}
-            setContext={setContext}
-            files={files}
-            importFiles={importFiles}
-          />
+          <AIAnalystEmptyChatPromptSuggestions submit={handleSubmit} setContext={setContext} />
         )}
 
         <form

@@ -1,8 +1,8 @@
 import {
   useGetEmptyChatPromptSuggestions,
-  type EmptyChatPromptSuggestions,
+  type CategorizedEmptyChatPromptSuggestions,
+  type SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -11,17 +11,17 @@ import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFi
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { EmptyChatSection } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AddIcon, PromptIcon } from '@/shared/components/Icons';
+import { AddIcon, PromptIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-// label and prompt are identical here, but the type requires both fields
-// for compatibility with AI-generated suggestions which may have different values
-const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
+// Default suggestions shown when the sheet is empty
+const defaultPromptSuggestions = [
   {
     label: 'What can you help me with in Quadratic?',
     prompt: 'What can you help me with in Quadratic?',
@@ -41,23 +41,82 @@ const ALL_IMPORT_FILE_TYPES = ['image/*', '.pdf', '.xlsx', '.xls', '.csv', '.par
 
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
-  context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
-  files: FileContent[];
-  importFiles: ImportFile[];
 }
+const SUGGESTION_CATEGORIES: { key: SuggestionCategory; label: string }[] = [
+  { key: 'enrich', label: 'Enrich' },
+  { key: 'clean', label: 'Clean' },
+  { key: 'visualize', label: 'Visualize' },
+  { key: 'analyze', label: 'Analyze' },
+];
+
+interface CategorizedSuggestionsSectionProps {
+  suggestions: CategorizedEmptyChatPromptSuggestions;
+  activeCategory: SuggestionCategory;
+  setActiveCategory: (category: SuggestionCategory) => void;
+  loading: boolean;
+  submit: (prompt: string) => void;
+}
+
+const CategorizedSuggestionsSection = memo(
+  ({ suggestions, activeCategory, setActiveCategory, loading, submit }: CategorizedSuggestionsSectionProps) => {
+    return (
+      <div className="relative flex w-full max-w-lg flex-col gap-3">
+        <h2 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          Suggestions
+          {loading && <SpinnerIcon className="text-primary" />}
+        </h2>
+        <Tabs
+          value={activeCategory}
+          onValueChange={(value) => setActiveCategory(value as SuggestionCategory)}
+          className="w-full"
+        >
+          <TabsList className="absolute -top-2 right-0 w-full justify-end">
+            {SUGGESTION_CATEGORIES.map(({ key, label }) => (
+              <TabsTrigger key={key} value={key} className="text-xs">
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {SUGGESTION_CATEGORIES.map(({ key }) => (
+            <TabsContent key={key} value={key} className="-mx-2 mt-0 flex flex-col">
+              {suggestions[key].map(({ label, prompt }, index) => (
+                <Button
+                  key={`${index}-${prompt}`}
+                  variant="ghost"
+                  className="h-auto w-full justify-start gap-2 whitespace-normal px-2 text-left text-sm font-normal text-foreground hover:text-foreground"
+                  onClick={() => {
+                    trackEvent('[AIAnalyst].submitCategorizedExamplePrompt', { category: key });
+                    submit(prompt);
+                  }}
+                >
+                  <PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />
+                  <span>{label}</span>
+                </Button>
+              ))}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+    );
+  }
+);
+
 export const AIAnalystEmptyChatPromptSuggestions = memo(
-  ({ submit, context, setContext, files, importFiles }: AIAnalystEmptyChatPromptSuggestionsProps) => {
-    const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
+  ({ submit, setContext }: AIAnalystEmptyChatPromptSuggestionsProps) => {
+    const [categorizedSuggestions, setCategorizedSuggestions] = useState<
+      CategorizedEmptyChatPromptSuggestions | undefined
+    >(undefined);
+    const [activeCategory, setActiveCategory] = useState<SuggestionCategory>('enrich');
     const [loading, setLoading] = useState(false);
     const abortControllerRef = useRef<AbortController | undefined>(undefined);
     // Initialize to undefined to avoid flash - only show import section once we know sheet is empty
     const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
     const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
-    const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
+    const { getCategorizedEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
     // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
-    const getEmptyChatPromptSuggestionsRef = useRef(getEmptyChatPromptSuggestions);
-    getEmptyChatPromptSuggestionsRef.current = getEmptyChatPromptSuggestions;
+    const getCategorizedEmptyChatPromptSuggestionsRef = useRef(getCategorizedEmptyChatPromptSuggestions);
+    getCategorizedEmptyChatPromptSuggestionsRef.current = getCategorizedEmptyChatPromptSuggestions;
 
     // Listen for sheet content changes to update suggestions when data is added/removed
     const handleChooseFile = useCallback(async () => {
@@ -163,44 +222,49 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, []);
 
     useEffect(() => {
+      // Wait until we know if sheet has data
+      if (sheetHasData === undefined) {
+        return;
+      }
+
+      // If sheet is empty, use default suggestions (no API call needed)
+      if (!sheetHasData) {
+        setCategorizedSuggestions(undefined);
+        setLoading(false);
+        return;
+      }
+
+      // Sheet has data - fetch categorized suggestions
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      const updatePromptSuggestions = async () => {
+      const fetchCategorizedSuggestions = async () => {
         setLoading(true);
 
         try {
-          const newSuggestions = await getEmptyChatPromptSuggestionsRef.current({
-            context,
-            files,
-            importFiles,
-            sheetHasData: sheetHasData ?? true, // Treat undefined as having data
+          const newCategorizedSuggestions = await getCategorizedEmptyChatPromptSuggestionsRef.current({
             abortController,
           });
-          // Only update state if this request wasn't aborted and we got valid suggestions
-          if (!abortController.signal.aborted && newSuggestions) {
-            setPromptSuggestions(newSuggestions);
+          if (!abortController.signal.aborted && newCategorizedSuggestions) {
+            setCategorizedSuggestions(newCategorizedSuggestions);
           }
         } catch (error) {
-          // Keep existing suggestions on error, just log the warning
           if (!abortController.signal.aborted) {
-            console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
+            console.warn('[AIAnalystEmptyChatPromptSuggestions] Error fetching categorized suggestions:', error);
           }
         }
 
-        // Only update loading state if this request wasn't aborted
         if (!abortController.signal.aborted) {
           setLoading(false);
         }
       };
 
-      updatePromptSuggestions();
+      fetchCategorizedSuggestions();
 
-      // Cleanup: abort on unmount or when dependencies change
       return () => {
         abortController.abort();
       };
-    }, [context, files, importFiles, sheetHasData]);
+    }, [sheetHasData]);
 
     useEffect(() => {
       if (aiAnalystLoading) {
@@ -228,7 +292,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     return (
       <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
-        {/* Import Data Section - always shown, with different text based on sheet content */}
+        {/* Import Data Section */}
         <div className="flex w-full max-w-lg flex-col items-center gap-3">
           <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-10">
             <div className="mb-3 flex items-center justify-center gap-1">
@@ -248,19 +312,30 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           </div>
         </div>
 
-        <EmptyChatSection
-          header="Suggestions"
-          isLoading={loading}
-          items={(promptSuggestions ?? defaultPromptSuggestions).map(({ prompt }, index) => ({
-            key: `${index}-${prompt}`,
-            icon: <PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />,
-            text: prompt,
-            onClick: () => {
-              trackEvent('[AIAnalyst].submitExamplePrompt');
-              submit(prompt);
-            },
-          }))}
-        />
+        {/* Suggestions Section */}
+        {sheetHasData && categorizedSuggestions ? (
+          <CategorizedSuggestionsSection
+            suggestions={categorizedSuggestions}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            loading={loading}
+            submit={submit}
+          />
+        ) : (
+          <EmptyChatSection
+            header="Suggestions"
+            isLoading={sheetHasData && loading}
+            items={defaultPromptSuggestions.map(({ prompt }, index) => ({
+              key: `${index}-${prompt}`,
+              icon: <PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />,
+              text: prompt,
+              onClick: () => {
+                trackEvent('[AIAnalyst].submitExamplePrompt');
+                submit(prompt);
+              },
+            }))}
+          />
+        )}
 
         <EmptyChatSection
           header="Connections"
