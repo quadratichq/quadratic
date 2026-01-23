@@ -675,7 +675,7 @@ class InlineEditorHandler {
       // When there are no spans (plain text with cell-level formatting), set the font family
       // directly so Monaco can use correct font metrics for cursor positioning.
       if (inlineEditorSpans.isActive()) {
-        inlineEditorMonaco.setFontFamily('OpenSans');
+        inlineEditorMonaco.setFontFamily("OpenSans, NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'");
         inlineEditorMonaco.setItalic(!!italic);
         inlineEditorMonaco.setBold(!!bold);
       } else {
@@ -687,7 +687,7 @@ class InlineEditorHandler {
         inlineEditorMonaco.setBold(false);
       }
     } else {
-      inlineEditorMonaco.setFontFamily('OpenSans');
+      inlineEditorMonaco.setFontFamily("OpenSans, NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'");
       inlineEditorMonaco.setItalic(false);
       inlineEditorMonaco.setBold(false);
     }
@@ -701,14 +701,15 @@ class InlineEditorHandler {
    * Get the font family name based on bold and italic formatting.
    */
   private getFontFamily = (bold: boolean, italic: boolean): string => {
+    const emojiFonts = ", NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'";
     if (bold && italic) {
-      return 'OpenSans-BoldItalic';
+      return 'OpenSans-BoldItalic' + emojiFonts;
     } else if (bold) {
-      return 'OpenSans-Bold';
+      return 'OpenSans-Bold' + emojiFonts;
     } else if (italic) {
-      return 'OpenSans-Italic';
+      return 'OpenSans-Italic' + emojiFonts;
     }
-    return 'OpenSans';
+    return 'OpenSans' + emojiFonts;
   };
 
   // Refreshes the format summary and updates the font display in the inline editor

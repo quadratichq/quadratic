@@ -39,7 +39,7 @@ try {
 // Match the runtime constants from emojis.ts
 const PAGE_SIZE = 1024;
 const CHARACTER_SIZE = 125;
-const SCALE_EMOJI = 0.81;
+const SCALE_EMOJI = 1.0;
 
 // Output directories
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'emojis');

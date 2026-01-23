@@ -380,7 +380,7 @@ class InlineEditorMonaco {
   private getFontForSpan = (bold: boolean, italic: boolean, fontSize: number): string => {
     const style = italic ? 'italic ' : '';
     const weight = bold ? 'bold ' : '';
-    return `${style}${weight}${fontSize}px OpenSans`;
+    return `${style}${weight}${fontSize}px OpenSans, NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'`;
   };
 
   removeSelection() {
@@ -745,7 +745,7 @@ class InlineEditorMonaco {
       },
       fontSize: DEFAULT_FONT_SIZE,
       lineHeight: LINE_HEIGHT,
-      fontFamily: 'OpenSans',
+      fontFamily: "OpenSans, NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'",
       fontWeight: 'normal',
       lineNumbers: 'off',
       lineNumbersMinChars: 0,
