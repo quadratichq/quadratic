@@ -5,6 +5,7 @@ use quadratic_core::{
     controller::{GridController, transaction_types::JsConnectionResult},
     grid::{ConnectionKind, SheetId},
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::Mutex;
 
@@ -139,6 +140,67 @@ pub(crate) async fn execute(
     };
 
     Ok((result, std_error))
+}
+
+/// Request body for stock prices API.
+#[derive(Debug, Serialize)]
+pub(crate) struct StockPricesRequest {
+    pub identifier: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<String>,
+}
+
+/// Response from stock prices API.
+#[derive(Debug, Deserialize)]
+pub(crate) struct StockPricesResponse {
+    #[serde(flatten)]
+    pub data: serde_json::Value,
+}
+
+/// Fetches stock prices from the connection service.
+pub(crate) async fn fetch_stock_prices(
+    connection_url: &str,
+    identifier: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
+) -> Result<serde_json::Value> {
+    let url = format!("{connection_url}/financial/stock-prices");
+
+    tracing::info!(
+        "[Connection] Fetching stock prices for {identifier} from {url}",
+    );
+
+    let request = StockPricesRequest {
+        identifier: identifier.to_string(),
+        start_date: start_date.map(String::from),
+        end_date: end_date.map(String::from),
+    };
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(&url)
+        .json(&request)
+        .send()
+        .await
+        .map_err(|e| CoreCloudError::Connection(format!("HTTP request failed: {}", e)))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(CoreCloudError::Connection(format!(
+            "Stock prices request failed with status {}: {}",
+            status, body
+        )));
+    }
+
+    let json_value: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| CoreCloudError::Connection(format!("Failed to parse response: {}", e)))?;
+
+    Ok(json_value)
 }
 
 #[cfg(test)]

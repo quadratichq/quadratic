@@ -7,6 +7,7 @@ use quadratic_core::controller::execution::run_code::get_cells::{
 use std::cell::RefCell;
 use std::ffi::CString;
 
+use crate::connection::fetch_stock_prices;
 use crate::error::Result;
 
 static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
@@ -112,6 +113,76 @@ pub(crate) fn create_get_cells_function(
     Ok(function.into())
 }
 
+/// Creates a Python function that wraps the Rust fetch_stock_prices function
+pub(crate) fn create_stock_prices_function(
+    py: Python,
+    connection_url: String,
+) -> PyResult<PyObject> {
+    let connection_url = RefCell::new(connection_url);
+
+    let function = pyo3::types::PyCFunction::new_closure(
+        py,
+        Some(c"rust_stock_prices"),
+        Some(c"Fetch stock prices from connection service"),
+        move |args, kwargs| -> PyResult<PyObject> {
+            // Extract identifier (required)
+            let identifier: String = args.get_item(0)?.extract()?;
+
+            // Extract optional start_date
+            let start_date: Option<String> = if args.len() > 1 {
+                args.get_item(1)?.extract().ok()
+            } else if let Some(kwargs) = kwargs {
+                kwargs
+                    .get_item("start_date")
+                    .ok()
+                    .flatten()
+                    .and_then(|v| v.extract().ok())
+            } else {
+                None
+            };
+
+            // Extract optional end_date
+            let end_date: Option<String> = if args.len() > 2 {
+                args.get_item(2)?.extract().ok()
+            } else if let Some(kwargs) = kwargs {
+                kwargs
+                    .get_item("end_date")
+                    .ok()
+                    .flatten()
+                    .and_then(|v| v.extract().ok())
+            } else {
+                None
+            };
+
+            let url = connection_url.borrow().clone();
+
+            // Use tokio runtime to call async function
+            let result = tokio::runtime::Runtime::new()
+                .map_err(|e| {
+                    PyErr::new::<PyException, _>(format!("Failed to create runtime: {}", e))
+                })?
+                .block_on(fetch_stock_prices(
+                    &url,
+                    &identifier,
+                    start_date.as_deref(),
+                    end_date.as_deref(),
+                ))
+                .map_err(|e| PyErr::new::<PyException, _>(e.to_string()))?;
+
+            // Convert serde_json::Value to Python object
+            Python::with_gil(|py| {
+                let json_str = serde_json::to_string(&result)
+                    .map_err(|e| PyErr::new::<PyException, _>(format!("JSON error: {}", e)))?;
+                let json_module = py.import("json")?;
+                let py_obj = json_module.call_method1("loads", (json_str,))?;
+                Ok(py_obj.unbind())
+            })
+        },
+    )?;
+
+    Ok(function.into())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -201,5 +272,40 @@ mod tests {
             let result = convert_cells_response(py, error_response, false);
             assert!(result.is_err());
         });
+    }
+
+    #[test]
+    fn test_create_stock_prices_function() {
+        Python::with_gil(|py| {
+            let func = create_stock_prices_function(py, "http://localhost:3003".to_string());
+            assert!(func.is_ok(), "Should create stock prices function");
+        });
+    }
+
+    #[tokio::test]
+    async fn test_fetch_stock_prices() {
+        // This test requires the connection service to be running
+        // Skip if not available
+        let result = fetch_stock_prices(
+            "http://localhost:3003",
+            "AAPL",
+            Some("2025-01-01"),
+            Some("2025-01-31"),
+        )
+        .await;
+
+        match result {
+            Ok(data) => {
+                println!("Stock prices data: {:?}", data);
+                assert!(
+                    data.is_object() || data.is_array(),
+                    "Should return JSON object or array"
+                );
+            }
+            Err(e) => {
+                // Connection service may not be running in CI
+                println!("Skipping test - connection service not available: {}", e);
+            }
+        }
     }
 }

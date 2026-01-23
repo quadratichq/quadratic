@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use intrinio_rs::Client;
 use intrinio_rs::types::ApiResponseSecurityStockPrices;
 use serde::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use crate::intrinio::error::Intrinio as IntrinioError;
 
 const INTRINIO_BASE_URL: &str = "https://api-v2.intrinio.com";
 
+#[derive(Debug, Clone)]
 pub struct IntrinioClient {
     client: Client,
 }
@@ -20,13 +22,31 @@ impl IntrinioClient {
     }
 
     /// Get the stock prices for a security.
+    ///
+    /// # Arguments
+    ///
+    /// * `identifier` - The stock ticker symbol (e.g., "AAPL").
+    /// * `start_date` - Optional start date for the price data.
+    /// * `end_date` - Optional end date for the price data.
     pub async fn get_security_stock_prices(
         &self,
         identifier: &str,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
     ) -> Result<ApiResponseSecurityStockPrices> {
-        self.client
+        let mut request = self
+            .client
             .get_security_stock_prices()
-            .identifier(identifier)
+            .identifier(identifier);
+
+        if let Some(start) = start_date {
+            request = request.start_date(start);
+        }
+        if let Some(end) = end_date {
+            request = request.end_date(end);
+        }
+
+        request
             .send()
             .await
             .map(|response| response.into_inner())
@@ -75,7 +95,15 @@ mod tests {
     #[tokio::test]
     async fn test_get_security_stock_prices() {
         let client = new_intrinio_client();
-        let stock_prices = client.get_security_stock_prices("AAPL").await.unwrap();
+
+        // Test with date range
+        let start_date = NaiveDate::from_ymd_opt(2025, 1, 1);
+        let end_date = NaiveDate::from_ymd_opt(2025, 1, 31);
+        let stock_prices = client
+            .get_security_stock_prices("AAPL", start_date, end_date)
+            .await
+            .expect("get_security_stock_prices should succeed");
+
         println!("Stock prices: {:?}", stock_prices);
     }
 }

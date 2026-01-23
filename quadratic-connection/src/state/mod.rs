@@ -10,6 +10,7 @@ pub mod stats;
 use std::sync::Arc;
 
 use jsonwebtoken::jwk::JwkSet;
+use quadratic_rust_shared::intrinio::client::IntrinioClient;
 use reqwest::Client;
 use reqwest::redirect::Policy;
 use tokio::sync::Mutex;
@@ -25,12 +26,15 @@ use self::stats::Stats;
 pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) client: Client,
+    pub(crate) intrinio_client: IntrinioClient,
     pub(crate) schema_cache: SchemaCache,
     pub(crate) stats: Arc<Mutex<Stats>>,
 }
 
 impl State {
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
+        let intrinio_client = IntrinioClient::new(&config.intrinio_api_key);
+
         Ok(State {
             settings: Settings::new(config, jwks).await?,
             client: Client::builder()
@@ -38,6 +42,7 @@ impl State {
                 .redirect(Policy::limited(5))
                 .build()
                 .map_err(proxy_error)?,
+            intrinio_client,
             schema_cache: SchemaCache::new(),
             stats: Arc::new(Mutex::new(Stats::new())),
         })

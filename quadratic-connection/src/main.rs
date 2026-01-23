@@ -7,6 +7,7 @@ mod auth;
 mod config;
 mod connection;
 mod error;
+mod financial;
 mod header;
 mod health;
 mod proxy;
