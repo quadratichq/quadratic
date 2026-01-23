@@ -45,6 +45,9 @@ pub mod quadratic_api;
 #[cfg(feature = "quadratic-cloud")]
 pub mod quadratic_cloud;
 
+#[cfg(feature = "quadratic-database")]
+pub mod quadratic_database;
+
 #[cfg(feature = "sql")]
 pub mod sql;
 

@@ -204,7 +204,8 @@ const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: C
     return () => clearInterval(interval);
   }, [connection.uuid, connection.syncedConnectionUpdatedDate, teamUuid]);
 
-  const isDisabled = percentCompleted !== undefined && percentCompleted < 100;
+  const isSyncedConnection = connection.syncedConnectionUpdatedDate !== undefined;
+  const isDisabled = isSyncedConnection && percentCompleted !== undefined && percentCompleted < 100;
 
   return (
     <CommandItem

@@ -83,13 +83,18 @@ impl DatafusionConnection {
         SessionContext::new_with_config(config)
     }
 
-    /// Get the parquet path for a table in the object store (format: s3://synced-data/consolidated/{table}/{connection_id}/{table}.parquet)
+    /// Get the parquet path for a table in the object store (format: s3://bucket/{connection_id}/{table}/)
+    /// Returns the full URL path that DataFusion expects for register_parquet
     pub fn object_store_parquet_path(&self, table: &str) -> Result<String> {
         let connection_id = self
             .connection_id
             .ok_or_else(|| connect_error("Connection ID is required"))?;
 
-        Ok(format!("/{}/{}/", connection_id, table))
+        // DataFusion's register_parquet expects a full URL path
+        Ok(format!(
+            "{}/{}/{}/",
+            self.object_store_url, connection_id, table
+        ))
     }
 }
 

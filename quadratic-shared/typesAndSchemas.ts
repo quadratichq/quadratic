@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
+import { AILanguagePreferencesSchema, AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
@@ -273,6 +273,11 @@ export const ApiSchemas = {
         version: z.string(),
       })
     ),
+    userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id,
+      filePermissions: z.array(FilePermissionSchema),
+      teamPermissions: z.array(TeamPermissionSchema),
+    }),
   }),
   '/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
@@ -521,6 +526,15 @@ export const ApiSchemas = {
   }),
   '/v0/user/ai-rules.GET.response': z.object({
     aiRules: z.string().nullable(),
+  }),
+  '/v0/user/ai-languages.PATCH.request': z.object({
+    aiLanguages: AILanguagePreferencesSchema,
+  }),
+  '/v0/user/ai-languages.PATCH.response': z.object({
+    aiLanguages: AILanguagePreferencesSchema,
+  }),
+  '/v0/user/ai-languages.GET.response': z.object({
+    aiLanguages: AILanguagePreferencesSchema,
   }),
 
   /**

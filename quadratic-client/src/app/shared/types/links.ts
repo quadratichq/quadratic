@@ -10,6 +10,10 @@ export interface Link {
   linkText?: string;
   /** True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink). */
   isNakedUrl?: boolean;
+  /** Character start position of this hyperlink span within the cell text. */
+  spanStart?: number;
+  /** Character end position of this hyperlink span within the cell text. */
+  spanEnd?: number;
 }
 
 /** A hyperlink span within a cell, with character range and URL. */

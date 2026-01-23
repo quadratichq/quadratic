@@ -158,7 +158,8 @@ impl GridController {
         let mut ops = vec![];
         let selection = A1Selection::from_rect(delete_rect);
         ops.extend(self.delete_cells_operations(&selection, false));
-        ops.extend(self.clear_format_borders_operations(&selection, false));
+        // Skip RichText clearing because the cells are being deleted
+        ops.extend(self.clear_format_borders_operations(&selection, false, true));
         ops
     }
 

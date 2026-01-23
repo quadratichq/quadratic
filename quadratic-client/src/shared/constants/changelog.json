@@ -1,5 +1,29 @@
 [
   {
+    "version": "0.23.5",
+    "date": "2026-01-16",
+    "changes": ["Connections list UI improvements", "AI chat improvements", "Rich text fixes", "Bug fixes"],
+    "details": "<h2>Connections list UI improvements</h2>\n<p>The connections list has been redesigned with improved styling, better responsiveness, and a more intuitive layout for managing your data connections.</p>\n\n<h2>AI chat improvements</h2>\n<p>AI thinking text now remains visible in the chat history, making it easier to follow the AI's reasoning process. We've also improved how formatting tool cards display when working with multiple cell selections.</p>\n\n<h2>Rich text fixes</h2>\n<p>We've resolved several issues with rich text formatting including:</p>\n<ul>\n<li>Fixed width problems with multiple rich-text spans</li>\n<li>Fixed italic clipping on first letters</li>\n<li>Fixed strikethrough and underline rendering</li>\n<li>Improved cell-level formatting synchronization with the inline editor</li>\n</ul>\n\n<h2>Bug fixes</h2>\n<p>Numerous bug fixes and stability improvements including:</p>\n<ul>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3854\" target=\"_blank\" rel=\"noopener noreferrer\">Fixed hyperlinks remaining active over clipped areas</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3853\" target=\"_blank\" rel=\"noopener noreferrer\">Prevented deletion of tables being referenced by other cells</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3837\" target=\"_blank\" rel=\"noopener noreferrer\">Fixed single-cell code cell formatting issues</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3831\" target=\"_blank\" rel=\"noopener noreferrer\">Fixed file history UI navigation</a></li>\n<li><a href=\"https://github.com/quadratichq/quadratic/pull/3852\" target=\"_blank\" rel=\"noopener noreferrer\">Improved backend robustness when generating file checkpoints</a></li>\n</ul>"
+  },
+  {
+    "version": "0.23.4",
+    "date": "2026-01-19",
+    "changes": ["OpenAI bug fixes"],
+    "details": null
+  },
+  {
+    "version": "0.23.3",
+    "date": "2026-01-13",
+    "changes": [
+      "Rich text and hyperlinks",
+      "Additional formulas",
+      "Google Analytics connection",
+      "Performance improvements",
+      "Bug fixes"
+    ],
+    "details": "<h2>Rich text and hyperlinks</h2>\n<p>Cells now support rich text formatting with clickable hyperlinks. You can add, edit, and style links directly within cells for better navigation and interactivity in your spreadsheets.</p>\n\n<h2>Additional formulas</h2>\n<p>We've added many new formulas including financial functions (COUP*, IRR, NPV variants), date/time functions, and various utility formulas to expand spreadsheet capabilities.</p>\n\n<h2>Google Analytics connection</h2>\n<p>Connect directly to Google Analytics to pull your analytics data into Quadratic. Query multiple streams and tables, with full support for synced data and logging.</p>\n\n<h2>Performance improvements</h2>\n<p>Significant performance optimizations including improved bounds calculation, faster viewport-based hash rendering, and optimized fill operations for smoother editing of large spreadsheets.</p>\n\n<h2>Bug fixes</h2>\n<p>Numerous bug fixes and stability improvements including:</p>\n<ul>\n<li>Fixed formula autocomplete behavior</li>\n<li>Fixed sheet name trimming issues</li>\n<li>Fixed table number editing</li>\n<li>Improved text alignment and centering</li>\n<li>Fixed glyph sizing and spacing</li>\n<li>Improved file history with sequence numbers</li>\n</ul>"
+  },
+  {
     "version": "0.21.10",
     "date": "2024-12-20",
     "changes": ["Added in-app changelog viewer", "Improved settings menu navigation"],

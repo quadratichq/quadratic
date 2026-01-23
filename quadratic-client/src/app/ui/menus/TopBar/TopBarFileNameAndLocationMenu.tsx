@@ -80,7 +80,7 @@ function FileLocation() {
   let dashboardLink = null;
   if (ownerUserId && ownerUserId === userId) {
     // My private file
-    const label = 'My files';
+    const label = 'Personal';
     dashboardLink = isEmbed ? (
       label
     ) : (
@@ -103,7 +103,11 @@ function FileLocation() {
     dashboardLink = isEmbed ? (
       label
     ) : (
-      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} data-testid="file-location-link-shared-with-me">
+      <Link
+        to={ROUTES.TEAM_FILES_SHARED_WITH_ME(team.uuid)}
+        {...linkProps}
+        data-testid="file-location-link-shared-with-me"
+      >
         {label}
       </Link>
     );

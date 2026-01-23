@@ -36,6 +36,9 @@ pub enum FilesError {
     #[error("Error creating object store: {0}")]
     CreateObjectStore(String),
 
+    #[error("Error connecting to database: {0}")]
+    DatabaseConnect(String),
+
     #[error("Unable to export file {0}: {1}")]
     ExportFile(String, String),
 

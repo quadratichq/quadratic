@@ -2,7 +2,7 @@ name: Preview Delete
 
 on:
   pull_request:
-    types: [closed]
+    types: [closed, labeled]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-stack
@@ -15,10 +15,14 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      (github.event.action == 'closed' ||
+       (github.event.action == 'labeled' && github.event.label.name == 'no-preview'))
     timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
+      S3_BUCKET: e2e.quadratic-preview.com
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -43,3 +47,23 @@ jobs:
           else
             echo "Stack ${{ env.STACK_NAME }} does not exist"
           fi
+
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
+
+      - name: Update status comment
+        if: steps.preview-build-deploy-images-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            🗑️ Preview deleted (${{ github.event.action == 'closed' && 'PR closed' || 'no-preview label added' }})
+            📊 [Last E2E Report](https://${{ env.S3_BUCKET }}/${{ env.STACK_NAME }})
+          edit-mode: replace
