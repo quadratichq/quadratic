@@ -126,15 +126,15 @@ export const Component = () => {
         </Card>
       </div>
     );
-  }
-
-  return (
-    <div className="flex h-full items-center justify-center">
-      <FileLimitDialog />
-      <UpgradeDialog teamUuid={selectedTeamUuid} canManageBilling={true} />
-      <Card className="w-96">
-        <CardHeader>
-          <CardTitle>Duplicate file</CardTitle>
+  useEffect(() => {
+    if (singleTeamUuid) {
+      // We're here because single team was over limit
+      // Show the dialog with option to duplicate anyway
+      apiClient.teams.fileLimit(singleTeamUuid, true).then(({ maxEditableFiles }) => {
+        showFileLimitDialog(maxEditableFiles ?? 5, singleTeamUuid, () => doDuplicate(singleTeamUuid));
+      });
+    }
+  }, [singleTeamUuid, doDuplicate]);
           <CardDescription>Choose a team, the file will be duplicated to your personal files.</CardDescription>
         </CardHeader>
         <CardContent>
