@@ -42,13 +42,13 @@ export const getFreeEditableFileLimit = (): number => {
 };
 
 /**
- * Get the IDs of files that are editable for a team.
- * For free teams, returns the N most recently created file IDs.
- * For paid teams, returns all file IDs.
+ * Internal helper to get editable file IDs when isPaidPlan is already known.
+ * Avoids redundant getIsOnPaidPlan calls.
  */
-export const getEditableFileIds = async (team: Team | DecryptedTeam): Promise<number[]> => {
-  const isPaidPlan = await getIsOnPaidPlan(team);
-
+const getEditableFileIdsInternal = async (
+  team: Team | DecryptedTeam,
+  isPaidPlan: boolean
+): Promise<{ editableFileIds: number[]; allFileIds?: number[] }> => {
   if (isPaidPlan) {
     // Paid teams can edit all files - return all file IDs
     const allFiles = await dbClient.file.findMany({
@@ -56,11 +56,10 @@ export const getEditableFileIds = async (team: Team | DecryptedTeam): Promise<nu
         ownerTeamId: team.id,
         deleted: false,
       },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
-    return allFiles.map((f) => f.id);
+    const fileIds = allFiles.map((f) => f.id);
+    return { editableFileIds: fileIds, allFileIds: fileIds };
   }
 
   // Free teams: return only the N most recently created file IDs
@@ -74,12 +73,21 @@ export const getEditableFileIds = async (team: Team | DecryptedTeam): Promise<nu
       createdDate: 'desc',
     },
     take: limit,
-    select: {
-      id: true,
-    },
+    select: { id: true },
   });
 
-  return editableFiles.map((f) => f.id);
+  return { editableFileIds: editableFiles.map((f) => f.id) };
+};
+
+/**
+ * Get the IDs of files that are editable for a team.
+ * For free teams, returns the N most recently created file IDs.
+ * For paid teams, returns all file IDs.
+ */
+export const getEditableFileIds = async (team: Team | DecryptedTeam): Promise<number[]> => {
+  const isPaidPlan = await getIsOnPaidPlan(team);
+  const { editableFileIds } = await getEditableFileIdsInternal(team, isPaidPlan);
+  return editableFileIds;
 };
 
 /**
@@ -92,7 +100,7 @@ export const isFileEditRestricted = async (team: Team | DecryptedTeam, fileId: n
     return false;
   }
 
-  const editableFileIds = await getEditableFileIds(team);
+  const { editableFileIds } = await getEditableFileIdsInternal(team, isPaidPlan);
   return !editableFileIds.includes(fileId);
 };
 
@@ -110,32 +118,30 @@ export const getFileLimitInfo = async (
 }> => {
   const isPaidPlan = await getIsOnPaidPlan(team);
 
-  const totalFiles = await dbClient.file.count({
-    where: {
-      ownerTeamId: team.id,
-      deleted: false,
-    },
-  });
-
   if (isPaidPlan) {
-    // Paid teams have no limit
-    const allFiles = await dbClient.file.findMany({
+    // Paid teams have no limit - single query to get all file IDs
+    const { editableFileIds, allFileIds } = await getEditableFileIdsInternal(team, isPaidPlan);
+    return {
+      isOverLimit: false,
+      totalFiles: allFileIds!.length,
+      maxEditableFiles: Infinity,
+      editableFileIds,
+    };
+  }
+
+  // Free teams: need total count and editable file IDs
+  // Run both queries in parallel to minimize latency
+  const [totalFiles, { editableFileIds }] = await Promise.all([
+    dbClient.file.count({
       where: {
         ownerTeamId: team.id,
         deleted: false,
       },
-      select: { id: true },
-    });
-    return {
-      isOverLimit: false,
-      totalFiles,
-      maxEditableFiles: Infinity,
-      editableFileIds: allFiles.map((f) => f.id),
-    };
-  }
+    }),
+    getEditableFileIdsInternal(team, isPaidPlan),
+  ]);
 
   const maxEditableFiles = getFreeEditableFileLimit();
-  const editableFileIds = await getEditableFileIds(team);
 
   return {
     isOverLimit: totalFiles >= maxEditableFiles,

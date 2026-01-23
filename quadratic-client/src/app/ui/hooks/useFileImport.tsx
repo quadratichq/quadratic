@@ -12,7 +12,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
@@ -38,9 +38,6 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
 
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Store pending import props for when user clicks "Create anyway"
-  const pendingImportRef = useRef<FileImportProps | null>(null);
 
   const doImport = useCallback(
     async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
@@ -268,13 +265,9 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
       if (teamUuid !== undefined) {
         const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
         if (isOverLimit && !isPaidPlan) {
-          // Store the import props and show dialog
-          pendingImportRef.current = props;
+          // Show dialog with callback that captures props directly
           showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, () => {
-            if (pendingImportRef.current) {
-              doImport(pendingImportRef.current);
-              pendingImportRef.current = null;
-            }
+            doImport(props);
           });
           return;
         }
