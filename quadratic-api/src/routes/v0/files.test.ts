@@ -360,12 +360,12 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
         contents: Buffer.from('contents'),
         uuid: '00000000-0000-4000-8000-000000000010',
         publicLinkAccess: 'NOT_SHARED',
-        createdDate: new Date(Date.now() - 4000),
+        createdDate: new Date(Date.now() - 6000),
       },
     });
 
-    // Files 2, 3, 4 (newer) - within the limit of 5
-    for (let i = 0; i < 3; i++) {
+    // Files 2-6 (newer) - 5 files within the limit of 5, pushing oldFile out
+    for (let i = 0; i < 5; i++) {
       await createFile({
         data: {
           creatorUserId: user.id,
@@ -375,12 +375,12 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
           contents: Buffer.from('contents'),
           uuid: `00000000-0000-4000-8000-00000000001${i + 1}`,
           publicLinkAccess: 'NOT_SHARED',
-          createdDate: new Date(Date.now() - (3000 - i * 1000)),
+          createdDate: new Date(Date.now() - (5000 - i * 1000)),
         },
       });
     }
 
-    // The oldest file should be restricted
+    // The oldest file should be restricted (6 total files, only 5 newest are editable)
     await request(app)
       .get(`/v0/files/${oldFile.uuid}`)
       .set('Accept', 'application/json')
@@ -401,9 +401,9 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
       throw new Error('Test setup failed: user or team not found');
     }
 
-    // Create 5 files (more than the soft limit)
+    // Create 7 files (more than the soft limit of 5)
     const files = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const file = await createFile({
         data: {
           creatorUserId: user.id,
