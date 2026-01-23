@@ -28,12 +28,10 @@ export const SyncedConnection = ({
   connectionUuid,
   teamUuid,
   createdDate,
-  error,
 }: {
   connectionUuid: string;
   teamUuid: string;
   createdDate?: string;
-  error?: string;
 }) => {
   const { syncedConnection, syncState } = useSyncedConnection(connectionUuid, teamUuid);
 
@@ -56,7 +54,9 @@ export const SyncedConnection = ({
         {renderSyncStatus()}
         {createdDate && ` · Created ${timeAgo(createdDate)}`}
       </span>
-      {error && <span className="mt-1 text-destructive">Error: {error}</span>}
+      {syncedConnection.latestLogError && (
+        <span className="mt-1 text-destructive">Error: {syncedConnection.latestLogError}</span>
+      )}
     </div>
   );
 };

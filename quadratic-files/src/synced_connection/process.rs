@@ -76,12 +76,14 @@ pub(crate) async fn process_synced_connections<
         // process the connection in a separate thread
         tokio::spawn(async move {
             let connection_name = connection.type_details.name().to_owned();
+            let run_id = Uuid::new_v4();
 
             if let Err(e) = process_synced_connection(
                 Arc::clone(&state),
                 connection.type_details,
                 connection.uuid,
                 connection.id,
+                run_id,
                 sync_kind,
             )
             .await
@@ -105,8 +107,7 @@ pub(crate) async fn process_synced_connections<
 
                 tracing::warn!("{}", error_message);
 
-                // Send a failure log with the error message
-                let run_id = Uuid::new_v4();
+                // Send a failure log with the error message using the same run_id
                 if let Err(log_err) = failed_connection_status(
                     state,
                     connection.uuid,
@@ -139,6 +140,7 @@ pub(crate) async fn process_synced_connection<
     connection: T,
     connection_id: Uuid,
     synced_connection_id: u64,
+    run_id: Uuid,
     sync_kind: SyncKind,
 ) -> Result<()> {
     let connection_name = connection.name();
@@ -154,7 +156,6 @@ pub(crate) async fn process_synced_connection<
 
     let object_store = state.settings.object_store.clone();
     let today = chrono::Utc::now().date_naive();
-    let run_id = Uuid::new_v4();
     let sync_start_date = connection.start_date();
     let start_time = std::time::Instant::now();
     let mut total_files_processed = 0;

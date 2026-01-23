@@ -119,7 +119,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               connectionUuid={connection.uuid}
               teamUuid={teamUuid}
               createdDate={connection.createdDate}
-              error={connection.syncedConnectionLatestLogError}
             />
           </div>
         )}
