@@ -154,14 +154,22 @@ impl CodeRun {
                     &self.code, a1_context, pos, old_name, new_name,
                 );
             } else if self.language.has_q_cells() {
-                self.replace_q_cells_a1_selection(pos, a1_context, |mut cell_ref| {
-                    cell_ref.replace_table_name(old_name, new_name);
-                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
+                self.replace_q_cells_a1_selection(pos, a1_context, |cell_ref| {
+                    Ok(cell_ref.to_a1_string_replacing_table_name(
+                        Some(pos.sheet_id),
+                        a1_context,
+                        old_name,
+                        new_name,
+                    ))
                 });
             } else if self.language.has_handle_bars() {
-                self.replace_handle_bars_a1_selection(pos, a1_context, |mut cell_ref| {
-                    cell_ref.replace_table_name(old_name, new_name);
-                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
+                self.replace_handle_bars_a1_selection(pos, a1_context, |cell_ref| {
+                    Ok(cell_ref.to_a1_string_replacing_table_name(
+                        Some(pos.sheet_id),
+                        a1_context,
+                        old_name,
+                        new_name,
+                    ))
                 });
             }
         }
@@ -177,18 +185,25 @@ impl CodeRun {
         new_name: &str,
     ) {
         if old_name != new_name {
+            // Look up the table_id for the given table_name
+            let table_id = a1_context.table_map.try_table_id(table_name);
+
             if self.language == CodeCellLanguage::Formula {
                 self.code = crate::formulas::replace_column_name(
                     &self.code, a1_context, pos, table_name, old_name, new_name,
                 );
             } else if self.language.has_q_cells() {
                 self.replace_q_cells_a1_selection(pos, a1_context, |mut cell_ref| {
-                    cell_ref.replace_column_name(table_name, old_name, new_name);
+                    if let Some(table_id) = table_id {
+                        cell_ref.replace_column_name(table_id, old_name, new_name);
+                    }
                     Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
                 });
             } else if self.language.has_handle_bars() {
                 self.replace_handle_bars_a1_selection(pos, a1_context, |mut cell_ref| {
-                    cell_ref.replace_column_name(table_name, old_name, new_name);
+                    if let Some(table_id) = table_id {
+                        cell_ref.replace_column_name(table_id, old_name, new_name);
+                    }
                     Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
                 });
             }

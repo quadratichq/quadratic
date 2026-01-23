@@ -47,18 +47,48 @@ impl CellRefRange {
     }
 
     /// Converts the reference to a string, preferring A1 notation.
-    pub fn to_a1_string(&self) -> String {
+    /// For Table references, requires context to resolve table names.
+    pub fn to_a1_string_with_context(&self, a1_context: &A1Context) -> String {
         match self {
             CellRefRange::Sheet { range } => range.to_string(),
-            CellRefRange::Table { range } => range.to_string(),
+            CellRefRange::Table { range } => range
+                .to_string_with_context(a1_context)
+                .unwrap_or_else(|| format!("Table[{}]", range.table_id)),
         }
     }
 
     /// Converts the reference to a string, preferring RC notation.
-    pub fn to_rc_string(&self, base_pos: Pos) -> String {
+    /// For Table references, requires context to resolve table names.
+    pub fn to_rc_string_with_context(&self, base_pos: Pos, a1_context: &A1Context) -> String {
         match self {
             CellRefRange::Sheet { range } => range.to_rc_string(base_pos),
-            CellRefRange::Table { range } => range.to_string(),
+            CellRefRange::Table { range } => range
+                .to_string_with_context(a1_context)
+                .unwrap_or_else(|| format!("Table[{}]", range.table_id)),
+        }
+    }
+
+    /// Converts the reference to a string, replacing the table name if it matches old_name.
+    /// Used for updating formula strings when a table is renamed.
+    pub fn to_a1_string_replacing_table_name(
+        &self,
+        a1_context: &A1Context,
+        old_name: &str,
+        new_name: &str,
+    ) -> String {
+        match self {
+            CellRefRange::Sheet { range } => range.to_string(),
+            CellRefRange::Table { range } => {
+                if let Some(current_name) = range.table_name(a1_context) {
+                    if current_name.eq_ignore_ascii_case(old_name) {
+                        range.to_string_with_name(new_name)
+                    } else {
+                        range.to_string_with_name(current_name)
+                    }
+                } else {
+                    format!("Table[{}]", range.table_id)
+                }
+            }
         }
     }
 

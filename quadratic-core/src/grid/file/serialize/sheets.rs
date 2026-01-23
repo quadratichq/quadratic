@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::{
     Pos,
     grid::{
-        GridBounds, Sheet, SheetFormatting, SheetId,
+        GridBounds, Sheet, SheetFormatting, SheetId, TableId,
         file::serialize::contiguous_2d::{export_contiguous_2d, import_contiguous_2d},
         sheet::{
             borders::Borders, conditional_format::ConditionalFormats, merge_cells::MergeCells,
@@ -19,7 +19,9 @@ use super::{
     column::{export_column_builder, import_column_builder},
     conditional_format::{export_conditional_formats, import_conditional_formats},
     current,
-    data_table::{export_data_tables, import_data_table_builder},
+    data_table::{
+        TableIdResolver, TableNameResolver, export_data_tables, import_data_table_builder,
+    },
     formats::{export_formats, import_formats},
     row_resizes::{export_rows_size, import_rows_resize},
     validations::{export_validations, import_validations},
@@ -40,9 +42,31 @@ fn export_merge_cells(merge_cells: &MergeCells) -> current::MergeCellsSchema {
     }
 }
 
+/// Builds a name->id resolver from data tables in the schema.
+/// This is used during import to resolve table names to IDs.
+fn build_name_resolver(
+    data_tables: &[(current::PosSchema, current::DataTableSchema)],
+) -> TableNameResolver {
+    let mut resolver = TableNameResolver::new();
+    for (_, dt) in data_tables {
+        let table_id = dt
+            .id
+            .as_ref()
+            .and_then(|id| id.id.parse().ok())
+            .unwrap_or_else(TableId::new);
+        // Use lowercase for case-insensitive lookup
+        resolver.insert(dt.name.to_lowercase(), table_id);
+    }
+    resolver
+}
+
 pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
     let columns = import_column_builder(sheet.columns);
-    let data_tables = import_data_table_builder(sheet.data_tables, &columns)?;
+
+    // Build the name resolver from all data tables before importing them
+    let name_resolver = build_name_resolver(&sheet.data_tables);
+
+    let data_tables = import_data_table_builder(sheet.data_tables, &columns, &name_resolver)?;
 
     let sheet = Sheet {
         id: SheetId::from_str(&sheet.id.id)?,
@@ -69,6 +93,13 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
 }
 
 pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
+    // Build the id->name resolver from data tables before exporting them
+    let id_resolver: TableIdResolver = sheet
+        .data_tables
+        .expensive_iter()
+        .map(|(_, dt)| (dt.id, dt.name().to_string()))
+        .collect();
+
     current::SheetSchema {
         id: current::IdSchema {
             id: sheet.id.to_string(),
@@ -83,7 +114,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         validations: export_validations(sheet.validations),
         conditional_formats: export_conditional_formats(sheet.conditional_formats),
         columns: export_column_builder(sheet.columns),
-        data_tables: export_data_tables(sheet.data_tables),
+        data_tables: export_data_tables(sheet.data_tables, &id_resolver),
         merge_cells: export_merge_cells(&sheet.merge_cells),
     }
 }

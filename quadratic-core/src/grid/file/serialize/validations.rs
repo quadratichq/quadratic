@@ -1,4 +1,6 @@
 use super::current;
+use super::data_table::{TableIdResolver, TableNameResolver};
+use super::selection::{export_selection, import_selection};
 
 use crate::Pos;
 use crate::grid::sheet::validations::Validations;
@@ -16,9 +18,9 @@ use crate::grid::sheet::validations::rules::validation_text::{
 };
 use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
 
-use super::selection::{export_selection, import_selection};
-
 pub fn import_validations(validations: current::ValidationsSchema) -> Validations {
+    // TODO: Pass the resolver from the sheet context for proper table reference handling
+    let empty_resolver = TableNameResolver::new();
     Validations {
         validations: validations
             .validations
@@ -26,8 +28,8 @@ pub fn import_validations(validations: current::ValidationsSchema) -> Validation
             .map(|validation| {
                 Validation {
             id: validation.id,
-            selection: import_selection(validation.selection),
-            rule: import_validation_rule(validation.rule),
+            selection: import_selection(validation.selection, &empty_resolver),
+            rule: import_validation_rule(validation.rule, &empty_resolver),
             message: crate::grid::sheet::validations::validation::ValidationMessage {
                 show: validation.message.show,
                 title: validation.message.title,
@@ -60,13 +62,16 @@ pub fn import_validations(validations: current::ValidationsSchema) -> Validation
     }
 }
 
-fn import_validation_rule(rule: current::ValidationRuleSchema) -> ValidationRule {
+fn import_validation_rule(
+    rule: current::ValidationRuleSchema,
+    name_resolver: &TableNameResolver,
+) -> ValidationRule {
     match rule {
         current::ValidationRuleSchema::None => ValidationRule::None,
         current::ValidationRuleSchema::List(list) => ValidationRule::List(ValidationList {
             source: match list.source {
                 current::ValidationListSourceSchema::Selection(selection) => {
-                    ValidationListSource::Selection(import_selection(selection))
+                    ValidationListSource::Selection(import_selection(selection, name_resolver))
                 }
                 current::ValidationListSourceSchema::List(list) => ValidationListSource::List(list),
             },
@@ -157,14 +162,20 @@ fn import_validation_rule(rule: current::ValidationRuleSchema) -> ValidationRule
     }
 }
 
-fn export_validation_rule(rule: ValidationRule) -> current::ValidationRuleSchema {
+fn export_validation_rule(
+    rule: ValidationRule,
+    id_resolver: &TableIdResolver,
+) -> current::ValidationRuleSchema {
     match rule {
         ValidationRule::None => current::ValidationRuleSchema::None,
         ValidationRule::List(list) => {
             current::ValidationRuleSchema::List(current::ValidationListSchema {
                 source: match list.source {
                     ValidationListSource::Selection(selection) => {
-                        current::ValidationListSourceSchema::Selection(export_selection(selection))
+                        current::ValidationListSourceSchema::Selection(export_selection(
+                            selection,
+                            id_resolver,
+                        ))
                     }
                     ValidationListSource::List(list) => {
                         current::ValidationListSourceSchema::List(list)
@@ -275,14 +286,16 @@ fn export_validation_rule(rule: ValidationRule) -> current::ValidationRuleSchema
 }
 
 pub fn export_validations(validations: Validations) -> current::ValidationsSchema {
+    // TODO: Pass the resolver from the sheet context for proper table reference handling
+    let empty_resolver = TableIdResolver::new();
     current::ValidationsSchema {
         validations: validations
             .validations
             .into_iter()
             .map(|validation| current::ValidationSchema {
-                selection: export_selection(validation.selection),
+                selection: export_selection(validation.selection, &empty_resolver),
                 id: validation.id,
-                rule: export_validation_rule(validation.rule),
+                rule: export_validation_rule(validation.rule, &empty_resolver),
                 message: current::ValidationMessageSchema {
                     show: validation.message.show,
                     title: validation.message.title,

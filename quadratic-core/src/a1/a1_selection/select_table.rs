@@ -16,6 +16,7 @@ impl A1Selection {
         let Some(table) = a1_context.try_table(table_name) else {
             return;
         };
+        let table_id = table.table_id;
 
         // used for the cursor position
         let mut y = table.bounds.min.y;
@@ -24,90 +25,92 @@ impl A1Selection {
         let last = self.ranges.last().cloned();
         if shift_key {
             if let Some(CellRefRange::Table { range: table_ref }) = last {
+                let table_ref_matches = table_ref.table_id == table_id;
                 if let Some(col) = &col
-                    && table_ref.table_name == table_name {
-                        match &table_ref.col_range {
-                            ColRange::ColRange(start, end) => {
-                                // if we already have a range, then we change the end to the new col
-                                if end == col {
-                                    return;
-                                }
-                                self.ranges.pop();
+                    && table_ref_matches
+                {
+                    match &table_ref.col_range {
+                        ColRange::ColRange(start, end) => {
+                            // if we already have a range, then we change the end to the new col
+                            if end == col {
+                                return;
+                            }
+                            self.ranges.pop();
+                            let table_ref = TableRef {
+                                table_id,
+                                data: true,
+                                headers: false,
+                                totals: false,
+                                col_range: ColRange::ColRange(start.clone(), col.clone()),
+                            };
+                            self.ranges.push(CellRefRange::Table { range: table_ref });
+                            return;
+                        }
+                        ColRange::Col(existing_col) => {
+                            // if we have a single col selected, then we
+                            // create a range from that column to the new
+                            // col
+                            let headers = if col == existing_col {
+                                !table_ref.headers
+                            } else {
+                                false
+                            };
+                            self.ranges.pop();
+
+                            // if the col is already selected, then we don't need to do anything
+                            let table_ref = TableRef {
+                                table_id,
+                                data: true,
+                                headers: if existing_col == col {
+                                    !table_ref.headers
+                                } else {
+                                    headers
+                                },
+                                totals: false,
+                                col_range: if existing_col == col {
+                                    ColRange::Col(existing_col.clone())
+                                } else {
+                                    ColRange::ColRange(existing_col.clone(), col.clone())
+                                },
+                            };
+                            self.ranges.push(CellRefRange::Table { range: table_ref });
+                            return;
+                        }
+                        ColRange::ColToEnd(existing_col) => {
+                            // If we have col to end, then we change it to a
+                            // range (or a single col if it's the same)
+                            self.ranges.pop();
+                            if col == existing_col {
                                 let table_ref = TableRef {
-                                    table_name: table_name.to_string(),
+                                    table_id,
                                     data: true,
                                     headers: false,
                                     totals: false,
-                                    col_range: ColRange::ColRange(start.clone(), col.clone()),
+                                    col_range: ColRange::Col(col.clone()),
                                 };
                                 self.ranges.push(CellRefRange::Table { range: table_ref });
                                 return;
-                            }
-                            ColRange::Col(existing_col) => {
-                                // if we have a single col selected, then we
-                                // create a range from that column to the new
-                                // col
-                                let headers = if col == existing_col {
-                                    !table_ref.headers
-                                } else {
-                                    false
-                                };
-                                self.ranges.pop();
-
-                                // if the col is already selected, then we don't need to do anything
+                            } else {
                                 let table_ref = TableRef {
-                                    table_name: table_name.to_string(),
+                                    table_id,
                                     data: true,
-                                    headers: if existing_col == col {
-                                        !table_ref.headers
-                                    } else {
-                                        headers
-                                    },
+                                    headers: false,
                                     totals: false,
-                                    col_range: if existing_col == col {
-                                        ColRange::Col(existing_col.clone())
-                                    } else {
-                                        ColRange::ColRange(existing_col.clone(), col.clone())
-                                    },
+                                    col_range: ColRange::ColRange(
+                                        existing_col.clone(),
+                                        col.clone(),
+                                    ),
                                 };
                                 self.ranges.push(CellRefRange::Table { range: table_ref });
                                 return;
-                            }
-                            ColRange::ColToEnd(existing_col) => {
-                                // If we have col to end, then we change it to a
-                                // range (or a single col if it's the same)
-                                self.ranges.pop();
-                                if col == existing_col {
-                                    let table_ref = TableRef {
-                                        table_name: table_name.to_string(),
-                                        data: true,
-                                        headers: false,
-                                        totals: false,
-                                        col_range: ColRange::Col(col.clone()),
-                                    };
-                                    self.ranges.push(CellRefRange::Table { range: table_ref });
-                                    return;
-                                } else {
-                                    let table_ref = TableRef {
-                                        table_name: table_name.to_string(),
-                                        data: true,
-                                        headers: false,
-                                        totals: false,
-                                        col_range: ColRange::ColRange(
-                                            existing_col.clone(),
-                                            col.clone(),
-                                        ),
-                                    };
-                                    self.ranges.push(CellRefRange::Table { range: table_ref });
-                                    return;
-                                }
-                            }
-                            ColRange::All => {
-                                // if we have all cols selected, then we remove it
-                                self.ranges.pop();
                             }
                         }
+                        ColRange::All => {
+                            // if we have all cols selected, then we remove it
+                            self.ranges.pop();
+                        }
                     }
+                }
             } else if let Some(CellRefRange::Sheet { range }) = last {
                 // if the range is current a sheet, then select to the heading
                 if let Some(col) = &col {
@@ -127,7 +130,7 @@ impl A1Selection {
                 } else {
                     // if no column is selected, then add the entire table to the selection
                     self.ranges.push(CellRefRange::Table {
-                        range: TableRef::new(table_name),
+                        range: TableRef::new(table_id),
                     });
                 }
                 return;
@@ -159,30 +162,31 @@ impl A1Selection {
         let mut data = true;
         if !shift_key && !ctrl_key && self.ranges.len() == 1
             && let Some(CellRefRange::Table { range }) = self.ranges.last()
-                && range.table_name == table_name && range.col_range == col_range {
-                    // handle toggle for single column selection
-                    if matches!(col_range, ColRange::Col(_)) {
-                        if !range.headers && range.data {
-                            headers = table.show_columns;
-                            data = false;
-                        } else {
-                            headers = false;
-                            data = true;
-                        }
-                        self.ranges.pop();
-                    } else if matches!(col_range, ColRange::All) {
-                        // handle toggle for column selection
-                        headers = table.show_columns && !range.headers;
-                        self.ranges.pop();
-                    }
-                };
+            && range.table_id == table_id && range.col_range == col_range
+        {
+            // handle toggle for single column selection
+            if matches!(col_range, ColRange::Col(_)) {
+                if !range.headers && range.data {
+                    headers = table.show_columns;
+                    data = false;
+                } else {
+                    headers = false;
+                    data = true;
+                }
+                self.ranges.pop();
+            } else if matches!(col_range, ColRange::All) {
+                // handle toggle for column selection
+                headers = table.show_columns && !range.headers;
+                self.ranges.pop();
+            }
+        };
 
         if !shift_key && !ctrl_key {
             self.ranges.clear();
         }
 
         let table_ref = TableRef {
-            table_name: table_name.to_string(),
+            table_id,
             data,
             headers,
             totals: false,
@@ -218,6 +222,7 @@ mod tests {
     #[test]
     fn test_select_table() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let table = context.table_mut("Table1").unwrap();
         table.show_name = false;
         table.show_columns = false;
@@ -227,7 +232,7 @@ mod tests {
         assert_eq!(
             selection.ranges[0],
             CellRefRange::Table {
-                range: TableRef::new("Table1"),
+                range: TableRef::new(table_id),
             }
         );
         assert_eq!(selection.cursor, pos!(A1));
@@ -236,6 +241,7 @@ mod tests {
     #[test]
     fn test_select_table_col() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let table = context.table_mut("Table1").unwrap();
         table.show_name = false;
         table.show_columns = false;
@@ -250,7 +256,7 @@ mod tests {
         );
         assert_eq!(selection.ranges.len(), 1);
         let table_ref = TableRef {
-            table_name: "Table1".to_string(),
+            table_id,
             data: true,
             headers: false,
             totals: false,
@@ -270,6 +276,7 @@ mod tests {
     #[test]
     fn test_select_table_append() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let table = context.table_mut("Table1").unwrap();
         table.show_name = false;
         table.show_columns = false;
@@ -285,7 +292,7 @@ mod tests {
         assert_eq!(
             selection.ranges[1],
             CellRefRange::Table {
-                range: TableRef::new("Table1"),
+                range: TableRef::new(table_id),
             }
         );
         assert_eq!(selection.cursor, pos!(A1));
@@ -301,6 +308,7 @@ mod tests {
             &[],
             &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B3"))],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, false, false);
         selection.select_table(
@@ -322,7 +330,7 @@ mod tests {
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
         let table_ref = TableRef {
-            table_name: "Table1".to_string(),
+            table_id,
             data: true,
             headers: false,
             totals: false,

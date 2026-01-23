@@ -8,10 +8,13 @@ use crate::{
 
 use super::{
     current,
-    data_table::{export_cell_ref_range, import_cell_ref_range},
+    data_table::{TableIdResolver, TableNameResolver, export_cell_ref_range, import_cell_ref_range},
 };
 
-pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
+pub fn import_selection(
+    selection: current::A1SelectionSchema,
+    name_resolver: &TableNameResolver,
+) -> A1Selection {
     A1Selection {
         // todo: handle error more gracefully
         sheet_id: SheetId::from_str(&selection.sheet_id.to_string()).unwrap(),
@@ -22,12 +25,15 @@ pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
         ranges: selection
             .ranges
             .into_iter()
-            .map(import_cell_ref_range)
+            .map(|r| import_cell_ref_range(r, name_resolver))
             .collect(),
     }
 }
 
-pub fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
+pub fn export_selection(
+    selection: A1Selection,
+    id_resolver: &TableIdResolver,
+) -> current::A1SelectionSchema {
     current::A1SelectionSchema {
         sheet_id: selection.sheet_id.to_string().into(),
         cursor: current::PosSchema {
@@ -37,7 +43,7 @@ pub fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
         ranges: selection
             .ranges
             .into_iter()
-            .map(export_cell_ref_range)
+            .map(|r| export_cell_ref_range(r, id_resolver))
             .collect(),
     }
 }

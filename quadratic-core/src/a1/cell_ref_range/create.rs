@@ -74,9 +74,10 @@ impl CellRefRange {
     ) -> Result<(Self, Option<SheetId>), A1Error> {
         // first try table parsing
         if let Ok(table_ref) = TableRef::parse(s, a1_context)
-            && let Some(entry) = a1_context.try_table(&table_ref.table_name) {
-                return Ok((Self::Table { range: table_ref }, Some(entry.sheet_id)));
-            }
+            && let Some(entry) = a1_context.try_table_by_id(table_ref.table_id)
+        {
+            return Ok((Self::Table { range: table_ref }, Some(entry.sheet_id)));
+        }
         // then try sheet parsing
         Ok((
             Self::Sheet {

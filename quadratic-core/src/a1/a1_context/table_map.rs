@@ -84,28 +84,23 @@ impl TableMap {
 
     /// Finds a table by name (case-insensitive).
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
+        let folded = case_fold_ascii(table_name);
         self.name_to_id
-            .iter()
-            .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
-            .and_then(|(_, id)| self.tables_by_id.get(id))
+            .get(&folded)
+            .and_then(|id| self.tables_by_id.get(id))
     }
 
     /// Finds a table by name (case-insensitive).
     pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_id = self
-            .name_to_id
-            .iter()
-            .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
-            .map(|(_, id)| *id)?;
+        let folded = case_fold_ascii(table_name);
+        let table_id = *self.name_to_id.get(&folded)?;
         self.tables_by_id.get_mut(&table_id)
     }
 
     /// Finds the TableId for a table name (case-insensitive).
     pub fn try_table_id(&self, table_name: &str) -> Option<TableId> {
-        self.name_to_id
-            .iter()
-            .find(|(key, _)| key.eq_ignore_ascii_case(table_name))
-            .map(|(_, id)| *id)
+        let folded = case_fold_ascii(table_name);
+        self.name_to_id.get(&folded).copied()
     }
 
     /// Returns true if the table has a column with the given name.

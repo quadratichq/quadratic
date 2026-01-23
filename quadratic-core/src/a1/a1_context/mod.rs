@@ -12,7 +12,7 @@ mod table_map_entry;
 
 use crate::{
     SheetPos,
-    grid::{CodeCellLanguage, SheetId},
+    grid::{CodeCellLanguage, SheetId, TableId},
 };
 pub use sheet_map::*;
 pub use table_map::*;
@@ -51,6 +51,11 @@ impl A1Context {
     /// Finds a table by the table name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
         self.table_map.try_table(table_name)
+    }
+
+    /// Finds a table by the table ID.
+    pub fn try_table_by_id(&self, table_id: TableId) -> Option<&TableMapEntry> {
+        self.table_map.try_table_by_id(table_id)
     }
 
     /// Finds a sheetId using a sheet name.

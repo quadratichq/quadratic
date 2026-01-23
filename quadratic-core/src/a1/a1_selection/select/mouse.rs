@@ -21,7 +21,7 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Table { range } => {
-                    if let Some(table) = a1_context.try_table(&range.table_name) {
+                    if let Some(table) = a1_context.try_table_by_id(range.table_id) {
                         let mut start: Option<(i64, i64)> = None;
                         match &range.col_range {
                             // all gets the entire table selection

@@ -224,26 +224,28 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    let name = range.table_name.clone();
-                    if let Some(range) =
+                    if let Some(range_bounds) =
                         range.convert_to_ref_range_bounds(false, a1_context, false, false)
                     {
-                        if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
+                        if self.cursor.x == range_bounds.end.col()
+                            && self.cursor.y == range_bounds.end.row()
+                        {
                             // we adjust the y to step over the table name so we
                             // don't end up with the same selection
-                            let adjust_y = if let Some(table) = a1_context.try_table(&name) {
-                                if table.show_name { -1 } else { 0 }
-                            } else {
-                                0
-                            };
+                            let adjust_y =
+                                if let Some(table) = a1_context.try_table_by_id(range.table_id) {
+                                    if table.show_name { -1 } else { 0 }
+                                } else {
+                                    0
+                                };
                             Pos {
-                                x: range.start.col(),
-                                y: range.start.row() + adjust_y,
+                                x: range_bounds.start.col(),
+                                y: range_bounds.start.row() + adjust_y,
                             }
                         } else {
                             Pos {
-                                x: range.end.col(),
-                                y: range.end.row(),
+                                x: range_bounds.end.col(),
+                                y: range_bounds.end.row(),
                             }
                         }
                     } else {
@@ -467,7 +469,7 @@ impl A1Selection {
 
         // checks table ranges
         if let CellRefRange::Table { range: table_range } = &range
-            && let Some(table) = a1_context.try_table(&table_range.table_name)
+            && let Some(table) = a1_context.try_table_by_id(table_range.table_id)
         {
             // a single column in a table
             if matches!(table_range.col_range, ColRange::Col(_)) {
@@ -767,7 +769,7 @@ impl A1Selection {
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
             if is_python {
                 let show_columns = a1_context
-                    .try_table(&range.table_name)
+                    .try_table_by_id(range.table_id)
                     .is_some_and(|table| table.show_columns);
                 return show_columns || range.headers;
             }
@@ -791,7 +793,9 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Table { range } => {
                 if range.data && range.col_range == ColRange::All {
-                    names.push(range.table_name.clone());
+                    if let Some(name) = range.table_name(context) {
+                        names.push(name.to_string());
+                    }
                 }
             }
             CellRefRange::Sheet { range } => {
@@ -824,11 +828,13 @@ impl A1Selection {
     }
 
     /// Returns tables that have a column selection.
-    pub fn tables_with_column_selection(&self) -> Vec<String> {
+    pub fn tables_with_column_selection(&self, a1_context: &A1Context) -> Vec<String> {
         let mut names = Vec::new();
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Table { range } => {
-                names.push(range.table_name.clone());
+                if let Some(name) = range.table_name(a1_context) {
+                    names.push(name.to_string());
+                }
             }
             CellRefRange::Sheet { .. } => (),
         });
@@ -876,7 +882,10 @@ impl A1Selection {
             .iter()
             .filter_map(|range| match range {
                 CellRefRange::Table { range: table_range } => {
-                    if table_range.table_name == *table_name {
+                    let matches = table_range
+                        .table_name(a1_context)
+                        .is_some_and(|name| name == table_name);
+                    if matches {
                         if let Some(new_range) =
                             table_range.convert_to_ref_range_bounds(false, a1_context, false, false)
                         {
@@ -924,7 +933,7 @@ impl A1Selection {
 
     /// Returns true if the selection is a single table selection (needs only
     /// data to be true).
-    pub fn get_single_full_table_selection_name(&self) -> Option<String> {
+    pub fn get_single_full_table_selection_name(&self, a1_context: &A1Context) -> Option<String> {
         if self.ranges.len() != 1 {
             return None;
         }
@@ -932,7 +941,7 @@ impl A1Selection {
             && range.data
             && range.col_range == ColRange::All
         {
-            return Some(range.table_name.clone());
+            return range.table_name(a1_context).map(|s| s.to_string());
         }
         None
     }
@@ -1001,7 +1010,9 @@ impl A1Selection {
                 if range.col_range.has_col(column, table) {
                     found_column = true;
                 }
-                table_name == range.table_name
+                range
+                    .table_name(a1_context)
+                    .is_some_and(|name| name == table_name)
             }
             _ => false,
         }) && found_column
@@ -1016,7 +1027,7 @@ impl A1Selection {
         let Some(CellRefRange::Table { range }) = self.ranges.first() else {
             return 0;
         };
-        let Some(table) = a1_context.try_table(&range.table_name) else {
+        let Some(table) = a1_context.try_table_by_id(range.table_id) else {
             return 0;
         };
         range.col_range.col_count(table)

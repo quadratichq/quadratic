@@ -14,7 +14,6 @@ use rules::SyntaxRule;
 use super::*;
 use crate::{
     CodeResult, CoerceInto, RefAdjust, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
-    TableRef,
     a1::{A1Context, CellRefRange, RefRangeBounds, SheetCellRefRange},
     controller::GridController,
     grid::SheetId,
@@ -165,11 +164,13 @@ pub fn replace_table_name(
     old_name: &str,
     new_name: &str,
 ) -> String {
-    replace_table_references(source, ctx, pos, |mut table_ref| {
-        if table_ref.table_name.eq_ignore_ascii_case(old_name) {
-            table_ref.table_name = new_name.to_string();
-        }
-        Ok(table_ref)
+    replace_cell_range_references(source, ctx, pos, |range_ref| {
+        Ok(range_ref.to_a1_string_replacing_table_name(
+            Some(pos.sheet_id),
+            ctx,
+            old_name,
+            new_name,
+        ))
     })
 }
 
@@ -179,32 +180,24 @@ pub fn replace_column_name(
     ctx: &A1Context,
     pos: SheetPos,
     table_name: &str,
-    old_name: &str,
-    new_name: &str,
-) -> String {
-    replace_table_references(source, ctx, pos, |mut table_ref| {
-        if table_ref.table_name.eq_ignore_ascii_case(table_name) {
-            table_ref.col_range.replace_column_name(old_name, new_name);
-        }
-        Ok(table_ref)
-    })
-}
-
-#[must_use = "this method returns a new value instead of modifying its input"]
-fn replace_table_references(
-    source: &str,
-    ctx: &A1Context,
-    pos: SheetPos,
-    replace_fn: impl Fn(TableRef) -> Result<TableRef, RefError>,
+    old_col_name: &str,
+    new_col_name: &str,
 ) -> String {
     replace_cell_range_references(source, ctx, pos, |range_ref| {
-        Ok(match range_ref.cells {
-            CellRefRange::Table { range } => CellRefRange::Table {
-                range: replace_fn(range)?,
-            },
-            other @ CellRefRange::Sheet { .. } => other,
+        let mut cells = range_ref.cells;
+        if let CellRefRange::Table { ref mut range } = cells {
+            if let Some(current_name) = range.table_name(ctx) {
+                if current_name.eq_ignore_ascii_case(table_name) {
+                    range.col_range.replace_column_name(old_col_name, new_col_name);
+                }
+            }
         }
-        .to_string())
+        Ok(match cells {
+            CellRefRange::Sheet { range } => range.to_string(),
+            CellRefRange::Table { range } => range
+                .to_string_with_context(ctx)
+                .unwrap_or_else(|| format!("Table[{}]", range.table_id)),
+        })
     })
 }
 

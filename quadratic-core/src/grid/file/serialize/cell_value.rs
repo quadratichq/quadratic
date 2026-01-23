@@ -1,5 +1,7 @@
 use super::current;
-use super::data_table::{export_code_run, import_code_run_builder};
+use super::data_table::{
+    TableIdResolver, TableNameResolver, export_code_run, import_code_run_builder,
+};
 use crate::{
     CellValue, CodeCell, Duration,
     cellvalue::{Import, TextSpan},
@@ -83,8 +85,11 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
             current::CellValueSchema::RichText(spans.into_iter().map(export_text_span).collect())
         }
         CellValue::Code(code_cell) => {
+            // TODO: This uses an empty resolver which will produce placeholder table names.
+            // For proper table reference serialization, pass the resolver from the sheet context.
+            let empty_resolver = TableIdResolver::new();
             current::CellValueSchema::Code(Box::new(current::SingleCodeCellSchema {
-                code_run: export_code_run(code_cell.code_run),
+                code_run: export_code_run(code_cell.code_run, &empty_resolver),
                 output: export_cell_value(*code_cell.output),
                 last_modified: code_cell.last_modified.timestamp_millis(),
             }))
@@ -159,7 +164,10 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
 
 /// Import a code cell from the schema. Returns a Result since code run parsing can fail.
 fn import_code_cell(code_cell: current::SingleCodeCellSchema) -> Result<CellValue> {
-    let code_run = import_code_run_builder(code_cell.code_run)?;
+    // TODO: This uses an empty resolver which will produce placeholder table IDs.
+    // For proper table reference deserialization, pass the resolver from the sheet context.
+    let empty_resolver = TableNameResolver::new();
+    let code_run = import_code_run_builder(code_cell.code_run, &empty_resolver)?;
     let output = import_cell_value(code_cell.output);
     let last_modified = Utc
         .timestamp_millis_opt(code_cell.last_modified)

@@ -93,11 +93,18 @@ impl SyntaxRule for TableReference {
             return Err(RunErrorMsg::BadCellReference.with_span(p.span()));
         }
 
+        // Look up the table_id from context
+        let table_id = p
+            .ctx
+            .table_map
+            .try_table_id(table_name)
+            .ok_or_else(|| RunErrorMsg::BadCellReference.with_span(p.span()))?;
+
         let end_span;
         match p.try_parse(Token::TableRefBracketsExpression) {
             None => {
                 end_span = p.span();
-                Ok(TableRef::new(table_name))
+                Ok(TableRef::new(table_id))
             }
             Some(result) => {
                 end_span = p.span();
@@ -179,7 +186,7 @@ impl SyntaxRule for TableReference {
                     }
 
                     Ok(TableRef {
-                        table_name: table_name.to_owned(),
+                        table_id,
                         data: data || (!headers && !totals),
                         headers,
                         totals,
@@ -208,7 +215,7 @@ impl SyntaxRule for SheetTableReference {
             Ok(SheetCellRefRange {
                 sheet_id: p
                     .ctx
-                    .try_table(&table_ref.table_name)
+                    .try_table_by_id(table_ref.table_id)
                     .ok_or(RunErrorMsg::BadCellReference)?
                     .sheet_id,
                 cells: CellRefRange::Table { range: table_ref },

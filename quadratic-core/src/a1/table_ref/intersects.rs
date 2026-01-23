@@ -5,7 +5,7 @@ use super::*;
 impl TableRef {
     /// Returns true if the table intersects the rectangle.
     pub fn intersect_rect(&self, rect: Rect, a1_context: &A1Context) -> bool {
-        let Some(table) = a1_context.try_table(&self.table_name) else {
+        let Some(table) = a1_context.try_table_by_id(self.table_id) else {
             return false;
         };
         table.bounds.intersects(rect)
@@ -13,7 +13,7 @@ impl TableRef {
 
     /// Returns whether the table contains the position.
     pub fn contains(&self, pos: Pos, a1_context: &A1Context) -> bool {
-        let Some(table) = a1_context.try_table(&self.table_name) else {
+        let Some(table) = a1_context.try_table_by_id(self.table_id) else {
             return false;
         };
         table.bounds.contains(pos) && self.col_range.has_col(pos.x - table.bounds.min.x, table)
@@ -22,7 +22,7 @@ impl TableRef {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::grid::{CodeCellLanguage, SheetId, TableId};
 
     use super::*;
 
@@ -44,8 +44,9 @@ mod tests {
     #[test]
     fn test_intersect_rect() {
         let (context, _) = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("A".to_string()),
             data: true,
             headers: false,
@@ -63,7 +64,7 @@ mod tests {
     fn test_contains_invalid_table_name() {
         let (context, _) = setup_test_context();
         let table_ref = TableRef {
-            table_name: "nonexistent_table".to_string(),
+            table_id: TableId::new(),
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -79,8 +80,9 @@ mod tests {
     #[test]
     fn test_contains_col_all() {
         let (context, _) = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -101,8 +103,9 @@ mod tests {
     #[test]
     fn test_contains_single_col() {
         let (context, _) = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: false,
@@ -126,8 +129,9 @@ mod tests {
     #[test]
     fn test_contains_col_range() {
         let (context, _) = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
             data: true,
             headers: false,
@@ -152,8 +156,9 @@ mod tests {
     #[test]
     fn test_contains_col_to_end() {
         let (context, _) = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("B".to_string()),
             data: true,
             headers: false,
@@ -178,10 +183,11 @@ mod tests {
     #[test]
     fn test_contains_invalid_column_name() {
         let (context, _) = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Single invalid column
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Z".to_string()),
             data: true,
             headers: false,
@@ -192,7 +198,7 @@ mod tests {
 
         // Invalid column range
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("X".to_string(), "Z".to_string()),
             data: true,
             headers: false,
@@ -203,7 +209,7 @@ mod tests {
 
         // Invalid column to end
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("Z".to_string()),
             data: true,
             headers: false,

@@ -81,10 +81,10 @@ impl SheetCellRefRange {
             return format!(
                 "{}!{}",
                 super::quote_sheet_name(sheet_name),
-                self.cells.to_a1_string(),
+                self.cells.to_a1_string_with_context(a1_context),
             );
         }
-        format!("{}", self.cells)
+        self.cells.to_a1_string_with_context(a1_context)
     }
 
     /// Returns an RC-style string describing the range. The sheet name is
@@ -102,10 +102,10 @@ impl SheetCellRefRange {
             return format!(
                 "{}!{}",
                 super::quote_sheet_name(sheet_name),
-                self.cells.to_rc_string(base_pos),
+                self.cells.to_rc_string_with_context(base_pos, a1_context),
             );
         }
-        self.cells.to_rc_string(base_pos)
+        self.cells.to_rc_string_with_context(base_pos, a1_context)
     }
 
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out
@@ -137,15 +137,37 @@ impl SheetCellRefRange {
         }
     }
 
-    /// Replaces a table name in the range.
-    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
-        self.cells.replace_table_name(old_name, new_name);
+    /// Replaces a table column name in the range.
+    pub fn replace_column_name(
+        &mut self,
+        table_id: crate::grid::TableId,
+        old_name: &str,
+        new_name: &str,
+    ) {
+        self.cells.replace_column_name(table_id, old_name, new_name);
     }
 
-    /// Replaces a table column name in the range.
-    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
+    /// Returns an A1-style string, replacing the table name if it matches old_name.
+    /// Used for updating formula/code strings when a table is renamed.
+    pub fn to_a1_string_replacing_table_name(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        a1_context: &A1Context,
+        old_name: &str,
+        new_name: &str,
+    ) -> String {
+        if self.needs_sheet_name(default_sheet_id)
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                super::quote_sheet_name(sheet_name),
+                self.cells
+                    .to_a1_string_replacing_table_name(a1_context, old_name, new_name),
+            );
+        }
         self.cells
-            .replace_column_name(table_name, old_name, new_name);
+            .to_a1_string_replacing_table_name(a1_context, old_name, new_name)
     }
 }
 

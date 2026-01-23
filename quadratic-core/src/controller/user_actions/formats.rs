@@ -144,7 +144,7 @@ impl GridController {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    let Some(table) = self.a1_context().try_table(&range.table_name) else {
+                    let Some(table) = self.a1_context().try_table_by_id(range.table_id) else {
                         continue;
                     };
 

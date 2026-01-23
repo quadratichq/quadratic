@@ -15,7 +15,7 @@ impl TableRef {
                 let remaining =
                     A1Selection::find_excluded_rects(bounds, to_delete.to_rect_unbounded());
 
-                if let Some(table) = a1_context.try_table(&self.table_name) {
+                if let Some(table) = a1_context.try_table_by_id(self.table_id) {
                     remaining
                         .into_iter()
                         .map(|r| {
@@ -105,6 +105,7 @@ mod tests {
     #[test]
     fn test_delete_first_column_from_selection() {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
+        let table_id = table_range.table_id;
         let remove_first_column = A1Selection::test_a1("B1:B6");
 
         let result = table_range.delete(&remove_first_column.ranges[0], gc.a1_context());
@@ -115,7 +116,7 @@ mod tests {
         assert_eq!(
             table_range,
             &TableRef {
-                table_name: "test_table".to_string(),
+                table_id,
                 col_range: ColRange::ColRange("Column 2".to_string(), "Column 3".to_string()),
                 data: true,
                 headers: false,
@@ -127,6 +128,7 @@ mod tests {
     #[test]
     fn test_delete_second_column_from_selection() {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
+        let table_id = table_range.table_id;
         let remove_second_column = A1Selection::test_a1("C1:C6");
 
         let result = table_range.delete(&remove_second_column.ranges[0], gc.a1_context());
@@ -135,7 +137,7 @@ mod tests {
             result[0],
             CellRefRange::Table {
                 range: TableRef {
-                    table_name: "test_table".to_string(),
+                    table_id,
                     col_range: ColRange::Col("Column 1".to_string()),
                     data: true,
                     headers: false,
@@ -147,7 +149,7 @@ mod tests {
             result[1],
             CellRefRange::Table {
                 range: TableRef {
-                    table_name: "test_table".to_string(),
+                    table_id,
                     col_range: ColRange::Col("Column 3".to_string()),
                     data: true,
                     headers: false,
@@ -175,6 +177,7 @@ mod tests {
     #[test]
     fn test_delete_table_column_from_selection() {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
+        let table_id = table_range.table_id;
         let remove_first_column =
             A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
 
@@ -186,7 +189,7 @@ mod tests {
         assert_eq!(
             table_range,
             &TableRef {
-                table_name: "test_table".to_string(),
+                table_id,
                 col_range: ColRange::ColRange("Column 2".to_string(), "Column 3".to_string()),
                 data: true,
                 headers: false,

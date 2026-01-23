@@ -3,6 +3,7 @@
 use anyhow::Result;
 
 use super::current;
+use super::data_table::{TableIdResolver, TableNameResolver};
 use super::formula::{export_formula, import_formula};
 use super::selection::{export_selection, import_selection};
 use crate::grid::sheet::conditional_format::{
@@ -108,11 +109,12 @@ fn export_color_scale(color_scale: &ColorScale) -> current::ColorScaleSchema {
 
 fn import_config(
     schema: current::ConditionalFormatConfigSchema,
+    name_resolver: &TableNameResolver,
 ) -> Result<ConditionalFormatConfig> {
     match schema {
         current::ConditionalFormatConfigSchema::Formula { rule, style } => {
             Ok(ConditionalFormatConfig::Formula {
-                rule: import_formula(rule)?,
+                rule: import_formula(rule, name_resolver)?,
                 style: import_style(style),
             })
         }
@@ -124,11 +126,14 @@ fn import_config(
     }
 }
 
-fn export_config(config: &ConditionalFormatConfig) -> current::ConditionalFormatConfigSchema {
+fn export_config(
+    config: &ConditionalFormatConfig,
+    id_resolver: &TableIdResolver,
+) -> current::ConditionalFormatConfigSchema {
     match config {
         ConditionalFormatConfig::Formula { rule, style } => {
             current::ConditionalFormatConfigSchema::Formula {
-                rule: export_formula(rule.clone()),
+                rule: export_formula(rule.clone(), id_resolver),
                 style: export_style(style),
             }
         }
@@ -143,14 +148,16 @@ fn export_config(config: &ConditionalFormatConfig) -> current::ConditionalFormat
 pub fn import_conditional_formats(
     schema: current::ConditionalFormatsSchema,
 ) -> Result<ConditionalFormats> {
+    // TODO: Pass the resolver from the sheet context for proper table reference handling
+    let empty_resolver = TableNameResolver::new();
     let conditional_formats = schema
         .conditional_formats
         .into_iter()
         .map(|cf| {
             Ok(ConditionalFormat {
                 id: cf.id,
-                selection: import_selection(cf.selection),
-                config: import_config(cf.config)?,
+                selection: import_selection(cf.selection, &empty_resolver),
+                config: import_config(cf.config, &empty_resolver)?,
                 apply_to_blank: cf.apply_to_blank,
             })
         })
@@ -162,14 +169,16 @@ pub fn import_conditional_formats(
 pub fn export_conditional_formats(
     conditional_formats: ConditionalFormats,
 ) -> current::ConditionalFormatsSchema {
+    // TODO: Pass the resolver from the sheet context for proper table reference handling
+    let empty_resolver = TableIdResolver::new();
     current::ConditionalFormatsSchema {
         conditional_formats: conditional_formats
             .conditional_formats
             .into_iter()
             .map(|cf| current::ConditionalFormatSchema {
                 id: cf.id,
-                selection: export_selection(cf.selection),
-                config: export_config(&cf.config),
+                selection: export_selection(cf.selection, &empty_resolver),
+                config: export_config(&cf.config, &empty_resolver),
                 apply_to_blank: cf.apply_to_blank,
             })
             .collect(),

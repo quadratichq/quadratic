@@ -11,7 +11,7 @@ impl TableRef {
         show_table_headers_for_python: bool,
         a1_context: &A1Context,
     ) -> Option<RefRangeBounds> {
-        let Some(table) = a1_context.try_table(&self.table_name) else {
+        let Some(table) = a1_context.try_table_by_id(self.table_id) else {
             // the table may no longer exist
             return None;
         };
@@ -61,7 +61,7 @@ impl TableRef {
         // this returns the table's entire bounds, regardless of the range
         force_table_bounds: bool,
     ) -> Option<RefRangeBounds> {
-        let Some(table) = a1_context.try_table(&self.table_name) else {
+        let Some(table) = a1_context.try_table_by_id(self.table_id) else {
             // the table may no longer exist
             return None;
         };
@@ -177,9 +177,10 @@ mod tests {
     #[test]
     fn test_convert_all_columns() {
         let context = create_test_context(Rect::test_a1("A1:C4"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -192,7 +193,7 @@ mod tests {
         );
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: true,
@@ -208,13 +209,14 @@ mod tests {
     #[test]
     fn test_convert_all_columns_without_header() {
         let mut context = create_test_context(Rect::test_a1("A1:C3"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let mut table = context.table_map.remove("test_table").unwrap();
         table.show_name = false;
         table.show_columns = false;
         context.table_map.insert(table);
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -227,7 +229,7 @@ mod tests {
         );
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: true,
@@ -243,9 +245,10 @@ mod tests {
     #[test]
     fn test_convert_single_column() {
         let context = create_test_context(Rect::test_a1("A1:C4"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Col1".to_string()),
             data: true,
             headers: false,
@@ -258,7 +261,7 @@ mod tests {
         );
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Col1".to_string()),
             data: true,
             headers: true,
@@ -274,9 +277,10 @@ mod tests {
     #[test]
     fn test_convert_column_range() {
         let context = create_test_context(Rect::test_a1("A1:C4"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("Col1".to_string(), "Col2".to_string()),
             data: true,
             headers: false,
@@ -293,7 +297,7 @@ mod tests {
         );
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("Col1".to_string(), "Col2".to_string()),
             data: true,
             headers: true,
@@ -309,9 +313,10 @@ mod tests {
     #[test]
     fn test_convert_column_to_end() {
         let context = create_test_context(Rect::test_a1("A1:C4"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("Col2".to_string()),
             data: true,
             headers: false,
@@ -324,7 +329,7 @@ mod tests {
         );
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("Col2".to_string()),
             data: true,
             headers: true,
@@ -339,10 +344,11 @@ mod tests {
 
     #[test]
     fn test_convert_nonexistent_table() {
+        use crate::grid::TableId;
         let context = A1Context::default();
 
         let table_ref = TableRef {
-            table_name: "nonexistent".to_string(),
+            table_id: TableId::new(),
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -358,9 +364,10 @@ mod tests {
     #[test]
     fn test_convert_table_ref_column_name() {
         let context = create_test_context(Rect::test_a1("A1:C4"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Col1".to_string()),
             data: false,
             headers: true,
@@ -374,10 +381,11 @@ mod tests {
     #[test]
     fn test_convert_cells_accessed_to_ref_range_bounds() {
         let context = create_test_context(Rect::test_a1("A1:C4"));
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Test with headers only
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: false,
             headers: true,
@@ -391,7 +399,7 @@ mod tests {
 
         // Test with data only
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -405,7 +413,7 @@ mod tests {
 
         // Test with both headers and data
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: true,
@@ -425,7 +433,7 @@ mod tests {
 
         // Test with a single column
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Col1".to_string()),
             data: true,
             headers: true,
@@ -439,7 +447,7 @@ mod tests {
 
         // Test with a column range
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("Col1".to_string(), "Col2".to_string()),
             data: true,
             headers: true,
@@ -453,7 +461,7 @@ mod tests {
 
         // Test with a column to end
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("Col2".to_string()),
             data: true,
             headers: true,
@@ -466,8 +474,9 @@ mod tests {
         );
 
         // Test with a non-existent table
+        use crate::grid::TableId;
         let table_ref = TableRef {
-            table_name: "nonexistent".to_string(),
+            table_id: TableId::new(),
             col_range: ColRange::All,
             data: true,
             headers: true,

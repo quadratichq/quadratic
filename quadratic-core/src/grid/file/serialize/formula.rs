@@ -8,7 +8,7 @@ use crate::{
     Span, Spanned,
     a1::{CellRefRange, ColRange, RefRangeBounds, SheetCellRefRange, TableRef},
     formulas::ast::{AstNodeContents, Formula},
-    grid::SheetId,
+    grid::{SheetId, TableId},
 };
 
 use super::current::{
@@ -16,30 +16,41 @@ use super::current::{
     FormulaSchema, SheetCellRefRangeSchema, SpannedStringSchema, TableRefForAstSchema,
 };
 
-use super::data_table::{export_cell_ref_coord, import_cell_ref_coord};
+use super::data_table::{
+    TableIdResolver, TableNameResolver, export_cell_ref_coord, import_cell_ref_coord,
+};
 
 // ============================================================================
 // Import (Schema -> Runtime)
 // ============================================================================
 
 /// Converts a FormulaSchema to a runtime Formula.
-pub fn import_formula(schema: FormulaSchema) -> Result<Formula> {
+pub fn import_formula(
+    schema: FormulaSchema,
+    name_resolver: &TableNameResolver,
+) -> Result<Formula> {
     Ok(Formula {
-        ast: import_ast_node(schema.ast)?,
+        ast: import_ast_node(schema.ast, name_resolver)?,
     })
 }
 
-fn import_ast_node(schema: AstNodeSchema) -> Result<Spanned<AstNodeContents>> {
+fn import_ast_node(
+    schema: AstNodeSchema,
+    name_resolver: &TableNameResolver,
+) -> Result<Spanned<AstNodeContents>> {
     Ok(Spanned {
         span: Span {
             start: schema.span.start,
             end: schema.span.end,
         },
-        inner: import_ast_node_contents(schema.inner)?,
+        inner: import_ast_node_contents(schema.inner, name_resolver)?,
     })
 }
 
-fn import_ast_node_contents(schema: AstNodeContentsSchema) -> Result<AstNodeContents> {
+fn import_ast_node_contents(
+    schema: AstNodeContentsSchema,
+    name_resolver: &TableNameResolver,
+) -> Result<AstNodeContents> {
     Ok(match schema {
         AstNodeContentsSchema::Empty => AstNodeContents::Empty,
         AstNodeContentsSchema::FunctionCall { func, args } => AstNodeContents::FunctionCall {
@@ -52,20 +63,20 @@ fn import_ast_node_contents(schema: AstNodeContentsSchema) -> Result<AstNodeCont
             },
             args: args
                 .into_iter()
-                .map(import_ast_node)
+                .map(|node| import_ast_node(node, name_resolver))
                 .collect::<Result<Vec<_>>>()?,
         },
         AstNodeContentsSchema::Paren(contents) => AstNodeContents::Paren(
             contents
                 .into_iter()
-                .map(import_ast_node)
+                .map(|node| import_ast_node(node, name_resolver))
                 .collect::<Result<Vec<_>>>()?,
         ),
         AstNodeContentsSchema::Array(rows) => AstNodeContents::Array(
             rows.into_iter()
                 .map(|row| {
                     row.into_iter()
-                        .map(import_ast_node)
+                        .map(|node| import_ast_node(node, name_resolver))
                         .collect::<Result<Vec<_>>>()
                 })
                 .collect::<Result<Vec<_>>>()?,
@@ -79,7 +90,7 @@ fn import_ast_node_contents(schema: AstNodeContentsSchema) -> Result<AstNodeCont
             AstNodeContents::CellRef(sheet_id, range)
         }
         AstNodeContentsSchema::RangeRef(range) => {
-            AstNodeContents::RangeRef(import_sheet_cell_ref_range(range)?)
+            AstNodeContents::RangeRef(import_sheet_cell_ref_range(range, name_resolver)?)
         }
         AstNodeContentsSchema::String(s) => AstNodeContents::String(s),
         AstNodeContentsSchema::Number(n) => AstNodeContents::Number(n),
@@ -105,7 +116,10 @@ fn import_ref_range_bounds(schema: current::RefRangeBoundsSchema) -> RefRangeBou
     }
 }
 
-fn import_sheet_cell_ref_range(schema: SheetCellRefRangeSchema) -> Result<SheetCellRefRange> {
+fn import_sheet_cell_ref_range(
+    schema: SheetCellRefRangeSchema,
+    name_resolver: &TableNameResolver,
+) -> Result<SheetCellRefRange> {
     let sheet_id = SheetId::from_str(&schema.sheet_id.to_string())
         .map_err(|e| anyhow!("Invalid sheet ID: {}", e))?;
 
@@ -114,7 +128,7 @@ fn import_sheet_cell_ref_range(schema: SheetCellRefRangeSchema) -> Result<SheetC
             range: import_ref_range_bounds(range),
         },
         CellRefRangeForAstSchema::Table { range } => CellRefRange::Table {
-            range: import_table_ref(range),
+            range: import_table_ref(range, name_resolver),
         },
     };
 
@@ -125,9 +139,15 @@ fn import_sheet_cell_ref_range(schema: SheetCellRefRangeSchema) -> Result<SheetC
     })
 }
 
-fn import_table_ref(schema: TableRefForAstSchema) -> TableRef {
+fn import_table_ref(schema: TableRefForAstSchema, name_resolver: &TableNameResolver) -> TableRef {
+    // Look up the table_id from the name. If not found, use a placeholder ID.
+    let table_id = name_resolver
+        .get(&schema.table_name.to_lowercase())
+        .copied()
+        .unwrap_or_else(TableId::new);
+
     TableRef {
-        table_name: schema.table_name,
+        table_id,
         data: schema.data,
         headers: schema.headers,
         totals: schema.totals,
@@ -145,23 +165,29 @@ fn import_table_ref(schema: TableRefForAstSchema) -> TableRef {
 // ============================================================================
 
 /// Converts a runtime Formula to a FormulaSchema.
-pub fn export_formula(formula: Formula) -> FormulaSchema {
+pub fn export_formula(formula: Formula, id_resolver: &TableIdResolver) -> FormulaSchema {
     FormulaSchema {
-        ast: export_ast_node(formula.ast),
+        ast: export_ast_node(formula.ast, id_resolver),
     }
 }
 
-fn export_ast_node(node: Spanned<AstNodeContents>) -> AstNodeSchema {
+fn export_ast_node(
+    node: Spanned<AstNodeContents>,
+    id_resolver: &TableIdResolver,
+) -> AstNodeSchema {
     AstNodeSchema {
         span: current::SpanSchema {
             start: node.span.start,
             end: node.span.end,
         },
-        inner: export_ast_node_contents(node.inner),
+        inner: export_ast_node_contents(node.inner, id_resolver),
     }
 }
 
-fn export_ast_node_contents(contents: AstNodeContents) -> AstNodeContentsSchema {
+fn export_ast_node_contents(
+    contents: AstNodeContents,
+    id_resolver: &TableIdResolver,
+) -> AstNodeContentsSchema {
     match contents {
         AstNodeContents::Empty => AstNodeContentsSchema::Empty,
         AstNodeContents::FunctionCall { func, args } => AstNodeContentsSchema::FunctionCall {
@@ -172,14 +198,24 @@ fn export_ast_node_contents(contents: AstNodeContents) -> AstNodeContentsSchema 
                 },
                 inner: func.inner,
             },
-            args: args.into_iter().map(export_ast_node).collect(),
+            args: args
+                .into_iter()
+                .map(|node| export_ast_node(node, id_resolver))
+                .collect(),
         },
-        AstNodeContents::Paren(contents) => {
-            AstNodeContentsSchema::Paren(contents.into_iter().map(export_ast_node).collect())
-        }
+        AstNodeContents::Paren(contents) => AstNodeContentsSchema::Paren(
+            contents
+                .into_iter()
+                .map(|node| export_ast_node(node, id_resolver))
+                .collect(),
+        ),
         AstNodeContents::Array(rows) => AstNodeContentsSchema::Array(
             rows.into_iter()
-                .map(|row| row.into_iter().map(export_ast_node).collect())
+                .map(|row| {
+                    row.into_iter()
+                        .map(|node| export_ast_node(node, id_resolver))
+                        .collect()
+                })
                 .collect(),
         ),
         AstNodeContents::CellRef(sheet_id, bounds) => AstNodeContentsSchema::CellRef(
@@ -187,7 +223,7 @@ fn export_ast_node_contents(contents: AstNodeContents) -> AstNodeContentsSchema 
             export_ref_range_bounds(bounds),
         ),
         AstNodeContents::RangeRef(range) => {
-            AstNodeContentsSchema::RangeRef(export_sheet_cell_ref_range(range))
+            AstNodeContentsSchema::RangeRef(export_sheet_cell_ref_range(range, id_resolver))
         }
         AstNodeContents::String(s) => AstNodeContentsSchema::String(s),
         AstNodeContents::Number(n) => AstNodeContentsSchema::Number(n),
@@ -199,8 +235,6 @@ fn export_ast_node_contents(contents: AstNodeContents) -> AstNodeContentsSchema 
 }
 
 fn export_ref_range_bounds(bounds: RefRangeBounds) -> current::RefRangeBoundsSchema {
-    use super::data_table::export_cell_ref_coord;
-
     current::RefRangeBoundsSchema {
         start: current::CellRefRangeEndSchema {
             col: export_cell_ref_coord(bounds.start.col),
@@ -213,7 +247,10 @@ fn export_ref_range_bounds(bounds: RefRangeBounds) -> current::RefRangeBoundsSch
     }
 }
 
-fn export_sheet_cell_ref_range(range: SheetCellRefRange) -> SheetCellRefRangeSchema {
+fn export_sheet_cell_ref_range(
+    range: SheetCellRefRange,
+    id_resolver: &TableIdResolver,
+) -> SheetCellRefRangeSchema {
     SheetCellRefRangeSchema {
         sheet_id: current::IdSchema::from(range.sheet_id.to_string()),
         cells: match range.cells {
@@ -221,16 +258,22 @@ fn export_sheet_cell_ref_range(range: SheetCellRefRange) -> SheetCellRefRangeSch
                 range: export_ref_range_bounds(range),
             },
             CellRefRange::Table { range } => CellRefRangeForAstSchema::Table {
-                range: export_table_ref(range),
+                range: export_table_ref(range, id_resolver),
             },
         },
         explicit_sheet_name: range.explicit_sheet_name,
     }
 }
 
-fn export_table_ref(range: TableRef) -> TableRefForAstSchema {
+fn export_table_ref(range: TableRef, id_resolver: &TableIdResolver) -> TableRefForAstSchema {
+    // Look up the table_name from the id. If not found, use a placeholder.
+    let table_name = id_resolver
+        .get(&range.table_id)
+        .cloned()
+        .unwrap_or_else(|| format!("Unknown_{}", range.table_id));
+
     TableRefForAstSchema {
-        table_name: range.table_name,
+        table_name,
         data: range.data,
         headers: range.headers,
         totals: range.totals,

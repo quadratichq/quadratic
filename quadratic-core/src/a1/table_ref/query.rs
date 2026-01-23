@@ -13,7 +13,7 @@ impl TableRef {
     pub fn selected_cols(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut cols = vec![];
 
-        if let Some(table) = a1_context.try_table(&self.table_name) {
+        if let Some(table) = a1_context.try_table_by_id(self.table_id) {
             match &self.col_range {
                 ColRange::All => {
                     let start = table.bounds.min.x;
@@ -63,7 +63,7 @@ impl TableRef {
     pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut rows = vec![];
 
-        if let Some(table) = a1_context.try_table(&self.table_name) {
+        if let Some(table) = a1_context.try_table_by_id(self.table_id) {
             let bounds = table.bounds;
             if self.headers && !self.data {
                 rows.push(bounds.min.y + (if table.show_name { 1 } else { 0 }));
@@ -88,7 +88,7 @@ impl TableRef {
 
     /// Whether the TableRef has more than one cell.
     pub fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
-        let Some(table_entry) = a1_context.try_table(&self.table_name) else {
+        let Some(table_entry) = a1_context.try_table_by_id(self.table_id) else {
             return false;
         };
         if self.headers && self.data {
@@ -127,7 +127,7 @@ impl TableRef {
     }
 
     pub fn to_largest_rect(&self, a1_context: &A1Context) -> Option<Rect> {
-        let table = a1_context.try_table(&self.table_name)?;
+        let table = a1_context.try_table_by_id(self.table_id)?;
         let bounds = table.bounds;
         let mut min_x = bounds.max.x;
         let mut max_x = bounds.min.x;
@@ -184,7 +184,7 @@ impl TableRef {
 
     /// Returns the cursor position from the last range.
     pub fn cursor_pos_from_last_range(&self, a1_context: &A1Context) -> Pos {
-        if let Some(table) = a1_context.try_table(&self.table_name) {
+        if let Some(table) = a1_context.try_table_by_id(self.table_id) {
             let x = table.bounds.min.x;
             let y = table.bounds.min.y
                 + if self.headers
@@ -226,10 +226,10 @@ impl TableRef {
         a1_context: &A1Context,
     ) -> Option<Vec<i64>> {
         let mut cols = vec![];
-        if table_name != self.table_name {
+        let table = a1_context.try_table_by_id(self.table_id)?;
+        if table_name != table.table_name {
             return None;
         }
-        let table = a1_context.try_table(&self.table_name)?;
         if !table.show_columns {
             return None;
         }
@@ -274,7 +274,7 @@ impl TableRef {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::RefRangeBounds, grid::CodeCellLanguage};
+    use crate::{a1::RefRangeBounds, grid::{CodeCellLanguage, TableId}};
 
     use super::*;
 
@@ -306,8 +306,9 @@ mod tests {
     #[test]
     fn test_selected_cols() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: false,
@@ -321,8 +322,9 @@ mod tests {
     #[test]
     fn test_selected_cols_hidden_columns() {
         let context = setup_test_context_with_hidden_columns();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("C".to_string()),
             data: true,
             headers: false,
@@ -345,10 +347,11 @@ mod tests {
             Rect::test_a1("A1:B3"),
             CodeCellLanguage::Import,
         );
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // One column, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("A".to_string()),
             data: true,
             headers: false,
@@ -366,7 +369,7 @@ mod tests {
 
         // Two columns, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
             data: true,
             headers: false,
@@ -376,7 +379,7 @@ mod tests {
 
         // One column, one row, and headers are selected
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("A".to_string()),
             data: true,
             headers: true,
@@ -386,7 +389,7 @@ mod tests {
 
         // One column, one row, and only headers are selected
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("A".to_string()),
             data: false,
             headers: true,
@@ -398,8 +401,9 @@ mod tests {
     #[test]
     fn test_to_largest_rect() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
             data: true,
             headers: false,
@@ -420,10 +424,11 @@ mod tests {
             Rect::test_a1("A1:C4"),
             CodeCellLanguage::Import,
         );
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Single column with all rows
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: false,
@@ -435,7 +440,7 @@ mod tests {
 
         // Column to end
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("B".to_string()),
             data: true,
             headers: false,
@@ -450,7 +455,7 @@ mod tests {
     fn test_is_two_dimensional() {
         // Single column is not two-dimensional
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id: TableId::TEST,
             col_range: ColRange::Col("A".to_string()),
             data: true,
             headers: false,
@@ -460,7 +465,7 @@ mod tests {
 
         // Column range with different start and end is two-dimensional
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id: TableId::TEST,
             col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
             data: true,
             headers: false,
@@ -470,7 +475,7 @@ mod tests {
 
         // Column to end is two-dimensional
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id: TableId::TEST,
             col_range: ColRange::ColToEnd("B".to_string()),
             data: true,
             headers: false,
@@ -482,8 +487,9 @@ mod tests {
     #[test]
     fn test_try_to_pos() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: false,
@@ -495,8 +501,9 @@ mod tests {
     #[test]
     fn test_cursor_pos_from_last_range() {
         let mut context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let mut table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: false,
@@ -521,8 +528,9 @@ mod tests {
     #[test]
     fn test_table_column_selection() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: true,
@@ -535,7 +543,7 @@ mod tests {
 
         // Test single column
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: true,
@@ -546,7 +554,7 @@ mod tests {
 
         // Test column range
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
             data: true,
             headers: true,
@@ -557,7 +565,7 @@ mod tests {
 
         // Test reversed column range
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("B".to_string(), "A".to_string()),
             data: true,
             headers: true,
@@ -568,7 +576,7 @@ mod tests {
 
         // Test column to end
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("B".to_string()),
             data: true,
             headers: true,
@@ -577,9 +585,9 @@ mod tests {
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![1, 2]));
 
-        // Test with different table name (should return empty vec)
+        // Test with different table name (should return None)
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: true,
@@ -592,10 +600,11 @@ mod tests {
     #[test]
     fn test_selected_cols_finite() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Test All columns
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -606,7 +615,7 @@ mod tests {
 
         // Test single column
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("B".to_string()),
             data: true,
             headers: false,
@@ -617,7 +626,7 @@ mod tests {
 
         // Test column range
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
             data: true,
             headers: false,
@@ -630,8 +639,9 @@ mod tests {
     #[test]
     fn test_selected_rows() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -644,7 +654,7 @@ mod tests {
 
         // Test headers only
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: false,
             headers: true,
@@ -655,7 +665,7 @@ mod tests {
 
         // Test out of bounds range
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -668,10 +678,11 @@ mod tests {
     #[test]
     fn test_selected_rows_finite() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Test data rows
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -682,7 +693,7 @@ mod tests {
 
         // Test headers
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: false,
             headers: true,
@@ -695,10 +706,11 @@ mod tests {
     #[test]
     fn test_selected_cols_edge_cases() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Test column range with out of bounds
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -709,7 +721,7 @@ mod tests {
 
         // Test non-existent table
         let table_ref = TableRef {
-            table_name: "non_existent".to_string(),
+            table_id: TableId::new(),
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -720,7 +732,7 @@ mod tests {
 
         // Test non-existent column
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Z".to_string()),
             data: true,
             headers: false,
@@ -740,10 +752,11 @@ mod tests {
             Rect::test_a1("A1:C4"),
             CodeCellLanguage::Import,
         );
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Test ColToEnd with multiple columns
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("B".to_string()),
             data: true,
             headers: false,
@@ -759,8 +772,9 @@ mod tests {
             Rect::test_a1("A1:A4"),
             CodeCellLanguage::Import,
         );
+        let single_col_id = context.try_table("single_col").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "single_col".to_string(),
+            table_id: single_col_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -774,7 +788,7 @@ mod tests {
         table.show_columns = false;
         context.table_map.insert(table);
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("A".to_string()),
             data: false,
             headers: true,
@@ -786,10 +800,11 @@ mod tests {
     #[test]
     fn test_to_largest_rect_comprehensive() {
         let context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
 
         // Test ColToEnd
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColToEnd("B".to_string()),
             data: true,
             headers: false,
@@ -800,8 +815,9 @@ mod tests {
 
         // Test with hidden columns
         let context = setup_test_context_with_hidden_columns();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: false,
@@ -812,7 +828,7 @@ mod tests {
 
         // Test with non-existent column
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::Col("Z".to_string()),
             data: true,
             headers: false,
@@ -824,8 +840,9 @@ mod tests {
     #[test]
     fn test_table_column_selection_ui_states() {
         let mut context = setup_test_context();
+        let table_id = context.try_table("test_table").unwrap().table_id;
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::All,
             data: true,
             headers: true,
@@ -856,7 +873,7 @@ mod tests {
 
         // Test with non-existent column in ColRange
         let table_ref = TableRef {
-            table_name: "test_table".to_string(),
+            table_id,
             col_range: ColRange::ColRange("A".to_string(), "Z".to_string()),
             data: true,
             headers: true,

@@ -12,9 +12,14 @@ impl TableRef {
     /// Returns None if the table is not found in the context.
     pub fn to_string_with_context(&self, a1_context: &A1Context) -> Option<String> {
         let table_name = self.table_name(a1_context)?;
+        Some(self.to_string_with_name(table_name))
+    }
 
+    /// Converts the TableRef to a string using the provided table name.
+    /// This is useful when replacing table names in formulas during rename operations.
+    pub fn to_string_with_name(&self, table_name: &str) -> String {
         if self.is_default() {
-            return Some(table_name.to_string());
+            return table_name.to_string();
         }
 
         let mut entries = vec![];
@@ -37,13 +42,13 @@ impl TableRef {
         }
 
         if entries.is_empty() && matches!(self.col_range, ColRange::Col(_)) {
-            Some(format!("{}{}", table_name, self.col_range))
+            format!("{}{}", table_name, self.col_range)
         } else {
             let col = self.col_range.to_string();
             if !col.is_empty() {
                 entries.push(col);
             }
-            Some(format!("{}[{}]", table_name, entries.join(",")))
+            format!("{}[{}]", table_name, entries.join(","))
         }
     }
 }

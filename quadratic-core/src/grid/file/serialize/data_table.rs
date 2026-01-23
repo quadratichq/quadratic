@@ -45,9 +45,22 @@ fn import_col_range(range: current::ColRangeSchema) -> ColRange {
     }
 }
 
-fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
+/// A resolver for converting table names to table IDs during import.
+pub type TableNameResolver = HashMap<String, TableId>;
+
+fn import_table_ref(
+    table_ref: current::TableRefSchema,
+    name_resolver: &TableNameResolver,
+) -> TableRef {
+    // Look up the table_id from the name. If not found, use a placeholder ID.
+    // This can happen if the referenced table doesn't exist (corrupted file).
+    let table_id = name_resolver
+        .get(&table_ref.table_name.to_lowercase())
+        .copied()
+        .unwrap_or_else(TableId::new);
+
     TableRef {
-        table_name: table_ref.table_name,
+        table_id,
         data: table_ref.data,
         headers: table_ref.headers,
         totals: table_ref.totals,
@@ -55,7 +68,10 @@ fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
     }
 }
 
-pub(crate) fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
+pub(crate) fn import_cell_ref_range(
+    range: current::CellRefRangeSchema,
+    name_resolver: &TableNameResolver,
+) -> CellRefRange {
     match range {
         current::CellRefRangeSchema::Sheet(ref_range_bounds) => CellRefRange::Sheet {
             range: RefRangeBounds {
@@ -70,13 +86,14 @@ pub(crate) fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellR
             },
         },
         current::CellRefRangeSchema::Table(table_ref) => CellRefRange::Table {
-            range: import_table_ref(table_ref),
+            range: import_table_ref(table_ref, name_resolver),
         },
     }
 }
 
 fn import_cells_accessed(
     cells_accessed: Vec<(current::IdSchema, Vec<current::CellRefRangeSchema>)>,
+    name_resolver: &TableNameResolver,
 ) -> Result<CellsAccessed> {
     let mut imported_cells = CellsAccessed::default();
 
@@ -84,7 +101,10 @@ fn import_cells_accessed(
         let sheet_id = SheetId::from_str(&id.to_string())?;
         imported_cells.cells.insert(
             sheet_id,
-            ranges.into_iter().map(import_cell_ref_range).collect(),
+            ranges
+                .into_iter()
+                .map(|r| import_cell_ref_range(r, name_resolver))
+                .collect(),
         );
     }
 
@@ -198,7 +218,13 @@ fn export_col_range(range: ColRange) -> current::ColRangeSchema {
     }
 }
 
-pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
+/// A resolver for converting table IDs to table names during export.
+pub type TableIdResolver = HashMap<TableId, String>;
+
+pub(crate) fn export_cell_ref_range(
+    range: CellRefRange,
+    id_resolver: &TableIdResolver,
+) -> current::CellRefRangeSchema {
     match range {
         CellRefRange::Sheet { range } => {
             current::CellRefRangeSchema::Sheet(current::RefRangeBoundsSchema {
@@ -213,8 +239,14 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
             })
         }
         CellRefRange::Table { range } => {
+            // Look up the table_name from the id. If not found, use a placeholder.
+            let table_name = id_resolver
+                .get(&range.table_id)
+                .cloned()
+                .unwrap_or_else(|| format!("Unknown_{}", range.table_id));
+
             current::CellRefRangeSchema::Table(current::TableRefSchema {
-                table_name: range.table_name,
+                table_name,
                 data: range.data,
                 headers: range.headers,
                 totals: range.totals,
@@ -226,6 +258,7 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
 
 fn export_cells_accessed(
     cells_accessed: CellsAccessed,
+    id_resolver: &TableIdResolver,
 ) -> Vec<(current::IdSchema, Vec<current::CellRefRangeSchema>)> {
     cells_accessed
         .cells
@@ -233,13 +266,19 @@ fn export_cells_accessed(
         .map(|(sheet_id, ranges)| {
             (
                 current::IdSchema::from(sheet_id.to_string()),
-                ranges.into_iter().map(export_cell_ref_range).collect(),
+                ranges
+                    .into_iter()
+                    .map(|r| export_cell_ref_range(r, id_resolver))
+                    .collect(),
             )
         })
         .collect()
 }
 
-pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+pub(crate) fn import_code_run_builder(
+    code_run: current::CodeRunSchema,
+    name_resolver: &TableNameResolver,
+) -> Result<CodeRun> {
     let error = if let Some(error) = code_run.error {
         Some(RunError {
             span: error.span.map(|span| crate::Span {
@@ -254,7 +293,7 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
 
     let formula_ast = code_run
         .formula_ast
-        .map(super::formula::import_formula)
+        .map(|ast| super::formula::import_formula(ast, name_resolver))
         .transpose()?;
 
     let code_run = CodeRun {
@@ -264,7 +303,7 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
-        cells_accessed: import_cells_accessed(code_run.cells_accessed)?,
+        cells_accessed: import_cells_accessed(code_run.cells_accessed, name_resolver)?,
         return_type: code_run.return_type,
         line_number: code_run.line_number,
         output_type: code_run.output_type,
@@ -276,6 +315,7 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
     columns: &SheetColumns,
+    name_resolver: &TableNameResolver,
 ) -> Result<SheetDataTables> {
     let mut sheet_data_tables = SheetDataTables::new();
 
@@ -289,7 +329,7 @@ pub(crate) fn import_data_table_builder(
             id,
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
-                    DataTableKind::CodeRun(import_code_run_builder(*code_run)?)
+                    DataTableKind::CodeRun(import_code_run_builder(*code_run, name_resolver)?)
                 }
                 current::DataTableKindSchema::Import(import) => {
                     DataTableKind::Import(crate::cellvalue::Import {
@@ -457,7 +497,10 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
     }
 }
 
-pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
+pub(crate) fn export_code_run(
+    code_run: CodeRun,
+    id_resolver: &TableIdResolver,
+) -> current::CodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
@@ -473,11 +516,13 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     current::CodeRunSchema {
         language: export_code_cell_language(code_run.language),
         code: code_run.code,
-        formula_ast: code_run.formula_ast.map(super::formula::export_formula),
+        formula_ast: code_run
+            .formula_ast
+            .map(|ast| super::formula::export_formula(ast, id_resolver)),
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
-        cells_accessed: export_cells_accessed(code_run.cells_accessed),
+        cells_accessed: export_cells_accessed(code_run.cells_accessed, id_resolver),
         return_type: code_run.return_type,
         line_number: code_run.line_number,
         output_type: code_run.output_type,
@@ -486,6 +531,7 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
 
 pub(crate) fn export_data_tables(
     sheet_data_tables: SheetDataTables,
+    id_resolver: &TableIdResolver,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
     sheet_data_tables
         .into_iter()
@@ -541,7 +587,7 @@ pub(crate) fn export_data_tables(
 
             let kind = match data_table.kind {
                 DataTableKind::CodeRun(code_run) => {
-                    let code_run = export_code_run(code_run);
+                    let code_run = export_code_run(code_run, id_resolver);
                     current::DataTableKindSchema::CodeRun(Box::new(code_run))
                 }
                 DataTableKind::Import(import) => {

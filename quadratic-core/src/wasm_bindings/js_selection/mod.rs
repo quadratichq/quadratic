@@ -59,14 +59,24 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "updateTableName")]
-    pub fn update_table_name(&mut self, old_name: String, new_name: String) {
-        self.selection.replace_table_name(&old_name, &new_name);
+    pub fn update_table_name(&mut self, _old_name: String, _new_name: String) {
+        // No-op: TableRef now uses table_id instead of table_name.
+        // Table renames don't require updating the selection since the table_id is stable.
+        // The table name is looked up from the context when displaying.
     }
 
     #[wasm_bindgen(js_name = "updateColumnName")]
-    pub fn update_column_name(&mut self, table_name: String, old_name: String, new_name: String) {
-        self.selection
-            .replace_column_name(&table_name, &old_name, &new_name);
+    pub fn update_column_name(
+        &mut self,
+        table_name: String,
+        old_name: String,
+        new_name: String,
+        context: &JsA1Context,
+    ) {
+        if let Some(table_id) = context.get_context().table_map.try_table_id(&table_name) {
+            self.selection
+                .replace_column_name(table_id, &old_name, &new_name);
+        }
     }
 
     #[wasm_bindgen(js_name = "getTableNameFromPos")]

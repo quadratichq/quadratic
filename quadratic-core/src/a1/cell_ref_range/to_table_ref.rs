@@ -51,7 +51,7 @@ impl CellRefRange {
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.to_string(),
+                            table_id: table.table_id,
                             col_range: ColRange::All,
                             data: true,
                             headers: false,
@@ -63,7 +63,7 @@ impl CellRefRange {
                 if table.is_html_image && b.contains(start.into()) && b.contains(end.into()) {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.to_string(),
+                            table_id: table.table_id,
                             col_range: ColRange::All,
                             data: true,
                             headers: false,
@@ -98,7 +98,7 @@ impl CellRefRange {
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.to_string(),
+                            table_id: table.table_id,
                             col_range,
                             data: true,
                             headers: false,
@@ -111,7 +111,7 @@ impl CellRefRange {
                 if start.y == b.min.y + adjust_for_name + adjust_for_columns && end.y == b.max.y {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.to_string(),
+                            table_id: table.table_id,
                             col_range,
                             data: true,
                             headers: false,
@@ -127,7 +127,7 @@ impl CellRefRange {
                 if full_table || data_and_headers {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.to_string(),
+                            table_id: table.table_id,
                             col_range,
                             data: true,
                             headers: true,
@@ -151,6 +151,7 @@ mod tests {
             &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C4"))],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A2:C4"),
         };
@@ -160,7 +161,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::All,
                     data: true,
                     headers: true,
@@ -176,6 +177,7 @@ mod tests {
             &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A3:C3"),
         };
@@ -185,7 +187,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::All,
                     data: true,
                     headers: false,
@@ -201,6 +203,7 @@ mod tests {
             &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A2:C2"),
         };
@@ -210,7 +213,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::All,
                     data: true,
                     headers: false,
@@ -228,7 +231,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::Col("col2".to_string()),
                     data: true,
                     headers: false,
@@ -244,6 +247,7 @@ mod tests {
             &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A3:B3"),
         };
@@ -253,7 +257,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::ColRange("col1".to_string(), "col2".to_string()),
                     data: true,
                     headers: false,
@@ -269,6 +273,7 @@ mod tests {
             &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("D5:F10"))],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("E10:E7"),
         };
@@ -278,7 +283,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::Col("col2".to_string()),
                     data: true,
                     headers: false,
@@ -347,6 +352,7 @@ mod tests {
                 Rect::test_a1("A1:D5"),
             )],
         );
+        let table_id = context.try_table("Table1").unwrap().table_id;
 
         // Test selecting multiple contiguous columns
         let cell_ref_range = CellRefRange::Sheet {
@@ -358,7 +364,7 @@ mod tests {
             table_ref,
             Some(CellRefRange::Table {
                 range: TableRef {
-                    table_name: "Table1".to_string(),
+                    table_id,
                     col_range: ColRange::ColRange("col2".to_string(), "col3".to_string()),
                     data: true,
                     headers: false,

@@ -461,7 +461,7 @@ impl GridController {
                     );
                 }
                 CellRefRange::Table { range } => {
-                    if let Some(table) = context.try_table(&range.table_name)
+                    if let Some(table) = context.try_table_by_id(range.table_id)
                         && let Some(range) =
                             range.convert_to_ref_range_bounds(true, context, false, false)
                     {

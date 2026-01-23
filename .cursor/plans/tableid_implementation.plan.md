@@ -4,10 +4,10 @@ overview: "Add a stable `table_id: TableId` to all tables, refactor `TableRef` t
 todos:
   - id: fix-tableref-errors
     content: Fix remaining 53 compilation errors for TableRef table_id change
-    status: pending
+    status: completed
   - id: update-cellrefrange
     content: Update CellRefRange parsing/display to resolve names to IDs and vice versa
-    status: pending
+    status: completed
   - id: create-tablepos
     content: Create TablePos struct with table_id and col/row offsets
     status: pending
@@ -19,6 +19,8 @@ todos:
     status: pending
 isProject: false
 ---
+
+review to start w/table_map.rs
 
 # TableId Implementation Plan
 
@@ -47,44 +49,35 @@ isProject: false
 - Index maps: `name_to_id: IndexMap<String, TableId>`, `sheet_pos_to_id: HashMap<SheetPos, TableId>`
 - New methods: `try_table_by_id()`, `try_table_id()`
 
-### 5. Changed `TableRef` to use `table_id` (IN PROGRESS)
+### 5. Changed `TableRef` to use `table_id` (COMPLETED)
 
 - Changed struct field from `table_name: String` to `table_id: TableId`
 - Updated `new()` to take `TableId`
 - Added `from_name()` constructor
 - Added `table_name()` method that takes `A1Context`
 - Changed `to_string()` to `to_string_with_context(&A1Context)`
+- Added `to_string_with_name()` for table name replacement during formula updates
 - Removed `replace_table_name()` method
 
-## Current State: 53 Compilation Errors
+### 6. Fixed all compilation errors (COMPLETED)
 
-Run `cargo check` in `quadratic-core` to see remaining errors. Main categories:
+All 53+ compilation errors have been fixed. Key changes made:
 
-- **29 errors**: Code accessing `table_name` as field → use `table_name(a1_context)` method
-- **13 errors**: Struct construction with `table_name` → use `table_id`
-- **3 errors**: Type mismatches
-- **2 errors**: `to_string()` calls → use `to_string_with_context()`
-- **1 error**: `replace_table_name` removed → needs new approach
+- Updated all `table_ref.table_name` field accesses to use `table_ref.table_name(a1_context)` method
+- Updated all `TableRef` struct constructions to use `table_id` (resolved from context)
+- Updated `CellRefRange` to use `to_a1_string_with_context()` and `to_rc_string_with_context()`
+- Added `to_a1_string_replacing_table_name()` for updating formula strings during table renames
+- Updated formulas parser to look up `table_id` from context during parsing
+- Updated serialization layer with `TableNameResolver` (for import) and `TableIdResolver` (for export)
+- Updated wasm bindings to pass context where needed
 
-### Files needing updates:
+## Current State: Compiles Successfully
 
-- `a1/a1_selection/query.rs` - Multiple `table_name` field accesses
-- `a1/cell_ref_range/*.rs` - TableRef construction and display
-- `grid/file/serialize/formula.rs` - Serialization uses table_name
-- `formulas/parser/rules/table_ref.rs` - Parser creates TableRef with name
+Run `cargo check` in `quadratic-core` - should compile with no errors.
 
 ## Remaining Todos
 
-### 1. Finish fixing compilation errors for TableRef
-
-Pattern: Replace `table_ref.table_name` with `table_ref.table_name(a1_context)`
-
-### 2. Update CellRefRange parsing/display
-
-- Resolve names to IDs during parse
-- Resolve IDs to names during display
-
-### 3. Create `TablePos` struct
+### 1. Create `TablePos` struct
 
 ```rust
 pub struct TablePos {
