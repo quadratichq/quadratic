@@ -140,8 +140,10 @@ impl Sheet {
         let data_pos = Pos::new(table_col as i64, table_row as i64);
 
         // First, check for CellValue::Code in the parent's value array
-        if let Some(CellValue::Code(_)) = data_table.cell_value_ref_at(table_col, table_row as u32)
-        {
+        // cell_value_ref_at expects display coordinates (relative to table top-left, including headers)
+        let display_x = (display_pos.x - data_table_pos.x) as u32;
+        let display_y = (display_pos.y - data_table_pos.y) as u32;
+        if let Some(CellValue::Code(_)) = data_table.cell_value_ref_at(display_x, display_y) {
             // This is a 1x1 code cell stored in the value array
             return Some(TablePos::new(data_table_pos, data_pos));
         }

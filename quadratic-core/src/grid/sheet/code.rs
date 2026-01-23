@@ -275,12 +275,16 @@ impl Sheet {
 
         // Check for nested in-table code cells (direct anchor or within multi-cell output)
         // First check if clicked position is the anchor of a nested code cell
+        // cell_value_ref_at expects display coordinates (relative to table top-left, including headers)
         let nested_code_table_pos = self.display_pos_to_in_table_code_pos(pos)
             .filter(|tp| {
                 // Check for CellValue::Code in parent's value array OR nested DataTable
+                // Use display coordinates for cell_value_ref_at
+                let dx = (pos.x - tp.parent_pos.x) as u32;
+                let dy = (pos.y - tp.parent_pos.y) as u32;
                 self.data_tables.get_at(&tp.parent_pos).is_some_and(|parent| {
                     matches!(
-                        parent.cell_value_ref_at(tp.sub_table_pos.x as u32, tp.sub_table_pos.y as u32),
+                        parent.cell_value_ref_at(dx, dy),
                         Some(CellValue::Code(_))
                     )
                 }) || self.data_tables.get_nested_table(tp).is_some_and(|t| t.is_code())
@@ -290,11 +294,19 @@ impl Sheet {
 
         if let Some(table_pos) = nested_code_table_pos {
             // First check for CellValue::Code in parent's value array
-            if let Some(parent_table) = self.data_tables.get_at(&table_pos.parent_pos)
-                && let Some(CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
-                    table_pos.sub_table_pos.x as u32,
-                    table_pos.sub_table_pos.y as u32,
-                )
+            // Convert table coordinates to display coordinates for cell_value_ref_at
+            let anchor_display_coords = self
+                .table_pos_to_sheet_pos(table_pos)
+                .map(|sp| {
+                    (
+                        (sp.x - table_pos.parent_pos.x) as u32,
+                        (sp.y - table_pos.parent_pos.y) as u32,
+                    )
+                });
+            if let Some((display_x, display_y)) = anchor_display_coords
+                && let Some(parent_table) = self.data_tables.get_at(&table_pos.parent_pos)
+                && let Some(CellValue::Code(code_cell)) =
+                    parent_table.cell_value_ref_at(display_x, display_y)
             {
                 let code_run = &code_cell.code_run;
                 let mut code: String = code_run.code.clone();

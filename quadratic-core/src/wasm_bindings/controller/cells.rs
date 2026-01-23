@@ -121,11 +121,12 @@ impl GridController {
         // Check for in-table code cells (direct anchor position)
         if let Some(table_pos) = sheet.display_pos_to_in_table_code_pos(pos) {
             // First check for CellValue::Code in the parent's value array (1x1 code cells)
+            // cell_value_ref_at expects display coordinates (relative to table top-left, including headers)
+            let display_x = (pos.x - table_pos.parent_pos.x) as u32;
+            let display_y = (pos.y - table_pos.parent_pos.y) as u32;
             if let Some(parent_table) = sheet.data_tables.get_at(&table_pos.parent_pos)
-                && let Some(crate::CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
-                    table_pos.sub_table_pos.x as u32,
-                    table_pos.sub_table_pos.y as u32,
-                )
+                && let Some(crate::CellValue::Code(code_cell)) =
+                    parent_table.cell_value_ref_at(display_x, display_y)
             {
                 let result = JsEditCell {
                     text: code_cell.output.to_edit(),
@@ -163,11 +164,19 @@ impl GridController {
         // (i.e., clicking on a cell that's part of the output but not the anchor)
         if let Some(anchor_table_pos) = sheet.find_covering_nested_code_cell(pos) {
             // First check for CellValue::Code in the parent's value array
-            if let Some(parent_table) = sheet.data_tables.get_at(&anchor_table_pos.parent_pos)
-                && let Some(crate::CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
-                    anchor_table_pos.sub_table_pos.x as u32,
-                    anchor_table_pos.sub_table_pos.y as u32,
-                )
+            // Convert table coordinates to display coordinates for cell_value_ref_at
+            let anchor_display_coords = sheet
+                .table_pos_to_sheet_pos(anchor_table_pos)
+                .map(|sp| {
+                    (
+                        (sp.x - anchor_table_pos.parent_pos.x) as u32,
+                        (sp.y - anchor_table_pos.parent_pos.y) as u32,
+                    )
+                });
+            if let Some((display_x, display_y)) = anchor_display_coords
+                && let Some(parent_table) = sheet.data_tables.get_at(&anchor_table_pos.parent_pos)
+                && let Some(crate::CellValue::Code(code_cell)) =
+                    parent_table.cell_value_ref_at(display_x, display_y)
             {
                 let result = JsEditCell {
                     text: code_cell.output.to_edit(),

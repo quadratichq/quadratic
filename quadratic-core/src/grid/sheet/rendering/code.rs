@@ -146,11 +146,12 @@ impl Sheet {
         // Check for nested in-table code cells
         if let Some(table_pos) = self.display_pos_to_in_table_code_pos(pos) {
             // First check for CellValue::Code in parent's value array
+            // cell_value_ref_at expects display coordinates (relative to table top-left, including headers)
+            let display_x = (pos.x - table_pos.parent_pos.x) as u32;
+            let display_y = (pos.y - table_pos.parent_pos.y) as u32;
             if let Some(parent_table) = self.data_tables.get_at(&table_pos.parent_pos)
-                && let Some(CellValue::Code(code_cell)) = parent_table.cell_value_ref_at(
-                    table_pos.sub_table_pos.x as u32,
-                    table_pos.sub_table_pos.y as u32,
-                )
+                && let Some(CellValue::Code(code_cell)) =
+                    parent_table.cell_value_ref_at(display_x, display_y)
             {
                 let code_run = &code_cell.code_run;
                 let state = if code_run.error.is_some() {

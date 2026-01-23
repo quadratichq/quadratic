@@ -38,18 +38,21 @@ export async function doubleClickCell(options: {
   let isSingleCell =
     codeCell !== undefined && codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
 
-  // If not found in client-side cache, check if it's a single-cell code cell via core API
-  // We also capture the code so we can pass it as initialCode (avoids a second API call)
-  // This also detects in-table code cells via the tablePos field
+  // Always check via core API to get the actual code for any code cell.
+  // This ensures we have the code for:
+  // - Cells not in client-side cache
+  // - Import tables (to detect in-table code cells)
+  // - Cached in-table code cells (need to fetch code each time)
+  // - Any other code cell (for consistent behavior)
   let singleCellCode: string | undefined;
   let editCellTablePos: JsTablePos | undefined;
-  if (!language) {
-    const editCell = await quadraticCore.getEditCell(sheets.current, column, row);
-    if (editCell?.codeCell) {
-      language = editCell.codeCell.language;
-      singleCellCode = editCell.codeCell.code;
-      editCellTablePos = editCell.codeCell.tablePos;
-      // In-table code cells are also single-cell from a UI perspective
+  const editCell = await quadraticCore.getEditCell(sheets.current, column, row);
+  if (editCell?.codeCell) {
+    language = editCell.codeCell.language;
+    singleCellCode = editCell.codeCell.code;
+    editCellTablePos = editCell.codeCell.tablePos;
+    // In-table code cells are also single-cell from a UI perspective
+    if (editCellTablePos) {
       isSingleCell = true;
     }
   }
@@ -61,10 +64,11 @@ export async function doubleClickCell(options: {
     const formula = language === 'Formula';
     const file_import = language === 'Import';
 
-    // For single-cell code cells detected via getEditCell, use the clicked position
-    // For table code cells, use the table's anchor position
-    const codeCellX = codeCell?.x ?? column;
-    const codeCellY = codeCell?.y ?? row;
+    // For in-table code cells (detected via getEditCell with tablePos), use the clicked position
+    // so getCodeCell can find the correct nested code cell.
+    // For regular table code cells, use the table's anchor position.
+    const codeCellX = editCellTablePos ? column : (codeCell?.x ?? column);
+    const codeCellY = editCellTablePos ? row : (codeCell?.y ?? row);
     const lastModified = codeCell ? Number(codeCell.last_modified) : Date.now();
 
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {

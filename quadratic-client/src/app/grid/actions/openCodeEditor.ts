@@ -42,7 +42,39 @@ export const openCodeEditor = async () => {
         escapePressed: true,
       });
     } else if (codeCell.language === 'Import') {
-      pixiAppSettings.snackbar('Cannot create code cell inside table', { severity: 'error' });
+      // Open the cell type menu to create an in-table code cell
+      // Calculate the tablePos for the new in-table code cell
+      const tablePos = {
+        parentX: BigInt(codeCell.x),
+        parentY: BigInt(codeCell.y),
+        subX: BigInt(x - codeCell.x),
+        subY: BigInt(y - codeCell.y - (codeCell.show_name ? 1 : 0) - (codeCell.show_columns ? 1 : 0)),
+      };
+
+      setEditorInteractionState((prev) => ({
+        ...prev,
+        showCellTypeMenu: true,
+      }));
+      setCodeEditorState({
+        ...codeEditorState,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+          waitingOnMessageIndex: undefined,
+        },
+        diffEditorContent: undefined,
+        initialCode: '',
+        codeCell: {
+          sheetId: sheets.current,
+          pos: { x, y },
+          language: codeEditorState.codeCell.language,
+          lastModified: 0,
+          isSingleCell: true,
+          tablePos,
+        },
+      });
     } else {
       // if the code editor is not already open on the same cell, then open it
       // this will also open the save changes modal if there are unsaved changes
