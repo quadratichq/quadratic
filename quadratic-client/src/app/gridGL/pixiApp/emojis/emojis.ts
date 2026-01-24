@@ -12,6 +12,12 @@ export const EMOJI_X_OFFSET_RATIO = 0.03;
 // EMOJI_Y_OFFSET_RATIO: vertical offset as fraction of lineHeight (moves emoji up when reduced)
 export const EMOJI_Y_OFFSET_RATIO = 0.1;
 
+// Normalize emoji by stripping variation selectors (U+FE0F, U+FE0E)
+// This allows lookups like 🅰️ (with VS16) to find 🅰 (without) in the spritesheet
+function normalizeEmoji(emoji: string): string {
+  return emoji.replace(/[\uFE0E\uFE0F]/g, '');
+}
+
 interface EmojiLocation {
   page: number;
   x: number;
@@ -103,13 +109,16 @@ class Emojis {
    * Returns undefined if the emoji is not in the spritesheet.
    */
   getCharacter(emoji: string): Texture | undefined {
+    // Normalize emoji by stripping variation selectors for consistent lookup
+    const normalizedEmoji = normalizeEmoji(emoji);
+
     // Start loading if not already started
     if (!this.loaded && !this.loadingPromise) {
       this.initialize();
     }
 
-    // Check cache first
-    const cached = this.emojiTextures.get(emoji);
+    // Check cache first (using normalized key)
+    const cached = this.emojiTextures.get(normalizedEmoji);
     if (cached) {
       return cached;
     }
@@ -120,20 +129,20 @@ class Emojis {
       return Texture.EMPTY;
     }
 
-    // Look up in mapping
-    const location = this.mapping?.emojis[emoji];
+    // Look up in mapping (using normalized key)
+    const location = this.mapping?.emojis[normalizedEmoji];
     if (location && this.baseTextures[location.page]) {
       const texture = new Texture(
         this.baseTextures[location.page],
         new Rectangle(location.x, location.y, location.width, location.height)
       );
-      this.emojiTextures.set(emoji, texture);
+      this.emojiTextures.set(normalizedEmoji, texture);
       return texture;
     }
 
     // Emoji not in spritesheet
     if (debugFlags.getFlag('debugShowCellHashesInfo')) {
-      console.log(`[Emojis] Emoji not in spritesheet: ${emoji}`);
+      console.log(`[Emojis] Emoji not in spritesheet: ${emoji} (normalized: ${normalizedEmoji})`);
     }
     return undefined;
   }

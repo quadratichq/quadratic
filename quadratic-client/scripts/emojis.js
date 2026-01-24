@@ -16,7 +16,6 @@
 import fse from 'fs-extra';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import opentype from 'opentype.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +30,7 @@ try {
   console.error('This script requires puppeteer to render color emojis.');
   console.error('Puppeteer is intentionally not in package.json to avoid bloating node_modules.\n');
   console.error('To install puppeteer temporarily and run this script:');
-  console.error('  npm install puppeteer opentype.js && node scripts/emojis.js\n');
+  console.error('  npm install puppeteer && node scripts/emojis.js\n');
   console.error('Or to install it just for this session:');
   console.error('  npx --yes puppeteer node scripts/emojis.js\n');
   process.exit(1);
@@ -46,293 +45,28 @@ const SCALE_EMOJI = 0.81;
 // Output directories
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'emojis');
 const FONT_PATH = path.join(__dirname, 'Noto_Color_Emoji', 'NotoColorEmoji-Regular.ttf');
+const EMOJI_METADATA_PATH = path.join(__dirname, 'emoji_metadata.json');
 
-// Unicode emoji ranges and sequences
+// Get emoji list from Google's official Noto Color Emoji metadata
 function getEmojiList() {
+  const metadata = JSON.parse(fse.readFileSync(EMOJI_METADATA_PATH, 'utf8'));
   const emojis = [];
 
-  // Basic emoticons and symbols (Miscellaneous Symbols and Pictographs)
-  for (let code = 0x1f300; code <= 0x1f5ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
+  for (const group of metadata) {
+    for (const emojiData of group.emoji) {
+      // Add base emoji (convert code points array to string)
+      const baseEmoji = String.fromCodePoint(...emojiData.base);
+      emojis.push(baseEmoji);
 
-  // Emoticons
-  for (let code = 0x1f600; code <= 0x1f64f; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Transport and map symbols
-  for (let code = 0x1f680; code <= 0x1f6ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Supplemental Symbols and Pictographs
-  for (let code = 0x1f900; code <= 0x1f9ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Symbols and Pictographs Extended-A
-  for (let code = 0x1fa00; code <= 0x1fa6f; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Symbols and Pictographs Extended-A (more)
-  for (let code = 0x1fa70; code <= 0x1faff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Dingbats
-  for (let code = 0x2700; code <= 0x27bf; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Miscellaneous Symbols
-  for (let code = 0x2600; code <= 0x26ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Arrows
-  for (let code = 0x2190; code <= 0x21ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Mathematical Operators (some are used as emojis)
-  for (let code = 0x2200; code <= 0x22ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Geometric Shapes
-  for (let code = 0x25a0; code <= 0x25ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Common symbol characters used as emojis
-  const additionalEmojis = [
-    '©',
-    '®',
-    '™',
-    '‼',
-    '⁉',
-    '#️⃣',
-    '*️⃣',
-    '0️⃣',
-    '1️⃣',
-    '2️⃣',
-    '3️⃣',
-    '4️⃣',
-    '5️⃣',
-    '6️⃣',
-    '7️⃣',
-    '8️⃣',
-    '9️⃣',
-    '🔟',
-    '🏳️',
-    '🏴',
-    '🏁',
-    '🚩',
-    '🎌',
-    '🏴‍☠️',
-  ];
-
-  emojis.push(...additionalEmojis);
-
-  // Regional indicator symbols for flags (A-Z)
-  for (let code = 0x1f1e6; code <= 0x1f1ff; code++) {
-    emojis.push(String.fromCodePoint(code));
-  }
-
-  // Common country flag combinations
-  const flagPairs = [
-    'US',
-    'GB',
-    'CA',
-    'AU',
-    'DE',
-    'FR',
-    'IT',
-    'ES',
-    'JP',
-    'CN',
-    'KR',
-    'IN',
-    'BR',
-    'MX',
-    'RU',
-    'NL',
-    'BE',
-    'CH',
-    'AT',
-    'SE',
-    'NO',
-    'DK',
-    'FI',
-    'PL',
-    'CZ',
-    'PT',
-    'GR',
-    'TR',
-    'IL',
-    'SA',
-    'AE',
-    'EG',
-    'ZA',
-    'NG',
-    'KE',
-    'AR',
-    'CL',
-    'CO',
-    'PE',
-    'VE',
-    'NZ',
-    'SG',
-    'MY',
-    'TH',
-    'VN',
-    'PH',
-    'ID',
-    'PK',
-    'BD',
-    'UA',
-    'IE',
-    'HU',
-    'RO',
-    'SK',
-    'HR',
-    'SI',
-    'BG',
-    'RS',
-    'LT',
-    'LV',
-    'EE',
-    'BY',
-    'MD',
-    'GE',
-    'AM',
-    'AZ',
-    'KZ',
-    'UZ',
-    'TM',
-    'KG',
-    'TJ',
-    'MN',
-    'AF',
-    'IQ',
-    'IR',
-    'SY',
-    'LB',
-    'JO',
-    'KW',
-    'QA',
-    'BH',
-    'OM',
-    'YE',
-    'HK',
-    'TW',
-    'MO',
-    'EU',
-  ];
-
-  for (const pair of flagPairs) {
-    const flag = String.fromCodePoint(0x1f1e6 + pair.charCodeAt(0) - 65, 0x1f1e6 + pair.charCodeAt(1) - 65);
-    emojis.push(flag);
-  }
-
-  // Skin tone modifiers applied to common emojis
-  const skinTones = [0x1f3fb, 0x1f3fc, 0x1f3fd, 0x1f3fe, 0x1f3ff];
-
-  const skinToneEmojis = [
-    0x1f44b, 0x1f44c, 0x1f44d, 0x1f44e, 0x1f44f, 0x1f64b, 0x1f64c, 0x1f64d, 0x1f64e, 0x1f64f, 0x1f466, 0x1f467, 0x1f468,
-    0x1f469, 0x1f474, 0x1f475, 0x1f476, 0x1f471, 0x1f472, 0x1f473, 0x1f46e, 0x1f477, 0x1f478, 0x1f385, 0x1f936, 0x1f9d1,
-    0x1f9d2, 0x1f9d3, 0x1f9d4,
-  ];
-
-  for (const baseEmoji of skinToneEmojis) {
-    for (const skinTone of skinTones) {
-      emojis.push(String.fromCodePoint(baseEmoji, skinTone));
+      // Add all alternates (skin tones, genders, etc.)
+      if (emojiData.alternates) {
+        for (const alt of emojiData.alternates) {
+          const altEmoji = String.fromCodePoint(...alt);
+          emojis.push(altEmoji);
+        }
+      }
     }
   }
-
-  // ZWJ sequences
-  const zwjSequences = [
-    '👨‍👩‍👦',
-    '👨‍👩‍👧',
-    '👨‍👩‍👧‍👦',
-    '👨‍👩‍👦‍👦',
-    '👨‍👩‍👧‍👧',
-    '👨‍👨‍👦',
-    '👨‍👨‍👧',
-    '👨‍👨‍👧‍👦',
-    '👨‍👨‍👦‍👦',
-    '👨‍👨‍👧‍👧',
-    '👩‍👩‍👦',
-    '👩‍👩‍👧',
-    '👩‍👩‍👧‍👦',
-    '👩‍👩‍👦‍👦',
-    '👩‍👩‍👧‍👧',
-    '👨‍👦',
-    '👨‍👦‍👦',
-    '👨‍👧',
-    '👨‍👧‍👦',
-    '👨‍👧‍👧',
-    '👩‍👦',
-    '👩‍👦‍👦',
-    '👩‍👧',
-    '👩‍👧‍👦',
-    '👩‍👧‍👧',
-    '👩‍❤️‍👨',
-    '👨‍❤️‍👨',
-    '👩‍❤️‍👩',
-    '👩‍❤️‍💋‍👨',
-    '👨‍❤️‍💋‍👨',
-    '👩‍❤️‍💋‍👩',
-    '👨‍⚕️',
-    '👩‍⚕️',
-    '👨‍🎓',
-    '👩‍🎓',
-    '👨‍🏫',
-    '👩‍🏫',
-    '👨‍⚖️',
-    '👩‍⚖️',
-    '👨‍🌾',
-    '👩‍🌾',
-    '👨‍🍳',
-    '👩‍🍳',
-    '👨‍🔧',
-    '👩‍🔧',
-    '👨‍🏭',
-    '👩‍🏭',
-    '👨‍💼',
-    '👩‍💼',
-    '👨‍🔬',
-    '👩‍🔬',
-    '👨‍💻',
-    '👩‍💻',
-    '👨‍🎤',
-    '👩‍🎤',
-    '👨‍🎨',
-    '👩‍🎨',
-    '👨‍✈️',
-    '👩‍✈️',
-    '👨‍🚀',
-    '👩‍🚀',
-    '👨‍🚒',
-    '👩‍🚒',
-    '🐻‍❄️',
-    '🧑‍🤝‍🧑',
-    '👭',
-    '👫',
-    '👬',
-    '🏳️‍🌈',
-    '🏳️‍⚧️',
-    '👁️‍🗨️',
-    '🧔‍♂️',
-    '🧔‍♀️',
-  ];
-
-  emojis.push(...zwjSequences);
-
-  const variationEmojis = ['☀️', '☁️', '☂️', '☃️', '☄️', '☎️', '⌚', '⌛', '⏰', '⏱️', '⏲️', '⏳'];
-  emojis.push(...variationEmojis);
 
   return emojis;
 }
@@ -353,26 +87,6 @@ async function generateSpritesheets() {
   console.log('Loading Noto Color Emoji font...');
   const fontBuffer = await fse.readFile(FONT_PATH);
   const fontBase64 = fontBuffer.toString('base64');
-
-  // Parse font with opentype.js to get available glyphs
-  console.log('Parsing font glyph table...');
-  const font = opentype.parse(fontBuffer.buffer);
-  const availableCodePoints = new Set();
-  
-  // Build set of code points that have glyphs in the font
-  for (let i = 0; i < font.glyphs.length; i++) {
-    const glyph = font.glyphs.get(i);
-    if (glyph.unicode !== undefined) {
-      availableCodePoints.add(glyph.unicode);
-    }
-    // Also add unicodes array if present (for composite glyphs)
-    if (glyph.unicodes) {
-      for (const u of glyph.unicodes) {
-        availableCodePoints.add(u);
-      }
-    }
-  }
-  console.log(`  Font contains ${availableCodePoints.size} glyphs`);
 
   // Launch browser
   console.log('Launching headless browser...');
@@ -450,37 +164,10 @@ async function generateSpritesheets() {
   await page.setContent(htmlTemplate);
   await page.waitForFunction(() => document.fonts.ready);
 
-  // Filter emojis to only include those with glyphs in the font
-  console.log('Filtering emojis by font glyph availability...');
-  
-  // Modifiers that don't need their own glyph (they modify other glyphs via GSUB)
-  const modifierCodePoints = new Set([
-    0xfe0f,  // Variation Selector-16 (emoji presentation)
-    0xfe0e,  // Variation Selector-15 (text presentation)
-    0x200d,  // Zero Width Joiner
-  ]);
-  
-  // Skin tone modifiers (Fitzpatrick scale) - these DO need to exist in the font
-  const skinToneModifiers = new Set([
-    0x1f3fb, 0x1f3fc, 0x1f3fd, 0x1f3fe, 0x1f3ff
-  ]);
-  
-  const validEmojis = uniqueEmojis.filter((emoji) => {
-    // Get all code points in this emoji
-    const codePoints = [...emoji].map((char) => char.codePointAt(0));
-    
-    // Get significant code points (exclude ZWJ and variation selectors)
-    const significantCodePoints = codePoints.filter((cp) => !modifierCodePoints.has(cp));
-    
-    if (significantCodePoints.length === 0) return false;
-    
-    // For the emoji to be valid, all significant code points must exist in the font
-    // This ensures skin tone variants work (base + skin tone modifier both need glyphs)
-    return significantCodePoints.every((cp) => availableCodePoints.has(cp));
-  });
-  
-  const filtered = uniqueEmojis.length - validEmojis.length;
-  console.log(`  ${validEmojis.length} emojis have glyphs (${filtered} filtered out)`);
+  // The emoji metadata from Google is authoritative - all emojis in it are valid
+  // No additional filtering needed since we're using the official Noto Color Emoji metadata
+  const validEmojis = uniqueEmojis;
+  console.log(`  Using ${validEmojis.length} emojis from official metadata`);
 
   const totalPages = Math.ceil(validEmojis.length / emojisPerPage);
   console.log(`Layout: ${emojisPerRow}x${emojisPerRow} = ${emojisPerPage} emojis per ${PAGE_SIZE}x${PAGE_SIZE} page`);
