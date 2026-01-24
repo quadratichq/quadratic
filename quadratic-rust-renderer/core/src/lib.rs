@@ -92,6 +92,8 @@ pub use types::{
     // Render types with Rgba colors
     RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial,
     RenderCodeCell, RenderCodeCellState, RenderFill,
+    // Color parsing for conditional formats
+    parse_color as parse_color_to_rgba,
     // Re-exports from quadratic-core
     GridBounds, Pos, SheetId, SheetOffsets,
 };

@@ -10,17 +10,14 @@ mod text;
 use std::collections::HashMap;
 
 use wgpu::{
-    Backends, Device, DeviceDescriptor, Extent3d, Features, Instance, InstanceDescriptor, Limits,
-    MemoryHints, PowerPreference, Queue, RequestAdapterOptions, Texture, TextureDescriptor,
+    Backends, DeviceDescriptor, Extent3d, Features, Instance, InstanceDescriptor, Limits,
+    MemoryHints, PowerPreference, RequestAdapterOptions, Texture, TextureDescriptor,
     TextureDimension, TextureFormat, TextureUsages,
 };
 
 use quadratic_renderer_core::emoji_loader::EmojiSpritesheet;
 use quadratic_renderer_core::sheets::text::BitmapFonts;
 use quadratic_renderer_core::WgpuRenderer;
-
-use crate::image_export::ImageFormat;
-use crate::request::RenderRequest;
 
 /// Base texture ID for chart images (to avoid collision with font textures)
 pub(super) const CHART_IMAGE_TEXTURE_BASE: u32 = 10000;

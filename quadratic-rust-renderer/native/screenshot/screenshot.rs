@@ -20,12 +20,14 @@
 
 use clap::Parser;
 use quadratic_core::color::Rgba;
+use quadratic_core::controller::GridController;
 use quadratic_core::grid::file::import;
 use quadratic_core::CellValue;
 use quadratic_core::Pos;
 use quadratic_renderer_core::emoji_loader::load_emoji_spritesheet;
 use quadratic_renderer_core::font_loader::load_fonts_from_directory;
 use quadratic_renderer_core::from_rgba;
+use quadratic_renderer_core::parse_color_to_rgba;
 use quadratic_renderer_core::{RenderCell, RenderFill};
 use quadratic_renderer_native::{
     BorderLineStyle, ChartImage, ImageFormat, NativeRenderer, RenderRequest, SelectionRange,
@@ -33,6 +35,7 @@ use quadratic_renderer_native::{
 };
 use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 #[command(name = "screenshot")]
@@ -84,6 +87,8 @@ struct Args {
 }
 
 fn main() -> anyhow::Result<()> {
+    let start_time = Instant::now();
+
     // Initialize logging
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
@@ -94,16 +99,22 @@ fn main() -> anyhow::Result<()> {
     let file_bytes = fs::read(&args.file)?;
     let grid = import(file_bytes)?;
 
+    // Create GridController for conditional formatting support
+    let gc = GridController::from_grid(grid, 0);
+
     // Get the sheet
-    let sheets = grid.sheets();
-    if args.sheet >= sheets.len() {
+    let sheet_ids = gc.sheet_ids();
+    if args.sheet >= sheet_ids.len() {
         anyhow::bail!(
             "Sheet index {} out of range. Grid has {} sheets.",
             args.sheet,
-            sheets.len()
+            sheet_ids.len()
         );
     }
-    let sheet = &sheets[args.sheet];
+    let sheet_id = sheet_ids[args.sheet];
+    let sheet = gc.try_sheet(sheet_id).ok_or_else(|| {
+        anyhow::anyhow!("Sheet with id {:?} not found", sheet_id)
+    })?;
     println!("Using sheet: {}", sheet.name());
 
     // Parse the range in A1 notation (e.g., "A1:J20")
@@ -165,13 +176,30 @@ fn main() -> anyhow::Result<()> {
 
     // Get fills and convert from JsRenderFill to RenderFill
     let js_fills = sheet.get_render_fills_in_rect(render_rect);
-    request.fills = js_fills.into_iter().map(RenderFill::from).collect();
+    let mut fills: Vec<RenderFill> = js_fills.into_iter().map(RenderFill::from).collect();
+
+    // Get conditional format fills and merge them (they render on top of static fills)
+    let a1_context = gc.a1_context();
+    let cf_fills = gc.get_conditional_format_fills(sheet_id, render_rect, a1_context);
+    for (rect, color) in cf_fills {
+        fills.push(RenderFill::new(
+            rect.min.x,
+            rect.min.y,
+            (rect.max.x - rect.min.x + 1) as u32,
+            (rect.max.y - rect.min.y + 1) as u32,
+            parse_color_to_rgba(&color),
+        ));
+    }
+    request.fills = fills;
 
     println!("Found {} fills", request.fills.len());
 
     // Get cells and convert from JsRenderCell to RenderCell
-    let a1_context = grid.expensive_make_a1_context();
-    let js_cells = sheet.get_render_cells(render_rect, &a1_context);
+    let mut js_cells = sheet.get_render_cells(render_rect, a1_context);
+
+    // Apply conditional formatting to cells (text styles: bold, italic, underline, strikethrough, text_color)
+    gc.apply_conditional_formatting_to_cells(sheet_id, render_rect, &mut js_cells);
+
     let mut cells: Vec<RenderCell> = js_cells.into_iter().map(RenderCell::from).collect();
 
     // Table header text colors (matching TS renderer)
@@ -462,7 +490,13 @@ fn main() -> anyhow::Result<()> {
 
     // Save to file
     fs::write(&args.output, &image_bytes)?;
-    println!("Saved to {:?} ({} bytes)", args.output, image_bytes.len());
+    let elapsed = start_time.elapsed();
+    println!(
+        "Saved to {:?} ({} bytes) in {:.2}s",
+        args.output,
+        image_bytes.len(),
+        elapsed.as_secs_f64()
+    );
 
     Ok(())
 }

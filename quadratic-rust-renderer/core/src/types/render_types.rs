@@ -21,7 +21,7 @@ pub use quadratic_core::sheet_offsets::SheetOffsets;
 pub use quadratic_core::Pos;
 
 /// Parse a color string (hex #RRGGBB or CSS rgb(...)) into Rgba
-fn parse_color(color: &str) -> Rgba {
+pub fn parse_color(color: &str) -> Rgba {
     // Try hex format if it starts with #
     if color.starts_with('#') {
         if let Ok(rgba) = Rgba::color_from_str(color) {
