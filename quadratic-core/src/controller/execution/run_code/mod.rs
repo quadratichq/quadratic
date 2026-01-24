@@ -585,7 +585,7 @@ impl GridController {
             _ => None,
         };
 
-        let data_table = DataTable::new(
+        let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
@@ -594,6 +594,9 @@ impl GridController {
             None,
             chart_output,
         );
+
+        // Set chart_image if present in the result
+        data_table.chart_image = js_code_result.chart_image;
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
         if !js_code_result.has_headers

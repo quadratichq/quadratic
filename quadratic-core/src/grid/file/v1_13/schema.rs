@@ -193,6 +193,9 @@ pub struct DataTableSchema {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_image: Option<String>,
 }
 
 pub type DataTablesSchema = Vec<(PosSchema, DataTableSchema)>;

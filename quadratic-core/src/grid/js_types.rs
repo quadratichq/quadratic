@@ -442,6 +442,7 @@ pub struct JsHtmlOutput {
     pub html: Option<String>,
     pub name: String,
     pub show_name: bool,
+    pub chart_image: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]

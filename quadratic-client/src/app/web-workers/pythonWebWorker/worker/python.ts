@@ -12,6 +12,9 @@ import { loadPyodide } from 'pyodide';
 
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
+const DEFAULT_CHART_WIDTH = 600;
+const DEFAULT_CHART_HEIGHT = 460;
+
 // eslint-disable-next-line no-restricted-globals
 const SELF = self;
 
@@ -300,6 +303,32 @@ class Python {
       pythonRun.array_output = [];
     }
 
+    // Capture chart image if output is a Plotly chart
+    let chartImage: string | null = null;
+    const outputStr = pythonRun.output ? String(pythonRun.output) : '';
+    const looksLikePlotly = outputStr.includes('plotly') || outputStr.includes('Plotly');
+    const isChart = pythonRun.output_type === 'Chart' || looksLikePlotly;
+
+    if (isChart && pythonRun.output) {
+      const outputTuple = pythonRun.output as unknown as [string, number | string];
+      let htmlString = outputTuple[0];
+
+      // If the first element isn't a string with HTML, try using the stringified output
+      if (!htmlString || typeof htmlString !== 'string' || !htmlString.includes('<html')) {
+        if (outputStr.includes('<html')) {
+          htmlString = outputStr;
+        }
+      }
+
+      if (htmlString && typeof htmlString === 'string' && htmlString.includes('<html')) {
+        try {
+          chartImage = await pythonClient.captureChartImage(htmlString, DEFAULT_CHART_WIDTH, DEFAULT_CHART_HEIGHT);
+        } catch (e) {
+          console.error('[python.ts] Failed to capture chart image:', e);
+        }
+      }
+    }
+
     let codeResult: JsCodeResult | undefined = {
       transaction_id: this.transactionId,
       success: pythonRun.success,
@@ -310,6 +339,7 @@ class Python {
       line_number: pythonRun.lineno ?? null,
       output_display_type: pythonRun.output_type ?? null,
       chart_pixel_output: null,
+      chart_image: chartImage,
       has_headers: !!pythonRun.has_headers,
     };
 

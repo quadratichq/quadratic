@@ -146,6 +146,11 @@ with redirect_stdout(__quadratic_std_out__):
         let output_type = processed_result.get_item("output_type")?.extract()?;
         let has_headers = processed_result.get_item("has_headers")?.extract()?;
 
+        // extract chart_image if present (base64 WebP data URL)
+        let chart_image = processed_result
+            .get_item("chart_image")?
+            .extract::<Option<String>>()?;
+
         // convert to JsCellValueResult format (tuple struct with value, type_id)
         let output_value = processed_result
             .get_item("output_value")?
@@ -205,6 +210,7 @@ with redirect_stdout(__quadratic_std_out__):
             output_array: js_output_array,
             output_display_type: Some(output_type),
             chart_pixel_output: None,
+            chart_image,
             has_headers,
         })
     });
@@ -256,6 +262,7 @@ with redirect_stdout(__quadratic_std_out__):
                     output_array: None,
                     output_display_type: None,
                     chart_pixel_output: None,
+                    chart_image: None,
                     has_headers: false,
                 });
             }
@@ -282,6 +289,7 @@ with redirect_stdout(__quadratic_std_out__):
                 output_array: None,
                 output_display_type: None,
                 chart_pixel_output: None,
+                chart_image: None,
                 has_headers: false,
             })
         }),
@@ -384,6 +392,7 @@ not python code on line 2
             output_array: None,
             output_display_type: None,
             chart_pixel_output: None,
+            chart_image: None,
             has_headers: false,
         };
 

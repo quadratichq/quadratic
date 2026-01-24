@@ -1,6 +1,7 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
+  ClientPythonChartImage,
   ClientPythonGetJwt,
   ClientPythonMessage,
   PythonClientMessage,
@@ -83,6 +84,14 @@ class PythonClient {
       const id = this.id++;
       this.waitingForResponse[id] = (message: ClientPythonGetJwt) => resolve(message.jwt);
       this.send({ type: 'pythonClientGetJwt', id });
+    });
+  }
+
+  captureChartImage(html: string, width: number, height: number): Promise<string | null> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: ClientPythonChartImage) => resolve(message.image);
+      this.send({ type: 'pythonClientCaptureChartImage', id, html, width, height });
     });
   }
 }

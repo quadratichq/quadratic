@@ -62,6 +62,9 @@ pub struct DataTableTemplate {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_pixel_output: Option<(f32, f32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_image: Option<String>,
 }
 
 impl From<&DataTable> for DataTableTemplate {
@@ -73,6 +76,7 @@ impl From<&DataTable> for DataTableTemplate {
             header_is_first_row: dt.header_is_first_row,
             chart_output: dt.chart_output,
             chart_pixel_output: dt.chart_pixel_output,
+            chart_image: dt.chart_image.clone(),
         }
     }
 }
@@ -263,6 +267,10 @@ pub struct DataTable {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    // base64 encoded WebP image of the chart for thumbnails and cloud rendering
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_image: Option<String>,
 }
 
 impl From<(Import, Array, &A1Context)> for DataTable {
@@ -315,6 +323,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
+            chart_image: None,
         };
 
         if header_is_first_row {
@@ -347,6 +356,7 @@ impl DataTable {
             show_columns: self.show_columns,
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
+            chart_image: self.chart_image.clone(),
         }
     }
 

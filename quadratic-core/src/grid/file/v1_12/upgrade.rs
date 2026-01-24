@@ -135,6 +135,7 @@ fn upgrade_table(table: current::DataTableSchema) -> v1_13::DataTableSchema {
         borders: table.borders,
         chart_pixel_output: table.chart_pixel_output,
         chart_output: table.chart_output,
+        chart_image: None,
     }
 }
 

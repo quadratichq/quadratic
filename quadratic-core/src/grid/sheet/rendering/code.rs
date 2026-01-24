@@ -28,6 +28,7 @@ impl Sheet {
             html: Some(output.to_display()),
             name: dt.name().to_string(),
             show_name: dt.get_show_name(),
+            chart_image: dt.chart_image.clone(),
         })
     }
 
@@ -51,6 +52,7 @@ impl Sheet {
                     html: Some(output.to_display()),
                     name: dt.name().to_string(),
                     show_name: dt.get_show_name(),
+                    chart_image: dt.chart_image.clone(),
                 })
             })
             .collect()
@@ -277,6 +279,7 @@ mod tests {
                 html: Some("<html></html>".to_string()),
                 show_name: true,
                 name: "Python1".to_string(),
+                chart_image: None,
             }
         );
         gc.set_chart_size(
@@ -304,6 +307,7 @@ mod tests {
                 html: Some("<html></html>".to_string()),
                 show_name: true,
                 name: "Python1".to_string(),
+                chart_image: None,
             }
         );
     }
