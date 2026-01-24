@@ -86,6 +86,27 @@ impl Rgba {
         if s.len() < 8 { s } else { s[0..7].to_string() }
     }
 
+    /// Convert to a normalized f32 array [r, g, b, a] with values in 0.0..1.0 range.
+    /// Useful for GPU rendering where colors are typically normalized floats.
+    pub fn to_f32_array(&self) -> [f32; 4] {
+        [
+            self.red as f32 / 255.0,
+            self.green as f32 / 255.0,
+            self.blue as f32 / 255.0,
+            self.alpha as f32 / 255.0,
+        ]
+    }
+
+    /// Create an Rgba from RGB values (alpha defaults to 255).
+    pub const fn rgb(red: u8, green: u8, blue: u8) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha: 255,
+        }
+    }
+
     /// Compute the relative luminance of this color.
     /// Uses the sRGB luminance formula: L = 0.2126*R + 0.7152*G + 0.0722*B
     /// Returns a value between 0.0 (black) and 1.0 (white).
