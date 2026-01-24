@@ -25,8 +25,12 @@ pub const LINE_HEIGHT: f32 = 16.0;
 pub const DEFAULT_CELL_HEIGHT: f32 = 21.0;
 pub const CELL_VERTICAL_PADDING: f32 = 2.5;
 
-/// Extra left padding for table name cells to make room for language icons
-pub const TABLE_NAME_ICON_PADDING: f32 = 20.0;
+/// Base left padding for all table name cells (matches TypeScript TABLE_NAME_PADDING[0])
+pub const TABLE_NAME_PADDING: f32 = 4.0;
+
+/// Extra left padding for table name cells with language icons (symbol width + spacing)
+/// Total padding for icon tables = TABLE_NAME_PADDING + TABLE_NAME_ICON_EXTRA
+pub const TABLE_NAME_ICON_EXTRA: f32 = 16.0;
 
 /// OpenSans rendering fix (magic numbers from TypeScript)
 pub const OPEN_SANS_FIX_X: f32 = 1.8;
@@ -240,6 +244,9 @@ pub struct CellLabel {
     /// Link spans for RichText hyperlinks
     link_spans: Vec<RenderCellLinkSpan>,
 
+    /// Whether this is a table name cell (needs base left padding).
+    is_table_name: bool,
+
     /// Whether this cell needs extra left padding for a table name icon.
     /// Only true for table names with languages that have icons (not Import).
     has_table_icon: bool,
@@ -324,6 +331,7 @@ impl CellLabel {
             strike_through: false,
             format_spans: Vec::new(),
             link_spans: Vec::new(),
+            is_table_name: false,
             has_table_icon: false,
             table_columns: None,
             text_x: 0.0,
@@ -395,6 +403,9 @@ impl CellLabel {
         // - Other table cells (column_header implies table) default to clip, can be wrap, but never overflow
         let is_table_name = cell.table_name.unwrap_or(false);
         let is_column_header = cell.column_header.unwrap_or(false);
+
+        // Store table name flag for base padding
+        label.is_table_name = is_table_name;
 
         // Check if this table name has a language with an icon (Import tables have no icon)
         let language_has_icon = cell.language.as_ref().is_some_and(|lang| {
@@ -499,16 +510,18 @@ impl CellLabel {
             _single_width
         };
 
-        // Apply extra left padding for table names that have icons
-        let icon_padding = if self.has_table_icon {
-            TABLE_NAME_ICON_PADDING
+        // Apply left padding for table names:
+        // - All table names get base padding (TABLE_NAME_PADDING)
+        // - Table names with icons get additional icon padding (TABLE_NAME_ICON_EXTRA)
+        let left_padding = if self.is_table_name {
+            TABLE_NAME_PADDING + if self.has_table_icon { TABLE_NAME_ICON_EXTRA } else { 0.0 }
         } else {
             0.0
         };
 
-        self.cell_x = x as f32 + icon_padding;
+        self.cell_x = x as f32 + left_padding;
         self.cell_y = y as f32;
-        self.cell_width = (width as f32 - icon_padding).max(0.0);
+        self.cell_width = (width as f32 - left_padding).max(0.0);
         self.cell_height = height as f32;
         self.mesh_dirty = true;
     }

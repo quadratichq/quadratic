@@ -393,6 +393,17 @@ fn main() -> anyhow::Result<()> {
     request.table_outlines = table_outlines;
     request.table_name_icons = table_name_icons;
 
+    // Remove cells that are underneath table name rows (they would overlap with the table name)
+    if !table_name_cells.is_empty() {
+        let table_name_positions: std::collections::HashSet<(i64, i64)> = table_name_cells
+            .iter()
+            .map(|cell| (cell.x, cell.y))
+            .collect();
+        request
+            .cells
+            .retain(|cell| !table_name_positions.contains(&(cell.x, cell.y)));
+    }
+
     // Add table name cells to the cells list
     request.cells.extend(table_name_cells);
     println!(
