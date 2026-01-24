@@ -211,16 +211,23 @@ impl RenderRequest {
     pub fn calculate_viewport(&self) -> (f32, f32, f32) {
         let (world_x, world_y, world_w, world_h) = self.selection.world_bounds(&self.offsets);
 
-        // Calculate scale to fit selection in output size
+        // Add 1-pixel buffer on each edge so lines are visible
+        let buffer = 1.0;
+        let total_buffer = buffer * 2.0; // left+right, top+bottom
+
+        // Calculate scale to fit selection in output size minus buffers on both sides
         // When dimensions are calculated from aspect ratio, scale_x ≈ scale_y
-        let scale_x = self.width as f32 / world_w;
-        let scale_y = self.height as f32 / world_h;
+        let scale_x = (self.width as f32 - total_buffer) / world_w;
+        let scale_y = (self.height as f32 - total_buffer) / world_h;
 
         // Use provided scale or the minimum to ensure content fits
         let scale = self.scale.unwrap_or_else(|| scale_x.min(scale_y));
 
-        // Position at exact start of selection (no centering offset)
-        (world_x, world_y, scale)
+        // Offset viewport to create buffer (shift content right/down by 1 pixel)
+        let viewport_x = world_x - buffer / scale;
+        let viewport_y = world_y - buffer / scale;
+
+        (viewport_x, viewport_y, scale)
     }
 
     /// Get background color (default white)

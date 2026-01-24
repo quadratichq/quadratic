@@ -9,6 +9,7 @@
 use quadratic_core::grid::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use quadratic_core::sheet_offsets::SheetOffsets;
 
+use crate::emoji_loader::EMOJI_Y_OFFSET_RATIO;
 use crate::types::{RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial};
 
 use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
@@ -815,6 +816,10 @@ impl CellLabel {
         let scale = font.scale_for_size(self.font_size);
         let mut result = Vec::with_capacity(self.emoji_chars.len());
 
+        // Calculate scaled line height for Y offset (matching TypeScript)
+        let scaled_line_height = (self.font_size / DEFAULT_FONT_SIZE) * LINE_HEIGHT;
+        let y_offset = scaled_line_height * EMOJI_Y_OFFSET_RATIO;
+
         for emoji in &self.emoji_chars {
             let align_offset = self
                 .horizontal_align_offsets
@@ -828,7 +833,7 @@ impl CellLabel {
             let left = self.text_x + (emoji.position_x + align_offset) * scale + OPEN_SANS_FIX_X;
             let x = left + width / 2.0;
 
-            let line_top = self.text_y + emoji.position_y * scale + OPEN_SANS_FIX_Y;
+            let line_top = self.text_y + emoji.position_y * scale + OPEN_SANS_FIX_Y + y_offset;
             let y = line_top + height / 2.0;
 
             result.push(EmojiCharData {

@@ -103,8 +103,8 @@ pub struct EmojiUV {
 impl EmojiSpritesheet {
     /// Parse emoji mapping from JSON string
     pub fn from_json(json: &str) -> anyhow::Result<Self> {
-        let mapping: EmojiMapping =
-            serde_json::from_str(json).map_err(|e| anyhow::anyhow!("Failed to parse emoji mapping JSON: {}", e))?;
+        let mapping: EmojiMapping = serde_json::from_str(json)
+            .map_err(|e| anyhow::anyhow!("Failed to parse emoji mapping JSON: {}", e))?;
 
         log::info!(
             "Loaded emoji mapping: {} pages, {} emojis",
@@ -189,6 +189,17 @@ impl EmojiSpritesheet {
     /// Get the character size (in pixels)
     pub fn character_size(&self) -> u32 {
         self.mapping.character_size
+    }
+}
+
+// Implement EmojiLookup trait for emoji detection during text layout
+impl crate::sheets::text::EmojiLookup for EmojiSpritesheet {
+    fn is_potential_emoji(&self, c: char) -> bool {
+        crate::sheets::text::is_potential_emoji(c)
+    }
+
+    fn has_emoji(&self, emoji: &str) -> bool {
+        self.has_emoji(emoji)
     }
 }
 

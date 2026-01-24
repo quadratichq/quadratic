@@ -74,8 +74,18 @@ impl TableOutline {
         self
     }
 
+    pub fn with_clipped_top(mut self, clipped: bool) -> Self {
+        self.clipped_top = clipped;
+        self
+    }
+
     pub fn with_clipped_bottom(mut self, clipped: bool) -> Self {
         self.clipped_bottom = clipped;
+        self
+    }
+
+    pub fn with_clipped_left(mut self, clipped: bool) -> Self {
+        self.clipped_left = clipped;
         self
     }
 
@@ -152,10 +162,14 @@ impl TableOutlines {
 
             let color = table.outline_color();
 
-            // Draw outline lines (skip edges that are clipped)
-            outline_lines.add_line(x, y, x + w, y, color); // Top (always draw)
-            outline_lines.add_line(x, y, x, y + h, color); // Left (always draw)
-
+            // Draw outline lines centered on cell borders (0.5 pixels on each side)
+            // Skip edges that are clipped to the viewport boundary
+            if !table.clipped_top {
+                outline_lines.add_line(x, y, x + w, y, color); // Top
+            }
+            if !table.clipped_left {
+                outline_lines.add_line(x, y, x, y + h, color); // Left
+            }
             if !table.clipped_bottom {
                 outline_lines.add_line(x, y + h, x + w, y + h, color); // Bottom
             }

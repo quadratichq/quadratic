@@ -1,6 +1,6 @@
-//! Screenshot - Render a Quadratic grid file to PNG
+//! Screenshot - Render a Quadratic grid file to an image
 //!
-//! This tool loads a .grid file and renders a specified range to PNG.
+//! This tool loads a .grid file and renders a specified range to PNG, JPEG, or WebP.
 //! The image is sized to exactly fit the cell area while maintaining aspect ratio.
 //!
 //! Usage:
@@ -9,10 +9,11 @@
 //!     --range "A1:J20" \
 //!     --output output.png \
 //!     --width 800 \
+//!     --format png \
 //!     --fonts path/to/fonts
 //!
 //! Or via npm:
-//!   npm run screenshot -- --file path/to/file.grid --range "A1:J20"
+//!   npm run screenshot -- --file path/to/file.grid --range "A1:J20" --format webp --quality 90
 //!
 //! Note: Specify either --width OR --height. The other dimension will be
 //! calculated to match the cell area's aspect ratio.
@@ -20,21 +21,22 @@
 use clap::Parser;
 use quadratic_core::color::Rgba;
 use quadratic_core::grid::file::import;
+use quadratic_core::CellValue;
 use quadratic_core::Pos;
 use quadratic_renderer_core::emoji_loader::load_emoji_spritesheet;
 use quadratic_renderer_core::font_loader::load_fonts_from_directory;
 use quadratic_renderer_core::from_rgba;
 use quadratic_renderer_core::{RenderCell, RenderFill};
 use quadratic_renderer_native::{
-    BorderLineStyle, ChartImage, NativeRenderer, RenderRequest, SelectionRange, SheetBorders,
-    TableNameIcon, TableOutline, TableOutlines,
+    BorderLineStyle, ChartImage, ImageFormat, NativeRenderer, RenderRequest, SelectionRange,
+    SheetBorders, TableNameIcon, TableOutline, TableOutlines,
 };
 use std::fs;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(name = "screenshot")]
-#[command(about = "Render a Quadratic grid file to PNG screenshot")]
+#[command(about = "Render a Quadratic grid file to an image screenshot")]
 struct Args {
     /// Input grid file (.grid)
     #[arg(short, long)]
@@ -44,9 +46,17 @@ struct Args {
     #[arg(short, long, default_value = "A1:J20")]
     range: String,
 
-    /// Output PNG file
+    /// Output image file
     #[arg(short, long, default_value = "output.png")]
     output: PathBuf,
+
+    /// Output format: png, jpeg, or webp
+    #[arg(long, default_value = "png")]
+    format: String,
+
+    /// Quality for JPEG (0-100). WebP is always lossless.
+    #[arg(short = 'q', long, default_value = "90")]
+    quality: u8,
 
     /// Output width in pixels (if not set, calculated from height)
     #[arg(long)]
@@ -204,11 +214,6 @@ fn main() -> anyhow::Result<()> {
     }
 
     request.borders = borders;
-    println!(
-        "Found {} horizontal and {} vertical borders",
-        request.borders.horizontal.len(),
-        request.borders.vertical.len()
-    );
 
     // Get table outlines (code cells / data tables)
     // Only include tables that intersect with the selection, clipped to selection bounds
@@ -239,8 +244,10 @@ fn main() -> anyhow::Result<()> {
         let clipped_w = (clipped_right - clipped_x) as u32;
         let clipped_h = (clipped_bottom - clipped_y) as u32;
 
-        // Check if table extends beyond selection bounds
+        // Check if table extends beyond selection bounds (clipped edges)
+        let is_clipped_top = table_y < selection.start_row;
         let is_clipped_bottom = table_bottom > selection.end_row + 1;
+        let is_clipped_left = table_x < selection.start_col;
         let is_clipped_right = table_right > selection.end_col + 1;
 
         // Only show name/columns if the top of the table is visible
@@ -251,7 +258,9 @@ fn main() -> anyhow::Result<()> {
         let mut table = TableOutline::new(clipped_x, clipped_y, clipped_w, clipped_h)
             .with_show_columns(show_columns)
             .with_active(false) // No active table in static render
+            .with_clipped_top(is_clipped_top)
             .with_clipped_bottom(is_clipped_bottom)
+            .with_clipped_left(is_clipped_left)
             .with_clipped_right(is_clipped_right);
 
         if show_name {
@@ -279,6 +288,31 @@ fn main() -> anyhow::Result<()> {
 
         table_outlines.add(table);
     }
+
+    // Also process single-cell CellValue::Code cells (formulas, etc.)
+    // These are 1x1 code cells that aren't stored as DataTables
+    for pos in sheet.iter_code_cells_positions() {
+        // Check if cell is in selection
+        if pos.x < selection.start_col
+            || pos.x > selection.end_col
+            || pos.y < selection.start_row
+            || pos.y > selection.end_row
+        {
+            continue;
+        }
+
+        // Get the code cell to extract language
+        if let Some(CellValue::Code(_)) = sheet.cell_value_ref(pos) {
+            // Create a 1x1 table outline for the code cell
+            // Note: No language icon for single-cell code cells since show_name is false
+            let table = TableOutline::new(pos.x, pos.y, 1, 1)
+                .with_show_columns(false)
+                .with_active(false);
+
+            table_outlines.add(table);
+        }
+    }
+
     request.table_outlines = table_outlines;
     request.table_name_icons = table_name_icons;
 
@@ -384,47 +418,51 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    // Load emoji spritesheet
+    // Load emoji spritesheet (textures are lazy-loaded when needed)
     if let Ok(emoji_dir) = find_emoji_directory() {
-        println!("Loading emoji spritesheet from {:?}...", emoji_dir);
+        println!("Loading emoji mapping from {:?}...", emoji_dir);
         match load_emoji_spritesheet(&emoji_dir) {
-            Ok((spritesheet, texture_infos)) => {
+            Ok((spritesheet, _texture_infos)) => {
                 println!(
-                    "Loaded emoji spritesheet: {} emojis, {} texture pages",
+                    "Loaded emoji mapping: {} emojis, {} texture pages (lazy loading)",
                     spritesheet.emoji_count(),
-                    texture_infos.len()
+                    spritesheet.page_count()
                 );
-
-                // Upload emoji textures
-                for texture_info in &texture_infos {
-                    let texture_path = emoji_dir.join(&texture_info.filename);
-                    if texture_path.exists() {
-                        let png_bytes = fs::read(&texture_path)?;
-                        renderer.upload_emoji_texture(texture_info.texture_uid, &png_bytes)?;
-                    } else {
-                        println!(
-                            "Warning: Emoji texture not found: {:?}",
-                            texture_path
-                        );
-                    }
-                }
-
-                renderer.set_emoji_spritesheet(spritesheet);
+                renderer.set_emoji_spritesheet(spritesheet, emoji_dir);
             }
             Err(e) => {
-                println!("Warning: Failed to load emoji spritesheet: {}", e);
+                println!("Warning: Failed to load emoji mapping: {}", e);
             }
         }
     } else {
         println!("Note: Emoji directory not found, emojis will not render");
     }
 
-    println!("Rendering...");
-    let png_bytes = renderer.render_to_png(&request)?;
+    // Parse format
+    let image_format = match args.format.to_lowercase().as_str() {
+        "png" => ImageFormat::Png,
+        "jpeg" | "jpg" => ImageFormat::Jpeg(args.quality),
+        "webp" => ImageFormat::Webp(args.quality),
+        _ => anyhow::bail!(
+            "Unsupported format: '{}'. Use png, jpeg, or webp.",
+            args.format
+        ),
+    };
+
+    println!(
+        "Rendering to {:?} format{}...",
+        args.format.to_uppercase(),
+        match image_format {
+            ImageFormat::Jpeg(q) => format!(" (quality: {})", q),
+            ImageFormat::Webp(_) => " (lossless)".to_string(),
+            ImageFormat::Png => String::new(),
+        }
+    );
+    let image_bytes = renderer.render_to_format(&request, image_format)?;
 
     // Save to file
-    fs::write(&args.output, &png_bytes)?;
-    println!("Saved to {:?} ({} bytes)", args.output, png_bytes.len());
+    fs::write(&args.output, &image_bytes)?;
+    println!("Saved to {:?} ({} bytes)", args.output, image_bytes.len());
 
     Ok(())
 }

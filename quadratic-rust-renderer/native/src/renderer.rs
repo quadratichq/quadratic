@@ -66,6 +66,10 @@ pub struct NativeRenderer {
     language_icons: Vec<LanguageIconInfo>,
     /// Emoji spritesheet (optional, for emoji rendering)
     emoji_spritesheet: Option<EmojiSpritesheet>,
+    /// Directory containing emoji PNG files (for lazy loading)
+    emoji_directory: Option<std::path::PathBuf>,
+    /// Set of emoji texture pages that have been uploaded
+    uploaded_emoji_pages: std::collections::HashSet<u32>,
 }
 
 impl NativeRenderer {
@@ -137,6 +141,8 @@ impl NativeRenderer {
             next_language_icon_id: LANGUAGE_ICON_TEXTURE_BASE,
             language_icons: Vec::new(),
             emoji_spritesheet: None,
+            emoji_directory: None,
+            uploaded_emoji_pages: std::collections::HashSet::new(),
         })
     }
 
@@ -179,13 +185,23 @@ impl NativeRenderer {
     }
 
     /// Set the emoji spritesheet for emoji rendering
-    pub fn set_emoji_spritesheet(&mut self, spritesheet: EmojiSpritesheet) {
+    ///
+    /// The directory is used for lazy loading of texture pages - textures are only
+    /// uploaded when emojis from that page are actually needed.
+    pub fn set_emoji_spritesheet(
+        &mut self,
+        spritesheet: EmojiSpritesheet,
+        emoji_dir: std::path::PathBuf,
+    ) {
         log::info!(
-            "Setting emoji spritesheet with {} emojis, {} pages",
+            "Setting emoji spritesheet with {} emojis, {} pages (lazy loading from {:?})",
             spritesheet.emoji_count(),
-            spritesheet.page_count()
+            spritesheet.page_count(),
+            emoji_dir
         );
         self.emoji_spritesheet = Some(spritesheet);
+        self.emoji_directory = Some(emoji_dir);
+        self.uploaded_emoji_pages.clear();
     }
 
     /// Check if emoji spritesheet is loaded
@@ -193,30 +209,55 @@ impl NativeRenderer {
         self.emoji_spritesheet.is_some()
     }
 
-    /// Upload an emoji texture from PNG bytes
-    pub fn upload_emoji_texture(
-        &mut self,
-        texture_uid: u32,
-        png_bytes: &[u8],
-    ) -> anyhow::Result<()> {
-        // Decode the PNG image
-        let img = image::load_from_memory(png_bytes)?;
+    /// Ensure an emoji texture page is uploaded (lazy loading)
+    fn ensure_emoji_page_uploaded(&mut self, texture_uid: u32) -> anyhow::Result<bool> {
+        // Already uploaded?
+        if self.uploaded_emoji_pages.contains(&texture_uid) {
+            return Ok(true);
+        }
+
+        // Get the spritesheet and directory
+        let (spritesheet, emoji_dir) = match (&self.emoji_spritesheet, &self.emoji_directory) {
+            (Some(s), Some(d)) => (s, d),
+            _ => return Ok(false),
+        };
+
+        // Find the texture info for this page
+        let page_info = spritesheet
+            .texture_pages()
+            .into_iter()
+            .find(|p| p.texture_uid == texture_uid);
+
+        let Some(page_info) = page_info else {
+            return Ok(false);
+        };
+
+        // Load and upload the texture
+        let texture_path = emoji_dir.join(&page_info.filename);
+        if !texture_path.exists() {
+            log::warn!("Emoji texture not found: {:?}", texture_path);
+            return Ok(false);
+        }
+
+        let png_bytes = std::fs::read(&texture_path)?;
+        let img = image::load_from_memory(&png_bytes)?;
         let rgba = img.into_rgba8();
         let (width, height) = (rgba.width(), rgba.height());
         let data = rgba.into_raw();
 
         log::info!(
-            "Uploading emoji texture UID {} ({}x{})",
+            "Lazy loading emoji texture page {} ({}x{}) from {:?}",
             texture_uid,
             width,
-            height
+            height,
+            page_info.filename
         );
 
-        // Upload to wgpu
         self.wgpu
             .upload_texture(texture_uid, width, height, &data)?;
+        self.uploaded_emoji_pages.insert(texture_uid);
 
-        Ok(())
+        Ok(true)
     }
 
     /// Resize the render target
@@ -263,6 +304,36 @@ impl NativeRenderer {
         } else {
             None
         };
+
+        // Pre-compute text meshes and collect emojis (before render pass)
+        // This allows us to lazy-load emoji textures before rendering
+        let (text_meshes, atlas_font_size, distance_range, emojis_to_render) =
+            if !request.cells.is_empty() && !self.fonts.is_empty() {
+                self.create_text_meshes(request)
+            } else {
+                (Vec::new(), 14.0, 4.0, Vec::new())
+            };
+
+        // Lazy-load emoji textures that are needed
+        if !emojis_to_render.is_empty() {
+            if let Some(ref spritesheet) = self.emoji_spritesheet.clone() {
+                // Collect unique texture UIDs needed
+                let mut needed_pages: std::collections::HashSet<u32> =
+                    std::collections::HashSet::new();
+                for emoji in &emojis_to_render {
+                    if let Some(uv) = spritesheet.get_emoji_uv(&emoji.emoji) {
+                        needed_pages.insert(uv.texture_uid);
+                    }
+                }
+
+                // Upload any missing pages
+                for texture_uid in needed_pages {
+                    if let Err(e) = self.ensure_emoji_page_uploaded(texture_uid) {
+                        log::warn!("Failed to load emoji page {}: {}", texture_uid, e);
+                    }
+                }
+            }
+        }
 
         // Render
         let view = self
@@ -317,26 +388,47 @@ impl NativeRenderer {
                 }
             }
 
-            // Draw borders (on top of grid lines)
+            // Draw borders (on top of grid lines) as filled quads with thickness
             if !request.borders.is_empty() {
-                let border_lines = request.borders.to_line_buffer(
+                let border_quads = request.borders.to_fill_buffer(
                     &request.offsets,
                     request.selection.start_col,
                     request.selection.start_row,
                     request.selection.end_col,
                     request.selection.end_row,
                 );
-                if !border_lines.vertices.is_empty() {
+                if !border_quads.vertices.is_empty() {
                     log::info!(
-                        "Drawing {} border line vertices",
-                        border_lines.vertices.len() / 12
+                        "Drawing {} border quads",
+                        border_quads.vertices.len() / 36
                     );
                     self.wgpu
-                        .draw_lines(&mut pass, &border_lines.vertices, &matrix);
+                        .draw_triangles(&mut pass, &border_quads.vertices, &matrix);
                 }
             }
 
-            // Draw table outlines (on top of borders)
+            // Draw chart images (under table outlines so outlines appear on top)
+            for chart_info in &self.chart_infos {
+                if self.wgpu.has_texture(chart_info.texture_uid) {
+                    let (vertices, indices) = self.create_chart_sprite_from_info(chart_info, request);
+                    log::info!(
+                        "Drawing chart image at ({}, {}): {}x{} pixels",
+                        chart_info.x,
+                        chart_info.y,
+                        chart_info.width,
+                        chart_info.height
+                    );
+                    self.wgpu.draw_sprites(
+                        &mut pass,
+                        chart_info.texture_uid,
+                        &vertices,
+                        &indices,
+                        &matrix,
+                    );
+                }
+            }
+
+            // Draw table outlines (on top of chart images)
             if !request.table_outlines.is_empty() {
                 let (outline_lines, name_bgs, col_bgs) =
                     request.table_outlines.to_render_buffers(&request.offsets);
@@ -366,22 +458,17 @@ impl NativeRenderer {
                 }
             }
 
-            // Draw text and collect emoji data
-            let mut emojis_to_render: Vec<EmojiCharData> = Vec::new();
-            if !request.cells.is_empty() && !self.fonts.is_empty() {
-                let (meshes, atlas_font_size, distance_range, emojis) =
-                    self.create_text_meshes(request);
-                emojis_to_render = emojis;
-
+            // Draw text (meshes were pre-computed above)
+            if !text_meshes.is_empty() {
                 log::info!(
                     "Text geometry: {} meshes, {} emojis, atlas_font_size={}, distance_range={}, viewport_scale={}",
-                    meshes.len(),
+                    text_meshes.len(),
                     emojis_to_render.len(),
                     atlas_font_size,
                     distance_range,
                     scale
                 );
-                for mesh in &meshes {
+                for mesh in &text_meshes {
                     if !mesh.is_empty() {
                         let vertices = mesh.get_vertex_data();
                         let font_scale = mesh.font_size / atlas_font_size;
@@ -490,27 +577,6 @@ impl NativeRenderer {
                     );
                 }
             }
-
-            // Draw chart images (on top of everything)
-            for chart_info in &self.chart_infos {
-                if self.wgpu.has_texture(chart_info.texture_uid) {
-                    let (vertices, indices) = self.create_chart_sprite_from_info(chart_info, request);
-                    log::info!(
-                        "Drawing chart image at ({}, {}): {}x{} pixels",
-                        chart_info.x,
-                        chart_info.y,
-                        chart_info.width,
-                        chart_info.height
-                    );
-                    self.wgpu.draw_sprites(
-                        &mut pass,
-                        chart_info.texture_uid,
-                        &vertices,
-                        &indices,
-                        &matrix,
-                    );
-                }
-            }
         }
 
         self.wgpu.queue().submit(std::iter::once(encoder.finish()));
@@ -533,6 +599,26 @@ impl NativeRenderer {
     ) -> anyhow::Result<Vec<u8>> {
         let pixels = self.render(request)?;
         crate::image_export::encode(&pixels, self.width, self.height, ImageFormat::Jpeg(quality))
+    }
+
+    /// Render and export to WebP
+    pub fn render_to_webp(
+        &mut self,
+        request: &RenderRequest,
+        quality: u8,
+    ) -> anyhow::Result<Vec<u8>> {
+        let pixels = self.render(request)?;
+        crate::image_export::encode(&pixels, self.width, self.height, ImageFormat::Webp(quality))
+    }
+
+    /// Render and export to the specified format
+    pub fn render_to_format(
+        &mut self,
+        request: &RenderRequest,
+        format: ImageFormat,
+    ) -> anyhow::Result<Vec<u8>> {
+        let pixels = self.render(request)?;
+        crate::image_export::encode(&pixels, self.width, self.height, format)
     }
 
     /// Read pixels from the render texture
@@ -750,8 +836,12 @@ impl NativeRenderer {
             // Set cell bounds from offsets
             label.update_bounds(&request.offsets);
 
-            // Layout the text (computes glyph positions and overflow values)
-            label.layout(&self.fonts);
+            // Layout the text with emoji support (computes glyph positions and overflow values)
+            if let Some(ref spritesheet) = self.emoji_spritesheet {
+                label.layout_with_emojis(&self.fonts, Some(spritesheet));
+            } else {
+                label.layout(&self.fonts);
+            }
 
             labels.push(label);
         }

@@ -2,7 +2,7 @@
 //!
 //! Extends the shared border types with rendering-specific functionality.
 
-use super::LineBuffer;
+use super::FillBuffer;
 use quadratic_core::sheet_offsets::SheetOffsets;
 
 // Re-export the render types
@@ -10,30 +10,30 @@ pub use super::render_types::SheetBorders;
 
 /// Extension trait for SheetBorders to add rendering functionality
 pub trait SheetBordersRender {
-    /// Convert borders to a LineBuffer for rendering
+    /// Convert borders to a FillBuffer for rendering (quads with thickness)
     ///
     /// The viewport bounds (min_col, min_row, max_col, max_row) are used to
     /// limit unbounded borders and filter out-of-view borders.
-    fn to_line_buffer(
+    fn to_fill_buffer(
         &self,
         offsets: &SheetOffsets,
         min_col: i64,
         min_row: i64,
         max_col: i64,
         max_row: i64,
-    ) -> LineBuffer;
+    ) -> FillBuffer;
 }
 
 impl SheetBordersRender for SheetBorders {
-    fn to_line_buffer(
+    fn to_fill_buffer(
         &self,
         offsets: &SheetOffsets,
         min_col: i64,
         min_row: i64,
         max_col: i64,
         max_row: i64,
-    ) -> LineBuffer {
-        let mut buffer = LineBuffer::new();
+    ) -> FillBuffer {
+        let mut buffer = FillBuffer::new();
 
         // Convert horizontal borders
         for border in &self.horizontal {
@@ -63,7 +63,23 @@ impl SheetBordersRender for SheetBorders {
             let x1 = x1 as f32;
             let x2 = (x2 + w2) as f32;
 
-            buffer.add_line(x1, y, x2, y, border.color);
+            let thickness = border.style.thickness();
+            let half_thickness = thickness / 2.0;
+
+            // Create a horizontal quad centered on the border position
+            let rect_x = x1 - half_thickness;
+            let rect_y = y - half_thickness;
+            let rect_w = (x2 - x1) + thickness;
+            let rect_h = thickness;
+            
+            // Fix alpha if it's suspiciously low - old grid files have a bug where
+            // alpha was set to 1 (instead of 255) due to TypeScript/Rust type mismatch
+            let color = if border.color[3] > 0.0 && border.color[3] < 0.1 {
+                [border.color[0], border.color[1], border.color[2], 1.0]
+            } else {
+                border.color
+            };
+            buffer.add_rect(rect_x, rect_y, rect_w, rect_h, color);
         }
 
         // Convert vertical borders
@@ -94,7 +110,23 @@ impl SheetBordersRender for SheetBorders {
             let y1 = y1 as f32;
             let y2 = (y2 + h2) as f32;
 
-            buffer.add_line(x, y1, x, y2, border.color);
+            let thickness = border.style.thickness();
+            let half_thickness = thickness / 2.0;
+
+            // Create a vertical quad centered on the border position
+            let rect_x = x - half_thickness;
+            let rect_y = y1 - half_thickness;
+            let rect_w = thickness;
+            let rect_h = (y2 - y1) + thickness;
+            
+            // Fix alpha if it's suspiciously low - old grid files have a bug where
+            // alpha was set to 1 (instead of 255) due to TypeScript/Rust type mismatch
+            let color = if border.color[3] > 0.0 && border.color[3] < 0.1 {
+                [border.color[0], border.color[1], border.color[2], 1.0]
+            } else {
+                border.color
+            };
+            buffer.add_rect(rect_x, rect_y, rect_w, rect_h, color);
         }
 
         buffer
@@ -103,10 +135,10 @@ impl SheetBordersRender for SheetBorders {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::BorderLineStyle;
 
     #[test]
-    fn test_sheet_borders_to_line_buffer() {
+    fn test_sheet_borders_to_fill_buffer() {
         let mut borders = SheetBorders::new();
 
         // Add a horizontal border at row 2, spanning columns 1-3
@@ -116,9 +148,23 @@ mod tests {
         borders.add_vertical(2, 1, Some(3), [0.0, 0.0, 0.0, 1.0], BorderLineStyle::Line1);
 
         let offsets = SheetOffsets::default();
-        let buffer = borders.to_line_buffer(&offsets, 1, 1, 10, 10);
+        let buffer = borders.to_fill_buffer(&offsets, 1, 1, 10, 10);
 
-        // Should have 2 lines (1 horizontal + 1 vertical) = 4 vertices = 24 floats
-        assert_eq!(buffer.vertices.len(), 24);
+        // Should have 2 quads (1 horizontal + 1 vertical) = 12 vertices = 72 floats
+        assert_eq!(buffer.vertices.len(), 72);
+    }
+
+    #[test]
+    fn test_thick_borders() {
+        let mut borders = SheetBorders::new();
+
+        // Add a thick horizontal border (line3 = 3 pixels)
+        borders.add_horizontal(1, 2, Some(3), [1.0, 0.0, 0.0, 1.0], BorderLineStyle::Line3);
+
+        let offsets = SheetOffsets::default();
+        let buffer = borders.to_fill_buffer(&offsets, 1, 1, 10, 10);
+
+        // Should have 1 quad = 6 vertices = 36 floats
+        assert_eq!(buffer.vertices.len(), 36);
     }
 }

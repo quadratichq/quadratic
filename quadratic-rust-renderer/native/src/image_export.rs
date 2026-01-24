@@ -10,6 +10,8 @@ pub enum ImageFormat {
     Png,
     /// JPEG format with quality (0-100)
     Jpeg(u8),
+    /// WebP format (lossless only, quality parameter reserved for future use)
+    Webp(u8),
 }
 
 impl Default for ImageFormat {
@@ -49,6 +51,16 @@ pub fn encode(
                 image::ExtendedColorType::Rgb8,
             )?;
         }
+        ImageFormat::Webp(_quality) => {
+            // Note: image crate 0.25 only supports lossless WebP encoding
+            let encoder = image::codecs::webp::WebPEncoder::new_lossless(&mut cursor);
+            encoder.encode(
+                image.as_raw(),
+                width,
+                height,
+                image::ExtendedColorType::Rgba8,
+            )?;
+        }
     }
 
     Ok(output)
@@ -85,5 +97,19 @@ mod tests {
 
         // JPEG magic bytes
         assert_eq!(&jpeg[0..2], &[0xFF, 0xD8]);
+    }
+
+    #[test]
+    fn test_encode_webp() {
+        // Create a simple 2x2 image
+        let pixels = vec![
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+        ];
+
+        let webp = encode(&pixels, 2, 2, ImageFormat::Webp(80)).unwrap();
+
+        // WebP magic bytes (RIFF....WEBP)
+        assert_eq!(&webp[0..4], b"RIFF");
+        assert_eq!(&webp[8..12], b"WEBP");
     }
 }

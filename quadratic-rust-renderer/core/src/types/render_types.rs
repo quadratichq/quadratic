@@ -59,6 +59,20 @@ impl Default for BorderLineStyle {
     }
 }
 
+impl BorderLineStyle {
+    /// Get the line thickness in pixels
+    pub fn thickness(&self) -> f32 {
+        match self {
+            Self::Line1 => 1.0,
+            Self::Line2 => 2.0,
+            Self::Line3 => 3.0,
+            Self::Dotted => 1.0,
+            Self::Dashed => 1.0,
+            Self::Double => 1.0, // Each line is 1px, but with gap
+        }
+    }
+}
+
 /// A horizontal border
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct HorizontalBorder {
