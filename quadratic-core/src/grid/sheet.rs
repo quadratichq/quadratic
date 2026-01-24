@@ -145,6 +145,16 @@ impl Sheet {
         self.color_scale_threshold_cache.borrow_mut().clear();
     }
 
+    /// Returns the sheet offsets (column widths, row heights).
+    pub fn offsets(&self) -> &SheetOffsets {
+        &self.offsets
+    }
+
+    /// Returns the sheet name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     /// Returns an error if a sheet name would be invalid to add.
     pub fn validate_sheet_name(
         name: &str,
