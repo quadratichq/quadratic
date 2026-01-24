@@ -15,6 +15,9 @@
 //! Or via npm:
 //!   npm run screenshot -- --file path/to/file.grid --range "A1:J20" --format webp --quality 90
 //!
+//! Thumbnail mode (auto-calculates range, 1280x720 PNG, outputs to thumbnail.png by default):
+//!   npm run screenshot -- --file path/to/file.grid --thumbnail
+//!
 //! Note: Specify either --width OR --height. The other dimension will be
 //! calculated to match the cell area's aspect ratio.
 
@@ -37,6 +40,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 
+/// Thumbnail dimensions matching the client (1280x720, 16:9 aspect ratio)
+const THUMBNAIL_WIDTH: u32 = 1280;
+const THUMBNAIL_HEIGHT: u32 = 720;
+
 #[derive(Parser, Debug)]
 #[command(name = "screenshot")]
 #[command(about = "Render a Quadratic grid file to an image screenshot")]
@@ -49,9 +56,9 @@ struct Args {
     #[arg(short, long, default_value = "A1:J20")]
     range: String,
 
-    /// Output image file
-    #[arg(short, long, default_value = "output.png")]
-    output: PathBuf,
+    /// Output image file (defaults to thumbnail.png in thumbnail mode, output.png otherwise)
+    #[arg(short, long)]
+    output: Option<PathBuf>,
 
     /// Output format: png, jpeg, or webp
     #[arg(long, default_value = "png")]
@@ -84,6 +91,10 @@ struct Args {
     /// Device pixel ratio for higher resolution rendering (default 2 for crisp text)
     #[arg(long, default_value = "2")]
     dpr: u32,
+
+    /// Generate a thumbnail (1280x720 PNG, auto-calculated range from top-left)
+    #[arg(long)]
+    thumbnail: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -117,40 +128,76 @@ fn main() -> anyhow::Result<()> {
     })?;
     println!("Using sheet: {}", sheet.name());
 
-    // Parse the range in A1 notation (e.g., "A1:J20")
-    let (start_pos, end_pos) = parse_a1_range(&args.range)?;
-    let selection = SelectionRange::new(start_pos.x, start_pos.y, end_pos.x, end_pos.y);
-
-    println!(
-        "Rendering range: {} (columns {}-{}, rows {}-{})",
-        args.range, selection.start_col, selection.end_col, selection.start_row, selection.end_row
-    );
-
     // Get sheet offsets for column/row sizes
     let offsets = sheet.offsets().clone();
 
-    // Calculate the selection's world bounds to determine aspect ratio
-    let (_world_x, _world_y, world_w, world_h) = selection.world_bounds(&offsets);
-    let aspect_ratio = world_w / world_h;
+    // Calculate selection and dimensions based on thumbnail mode or manual settings
+    let (selection, base_width, base_height, show_grid_lines, image_format) = if args.thumbnail {
+        // Thumbnail mode: auto-calculate range, fixed size 1280x720, PNG format
+        let thumbnail_rect = offsets.thumbnail();
+        let selection = SelectionRange::new(
+            thumbnail_rect.min.x,
+            thumbnail_rect.min.y,
+            thumbnail_rect.max.x,
+            thumbnail_rect.max.y,
+        );
 
-    println!(
-        "Cell area: {:.1}x{:.1} pixels (aspect ratio: {:.3})",
-        world_w, world_h, aspect_ratio
-    );
+        println!(
+            "Thumbnail mode: auto-calculated range (columns 0-{}, rows 0-{})",
+            thumbnail_rect.max.x, thumbnail_rect.max.y
+        );
+        println!(
+            "Output: {}x{} PNG",
+            THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT
+        );
 
-    // Calculate output dimensions based on aspect ratio
-    let (base_width, base_height) = match (args.width, args.height) {
-        (Some(w), Some(_h)) => {
-            println!("Warning: Both width and height specified. Using width and calculating height from aspect ratio.");
-            (w, (w as f32 / aspect_ratio).round() as u32)
-        }
-        (Some(w), None) => (w, (w as f32 / aspect_ratio).round() as u32),
-        (None, Some(h)) => ((h as f32 * aspect_ratio).round() as u32, h),
-        (None, None) => {
-            // Default to 800px width
-            let w = 800u32;
-            (w, (w as f32 / aspect_ratio).round() as u32)
-        }
+        (selection, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, true, ImageFormat::Png)
+    } else {
+        // Parse the range in A1 notation (e.g., "A1:J20")
+        let (start_pos, end_pos) = parse_a1_range(&args.range)?;
+        let selection = SelectionRange::new(start_pos.x, start_pos.y, end_pos.x, end_pos.y);
+
+        println!(
+            "Rendering range: {} (columns {}-{}, rows {}-{})",
+            args.range, selection.start_col, selection.end_col, selection.start_row, selection.end_row
+        );
+
+        // Calculate the selection's world bounds to determine aspect ratio
+        let (_world_x, _world_y, world_w, world_h) = selection.world_bounds(&offsets);
+        let aspect_ratio = world_w / world_h;
+
+        println!(
+            "Cell area: {:.1}x{:.1} pixels (aspect ratio: {:.3})",
+            world_w, world_h, aspect_ratio
+        );
+
+        // Calculate output dimensions based on aspect ratio
+        let (base_width, base_height) = match (args.width, args.height) {
+            (Some(w), Some(_h)) => {
+                println!("Warning: Both width and height specified. Using width and calculating height from aspect ratio.");
+                (w, (w as f32 / aspect_ratio).round() as u32)
+            }
+            (Some(w), None) => (w, (w as f32 / aspect_ratio).round() as u32),
+            (None, Some(h)) => ((h as f32 * aspect_ratio).round() as u32, h),
+            (None, None) => {
+                // Default to 800px width
+                let w = 800u32;
+                (w, (w as f32 / aspect_ratio).round() as u32)
+            }
+        };
+
+        // Parse format
+        let image_format = match args.format.to_lowercase().as_str() {
+            "png" => ImageFormat::Png,
+            "jpeg" | "jpg" => ImageFormat::Jpeg(args.quality),
+            "webp" => ImageFormat::Webp(args.quality),
+            _ => anyhow::bail!(
+                "Unsupported format: '{}'. Use png, jpeg, or webp.",
+                args.format
+            ),
+        };
+
+        (selection, base_width, base_height, args.grid_lines, image_format)
     };
 
     // Apply DPR for higher resolution rendering
@@ -159,7 +206,7 @@ fn main() -> anyhow::Result<()> {
 
     // Create render request
     let mut request = RenderRequest::new(selection, render_width, render_height);
-    request.show_grid_lines = args.grid_lines;
+    request.show_grid_lines = show_grid_lines;
     request.offsets = offsets;
 
     // Get fills from the sheet
@@ -310,6 +357,8 @@ fn main() -> anyhow::Result<()> {
                 bold: Some(true),
                 text_color: Some(Rgba::rgb(255, 255, 255)), // White on colored bg
                 table_name: Some(true),
+                language: Some(code_cell.language.clone()),
+                table_columns: Some(code_cell.w),
                 ..Default::default()
             });
         }
@@ -466,20 +515,13 @@ fn main() -> anyhow::Result<()> {
         println!("Note: Emoji directory not found, emojis will not render");
     }
 
-    // Parse format
-    let image_format = match args.format.to_lowercase().as_str() {
-        "png" => ImageFormat::Png,
-        "jpeg" | "jpg" => ImageFormat::Jpeg(args.quality),
-        "webp" => ImageFormat::Webp(args.quality),
-        _ => anyhow::bail!(
-            "Unsupported format: '{}'. Use png, jpeg, or webp.",
-            args.format
-        ),
-    };
-
     println!(
         "Rendering to {:?} format{}...",
-        args.format.to_uppercase(),
+        match image_format {
+            ImageFormat::Png => "PNG",
+            ImageFormat::Jpeg(_) => "JPEG",
+            ImageFormat::Webp(_) => "WEBP",
+        },
         match image_format {
             ImageFormat::Jpeg(q) => format!(" (quality: {})", q),
             ImageFormat::Webp(_) => " (lossless)".to_string(),
@@ -488,12 +530,21 @@ fn main() -> anyhow::Result<()> {
     );
     let image_bytes = renderer.render_to_format(&request, image_format)?;
 
+    // Determine output filename
+    let output_path = args.output.unwrap_or_else(|| {
+        if args.thumbnail {
+            PathBuf::from("thumbnail.png")
+        } else {
+            PathBuf::from("output.png")
+        }
+    });
+
     // Save to file
-    fs::write(&args.output, &image_bytes)?;
+    fs::write(&output_path, &image_bytes)?;
     let elapsed = start_time.elapsed();
     println!(
         "Saved to {:?} ({} bytes) in {:.2}s",
-        args.output,
+        output_path,
         image_bytes.len(),
         elapsed.as_secs_f64()
     );

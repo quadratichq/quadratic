@@ -8,6 +8,7 @@ use quadratic_core::grid::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use quadratic_core::grid::js_types::{
     JsRenderCell, JsRenderCellFormatSpan, JsRenderCellLinkSpan, JsRenderFill,
 };
+pub use quadratic_core::grid::CodeCellLanguage;
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
@@ -240,6 +241,10 @@ pub struct RenderCell {
     pub table_name: Option<bool>,
     pub column_header: Option<bool>,
     pub special: Option<RenderCellSpecial>,
+    /// Code language for table name cells (determines if icon is shown).
+    pub language: Option<CodeCellLanguage>,
+    /// Number of columns spanned by table name (for clipping to full table width).
+    pub table_columns: Option<u32>,
     /// Hyperlink spans for RichText cells with hyperlinks (character ranges + URLs).
     pub link_spans: Vec<RenderCellLinkSpan>,
     /// Formatting spans for RichText cells with inline formatting overrides.
@@ -264,6 +269,8 @@ impl From<&JsRenderCell> for RenderCell {
             table_name: cell.table_name,
             column_header: cell.column_header,
             special: cell.special.clone(),
+            language: cell.language.clone(),
+            table_columns: None, // Not available from JsRenderCell, set manually for table names
             link_spans: cell.link_spans.iter().map(RenderCellLinkSpan::from).collect(),
             format_spans: cell.format_spans.iter().map(RenderCellFormatSpan::from).collect(),
         }

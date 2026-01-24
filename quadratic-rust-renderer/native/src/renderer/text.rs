@@ -3,7 +3,8 @@
 use std::collections::HashMap;
 
 use quadratic_renderer_core::calculate_clip_bounds;
-use quadratic_renderer_core::sheets::text::{CellLabel, EmojiCharData, LabelMesh};
+use quadratic_renderer_core::sheets::text::{CellLabel, EmojiCharData, HorizontalLine, LabelMesh};
+use quadratic_renderer_core::FillBuffer;
 
 use super::NativeRenderer;
 use crate::request::RenderRequest;
@@ -11,17 +12,14 @@ use crate::request::RenderRequest;
 impl NativeRenderer {
     /// Create text meshes from request using CellLabel from core
     ///
-    /// Returns (meshes, atlas_font_size, distance_range) for MSDF rendering.
-    /// Create text meshes and collect emoji data from cell labels
-    ///
-    /// Returns (meshes, atlas_font_size, distance_range, emojis)
+    /// Returns (meshes, atlas_font_size, distance_range, emojis, horizontal_lines)
     pub(super) fn create_text_meshes(
         &self,
         request: &RenderRequest,
-    ) -> (Vec<LabelMesh>, f32, f32, Vec<EmojiCharData>) {
+    ) -> (Vec<LabelMesh>, f32, f32, Vec<EmojiCharData>, FillBuffer) {
         let default_font = self.fonts.default_font();
         let Some(font) = default_font else {
-            return (Vec::new(), 14.0, 4.0, Vec::new());
+            return (Vec::new(), 14.0, 4.0, Vec::new(), FillBuffer::new());
         };
 
         let atlas_font_size = font.size;
@@ -56,14 +54,19 @@ impl NativeRenderer {
         // This ensures overflowing text is clipped by neighboring cell content
         calculate_clip_bounds(&mut labels);
 
-        // Third pass: Generate meshes and collect emojis from clipped labels
+        // Third pass: Generate meshes, emojis, and horizontal lines from clipped labels
         let mut mesh_map: HashMap<u32, LabelMesh> = HashMap::new();
         let mut all_emojis: Vec<EmojiCharData> = Vec::new();
+        let mut all_lines: Vec<HorizontalLine> = Vec::new();
 
         for mut label in labels {
             // Collect emoji data from this label
             let emojis = label.get_emoji_chars(&self.fonts);
             all_emojis.extend(emojis);
+
+            // Collect horizontal lines (underlines/strikethroughs)
+            let lines = label.get_horizontal_lines(&self.fonts);
+            all_lines.extend(lines.iter().cloned());
 
             // Merge meshes by texture_uid
             for mesh in label.get_meshes(&self.fonts) {
@@ -80,11 +83,18 @@ impl NativeRenderer {
             }
         }
 
+        // Convert horizontal lines to fill buffer
+        let mut lines_buffer = FillBuffer::new();
+        for line in &all_lines {
+            lines_buffer.add_rect(line.x, line.y, line.width, line.height, line.color);
+        }
+
         (
             mesh_map.into_values().collect(),
             atlas_font_size,
             distance_range,
             all_emojis,
+            lines_buffer,
         )
     }
 }

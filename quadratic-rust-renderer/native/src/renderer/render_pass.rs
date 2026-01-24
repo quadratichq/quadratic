@@ -33,13 +33,19 @@ impl NativeRenderer {
             None
         };
 
-        // Pre-compute text meshes and collect emojis (before render pass)
+        // Pre-compute text meshes, emojis, and horizontal lines (before render pass)
         // This allows us to lazy-load emoji textures before rendering
-        let (text_meshes, atlas_font_size, distance_range, emojis_to_render) =
+        let (text_meshes, atlas_font_size, distance_range, emojis_to_render, horizontal_lines) =
             if !request.cells.is_empty() && !self.fonts.is_empty() {
                 self.create_text_meshes(request)
             } else {
-                (Vec::new(), 14.0, 4.0, Vec::new())
+                (
+                    Vec::new(),
+                    14.0,
+                    4.0,
+                    Vec::new(),
+                    quadratic_renderer_core::FillBuffer::new(),
+                )
             };
 
         // Lazy-load emoji textures that are needed
@@ -220,6 +226,16 @@ impl NativeRenderer {
                         );
                     }
                 }
+            }
+
+            // Draw horizontal lines (underlines/strikethroughs)
+            if !horizontal_lines.is_empty() {
+                log::debug!(
+                    "Drawing {} horizontal line vertices",
+                    horizontal_lines.vertices.len()
+                );
+                self.wgpu
+                    .draw_triangles(&mut pass, &horizontal_lines.vertices, &matrix);
             }
 
             // Draw emoji sprites

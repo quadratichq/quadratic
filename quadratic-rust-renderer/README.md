@@ -96,11 +96,31 @@ cargo run -p quadratic-renderer-native --example screenshot -- \
   --dpr 2
 ```
 
-Options:
+### Thumbnail Mode
+
+Generate a thumbnail with automatic settings (1280x720 PNG, auto-calculated range):
+
+```bash
+cargo run -p quadratic-renderer-native --example screenshot -- \
+  --file path/to/file.grid \
+  --thumbnail
+```
+
+Thumbnail mode automatically:
+- Calculates the range from top-left (0,0) to cover cells visible in 1280x720 pixels
+- Outputs a 1280x720 PNG image (16:9 aspect ratio)
+- Enables grid lines
+- Saves to `thumbnail.png` by default
+
+### Options
+
 - `--file`: Path to .grid file (required)
+- `--thumbnail`: Generate a thumbnail with automatic settings
 - `--range`: A1 notation range to render (default: A1:J20)
 - `--width` or `--height`: Output dimension (other calculated from aspect ratio)
-- `--output`: Output PNG path (default: output.png)
+- `--output`: Output path (default: thumbnail.png in thumbnail mode, output.png otherwise)
+- `--format`: Output format: png, jpeg, or webp (default: png)
+- `--quality`: JPEG quality 0-100 (default: 90)
 - `--dpr`: Device pixel ratio for crisp text (default: 2)
 - `--fonts`: Font directory (default: quadratic-client/public/fonts/opensans)
 - `--grid-lines`: Show grid lines (default: true)

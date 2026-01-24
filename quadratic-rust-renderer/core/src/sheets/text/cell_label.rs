@@ -10,7 +10,9 @@ use quadratic_core::grid::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use quadratic_core::sheet_offsets::SheetOffsets;
 
 use crate::emoji_loader::EMOJI_Y_OFFSET_RATIO;
-use crate::types::{RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial};
+use crate::types::{
+    CodeCellLanguage, RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial,
+};
 
 use super::bitmap_font::{extract_char_code, split_text_to_characters, BitmapFonts};
 use super::horizontal_line::HorizontalLine;
@@ -33,11 +35,49 @@ pub const OPEN_SANS_FIX_Y: f32 = -1.8;
 /// Line thickness for underline/strikethrough (matching TypeScript)
 const HORIZONTAL_LINE_THICKNESS: f32 = 1.0;
 
-/// Underline offset from baseline (matching TypeScript UNDERLINE_OFFSET = 52 / LINE_HEIGHT * scale)
-const UNDERLINE_OFFSET_RATIO: f32 = 52.0 / 64.0;
+/// Underline offset from baseline (matching TypeScript UNDERLINE_OFFSET = 52)
+const UNDERLINE_OFFSET: f32 = 52.0;
 
 /// Strikethrough offset from baseline (matching TypeScript STRIKE_THROUGH_OFFSET = 32)
-const STRIKE_THROUGH_OFFSET_RATIO: f32 = 32.0 / 64.0;
+const STRIKE_THROUGH_OFFSET: f32 = 32.0;
+
+// =============================================================================
+// URL detection
+// =============================================================================
+
+/// Check if a string is a "naked URL" that should be rendered as a hyperlink.
+/// Matches the TypeScript URL_REGEX: /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i
+fn is_naked_url(text: &str) -> bool {
+    let text = text.trim();
+    if text.is_empty() {
+        return false;
+    }
+
+    // Must start with http://, https://, or www.
+    let lower = text.to_lowercase();
+    if !lower.starts_with("http://") && !lower.starts_with("https://") && !lower.starts_with("www.")
+    {
+        return false;
+    }
+
+    // Must not contain whitespace or disallowed characters
+    if text.chars().any(|c| c.is_whitespace() || "<>'\"".contains(c)) {
+        return false;
+    }
+
+    // Must contain at least one dot after the protocol/www prefix
+    let after_prefix = if lower.starts_with("https://") {
+        &text[8..]
+    } else if lower.starts_with("http://") {
+        &text[7..]
+    } else if lower.starts_with("www.") {
+        &text[4..]
+    } else {
+        text
+    };
+
+    after_prefix.contains('.')
+}
 
 // =============================================================================
 // Emoji lookup trait
@@ -91,12 +131,18 @@ pub fn is_potential_emoji(c: char) -> bool {
 /// Character render data (position and glyph info)
 #[derive(Debug, Clone)]
 struct CharRenderData {
-    /// Position in unscaled coordinates
+    /// Position in unscaled coordinates (includes x_offset for glyph rendering)
     position_x: f32,
     position_y: f32,
 
+    /// Pen position before drawing (for underline calculations, matches TypeScript position.x)
+    pen_x: f32,
+
     /// Line number
     line: usize,
+
+    /// Original text character index (for matching against format/link spans)
+    text_index: usize,
 
     /// Glyph frame dimensions
     frame_width: f32,
@@ -194,8 +240,12 @@ pub struct CellLabel {
     /// Link spans for RichText hyperlinks
     link_spans: Vec<RenderCellLinkSpan>,
 
-    /// Whether this is a table name cell (needs extra left padding for icon)
-    is_table_name: bool,
+    /// Whether this cell needs extra left padding for a table name icon.
+    /// Only true for table names with languages that have icons (not Import).
+    has_table_icon: bool,
+
+    /// Number of columns spanned by table name (for calculating full table width).
+    table_columns: Option<u32>,
 
     /// Computed text position
     text_x: f32,
@@ -274,7 +324,8 @@ impl CellLabel {
             strike_through: false,
             format_spans: Vec::new(),
             link_spans: Vec::new(),
-            is_table_name: false,
+            has_table_icon: false,
+            table_columns: None,
             text_x: 0.0,
             text_y: 0.0,
             text_width: 0.0,
@@ -337,7 +388,7 @@ impl CellLabel {
 
         // Apply alignment
         label.align = cell.align.unwrap_or(CellAlign::Left);
-        label.vertical_align = cell.vertical_align.unwrap_or(CellVerticalAlign::Top);
+        label.vertical_align = cell.vertical_align.unwrap_or(CellVerticalAlign::Bottom);
 
         // Determine wrap mode:
         // - Table name rows and column headers are always clipped
@@ -345,8 +396,14 @@ impl CellLabel {
         let is_table_name = cell.table_name.unwrap_or(false);
         let is_column_header = cell.column_header.unwrap_or(false);
 
-        // Store table name flag for icon padding
-        label.is_table_name = is_table_name;
+        // Check if this table name has a language with an icon (Import tables have no icon)
+        let language_has_icon = cell.language.as_ref().is_some_and(|lang| {
+            !matches!(lang, CodeCellLanguage::Import)
+        });
+        label.has_table_icon = is_table_name && language_has_icon;
+
+        // Store table columns for width calculation
+        label.table_columns = cell.table_columns;
 
         if is_table_name || is_column_header {
             // Table headers are always clipped
@@ -361,6 +418,18 @@ impl CellLabel {
 
         // Copy link spans for RichText hyperlinks
         label.link_spans = cell.link_spans.clone();
+
+        // Detect naked URLs (plain text cells containing a URL)
+        // Only check if there are no existing link spans and no special cell type
+        if label.link_spans.is_empty() && cell.special.is_none() {
+            if is_naked_url(&cell.value) {
+                label.link_spans.push(RenderCellLinkSpan {
+                    start: 0,
+                    end: cell.value.chars().count() as u32,
+                    url: cell.value.clone(),
+                });
+            }
+        }
 
         label
     }
@@ -414,11 +483,24 @@ impl CellLabel {
 
     /// Update cell bounds from sheet offsets
     pub fn update_bounds(&mut self, offsets: &SheetOffsets) {
-        let (x, width) = offsets.column_position_size(self.col);
+        let (x, _single_width) = offsets.column_position_size(self.col);
         let (y, height) = offsets.row_position_size(self.row);
 
-        // Apply extra left padding for table names (to make room for language icons)
-        let icon_padding = if self.is_table_name {
+        // Calculate width: use full table width if table_columns is set
+        let width = if let Some(cols) = self.table_columns {
+            // Sum the widths of all columns in the table
+            let mut total_width = 0.0f64;
+            for c in 0..cols as i64 {
+                let (_, col_width) = offsets.column_position_size(self.col + c);
+                total_width += col_width;
+            }
+            total_width
+        } else {
+            _single_width
+        };
+
+        // Apply extra left padding for table names that have icons
+        let icon_padding = if self.has_table_icon {
             TABLE_NAME_ICON_PADDING
         } else {
             0.0
@@ -640,7 +722,9 @@ impl CellLabel {
             let char_render = CharRenderData {
                 position_x: pos_x + char_data.x_offset,
                 position_y: pos_y + char_data.y_offset,
+                pen_x: pos_x,
                 line,
+                text_index: i,
                 frame_width: char_data.frame.width,
                 frame_height: char_data.frame.height,
                 uvs: char_data.uvs,
@@ -1114,7 +1198,10 @@ impl CellLabel {
 
         for i in 0..=self.chars.len() {
             let (has_underline, has_strike, char_line, _char_color) = if i < self.chars.len() {
-                let formatting = self.get_char_formatting(i);
+                // Use the original text index for matching against format/link spans
+                let text_idx = self.chars[i].text_index;
+                let formatting = self.get_char_formatting(text_idx);
+
                 (
                     formatting.underline,
                     formatting.strike_through,
@@ -1161,7 +1248,17 @@ impl CellLabel {
         }
 
         // Convert runs to horizontal lines
-        let line_height_scaled = LINE_HEIGHT * (self.font_size / DEFAULT_FONT_SIZE);
+        // line_height matches TypeScript: (fontSize / DEFAULT_FONT_SIZE) * LINE_HEIGHT
+        let line_height = LINE_HEIGHT * (self.font_size / DEFAULT_FONT_SIZE);
+
+        // Calculate clip boundaries (same logic as for glyphs)
+        let (clip_left, clip_right) = if self.wrap == CellWrap::Clip {
+            (self.cell_x, self.cell_x + self.cell_width)
+        } else {
+            let left = self.clip_left.unwrap_or(f32::NEG_INFINITY);
+            let right = self.clip_right.unwrap_or(f32::INFINITY);
+            (left, right)
+        };
 
         for run in runs {
             if run.start_char_idx >= self.chars.len() || run.end_char_idx >= self.chars.len() {
@@ -1182,25 +1279,38 @@ impl CellLabel {
                 .copied()
                 .unwrap_or(0.0);
 
+            // X positions: use pen position for character cell boundaries
+            // pen_x is the pen position before drawing (doesn't include x_offset)
+            // For end, use pen_x + x_advance which is the pen position after the character
             let start_x =
-                self.text_x + (start_char.position_x + start_align_offset) * scale + OPEN_SANS_FIX_X;
+                self.text_x + (start_char.pen_x + start_align_offset) * scale + OPEN_SANS_FIX_X;
             let end_x = self.text_x
-                + (end_char.position_x + end_char.x_advance + end_align_offset) * scale
+                + (end_char.pen_x + end_char.x_advance + end_align_offset) * scale
                 + OPEN_SANS_FIX_X;
 
-            let base_y = self.text_y + (run.line as f32 * line_height_scaled) + OPEN_SANS_FIX_Y;
-            let y = if run.is_underline {
-                base_y + line_height_scaled * UNDERLINE_OFFSET_RATIO
+            // Apply clipping to horizontal lines (matching TypeScript behavior)
+            let clipped_start_x = start_x.max(clip_left);
+            let clipped_end_x = end_x.min(clip_right);
+
+            // Skip if fully clipped
+            if clipped_start_x >= clipped_end_x {
+                continue;
+            }
+
+            // Y position matches TypeScript: position.y + lineHeight * line + yOffset * scale + scaledFixY
+            let y_offset = if run.is_underline {
+                UNDERLINE_OFFSET
             } else {
-                base_y + line_height_scaled * STRIKE_THROUGH_OFFSET_RATIO
+                STRIKE_THROUGH_OFFSET
             };
+            let y = self.text_y + (run.line as f32 * line_height) + (y_offset * scale) + OPEN_SANS_FIX_Y;
 
             let color = start_char.color;
 
             self.cached_horizontal_lines.push(HorizontalLine {
-                x: start_x,
+                x: clipped_start_x,
                 y,
-                width: (end_x - start_x).max(1.0),
+                width: (clipped_end_x - clipped_start_x).max(1.0),
                 height: HORIZONTAL_LINE_THICKNESS,
                 color,
             });
