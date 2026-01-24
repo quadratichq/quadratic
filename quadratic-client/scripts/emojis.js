@@ -16,6 +16,7 @@
 import fse from 'fs-extra';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import opentype from 'opentype.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,7 +31,7 @@ try {
   console.error('This script requires puppeteer to render color emojis.');
   console.error('Puppeteer is intentionally not in package.json to avoid bloating node_modules.\n');
   console.error('To install puppeteer temporarily and run this script:');
-  console.error('  npm install puppeteer && node scripts/emojis.js\n');
+  console.error('  npm install puppeteer opentype.js && node scripts/emojis.js\n');
   console.error('Or to install it just for this session:');
   console.error('  npx --yes puppeteer node scripts/emojis.js\n');
   process.exit(1);
@@ -39,7 +40,8 @@ try {
 // Match the runtime constants from emojis.ts
 const PAGE_SIZE = 1024;
 const CHARACTER_SIZE = 125;
-const SCALE_EMOJI = 1.0;
+// Scale factor to fit emoji within cell (font renders at 1.245x the Em)
+const SCALE_EMOJI = 0.81;
 
 // Output directories
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'emojis');
@@ -352,6 +354,26 @@ async function generateSpritesheets() {
   const fontBuffer = await fse.readFile(FONT_PATH);
   const fontBase64 = fontBuffer.toString('base64');
 
+  // Parse font with opentype.js to get available glyphs
+  console.log('Parsing font glyph table...');
+  const font = opentype.parse(fontBuffer.buffer);
+  const availableCodePoints = new Set();
+  
+  // Build set of code points that have glyphs in the font
+  for (let i = 0; i < font.glyphs.length; i++) {
+    const glyph = font.glyphs.get(i);
+    if (glyph.unicode !== undefined) {
+      availableCodePoints.add(glyph.unicode);
+    }
+    // Also add unicodes array if present (for composite glyphs)
+    if (glyph.unicodes) {
+      for (const u of glyph.unicodes) {
+        availableCodePoints.add(u);
+      }
+    }
+  }
+  console.log(`  Font contains ${availableCodePoints.size} glyphs`);
+
   // Launch browser
   console.log('Launching headless browser...');
   const browser = await puppeteer.launch({
@@ -388,6 +410,10 @@ async function generateSpritesheets() {
         body {
           font-family: 'NotoColorEmoji', sans-serif;
           background: transparent;
+          /* Enable OpenType features for ligatures (skin tones, ZWJ sequences) */
+          font-feature-settings: 'ccmp' 1, 'liga' 1;
+          text-rendering: optimizeLegibility;
+          -webkit-font-feature-settings: 'ccmp' 1, 'liga' 1;
         }
         .emoji-cell {
           width: ${CHARACTER_SIZE}px;
@@ -398,6 +424,7 @@ async function generateSpritesheets() {
           font-size: ${fontSize}px;
           line-height: 1;
           box-sizing: border-box;
+          font-feature-settings: 'ccmp' 1, 'liga' 1;
         }
         .page {
           width: ${PAGE_SIZE}px;
@@ -418,55 +445,42 @@ async function generateSpritesheets() {
   const emojisPerRow = Math.floor(PAGE_SIZE / CHARACTER_SIZE);
   const emojisPerPage = emojisPerRow * emojisPerRow;
 
-  // First, test which emojis actually render in the browser
-  console.log('Testing which emojis render correctly...');
+  // Set up the page with the font
+  console.log('Loading font in browser...');
   await page.setContent(htmlTemplate);
   await page.waitForFunction(() => document.fonts.ready);
 
-  // Test emojis in batches
-  const validEmojis = [];
-  const batchSize = 100;
-
-  for (let i = 0; i < uniqueEmojis.length; i += batchSize) {
-    const batch = uniqueEmojis.slice(i, i + batchSize);
-    const results = await page.evaluate(
-      (emojis, charSize) => {
-        const valid = [];
-        const canvas = document.createElement('canvas');
-        canvas.width = charSize * 2;
-        canvas.height = charSize * 2;
-        const ctx = canvas.getContext('2d');
-        ctx.font = `${charSize}px NotoColorEmoji`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        for (const emoji of emojis) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillText(emoji, charSize, charSize);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          let hasPixels = false;
-          for (let j = 3; j < imageData.data.length; j += 4) {
-            if (imageData.data[j] > 0) {
-              hasPixels = true;
-              break;
-            }
-          }
-          if (hasPixels) {
-            valid.push(emoji);
-          }
-        }
-        return valid;
-      },
-      batch,
-      CHARACTER_SIZE
-    );
-
-    validEmojis.push(...results);
-    process.stdout.write(
-      `\r  Tested ${Math.min(i + batchSize, uniqueEmojis.length)}/${uniqueEmojis.length} emojis, ${validEmojis.length} valid`
-    );
-  }
-  console.log(`\n  ${validEmojis.length} emojis render correctly\n`);
+  // Filter emojis to only include those with glyphs in the font
+  console.log('Filtering emojis by font glyph availability...');
+  
+  // Modifiers that don't need their own glyph (they modify other glyphs via GSUB)
+  const modifierCodePoints = new Set([
+    0xfe0f,  // Variation Selector-16 (emoji presentation)
+    0xfe0e,  // Variation Selector-15 (text presentation)
+    0x200d,  // Zero Width Joiner
+  ]);
+  
+  // Skin tone modifiers (Fitzpatrick scale) - these DO need to exist in the font
+  const skinToneModifiers = new Set([
+    0x1f3fb, 0x1f3fc, 0x1f3fd, 0x1f3fe, 0x1f3ff
+  ]);
+  
+  const validEmojis = uniqueEmojis.filter((emoji) => {
+    // Get all code points in this emoji
+    const codePoints = [...emoji].map((char) => char.codePointAt(0));
+    
+    // Get significant code points (exclude ZWJ and variation selectors)
+    const significantCodePoints = codePoints.filter((cp) => !modifierCodePoints.has(cp));
+    
+    if (significantCodePoints.length === 0) return false;
+    
+    // For the emoji to be valid, all significant code points must exist in the font
+    // This ensures skin tone variants work (base + skin tone modifier both need glyphs)
+    return significantCodePoints.every((cp) => availableCodePoints.has(cp));
+  });
+  
+  const filtered = uniqueEmojis.length - validEmojis.length;
+  console.log(`  ${validEmojis.length} emojis have glyphs (${filtered} filtered out)`);
 
   const totalPages = Math.ceil(validEmojis.length / emojisPerPage);
   console.log(`Layout: ${emojisPerRow}x${emojisPerRow} = ${emojisPerPage} emojis per ${PAGE_SIZE}x${PAGE_SIZE} page`);
@@ -504,6 +518,9 @@ async function generateSpritesheets() {
           body {
             font-family: 'NotoColorEmoji', sans-serif;
             background: transparent;
+            font-feature-settings: 'ccmp' 1, 'liga' 1;
+            text-rendering: optimizeLegibility;
+            -webkit-font-feature-settings: 'ccmp' 1, 'liga' 1;
           }
           .emoji-cell {
             width: ${CHARACTER_SIZE}px;
@@ -514,6 +531,7 @@ async function generateSpritesheets() {
             font-size: ${fontSize}px;
             line-height: 1;
             box-sizing: border-box;
+            font-feature-settings: 'ccmp' 1, 'liga' 1;
           }
           .page {
             width: ${PAGE_SIZE}px;
