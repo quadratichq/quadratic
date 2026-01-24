@@ -33,8 +33,8 @@ use quadratic_renderer_core::from_rgba;
 use quadratic_renderer_core::parse_color_to_rgba;
 use quadratic_renderer_core::{RenderCell, RenderFill};
 use quadratic_renderer_native::{
-    BorderLineStyle, ChartImage, ImageFormat, NativeRenderer, RenderRequest, SelectionRange,
-    SheetBorders, TableNameIcon, TableOutline, TableOutlines,
+    BorderLineStyle, ChartImage, GridExclusionZone, ImageFormat, NativeRenderer, RenderRequest,
+    SelectionRange, SheetBorders, TableNameIcon, TableOutline, TableOutlines,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -411,28 +411,43 @@ fn main() -> anyhow::Result<()> {
         request.table_outlines.tables.len()
     );
 
-    // Get chart images (HTML output with chart_image data)
+    // Get chart images (HTML output with chart_image data) and create grid exclusion zones
     let mut chart_images = Vec::new();
+    let mut grid_exclusion_zones = Vec::new();
+
     for html_output in sheet.get_html_output() {
-        // Only include if we have chart_image data
+        let chart_x = html_output.x as i64;
+        // Offset y by 1 row if the chart has a title bar (show_name)
+        let chart_y = html_output.y as i64 + if html_output.show_name { 1 } else { 0 };
+        let chart_w = html_output.w as i64;
+        let chart_h = html_output.h as i64;
+
+        // Check if chart intersects with selection
+        if chart_x + chart_w <= selection.start_col
+            || chart_x > selection.end_col
+            || chart_y + chart_h <= selection.start_row
+            || chart_y > selection.end_row
+        {
+            continue; // Chart doesn't intersect with selection
+        }
+
+        // Create grid exclusion zone for this chart (in world coordinates)
+        // The chart spans from (chart_x, chart_y) to (chart_x + chart_w, chart_y + chart_h) in cells
+        let (left, _) = request.offsets.column_position_size(chart_x);
+        let (top, _) = request.offsets.row_position_size(chart_y);
+        let (right_pos, right_size) = request.offsets.column_position_size(chart_x + chart_w - 1);
+        let (bottom_pos, bottom_size) = request.offsets.row_position_size(chart_y + chart_h - 1);
+
+        grid_exclusion_zones.push(GridExclusionZone {
+            left: left as f32,
+            top: top as f32,
+            right: (right_pos + right_size) as f32,
+            bottom: (bottom_pos + bottom_size) as f32,
+        });
+
+        // Only add to chart_images if we have chart_image data
         if let Some(chart_image_data) = html_output.chart_image {
-            let chart_x = html_output.x as i64;
-            // Offset y by 1 row if the chart has a title bar (show_name)
-            let chart_y = html_output.y as i64 + if html_output.show_name { 1 } else { 0 };
-            let chart_w = html_output.w as i64;
-            let chart_h = html_output.h as i64;
-
-            // Check if chart intersects with selection
-            if chart_x + chart_w <= selection.start_col
-                || chart_x > selection.end_col
-                || chart_y + chart_h <= selection.start_row
-                || chart_y > selection.end_row
-            {
-                continue; // Chart doesn't intersect with selection
-            }
-
-            // Get pixel dimensions from the HTML output
-            // Note: w and h in JsHtmlOutput are in pixels, not cells
+            // Note: w and h in JsHtmlOutput are in cells
             chart_images.push(ChartImage {
                 x: chart_x,
                 y: chart_y,
@@ -443,7 +458,12 @@ fn main() -> anyhow::Result<()> {
         }
     }
     request.chart_images = chart_images;
+    request.grid_exclusion_zones = grid_exclusion_zones;
     println!("Found {} chart images", request.chart_images.len());
+    println!(
+        "Created {} grid exclusion zones",
+        request.grid_exclusion_zones.len()
+    );
 
     // Create renderer and render
     println!(

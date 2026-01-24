@@ -4,6 +4,20 @@ use quadratic_core::grid::CodeCellLanguage;
 use quadratic_core::sheet_offsets::SheetOffsets;
 use quadratic_renderer_core::{RenderCell, RenderFill, SheetBorders, TableOutlines};
 
+/// A rectangular exclusion zone where grid lines should not be drawn
+/// (e.g., chart areas)
+#[derive(Debug, Clone)]
+pub struct GridExclusionZone {
+    /// Left position in world coordinates
+    pub left: f32,
+    /// Top position in world coordinates
+    pub top: f32,
+    /// Right position in world coordinates
+    pub right: f32,
+    /// Bottom position in world coordinates
+    pub bottom: f32,
+}
+
 /// A chart image to render (e.g., Python chart output)
 #[derive(Debug, Clone)]
 pub struct ChartImage {
@@ -185,6 +199,9 @@ pub struct RenderRequest {
 
     /// Whether to render grid lines
     pub show_grid_lines: bool,
+
+    /// Exclusion zones where grid lines should not be drawn (e.g., chart areas)
+    pub grid_exclusion_zones: Vec<GridExclusionZone>,
 }
 
 impl RenderRequest {
@@ -204,6 +221,7 @@ impl RenderRequest {
             table_name_icons: Vec::new(),
             background_color: None,
             show_grid_lines: true,
+            grid_exclusion_zones: Vec::new(),
         }
     }
 
