@@ -78,13 +78,20 @@ def generate_chart_image(fig, max_width=800, max_height=600):
     The image dimensions are scaled to fit within max_width x max_height while
     preserving the figure's aspect ratio.
     Returns a data URL string or None if generation fails.
+    
+    Note: This function works on a copy of the figure to avoid mutating the original.
     """
     try:
         import base64
+        import copy
+        import plotly.io as pio
+        
+        # Work on a deep copy to avoid mutating the original figure
+        fig_copy = copy.deepcopy(fig)
         
         # Get the figure's current dimensions (Plotly defaults to 700x450 if not set)
-        fig_width = fig.layout.width if fig.layout.width else 700
-        fig_height = fig.layout.height if fig.layout.height else 450
+        fig_width = fig_copy.layout.width if fig_copy.layout.width else 700
+        fig_height = fig_copy.layout.height if fig_copy.layout.height else 450
         
         # Calculate scale factor to fit within max bounds while preserving aspect ratio
         scale_x = max_width / fig_width
@@ -94,10 +101,34 @@ def generate_chart_image(fig, max_width=800, max_height=600):
         render_width = int(fig_width * scale)
         render_height = int(fig_height * scale)
         
-        # Set explicit layout dimensions to ensure consistent rendering
-        fig.update_layout(width=render_width, height=render_height, autosize=False)
+        # Set explicit layout dimensions and disable animations/transitions
+        # to ensure the figure is fully rendered before capture
+        fig_copy.update_layout(
+            width=render_width,
+            height=render_height,
+            autosize=False,
+            # Disable animations that could cause blank renders
+            transition=None,
+        )
         
-        img_bytes = fig.to_image(format='webp', width=render_width, height=render_height)
+        # Force the figure to be fully validated/constructed by converting to dict
+        # This ensures all data is resolved before image generation
+        _ = fig_copy.to_dict()
+        
+        # Use pio.to_image which gives more control over the rendering engine
+        img_bytes = pio.to_image(
+            fig_copy,
+            format='webp',
+            width=render_width,
+            height=render_height,
+            engine='kaleido',
+            validate=True,  # Validate figure before rendering
+        )
+        
+        if img_bytes is None or len(img_bytes) == 0:
+            print("[generate_chart_image] Warning: to_image returned empty bytes")
+            return None
+            
         return 'data:image/webp;base64,' + base64.b64encode(img_bytes).decode('utf-8')
     except Exception as e:
         import traceback
@@ -125,6 +156,17 @@ def setup_plotly_patch():
         
         # Override the show method to convert to HTML with CDN
         BaseFigure.show = to_html_with_cdn
+        
+        # Initialize Kaleido scope with explicit settings to avoid timing issues
+        try:
+            import kaleido
+            # Pre-warm kaleido by accessing the scope
+            plotly.io.kaleido.scope.default_format = "webp"
+            plotly.io.kaleido.scope.default_width = 700
+            plotly.io.kaleido.scope.default_height = 450
+        except Exception:
+            pass
+            
     except ImportError:
         # Plotly not installed, nothing to patch
         pass

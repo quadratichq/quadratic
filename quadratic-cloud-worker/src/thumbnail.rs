@@ -250,17 +250,34 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
     let mut chart_images = Vec::new();
     let mut grid_exclusion_zones = Vec::new();
 
-    for html_output in sheet.get_html_output() {
+    let html_outputs = sheet.get_html_output();
+    trace!("Found {} HTML outputs", html_outputs.len());
+
+    for html_output in html_outputs {
         let chart_x = html_output.x as i64;
         let chart_y = html_output.y as i64 + if html_output.show_name { 1 } else { 0 };
         let chart_w = html_output.w as i64;
         let chart_h = html_output.h as i64;
+
+        trace!(
+            "HTML output at ({}, {}), size {}x{}, chart_image: {}",
+            chart_x,
+            chart_y,
+            chart_w,
+            chart_h,
+            if html_output.chart_image.is_some() {
+                format!("present ({} bytes)", html_output.chart_image.as_ref().unwrap().len())
+            } else {
+                "None".to_string()
+            }
+        );
 
         if chart_x + chart_w <= selection.start_col
             || chart_x > selection.end_col
             || chart_y + chart_h <= selection.start_row
             || chart_y > selection.end_row
         {
+            trace!("  -> skipping (outside selection)");
             continue;
         }
 
@@ -277,6 +294,7 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
         });
 
         if let Some(chart_image_data) = html_output.chart_image {
+            trace!("  -> adding chart image");
             chart_images.push(ChartImage {
                 x: chart_x,
                 y: chart_y,
@@ -284,6 +302,8 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
                 height: html_output.h as u32,
                 image_data: chart_image_data,
             });
+        } else {
+            warn!("  -> chart_image is None, chart will render as blank area");
         }
     }
     request.chart_images = chart_images;
