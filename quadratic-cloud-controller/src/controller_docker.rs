@@ -147,6 +147,12 @@ impl Controller {
             .files_presigned_url(&file_init_data.presigned_url)?
             .to_string();
 
+        file_init_data.thumbnail_upload_url = self
+            .state
+            .settings
+            .files_presigned_url(&file_init_data.thumbnail_upload_url)?
+            .to_string();
+
         trace!("[File init data for file {file_id}: {file_init_data:?}");
 
         let worker_init_data = GetWorkerInitDataResponse {
