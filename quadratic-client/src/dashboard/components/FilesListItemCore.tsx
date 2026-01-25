@@ -1,7 +1,9 @@
 import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import type { FileCreator } from '@/dashboard/components/UserFilesList';
 import { Avatar } from '@/shared/components/Avatar';
+import { ScheduledTasksIcon } from '@/shared/components/Icons';
 import { TYPE } from '@/shared/constants/appConstants';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ReactNode } from 'react';
@@ -13,6 +15,8 @@ export function FilesListItemCore({
   creator,
   hasNetworkError,
   isShared,
+  hasScheduledTasks,
+  fileUuid,
   viewPreferences,
   actions,
   children,
@@ -24,6 +28,8 @@ export function FilesListItemCore({
   creator?: FileCreator;
   hasNetworkError?: boolean;
   isShared?: boolean;
+  hasScheduledTasks?: boolean;
+  fileUuid?: string;
   actions?: ReactNode;
   children?: ReactNode;
 }) {
@@ -41,7 +47,26 @@ export function FilesListItemCore({
             {hasNetworkError ? (
               <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
             ) : (
-              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
+              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
+                {hasScheduledTasks && fileUuid && (
+                  <TooltipPopover label="View scheduled tasks">
+                    <button
+                      className="flex items-center hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        window.location.href = ROUTES.FILE({
+                          uuid: fileUuid,
+                          searchParams: SEARCH_PARAMS.SCHEDULED_TASKS.KEY,
+                        });
+                      }}
+                    >
+                      <ScheduledTasksIcon className="h-3 w-3" />
+                    </button>
+                  </TooltipPopover>
+                )}
+                {description}
+              </p>
             )}
           </div>
         </div>

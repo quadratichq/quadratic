@@ -62,7 +62,7 @@ export function UserFilesListItem({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions, hasScheduledTasks } = file;
   let { fileType } = file;
 
   const actionUrl = ROUTES.API.FILE(uuid);
@@ -177,6 +177,8 @@ export function UserFilesListItem({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            hasScheduledTasks={hasScheduledTasks}
+            fileUuid={uuid}
             children={<FileTypeBadge type={fileType} />}
             viewPreferences={viewPreferences}
             actions={

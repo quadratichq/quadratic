@@ -72,16 +72,37 @@ def to_html_with_cdn(self):
     )
     return html
 
-def generate_chart_image(fig, width=800, height=600):
+def generate_chart_image(fig, max_width=800, max_height=600):
     """
     Generate a base64-encoded WebP image from a Plotly figure using kaleido.
+    The image dimensions are scaled to fit within max_width x max_height while
+    preserving the figure's aspect ratio.
     Returns a data URL string or None if generation fails.
     """
     try:
         import base64
-        img_bytes = fig.to_image(format='webp', width=width, height=height)
+        
+        # Get the figure's current dimensions (Plotly defaults to 700x450 if not set)
+        fig_width = fig.layout.width if fig.layout.width else 700
+        fig_height = fig.layout.height if fig.layout.height else 450
+        
+        # Calculate scale factor to fit within max bounds while preserving aspect ratio
+        scale_x = max_width / fig_width
+        scale_y = max_height / fig_height
+        scale = min(scale_x, scale_y, 1.0)  # Don't upscale, only downscale if needed
+        
+        render_width = int(fig_width * scale)
+        render_height = int(fig_height * scale)
+        
+        # Set explicit layout dimensions to ensure consistent rendering
+        fig.update_layout(width=render_width, height=render_height, autosize=False)
+        
+        img_bytes = fig.to_image(format='webp', width=render_width, height=render_height)
         return 'data:image/webp;base64,' + base64.b64encode(img_bytes).decode('utf-8')
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"[generate_chart_image] Failed to generate chart image: {e}")
+        traceback.print_exc()
         return None
 
 def setup_plotly_patch():
