@@ -9,6 +9,8 @@ members = [
   "quadratic-files",
   "quadratic-multiplayer",
   "quadratic-rust-shared",
+  "quadratic-rust-renderer/core",
+  "quadratic-rust-renderer/native",
 ]
 exclude = ["poc/number_type", "dev-rust"]
 

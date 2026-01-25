@@ -1,5 +1,6 @@
 mod config;
 mod error;
+mod thumbnail;
 mod worker;
 
 use tracing::{error, info};

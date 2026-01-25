@@ -154,6 +154,8 @@ impl Controller {
             email: file_init_data.email,
             sequence_number: file_init_data.sequence_number,
             presigned_url: file_init_data.presigned_url,
+            thumbnail_upload_url: file_init_data.thumbnail_upload_url,
+            thumbnail_key: file_init_data.thumbnail_key,
             timezone: file_init_data.timezone,
         };
 

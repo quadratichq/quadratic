@@ -36,7 +36,16 @@ COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY ./quadratic-core-cloud/. ./quadratic-core-cloud/
+COPY ./quadratic-rust-renderer/. ./quadratic-rust-renderer/
 COPY ./quadratic-cloud-worker/. ./quadratic-cloud-worker/
+
+# Copy thumbnail rendering assets (fonts, icons, emojis) for bundling
+COPY ./quadratic-client/public/fonts/opensans/. ./assets/fonts/
+COPY ./quadratic-client/public/images/icon-python.png ./assets/icons/
+COPY ./quadratic-client/public/images/icon-javascript.png ./assets/icons/
+COPY ./quadratic-client/public/images/icon-formula.png ./assets/icons/
+COPY ./quadratic-client/public/images/icon-connection.png ./assets/icons/
+COPY ./quadratic-client/public/emojis/. ./assets/emojis/
 
 WORKDIR /quadratic/quadratic-cloud-worker
 
@@ -48,9 +57,10 @@ RUN cargo build --release
 ###########################################################################################
 FROM ubuntu:24.04 AS runtime
 
-# Install runtime dependencies including Python, Deno, and timezone data
+# Install runtime dependencies including Python, Deno, timezone data, and Vulkan/Mesa for GPU rendering
 # tzdata provides IANA timezone database needed for Deno/V8 to recognize timezone identifiers
 # libicu74 provides ICU library used by V8 for internationalization including timezones
+# libvulkan1 and mesa-vulkan-drivers provide software rendering for wgpu (thumbnail generation)
 # The actual timezone is set dynamically by the controller via TZ environment variable
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
@@ -61,6 +71,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libpython3.12 \
   tzdata \
   libicu74 \
+  libvulkan1 \
+  mesa-vulkan-drivers \
   && rm -rf /var/lib/apt/lists/*
 
 # Install Deno for JavaScript execution with full web API support (fetch, WebSocket, etc.)
@@ -99,6 +111,16 @@ RUN uv pip install --system --break-system-packages \
 COPY --from=builder /quadratic/quadratic-cloud-worker/target/release/quadratic-cloud-worker .
 COPY quadratic-cloud-worker/entrypoint.sh .
 
+# Copy thumbnail rendering assets (fonts, icons, emojis)
+COPY --from=builder /quadratic/assets/fonts/ /assets/fonts/
+COPY --from=builder /quadratic/assets/icons/ /assets/icons/
+COPY --from=builder /quadratic/assets/emojis/ /assets/emojis/
+
 RUN chmod +x entrypoint.sh
+
+# Set default paths for thumbnail assets
+ENV THUMBNAIL_FONTS_DIR=/assets/fonts \
+    THUMBNAIL_ICONS_DIR=/assets/icons \
+    THUMBNAIL_EMOJIS_DIR=/assets/emojis
 
 ENTRYPOINT ["./entrypoint.sh"]
