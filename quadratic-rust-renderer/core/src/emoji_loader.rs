@@ -139,8 +139,11 @@ impl EmojiSpritesheet {
             return Some(self.location_to_uv(location));
         }
 
-        // Try with variation selector stripped (U+FE0F)
-        let normalized = emoji.replace('\u{FE0F}', "");
+        // Try with variation selectors stripped (U+FE0F and U+FE0E)
+        let normalized: String = emoji
+            .chars()
+            .filter(|c| *c != '\u{FE0F}' && *c != '\u{FE0E}')
+            .collect();
         if normalized != emoji {
             if let Some(location) = self.mapping.emojis.get(&normalized) {
                 return Some(self.location_to_uv(location));

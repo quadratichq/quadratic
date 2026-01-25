@@ -89,11 +89,7 @@ pub(crate) async fn upload_presigned_storage(
             let key = fs.first_key()?;
             let file_name = decrypt_from_api(&key, &encrypted_file_name)?;
 
-            tracing::trace!(
-                "Uploading presigned file {} to {}",
-                file_name,
-                fs.path()
-            );
+            tracing::trace!("Uploading presigned file {} to {}", file_name, fs.path());
 
             let bytes = to_bytes(request.into_body(), usize::MAX)
                 .await
