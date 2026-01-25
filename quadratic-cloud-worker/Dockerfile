@@ -92,6 +92,7 @@ ENV PATH="/root/.deno/bin:${PATH}" \
     PYTHONPATH="/root/.local/lib/python3.12/site-packages"
 
 # Install common Python packages that are frequently used in Quadratic
+# PYTHON_DEPS_VERSION=3 (bump this to invalidate cache when dependencies change)
 RUN uv pip install --system --break-system-packages \
   pandas \
   numpy \
@@ -102,6 +103,7 @@ RUN uv pip install --system --break-system-packages \
   openpyxl \
   xlsxwriter \
   plotly \
+  kaleido==0.2.1 \
   scikit-learn \
   statsmodels \
   nltk \

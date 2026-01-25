@@ -143,13 +143,24 @@ with redirect_stdout(__quadratic_std_out__):
         let processed_result = py.eval(&c_get_result, Some(&globals), Some(&locals))?;
 
         // extract fields from Python dictionary
-        let output_type = processed_result.get_item("output_type")?.extract()?;
+        let output_type: String = processed_result.get_item("output_type")?.extract()?;
         let has_headers = processed_result.get_item("has_headers")?.extract()?;
 
         // extract chart_image if present (base64 WebP data URL)
         let chart_image = processed_result
             .get_item("chart_image")?
             .extract::<Option<String>>()?;
+
+        // Log chart image status for debugging
+        tracing::debug!(
+            "[Python] output_type={}, chart_image={}",
+            output_type,
+            if let Some(ref img) = chart_image {
+                format!("present ({} bytes)", img.len())
+            } else {
+                "None".to_string()
+            }
+        );
 
         // convert to JsCellValueResult format (tuple struct with value, type_id)
         let output_value = processed_result
@@ -192,13 +203,13 @@ with redirect_stdout(__quadratic_std_out__):
         let c_std_out = c_string("__quadratic_std_out__.getvalue()")?;
         let std_out_value = py.eval(&c_std_out, Some(&globals), None)?;
         let std_out_string = std_out_value.extract::<String>()?;
-        let std_out = (!std_out_string.is_empty()).then_some(std_out_string);
+        let std_out = (!std_out_string.is_empty()).then_some(std_out_string.clone());
 
         // capture std_err from python
         let c_std_err = c_string("__quadratic_std_err__.getvalue()")?;
         let std_err_value = py.eval(&c_std_err, Some(&globals), None)?;
         let std_err_string = std_err_value.extract::<String>()?;
-        let std_err = (!std_err_string.is_empty()).then_some(std_err_string);
+        let std_err = (!std_err_string.is_empty()).then_some(std_err_string.clone());
 
         Ok(JsCodeResult {
             transaction_id: transaction_id.to_string(),

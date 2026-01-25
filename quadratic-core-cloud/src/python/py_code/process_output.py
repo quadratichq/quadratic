@@ -62,7 +62,16 @@ def to_quadratic_type(value):
     except Exception as e:
         return (str(value), CellValueType.Text.value)
 
+# Global variable to store the chart image from the patched show method
+_captured_chart_image = None
+
 def to_html_with_cdn(self):
+    global _captured_chart_image
+    
+    # Generate chart image before converting to HTML
+    # This is called from the patched fig.show() method
+    _captured_chart_image = generate_chart_image(self)
+    
     html = self.to_html(
         include_plotlyjs="cdn",
         include_mathjax="cdn",
@@ -112,7 +121,6 @@ def generate_chart_image(fig, max_width=800, max_height=600):
         )
         
         # Force the figure to be fully validated/constructed by converting to dict
-        # This ensures all data is resolved before image generation
         _ = fig_copy.to_dict()
         
         # Use pio.to_image which gives more control over the rendering engine
@@ -126,14 +134,10 @@ def generate_chart_image(fig, max_width=800, max_height=600):
         )
         
         if img_bytes is None or len(img_bytes) == 0:
-            print("[generate_chart_image] Warning: to_image returned empty bytes")
             return None
-            
+        
         return 'data:image/webp;base64,' + base64.b64encode(img_bytes).decode('utf-8')
-    except Exception as e:
-        import traceback
-        print(f"[generate_chart_image] Failed to generate chart image: {e}")
-        traceback.print_exc()
+    except Exception:
         return None
 
 def setup_plotly_patch():
@@ -213,13 +217,19 @@ def process_output_value(output_value):
 
     try:
         import plotly
+        global _captured_chart_image
 
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
-            # Generate chart image before converting to HTML
             chart_image = generate_chart_image(output_value)
             output_value = to_html_with_cdn(output_value)
             output_type = "Chart"
-    except:
+        elif isinstance(output_value, str) and '<div' in output_value and 'plotly' in output_value.lower():
+            # Output is already HTML from fig.show() - use the captured chart image
+            if _captured_chart_image:
+                chart_image = _captured_chart_image
+                _captured_chart_image = None  # Clear after use
+            output_type = "Chart"
+    except Exception:
         pass
 
     # Convert Pandas.Series to array_output
