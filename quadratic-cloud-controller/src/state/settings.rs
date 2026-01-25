@@ -1,11 +1,16 @@
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
-use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks, parse_jwks};
+use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks, jwks_from_private_key_pem};
 use quadratic_rust_shared::environment::Environment;
+use tracing::info;
 use url::Url;
 use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::{ControllerError, Result};
+
+/// Key ID for the cloud controller's signing key.
+/// This is a constant since we derive the JWKS from the private key at startup.
+const CONTROLLER_KEY_ID: &str = "quadratic_controller";
 
 pub(crate) struct Settings {
     pub(crate) environment: Environment,
@@ -37,15 +42,19 @@ pub(crate) fn version() -> String {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Result<Self> {
-        let quadratic_jwt_encoding_key = EncodingKey::from_rsa_pem(
-            config
-                .quadratic_jwt_encoding_key
-                .replace(r"\n", "\n")
-                .as_bytes(),
-        )
-        .map_err(|e| ControllerError::Settings(e.to_string()))?;
+        let private_key_pem = config.quadratic_jwt_encoding_key.replace(r"\n", "\n");
 
-        let quadratic_jwks = parse_jwks(&config.quadratic_jwks)?;
+        let quadratic_jwt_encoding_key = EncodingKey::from_rsa_pem(private_key_pem.as_bytes())
+            .map_err(|e| ControllerError::Settings(e.to_string()))?;
+
+        // Derive the JWKS from the private key to ensure they always match.
+        // This eliminates configuration mismatches between the signing key and validation JWKS.
+        let quadratic_jwks = jwks_from_private_key_pem(&private_key_pem, CONTROLLER_KEY_ID)?;
+
+        info!(
+            "Derived JWKS from private key with kid: {}",
+            CONTROLLER_KEY_ID
+        );
 
         let settings = Settings {
             environment: config.environment,
