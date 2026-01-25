@@ -11,7 +11,15 @@ import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (
+      transactionId: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
+      chartPixelWidth: number | null,
+      chartPixelHeight: number | null
+    ) => void;
   };
 
 class CorePython {
@@ -103,7 +111,18 @@ class CorePython {
     Atomics.notify(int32View, 0, 1);
   };
 
-  private sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  private sendRunPython = (
+    transactionId: string,
+    x: number,
+    y: number,
+    sheetId: string,
+    code: string,
+    chartPixelWidth: number | null,
+    chartPixelHeight: number | null
+  ) => {
+    console.log(
+      `[corePython sendRunPython] x=${x}, y=${y}, chartPixelWidth=${chartPixelWidth}, chartPixelHeight=${chartPixelHeight}`
+    );
     this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',
@@ -112,6 +131,8 @@ class CorePython {
       y,
       sheetId,
       code,
+      chartPixelWidth,
+      chartPixelHeight,
     });
   };
 

@@ -28,13 +28,15 @@ pub(crate) async fn run_python(
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    chart_pixel_width: f32,
+    chart_pixel_height: f32,
 ) -> Result<()> {
     tracing::info!(
         "[Python] Starting execution for transaction: {}",
         transaction_id
     );
 
-    let js_code_result = execute(code, transaction_id, get_cells)?;
+    let js_code_result = execute(code, transaction_id, get_cells, chart_pixel_width, chart_pixel_height)?;
 
     grid.lock()
         .await
@@ -47,6 +49,8 @@ pub(crate) fn execute(
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    chart_pixel_width: f32,
+    chart_pixel_height: f32,
 ) -> Result<JsCodeResult> {
     let result: std::result::Result<JsCodeResult, PyErr> = Python::with_gil(|py| {
         let empty_result = empty_js_code_result(transaction_id);
@@ -66,6 +70,10 @@ pub(crate) fn execute(
 
         // create a globals dict to capture q.cells("A1") call early
         let globals = pyo3::types::PyDict::new(py);
+
+        // Set chart pixel dimensions for process_output.py to use
+        globals.set_item("__chart_pixel_width__", chart_pixel_width)?;
+        globals.set_item("__chart_pixel_height__", chart_pixel_height)?;
 
         // create a Python callable that uses the get_cells closure and returns converted values/DataFrames
         let get_cells_py = create_get_cells_function(py, get_cells)?;
@@ -324,7 +332,8 @@ mod tests {
 
     fn test_execute(code: &str) -> JsCodeResult {
         let start = Instant::now();
-        let result = execute(code, "test", Box::new(test_get_cells)).unwrap();
+        // Use default chart dimensions for tests
+        let result = execute(code, "test", Box::new(test_get_cells), 600.0, 460.0).unwrap();
         let end = Instant::now();
         println!("time: {:?}", end.duration_since(start));
         println!("result: {:#?}", result);

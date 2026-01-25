@@ -60,6 +60,8 @@ pub struct DataTableTemplate {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
 
+    // DEPRECATED: Use `chart_output` (cell dimensions) with sheet offsets to calculate pixels.
+    // Kept for backwards compatibility with old files.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_pixel_output: Option<(f32, f32)>,
 
@@ -261,7 +263,8 @@ pub struct DataTable {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub show_columns: Option<bool>,
 
-    // width and height of the chart (html or image) output
+    // DEPRECATED: Use `chart_output` (cell dimensions) with sheet offsets to calculate pixels.
+    // Kept for backwards compatibility with old files.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_pixel_output: Option<(f32, f32)>,
 

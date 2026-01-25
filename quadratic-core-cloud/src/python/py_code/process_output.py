@@ -70,7 +70,10 @@ def to_html_with_cdn(self):
     
     # Generate chart image before converting to HTML
     # This is called from the patched fig.show() method
-    _captured_chart_image = generate_chart_image(self)
+    # Use chart dimensions from core if available
+    chart_width = globals().get('__chart_pixel_width__')
+    chart_height = globals().get('__chart_pixel_height__')
+    _captured_chart_image = generate_chart_image(self, chart_width, chart_height)
     
     html = self.to_html(
         include_plotlyjs="cdn",
@@ -81,11 +84,13 @@ def to_html_with_cdn(self):
     )
     return html
 
-def generate_chart_image(fig, max_width=800, max_height=600):
+def generate_chart_image(fig, target_width=None, target_height=None):
     """
     Generate a base64-encoded WebP image from a Plotly figure using kaleido.
-    The image dimensions are scaled to fit within max_width x max_height while
-    preserving the figure's aspect ratio.
+    
+    If target_width and target_height are provided, the image is rendered at those
+    exact dimensions. Otherwise, falls back to the figure's dimensions or Plotly defaults.
+    
     Returns a data URL string or None if generation fails.
     
     Note: This function works on a copy of the figure to avoid mutating the original.
@@ -98,17 +103,14 @@ def generate_chart_image(fig, max_width=800, max_height=600):
         # Work on a deep copy to avoid mutating the original figure
         fig_copy = copy.deepcopy(fig)
         
-        # Get the figure's current dimensions (Plotly defaults to 700x450 if not set)
-        fig_width = fig_copy.layout.width if fig_copy.layout.width else 700
-        fig_height = fig_copy.layout.height if fig_copy.layout.height else 450
-        
-        # Calculate scale factor to fit within max bounds while preserving aspect ratio
-        scale_x = max_width / fig_width
-        scale_y = max_height / fig_height
-        scale = min(scale_x, scale_y, 1.0)  # Don't upscale, only downscale if needed
-        
-        render_width = int(fig_width * scale)
-        render_height = int(fig_height * scale)
+        # Use target dimensions if provided, otherwise use figure dimensions or defaults
+        if target_width is not None and target_height is not None:
+            render_width = int(target_width)
+            render_height = int(target_height)
+        else:
+            # Fallback to figure's dimensions or Plotly defaults (700x450)
+            render_width = int(fig_copy.layout.width) if fig_copy.layout.width else 700
+            render_height = int(fig_copy.layout.height) if fig_copy.layout.height else 450
         
         # Set explicit layout dimensions and disable animations/transitions
         # to ensure the figure is fully rendered before capture
@@ -220,7 +222,10 @@ def process_output_value(output_value):
         global _captured_chart_image
 
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
-            chart_image = generate_chart_image(output_value)
+            # Use chart dimensions from core if available
+            chart_width = globals().get('__chart_pixel_width__')
+            chart_height = globals().get('__chart_pixel_height__')
+            chart_image = generate_chart_image(output_value, chart_width, chart_height)
             output_value = to_html_with_cdn(output_value)
             output_type = "Chart"
         elif isinstance(output_value, str) and '<div' in output_value and 'plotly' in output_value.lower():

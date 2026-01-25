@@ -12,8 +12,34 @@ import { loadPyodide } from 'pyodide';
 
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
+// Default chart pixel dimensions (must match DEFAULT_HTML_WIDTH/HEIGHT in quadratic-core)
 const DEFAULT_CHART_WIDTH = 600;
 const DEFAULT_CHART_HEIGHT = 460;
+
+// Extract chart dimensions from Plotly HTML
+function extractChartDimensions(html: string): { width: number; height: number } {
+  // Look for width/height in the main layout section (after "layout": or near end of Plotly.newPlot)
+  // Match "width":NUMBER,"height":NUMBER or "height":NUMBER nearby "width":NUMBER
+  // Only match integers >= 100 to avoid small template values like "width":0.5
+
+  // Try to find all width/height pairs that look like chart dimensions (integers >= 100)
+  const widthMatches = html.matchAll(/"width"\s*:\s*(\d{3,4})(?![.\d])/g);
+  const heightMatches = html.matchAll(/"height"\s*:\s*(\d{3,4})(?![.\d])/g);
+
+  const widths = Array.from(widthMatches).map((m) => parseInt(m[1], 10));
+  const heights = Array.from(heightMatches).map((m) => parseInt(m[1], 10));
+
+  // Use the last valid pair (layout dimensions typically appear last in Plotly HTML)
+  if (widths.length > 0 && heights.length > 0) {
+    const width = widths[widths.length - 1];
+    const height = heights[heights.length - 1];
+    if (width >= 100 && width <= 4000 && height >= 100 && height <= 4000) {
+      return { width, height };
+    }
+  }
+
+  return { width: DEFAULT_CHART_WIDTH, height: DEFAULT_CHART_HEIGHT };
+}
 
 // eslint-disable-next-line no-restricted-globals
 const SELF = self;
@@ -163,6 +189,8 @@ class Python {
       transactionId: corePythonRun.transactionId,
       sheetPos: { x: corePythonRun.x, y: corePythonRun.y, sheetId: corePythonRun.sheetId },
       code: corePythonRun.code,
+      chartPixelWidth: corePythonRun.chartPixelWidth,
+      chartPixelHeight: corePythonRun.chartPixelHeight,
     };
   };
 
@@ -173,6 +201,8 @@ class Python {
     y: codeRun.sheetPos.y,
     sheetId: codeRun.sheetPos.sheetId,
     code: codeRun.code,
+    chartPixelWidth: codeRun.chartPixelWidth,
+    chartPixelHeight: codeRun.chartPixelHeight,
   });
 
   private next = () => {
@@ -205,6 +235,9 @@ class Python {
   };
 
   runPython = async (message: CorePythonRun): Promise<void> => {
+    console.log(
+      `[python.ts runPython] x=${message.x}, y=${message.y}, chartPixelWidth=${message.chartPixelWidth}, chartPixelHeight=${message.chartPixelHeight}`
+    );
     if (!this.pyodide || this.state !== 'ready' || this.transactionId) {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       // Send state update - Rust handles code running state via coreClientCodeRunningState
@@ -322,7 +355,22 @@ class Python {
 
       if (htmlString && typeof htmlString === 'string' && htmlString.includes('<html')) {
         try {
-          chartImage = await pythonClient.captureChartImage(htmlString, DEFAULT_CHART_WIDTH, DEFAULT_CHART_HEIGHT);
+          // Use chart pixel dimensions from core if available, otherwise extract from HTML
+          let width: number;
+          let height: number;
+          if (message.chartPixelWidth && message.chartPixelHeight) {
+            width = Math.round(message.chartPixelWidth);
+            height = Math.round(message.chartPixelHeight);
+            console.log(`[python.ts] Using core dimensions: ${width}x${height}`);
+          } else {
+            const extracted = extractChartDimensions(htmlString);
+            width = extracted.width;
+            height = extracted.height;
+            console.log(
+              `[python.ts] Using extracted dimensions: ${width}x${height} (core had: ${message.chartPixelWidth}x${message.chartPixelHeight})`
+            );
+          }
+          chartImage = await pythonClient.captureChartImage(htmlString, width, height);
         } catch (e) {
           console.error('[python.ts] Failed to capture chart image:', e);
         }

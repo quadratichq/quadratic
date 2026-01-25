@@ -5,6 +5,8 @@ export interface CorePythonRun {
   x: number;
   y: number;
   code: string;
+  chartPixelWidth: number | null;
+  chartPixelHeight: number | null;
 }
 
 export interface PythonCoreResults {

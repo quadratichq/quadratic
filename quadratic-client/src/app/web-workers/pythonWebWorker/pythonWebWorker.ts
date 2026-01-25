@@ -113,6 +113,12 @@ class PythonWebWorker {
           // Wait for chart to finish rendering before capturing
           await this.waitForPlotlyRender(plotElement);
 
+          // Resize the chart to match the target dimensions before capturing
+          await plotly.relayout(plotElement, { width, height, autosize: false });
+
+          // Wait for the resize to complete
+          await this.waitForPlotlyRender(plotElement);
+
           const dataUrl = await plotly.toImage(plotElement, {
             format: 'webp',
             width,
@@ -145,13 +151,16 @@ class PythonWebWorker {
   private waitForPlotly = (
     contentWindow: Window,
     timeoutMs: number
-  ): Promise<{ toImage: (el: Element, opts: object) => Promise<string> } | null> => {
+  ): Promise<{
+    toImage: (el: Element, opts: object) => Promise<string>;
+    relayout: (el: Element, update: object) => Promise<void>;
+  } | null> => {
     return new Promise((resolve) => {
       const startTime = Date.now();
 
       const check = () => {
         const plotly = (contentWindow as any).Plotly;
-        if (plotly && typeof plotly.toImage === 'function') {
+        if (plotly && typeof plotly.toImage === 'function' && typeof plotly.relayout === 'function') {
           resolve(plotly);
           return;
         }
