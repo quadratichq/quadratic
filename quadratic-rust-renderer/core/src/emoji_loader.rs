@@ -106,7 +106,7 @@ impl EmojiSpritesheet {
         let mapping: EmojiMapping = serde_json::from_str(json)
             .map_err(|e| anyhow::anyhow!("Failed to parse emoji mapping JSON: {}", e))?;
 
-        log::info!(
+        log::debug!(
             "Loaded emoji mapping: {} pages, {} emojis",
             mapping.pages.len(),
             mapping.emojis.len()

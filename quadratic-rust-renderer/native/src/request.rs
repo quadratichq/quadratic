@@ -25,9 +25,9 @@ pub struct ChartImage {
     pub x: i64,
     /// Y position in cell coordinates
     pub y: i64,
-    /// Width in pixels (from chart_output)
+    /// Width in cells (how many columns the chart spans, from chart_output)
     pub width: u32,
-    /// Height in pixels (from chart_output)
+    /// Height in cells (how many rows the chart spans, from chart_output)
     pub height: u32,
     /// Base64-encoded WebP image data
     pub image_data: String,

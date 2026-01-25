@@ -34,12 +34,20 @@ pub(super) const ICON_TOP_PADDING: f32 = 4.0;
 /// Horizontal padding from left of cell
 pub(super) const ICON_LEFT_PADDING: f32 = 4.0;
 
-/// Decoded chart image info (position and actual pixel dimensions)
+/// Decoded chart image info (position, cell span, and texture dimensions)
 pub(super) struct DecodedChartInfo {
+    /// X position in cell coordinates
     pub x: i64,
+    /// Y position in cell coordinates
     pub y: i64,
-    pub width: u32,
-    pub height: u32,
+    /// Width in cells (how many columns the chart spans)
+    pub cell_width: u32,
+    /// Height in cells (how many rows the chart spans)
+    pub cell_height: u32,
+    /// Texture width in pixels (for aspect ratio preservation)
+    pub texture_width: u32,
+    /// Texture height in pixels (for aspect ratio preservation)
+    pub texture_height: u32,
     pub texture_uid: u32,
 }
 
