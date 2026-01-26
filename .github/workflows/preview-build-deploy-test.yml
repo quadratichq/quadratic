@@ -1,11 +1,26 @@
 name: Preview
 
 on:
-  workflow_call:
+  pull_request:
+    types: [synchronize, reopened, labeled]
+
+# Concurrency: cancel in-progress builds ONLY for synchronize events (new code pushes).
+# For labeled/reopened events, queue behind any running build instead of cancelling it.
+# This ensures adding unrelated labels doesn't cancel a running preview build.
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-preview-build
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 jobs:
   create_deployment:
     name: Create Deployment
+    # Only run for preview-labeled PRs on valid events (skip qa->main PRs)
+    if: |
+      (github.head_ref != 'qa' || github.base_ref != 'main') &&
+      contains(github.event.pull_request.labels.*.name, 'preview') &&
+      (github.event.action == 'synchronize' ||
+       github.event.action == 'reopened' ||
+       (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     permissions:
       contents: read
       pull-requests: write
