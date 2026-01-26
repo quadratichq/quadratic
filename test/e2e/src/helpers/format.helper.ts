@@ -1,5 +1,9 @@
 import type { Page } from '@playwright/test';
-import { gotoCells } from './sheet.helper';
+import { gotoCells, selectTextInEditor } from './sheet.helper';
+
+// =============================================================================
+// Popper/Popover Helpers
+// =============================================================================
 
 // Helper to wait for all Radix popovers/menus to close
 // This handles cases where multiple popper wrappers exist simultaneously
@@ -24,6 +28,10 @@ const closeExistingPopovers = async (page: Page) => {
   await page.keyboard.press('Escape');
   await waitForAllPoppersToClose(page, 1000);
 };
+
+// =============================================================================
+// More Formatting Menu Helpers
+// =============================================================================
 
 // This function clicks the "more formatting" icon in the formatting bar. This
 // is only needed when there are hidden items based on screen width.
@@ -115,9 +123,19 @@ export const clickStrikeThrough = async (page: Page) => {
 export const clickTextColor = async (page: Page, colorLabel?: string) => {
   await ensureFormattingButtonVisible(page, 'format_text_color');
   await page.locator(`[data-testid="format_text_color"]`).click();
+
+  // Wait for the color picker dropdown to appear
+  await page.waitForTimeout(300);
+
   if (colorLabel) {
-    await page.locator(`[aria-label="Select color ${colorLabel}"]`).click();
+    // Wait for the specific color button to be visible and click it
+    const colorButton = page.locator(`[aria-label="Select color ${colorLabel}"]`);
+    await colorButton.waitFor({ state: 'visible', timeout: 5000 });
+    await colorButton.click();
   }
+
+  // Wait for the color to be applied and dropdown to close
+  await page.waitForTimeout(300);
 };
 
 // ============================================================================
@@ -228,9 +246,19 @@ export const clickTextWrapClip = async (page: Page) => {
 export const clickFillColor = async (page: Page, colorLabel?: string) => {
   await ensureFormattingButtonVisible(page, 'format_fill_color');
   await page.locator(`[data-testid="format_fill_color"]`).click();
+
+  // Wait for the color picker dropdown to appear
+  await page.waitForTimeout(300);
+
   if (colorLabel) {
-    await page.locator(`[aria-label="Select color ${colorLabel}"]`).click();
+    // Wait for the specific color button to be visible and click it
+    const colorButton = page.locator(`[aria-label="Select color ${colorLabel}"]`);
+    await colorButton.waitFor({ state: 'visible', timeout: 5000 });
+    await colorButton.click();
   }
+
+  // Wait for the fill color to be applied and dropdown to close
+  await page.waitForTimeout(300);
 };
 
 export const clickBordersMenu = async (page: Page) => {
@@ -305,6 +333,10 @@ export const clickClearFormatting = async (page: Page) => {
   await clickFormattingButton(page, 'clear_formatting_borders');
 };
 
+// ============================================================================
+// High-Level Alignment & Wrap Helpers
+// ============================================================================
+
 /**
  * Sets the horizontal alignment for the currently selected cell(s).
  */
@@ -333,4 +365,95 @@ export const setTextWrap = async (page: Page, wrap: 'Overflow' | 'Wrap' | 'Clip'
   // Press Escape to close menus and wait for all popovers to close
   await page.keyboard.press('Escape');
   await waitForAllPoppersToClose(page);
+};
+
+// ============================================================================
+// Batch Formatting Helpers
+// ============================================================================
+
+/**
+ * Format type for batch formatting operations.
+ */
+export type FormatType = 'bold' | 'italic' | 'underline' | 'strike' | 'color';
+
+/**
+ * Applies multiple formats to selected text within the inline editor.
+ * This helper selects the text and applies each format in sequence.
+ *
+ * @param page - Playwright page
+ * @param startPosition - The character position to start selection (0-indexed)
+ * @param length - The number of characters to select
+ * @param formats - Array of format types to apply ('bold', 'italic', 'underline', 'strike', 'color')
+ * @param color - Optional hex color code for 'color' format (defaults to '#E74C3C')
+ */
+export const applyFormatsToSelection = async (
+  page: Page,
+  startPosition: number,
+  length: number,
+  formats: FormatType[],
+  color: string = '#E74C3C'
+) => {
+  for (const format of formats) {
+    await selectTextInEditor(page, startPosition, length);
+    switch (format) {
+      case 'bold':
+        await page.keyboard.press('Control+b');
+        break;
+      case 'italic':
+        await page.keyboard.press('Control+i');
+        break;
+      case 'underline':
+        await page.keyboard.press('Control+u');
+        break;
+      case 'strike':
+        await page.keyboard.press('Control+5');
+        break;
+      case 'color':
+        await clickTextColor(page, color);
+        break;
+    }
+    await page.waitForTimeout(100);
+  }
+};
+
+/**
+ * Applies multiple formats to cell(s) at the cell level.
+ * If a1 is provided, navigates to that cell/range first.
+ *
+ * @param page - Playwright page
+ * @param formats - Array of format types to apply ('bold', 'italic', 'underline', 'strike', 'color')
+ * @param options - Optional settings: a1 (cell reference), color (hex code for 'color' format)
+ */
+export const applyCellLevelFormats = async (
+  page: Page,
+  formats: FormatType[],
+  options?: { a1?: string; color?: string }
+) => {
+  const color = options?.color ?? '#E74C3C';
+
+  // Navigate to cell if specified
+  if (options?.a1) {
+    await gotoCells(page, { a1: options.a1 });
+  }
+
+  for (const format of formats) {
+    switch (format) {
+      case 'bold':
+        await page.keyboard.press('Control+b');
+        break;
+      case 'italic':
+        await page.keyboard.press('Control+i');
+        break;
+      case 'underline':
+        await page.keyboard.press('Control+u');
+        break;
+      case 'strike':
+        await page.keyboard.press('Control+5');
+        break;
+      case 'color':
+        await clickTextColor(page, color);
+        break;
+    }
+    await page.waitForTimeout(100);
+  }
 };

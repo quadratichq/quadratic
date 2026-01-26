@@ -86,6 +86,17 @@ export function getGenAIApiArgs(
         }
       : undefined;
 
+  // First pass: collect all valid tool call IDs from assistant messages
+  // This is needed to filter out orphaned tool results (e.g., when user aborts mid-tool-call)
+  const validToolCallIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isAIPromptMessage(message)) {
+      for (const toolCall of message.toolCalls) {
+        validToolCallIds.add(toolCall.id);
+      }
+    }
+  }
+
   const messages: GenAIContent[] = promptMessages.reduce<GenAIContent[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -108,10 +119,19 @@ export function getGenAIApiArgs(
       };
       return [...acc, genaiMessage];
     } else if (isToolResultMessage(message)) {
+      // Filter out tool results that reference non-existent tool call IDs
+      // This can happen when user aborts mid-tool-call and tool calls are cleared
+      const validToolResults = message.content.filter((toolResult) => validToolCallIds.has(toolResult.id));
+
+      // Skip entirely if no valid tool results remain
+      if (validToolResults.length === 0) {
+        return acc;
+      }
+
       const genaiMessage: GenAIContent = {
         role: message.role,
         parts: [
-          ...message.content.map((toolResult) => ({
+          ...validToolResults.map((toolResult) => ({
             functionResponse: {
               name: toolResult.id,
               response: { res: convertToolResultContent(toolResult.content) },

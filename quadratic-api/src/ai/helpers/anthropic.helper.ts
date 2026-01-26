@@ -126,51 +126,79 @@ export function getAnthropicApiArgs(
     ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
+  // First pass: collect all valid tool_use IDs from assistant messages
+  // This is needed to filter out orphaned tool_results (e.g., when user aborts mid-tool-call)
+  const validToolUseIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isAIPromptMessage(message)) {
+      for (const toolCall of message.toolCalls) {
+        validToolUseIds.add(toolCall.id);
+      }
+    }
+  }
+
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      const filteredContent = message.content
+        .filter(
+          (content) =>
+            !!content.text.trim() &&
+            (content.type !== 'anthropic_thinking' || !!content.signature) &&
+            (!!thinking || isContentText(content))
+        )
+        .map((content) => {
+          switch (content.type) {
+            case 'anthropic_thinking':
+              return {
+                type: 'thinking' as const,
+                thinking: content.text,
+                signature: content.signature,
+              };
+            case 'anthropic_redacted_thinking':
+              return {
+                type: 'redacted_thinking' as const,
+                data: content.text,
+              };
+            default:
+              return createTextContent(content.text.trim());
+          }
+        });
+
+      const toolUseContent = message.toolCalls.map((toolCall) => ({
+        type: 'tool_use' as const,
+        id: toolCall.id,
+        name: toolCall.name,
+        input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
+      }));
+
+      const combinedContent = [...filteredContent, ...toolUseContent];
+
+      // Skip messages with empty content to avoid API errors
+      if (combinedContent.length === 0) {
+        return acc;
+      }
+
       const anthropicMessage: MessageParam = {
         role: message.role,
-        content: [
-          ...message.content
-            .filter(
-              (content) =>
-                !!content.text.trim() &&
-                (content.type !== 'anthropic_thinking' || !!content.signature) &&
-                (!!thinking || isContentText(content))
-            )
-            .map((content) => {
-              switch (content.type) {
-                case 'anthropic_thinking':
-                  return {
-                    type: 'thinking' as const,
-                    thinking: content.text,
-                    signature: content.signature,
-                  };
-                case 'anthropic_redacted_thinking':
-                  return {
-                    type: 'redacted_thinking' as const,
-                    data: content.text,
-                  };
-                default:
-                  return createTextContent(content.text.trim());
-              }
-            }),
-          ...message.toolCalls.map((toolCall) => ({
-            type: 'tool_use' as const,
-            id: toolCall.id,
-            name: toolCall.name,
-            input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
-          })),
-        ],
+        content: combinedContent,
       };
       return [...acc, anthropicMessage];
     } else if (isToolResultMessage(message)) {
+      // Filter out tool results that reference non-existent tool_use IDs
+      // This can happen when user aborts mid-tool-call and tool calls are cleared
+      const validToolResults = message.content.filter((toolResult) => validToolUseIds.has(toolResult.id));
+
+      // Skip entirely if no valid tool results remain
+      if (validToolResults.length === 0) {
+        return acc;
+      }
+
       const anthropicMessages: MessageParam = {
         role: message.role,
         content: [
-          ...message.content.map((toolResult) => ({
+          ...validToolResults.map((toolResult) => ({
             type: 'tool_result' as const,
             tool_use_id: toolResult.id,
             content: convertToolResultContent(toolResult.content),

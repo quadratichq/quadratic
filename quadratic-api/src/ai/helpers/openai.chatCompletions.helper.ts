@@ -80,6 +80,18 @@ export function getOpenAIChatCompletionsApiArgs(
   const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
+
+  // First pass: collect all valid tool call IDs from assistant messages
+  // This is needed to filter out orphaned tool results (e.g., when user aborts mid-tool-call)
+  const validToolCallIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isAIPromptMessage(message)) {
+      for (const toolCall of message.toolCalls) {
+        validToolCallIds.add(toolCall.id);
+      }
+    }
+  }
+
   const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -103,7 +115,16 @@ export function getOpenAIChatCompletionsApiArgs(
       };
       return [...acc, openaiMessage];
     } else if (isToolResultMessage(message)) {
-      const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
+      // Filter out tool results that reference non-existent tool call IDs
+      // This can happen when user aborts mid-tool-call and tool calls are cleared
+      const validToolResults = message.content.filter((toolResult) => validToolCallIds.has(toolResult.id));
+
+      // Skip entirely if no valid tool results remain
+      if (validToolResults.length === 0) {
+        return acc;
+      }
+
+      const openaiMessages: ChatCompletionMessageParam[] = validToolResults.map((toolResult) => ({
         role: 'tool' as const,
         tool_call_id: toolResult.id,
         content: convertToolResultContent(toolResult.content),
