@@ -243,6 +243,30 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Find Build & Deploy Images Comment (cancelled)
+        if: cancelled()
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment-cancelled
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on build images cancelled
+        if: cancelled()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-cancelled.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            🚫 Build images - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🚫 Deploy images
+            🚫 Tests-E2E
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
   deploy_images:
     name: Deploy Images
     needs: [create_deployment, build_images]
@@ -494,6 +518,30 @@ jobs:
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find Build & Deploy Images Comment (cancelled)
+        if: cancelled()
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment-cancelled
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
+
+      - name: Update comment on deploy images cancelled
+        if: cancelled()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-cancelled.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            ✅ Build images
+            🚫 Deploy images - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🚫 Tests-E2E
+
+            🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
 
   verify_deployed_version:
     name: Verify Version
@@ -1027,7 +1075,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-            ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🚫 Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
