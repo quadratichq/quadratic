@@ -1,7 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { AgentModeDropdownMenu } from '@/app/ui/menus/TopBar/AgentModeDropdownMenu';
 import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/EditMenubarMenu';
@@ -28,6 +28,7 @@ export const TopBarMenus = () => {
   const label = feedbackAction.label();
   const [agentMode, setAgentMode] = useAtom(agentModeAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const aiLoading = useRecoilValue(aiAnalystLoadingAtom);
 
   // Show/hide AI Analyst when agent mode is toggled
   useEffect(() => {
@@ -53,6 +54,7 @@ export const TopBarMenus = () => {
           // agentMode && 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text !text-transparent'
         )}
         onClick={() => setAgentMode((prev) => !prev)}
+        disabled={aiLoading}
       >
         <AIIcon className={cn(agentMode ? 'mr-2' : '')} />
         {agentMode ? 'Agent mode' : ''}

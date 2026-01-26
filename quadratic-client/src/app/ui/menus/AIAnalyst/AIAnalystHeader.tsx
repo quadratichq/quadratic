@@ -179,7 +179,7 @@ function RenamableHeaderTitle({ showChatHistory }: { showChatHistory: boolean })
 
   const headerTitle = useMemo(() => {
     if (showChatHistory) {
-      return `${defaultLabel} history`;
+      return `Chat history`;
     }
     return currentChatName.trim() || defaultLabel;
   }, [showChatHistory, currentChatName, defaultLabel]);
