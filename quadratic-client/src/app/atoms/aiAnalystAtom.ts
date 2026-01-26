@@ -1,4 +1,5 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
@@ -162,7 +163,12 @@ export const aiAnalystActiveSchemaConnectionUuidAtom = createSelector('activeSch
 
 export const showAIAnalystAtom = selector<boolean>({
   key: 'showAIAnalystAtom',
-  get: ({ get }) => get(aiAnalystAtom).showAIAnalyst,
+  get: ({ get }) => {
+    // If agent mode is enabled, always show AI Analyst
+    const agentMode = get(agentModeAtom);
+    if (agentMode) return true;
+    return get(aiAnalystAtom).showAIAnalyst;
+  },
   set: ({ set, get }, newValue) => {
     const currentState = get(aiAnalystAtom);
     const isShowing = currentState.showAIAnalyst;

@@ -8,7 +8,6 @@ import { ConnectionSchemaBrowser } from '@/shared/components/connections/Connect
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useAtomValue } from 'jotai';
 import { memo, useCallback, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -23,7 +22,7 @@ export const AIAnalystConnectionSchema = memo(() => {
     aiAnalystActiveSchemaConnectionUuidAtom
   );
   const { connections } = useConnectionsFetcher();
-  const agentMode = useAtomValue(agentModeAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {

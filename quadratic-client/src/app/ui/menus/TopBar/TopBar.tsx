@@ -15,11 +15,11 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
-import { useAtomValue } from 'jotai';
+import { useRecoilValue } from 'recoil';
 
 export const TopBar = () => {
   // TODO: what about embeddable view? should we show the file menu?
-  const agentMode = useAtomValue(agentModeAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
 
   return (
     <div

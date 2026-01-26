@@ -48,7 +48,6 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
-import { useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -60,7 +59,7 @@ export default function QuadraticUI() {
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
-  const [agentMode] = useAtom(agentModeAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);

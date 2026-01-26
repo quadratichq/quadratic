@@ -20,7 +20,6 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useAtom } from 'jotai';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -38,7 +37,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
     [debugFlags]
   );
-  const [agentMode] = useAtom(agentModeAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);

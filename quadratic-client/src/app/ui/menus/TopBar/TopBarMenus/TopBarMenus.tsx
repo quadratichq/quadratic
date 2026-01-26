@@ -1,7 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import { aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { AgentModeDropdownMenu } from '@/app/ui/menus/TopBar/AgentModeDropdownMenu';
 import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/EditMenubarMenu';
@@ -15,9 +15,8 @@ import { AI_GRADIENT } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
 import { cn } from '@/shared/shadcn/utils';
-import { useAtom } from 'jotai';
-import { useEffect, useMemo } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useMemo } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import './styles.css';
 
 const feedbackAction = defaultActionSpec[Action.HelpFeedback];
@@ -26,14 +25,8 @@ export const TopBarMenus = () => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEdit = useMemo(() => permissions.includes('FILE_EDIT'), [permissions]);
   const label = feedbackAction.label();
-  const [agentMode, setAgentMode] = useAtom(agentModeAtom);
-  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const [agentMode, setAgentMode] = useRecoilState(agentModeAtom);
   const aiLoading = useRecoilValue(aiAnalystLoadingAtom);
-
-  // Show/hide AI Analyst when agent mode is toggled
-  useEffect(() => {
-    setShowAIAnalyst(agentMode);
-  }, [agentMode, setShowAIAnalyst]);
 
   return (
     <div className="flex items-center">

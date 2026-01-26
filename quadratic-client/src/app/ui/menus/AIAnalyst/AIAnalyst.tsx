@@ -19,7 +19,6 @@ import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
-import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -32,7 +31,7 @@ export const AIAnalyst = memo(() => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
   const [dragOver, setDragOver] = useState(false);
-  const agentMode = useAtomValue(agentModeAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
