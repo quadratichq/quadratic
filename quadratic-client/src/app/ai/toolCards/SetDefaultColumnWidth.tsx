@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type SetDefaultColumnWidthResponse = z.infer<(typeof aiToolsSpec)[AITool.SetDefaultColumnWidth]['responseSchema']>;
+type SetDefaultColumnWidthResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.SetDefaultColumnWidth]>;
 
 export const SetDefaultColumnWidth = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -20,7 +20,7 @@ export const SetDefaultColumnWidth = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.SetDefaultColumnWidth].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.SetDefaultColumnWidth].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[SetDefaultColumnWidth] Failed to parse args: ', error);
