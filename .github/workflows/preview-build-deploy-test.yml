@@ -2,14 +2,15 @@ name: Preview
 
 on:
   pull_request:
-    types: [synchronize, reopened, labeled]
+    types: [synchronize, reopened, labeled, unlabeled]
 
-# Concurrency: cancel in-progress builds ONLY for synchronize events (new code pushes).
-# For labeled/reopened events, queue behind any running build instead of cancelling it.
-# This ensures adding unrelated labels doesn't cancel a running preview build.
+# Concurrency: cancel in-progress builds for:
+# - synchronize: new code pushes should cancel old builds
+# - unlabeled with 'preview': removing preview label should cancel the build
+# For other events (labeled, reopened), queue behind any running build.
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-preview-build
-  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
+  cancel-in-progress: ${{ github.event.action == 'synchronize' || (github.event.action == 'unlabeled' && github.event.label.name == 'preview') }}
 
 jobs:
   create_deployment:
