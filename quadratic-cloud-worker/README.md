@@ -17,9 +17,12 @@ Set via environment variables:
 - `MULTIPLAYER_URL` - Multiplayer service endpoint
 - `CONNECTION_URL` - Database connection service endpoint
 - `FILE_ID` - File UUID to process
-- `M2M_AUTH_TOKEN` - Machine-to-machine auth token
+- `JWT` - Ephemeral JWT for authenticating with controller
 - `TASKS` - Compressed/encoded task list
 - `WORKER_INIT_DATA` - Compressed worker initialization data
+- `THUMBNAIL_FONTS_DIR` - (Optional) Path to fonts for thumbnail rendering
+- `THUMBNAIL_ICONS_DIR` - (Optional) Path to language icons for thumbnail rendering
+- `THUMBNAIL_EMOJIS_DIR` - (Optional) Path to emoji assets for thumbnail rendering
 
 ## Build
 

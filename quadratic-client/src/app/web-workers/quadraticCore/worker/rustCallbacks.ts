@@ -34,7 +34,15 @@ declare var self: WorkerGlobalScope &
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
-    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (
+      transactionId: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
+      chartPixelWidth: number | null,
+      chartPixelHeight: number | null
+    ) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
@@ -166,8 +174,17 @@ export const jsTransactionEnd = (transaction_id: string, transaction_name: strin
   self.sendTransactionEndRender(transaction_id, transactionName);
 };
 
-export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
-  self.sendRunPython(transactionId, x, y, sheetId, code);
+export const jsRunPython = (
+  transactionId: string,
+  x: number,
+  y: number,
+  sheetId: string,
+  code: string,
+  chartPixelWidth: number | undefined,
+  chartPixelHeight: number | undefined
+) => {
+  console.log(`[jsRunPython] x=${x}, y=${y}, chartPixelWidth=${chartPixelWidth}, chartPixelHeight=${chartPixelHeight}`);
+  self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth ?? null, chartPixelHeight ?? null);
 };
 
 export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {

@@ -100,12 +100,27 @@ export const multerS3Storage = (bucket: S3Bucket): multer.Multer =>
     }) as StorageEngine,
   });
 
-// Get the presigned file URL from S3
+// Get the presigned file URL from S3 (for downloads)
 export const generatePresignedUrl = async (key: string, bucket: S3Bucket): Promise<string> => {
   const command = new GetObjectCommand({
     Bucket: getBucketName(bucket),
     Key: key,
   });
 
-  return await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 * 24 * 7 }); // 7 days
+  return await getSignedUrl(getS3Client(), command, { expiresIn: 60 * 60 * 24 * 7 }); // 7 days
+};
+
+// Generate a presigned URL for uploading to S3
+export const generatePresignedUploadUrl = async (
+  key: string,
+  bucket: S3Bucket,
+  contentType: string = 'application/octet-stream'
+): Promise<string> => {
+  const command = new PutObjectCommand({
+    Bucket: getBucketName(bucket),
+    Key: key,
+    ContentType: contentType,
+  });
+
+  return await getSignedUrl(getS3Client(), command, { expiresIn: 60 * 60 }); // 1 hour
 };

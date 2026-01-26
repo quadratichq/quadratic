@@ -225,6 +225,8 @@ class QuadraticCore {
             transactionId: data.transactionId,
             sheetPos: { x: state.current.x, y: state.current.y, sheetId: state.current.sheet_id },
             code: '', // Code is not needed for display, can be retrieved from grid if needed
+            chartPixelWidth: null,
+            chartPixelHeight: null,
           };
         }
 
@@ -233,6 +235,8 @@ class QuadraticCore {
           transactionId: data.transactionId,
           sheetPos: { x: op.x, y: op.y, sheetId: op.sheet_id },
           code: '', // Code is not needed for display, can be retrieved from grid if needed
+          chartPixelWidth: null,
+          chartPixelHeight: null,
         }));
 
         // Emit unified code running state

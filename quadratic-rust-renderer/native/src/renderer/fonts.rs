@@ -8,7 +8,7 @@ use super::NativeRenderer;
 impl NativeRenderer {
     /// Set the bitmap fonts for text rendering
     pub fn set_fonts(&mut self, fonts: BitmapFonts) {
-        log::info!("Setting {} fonts", fonts.count());
+        log::debug!("Setting {} fonts", fonts.count());
         self.fonts = fonts;
     }
 
@@ -24,7 +24,7 @@ impl NativeRenderer {
         let (width, height) = (rgba.width(), rgba.height());
         let data = rgba.into_raw();
 
-        log::info!(
+        log::debug!(
             "Uploading font texture UID {} ({}x{}, {} bytes)",
             texture_uid,
             width,
@@ -53,7 +53,7 @@ impl NativeRenderer {
         spritesheet: EmojiSpritesheet,
         emoji_dir: std::path::PathBuf,
     ) {
-        log::info!(
+        log::debug!(
             "Setting emoji spritesheet with {} emojis, {} pages (lazy loading from {:?})",
             spritesheet.emoji_count(),
             spritesheet.page_count(),
@@ -105,7 +105,7 @@ impl NativeRenderer {
         let (width, height) = (rgba.width(), rgba.height());
         let data = rgba.into_raw();
 
-        log::info!(
+        log::debug!(
             "Lazy loading emoji texture page {} ({}x{}) from {:?}",
             texture_uid,
             width,

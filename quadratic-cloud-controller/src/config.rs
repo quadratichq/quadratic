@@ -23,7 +23,6 @@ pub(crate) struct Config {
     pub(crate) m2m_auth_token: String,
     pub(crate) quadratic_jwt_encoding_key: String,
     pub(crate) quadratic_jwt_expiration_seconds: u64,
-    pub(crate) quadratic_jwks: String,
     pub(crate) worker_jwt_email: String,
     pub(crate) namespace: String,
     pub(crate) pubsub_host: String,

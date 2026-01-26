@@ -283,7 +283,7 @@ pub fn load_fonts_from_directory(
         let font = parse_bmfont_xml(&xml, index as u32)?;
         let textures = parse_font_texture_pages(&xml, index as u32)?;
 
-        log::info!(
+        log::debug!(
             "Loaded font '{}' with {} chars, {} texture pages",
             font.font,
             font.chars.len(),

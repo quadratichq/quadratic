@@ -547,11 +547,11 @@ impl super::PubSub for RedisConnection {
 
 // Private helper methods for RedisConnection
 impl RedisConnection {
-    /// Check if a channel has any messages (pending or unread)
-    /// This is used to determine if a channel should remain in the active channels set
-    async fn has_pending_messages(&mut self, channel: &str, group: &str) -> Result<bool> {
-        // Use XINFO GROUPS to get information about the consumer group
-        // This includes pending count and lag (undelivered messages)
+    /// Get the pending count and lag for a consumer group on a channel.
+    /// Returns (pending_count, lag) where:
+    /// - pending_count: messages delivered to consumers but not yet acknowledged
+    /// - lag: messages not yet delivered to any consumer in the group
+    async fn get_group_info(&mut self, channel: &str, group: &str) -> Result<(i64, i64)> {
         let info_cmd = cmd("XINFO").arg("GROUPS").arg(channel).to_owned();
 
         let result: Value = self.multiplex.send_packed_command(&info_cmd).await?;
@@ -595,15 +595,31 @@ impl RedisConnection {
                         }
 
                         if is_our_group {
-                            // Channel has messages if there are pending messages or undelivered messages (lag)
-                            return Ok(pending_count > 0 || lag > 0);
+                            return Ok((pending_count, lag));
                         }
                     }
                 }
-                Ok(false)
+                Ok((0, 0))
             }
-            _ => Ok(false),
+            _ => Ok((0, 0)),
         }
+    }
+
+    /// Check if a channel has any messages (pending or unread)
+    /// This is used to determine if a channel should remain in the active channels set
+    async fn has_pending_messages(&mut self, channel: &str, group: &str) -> Result<bool> {
+        let (pending_count, lag) = self.get_group_info(channel, group).await?;
+        // Channel has messages if there are pending messages or undelivered messages (lag)
+        Ok(pending_count > 0 || lag > 0)
+    }
+
+    /// Check if a channel has undelivered messages (lag > 0).
+    /// This only returns true if there are new messages that haven't been
+    /// delivered to any consumer yet. Pending messages (delivered but not acked)
+    /// are not counted since XREADGROUP with ">" won't return them.
+    pub async fn has_undelivered_messages(&mut self, channel: &str, group: &str) -> Result<bool> {
+        let (_pending_count, lag) = self.get_group_info(channel, group).await?;
+        Ok(lag > 0)
     }
 
     /// Remove an a key within an active channel

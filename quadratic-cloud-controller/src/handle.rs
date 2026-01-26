@@ -230,6 +230,15 @@ pub(crate) async fn shutdown_worker(
     // Validate the worker's JWT before allowing shutdown
     validate_worker_token(&state, &headers, file_id)?;
 
+    // If the worker uploaded a thumbnail, update the file record via the API
+    if let Some(thumbnail_key) = &shutdown_request.thumbnail_key {
+        info!("Updating thumbnail for file {file_id} with key {thumbnail_key}");
+        if let Err(e) = crate::quadratic_api::update_file_thumbnail(&state, file_id, thumbnail_key).await {
+            warn!("Failed to update thumbnail for file {file_id}: {e}");
+            // Don't fail shutdown if thumbnail update fails
+        }
+    }
+
     Controller::shutdown_worker(Arc::clone(&state), &container_id, &file_id)
         .await
         .map_err(|e| ControllerError::ShutdownWorker(e.to_string()))?;

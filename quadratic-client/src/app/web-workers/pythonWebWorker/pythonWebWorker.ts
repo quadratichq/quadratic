@@ -110,6 +110,15 @@ class PythonWebWorker {
             throw new Error('No Plotly element found');
           }
 
+          // Wait for chart to finish rendering before capturing
+          await this.waitForPlotlyRender(plotElement);
+
+          // Resize the chart to match the target dimensions before capturing
+          await plotly.relayout(plotElement, { width, height, autosize: false });
+
+          // Wait for the resize to complete
+          await this.waitForPlotlyRender(plotElement);
+
           const dataUrl = await plotly.toImage(plotElement, {
             format: 'webp',
             width,
@@ -142,13 +151,16 @@ class PythonWebWorker {
   private waitForPlotly = (
     contentWindow: Window,
     timeoutMs: number
-  ): Promise<{ toImage: (el: Element, opts: object) => Promise<string> } | null> => {
+  ): Promise<{
+    toImage: (el: Element, opts: object) => Promise<string>;
+    relayout: (el: Element, update: object) => Promise<void>;
+  } | null> => {
     return new Promise((resolve) => {
       const startTime = Date.now();
 
       const check = () => {
         const plotly = (contentWindow as any).Plotly;
-        if (plotly && typeof plotly.toImage === 'function') {
+        if (plotly && typeof plotly.toImage === 'function' && typeof plotly.relayout === 'function') {
           resolve(plotly);
           return;
         }
@@ -162,6 +174,42 @@ class PythonWebWorker {
       };
 
       check();
+    });
+  };
+
+  // Wait for Plotly chart to finish rendering (fires plotly_afterplot event)
+  private waitForPlotlyRender = (plotElement: Element): Promise<void> => {
+    return new Promise((resolve) => {
+      // Check if chart already has rendered data (gd._fullData exists and has content)
+      const gd = plotElement as any;
+      if (gd._fullData && gd._fullData.length > 0 && gd._fullLayout) {
+        // Chart appears to be fully rendered
+        resolve();
+        return;
+      }
+
+      // Otherwise wait for the afterplot event with a fallback timeout
+      const RENDER_TIMEOUT_MS = 2000;
+      let resolved = false;
+
+      const onAfterPlot = () => {
+        if (!resolved) {
+          resolved = true;
+          plotElement.removeEventListener('plotly_afterplot', onAfterPlot);
+          resolve();
+        }
+      };
+
+      plotElement.addEventListener('plotly_afterplot', onAfterPlot);
+
+      // Fallback timeout in case the event doesn't fire
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          plotElement.removeEventListener('plotly_afterplot', onAfterPlot);
+          resolve();
+        }
+      }, RENDER_TIMEOUT_MS);
     });
   };
 

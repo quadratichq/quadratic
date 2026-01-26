@@ -34,38 +34,42 @@ interface EmojiMapping {
   emojis: Record<string, EmojiLocation>;
 }
 
+type PageState = 'not_loaded' | 'loading' | 'loaded' | 'failed';
+
 class Emojis {
-  // Base textures for each spritesheet page
-  private baseTextures: BaseTexture[] = [];
+  // Base textures for each spritesheet page (sparse array, loaded on demand)
+  private baseTextures: (BaseTexture | undefined)[] = [];
+
+  // Track loading state for each page
+  private pageStates: PageState[] = [];
 
   // Cached textures for individual emojis (from spritesheets)
   private emojiTextures: Map<string, Texture> = new Map();
 
-  // Track if emojis were requested before loading (to trigger re-render)
+  // Track if emojis were requested while their page was loading
   private pendingEmojis = false;
 
   // Mapping from emoji string to location in spritesheet
   private mapping: EmojiMapping | null = null;
 
-  // Loading state
-  private loadingPromise: Promise<void> | null = null;
-  private loaded = false;
+  // Loading state for the mapping JSON
+  private mappingPromise: Promise<void> | null = null;
+  private mappingLoaded = false;
 
   /**
-   * Initialize by loading the mapping and spritesheet textures.
-   * This is called lazily when emojis are first requested.
+   * Initialize by loading only the mapping JSON (not the spritesheet pages).
+   * Pages are loaded on-demand when an emoji from that page is requested.
    */
-  private async initialize(): Promise<void> {
-    if (this.loaded) return;
-    if (this.loadingPromise) return this.loadingPromise;
+  private async initializeMapping(): Promise<void> {
+    if (this.mappingLoaded) return;
+    if (this.mappingPromise) return this.mappingPromise;
 
-    this.loadingPromise = this.load();
-    await this.loadingPromise;
+    this.mappingPromise = this.loadMapping();
+    await this.mappingPromise;
   }
 
-  private async load(): Promise<void> {
+  private async loadMapping(): Promise<void> {
     try {
-      // Load the mapping JSON
       const response = await fetch('/emojis/emoji-mapping.json');
       if (!response.ok) {
         throw new Error(`Failed to load emoji mapping: ${response.status}`);
@@ -76,82 +80,144 @@ class Emojis {
         throw new Error('Emoji mapping is empty');
       }
 
-      // Load all spritesheet pages as base textures
-      const loadPromises = this.mapping.pages.map(async (page, index) => {
-        const texture = BaseTexture.from(`/emojis/${page.filename}`);
-        this.baseTextures[index] = texture;
-      });
+      // Initialize page states array
+      this.pageStates = new Array(this.mapping.pages.length).fill('not_loaded');
 
-      await Promise.all(loadPromises);
-
-      this.loaded = true;
+      this.mappingLoaded = true;
 
       if (debugFlags.getFlag('debugShowCellHashesInfo')) {
         console.log(
-          `[Emojis] Loaded ${this.mapping.pages.length} spritesheet pages with ${Object.keys(this.mapping.emojis).length} emojis`
+          `[Emojis] Loaded mapping with ${this.mapping.pages.length} pages and ${Object.keys(this.mapping.emojis).length} emojis`
         );
       }
 
-      // If emojis were requested before loading, trigger re-render
+      // If emojis were requested before mapping loaded, trigger re-render
       if (this.pendingEmojis) {
         this.pendingEmojis = false;
         events.emit('emojiSpritesheetsLoaded');
       }
     } catch (error) {
-      console.error('[Emojis] Failed to load emoji spritesheets:', error);
-      this.loaded = true;
+      console.error('[Emojis] Failed to load emoji mapping:', error);
+      this.mappingLoaded = true;
+    }
+  }
+
+  /**
+   * Load a specific page on demand.
+   */
+  private async loadPage(pageIndex: number): Promise<void> {
+    if (!this.mapping || pageIndex < 0 || pageIndex >= this.mapping.pages.length) {
+      return;
+    }
+
+    const state = this.pageStates[pageIndex];
+    if (state === 'loaded' || state === 'loading' || state === 'failed') {
+      return;
+    }
+
+    this.pageStates[pageIndex] = 'loading';
+
+    try {
+      const page = this.mapping.pages[pageIndex];
+      const texture = BaseTexture.from(`/emojis/${page.filename}`);
+
+      // Wait for the texture to actually load
+      await new Promise<void>((resolve, reject) => {
+        if (texture.valid) {
+          resolve();
+        } else {
+          texture.once('loaded', () => resolve());
+          texture.once('error', () => reject(new Error(`Failed to load emoji page ${pageIndex}`)));
+        }
+      });
+
+      this.baseTextures[pageIndex] = texture;
+      this.pageStates[pageIndex] = 'loaded';
+
+      if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+        console.log(`[Emojis] Loaded page ${pageIndex}: ${page.filename}`);
+      }
+
+      // Trigger re-render for emojis that were waiting for this page
+      if (this.pendingEmojis) {
+        this.pendingEmojis = false;
+        events.emit('emojiSpritesheetsLoaded');
+      }
+    } catch (error) {
+      console.error(`[Emojis] Failed to load page ${pageIndex}:`, error);
+      this.pageStates[pageIndex] = 'failed';
     }
   }
 
   /**
    * Get or create a texture for an emoji.
-   * Returns Texture.EMPTY if spritesheets haven't loaded yet.
+   * Returns Texture.EMPTY if the page hasn't loaded yet.
    * Returns undefined if the emoji is not in the spritesheet.
    */
   getCharacter(emoji: string): Texture | undefined {
-    // Normalize emoji by stripping variation selectors for consistent lookup
     const normalizedEmoji = normalizeEmoji(emoji);
 
-    // Start loading if not already started
-    if (!this.loaded && !this.loadingPromise) {
-      this.initialize();
+    // Start loading mapping if not already started
+    if (!this.mappingLoaded && !this.mappingPromise) {
+      this.initializeMapping();
     }
 
-    // Check cache first (using normalized key)
+    // Check cache first
     const cached = this.emojiTextures.get(normalizedEmoji);
     if (cached) {
       return cached;
     }
 
-    // If still loading, return empty texture and mark that we need a re-render
-    if (!this.loaded) {
+    // If mapping still loading, return empty texture
+    if (!this.mappingLoaded) {
       this.pendingEmojis = true;
       return Texture.EMPTY;
     }
 
-    // Look up in mapping (using normalized key)
+    // Look up emoji location
     const location = this.mapping?.emojis[normalizedEmoji];
-    if (location && this.baseTextures[location.page]) {
-      const texture = new Texture(
-        this.baseTextures[location.page],
-        new Rectangle(location.x, location.y, location.width, location.height)
-      );
+    if (!location) {
+      if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+        console.log(`[Emojis] Emoji not in spritesheet: ${emoji} (normalized: ${normalizedEmoji})`);
+      }
+      return undefined;
+    }
+
+    // Check if page is loaded
+    const pageState = this.pageStates[location.page];
+    if (pageState === 'not_loaded') {
+      // Start loading the page on demand
+      this.loadPage(location.page);
+      this.pendingEmojis = true;
+      return Texture.EMPTY;
+    }
+
+    if (pageState === 'loading') {
+      this.pendingEmojis = true;
+      return Texture.EMPTY;
+    }
+
+    if (pageState === 'failed') {
+      return undefined;
+    }
+
+    // Page is loaded, create texture
+    const baseTexture = this.baseTextures[location.page];
+    if (baseTexture) {
+      const texture = new Texture(baseTexture, new Rectangle(location.x, location.y, location.width, location.height));
       this.emojiTextures.set(normalizedEmoji, texture);
       return texture;
     }
 
-    // Emoji not in spritesheet
-    if (debugFlags.getFlag('debugShowCellHashesInfo')) {
-      console.log(`[Emojis] Emoji not in spritesheet: ${emoji} (normalized: ${normalizedEmoji})`);
-    }
     return undefined;
   }
 
   /**
-   * Preload emoji spritesheets. Call this early to avoid delays.
+   * Preload emoji mapping. Call this early to avoid delays.
+   * Note: This only loads the mapping, not the spritesheet pages.
    */
   async preload(): Promise<void> {
-    await this.initialize();
+    await this.initializeMapping();
   }
 
   /**
@@ -168,6 +234,7 @@ class Emojis {
     const GAP = 10;
     for (let index = 0; index < this.baseTextures.length; index++) {
       const baseTexture = this.baseTextures[index];
+      if (!baseTexture) continue;
       const resource = baseTexture.resource as any;
       const source = resource?.source as HTMLImageElement | HTMLCanvasElement;
       if (source && source instanceof HTMLImageElement) {

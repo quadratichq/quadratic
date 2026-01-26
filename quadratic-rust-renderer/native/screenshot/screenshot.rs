@@ -417,10 +417,10 @@ fn main() -> anyhow::Result<()> {
 
     for html_output in sheet.get_html_output() {
         let chart_x = html_output.x as i64;
-        // Offset y by 1 row if the chart has a title bar (show_name)
-        let chart_y = html_output.y as i64 + if html_output.show_name { 1 } else { 0 };
+        // Charts always have a title bar, so offset y by 1 row and reduce height by 1
+        let chart_y = html_output.y as i64 + 1;
         let chart_w = html_output.w as i64;
-        let chart_h = html_output.h as i64;
+        let chart_h = html_output.h as i64 - 1;
 
         // Check if chart intersects with selection
         if chart_x + chart_w <= selection.start_col
@@ -447,12 +447,12 @@ fn main() -> anyhow::Result<()> {
 
         // Only add to chart_images if we have chart_image data
         if let Some(chart_image_data) = html_output.chart_image {
-            // Note: w and h in JsHtmlOutput are in cells
+            // Note: w and h in JsHtmlOutput are in cells, chart_h excludes the title row
             chart_images.push(ChartImage {
                 x: chart_x,
                 y: chart_y,
-                width: html_output.w as u32,
-                height: html_output.h as u32,
+                width: chart_w as u32,
+                height: chart_h as u32,
                 image_data: chart_image_data,
             });
         }
