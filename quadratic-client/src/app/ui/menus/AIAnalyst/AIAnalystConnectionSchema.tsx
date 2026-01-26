@@ -61,7 +61,7 @@ export const AIAnalystConnectionSchema = memo(() => {
       style={{ width: `${panelWidth}px` }}
     >
       <ResizeControl
-        className={agentMode ? 'resize-control--vertical-condensed' : ''}
+        className={agentMode ? 'resize-control--invisible' : ''}
         position="VERTICAL"
         style={{ left: `${panelWidth - 1}px` }}
         setState={handleResize}

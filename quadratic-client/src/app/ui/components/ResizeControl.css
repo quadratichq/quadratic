@@ -51,10 +51,8 @@
   transition: 0.2s ease background-color 300ms;
 }
 
-.resize-control--vertical-condensed {
-  height: 240px;
-  top: 50%;
-  margin-top: -120px;
+.resize-control--invisible {
+  background-color: transparent;
 }
 
 /* When control is being dragged, applies styles to prevent text
