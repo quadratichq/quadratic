@@ -93,9 +93,7 @@ export function getOpenAIResponsesApiArgs(
   for (const message of promptMessages) {
     if (isAIPromptMessage(message)) {
       for (const toolCall of message.toolCalls) {
-        // Handle both formats: with and without 'call_' prefix
         validToolCallIds.add(toolCall.id);
-        validToolCallIds.add(toolCall.id.startsWith('call_') ? toolCall.id : `call_${toolCall.id}`);
       }
     }
   }
