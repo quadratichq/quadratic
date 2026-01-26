@@ -51,7 +51,11 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         order: sheet.order,
         borders: import_borders(sheet.borders),
         formats: import_formats(sheet.formats),
-        offsets: SheetOffsets::import(sheet.offsets),
+        offsets: SheetOffsets::import_with_defaults(
+            sheet.offsets,
+            sheet.default_column_width,
+            sheet.default_row_height,
+        ),
         rows_resize: import_rows_resize(sheet.rows_resize),
         validations: import_validations(sheet.validations),
         conditional_formats: import_conditional_formats(sheet.conditional_formats)
@@ -69,6 +73,10 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
 }
 
 pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
+    // Get custom defaults before consuming offsets
+    let default_column_width = sheet.offsets.custom_default_column_width();
+    let default_row_height = sheet.offsets.custom_default_row_height();
+
     current::SheetSchema {
         id: current::IdSchema {
             id: sheet.id.to_string(),
@@ -85,5 +93,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         columns: export_column_builder(sheet.columns),
         data_tables: export_data_tables(sheet.data_tables),
         merge_cells: export_merge_cells(&sheet.merge_cells),
+        default_column_width,
+        default_row_height,
     }
 }

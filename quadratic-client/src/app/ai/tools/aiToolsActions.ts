@@ -48,6 +48,9 @@ import {
   CELL_TEXT_MARGIN_LEFT,
   CELL_WIDTH,
   FONT_SIZE_DISPLAY_ADJUSTMENT,
+  MAX_CELL_HEIGHT,
+  MAX_CELL_WIDTH,
+  MIN_CELL_HEIGHT,
   MIN_CELL_WIDTH,
 } from '@/shared/constants/gridConstants';
 import Color from 'color';
@@ -1112,6 +1115,10 @@ export const aiToolsActions: AIToolActionsRecord = {
             const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
             newSize = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
           }
+        } else if (size === 'default') {
+          newSize = CELL_WIDTH;
+        } else if (typeof size === 'number') {
+          newSize = Math.max(MIN_CELL_WIDTH, Math.min(MAX_CELL_WIDTH, size));
         } else {
           newSize = CELL_WIDTH;
         }
@@ -1165,6 +1172,10 @@ export const aiToolsActions: AIToolActionsRecord = {
         if (size === 'auto') {
           const maxHeight = await content.cellsSheets.getCellsContentMaxHeight(row);
           newSize = Math.max(maxHeight, CELL_HEIGHT);
+        } else if (size === 'default') {
+          newSize = CELL_HEIGHT;
+        } else if (typeof size === 'number') {
+          newSize = Math.max(MIN_CELL_HEIGHT, Math.min(MAX_CELL_HEIGHT, size));
         } else {
           newSize = CELL_HEIGHT;
         }
@@ -1177,6 +1188,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       if (resizing.length) {
         // When AI uses size 'auto', set clientResized to false so rows auto-recalculate on font changes
+        // When AI specifies a pixel value, set clientResized to true since it's a deliberate size
         const clientResized = size !== 'auto';
         const response = await quadraticCore.resizeRows(sheetId, resizing, true, clientResized);
         if (response?.result) {
@@ -1189,6 +1201,42 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [createTextContent(`Error executing resize rows tool: ${e}`)];
+    }
+  },
+  [AITool.SetDefaultColumnWidth]: async (args) => {
+    try {
+      const { sheet_name, size } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const sheetName = sheets.getSheetByName(sheet_name ?? '')?.name ?? sheets.sheet.name;
+
+      const clampedSize = Math.max(MIN_CELL_WIDTH, Math.min(MAX_CELL_WIDTH, size));
+      quadraticCore.resizeAllColumns(sheetId, clampedSize, true);
+
+      return [
+        createTextContent(
+          `Set default column width to ${clampedSize} pixels in sheet "${sheetName}". All columns without custom widths will now use this size.`
+        ),
+      ];
+    } catch (e) {
+      return [createTextContent(`Error setting default column width: ${e}`)];
+    }
+  },
+  [AITool.SetDefaultRowHeight]: async (args) => {
+    try {
+      const { sheet_name, size } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const sheetName = sheets.getSheetByName(sheet_name ?? '')?.name ?? sheets.sheet.name;
+
+      const clampedSize = Math.max(MIN_CELL_HEIGHT, Math.min(MAX_CELL_HEIGHT, size));
+      quadraticCore.resizeAllRows(sheetId, clampedSize, true);
+
+      return [
+        createTextContent(
+          `Set default row height to ${clampedSize} pixels in sheet "${sheetName}". All rows without custom heights will now use this size.`
+        ),
+      ];
+    } catch (e) {
+      return [createTextContent(`Error setting default row height: ${e}`)];
     }
   },
   [AITool.SetBorders]: async (args) => {
