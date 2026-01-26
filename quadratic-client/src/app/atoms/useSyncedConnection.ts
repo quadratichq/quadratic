@@ -3,9 +3,9 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, useAtom } from 'jotai';
 import type {
-  Connection,
-  SyncedConnectionLatestLogStatus,
-  SyncedConnectionLog,
+    Connection,
+    SyncedConnectionLatestLogStatus,
+    SyncedConnectionLog,
 } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -42,17 +42,16 @@ export const syncedConnectionsAtom = atom<Record<string, SyncedConnection>>({});
 /**
  * Core sync state derivation logic.
  * Rules:
- * - not_synced: Never synced (updatedDate is null/undefined AND never started syncing)
+ * - not_synced: Never synced (no completed sync yet)
  * - syncing: Actively syncing (percentCompleted > 0 and < 100, or latest log is PENDING/RUNNING)
- * - synced: Completed sync, no error (percentCompleted >= 100, latest log not FAILED)
+ * - synced: Completed sync, no error (percentCompleted >= 100 or latest log is COMPLETED)
  * - failed: Error in latest sync (latest log status is FAILED)
  */
 export function deriveSyncState(params: {
   percentCompleted?: number;
-  updatedDate?: string | null;
   latestLogStatus?: SyncedConnectionLatestLogStatus | null;
 }): SyncState {
-  const { percentCompleted, updatedDate, latestLogStatus } = params;
+  const { percentCompleted, latestLogStatus } = params;
 
   // If currently syncing (between 0 and 100), return syncing
   if (percentCompleted !== undefined && percentCompleted > 0 && percentCompleted < 100) {
@@ -69,11 +68,8 @@ export function deriveSyncState(params: {
     return 'syncing';
   }
 
-  // If completed (100%) or has an updatedDate (was synced at some point)
-  if (
-    (percentCompleted !== undefined && percentCompleted >= 100) ||
-    (updatedDate !== undefined && updatedDate !== null)
-  ) {
+  // If completed (100%) or latest log shows COMPLETED
+  if ((percentCompleted !== undefined && percentCompleted >= 100) || latestLogStatus === 'COMPLETED') {
     return 'synced';
   }
 
@@ -87,12 +83,10 @@ export function deriveSyncState(params: {
  */
 export function deriveSyncStateFromConnectionList(connection: {
   syncedConnectionPercentCompleted?: number;
-  syncedConnectionUpdatedDate?: string;
   syncedConnectionLatestLogStatus?: SyncedConnectionLatestLogStatus;
 }): SyncState {
   return deriveSyncState({
     percentCompleted: connection.syncedConnectionPercentCompleted,
-    updatedDate: connection.syncedConnectionUpdatedDate,
     latestLogStatus: connection.syncedConnectionLatestLogStatus,
   });
 }
@@ -162,7 +156,6 @@ export const useSyncedConnection = (connectionUuid: string, teamUuid: string): S
     () =>
       deriveSyncState({
         percentCompleted: syncedConnection.percentCompleted,
-        updatedDate: syncedConnection.updatedDate,
         latestLogStatus: syncedConnection.latestLogStatus,
       }),
     [syncedConnection]
