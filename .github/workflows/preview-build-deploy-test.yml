@@ -5,10 +5,10 @@ on:
     types: [labeled, synchronize, reopened]
 
 concurrency:
-  # Use a separate concurrency group for non-preview label events to avoid cancelling real builds
-  group: ${{ github.event.action == 'labeled' && github.event.label.name != 'preview' && format('pr-{0}-ignore-{1}', github.event.pull_request.number, github.event.label.name) || format('pr-{0}-build-deploy-test', github.event.pull_request.number) }}
-  # Only cancel in-progress runs for preview-related events, not unrelated label additions
-  cancel-in-progress: ${{ !(github.event.action == 'labeled' && github.event.label.name != 'preview') }}
+  # Non-preview labels get their own group (e.g., pr-123-claude) to avoid cancelling real builds
+  # Preview-related events share a group (pr-123-preview-build) so they can cancel each other
+  group: pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && github.event.label.name != 'preview' && github.event.label.name || 'preview-build' }}
+  cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'preview' }}
 
 jobs:
   create_deployment:

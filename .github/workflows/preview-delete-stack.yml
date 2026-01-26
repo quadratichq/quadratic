@@ -5,8 +5,8 @@ on:
     types: [closed, unlabeled]
 
 concurrency:
-  # Use a separate concurrency group for non-preview label events to avoid interfering with real stack operations
-  group: ${{ github.event.action == 'unlabeled' && github.event.label.name != 'preview' && format('pr-{0}-ignore-{1}', github.event.pull_request.number, github.event.label.name) || format('pr-{0}-stack', github.event.pull_request.number) }}
+  # Non-preview labels get their own group to avoid interfering with real stack operations
+  group: pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'unlabeled' && github.event.label.name != 'preview' && github.event.label.name || 'stack' }}
 
 jobs:
   delete_stack:
