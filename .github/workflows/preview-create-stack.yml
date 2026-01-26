@@ -5,8 +5,7 @@ on:
     types: [labeled, reopened]
 
 concurrency:
-  # Non-preview labels get their own group to avoid interfering with real stack operations
-  group: pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && github.event.label.name != 'preview' && github.event.label.name || 'stack' }}
+  group: pr-${{ github.event.pull_request.number }}-stack
 
 jobs:
   create_stack:
