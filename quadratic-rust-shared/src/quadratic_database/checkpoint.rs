@@ -134,15 +134,9 @@ pub async fn set_file_checkpoint(
         .await
         .map_err(QuadraticDatabase::from)?;
 
-    // If we got a row back, the insert succeeded
+    // If we got a row back, the insert succeeded - update the file's modification time
     if result.is_some() {
-        // Update the file's updated_date to reflect this modification
-        let update_query = "
-            UPDATE \"File\"
-            SET updated_date = NOW()
-            WHERE uuid = $1::text";
-
-        sqlx::query(update_query)
+        sqlx::query("UPDATE \"File\" SET updated_date = NOW() WHERE uuid = $1::text")
             .bind(file_id)
             .execute(pool)
             .await
