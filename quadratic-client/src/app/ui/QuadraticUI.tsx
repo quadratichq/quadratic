@@ -141,7 +141,7 @@ export default function QuadraticUI() {
           {canEditFile && isAuthenticated && <AIAnalyst />}
           {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
 
-          <div className={cn('flex h-full w-full overflow-hidden', agentMode && 'pb-2 pl-2 pr-2')}>
+          <div className={cn('flex h-full w-full overflow-hidden', agentMode && 'pb-2 pr-2')}>
             <div
               className={cn(
                 'flex h-full w-full',
