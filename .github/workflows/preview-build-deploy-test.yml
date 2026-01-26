@@ -2,7 +2,7 @@ name: Preview
 
 on:
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled, synchronize, reopened]
 
 concurrency:
   # Use a separate concurrency group for non-preview label events to avoid cancelling real builds
@@ -22,7 +22,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 5
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
@@ -113,7 +113,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 40
     outputs:
       version: ${{ steps.read-version.outputs.version }}
@@ -281,7 +281,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 30
     outputs:
       WEBSITE_URL: ${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
@@ -552,7 +552,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 30
     strategy:
       matrix:
@@ -604,7 +604,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 15
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
@@ -660,7 +660,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -704,7 +704,7 @@ jobs:
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 14
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
@@ -976,7 +976,7 @@ jobs:
       needs.test-e2e-start-comment.result == 'success' &&
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 15
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
@@ -1093,7 +1093,7 @@ jobs:
       always() &&
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       contains(github.event.pull_request.labels.*.name, 'preview') &&
-      (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' || (github.event.action == 'labeled' && github.event.label.name == 'preview'))
     timeout-minutes: 5
     steps:
       - name: Check E2E test results
