@@ -1,8 +1,8 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
-    editorInteractionStateShowCellTypeMenuAtom,
-    editorInteractionStateShowConnectionsMenuAtom,
-    editorInteractionStateTeamUuidAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
+  editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -15,13 +15,13 @@ import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';

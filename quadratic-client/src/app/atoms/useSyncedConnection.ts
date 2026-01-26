@@ -3,9 +3,9 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, useAtom } from 'jotai';
 import type {
-    Connection,
-    SyncedConnectionLatestLogStatus,
-    SyncedConnectionLog,
+  Connection,
+  SyncedConnectionLatestLogStatus,
+  SyncedConnectionLog,
 } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
