@@ -58,6 +58,45 @@ impl SheetOffsets {
         offsets
     }
 
+    /// Import offsets with optional custom default column width and row height.
+    /// This supports the v1.13+ file format which persists custom defaults.
+    pub fn import_with_defaults(
+        offsets: OffsetWidthHeight,
+        default_column_width: Option<f64>,
+        default_row_height: Option<f64>,
+    ) -> Self {
+        let column_default = default_column_width.unwrap_or(crate::DEFAULT_COLUMN_WIDTH);
+        let row_default = default_row_height.unwrap_or(crate::DEFAULT_ROW_HEIGHT);
+        let mut offsets = SheetOffsets {
+            column_widths: Offsets::from_iter(column_default, offsets.0),
+            row_heights: Offsets::from_iter(row_default, offsets.1),
+            thumbnail: (0, 0),
+            transient_resize: None,
+        };
+        offsets.calculate_thumbnail();
+        offsets
+    }
+
+    /// Returns the default column width if it differs from the hardcoded default.
+    pub fn custom_default_column_width(&self) -> Option<f64> {
+        let default = self.defaults().0;
+        if (default - crate::DEFAULT_COLUMN_WIDTH).abs() < f64::EPSILON {
+            None
+        } else {
+            Some(default)
+        }
+    }
+
+    /// Returns the default row height if it differs from the hardcoded default.
+    pub fn custom_default_row_height(&self) -> Option<f64> {
+        let default = self.defaults().1;
+        if (default - crate::DEFAULT_ROW_HEIGHT).abs() < f64::EPSILON {
+            None
+        } else {
+            Some(default)
+        }
+    }
+
     /// Returns the widths of a range of columns.
     pub fn column_widths(&self, x_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
         self.column_widths.iter_offsets(x_range)
