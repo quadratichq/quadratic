@@ -1,5 +1,6 @@
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -99,6 +100,14 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               <FormControl>
                 <Textarea autoComplete="off" {...field} className="h-48" />
               </FormControl>
+              <a
+                href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm underline hover:text-primary"
+              >
+                Learn how to find Google Analytics connection details
+              </a>
               <FormMessage />
             </FormItem>
           )}
