@@ -46,6 +46,8 @@ export enum AITool {
   RerunCode = 'rerun_code',
   ResizeColumns = 'resize_columns',
   ResizeRows = 'resize_rows',
+  SetDefaultColumnWidth = 'set_default_column_width',
+  SetDefaultRowHeight = 'set_default_row_height',
   SetBorders = 'set_borders',
   MergeCells = 'merge_cells',
   UnmergeCells = 'unmerge_cells',
@@ -106,6 +108,8 @@ export const AIToolSchema = z.enum([
   AITool.RerunCode,
   AITool.ResizeColumns,
   AITool.ResizeRows,
+  AITool.SetDefaultColumnWidth,
+  AITool.SetDefaultRowHeight,
   AITool.SetBorders,
   AITool.MergeCells,
   AITool.UnmergeCells,
@@ -420,12 +424,20 @@ export const AIToolsArgsSchema = {
   [AITool.ResizeColumns]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    size: z.enum(['auto', 'default']),
+    size: z.union([z.enum(['auto', 'default']), z.number().min(20).max(2000)]),
   }),
   [AITool.ResizeRows]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    size: z.enum(['auto', 'default']),
+    size: z.union([z.enum(['auto', 'default']), z.number().min(10).max(2000)]),
+  }),
+  [AITool.SetDefaultColumnWidth]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    size: z.number().min(20).max(2000),
+  }),
+  [AITool.SetDefaultRowHeight]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    size: z.number().min(10).max(2000),
   }),
   [AITool.SetBorders]: z.object({
     sheet_name: z.string().nullable().optional(),
@@ -2043,11 +2055,12 @@ If you provide neither a sheet name nor a selection, then all code cells in the 
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool resizes columns in a sheet.\n
+This tool resizes specific columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
 The selection is a range of columns, for example: A1:D1.\n
-The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
-Use this tool when the user specifically asks to resize columns or when the user asks to prettify the sheet.\n
+The size can be: "default" (reset to default width), "auto" (resize to fit the largest cell content), or a number in pixels (between 20 and 2000).\n
+IMPORTANT: To change ALL columns in the sheet at once, use the set_default_column_width tool instead.\n
+Use this tool for resizing specific columns, auto-fitting content, or prettifying the sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -2061,9 +2074,9 @@ Use this tool when the user specifically asks to resize columns or when the user
           description: 'The selection (in A1 notation) of columns to resize, for example: A1:D1',
         },
         size: {
-          type: 'string',
+          type: ['string', 'number'],
           description:
-            'The size to resize the columns to. Either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.',
+            'The size to resize the columns to. Either "default", "auto" (fit content), or a number in pixels (20-2000).',
         },
       },
       required: ['sheet_name', 'selection', 'size'],
@@ -2071,22 +2084,24 @@ Use this tool when the user specifically asks to resize columns or when the user
     },
     responseSchema: AIToolsArgsSchema[AITool.ResizeColumns],
     prompt: `
-This tool resizes columns in a sheet.\n
+This tool resizes specific columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
 The selection is a range of columns, for example: A1:D1.\n
-The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
-Use this tool when the user specifically asks to resize columns or when the user asks to prettify the sheet.\n
+The size can be: "default" (reset to default width), "auto" (resize to fit the largest cell content), or a number in pixels (between 20 and 2000).\n
+IMPORTANT: To change ALL columns in the sheet at once (for uniform grid or square cells), use the set_default_column_width tool instead.\n
+Use this tool for resizing specific columns, auto-fitting content, or prettifying the sheet.\n
 `,
   },
   [AITool.ResizeRows]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool resizes rows in a sheet.\n
+This tool resizes specific rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
 The selection is a range of rows, for example: A1:A100.\n
-The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
-Use this tool when the user specifically asks to resize rows.\n
+The size can be: "default" (reset to default height), "auto" (resize to fit the largest cell content), or a number in pixels (between 10 and 2000).\n
+IMPORTANT: To change ALL rows in the sheet at once, use the set_default_row_height tool instead.\n
+Use this tool for resizing specific rows, auto-fitting content, or adjusting row heights.\n
 `,
     parameters: {
       type: 'object',
@@ -2100,9 +2115,9 @@ Use this tool when the user specifically asks to resize rows.\n
           description: 'The selection (in A1 notation) of rows to resize, for example: A1:A100',
         },
         size: {
-          type: 'string',
+          type: ['string', 'number'],
           description:
-            'The size to resize the rows to. Either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.',
+            'The size to resize the rows to. Either "default", "auto" (fit content), or a number in pixels (10-2000).',
         },
       },
       required: ['sheet_name', 'selection', 'size'],
@@ -2110,11 +2125,82 @@ Use this tool when the user specifically asks to resize rows.\n
     },
     responseSchema: AIToolsArgsSchema[AITool.ResizeRows],
     prompt: `
-This tool resizes rows in a sheet.\n
+This tool resizes specific rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
 The selection is a range of rows in A1 notation, for example: A1:A100.\n
-The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
-Use this tool when the user specifically asks to resize rows.\n
+The size can be: "default" (reset to default height), "auto" (resize to fit the largest cell content), or a number in pixels (between 10 and 2000).\n
+IMPORTANT: To change ALL rows in the sheet at once (for uniform grid or square cells), use the set_default_row_height tool instead.\n
+Use this tool for resizing specific rows, auto-fitting content, or adjusting row heights.\n
+`,
+  },
+  [AITool.SetDefaultColumnWidth]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool sets the default column width for an entire sheet, affecting all columns that don't have a custom width.\n
+It requires the sheet name and a size in pixels (between 20 and 2000).\n
+This is useful for making uniform grid cells across the entire sheet.\n
+For a square grid, set the default column width equal to the default row height.\n
+Use this tool when the user asks to change the default column width, make all columns a certain width, create a square grid, or uniformly resize the grid.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to set the default column width in',
+        },
+        size: {
+          type: 'number',
+          description:
+            'The default column width in pixels (20-2000). Default is 100 pixels. For square cells, use the same value as the default row height.',
+        },
+      },
+      required: ['sheet_name', 'size'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetDefaultColumnWidth],
+    prompt: `
+This tool sets the default column width for an entire sheet, affecting all columns that don't have a custom width.\n
+It requires the sheet name and a size in pixels (between 20 and 2000).\n
+This is useful for making uniform grid cells across the entire sheet.\n
+For a square grid, set the default column width equal to the default row height (e.g., both at 100 pixels).\n
+Use this tool when the user asks to change the default column width, make all columns a certain width, create a square grid, or uniformly resize the grid.\n
+`,
+  },
+  [AITool.SetDefaultRowHeight]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool sets the default row height for an entire sheet, affecting all rows that don't have a custom height.\n
+It requires the sheet name and a size in pixels (between 10 and 2000).\n
+This is useful for making uniform grid cells across the entire sheet.\n
+For a square grid, set the default row height equal to the default column width.\n
+Use this tool when the user asks to change the default row height, make all rows a certain height, create a square grid, or uniformly resize the grid.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to set the default row height in',
+        },
+        size: {
+          type: 'number',
+          description:
+            'The default row height in pixels (10-2000). Default is 21 pixels. For square cells, use the same value as the default column width.',
+        },
+      },
+      required: ['sheet_name', 'size'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetDefaultRowHeight],
+    prompt: `
+This tool sets the default row height for an entire sheet, affecting all rows that don't have a custom height.\n
+It requires the sheet name and a size in pixels (between 10 and 2000).\n
+This is useful for making uniform grid cells across the entire sheet.\n
+For a square grid, set the default row height equal to the default column width (e.g., both at 100 pixels).\n
+Use this tool when the user asks to change the default row height, make all rows a certain height, create a square grid, or uniformly resize the grid.\n
 `,
   },
   [AITool.SetBorders]: {
