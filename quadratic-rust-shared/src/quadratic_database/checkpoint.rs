@@ -264,10 +264,10 @@ mod tests {
         let seq_num = 100;
 
         // Get the initial updated_date
-        let initial_updated_date: chrono::DateTime<chrono::Utc> = sqlx::query_scalar(
+        let initial_updated_date: chrono::NaiveDateTime = sqlx::query_scalar(
             "SELECT updated_date FROM \"File\" WHERE uuid = $1::text",
         )
-        .bind(&file_uuid)
+        .bind(file_uuid)
         .fetch_one(&pool)
         .await
         .unwrap();
@@ -292,10 +292,10 @@ mod tests {
         assert_eq!(max_sequence_num, seq_num);
 
         // Verify the file's updated_date was updated
-        let new_updated_date: chrono::DateTime<chrono::Utc> = sqlx::query_scalar(
+        let new_updated_date: chrono::NaiveDateTime = sqlx::query_scalar(
             "SELECT updated_date FROM \"File\" WHERE uuid = $1::text",
         )
-        .bind(&file_uuid)
+        .bind(file_uuid)
         .fetch_one(&pool)
         .await
         .unwrap();
