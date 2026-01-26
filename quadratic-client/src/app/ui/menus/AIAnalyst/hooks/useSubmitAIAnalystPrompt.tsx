@@ -26,12 +26,12 @@ import {
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   createTextContent,
