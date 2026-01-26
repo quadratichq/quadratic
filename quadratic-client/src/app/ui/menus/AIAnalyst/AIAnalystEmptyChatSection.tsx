@@ -19,7 +19,7 @@ interface EmptyChatSectionProps {
 export const EmptyChatSection = memo(({ header, items, isLoading, emptyState }: EmptyChatSectionProps) => {
   return (
     <div className="flex w-full max-w-lg flex-col gap-3">
-      <h2 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+      <h2 className="flex h-6 items-center gap-2 text-xs font-semibold text-muted-foreground">
         {header}
         {isLoading && <SpinnerIcon className="text-primary" />}
       </h2>
