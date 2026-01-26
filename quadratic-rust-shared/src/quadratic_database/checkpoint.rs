@@ -134,8 +134,14 @@ pub async fn set_file_checkpoint(
         .await
         .map_err(QuadraticDatabase::from)?;
 
-    // If we got a row back, the insert succeeded
+    // If we got a row back, the insert succeeded - update the file's modification time
     if result.is_some() {
+        sqlx::query("UPDATE \"File\" SET updated_date = NOW() WHERE uuid = $1::text")
+            .bind(file_id)
+            .execute(pool)
+            .await
+            .map_err(QuadraticDatabase::from)?;
+
         return Ok(());
     }
 
@@ -257,6 +263,18 @@ mod tests {
 
         let seq_num = 100;
 
+        // Get the initial updated_date
+        let initial_updated_date: chrono::NaiveDateTime = sqlx::query_scalar(
+            "SELECT updated_date FROM \"File\" WHERE uuid = $1::text",
+        )
+        .bind(file_uuid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        // Small delay to ensure timestamp difference
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
         // Insert a new checkpoint
         set_file_checkpoint(
             &pool,
@@ -272,6 +290,21 @@ mod tests {
         // Verify the max sequence number is set
         let max_sequence_num = get_max_sequence_number(&pool, &file_uuid).await.unwrap();
         assert_eq!(max_sequence_num, seq_num);
+
+        // Verify the file's updated_date was updated
+        let new_updated_date: chrono::NaiveDateTime = sqlx::query_scalar(
+            "SELECT updated_date FROM \"File\" WHERE uuid = $1::text",
+        )
+        .bind(file_uuid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert!(
+            new_updated_date > initial_updated_date,
+            "updated_date should be updated after checkpoint: initial={}, new={}",
+            initial_updated_date,
+            new_updated_date
+        );
 
         // Insert again with same hash (idempotent - should succeed)
         set_file_checkpoint(
