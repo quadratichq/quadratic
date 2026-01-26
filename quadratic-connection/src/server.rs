@@ -39,7 +39,10 @@ use crate::{
     proxy::proxy,
     sql::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
-        datafusion::{query as query_datafusion, schema as schema_datafusion, test_mixpanel},
+        datafusion::{
+            query as query_datafusion, schema as schema_datafusion, test_google_analytics,
+            test_mixpanel, test_plaid,
+        },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
@@ -148,10 +151,16 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         .route("/bigquery/query", post(query_bigquery))
         .route("/bigquery/schema/:id", get(schema_bigquery))
         //
-        // mixpanel
+        // synced connections
         .route("/mixpanel/test", post(test_mixpanel))
         .route("/mixpanel/query", post(query_datafusion))
         .route("/mixpanel/schema/:id", get(schema_datafusion))
+        .route("/google-analytics/test", post(test_google_analytics))
+        .route("/google-analytics/query", post(query_datafusion))
+        .route("/google-analytics/schema/:id", get(schema_datafusion))
+        .route("/plaid/test", post(test_plaid))
+        .route("/plaid/query", post(query_datafusion))
+        .route("/plaid/schema/:id", get(schema_datafusion))
         //
         // proxy
         .route("/proxy", any(proxy))

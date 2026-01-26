@@ -10,7 +10,6 @@ import type {
   JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
-  JsRenderFill,
   JsSheetFill,
   JsUpdateCodeCell,
   SheetBounds,
@@ -51,6 +50,23 @@ interface EventTypes {
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
+  hoverLink: (link?: {
+    x: number;
+    y: number;
+    url: string;
+    rect: Rectangle;
+    linkText?: string;
+    isNakedUrl?: boolean;
+    spanStart?: number;
+    spanEnd?: number;
+  }) => void;
+  insertLink: () => void;
+  insertLinkInline: (data: {
+    selectedText: string;
+    selectionRange?: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number };
+  }) => void;
+  showInlineHyperlinkInput: (data: { selectedText: string }) => void;
+  inlineEditorCursorOnHyperlink: (data?: { url: string; rect: Rectangle; linkText: string }) => void;
   hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;
@@ -73,7 +89,8 @@ interface EventTypes {
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetOffsetsUpdated: (sheetId: string) => void;
-  sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+  hashRenderFills: (hashRenderFills: Uint8Array) => void;
+  hashesDirtyFills: (dirtyHashes: Uint8Array) => void;
   sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;

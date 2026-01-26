@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import * as xlsx from 'xlsx';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
-import { logIn } from './helpers/auth.helpers';
+import { assertDashboardLoaded, logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { gotoCells, waitForKernelMenuIdle } from './helpers/sheet.helper';
 import { waitForAppReady } from './helpers/wait.helpers';
@@ -27,10 +27,7 @@ test('Appearance Customization', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible({ timeout: 60 * 1000 });
+  await assertDashboardLoaded(page, { email });
 
   // Reset current theme
   await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
@@ -1245,9 +1242,7 @@ test.skip('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName });
 
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
+  await assertDashboardLoaded(page, { email });
 
   // Clean up files
   await cleanUpFiles(page, { fileName });
@@ -1405,7 +1400,7 @@ test.skip('File - Clear Recent History', async ({ page }) => {
   if (!exampleName) throw new Error('No example name found');
 
   // Search for the randomly picked file, click it
-  await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleName);
+  await page.locator('[data-testid="files-list-search-input"]').fill(exampleName);
   await page.locator(`h2:text("${exampleName}")`).click({ timeout: 60 * 1000 });
 
   // Wait for the page to load, this is the sheet chat.
@@ -2435,9 +2430,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   await createFile(page, { fileName });
 
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
+  await assertDashboardLoaded(page, { email });
 
   await navigateIntoFile(page, { fileName });
 
@@ -3436,9 +3429,7 @@ test.skip('Scroll between sheets', async ({ page }) => {
   await createFile(page, { fileName });
 
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
+  await assertDashboardLoaded(page, { email });
 
   await navigateIntoFile(page, { fileName });
 
@@ -4221,10 +4212,7 @@ test('Theme Customization', async ({ page }) => {
   //--------------------------------
 
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
-  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
+  await assertDashboardLoaded(page, { email });
 
   //--------------------------------
   // Act:
@@ -4361,9 +4349,7 @@ test.skip('Theme Customization from Sheet', async ({ page }) => {
   // Theme Customization from Sheet
   //--------------------------------
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
+  await assertDashboardLoaded(page, { email });
 
   // Reset current theme
   await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
@@ -4597,9 +4583,7 @@ test.skip('Theme Customization from Sheet', async ({ page }) => {
   await page.locator(`[href="/"]`).click({ timeout: 60 * 1000 });
 
   // Assert Quadratic dashboard page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page).toHaveTitle(/Suggested files - Quadratic/);
-  await expect(page.getByRole(`heading`, { name: `Suggested files`, exact: true })).toBeVisible();
+  await assertDashboardLoaded(page, { email });
 
   // Cleanup any files with fileName
   await cleanUpFiles(page, { fileName });

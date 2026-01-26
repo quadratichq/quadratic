@@ -1,3 +1,4 @@
+import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import {
   ChevronRightIcon,
   CloseIcon,
@@ -42,6 +43,7 @@ type ConnectionSchemaBrowserProps = {
   hideRefreshButton?: boolean;
   tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
+  showSyncedConnection?: boolean;
 };
 
 export const ConnectionSchemaBrowser = ({
@@ -52,6 +54,7 @@ export const ConnectionSchemaBrowser = ({
   teamUuid,
   type,
   uuid,
+  showSyncedConnection = true,
 }: ConnectionSchemaBrowserProps) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
 
@@ -92,6 +95,7 @@ export const ConnectionSchemaBrowser = ({
               <Skeleton className="h-4 w-24" />
             )}
           </div>
+
           <div className="flex flex-row-reverse items-center gap-1">
             {additionalActions}
             {!hideRefreshButton && (
@@ -103,6 +107,12 @@ export const ConnectionSchemaBrowser = ({
             )}
           </div>
         </div>
+
+        {showSyncedConnection && uuid && (
+          <div className="mb-1 mt-1 text-xs text-muted-foreground">
+            <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} />
+          </div>
+        )}
         <div className="relative">
           <Input
             ref={inputRef}
@@ -334,7 +344,11 @@ function getTableQuery({ table: { name, schema }, connectionType }: { table: Tab
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'BIGQUERY':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+
+    // datafusion connections
     case 'MIXPANEL':
+    case 'GOOGLE_ANALYTICS':
+    case 'PLAID':
       return `SELECT * FROM \`${name}\` LIMIT 100`;
     default:
       return '';

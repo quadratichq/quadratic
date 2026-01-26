@@ -208,8 +208,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  // A/B test: 10% of users go to the AI create flow, 90% go directly to a new file
-  const useAiCreateFlow = Math.random() < 0.1;
+  // A/B test: 50% of users go to the AI create flow, 50% go directly to a new file
+  const useAiCreateFlow = Math.random() < 0.5;
   trackEvent('[Onboarding].postOnboardingFlow', { flow: useAiCreateFlow ? 'startWithAi' : 'newFile' });
 
   // Register as super property so we can filter/analyze sessions for users in the "Start with AI" cohort.

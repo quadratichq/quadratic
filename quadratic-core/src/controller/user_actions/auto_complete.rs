@@ -957,4 +957,199 @@ mod tests {
             assert_cell_value_row(&grid, sheet_id, 1, 6, y, expected.clone());
         }
     }
+
+    #[test]
+    fn test_autocomplete_preserves_data_table_properties() {
+        // Test that autocomplete preserves data table properties like
+        // show_name, alternating_colors, etc.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a formula code cell
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "1+1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Customize the data table properties
+        let sheet = gc.sheet_mut(sheet_id);
+        let (data_table, _) = sheet
+            .data_tables
+            .modify_data_table_at(&pos![A1], |dt| {
+                dt.show_name = Some(false);
+                dt.alternating_colors = false;
+                Ok(())
+            })
+            .unwrap();
+
+        // Verify original properties are set
+        assert_eq!(data_table.show_name, Some(false));
+        assert!(!data_table.alternating_colors);
+
+        // Autocomplete the formula to B1
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A1"),
+            Rect::test_a1("A1:B1"),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify the autocompleted cell has the same properties
+        let sheet = gc.sheet(sheet_id);
+        let autocompleted_dt = sheet.data_table_at(&pos![B1]).unwrap();
+
+        assert_eq!(
+            autocompleted_dt.show_name,
+            Some(false),
+            "show_name should be preserved during autocomplete"
+        );
+        assert!(
+            !autocompleted_dt.alternating_colors,
+            "alternating_colors should be preserved during autocomplete"
+        );
+
+        // Also verify the formula was correctly adjusted
+        let code_run = autocompleted_dt.code_run().unwrap();
+        assert_eq!(code_run.code, "1+1"); // Formula doesn't have references to adjust
+    }
+
+    #[test]
+    fn test_autocomplete_preserves_python_data_table_properties() {
+        // Test that autocomplete preserves data table properties for Python cells
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a Python code cell
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Python,
+            "q.cells('B1')".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Customize the data table properties
+        let sheet = gc.sheet_mut(sheet_id);
+        let (data_table, _) = sheet
+            .data_tables
+            .modify_data_table_at(&pos![A1], |dt| {
+                dt.show_name = Some(false);
+                dt.show_columns = Some(false);
+                dt.alternating_colors = false;
+                Ok(())
+            })
+            .unwrap();
+
+        // Verify original properties are set
+        assert_eq!(data_table.show_name, Some(false));
+        assert_eq!(data_table.show_columns, Some(false));
+        assert!(!data_table.alternating_colors);
+
+        // Autocomplete the Python cell to B1
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A1"),
+            Rect::test_a1("A1:B1"),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify the autocompleted cell has the same properties
+        let sheet = gc.sheet(sheet_id);
+        let autocompleted_dt = sheet.data_table_at(&pos![B1]).unwrap();
+
+        assert_eq!(
+            autocompleted_dt.show_name,
+            Some(false),
+            "show_name should be preserved during Python autocomplete"
+        );
+        assert_eq!(
+            autocompleted_dt.show_columns,
+            Some(false),
+            "show_columns should be preserved during Python autocomplete"
+        );
+        assert!(
+            !autocompleted_dt.alternating_colors,
+            "alternating_colors should be preserved during Python autocomplete"
+        );
+
+        // Verify the code reference was adjusted (quotes may change to double quotes)
+        let code_run = autocompleted_dt.code_run().unwrap();
+        assert_eq!(code_run.code, r#"q.cells("C1")"#);
+    }
+
+    #[test]
+    fn test_autocomplete_preserves_javascript_data_table_properties() {
+        // Test that autocomplete preserves data table properties for JavaScript cells
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a JavaScript code cell
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Javascript,
+            r#"return q.cells("B1");"#.to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Customize the data table properties
+        let sheet = gc.sheet_mut(sheet_id);
+        let (data_table, _) = sheet
+            .data_tables
+            .modify_data_table_at(&pos![A1], |dt| {
+                dt.show_name = Some(false);
+                dt.show_columns = Some(false);
+                dt.alternating_colors = false;
+                Ok(())
+            })
+            .unwrap();
+
+        // Verify original properties are set
+        assert_eq!(data_table.show_name, Some(false));
+        assert_eq!(data_table.show_columns, Some(false));
+        assert!(!data_table.alternating_colors);
+
+        // Autocomplete the JavaScript cell to B1
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A1"),
+            Rect::test_a1("A1:B1"),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify the autocompleted cell has the same properties
+        let sheet = gc.sheet(sheet_id);
+        let autocompleted_dt = sheet.data_table_at(&pos![B1]).unwrap();
+
+        assert_eq!(
+            autocompleted_dt.show_name,
+            Some(false),
+            "show_name should be preserved during JavaScript autocomplete"
+        );
+        assert_eq!(
+            autocompleted_dt.show_columns,
+            Some(false),
+            "show_columns should be preserved during JavaScript autocomplete"
+        );
+        assert!(
+            !autocompleted_dt.alternating_colors,
+            "alternating_colors should be preserved during JavaScript autocomplete"
+        );
+
+        // Verify the code reference was adjusted
+        let code_run = autocompleted_dt.code_run().unwrap();
+        assert_eq!(code_run.code, r#"return q.cells("C1");"#);
+    }
 }

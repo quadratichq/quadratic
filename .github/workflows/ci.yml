@@ -67,25 +67,50 @@ jobs:
       - name: Set up Rust
         run: rustup toolchain install
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
         with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
-        run: if ! which grcov; then cargo install grcov; fi
+        uses: taiki-e/install-action@v2
+        with:
+          tool: grcov
 
       - name: Install llvm-tools-preview
         run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
 
-      - name: Install pkg-config and OpenSSL development libraries
+      - name: Install pkg-config, OpenSSL, and CA certificates
         run: |
           for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
-          sudo apt-get install -y pkg-config libssl-dev
+          sudo apt-get install -y pkg-config libssl-dev ca-certificates
+          sudo update-ca-certificates
 
       - name: Install Deno for core-cloud and cloud-worker
         if: matrix.package == 'core-cloud' || matrix.package == 'cloud-worker'
@@ -131,18 +156,23 @@ jobs:
             yfinance
 
       - name: Test quadratic-${{ matrix.package }}
+        id: test
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
           BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
+          PLAID_CREDENTIALS: "${{ secrets.PLAID_CREDENTIALS }}"
+          SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+          SSL_CERT_DIR: /etc/ssl/certs
+          DATABASE_DSN: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
 
       - name: Generate coverage for quadratic-${{ matrix.package }}
-        if: always()
+        if: always() && steps.test.outcome != 'skipped'
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
@@ -160,7 +190,7 @@ jobs:
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-${{ matrix.package }}
-        if: always()
+        if: always() && steps.test.outcome != 'skipped'
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -182,11 +212,33 @@ jobs:
         with:
           components: clippy, rustfmt, llvm-tools-preview
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
         with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -234,11 +286,33 @@ jobs:
       - name: Set up Rust
         run: rustup toolchain install
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
         with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -320,11 +394,33 @@ jobs:
       - name: Set up Rust
         run: rustup toolchain install
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
         with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
@@ -353,11 +449,33 @@ jobs:
       - name: Set up Rust
         run: rustup toolchain install
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
         with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
 
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3

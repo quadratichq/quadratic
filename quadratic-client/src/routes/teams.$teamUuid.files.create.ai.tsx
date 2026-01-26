@@ -1,14 +1,17 @@
 import { aiChatFilesDirect } from '@/app/ai/aiChatFilesDirect';
 import { getExtension, uploadFile } from '@/app/helpers/files';
 import { authClient, requireAuth } from '@/auth/auth';
+import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
-import { AttachFileIcon, DatabaseIcon, FileIcon, PDFIcon, SearchIcon, StarShineIcon } from '@/shared/components/Icons';
+import { Connections } from '@/shared/components/connections/Connections';
+import { DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/shadcn/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,25 +22,19 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { ArrowRightIcon, ChevronLeftIcon, ReloadIcon, UploadIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { ArrowRightIcon, ChevronLeftIcon, Cross1Icon, UploadIcon } from '@radix-ui/react-icons';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { Link, redirect, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, redirect, useFetcher, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
 
-type Step = 'data' | 'file-import' | 'pdf-import' | 'connection' | 'describe';
+type Step = 'connection' | 'describe';
 
 const getStepFromPath = (pathname: string, teamUuid: string): Step => {
-  if (pathname === ROUTES.TEAM_FILES_CREATE_AI_FILE(teamUuid)) return 'file-import';
-  if (pathname === ROUTES.TEAM_FILES_CREATE_AI_PDF(teamUuid)) return 'pdf-import';
   if (pathname === ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)) return 'connection';
-  if (
-    pathname === ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid) ||
-    pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid)
-  )
-    return 'describe';
-  return 'data';
+  // All other routes go to describe (including base route, prompt, file, pdf, web)
+  return 'describe';
 };
 
 interface UploadedFile {
@@ -50,7 +47,7 @@ interface UploadedFile {
 interface SelectedConnection {
   uuid: string;
   name: string;
-  type: string;
+  type: ConnectionType;
 }
 
 interface SuggestedPrompt {
@@ -83,19 +80,19 @@ const getFileTypeDisplay = (extensions: string[]): string => {
 
 const DEFAULT_SUGGESTIONS: SuggestedPrompt[] = [
   {
-    title: 'Sales Dashboard',
-    description: 'Track revenue metrics and trends',
-    prompt: 'Create a sales dashboard with monthly revenue, top products, and growth trends',
+    title: 'Financial Model',
+    description: 'Build projections and valuations',
+    prompt: 'Create a financial model with revenue projections, expense forecasts, and cash flow analysis',
   },
   {
-    title: 'Budget Tracker',
-    description: 'Manage expenses and income',
-    prompt: 'Create a personal budget tracker with expense categories, income tracking, and savings goals',
+    title: 'Supply Chain Tracker',
+    description: 'Monitor inventory and logistics',
+    prompt: 'Create a supply chain tracker with inventory levels, supplier lead times, and order fulfillment metrics',
   },
   {
-    title: 'Project Timeline',
-    description: 'Plan tasks and milestones',
-    prompt: 'Create a project timeline with tasks, deadlines, and milestone tracking',
+    title: 'Project Management',
+    description: 'Track tasks and milestones',
+    prompt: 'Create a project management tracker with tasks, deadlines, team assignments, and milestone tracking',
   },
 ];
 
@@ -121,12 +118,13 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   return {
     connections: teamData.connections,
     teamUuid: teamData.team.uuid,
+    sshPublicKey: teamData.team.sshPublicKey,
   };
 };
 
 export const Component = () => {
   useRemoveInitialLoadingUI();
-  const { connections, teamUuid } = useLoaderData<typeof loader>();
+  const { connections, teamUuid, sshPublicKey } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -147,35 +145,76 @@ export const Component = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<SelectedConnection | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState('');
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-  const [planError, setPlanError] = useState<string | null>(null);
-  const [showFloatingExecute, setShowFloatingExecute] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestedPrompt[]>(DEFAULT_SUGGESTIONS);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const planTextareaRef = useRef<HTMLTextAreaElement>(null);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const executeButtonRef = useRef<HTMLButtonElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const suggestionsAbortRef = useRef<AbortController | null>(null);
   const dragCounterRef = useRef(0);
-  const lastGeneratedPromptRef = useRef<string>('');
 
-  // Auto-resize plan textarea to fit content
+  // Connections dialog state
+  const [showConnectionsDialog, setShowConnectionsDialog] = useState(false);
+  const [connectionsDialogInitialView, setConnectionsDialogInitialView] = useState<'new' | 'list'>('list');
+  const connectionsFetcher = useFetcher<GetConnections>({ key: 'START_WITH_AI_CONNECTIONS_FETCHER' });
+
+  // Connections helper dismissed state (persisted to localStorage)
+  const [connectionsHelperDismissed, setConnectionsHelperDismissed] = useState(() => {
+    return localStorage.getItem('startWithAI.connectionsHelperDismissed') === 'true';
+  });
+  const handleDismissConnectionsHelper = () => {
+    setConnectionsHelperDismissed(true);
+    localStorage.setItem('startWithAI.connectionsHelperDismissed', 'true');
+  };
+
+  // Fetch connections when dialog opens
   useEffect(() => {
-    if (planTextareaRef.current && generatedPlan && step === 'describe') {
-      // Use requestAnimationFrame to ensure DOM is ready after navigation
-      requestAnimationFrame(() => {
-        if (planTextareaRef.current) {
-          planTextareaRef.current.style.height = 'auto';
-          planTextareaRef.current.style.height = `${planTextareaRef.current.scrollHeight}px`;
-        }
-      });
+    if (showConnectionsDialog && connectionsFetcher.state === 'idle' && connectionsFetcher.data === undefined) {
+      connectionsFetcher.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
-  }, [generatedPlan, step]);
+  }, [showConnectionsDialog, connectionsFetcher, teamUuid]);
+
+  // Get the latest connections list (from fetcher or loader)
+  const latestConnections = useMemo(
+    () => connectionsFetcher.data?.connections ?? connections,
+    [connectionsFetcher.data?.connections, connections]
+  );
+  const staticIps = useMemo(() => connectionsFetcher.data?.staticIps ?? [], [connectionsFetcher.data?.staticIps]);
+
+  // When connections dialog closes, check if a new connection was added and auto-select it
+  const prevConnectionsLengthRef = useRef(connections.length);
+  useEffect(() => {
+    if (!showConnectionsDialog) {
+      if (latestConnections.length > prevConnectionsLengthRef.current) {
+        // A new connection was added, auto-select the most recent one
+        const newestConnection = latestConnections[0]; // Connections are sorted newest first
+        if (newestConnection) {
+          trackEvent('[StartWithAI].addConnection', { connectionType: newestConnection.type, source: 'dialog' });
+          setSelectedConnection({
+            uuid: newestConnection.uuid,
+            name: newestConnection.name,
+            type: newestConnection.type,
+          });
+        }
+      }
+      // Only update ref when dialog is closed to avoid missing new connections created while dialog was open
+      prevConnectionsLengthRef.current = latestConnections.length;
+    }
+  }, [showConnectionsDialog, latestConnections]);
+
+  const handleOpenConnectionsDialog = useCallback((initialView: 'new' | 'list' = 'list') => {
+    trackEvent('[StartWithAI].openConnectionsDialog', { initialView });
+    setConnectionsDialogInitialView(initialView);
+    setShowConnectionsDialog(true);
+  }, []);
+
+  // Reset initial view when dialog closes
+  const handleConnectionsDialogChange = useCallback((open: boolean) => {
+    setShowConnectionsDialog(open);
+    if (!open) {
+      setConnectionsDialogInitialView('list');
+    }
+  }, []);
 
   // Generate contextual suggestions when files or connections change
   useEffect(() => {
@@ -283,26 +322,6 @@ export const Component = () => {
     };
   }, [uploadedFiles, selectedConnection, teamUuid]);
 
-  // Check if execute button is visible in viewport
-  useEffect(() => {
-    const checkButtonVisibility = () => {
-      if (executeButtonRef.current) {
-        const rect = executeButtonRef.current.getBoundingClientRect();
-        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-        setShowFloatingExecute(!isVisible && !!generatedPlan.trim() && !isGeneratingPlan);
-      }
-    };
-
-    checkButtonVisibility();
-    window.addEventListener('scroll', checkButtonVisibility, true);
-    window.addEventListener('resize', checkButtonVisibility);
-
-    return () => {
-      window.removeEventListener('scroll', checkButtonVisibility, true);
-      window.removeEventListener('resize', checkButtonVisibility);
-    };
-  }, [generatedPlan, isGeneratingPlan]);
-
   const handleFileUpload = async (fileTypes: string[], shouldNavigate = true) => {
     try {
       const files = await uploadFile(fileTypes);
@@ -393,196 +412,61 @@ export const Component = () => {
     navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
   };
 
-  const generatePlan = useCallback(
-    async (promptText: string) => {
-      if (!promptText.trim()) return;
-
-      trackEvent('[StartWithAI].generatePlan', {
-        hasFiles: uploadedFiles.length > 0,
-        hasConnection: !!selectedConnection,
-        promptLength: promptText.length,
-      });
-
-      lastGeneratedPromptRef.current = promptText;
-      setIsEditingPrompt(false);
-      setIsGeneratingPlan(true);
-      setPlanError(null);
-      setGeneratedPlan('');
-
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current = new AbortController();
-
-      try {
-        const token = await authClient.getTokenOrRedirect();
-        const endpoint = `${apiClient.getApiUrl()}/v0/ai/plan`;
-
-        const context: {
-          files?: { name: string; type: string; content?: string }[];
-          connectionName?: string;
-          connectionType?: string;
-        } = {};
-
-        if (uploadedFiles.length > 0) {
-          context.files = uploadedFiles.map((file) => {
-            const isTextFile =
-              file.type.startsWith('text/') ||
-              file.type === 'application/json' ||
-              file.type === 'application/csv' ||
-              file.name.endsWith('.csv') ||
-              file.name.endsWith('.json') ||
-              file.name.endsWith('.txt') ||
-              file.name.endsWith('.md') ||
-              file.name.endsWith('.tsv');
-
-            let content: string | undefined;
-            if (isTextFile) {
-              try {
-                const decoder = new TextDecoder('utf-8');
-                content = decoder.decode(file.data);
-              } catch {
-                // If decoding fails, skip content
-              }
-            }
-
-            return { name: file.name, type: file.type, content };
-          });
-        }
-        if (selectedConnection) {
-          context.connectionName = selectedConnection.name;
-          context.connectionType = selectedConnection.type;
-        }
-
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          signal: abortControllerRef.current.signal,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            teamUuid,
-            prompt: promptText,
-            context: Object.keys(context).length > 0 ? context : undefined,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error?.message || `Request failed with status ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('No response body');
-        }
-
-        const decoder = new TextDecoder();
-        let fullText = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.content) {
-                  for (const content of data.content) {
-                    if (content.type === 'text' && content.text) {
-                      fullText = content.text;
-                      setGeneratedPlan(fullText);
-                    }
-                  }
-                }
-              } catch {
-                // Ignore parse errors for incomplete JSON
-              }
-            }
-          }
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          return;
-        }
-        console.error('Error generating plan:', error);
-        trackEvent('[StartWithAI].generatePlanError', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        setPlanError(error instanceof Error ? error.message : 'Failed to generate plan');
-      } finally {
-        setIsGeneratingPlan(false);
-      }
-    },
-    [teamUuid, uploadedFiles, selectedConnection]
-  );
-
-  const handleGeneratePlan = () => {
-    if (!prompt.trim()) return;
-    generatePlan(prompt);
-  };
-
   const handleSubmitPrompt = useCallback(
-    (promptText: string, isSuggestion = false) => {
+    async (promptText: string, isSuggestion = false) => {
+      if (!promptText.trim() || isSubmitting) return;
+
       if (isSuggestion) {
         trackEvent('[StartWithAI].selectSuggestion', { promptLength: promptText.length });
       }
-      setPrompt(promptText);
-      generatePlan(promptText);
+
+      trackEvent('[StartWithAI].buildSpreadsheet', {
+        hasFiles: uploadedFiles.length > 0,
+        hasConnection: !!selectedConnection,
+        promptLength: promptText.length,
+        isPrivate,
+      });
+
+      setIsSubmitting(true);
+
+      // Save files to IndexedDB so they can be picked up by the spreadsheet
+      let chatId: string | undefined;
+      if (uploadedFiles.length > 0) {
+        chatId = crypto.randomUUID();
+        await aiChatFilesDirect.saveFiles(
+          chatId,
+          uploadedFiles.map((f) => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            data: f.data,
+          }))
+        );
+      }
+
+      navigate(
+        ROUTES.CREATE_FILE(teamUuid, {
+          prompt: promptText,
+          private: isPrivate,
+          chatId,
+          connectionUuid: selectedConnection?.uuid,
+          connectionType: selectedConnection?.type,
+          connectionName: selectedConnection?.name,
+        })
+      );
     },
-    [generatePlan]
+    [uploadedFiles, selectedConnection, isPrivate, teamUuid, navigate, isSubmitting]
   );
 
-  const handleExecutePlan = async () => {
-    if (!generatedPlan.trim() || isExecuting) return;
-
-    trackEvent('[StartWithAI].buildSpreadsheet', {
-      hasFiles: uploadedFiles.length > 0,
-      hasConnection: !!selectedConnection,
-      planLength: generatedPlan.length,
-      isPrivate,
-    });
-
-    setIsExecuting(true);
-
-    // Save files to IndexedDB so they can be picked up by the spreadsheet
-    let chatId: string | undefined;
-    if (uploadedFiles.length > 0) {
-      chatId = crypto.randomUUID();
-      await aiChatFilesDirect.saveFiles(
-        chatId,
-        uploadedFiles.map((f) => ({
-          name: f.name,
-          type: f.type,
-          size: f.size,
-          data: f.data,
-        }))
-      );
-    }
-
-    navigate(
-      ROUTES.CREATE_FILE(teamUuid, {
-        prompt: generatedPlan,
-        private: isPrivate,
-        chatId,
-      })
-    );
-  };
-
-  const handleRegeneratePlan = () => {
-    trackEvent('[StartWithAI].regeneratePlan');
-    generatePlan(prompt);
+  const handleBuildSpreadsheet = () => {
+    if (!prompt.trim()) return;
+    handleSubmitPrompt(prompt);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleGeneratePlan();
+      handleBuildSpreadsheet();
     }
   };
 
@@ -590,15 +474,15 @@ export const Component = () => {
   return (
     <div
       className="relative flex h-full flex-col bg-background"
-      {...(step === 'data' && {
+      {...(step === 'describe' && {
         onDrop: (e: DragEvent<HTMLDivElement>) => handleDrop(e, [...FILE_TYPES, ...PDF_TYPES]),
         onDragEnter: handleDragEnter,
         onDragOver: handleDragOver,
         onDragLeave: handleDragLeave,
       })}
     >
-      {/* Drag overlay - only show on data selection page */}
-      {dragOver && step === 'data' && (
+      {/* Drag overlay - show on describe page */}
+      {dragOver && step === 'describe' && (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-primary bg-background/90 px-12 py-8 shadow-lg">
             <UploadIcon className="h-12 w-12 text-primary" />
@@ -610,7 +494,7 @@ export const Component = () => {
         </div>
       )}
 
-      {step === 'data' ? (
+      {step === 'describe' ? (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -635,167 +519,6 @@ export const Component = () => {
 
       <main className="flex flex-1 justify-center overflow-auto p-6 pt-16">
         <div className="w-full max-w-2xl">
-          {/* Step 1: Select Data */}
-          {step === 'data' && (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Start with AI</h1>
-                <p className="text-base text-muted-foreground">Choose where your data comes from</p>
-              </div>
-
-              {/* Data source cards */}
-              <div className="mb-6 grid gap-4 md:grid-cols-3">
-                {/* Start from Prompt - First with Recommended badge */}
-                <Card
-                  className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => {
-                    trackEvent('[StartWithAI].selectDataSource', { source: 'prompt' });
-                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)));
-                  }}
-                >
-                  <div className="flex h-24 items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
-                    <StarShineIcon className="text-white" size="lg" />
-                  </div>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-sm group-hover:text-primary">Generate from Prompt</CardTitle>
-                    <CardDescription className="text-xs">Describe what you want</CardDescription>
-                    <span className="mt-2 inline-block w-fit rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                      Recommended
-                    </span>
-                  </CardHeader>
-                </Card>
-
-                <Card
-                  className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => {
-                    trackEvent('[StartWithAI].selectDataSource', { source: 'file' });
-                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_FILE(teamUuid)));
-                  }}
-                >
-                  <div className="flex h-24 items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-600">
-                    <FileIcon className="text-white" size="lg" />
-                  </div>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-sm group-hover:text-primary">Import File</CardTitle>
-                    <CardDescription className="text-xs">{getFileTypeDisplay(FILE_TYPES)}</CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card
-                  className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => {
-                    trackEvent('[StartWithAI].selectDataSource', { source: 'pdf' });
-                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_PDF(teamUuid)));
-                  }}
-                >
-                  <div className="flex h-24 items-center justify-center bg-gradient-to-br from-red-500 to-orange-600">
-                    <PDFIcon className="text-white" size="lg" />
-                  </div>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-sm group-hover:text-primary">Import PDF</CardTitle>
-                    <CardDescription className="text-xs">Extract data from PDFs</CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card
-                  className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => {
-                    trackEvent('[StartWithAI].selectDataSource', { source: 'connection' });
-                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)));
-                  }}
-                >
-                  <div className="flex h-24 items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600">
-                    <DatabaseIcon className="text-white" size="lg" />
-                  </div>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-sm group-hover:text-primary">Connection</CardTitle>
-                    <CardDescription className="text-xs">
-                      {connections.length > 0 ? `${connections.length} available` : 'Connect to database'}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card
-                  className="group cursor-pointer overflow-hidden transition-all hover:border-primary hover:shadow-lg"
-                  onClick={() => {
-                    trackEvent('[StartWithAI].selectDataSource', { source: 'web' });
-                    navigate(getRouteWithParams(ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid)));
-                  }}
-                >
-                  <div className="flex h-24 items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600">
-                    <SearchIcon className="text-white" size="lg" />
-                  </div>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-sm group-hover:text-primary">Web Research</CardTitle>
-                    <CardDescription className="text-xs">AI searches the web</CardDescription>
-                  </CardHeader>
-                </Card>
-              </div>
-            </>
-          )}
-
-          {/* File Import Page */}
-          {step === 'file-import' && (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Import File</h1>
-                <p className="text-base text-muted-foreground">Upload a file to get started</p>
-              </div>
-
-              <div
-                className={cn(
-                  'flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-all',
-                  dragOver
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-muted/30 hover:border-primary hover:bg-muted/50'
-                )}
-                onClick={() => handleFileUpload(FILE_TYPES)}
-                onDrop={(e) => handleDrop(e, FILE_TYPES)}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10">
-                  <UploadIcon className="h-8 w-8 text-blue-500" />
-                </div>
-                <p className="mb-2 text-lg font-semibold">Drop your file here</p>
-                <p className="mb-4 text-sm text-muted-foreground">or click to browse</p>
-                <p className="text-xs text-muted-foreground">Supported: {getFileTypeDisplay(FILE_TYPES)}</p>
-              </div>
-            </>
-          )}
-
-          {/* PDF Import Page */}
-          {step === 'pdf-import' && (
-            <>
-              <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Import PDF</h1>
-                <p className="text-base text-muted-foreground">Upload a PDF to extract data from</p>
-              </div>
-
-              <div
-                className={cn(
-                  'flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-all',
-                  dragOver
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-muted/30 hover:border-primary hover:bg-muted/50'
-                )}
-                onClick={() => handleFileUpload(PDF_TYPES)}
-                onDrop={(e) => handleDrop(e, PDF_TYPES)}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10">
-                  <PDFIcon className="text-red-500" size="lg" />
-                </div>
-                <p className="mb-2 text-lg font-semibold">Drop your PDF here</p>
-                <p className="mb-4 text-sm text-muted-foreground">or click to browse</p>
-                <p className="text-xs text-muted-foreground">Supported: .pdf</p>
-              </div>
-            </>
-          )}
-
           {/* Connection Selection Page */}
           {step === 'connection' && (
             <>
@@ -844,28 +567,108 @@ export const Component = () => {
           {step === 'describe' && (
             <>
               <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Describe Your Spreadsheet</h1>
-                <p className="text-base text-muted-foreground">What do you want to do?</p>
+                <h1 className="mb-2 text-3xl font-bold">Start with AI</h1>
+                <p className="text-base text-muted-foreground">Let's build your spreadsheet.</p>
               </div>
 
               {/* Data section */}
-              <div className="mb-4 space-y-1">
-                <h3 className="text-sm font-medium text-muted-foreground">Data</h3>
+              <div className="mb-6 space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
                 <div className="flex flex-wrap items-center gap-2">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm">
-                      <FileIcon size="sm" />
-                      <span className="max-w-32 truncate">{file.name}</span>
-                      <button
-                        onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                  <Button
+                    variant="outline"
+                    className="h-10 gap-2 px-4"
+                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                  >
+                    <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
+                    Import Excel
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="h-10 gap-2 px-4"
+                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                  >
+                    <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
+                    Import PDF
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="h-10 gap-2 px-4"
+                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                  >
+                    <FileIcon size="sm" />
+                    Import CSV / Others
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="h-10 gap-2 px-4">
+                        <DatabaseIcon size="sm" />
+                        Add connection
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuLabel>Connections</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
+                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                        <span className="truncate">Add connection</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
+                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                        <span className="truncate">Manage connections</span>
+                      </DropdownMenuItem>
+                      {latestConnections.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          {latestConnections.map((connection) => (
+                            <DropdownMenuItem
+                              key={connection.uuid}
+                              onClick={() => {
+                                trackEvent('[StartWithAI].addConnection', { connectionType: connection.type });
+                                setSelectedConnection({
+                                  uuid: connection.uuid,
+                                  name: connection.name,
+                                  type: connection.type,
+                                });
+                              }}
+                              className="gap-4"
+                            >
+                              <LanguageIcon language={connection.type} className="flex-shrink-0" />
+                              <span className="truncate">{connection.name}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {uploadedFiles.map((file, index) => {
+                    const ext = file.name.toLowerCase();
+                    const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
+                    const isPdf = ext.endsWith('.pdf');
+                    return (
+                      <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                        {isExcel ? (
+                          <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
+                        ) : isPdf ? (
+                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
+                        ) : (
+                          <FileIcon size="sm" />
+                        )}
+                        <span className="max-w-32 truncate">{file.name}</span>
+                        <button
+                          onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
                   {selectedConnection && (
-                    <div className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm">
+                    <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
                       <LanguageIcon language={selectedConnection.type} />
                       <span className="max-w-32 truncate">{selectedConnection.name}</span>
                       <button
@@ -876,57 +679,64 @@ export const Component = () => {
                       </button>
                     </div>
                   )}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <AttachFileIcon size="sm" />
-                    Add file
-                  </Button>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <DatabaseIcon size="sm" />
-                        Add connection
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuLabel>Select Connection</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {connections.length > 0 ? (
-                        connections.map((connection) => (
-                          <DropdownMenuItem
-                            key={connection.uuid}
-                            onClick={() => {
-                              setSelectedConnection({
-                                uuid: connection.uuid,
-                                name: connection.name,
-                                type: connection.type,
-                              });
-                            }}
-                          >
-                            <LanguageIcon language={connection.type} className="mr-2" />
-                            {connection.name}
-                          </DropdownMenuItem>
-                        ))
-                      ) : (
-                        <DropdownMenuItem asChild>
-                          <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="gap-4">
-                            Add Connection
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
+
+                {/* Connections helper - show when no connections exist and not dismissed */}
+                {latestConnections.length === 0 && !selectedConnection && !connectionsHelperDismissed && (
+                  <div className="relative mt-4 rounded-lg border border-border p-4">
+                    <button
+                      onClick={handleDismissConnectionsHelper}
+                      className="absolute right-2 top-2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      aria-label="Dismiss"
+                    >
+                      <Cross1Icon className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="pr-4">
+                      <h4 className="mb-1 text-sm font-semibold">Connect Quadratic to your data</h4>
+                      <p className="mb-3 text-sm text-muted-foreground">
+                        Pull data from services like Google Analytics and Mixpanel, as well as databases like Postgres
+                        and BigQuery.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="POSTGRES" />
+                          <span>Postgres</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="MYSQL" />
+                          <span>MySQL</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="SNOWFLAKE" />
+                          <span>Snowflake</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="GOOGLE_ANALYTICS" />
+                          <span>Analytics</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <LanguageIcon language="PLAID" />
+                          <span>Banks and Brokerages</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">& more</span>
+                      </div>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        <Button
+                          variant="link"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => handleOpenConnectionsDialog('new')}
+                        >
+                          Add a connection
+                        </Button>{' '}
+                        to get started.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Suggestions - above the chat */}
-              <div className="mb-4 space-y-1">
+              <div className="mb-6 space-y-2">
                 {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
                   <>
                     <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
@@ -935,7 +745,7 @@ export const Component = () => {
                         <button
                           key={index}
                           className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
-                          onClick={() => handleSubmitPrompt(query, true)}
+                          onClick={() => setPrompt(query)}
                         >
                           <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
                           <span className="text-sm group-hover:text-primary">{query}</span>
@@ -949,7 +759,7 @@ export const Component = () => {
                       <h3 className="text-sm font-medium text-muted-foreground">
                         {uploadedFiles.length > 0 || selectedConnection
                           ? 'Suggestions based on your data'
-                          : 'Popular templates'}
+                          : 'Suggested prompts'}
                       </h3>
                       {isLoadingSuggestions && (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -967,7 +777,7 @@ export const Component = () => {
                             <button
                               key={index}
                               className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
-                              onClick={() => handleSubmitPrompt(suggestion.prompt, true)}
+                              onClick={() => setPrompt(suggestion.prompt)}
                             >
                               <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
                                 {suggestion.title}
@@ -981,113 +791,38 @@ export const Component = () => {
               </div>
 
               {/* Chat box */}
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium text-muted-foreground">Prompt</h3>
-                <div
-                  className={cn(
-                    'rounded-xl border border-border bg-background',
-                    (isGeneratingPlan || generatedPlan) && !isEditingPrompt ? 'rounded-b-xl shadow-none' : 'shadow-lg'
-                  )}
-                >
+              <div>
+                <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
                   <Textarea
                     ref={promptTextareaRef}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    onFocus={() => (isGeneratingPlan || generatedPlan) && setIsEditingPrompt(true)}
-                    onBlur={() => {
-                      if (prompt === lastGeneratedPromptRef.current) {
-                        setIsEditingPrompt(false);
-                      }
-                    }}
                     placeholder="I want to create a spreadsheet that..."
-                    className={cn(
-                      'resize-none border-0 p-4 text-base shadow-none focus-visible:ring-0',
-                      (isGeneratingPlan || generatedPlan) && !isEditingPrompt
-                        ? 'min-h-16 rounded-xl'
-                        : 'min-h-32 rounded-t-xl',
-                      generatedPlan && !isEditingPrompt && 'cursor-pointer'
-                    )}
+                    className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
                   />
 
-                  {/* Actions footer - hide when plan exists and not editing */}
-                  {(!isGeneratingPlan && !generatedPlan) || isEditingPrompt ? (
-                    <div className="flex items-center justify-end border-t border-border px-4 py-3">
-                      {!isGeneratingPlan && !generatedPlan ? (
-                        <Button onClick={handleGeneratePlan} disabled={!prompt.trim()} className="gap-2">
-                          Generate Plan
-                          <ArrowRightIcon className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => {
-                            setIsEditingPrompt(false);
-                            handleGeneratePlan();
-                          }}
-                          disabled={!prompt.trim() || prompt === lastGeneratedPromptRef.current}
-                          className="gap-2"
-                        >
-                          <ReloadIcon className="h-4 w-4" />
-                          Regenerate Plan
-                        </Button>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Generated Plan Section */}
-              {(isGeneratingPlan || generatedPlan || planError) && (
-                <div className="mt-6 space-y-1">
-                  {planError && (
-                    <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
-                      <p className="text-sm font-medium">Error generating plan</p>
-                      <p className="text-sm">{planError}</p>
-                      <Button variant="outline" size="sm" className="mt-3" onClick={handleRegeneratePlan}>
-                        <ReloadIcon className="mr-2 h-4 w-4" />
-                        Try Again
-                      </Button>
-                    </div>
-                  )}
-
-                  <h3 className="text-sm font-medium text-muted-foreground">Generated Plan</h3>
-                  <div className="rounded-xl border border-border bg-background shadow-lg">
-                    {isGeneratingPlan && !generatedPlan ? (
-                      <div className="flex min-h-64 items-center justify-center p-6">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                          <p className="text-sm text-muted-foreground">Generating plan...</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <Textarea
-                        ref={planTextareaRef}
-                        value={generatedPlan}
-                        onChange={(e) => setGeneratedPlan(e.target.value)}
-                        placeholder="Your plan will appear here..."
-                        className="min-h-32 resize-none overflow-hidden rounded-none border-0 bg-transparent p-4 text-sm shadow-none focus-visible:ring-0"
-                        style={{ height: 'auto' }}
-                        disabled={isGeneratingPlan}
-                      />
-                    )}
-
-                    <div className="flex items-center justify-between border-t border-border px-4 py-3">
-                      <p className="text-xs text-muted-foreground">
-                        {isGeneratingPlan ? 'Please wait...' : 'Ready to create your spreadsheet?'}
-                      </p>
-                      <Button
-                        ref={executeButtonRef}
-                        onClick={handleExecutePlan}
-                        disabled={!generatedPlan.trim() || isGeneratingPlan || isExecuting}
-                        className="gap-2"
-                      >
-                        Build Spreadsheet
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="flex items-center justify-end px-4 py-3">
+                    <Button
+                      onClick={handleBuildSpreadsheet}
+                      disabled={!prompt.trim() || isSubmitting}
+                      className="gap-2"
+                    >
+                      {isSubmitting ? 'Creating...' : 'Create'}
+                      <ArrowRightIcon className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              )}
+                <div className="mt-3 text-center">
+                  <a
+                    href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                    className="text-sm"
+                    onClick={() => trackEvent('[StartWithAI].skip')}
+                  >
+                    Skip and open the spreadsheet →
+                  </a>
+                </div>
+              </div>
 
               {/* Spacer to reduce scroll jumping during generation */}
               <div className="h-24" />
@@ -1096,17 +831,31 @@ export const Component = () => {
         </div>
       </main>
 
-      {showFloatingExecute && step === 'describe' && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 p-4 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-2xl items-center justify-between">
-            <p className="text-sm text-muted-foreground">Ready to create your spreadsheet?</p>
-            <Button onClick={handleExecutePlan} disabled={isExecuting} className="gap-2">
-              Build Spreadsheet
-              <ArrowRightIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Connections Dialog */}
+      <Dialog open={showConnectionsDialog} onOpenChange={handleConnectionsDialogChange}>
+        <DialogContent
+          className="max-w-4xl"
+          onPointerDownOutside={(event) => {
+            event.preventDefault();
+          }}
+          aria-describedby={undefined}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
+          </DialogHeader>
+          {showConnectionsDialog && (
+            <Connections
+              connections={latestConnections}
+              connectionsAreLoading={connectionsFetcher.state === 'loading'}
+              teamUuid={teamUuid}
+              sshPublicKey={sshPublicKey}
+              staticIps={staticIps}
+              hideSidebar
+              initialView={connectionsDialogInitialView}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

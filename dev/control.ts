@@ -6,7 +6,7 @@ import {
 import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
 import { UI } from "./ui.js";
-import { killPort } from './utils.js';
+import { killPort } from "./utils.js";
 export class Control {
   private cli: CLI;
   private ui: UI;
@@ -112,8 +112,10 @@ export class Control {
       this.isPostgresRunning(),
     ]);
 
-    const redisNotRunning = redisRunning !== true && redisRunning !== "not found";
-    const postgresNotRunning = postgresRunning !== true && postgresRunning !== "not found";
+    const redisNotRunning =
+      redisRunning !== true && redisRunning !== "not found";
+    const postgresNotRunning =
+      postgresRunning !== true && postgresRunning !== "not found";
     const redisNotFound = redisRunning === "not found";
     const postgresNotFound = postgresRunning === "not found";
     const errors: string[] = [];
@@ -121,7 +123,9 @@ export class Control {
     // Check Redis
     if (redisNotFound) {
       this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-      errors.push("redis-cli not found. Please install redis-cli or ensure it's in your PATH.");
+      errors.push(
+        "redis-cli not found. Please install redis-cli or ensure it's in your PATH.",
+      );
     } else if (redisRunning === true) {
       this.status.redis = true;
       this.ui.print("redis", "is running", "green");
@@ -132,7 +136,9 @@ export class Control {
     // Check PostgreSQL
     if (postgresNotFound) {
       this.status.postgres = "killed"; // use killed to indicate that pg_isready was not found
-      errors.push("pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.");
+      errors.push(
+        "pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.",
+      );
     } else if (postgresRunning === true) {
       this.status.postgres = true;
       this.ui.print("postgres", "is running", "green");
@@ -142,13 +148,19 @@ export class Control {
 
     // Combine "not running" errors if both are failing
     if (redisNotRunning && postgresNotRunning) {
-      errors.push("Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.");
+      errors.push(
+        "Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.",
+      );
     } else {
       if (redisNotRunning) {
-        errors.push("Redis is NOT running! Please start redis before running node dev.");
+        errors.push(
+          "Redis is NOT running! Please start redis before running node dev.",
+        );
       }
       if (postgresNotRunning) {
-        errors.push("PostgreSQL is NOT running! Please start PostgreSQL before running node dev.");
+        errors.push(
+          "PostgreSQL is NOT running! Please start PostgreSQL before running node dev.",
+        );
       }
     }
 
@@ -327,15 +339,11 @@ export class Control {
       { signal: this.signals.core.signal },
     );
     this.ui.printOutput("core", (data) =>
-      this.handleResponse(
-        "core",
-        data,
-        {
-          success: ["[Finished running. Exit status: 0", "ready to publish"],
-          error: "error[",
-          start: ["> quadratic", "[Running "],
-        },
-      ),
+      this.handleResponse("core", data, {
+        success: ["[Finished running. Exit status: 0", "ready to publish"],
+        error: "error[",
+        start: ["> quadratic", "[Running "],
+      }),
     );
   }
 
@@ -398,9 +406,9 @@ export class Control {
         env: { ...process.env, RUST_LOG: "info" },
       });
     } else {
-    this.multiplayer = spawn(
-      "cargo",
-      this.cli.options.multiplayer
+      this.multiplayer = spawn(
+        "cargo",
+        this.cli.options.multiplayer
           ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
           : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
         {
@@ -625,7 +633,7 @@ export class Control {
       this.connection = spawn("./quadratic-connection", [], {
         signal: this.signals.connection.signal,
         cwd: "quadratic-connection/target/debug",
-        env: { ...process.env, RUST_LOG: "info" },
+        env: { ...process.env, RUST_LOG: "info,object_store=warn" },
       });
     } else {
       this.connection = spawn(
@@ -636,14 +644,21 @@ export class Control {
         {
           signal: this.signals.connection.signal,
           cwd: "quadratic-connection",
-          env: { ...process.env, RUST_LOG: "info" },
+          env: { ...process.env, RUST_LOG: "info,object_store=warn" },
         },
       );
     }
     this.ui.printOutput("connection", (data) => {
       this.handleResponse("connection", data, {
         success: "listening on",
-        error: ["error[", "error:", "failed to compile", "npm ERR!", "Compiling failed", "Exit status: 1"],
+        error: [
+          "error[",
+          "error:",
+          "failed to compile",
+          "npm ERR!",
+          "Compiling failed",
+          "Exit status: 1",
+        ],
         start: "    Compiling",
       });
     });

@@ -8,6 +8,7 @@ use quadratic_core::a1::CellRefRangeEnd;
 use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
+use quadratic_core::cellvalue::TextSpan;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::TransactionSource;
@@ -37,6 +38,7 @@ use quadratic_core::grid::js_types::JsCoordinate;
 use quadratic_core::grid::js_types::JsDataTableContext;
 use quadratic_core::grid::js_types::JsGetAICellResult;
 use quadratic_core::grid::js_types::JsHashRenderCells;
+use quadratic_core::grid::js_types::JsHashRenderFills;
 use quadratic_core::grid::js_types::JsHashValidationWarnings;
 use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
@@ -46,9 +48,9 @@ use quadratic_core::grid::js_types::JsSummaryContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsClipboard, JsCodeCell,
-    JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
-    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
-    JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
+    JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellLinkSpan,
+    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo,
+    JsRowHeight, JsSheetFill, JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::BorderSelection;
 use quadratic_core::grid::sheet::borders::BorderSide;
@@ -163,11 +165,13 @@ fn main() {
         JsGetAICellResult,
         JsHashesDirty,
         JsHashRenderCells,
+        JsHashRenderFills,
         JsHashValidationWarnings,
         JsHtmlOutput,
         JsNumber,
         JsOffset,
         JsRenderCell,
+        JsRenderCellLinkSpan,
         JsRenderCellSpecial,
         JsRenderCodeCell,
         JsRenderCodeCellState,
@@ -206,6 +210,7 @@ fn main() {
         TableRef,
         TextCase,
         TextMatch,
+        TextSpan,
         TrackedOperation,
         TrackedTransaction,
         TransactionName,
