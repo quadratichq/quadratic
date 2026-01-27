@@ -71,7 +71,7 @@ const CategorizedSuggestionsSection = memo(
           onValueChange={(value) => setActiveCategory(value as SuggestionCategory)}
           className="w-full"
         >
-          <TabsList className="absolute -top-2 right-0 w-full justify-end">
+          <TabsList className="absolute -top-1.5 right-0 w-full justify-end">
             {SUGGESTION_CATEGORIES.map(({ key, label }) => (
               <TabsTrigger key={key} value={key} className="px-2 text-xs">
                 {label}
