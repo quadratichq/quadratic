@@ -13,8 +13,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import type { Dispatch, SetStateAction } from 'react';
@@ -161,15 +159,6 @@ function FileLocation() {
               >
                 Personal file
               </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                inset
-                onClick={() => {
-                  window.location.href = ROUTES.TEAM_SETTINGS(team.uuid);
-                }}
-              >
-                Manage team…
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
