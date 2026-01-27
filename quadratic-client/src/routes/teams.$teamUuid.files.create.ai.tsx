@@ -4,7 +4,11 @@ import { authClient, requireAuth } from '@/auth/auth';
 import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
 import { Connections } from '@/shared/components/connections/Connections';
-import { DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
+import {
+  connectionsByType,
+  potentialConnectionsByType,
+} from '@/shared/components/connections/connectionsByType';
+import { AIIcon, DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -30,6 +34,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { Link, redirect, useFetcher, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 type Step = 'connection' | 'describe';
+type DataPath = 'files' | 'connections' | 'scratch' | null;
 
 const getStepFromPath = (pathname: string, teamUuid: string): Step => {
   if (pathname === ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)) return 'connection';
@@ -115,16 +120,21 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     return redirect(`/?${SEARCH_PARAMS.SNACKBAR_MSG.KEY}=${message}`);
   }
 
+  // Check if this is a new user coming from onboarding (check URL referrer or session)
+  const url = new URL(loaderArgs.request.url);
+  const isFromOnboarding = url.searchParams.get('onboarding') === 'true';
+
   return {
     connections: teamData.connections,
     teamUuid: teamData.team.uuid,
     sshPublicKey: teamData.team.sshPublicKey,
+    isFromOnboarding,
   };
 };
 
 export const Component = () => {
   useRemoveInitialLoadingUI();
-  const { connections, teamUuid, sshPublicKey } = useLoaderData<typeof loader>();
+  const { connections, teamUuid, sshPublicKey, isFromOnboarding } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -132,10 +142,13 @@ export const Component = () => {
   const step = getStepFromPath(location.pathname, teamUuid);
   const isPrivate = searchParams.get('private') === 'true';
 
+  // Data path selection for onboarding flow
+  const [selectedDataPath, setSelectedDataPath] = useState<DataPath>(null);
+
   // Track page load
   useEffect(() => {
-    trackEvent('[StartWithAI].loaded', { step });
-  }, [step]);
+    trackEvent('[StartWithAI].loaded', { step, isFromOnboarding });
+  }, [step, isFromOnboarding]);
 
   // Helper to preserve search params when navigating
   const getRouteWithParams = (route: string) => {
@@ -566,266 +579,438 @@ export const Component = () => {
           {/* Step 2: Describe Your Spreadsheet */}
           {step === 'describe' && (
             <>
-              <div className="mb-6 text-center">
-                <h1 className="mb-2 text-3xl font-bold">Start with AI</h1>
-                <p className="text-base text-muted-foreground">Let's build your spreadsheet.</p>
-              </div>
+              {/* Onboarding: Data Path Selection */}
+              {isFromOnboarding && !selectedDataPath && (
+                <>
+                  <div className="mb-8 text-center">
+                    <h1 className="mb-2 text-3xl font-bold">Ok, let's get started.</h1>
+                    <p className="text-lg text-muted-foreground">
+                      What kind of data will you work with in Quadratic?
+                    </p>
+                  </div>
 
-              {/* Data section */}
-              <div className="mb-6 space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
-                    Import Excel
-                  </Button>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => {
+                        trackEvent('[StartWithAI].selectDataPath', { path: 'files' });
+                        setSelectedDataPath('files');
+                      }}
+                      className="group flex flex-col items-center gap-3 rounded-lg border border-border px-4 py-8 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                    >
+                      <FileIcon size="lg" className="text-primary" />
+                      <span className="text-base">Import Files</span>
+                      <span className="text-xs text-muted-foreground">Excel, CSV, PDF, Parquet</span>
+                      <ArrowRightIcon className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </button>
 
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
-                    Import PDF
-                  </Button>
+                    <button
+                      onClick={() => {
+                        trackEvent('[StartWithAI].selectDataPath', { path: 'connections' });
+                        setSelectedDataPath('connections');
+                      }}
+                      className="group flex flex-col items-center gap-3 rounded-lg border border-border px-4 py-8 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                    >
+                      <DatabaseIcon size="lg" className="text-primary" />
+                      <span className="text-base">Connect Data</span>
+                      <span className="text-xs text-muted-foreground">Databases & services</span>
+                      <ArrowRightIcon className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </button>
 
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 px-4"
-                    onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                  >
-                    <FileIcon size="sm" />
-                    Import CSV / Others
-                  </Button>
+                    <button
+                      onClick={() => {
+                        trackEvent('[StartWithAI].selectDataPath', { path: 'scratch' });
+                        setSelectedDataPath('scratch');
+                      }}
+                      className="group flex flex-col items-center gap-3 rounded-lg border border-border px-4 py-8 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                    >
+                      <AIIcon size="lg" className="text-primary" />
+                      <span className="text-base">Start Fresh</span>
+                      <span className="text-xs text-muted-foreground">Build with AI</span>
+                      <ArrowRightIcon className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </button>
+                  </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="h-10 gap-2 px-4">
-                        <DatabaseIcon size="sm" />
-                        Add connection
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuLabel>Connections</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
-                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                        <span className="truncate">Add connection</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
-                        <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                        <span className="truncate">Manage connections</span>
-                      </DropdownMenuItem>
-                      {latestConnections.length > 0 && (
-                        <>
-                          <DropdownMenuSeparator />
-                          {latestConnections.map((connection) => (
-                            <DropdownMenuItem
-                              key={connection.uuid}
-                              onClick={() => {
-                                trackEvent('[StartWithAI].addConnection', { connectionType: connection.type });
-                                setSelectedConnection({
-                                  uuid: connection.uuid,
-                                  name: connection.name,
-                                  type: connection.type,
-                                });
-                              }}
-                              className="gap-4"
-                            >
-                              <LanguageIcon language={connection.type} className="flex-shrink-0" />
-                              <span className="truncate">{connection.name}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="mt-8 text-center">
+                    <a
+                      href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                      onClick={() => trackEvent('[StartWithAI].skipDataPath')}
+                    >
+                      Skip and open a blank spreadsheet →
+                    </a>
+                  </div>
+                </>
+              )}
 
-                  {uploadedFiles.map((file, index) => {
-                    const ext = file.name.toLowerCase();
-                    const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
-                    const isPdf = ext.endsWith('.pdf');
-                    return (
-                      <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
-                        {isExcel ? (
-                          <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
-                        ) : isPdf ? (
-                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
-                        ) : (
-                          <FileIcon size="sm" />
-                        )}
-                        <span className="max-w-32 truncate">{file.name}</span>
-                        <button
-                          onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
-                          className="ml-1 text-muted-foreground hover:text-foreground"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {selectedConnection && (
-                    <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
-                      <LanguageIcon language={selectedConnection.type} />
-                      <span className="max-w-32 truncate">{selectedConnection.name}</span>
-                      <button
-                        onClick={() => setSelectedConnection(null)}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
+              {/* Show content based on selected data path or default view */}
+              {(!isFromOnboarding || selectedDataPath) && (
+                <>
+                  <div className="mb-6 text-center">
+                    <h1 className="mb-2 text-3xl font-bold">Start with AI</h1>
+                    <p className="text-base text-muted-foreground">Let's build your spreadsheet.</p>
+                  </div>
+
+                  {/* Path indicator for onboarding users */}
+                  {isFromOnboarding && selectedDataPath && (
+                    <div className="mb-6 flex items-center justify-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        You selected:{' '}
+                        <span className="font-medium text-foreground">
+                          {selectedDataPath === 'files' && 'Import Files'}
+                          {selectedDataPath === 'connections' && 'Connect Data'}
+                          {selectedDataPath === 'scratch' && 'Start Fresh'}
+                        </span>
+                      </span>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-sm"
+                        onClick={() => setSelectedDataPath(null)}
                       >
-                        ×
-                      </button>
+                        Change
+                      </Button>
                     </div>
                   )}
-                </div>
 
-                {/* Connections helper - show when no connections exist and not dismissed */}
-                {latestConnections.length === 0 && !selectedConnection && !connectionsHelperDismissed && (
-                  <div className="relative mt-4 rounded-lg border border-border p-4">
-                    <button
-                      onClick={handleDismissConnectionsHelper}
-                      className="absolute right-2 top-2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                      aria-label="Dismiss"
-                    >
-                      <Cross1Icon className="h-3.5 w-3.5" />
-                    </button>
-                    <div className="pr-4">
-                      <h4 className="mb-1 text-sm font-semibold">Connect Quadratic to your data</h4>
-                      <p className="mb-3 text-sm text-muted-foreground">
-                        Pull data from services like Google Analytics and Mixpanel, as well as databases like Postgres
-                        and BigQuery.
-                      </p>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <LanguageIcon language="POSTGRES" />
-                          <span>Postgres</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <LanguageIcon language="MYSQL" />
-                          <span>MySQL</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <LanguageIcon language="SNOWFLAKE" />
-                          <span>Snowflake</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <LanguageIcon language="GOOGLE_ANALYTICS" />
-                          <span>Analytics</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <LanguageIcon language="PLAID" />
-                          <span>Banks and Brokerages</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">& more</span>
-                      </div>
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        <Button
-                          variant="link"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => handleOpenConnectionsDialog('new')}
-                        >
-                          Add a connection
-                        </Button>{' '}
-                        to get started.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Suggestions - above the chat */}
-              <div className="mb-6 space-y-2">
-                {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
-                  <>
-                    <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
-                    <div className="flex flex-col gap-2">
-                      {WEB_SEARCH_EXAMPLES.map((query, index) => (
+                  {/* FILES PATH: Dedicated file type buttons */}
+                  {selectedDataPath === 'files' && (
+                    <div className="mb-6 space-y-3">
+                      <h3 className="text-sm font-medium text-muted-foreground">Choose a file type to import</h3>
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                         <button
-                          key={index}
-                          className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
-                          onClick={() => setPrompt(query)}
+                          onClick={() => handleFileUpload(['.xlsx', '.xls'], false)}
+                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
                         >
-                          <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
-                          <span className="text-sm group-hover:text-primary">{query}</span>
+                          <img src="/images/icon-excel.svg" alt="Excel" className="h-10 w-10" />
+                          <span className="text-sm font-medium">Excel</span>
+                          <span className="text-xs text-muted-foreground">.xlsx, .xls</span>
                         </button>
-                      ))}
+
+                        <button
+                          onClick={() => handleFileUpload(['.csv'], false)}
+                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <FileIcon size="lg" className="text-green-600" />
+                          <span className="text-sm font-medium">CSV</span>
+                          <span className="text-xs text-muted-foreground">.csv</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleFileUpload(['.pdf'], false)}
+                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-10 w-10" />
+                          <span className="text-sm font-medium">PDF</span>
+                          <span className="text-xs text-muted-foreground">.pdf</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleFileUpload(['.parquet', '.parq', '.pqt'], false)}
+                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <FileIcon size="lg" className="text-orange-500" />
+                          <span className="text-sm font-medium">Parquet</span>
+                          <span className="text-xs text-muted-foreground">.parquet</span>
+                        </button>
+                      </div>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium text-muted-foreground">
-                        {uploadedFiles.length > 0 || selectedConnection
-                          ? 'Suggestions based on your data'
-                          : 'Suggested prompts'}
-                      </h3>
-                      {isLoadingSuggestions && (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  )}
+
+                  {/* CONNECTIONS PATH: Grid of available connections */}
+                  {selectedDataPath === 'connections' && (
+                    <div className="mb-6 space-y-4">
+                      <h3 className="text-sm font-medium text-muted-foreground">Select a data source to connect</h3>
+
+                      {/* Existing connections */}
+                      {latestConnections.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            Your Connections
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {latestConnections.map((connection) => (
+                              <button
+                                key={connection.uuid}
+                                onClick={() => {
+                                  trackEvent('[StartWithAI].addConnection', {
+                                    connectionType: connection.type,
+                                    source: 'onboarding-grid',
+                                  });
+                                  setSelectedConnection({
+                                    uuid: connection.uuid,
+                                    name: connection.name,
+                                    type: connection.type,
+                                  });
+                                }}
+                                className="flex items-center gap-3 rounded-lg border border-border p-3 text-left transition-all hover:border-primary hover:shadow-md"
+                              >
+                                <LanguageIcon language={connection.type} />
+                                <span className="truncate text-sm font-medium">{connection.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Available connection types */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          {latestConnections.length > 0 ? 'Add New Connection' : 'Available Connections'}
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
+                          {(Object.entries(connectionsByType) as [ConnectionType, (typeof connectionsByType)[ConnectionType]][]).map(
+                            ([type, { name, Logo }]) => (
+                              <button
+                                key={type}
+                                onClick={() => {
+                                  trackEvent('[StartWithAI].clickConnectionType', { connectionType: type });
+                                  handleOpenConnectionsDialog('new');
+                                }}
+                                className="group flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                              >
+                                <Logo className="h-8 w-8" />
+                                <span className="text-xs font-medium">{name}</span>
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Coming soon connections */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Coming Soon</p>
+                        <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
+                          {Object.entries(potentialConnectionsByType)
+                            .slice(0, 6)
+                            .map(([type, { name, Logo }]) => (
+                              <div
+                                key={type}
+                                className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-border p-2 opacity-50"
+                              >
+                                <Logo className="h-6 w-6" />
+                                <span className="text-xs text-muted-foreground">{name}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SCRATCH PATH or default: Show AI suggestions prominently */}
+                  {(selectedDataPath === 'scratch' || !isFromOnboarding) && !selectedDataPath?.match(/files|connections/) && (
+                    <>
+                      {/* Data section - only show for non-onboarding or scratch path */}
+                      <div className="mb-6 space-y-2">
+                        <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            className="h-10 gap-2 px-4"
+                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                          >
+                            <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
+                            Import Excel
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            className="h-10 gap-2 px-4"
+                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                          >
+                            <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
+                            Import PDF
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            className="h-10 gap-2 px-4"
+                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                          >
+                            <FileIcon size="sm" />
+                            Import CSV / Others
+                          </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="h-10 gap-2 px-4">
+                                <DatabaseIcon size="sm" />
+                                Add connection
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuLabel>Connections</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
+                                <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                                <span className="truncate">Add connection</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
+                                <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                                <span className="truncate">Manage connections</span>
+                              </DropdownMenuItem>
+                              {latestConnections.length > 0 && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  {latestConnections.map((connection) => (
+                                    <DropdownMenuItem
+                                      key={connection.uuid}
+                                      onClick={() => {
+                                        trackEvent('[StartWithAI].addConnection', { connectionType: connection.type });
+                                        setSelectedConnection({
+                                          uuid: connection.uuid,
+                                          name: connection.name,
+                                          type: connection.type,
+                                        });
+                                      }}
+                                      className="gap-4"
+                                    >
+                                      <LanguageIcon language={connection.type} className="flex-shrink-0" />
+                                      <span className="truncate">{connection.name}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Uploaded files and selected connection pills - show for all paths */}
+                  {(uploadedFiles.length > 0 || selectedConnection) && (
+                    <div className="mb-6 flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Selected:</span>
+                      {uploadedFiles.map((file, index) => {
+                        const ext = file.name.toLowerCase();
+                        const isExcel = ext.endsWith('.xlsx') || ext.endsWith('.xls');
+                        const isPdf = ext.endsWith('.pdf');
+                        return (
+                          <div key={index} className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                            {isExcel ? (
+                              <img src="/images/icon-excel.svg" alt="Excel" className="h-4 w-4" />
+                            ) : isPdf ? (
+                              <img src="/images/icon-pdf.svg" alt="PDF" className="h-4 w-4" />
+                            ) : (
+                              <FileIcon size="sm" />
+                            )}
+                            <span className="max-w-32 truncate">{file.name}</span>
+                            <button
+                              onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== index))}
+                              className="ml-1 text-muted-foreground hover:text-foreground"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {selectedConnection && (
+                        <div className="flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm">
+                          <LanguageIcon language={selectedConnection.type} />
+                          <span className="max-w-32 truncate">{selectedConnection.name}</span>
+                          <button
+                            onClick={() => setSelectedConnection(null)}
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                          >
+                            ×
+                          </button>
+                        </div>
                       )}
                     </div>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {isLoadingSuggestions
-                        ? Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
-                              <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
-                              <div className="h-3 w-full rounded bg-muted" />
-                            </div>
-                          ))
-                        : suggestions.map((suggestion, index) => (
+                  )}
+
+                  {/* Suggestions - above the chat */}
+                  <div className="mb-6 space-y-2">
+                    {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
+                      <>
+                        <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
+                        <div className="flex flex-col gap-2">
+                          {WEB_SEARCH_EXAMPLES.map((query, index) => (
                             <button
                               key={index}
-                              className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
-                              onClick={() => setPrompt(suggestion.prompt)}
+                              className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
+                              onClick={() => setPrompt(query)}
                             >
-                              <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
-                                {suggestion.title}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                              <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
+                              <span className="text-sm group-hover:text-primary">{query}</span>
                             </button>
                           ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Chat box */}
-              <div>
-                <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
-                  <Textarea
-                    ref={promptTextareaRef}
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="I want to create a spreadsheet that..."
-                    className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
-                  />
-
-                  <div className="flex items-center justify-end px-4 py-3">
-                    <Button
-                      onClick={handleBuildSpreadsheet}
-                      disabled={!prompt.trim() || isSubmitting}
-                      className="gap-2"
-                    >
-                      {isSubmitting ? 'Creating...' : 'Create'}
-                      <ArrowRightIcon className="h-4 w-4" />
-                    </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-muted-foreground">
+                            {uploadedFiles.length > 0 || selectedConnection
+                              ? 'Suggestions based on your data'
+                              : 'Suggested prompts'}
+                          </h3>
+                          {isLoadingSuggestions && (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          )}
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-3">
+                          {isLoadingSuggestions
+                            ? Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
+                                  <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
+                                  <div className="h-3 w-full rounded bg-muted" />
+                                </div>
+                              ))
+                            : suggestions.map((suggestion, index) => (
+                                <button
+                                  key={index}
+                                  className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
+                                  onClick={() => setPrompt(suggestion.prompt)}
+                                >
+                                  <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
+                                    {suggestion.title}
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                                </button>
+                              ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div className="mt-3 text-center">
-                  <a
-                    href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-                    className="text-sm"
-                    onClick={() => trackEvent('[StartWithAI].skip')}
-                  >
-                    Skip and open the spreadsheet →
-                  </a>
-                </div>
-              </div>
 
-              {/* Spacer to reduce scroll jumping during generation */}
-              <div className="h-24" />
+                  {/* Chat box */}
+                  <div>
+                    <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
+                      <Textarea
+                        ref={promptTextareaRef}
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="I want to create a spreadsheet that..."
+                        className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
+                      />
+
+                      <div className="flex items-center justify-end px-4 py-3">
+                        <Button
+                          onClick={handleBuildSpreadsheet}
+                          disabled={!prompt.trim() || isSubmitting}
+                          className="gap-2"
+                        >
+                          {isSubmitting ? 'Creating...' : 'Create'}
+                          <ArrowRightIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-center">
+                      <a
+                        href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                        className="text-sm"
+                        onClick={() => trackEvent('[StartWithAI].skip')}
+                      >
+                        Skip and open the spreadsheet →
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Spacer to reduce scroll jumping during generation */}
+                  <div className="h-24" />
+                </>
+              )}
             </>
           )}
         </div>

@@ -217,7 +217,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   // When running a new A/B test, create a new property with updated date (e.g., ab_onboarding_mar2025).
   registerEventAnalyticsData({ ab_onboarding_dec2024: useAiCreateFlow ? 'startWithAi' : 'newFile' });
   const newFilePath = useAiCreateFlow
-    ? ROUTES.TEAM_FILES_CREATE_AI(teamUuid)
+    ? `${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}?onboarding=true`
     : ROUTES.CREATE_FILE(teamUuid, { private: false });
 
   // If the user wants to upgrade to Pro, we'll send them to Stripe first
