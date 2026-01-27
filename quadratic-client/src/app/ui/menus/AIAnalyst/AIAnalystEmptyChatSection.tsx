@@ -23,13 +23,13 @@ export const EmptyChatSection = memo(({ header, items, isLoading, emptyState }: 
         {header}
         {isLoading && <SpinnerIcon className="text-primary" />}
       </h2>
-      <div className="-m-2 flex max-w-lg flex-col">
+      <div className="-mx-1 flex max-w-lg flex-col">
         {items.length > 0
           ? items.map((item) => (
               <Button
                 key={item.key}
                 variant="ghost"
-                className="h-auto w-full justify-start gap-2 whitespace-normal px-2 text-left text-sm font-normal text-foreground hover:text-foreground"
+                className="h-auto w-full justify-start gap-2 whitespace-normal px-1 text-left text-sm font-normal text-foreground hover:text-foreground"
                 onClick={item.onClick}
               >
                 {item.icon}

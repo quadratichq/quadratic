@@ -3,22 +3,20 @@ import type {
   CategorizedEmptyChatPromptSuggestions,
   SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
-import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { EmptyChatSection } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AddIcon, PromptIcon, SpinnerIcon } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { PromptIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
 const defaultPromptSuggestions = [
@@ -73,18 +71,18 @@ const CategorizedSuggestionsSection = memo(
         >
           <TabsList className="absolute -top-1.5 right-0 w-full justify-end">
             {SUGGESTION_CATEGORIES.map(({ key, label }) => (
-              <TabsTrigger key={key} value={key} className="px-2 text-xs">
+              <TabsTrigger key={key} value={key} className="h-7 px-2 text-xs">
                 {label}
               </TabsTrigger>
             ))}
           </TabsList>
           {SUGGESTION_CATEGORIES.map(({ key }) => (
-            <TabsContent key={key} value={key} className="-mx-2 mt-0 flex flex-col">
+            <TabsContent key={key} value={key} className="-mx-1 mt-0 flex flex-col">
               {suggestions[key].map(({ label, prompt }, index) => (
                 <Button
                   key={`${index}-${prompt}`}
                   variant="ghost"
-                  className="h-auto w-full justify-start gap-2 whitespace-normal px-2 text-left text-sm font-normal text-foreground hover:text-foreground"
+                  className="h-auto w-full justify-start gap-2 whitespace-normal px-1 text-left text-sm font-normal text-foreground hover:text-foreground"
                   onClick={() => {
                     trackEvent('[AIAnalyst].submitCategorizedExamplePrompt', { category: key });
                     submit(prompt);
@@ -217,26 +215,8 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       }
     }, [sheetHasData, categorizedSuggestions, loading, checkAndUpdateSuggestions]);
 
-    const connections = useConnectionsFetcher();
-    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
-
-    const handleClickConnection = useCallback(
-      (connectionUuid: string) => {
-        trackEvent('[AIAnalyst].selectConnectionFromEmptyChat');
-        const connection = connections.connections.find((c) => c.uuid === connectionUuid);
-        if (!connection) return;
-
-        setContext?.((prev) => ({
-          ...prev,
-          connection: { type: connection.type, id: connection.uuid, name: connection.name },
-        }));
-        setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
-      },
-      [connections.connections, setContext, setAIAnalystActiveSchemaConnectionUuid]
-    );
-
     return (
-      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
+      <div className="absolute -left-1 -right-1 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
         {/* Import Data Section */}
         <div className="flex w-full max-w-lg flex-col items-center gap-3">
           <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-10">
@@ -281,25 +261,6 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             }))}
           />
         )}
-
-        <EmptyChatSection
-          header="Connections"
-          items={connections.connections.map((connection) => ({
-            key: connection.uuid,
-            icon: <LanguageIcon language={connection.type} className="flex-shrink-0" />,
-            text: connection.name,
-            onClick: () => handleClickConnection(connection.uuid),
-          }))}
-          emptyState={
-            <Button
-              variant="ghost"
-              className="h-auto w-full justify-start gap-2 whitespace-normal px-2 text-left text-sm font-normal text-muted-foreground hover:text-foreground"
-            >
-              <AddIcon className="flex-shrink-0" />
-              <span>Add a connection</span>
-            </Button>
-          }
-        />
       </div>
     );
   }
