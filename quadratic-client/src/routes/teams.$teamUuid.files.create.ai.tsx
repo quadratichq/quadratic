@@ -5,7 +5,7 @@ import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
 import { Connections } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
-import { AIIcon, DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
+import { DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -185,26 +185,29 @@ export const Component = () => {
   );
   const staticIps = useMemo(() => connectionsFetcher.data?.staticIps ?? [], [connectionsFetcher.data?.staticIps]);
 
-  // When connections dialog closes, check if a new connection was added and auto-select it
+  // When a new connection is added, auto-select it and close the dialog (for onboarding flow)
   const prevConnectionsLengthRef = useRef(connections.length);
   useEffect(() => {
-    if (!showConnectionsDialog) {
-      if (latestConnections.length > prevConnectionsLengthRef.current) {
-        // A new connection was added, auto-select the most recent one
-        const newestConnection = latestConnections[0]; // Connections are sorted newest first
-        if (newestConnection) {
-          trackEvent('[StartWithAI].addConnection', { connectionType: newestConnection.type, source: 'dialog' });
-          setSelectedConnection({
-            uuid: newestConnection.uuid,
-            name: newestConnection.name,
-            type: newestConnection.type,
-          });
+    if (latestConnections.length > prevConnectionsLengthRef.current) {
+      // A new connection was added, auto-select the most recent one
+      const newestConnection = latestConnections[0]; // Connections are sorted newest first
+      if (newestConnection) {
+        trackEvent('[StartWithAI].addConnection', { connectionType: newestConnection.type, source: 'dialog' });
+        setSelectedConnection({
+          uuid: newestConnection.uuid,
+          name: newestConnection.name,
+          type: newestConnection.type,
+        });
+        // Close the dialog immediately if it's open (for onboarding flow)
+        if (showConnectionsDialog) {
+          setShowConnectionsDialog(false);
+          setConnectionsDialogInitialView('list');
+          setConnectionsDialogInitialType(undefined);
         }
       }
-      // Only update ref when dialog is closed to avoid missing new connections created while dialog was open
-      prevConnectionsLengthRef.current = latestConnections.length;
     }
-  }, [showConnectionsDialog, latestConnections]);
+    prevConnectionsLengthRef.current = latestConnections.length;
+  }, [latestConnections, showConnectionsDialog]);
 
   // When in onboarding connections flow and a connection is selected, navigate to new file with auto-prompt
   const connectionPrompt =
@@ -603,12 +606,12 @@ export const Component = () => {
                     <p className="text-lg text-muted-foreground">What kind of data will you work with in Quadratic?</p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => {
                         trackEvent('[StartWithAI].selectDataPath', { path: 'files' });
-                        // Navigate to a new sheet with file import guidance
-                        navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, onboardingFileImport: true }));
+                        // Navigate to a new sheet and open the file import dialog
+                        navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, openFileImport: true }));
                       }}
                       className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
                     >
@@ -628,18 +631,17 @@ export const Component = () => {
                       <span className="text-sm">Connect Data</span>
                       <span className="text-xs text-muted-foreground">Databases & services</span>
                     </button>
+                  </div>
 
+                  <div className="mt-6 text-center">
                     <button
                       onClick={() => {
-                        trackEvent('[StartWithAI].selectDataPath', { path: 'scratch' });
-                        // Navigate directly to a blank sheet
+                        trackEvent('[StartWithAI].selectDataPath', { path: 'skip' });
                         navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate }));
                       }}
-                      className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                      className="text-sm text-muted-foreground hover:text-foreground"
                     >
-                      <AIIcon size="lg" className="text-primary" />
-                      <span className="text-sm">Start Fresh</span>
-                      <span className="text-xs text-muted-foreground">Build with AI</span>
+                      I'm not ready to add a file or connection. Take me to the spreadsheet.
                     </button>
                   </div>
                 </>

@@ -20,6 +20,7 @@ export class UrlParamsUser {
   private chatId?: string;
   private iframeFilesLoaded = false;
   private aiAnalystPromptLoaded = false;
+  private fileImportTriggered = false;
 
   dirty = false;
 
@@ -29,6 +30,7 @@ export class UrlParamsUser {
     this.loadCode(params);
     this.loadIframeFiles(params);
     this.loadAIAnalystPrompt(params);
+    this.loadFileImport(params);
     this.setupListeners(params);
   }
 
@@ -169,6 +171,31 @@ export class UrlParamsUser {
     });
   };
 
+  private loadFileImport = (params: URLSearchParams) => {
+    if (this.fileImportTriggered) return;
+
+    const openFileImport = params.get('open-file-import');
+    if (openFileImport !== 'true') return;
+
+    if (!this.pixiAppSettingsInitialized || !this.aiAnalystInitialized) return;
+
+    this.fileImportTriggered = true;
+
+    // Remove the URL param
+    const url = new URL(window.location.href);
+    params.delete('open-file-import');
+    url.search = params.toString();
+    window.history.replaceState(null, '', url.toString());
+
+    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
+
+    // Open the AI panel - the file attach button is prominently displayed there
+    pixiAppSettings.setAIAnalystState?.((prev) => ({ ...prev, showAIAnalyst: true }));
+
+    // Emit event to trigger file import dialog
+    events.emit('triggerFileImport');
+  };
+
   private setupListeners = (params: URLSearchParams) => {
     events.on('cursorPosition', this.setDirty);
     events.on('changeSheet', this.setDirty);
@@ -177,10 +204,12 @@ export class UrlParamsUser {
     events.on('pixiAppSettingsInitialized', () => {
       this.pixiAppSettingsInitialized = true;
       this.loadAIAnalystPrompt(params);
+      this.loadFileImport(params);
     });
     events.on('aiAnalystInitialized', () => {
       this.aiAnalystInitialized = true;
       this.loadAIAnalystPrompt(params);
+      this.loadFileImport(params);
     });
     events.on('filesFromIframeInitialized', () => {
       this.iframeFilesLoaded = true;
