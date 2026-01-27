@@ -173,21 +173,99 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...aiLanguagesContext, ...args.messages];
   }
 
-  const parsedResponse = await handleAIRequest({
-    modelKey,
-    args,
-    isOnPaidPlan,
-    exceededBillingLimit,
-    response: res,
-    signal: abortController.signal,
-  });
+  const model = getModelFromModelKey(modelKey);
+  const messageIndex = getLastAIPromptMessageIndex(args.messages) + 1;
+
+  // Start Raindrop interaction before the AI request for tracing
+  const shouldTrackRaindrop =
+    ownerTeam.settingAnalyticsAi && ['AIAnalyst', 'AIAssistant'].includes(source) && raindrop;
+
+  const interaction = shouldTrackRaindrop
+    ? raindrop.begin({
+        userId: userEmail,
+        model,
+        convoId: chatId,
+        event: userMessage.contextType,
+        eventId: `${chatId}-${messageIndex}`,
+        input:
+          userMessage.contextType === 'toolResult'
+            ? userMessage.content
+                .map(({ content }) =>
+                  content
+                    .filter(isContentText)
+                    .map((content) => content.text)
+                    .join('\n')
+                )
+                .join('\n\n')
+            : userMessage.content
+                .filter(isContentText)
+                .map((content) => content.text)
+                .join('\n'),
+        properties: {
+          tool_results: userMessage.contextType === 'toolResult' ? userMessage.content : [],
+        },
+      })
+    : null;
+
+  // Execute AI request with tracing span
+  let parsedResponse;
+  try {
+    if (interaction) {
+      // Use withSpan for automatic LLM call tracing
+      parsedResponse = await interaction.withSpan(
+        {
+          name: 'ai_chat_request',
+          properties: {
+            model,
+            source,
+            modelKey,
+          },
+        },
+        async () => {
+          return handleAIRequest({
+            modelKey,
+            args,
+            isOnPaidPlan,
+            exceededBillingLimit,
+            response: res,
+            signal: abortController.signal,
+          });
+        }
+      );
+    } else {
+      parsedResponse = await handleAIRequest({
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        response: res,
+        signal: abortController.signal,
+      });
+    }
+  } catch (error) {
+    // Ensure interaction is finished even on error
+    if (interaction) {
+      try {
+        interaction.finish({
+          output: error instanceof Error ? error.message : 'Unknown error',
+          properties: {
+            error: true,
+          },
+        });
+      } catch {
+        // Silently handle raindrop errors
+      }
+    }
+    throw error;
+  }
+
   if (parsedResponse) {
     modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);
   }
 
-  const model = getModelFromModelKey(modelKey);
-  const messageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
+  const finalModel = getModelFromModelKey(modelKey);
+  const finalMessageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
 
   let chat: AnalyticsAIChat;
   try {
@@ -200,8 +278,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         source,
         messages: {
           create: {
-            model,
-            messageIndex,
+            model: finalModel,
+            messageIndex: finalMessageIndex,
             messageType,
             source: messageSource,
             inputTokens: parsedResponse?.usage.inputTokens,
@@ -214,8 +292,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       update: {
         messages: {
           create: {
-            model,
-            messageIndex,
+            model: finalModel,
+            messageIndex: finalMessageIndex,
             messageType,
             source: messageSource,
             inputTokens: parsedResponse?.usage.inputTokens,
@@ -237,14 +315,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     // This path is also used for self-hosted users, so we don't want to save the data in that case
     if (STORAGE_TYPE === 's3' && getBucketName(S3Bucket.ANALYTICS)) {
       try {
-        const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
+        const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${finalMessageIndex}.json`;
 
         const contents = Buffer.from(JSON.stringify(args)).toString('base64');
         const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
         const s3Key = response.key;
 
         await dbClient.analyticsAIChatMessage.update({
-          where: { chatId_messageIndex: { chatId: chat.id, messageIndex } },
+          where: { chatId_messageIndex: { chatId: chat.id, messageIndex: finalMessageIndex } },
           data: { s3Key },
         });
       } catch (error) {
@@ -252,34 +330,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       }
     }
 
-    if (['AIAnalyst', 'AIAssistant'].includes(source)) {
+    // Finish the Raindrop interaction with the response
+    if (interaction) {
       try {
-        const interaction = raindrop?.begin({
-          userId: userEmail,
-          model,
-          convoId: chat.chatId,
-          event: userMessage.contextType,
-          eventId: `${chat.chatId}-${messageIndex}`,
-          input:
-            userMessage.contextType === 'toolResult'
-              ? userMessage.content
-                  .map(({ content }) =>
-                    content
-                      .filter(isContentText)
-                      .map((content) => content.text)
-                      .join('\n')
-                  )
-                  .join('\n\n')
-              : userMessage.content
-                  .filter(isContentText)
-                  .map((content) => content.text)
-                  .join('\n'),
-          properties: {
-            tool_results: userMessage.contextType === 'toolResult' ? userMessage.content : [],
-          },
-        });
-
-        interaction?.finish({
+        interaction.finish({
           output:
             parsedResponse?.responseMessage.content
               .filter(isContentText)
@@ -288,10 +342,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           properties: {
             tool_calls: parsedResponse?.responseMessage.toolCalls ?? [],
             inputTokens: (parsedResponse?.usage.inputTokens ?? 0) + (parsedResponse?.usage.cacheReadTokens ?? 0),
+            outputTokens: parsedResponse?.usage.outputTokens ?? 0,
           },
         });
       } catch (error) {
-        logger.error('Error in ai.chat.POST handler', error);
+        logger.error('Error finishing Raindrop interaction', error);
       }
     }
   }
