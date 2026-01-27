@@ -82,6 +82,18 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     if (chatId) {
       searchParamsToPass.set('chat-id', chatId);
     }
+    const connectionUuid = searchParams.get('connection-uuid');
+    if (connectionUuid) {
+      searchParamsToPass.set('connection-uuid', connectionUuid);
+    }
+    const connectionType = searchParams.get('connection-type');
+    if (connectionType) {
+      searchParamsToPass.set('connection-type', connectionType);
+    }
+    const connectionName = searchParams.get('connection-name');
+    if (connectionName) {
+      searchParamsToPass.set('connection-name', connectionName);
+    }
 
     return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
   } catch (error) {
