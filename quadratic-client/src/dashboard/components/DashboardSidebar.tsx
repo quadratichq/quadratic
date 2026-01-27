@@ -1,5 +1,6 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
@@ -254,7 +255,7 @@ function SidebarNavLinkCreateButton({
       window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
     createFile();

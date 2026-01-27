@@ -1,4 +1,5 @@
 import { CancellationDialog } from '@/components/CancellationDialog';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { CheckIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
@@ -47,7 +48,7 @@ export const FreePlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>Files</span>
-          <span className="font-medium">5 files editable</span>
+          <span className="font-medium">{VITE_MAX_EDITABLE_FILES} files editable</span>
         </div>
       </div>
 

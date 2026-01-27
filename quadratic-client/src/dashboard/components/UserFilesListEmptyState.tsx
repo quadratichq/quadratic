@@ -1,4 +1,5 @@
 import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
@@ -96,7 +97,7 @@ const CreateFileEmptyState = ({ isPrivate = false, title }: { isPrivate?: boolea
       window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
     createFile();

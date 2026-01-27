@@ -1,5 +1,6 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
@@ -69,7 +70,7 @@ export function OnboardingBanner() {
       window.location.href = ROUTES.CREATE_FILE(teamUuid);
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
     createFile();
@@ -83,7 +84,7 @@ export function OnboardingBanner() {
       window.location.href = newApiFileToLink;
     };
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
     createFile();

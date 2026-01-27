@@ -4,6 +4,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
@@ -266,7 +267,7 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
         const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
         if (isOverLimit && !isPaidPlan) {
           // Show dialog with callback that captures props directly
-          showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, () => {
+          showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, () => {
             doImport(props);
           });
           return;

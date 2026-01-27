@@ -28,3 +28,6 @@ export const VITE_QUADRATIC_CONNECTION_URL = import.meta.env.VITE_QUADRATIC_CONN
 ['VITE_QUADRATIC_API_URL', 'VITE_QUADRATIC_MULTIPLAYER_URL', 'VITE_QUADRATIC_CONNECTION_URL'].forEach(
   ensureEnvVarExists
 );
+
+// File limits - defaults to 5 if not set
+export const VITE_MAX_EDITABLE_FILES = Number(import.meta.env.VITE_MAX_EDITABLE_FILES) || 5;

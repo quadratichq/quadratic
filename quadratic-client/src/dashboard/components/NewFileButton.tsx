@@ -2,6 +2,7 @@ import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
@@ -63,7 +64,7 @@ export function NewFileButton() {
           const navigateToAI = () =>
             navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
           if (isOverLimit && !isPaidPlan) {
-            showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, navigateToAI);
+            showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, navigateToAI);
             return;
           }
           navigateToAI();
@@ -83,7 +84,7 @@ export function NewFileButton() {
             window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
           };
           if (isOverLimit && !isPaidPlan) {
-            showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
+            showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
             return;
           }
           createFile();
@@ -135,7 +136,7 @@ export function NewFileButton() {
                   });
                 };
                 if (isOverLimit && !isPaidPlan) {
-                  showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createApiFile);
+                  showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createApiFile);
                   return;
                 }
                 createApiFile();

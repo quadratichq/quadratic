@@ -1,3 +1,4 @@
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { closeFileLimitDialog, fileLimitDialogAtom } from '@/shared/atom/fileLimitDialogAtom';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { WarningIcon } from '@/shared/components/Icons';
@@ -40,7 +41,7 @@ export function FileLimitDialog() {
     closeFileLimitDialog();
   }, [state]);
 
-  const maxFiles = state.maxEditableFiles ?? 5;
+  const maxFiles = state.maxEditableFiles ?? VITE_MAX_EDITABLE_FILES;
 
   return (
     <Dialog open={state.open} onOpenChange={(open) => !open && handleClose()}>

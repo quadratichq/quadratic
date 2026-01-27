@@ -1,4 +1,5 @@
 import { requireAuth } from '@/auth/auth';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
@@ -112,7 +113,7 @@ export const Component = () => {
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, doDuplicate);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, doDuplicate);
       return;
     }
 

@@ -1,4 +1,5 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { getActionFileDelete } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
@@ -76,7 +77,7 @@ export const createNewFileAction = {
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, createFile);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
     createFile();
@@ -95,7 +96,7 @@ export const duplicateFileAction = {
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, teamUuid, duplicateFile);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, duplicateFile);
       return;
     }
     duplicateFile();

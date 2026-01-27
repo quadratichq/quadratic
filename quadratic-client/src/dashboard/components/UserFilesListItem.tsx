@@ -3,6 +3,7 @@ import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import type { UserFilesListFile } from '@/dashboard/components/UserFilesList';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
@@ -156,7 +157,7 @@ export function UserFilesListItem({
     };
 
     if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? 5, activeTeamUuid, doDuplicate);
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, activeTeamUuid, doDuplicate);
       return;
     }
     doDuplicate();
