@@ -24,7 +24,7 @@ import {
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { ArrowRightIcon, ChevronLeftIcon, Cross1Icon, UploadIcon } from '@radix-ui/react-icons';
+import { ArrowRightIcon, ChevronLeftIcon, UploadIcon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
@@ -167,15 +167,6 @@ export const Component = () => {
   const [showConnectionsDialog, setShowConnectionsDialog] = useState(false);
   const [connectionsDialogInitialView, setConnectionsDialogInitialView] = useState<'new' | 'list'>('list');
   const connectionsFetcher = useFetcher<GetConnections>({ key: 'START_WITH_AI_CONNECTIONS_FETCHER' });
-
-  // Connections helper dismissed state (persisted to localStorage)
-  const [connectionsHelperDismissed, setConnectionsHelperDismissed] = useState(() => {
-    return localStorage.getItem('startWithAI.connectionsHelperDismissed') === 'true';
-  });
-  const handleDismissConnectionsHelper = () => {
-    setConnectionsHelperDismissed(true);
-    localStorage.setItem('startWithAI.connectionsHelperDismissed', 'true');
-  };
 
   // Fetch connections when dialog opens
   useEffect(() => {
