@@ -166,6 +166,9 @@ export const Component = () => {
   // Connections dialog state
   const [showConnectionsDialog, setShowConnectionsDialog] = useState(false);
   const [connectionsDialogInitialView, setConnectionsDialogInitialView] = useState<'new' | 'list'>('list');
+  const [connectionsDialogInitialType, setConnectionsDialogInitialType] = useState<ConnectionType | undefined>(
+    undefined
+  );
   const connectionsFetcher = useFetcher<GetConnections>({ key: 'START_WITH_AI_CONNECTIONS_FETCHER' });
 
   // Fetch connections when dialog opens
@@ -223,17 +226,22 @@ export const Component = () => {
     }
   }, [selectedDataPath, selectedConnection, teamUuid, isPrivate, navigate]);
 
-  const handleOpenConnectionsDialog = useCallback((initialView: 'new' | 'list' = 'list') => {
-    trackEvent('[StartWithAI].openConnectionsDialog', { initialView });
-    setConnectionsDialogInitialView(initialView);
-    setShowConnectionsDialog(true);
-  }, []);
+  const handleOpenConnectionsDialog = useCallback(
+    (initialView: 'new' | 'list' = 'list', connectionType?: ConnectionType) => {
+      trackEvent('[StartWithAI].openConnectionsDialog', { initialView, connectionType });
+      setConnectionsDialogInitialView(initialView);
+      setConnectionsDialogInitialType(connectionType);
+      setShowConnectionsDialog(true);
+    },
+    []
+  );
 
-  // Reset initial view when dialog closes
+  // Reset initial view and type when dialog closes
   const handleConnectionsDialogChange = useCallback((open: boolean) => {
     setShowConnectionsDialog(open);
     if (!open) {
       setConnectionsDialogInitialView('list');
+      setConnectionsDialogInitialType(undefined);
     }
   }, []);
 
@@ -763,7 +771,7 @@ export const Component = () => {
                               key={type}
                               onClick={() => {
                                 trackEvent('[StartWithAI].clickConnectionType', { connectionType: type });
-                                handleOpenConnectionsDialog('new');
+                                handleOpenConnectionsDialog('new', type);
                               }}
                               className="group flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
                             >
@@ -771,24 +779,6 @@ export const Component = () => {
                               <span className="text-xs font-medium">{name}</span>
                             </button>
                           ))}
-                        </div>
-                      </div>
-
-                      {/* Coming soon connections */}
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Coming Soon</p>
-                        <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
-                          {Object.entries(potentialConnectionsByType)
-                            .slice(0, 6)
-                            .map(([type, { name, Logo }]) => (
-                              <div
-                                key={type}
-                                className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-border p-2 opacity-50"
-                              >
-                                <Logo className="h-6 w-6" />
-                                <span className="text-xs text-muted-foreground">{name}</span>
-                              </div>
-                            ))}
                         </div>
                       </div>
                     </div>
@@ -919,100 +909,105 @@ export const Component = () => {
                     </div>
                   )}
 
-                  {/* Suggestions - above the chat */}
-                  <div className="mb-6 space-y-2">
-                    {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
-                      <>
-                        <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
-                        <div className="flex flex-col gap-2">
-                          {WEB_SEARCH_EXAMPLES.map((query, index) => (
-                            <button
-                              key={index}
-                              className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
-                              onClick={() => setPrompt(query)}
-                            >
-                              <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
-                              <span className="text-sm group-hover:text-primary">{query}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-medium text-muted-foreground">
-                            {uploadedFiles.length > 0 || selectedConnection
-                              ? 'Suggestions based on your data'
-                              : 'Suggested prompts'}
-                          </h3>
-                          {isLoadingSuggestions && (
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                          )}
-                        </div>
-                        <div className="grid gap-3 md:grid-cols-3">
-                          {isLoadingSuggestions
-                            ? Array.from({ length: 3 }).map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="animate-pulse rounded-lg border border-border bg-background p-4"
-                                >
-                                  <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
-                                  <div className="h-3 w-full rounded bg-muted" />
-                                </div>
-                              ))
-                            : suggestions.map((suggestion, index) => (
+                  {/* Hide suggestions, chat box, and skip link for connections onboarding */}
+                  {selectedDataPath !== 'connections' && (
+                    <>
+                      {/* Suggestions - above the chat */}
+                      <div className="mb-6 space-y-2">
+                        {location.pathname === ROUTES.TEAM_FILES_CREATE_AI_WEB(teamUuid) ? (
+                          <>
+                            <h3 className="text-sm font-medium text-muted-foreground">Example searches</h3>
+                            <div className="flex flex-col gap-2">
+                              {WEB_SEARCH_EXAMPLES.map((query, index) => (
                                 <button
                                   key={index}
-                                  className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
-                                  onClick={() => setPrompt(suggestion.prompt)}
+                                  className="group flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-left transition-all hover:border-primary hover:shadow-md"
+                                  onClick={() => setPrompt(query)}
                                 >
-                                  <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
-                                    {suggestion.title}
-                                  </h3>
-                                  <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                                  <SearchIcon size="sm" className="text-muted-foreground group-hover:text-primary" />
+                                  <span className="text-sm group-hover:text-primary">{query}</span>
                                 </button>
                               ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Chat box */}
-                  <div>
-                    <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
-                      <Textarea
-                        ref={promptTextareaRef}
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="I want to create a spreadsheet that..."
-                        className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
-                      />
-
-                      <div className="flex items-center justify-end px-4 py-3">
-                        <Button
-                          onClick={handleBuildSpreadsheet}
-                          disabled={!prompt.trim() || isSubmitting}
-                          className="gap-2"
-                        >
-                          {isSubmitting ? 'Creating...' : 'Create'}
-                          <ArrowRightIcon className="h-4 w-4" />
-                        </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                {uploadedFiles.length > 0 || selectedConnection
+                                  ? 'Suggestions based on your data'
+                                  : 'Suggested prompts'}
+                              </h3>
+                              {isLoadingSuggestions && (
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                              )}
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-3">
+                              {isLoadingSuggestions
+                                ? Array.from({ length: 3 }).map((_, i) => (
+                                    <div
+                                      key={i}
+                                      className="animate-pulse rounded-lg border border-border bg-background p-4"
+                                    >
+                                      <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
+                                      <div className="h-3 w-full rounded bg-muted" />
+                                    </div>
+                                  ))
+                                : suggestions.map((suggestion, index) => (
+                                    <button
+                                      key={index}
+                                      className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
+                                      onClick={() => setPrompt(suggestion.prompt)}
+                                    >
+                                      <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">
+                                        {suggestion.title}
+                                      </h3>
+                                      <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                                    </button>
+                                  ))}
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </div>
-                    <div className="mt-3 text-center">
-                      <a
-                        href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-                        className="text-sm"
-                        onClick={() => trackEvent('[StartWithAI].skip')}
-                      >
-                        Skip and open the spreadsheet →
-                      </a>
-                    </div>
-                  </div>
 
-                  {/* Spacer to reduce scroll jumping during generation */}
-                  <div className="h-24" />
+                      {/* Chat box */}
+                      <div>
+                        <div className="rounded-lg border border-border bg-background shadow-lg has-[textarea:focus]:border-primary">
+                          <Textarea
+                            ref={promptTextareaRef}
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="I want to create a spreadsheet that..."
+                            className="min-h-32 resize-none rounded-lg border-0 p-4 text-base shadow-none focus-visible:ring-0"
+                          />
+
+                          <div className="flex items-center justify-end px-4 py-3">
+                            <Button
+                              onClick={handleBuildSpreadsheet}
+                              disabled={!prompt.trim() || isSubmitting}
+                              className="gap-2"
+                            >
+                              {isSubmitting ? 'Creating...' : 'Create'}
+                              <ArrowRightIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-center">
+                          <a
+                            href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                            className="text-sm"
+                            onClick={() => trackEvent('[StartWithAI].skip')}
+                          >
+                            Skip and open the spreadsheet →
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Spacer to reduce scroll jumping during generation */}
+                      <div className="h-24" />
+                    </>
+                  )}
                 </>
               )}
             </>
@@ -1041,6 +1036,7 @@ export const Component = () => {
               staticIps={staticIps}
               hideSidebar
               initialView={connectionsDialogInitialView}
+              initialConnectionType={connectionsDialogInitialType}
             />
           )}
         </DialogContent>
