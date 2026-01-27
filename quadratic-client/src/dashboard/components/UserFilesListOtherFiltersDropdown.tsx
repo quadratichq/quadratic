@@ -39,7 +39,10 @@ export function UserFilesListFiltersDropdown() {
         <Button
           variant="ghost"
           size="icon"
-          className={'user-select-none relative flex-shrink-0 text-muted-foreground hover:text-foreground'}
+          className={cn(
+            'user-select-none relative flex-shrink-0 text-muted-foreground hover:text-foreground',
+            hasFilters && 'text-foreground'
+          )}
           aria-label="Filters"
           onClick={() => setShowDropdown(true)}
         >
