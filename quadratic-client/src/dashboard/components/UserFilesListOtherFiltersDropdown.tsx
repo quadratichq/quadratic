@@ -127,7 +127,8 @@ export function UserFilesListFiltersDropdown() {
                   }));
                 }}
               >
-                <Avatar src={user.picture} className="mr-2" /> {user.name}
+                <Avatar src={user.picture} className="mr-2" />{' '}
+                <span className="truncate">{user.name || user.email}</span>
               </DropdownMenuCheckboxItem>
             ))}
           </>
