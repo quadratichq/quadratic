@@ -48,15 +48,23 @@ export const SyncedConnection = ({
     }
   };
 
-  return (
-    <div className="flex flex-col">
-      <span>
-        {renderSyncStatus()}
-        {createdDate && ` · Created ${timeAgo(createdDate)}`}
-      </span>
-      {syncedConnection.latestLogError && (
+  // If there's an error, use flex-col to stack content; otherwise render inline
+  if (syncedConnection.latestLogError) {
+    return (
+      <div className="flex flex-col">
+        <span>
+          {renderSyncStatus()}
+          {createdDate && ` · Created ${timeAgo(createdDate)}`}
+        </span>
         <span className="mt-1 text-destructive">Error: {syncedConnection.latestLogError}</span>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <span>
+      {renderSyncStatus()}
+      {createdDate && ` · Created ${timeAgo(createdDate)}`}
+    </span>
   );
 };
