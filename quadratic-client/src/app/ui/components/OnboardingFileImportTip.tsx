@@ -44,7 +44,7 @@ export function OnboardingFileImportTip() {
 
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl">
-            <FileIcon size="md" className="text-primary" />
+            <FileIcon className="text-primary" />
             Import your files
           </CardTitle>
           <CardDescription>Here's how you can add files to your spreadsheet:</CardDescription>
@@ -53,7 +53,7 @@ export function OnboardingFileImportTip() {
         <CardContent className="space-y-4">
           <div className="flex items-start gap-4 rounded-lg border border-border bg-muted/30 p-4">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <AIIcon size="md" className="text-primary" />
+              <AIIcon className="text-primary" />
             </div>
             <div>
               <h3 className="font-semibold">Use AI to import</h3>
