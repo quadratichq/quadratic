@@ -53,6 +53,7 @@ const BasetenModelSchema = z.enum([
 const FireworksModelSchema = z.enum([
   'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
   'accounts/fireworks/models/deepseek-v3p1',
+  'accounts/fireworks/models/kimi-k2p5',
 ]);
 const OpenRouterModelSchema = z.enum(['deepseek/deepseek-r1-0528']);
 const AIModelSchema = z.union([
@@ -155,6 +156,7 @@ export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 const FireworksModelKeySchema = z.enum([
   'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
   'fireworks:accounts/fireworks/models/deepseek-v3p1',
+  'fireworks:accounts/fireworks/models/kimi-k2p5',
 ]);
 export type FireworksModelKey = z.infer<typeof FireworksModelKeySchema>;
 

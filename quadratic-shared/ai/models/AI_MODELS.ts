@@ -5,7 +5,7 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // used when `restrictedCountry` is true, in model router
-export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-5.2';
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'fireworks:accounts/fireworks/models/kimi-k2p5';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
@@ -853,5 +853,29 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_output_tokens: 2.15,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
+  },
+  'fireworks:accounts/fireworks/models/kimi-k2p5': {
+    model: 'accounts/fireworks/models/kimi-k2p5',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929',
+    displayName: 'Experimental',
+    displayProvider: 'Hidden',
+    temperature: 0.6,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'others',
+    provider: 'fireworks',
+    promptCaching: true,
+    strictParams: false, // Fireworks doesn't support strict parameter
+    imageSupport: false,
+    rate_per_million_input_tokens: 1.2,
+    rate_per_million_output_tokens: 1.2,
+    rate_per_million_cache_read_tokens: 0.6,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
   },
 } as const;
