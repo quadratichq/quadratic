@@ -2,7 +2,7 @@
 
 import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { filesFromIframe, IMPORT_FILE_EXTENSIONS } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
-import { aiAnalystInitialized } from '@/app/atoms/aiAnalystAtom';
+import { getAIAnalystInitialized } from '@/app/ai/atoms/aiAnalystAtoms';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -100,7 +100,7 @@ export class UrlParamsUser {
   private loadAIAnalystPrompt = async (params: URLSearchParams) => {
     if (this.aiAnalystPromptLoaded) return;
 
-    this.aiAnalystInitialized = aiAnalystInitialized;
+    this.aiAnalystInitialized = getAIAnalystInitialized();
 
     if (!this.pixiAppSettingsInitialized || !this.iframeFilesLoaded || !this.aiAnalystInitialized) return;
 

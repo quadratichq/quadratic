@@ -1,4 +1,4 @@
-import { aiAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
@@ -10,6 +10,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useAtom } from 'jotai';
 import { memo, useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -75,7 +76,7 @@ export const PixiAppEffects = memo(() => {
     pixiAppSettings.updateContextMenu(contextMenu, setContextMenu);
   }, [contextMenu, setContextMenu]);
 
-  const [aiAnalystState, setAIAnalystState] = useRecoilState(aiAnalystAtom);
+  const [aiAnalystState, setAIAnalystState] = useAtom(aiAnalystAtom);
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   useEffect(() => {
     pixiAppSettings.updateAIAnalystState(aiAnalystState, setAIAnalystState, submitPrompt);

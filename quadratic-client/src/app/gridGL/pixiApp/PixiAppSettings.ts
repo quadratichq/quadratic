@@ -1,5 +1,5 @@
-import type { AIAnalystState } from '@/app/atoms/aiAnalystAtom';
-import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
+import type { AIAnalystState } from '@/app/ai/atoms/aiAnalystAtoms';
+import { defaultAIAnalystState } from '@/app/ai/atoms/aiAnalystAtoms';
 import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
 import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';

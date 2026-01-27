@@ -1,11 +1,12 @@
+import { aiStore, currentChatMessagesAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
-import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
 import { aiAssistantMessagesAtom } from '@/app/atoms/codeEditorAtom';
 import { createTextContent, getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_CHAT_NAME_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { useCallback } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -18,7 +19,7 @@ export const useGetFileName = () => {
         // Get messages from both AIAssistant and AIAnalyst
         const [aiAssistantMessages, aiAnalystMessages] = await Promise.all([
           snapshot.getPromise(aiAssistantMessagesAtom),
-          snapshot.getPromise(aiAnalystCurrentChatMessagesAtom),
+          Promise.resolve(aiStore.get(currentChatMessagesAtom)),
         ]);
 
         // Combine and filter messages to get only user prompts and assistant responses

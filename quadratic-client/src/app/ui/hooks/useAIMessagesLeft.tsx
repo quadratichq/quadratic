@@ -1,7 +1,8 @@
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
+import { useAtomValue } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import { atom, useRecoilState, useRecoilValue } from 'recoil';
 
@@ -31,7 +32,7 @@ export const useAIMessagesLeft = () => {
   const [loadState, setLoadState] = useState<'idle' | 'loaded' | 'loading' | 'error'>('idle');
   const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
   const prevAiAssistantLoading = useRef(aiAssistantLoading);
-  const aiAnalyastLoading = useRecoilValue(aiAnalystLoadingAtom);
+  const aiAnalyastLoading = useAtomValue(loadingAtom);
   const prevAiAnalyastLoading = useRef(aiAnalyastLoading);
 
   // Initial data load
