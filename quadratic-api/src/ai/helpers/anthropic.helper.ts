@@ -104,6 +104,16 @@ function convertToolResultContent(content: ToolResultContent): Array<TextBlockPa
     });
 }
 
+/**
+ * Sanitizes a tool ID to match Anthropic's required pattern: ^[a-zA-Z0-9_-]+$
+ * This is needed when switching from models (like Kimi K2) that may generate
+ * tool IDs with characters not accepted by Anthropic (e.g., dots, colons).
+ */
+function sanitizeToolId(id: string): string {
+  // Replace any character that doesn't match [a-zA-Z0-9_-] with an underscore
+  return id.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
   aiModelMode: ModelMode,
@@ -126,13 +136,16 @@ export function getAnthropicApiArgs(
     ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
-  // First pass: collect all valid tool_use IDs from assistant messages
-  // This is needed to filter out orphaned tool_results (e.g., when user aborts mid-tool-call)
+  // First pass: collect all valid tool_use IDs from assistant messages and build
+  // a mapping from original IDs to sanitized IDs (for cross-model compatibility)
   const validToolUseIds = new Set<string>();
+  const toolIdMapping = new Map<string, string>();
   for (const message of promptMessages) {
     if (isAIPromptMessage(message)) {
       for (const toolCall of message.toolCalls) {
         validToolUseIds.add(toolCall.id);
+        // Create sanitized ID mapping to ensure consistency between tool_use and tool_result
+        toolIdMapping.set(toolCall.id, sanitizeToolId(toolCall.id));
       }
     }
   }
@@ -168,7 +181,7 @@ export function getAnthropicApiArgs(
 
       const toolUseContent = message.toolCalls.map((toolCall) => ({
         type: 'tool_use' as const,
-        id: toolCall.id,
+        id: toolIdMapping.get(toolCall.id) ?? sanitizeToolId(toolCall.id),
         name: toolCall.name,
         input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
       }));
@@ -200,7 +213,7 @@ export function getAnthropicApiArgs(
         content: [
           ...validToolResults.map((toolResult) => ({
             type: 'tool_result' as const,
-            tool_use_id: toolResult.id,
+            tool_use_id: toolIdMapping.get(toolResult.id) ?? sanitizeToolId(toolResult.id),
             content: convertToolResultContent(toolResult.content),
           })),
           createTextContent('Given the above tool calls results, continue with your response.'),

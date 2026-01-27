@@ -39,6 +39,16 @@ import type {
 import { v4 } from 'uuid';
 import { getAIToolsInOrder } from './tools';
 
+/**
+ * Sanitizes a tool ID to match Anthropic's required pattern: ^[a-zA-Z0-9_-]+$
+ * This is needed when switching from models (like Kimi K2) that may generate
+ * tool IDs with characters not accepted by Anthropic/Bedrock (e.g., dots, colons).
+ */
+function sanitizeToolId(id: string): string {
+  // Replace any character that doesn't match [a-zA-Z0-9_-] with an underscore
+  return id.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
 function convertContent(content: Content): ContentBlock[] {
   return content
     .filter((content) => !('text' in content) || !!content.text.trim())
@@ -98,6 +108,18 @@ export function getBedrockApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
+
+  // First pass: build a mapping from original IDs to sanitized IDs (for cross-model compatibility)
+  const toolIdMapping = new Map<string, string>();
+  for (const message of promptMessages) {
+    if (isAIPromptMessage(message)) {
+      for (const toolCall of message.toolCalls) {
+        // Create sanitized ID mapping to ensure consistency between tool_use and tool_result
+        toolIdMapping.set(toolCall.id, sanitizeToolId(toolCall.id));
+      }
+    }
+  }
+
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -112,7 +134,7 @@ export function getBedrockApiArgs(
             })),
           ...message.toolCalls.map((toolCall) => ({
             toolUse: {
-              toolUseId: toolCall.id,
+              toolUseId: toolIdMapping.get(toolCall.id) ?? sanitizeToolId(toolCall.id),
               name: toolCall.name,
               input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
             },
@@ -126,7 +148,7 @@ export function getBedrockApiArgs(
         content: [
           ...message.content.map((toolResult) => ({
             toolResult: {
-              toolUseId: toolResult.id,
+              toolUseId: toolIdMapping.get(toolResult.id) ?? sanitizeToolId(toolResult.id),
               content: convertToolResultContent(toolResult.content),
               status: 'success' as const,
             },
