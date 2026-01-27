@@ -9,6 +9,14 @@ import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useTeamData } from '@/shared/hooks/useTeamData';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
@@ -64,6 +72,7 @@ function FileLocation() {
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;
+  const [fileType, setFileType] = useState<'team' | 'personal'>('team');
 
   const linkProps = {
     reloadDocument: true,
@@ -79,13 +88,11 @@ function FileLocation() {
   // But don't allow links in embed mode (file history, etc.)
   let dashboardLink = null;
   if (ownerUserId && ownerUserId === userId) {
-    // My private file
-    const label = 'Personal';
     dashboardLink = isEmbed ? (
-      label
+      teamName
     ) : (
-      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} data-testid="file-location-link-my-files">
-        {label}
+      <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps} data-testid="file-location-link-team-files">
+        {teamName}
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {
@@ -120,7 +127,53 @@ function FileLocation() {
 
   return (
     <>
-      <Type className="hidden text-muted-foreground md:block">{dashboardLink}</Type>
+      <Type className="hidden text-muted-foreground md:flex md:items-center">
+        {dashboardLink}
+        {/* TODO: if user is view-only member, don't allow switching. Also fix: Shared with me (Team) */}
+        {teamRole === 'VIEWER' ? (
+          `(${fileType})`
+        ) : teamRole === 'EDITOR' || teamRole === 'OWNER' ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="ml-1 flex h-6 items-center !bg-background font-normal capitalize">
+              ({fileType})
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                focusGrid();
+              }}
+            >
+              <DropdownMenuCheckboxItem
+                disabled={fileType === 'team'}
+                checked={fileType === 'team'}
+                onCheckedChange={(checked) => {
+                  setFileType(checked ? 'team' : 'personal');
+                }}
+              >
+                Team file
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                disabled={fileType === 'personal'}
+                checked={fileType === 'personal'}
+                onCheckedChange={(checked) => {
+                  setFileType(checked ? 'personal' : 'team');
+                }}
+              >
+                Personal file
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                inset
+                onClick={() => {
+                  window.location.href = ROUTES.TEAM_SETTINGS(team.uuid);
+                }}
+              >
+                Manage team…
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </Type>
 
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /
