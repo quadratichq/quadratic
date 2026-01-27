@@ -4,7 +4,7 @@ import { authClient, requireAuth } from '@/auth/auth';
 import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
 import { Connections } from '@/shared/components/connections/Connections';
-import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { AIIcon, DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
