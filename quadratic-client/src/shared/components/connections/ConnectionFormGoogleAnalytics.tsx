@@ -1,4 +1,5 @@
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -6,12 +7,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/shared/shadcn/ui/input';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
+  ConnectionTypeSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const ConnectionFormGoogleAnalyticsSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.GOOGLE_ANALYTICS),
   property_id: z.string().min(1, { message: 'Required' }),
   service_account_configuration: z.string().min(1, { message: 'Required' }),
@@ -26,6 +32,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
+    semanticDescription: String(connection?.semanticDescription || ''),
     type: 'GOOGLE_ANALYTICS',
     property_id: connection?.typeDetails?.property_id || '',
     service_account_configuration: connection?.typeDetails?.service_account_configuration || '',
@@ -112,8 +119,11 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             </FormItem>
           )}
         />
+
+        <ConnectionFormSemantic form={form} />
+
         {connection && (
-          <div className="flex items-center gap-2 pt-2 text-sm">
+          <div className="flex items-start gap-2 pt-2 text-sm">
             <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
