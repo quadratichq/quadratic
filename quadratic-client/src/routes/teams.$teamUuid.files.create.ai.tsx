@@ -4,10 +4,7 @@ import { authClient, requireAuth } from '@/auth/auth';
 import type { GetConnections } from '@/routes/api.connections';
 import { apiClient } from '@/shared/api/apiClient';
 import { Connections } from '@/shared/components/connections/Connections';
-import {
-  connectionsByType,
-  potentialConnectionsByType,
-} from '@/shared/components/connections/connectionsByType';
+import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import { AIIcon, DatabaseIcon, FileIcon, SearchIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
@@ -584,9 +581,7 @@ export const Component = () => {
                 <>
                   <div className="mb-8 text-center">
                     <h1 className="mb-2 text-3xl font-bold">Ok, let's get started.</h1>
-                    <p className="text-lg text-muted-foreground">
-                      What kind of data will you work with in Quadratic?
-                    </p>
+                    <p className="text-lg text-muted-foreground">What kind of data will you work with in Quadratic?</p>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -758,21 +753,24 @@ export const Component = () => {
                           {latestConnections.length > 0 ? 'Add New Connection' : 'Available Connections'}
                         </p>
                         <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
-                          {(Object.entries(connectionsByType) as [ConnectionType, (typeof connectionsByType)[ConnectionType]][]).map(
-                            ([type, { name, Logo }]) => (
-                              <button
-                                key={type}
-                                onClick={() => {
-                                  trackEvent('[StartWithAI].clickConnectionType', { connectionType: type });
-                                  handleOpenConnectionsDialog('new');
-                                }}
-                                className="group flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
-                              >
-                                <Logo className="h-8 w-8" />
-                                <span className="text-xs font-medium">{name}</span>
-                              </button>
-                            )
-                          )}
+                          {(
+                            Object.entries(connectionsByType) as [
+                              ConnectionType,
+                              (typeof connectionsByType)[ConnectionType],
+                            ][]
+                          ).map(([type, { name, Logo }]) => (
+                            <button
+                              key={type}
+                              onClick={() => {
+                                trackEvent('[StartWithAI].clickConnectionType', { connectionType: type });
+                                handleOpenConnectionsDialog('new');
+                              }}
+                              className="group flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                            >
+                              <Logo className="h-8 w-8" />
+                              <span className="text-xs font-medium">{name}</span>
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -797,84 +795,87 @@ export const Component = () => {
                   )}
 
                   {/* SCRATCH PATH or default: Show AI suggestions prominently */}
-                  {(selectedDataPath === 'scratch' || !isFromOnboarding) && !selectedDataPath?.match(/files|connections/) && (
-                    <>
-                      {/* Data section - only show for non-onboarding or scratch path */}
-                      <div className="mb-6 space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            variant="outline"
-                            className="h-10 gap-2 px-4"
-                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                          >
-                            <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
-                            Import Excel
-                          </Button>
+                  {(selectedDataPath === 'scratch' || !isFromOnboarding) &&
+                    !selectedDataPath?.match(/files|connections/) && (
+                      <>
+                        {/* Data section - only show for non-onboarding or scratch path */}
+                        <div className="mb-6 space-y-2">
+                          <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="outline"
+                              className="h-10 gap-2 px-4"
+                              onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                            >
+                              <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
+                              Import Excel
+                            </Button>
 
-                          <Button
-                            variant="outline"
-                            className="h-10 gap-2 px-4"
-                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                          >
-                            <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
-                            Import PDF
-                          </Button>
+                            <Button
+                              variant="outline"
+                              className="h-10 gap-2 px-4"
+                              onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                            >
+                              <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
+                              Import PDF
+                            </Button>
 
-                          <Button
-                            variant="outline"
-                            className="h-10 gap-2 px-4"
-                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                          >
-                            <FileIcon size="sm" />
-                            Import CSV / Others
-                          </Button>
+                            <Button
+                              variant="outline"
+                              className="h-10 gap-2 px-4"
+                              onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                            >
+                              <FileIcon size="sm" />
+                              Import CSV / Others
+                            </Button>
 
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" className="h-10 gap-2 px-4">
-                                <DatabaseIcon size="sm" />
-                                Add connection
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuLabel>Connections</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
-                                <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                                <span className="truncate">Add connection</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
-                                <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                                <span className="truncate">Manage connections</span>
-                              </DropdownMenuItem>
-                              {latestConnections.length > 0 && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  {latestConnections.map((connection) => (
-                                    <DropdownMenuItem
-                                      key={connection.uuid}
-                                      onClick={() => {
-                                        trackEvent('[StartWithAI].addConnection', { connectionType: connection.type });
-                                        setSelectedConnection({
-                                          uuid: connection.uuid,
-                                          name: connection.name,
-                                          type: connection.type,
-                                        });
-                                      }}
-                                      className="gap-4"
-                                    >
-                                      <LanguageIcon language={connection.type} className="flex-shrink-0" />
-                                      <span className="truncate">{connection.name}</span>
-                                    </DropdownMenuItem>
-                                  ))}
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-10 gap-2 px-4">
+                                  <DatabaseIcon size="sm" />
+                                  Add connection
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                <DropdownMenuLabel>Connections</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
+                                  <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                                  <span className="truncate">Add connection</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
+                                  <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                                  <span className="truncate">Manage connections</span>
+                                </DropdownMenuItem>
+                                {latestConnections.length > 0 && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    {latestConnections.map((connection) => (
+                                      <DropdownMenuItem
+                                        key={connection.uuid}
+                                        onClick={() => {
+                                          trackEvent('[StartWithAI].addConnection', {
+                                            connectionType: connection.type,
+                                          });
+                                          setSelectedConnection({
+                                            uuid: connection.uuid,
+                                            name: connection.name,
+                                            type: connection.type,
+                                          });
+                                        }}
+                                        className="gap-4"
+                                      >
+                                        <LanguageIcon language={connection.type} className="flex-shrink-0" />
+                                        <span className="truncate">{connection.name}</span>
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
 
                   {/* Uploaded files and selected connection pills - show for all paths */}
                   {(uploadedFiles.length > 0 || selectedConnection) && (
@@ -951,7 +952,10 @@ export const Component = () => {
                         <div className="grid gap-3 md:grid-cols-3">
                           {isLoadingSuggestions
                             ? Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
+                                <div
+                                  key={i}
+                                  className="animate-pulse rounded-lg border border-border bg-background p-4"
+                                >
                                   <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
                                   <div className="h-3 w-full rounded bg-muted" />
                                 </div>
