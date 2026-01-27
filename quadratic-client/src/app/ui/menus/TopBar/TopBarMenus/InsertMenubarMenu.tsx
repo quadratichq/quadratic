@@ -1,7 +1,13 @@
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateTeamUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
-import { CodeIcon, DataObjectIcon, InsertChartIcon } from '@/shared/components/Icons';
+import { useDataPicker } from '@/shared/components/DataPicker';
+import { CodeIcon, DataObjectIcon, InsertChartIcon, StorageIcon } from '@/shared/components/Icons';
 import {
   MenubarContent,
   MenubarItem,
@@ -12,10 +18,40 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const InsertMenubarMenu = () => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
+  const { open: openDataPicker } = useDataPicker();
+  const handleFileImport = useFileImport();
+
+  const handleInsertFromDataCenter = async () => {
+    if (!teamUuid) return;
+
+    const result = await openDataPicker(teamUuid, {
+      title: 'Insert data from Data Center',
+      allowedTypes: ['CSV', 'EXCEL', 'PARQUET'],
+      allowUpload: true,
+      downloadContent: true,
+    });
+
+    if (result?.fileContent) {
+      // Convert ArrayBuffer to File
+      const file = new File([result.fileContent.data], result.fileContent.name, {
+        type: result.fileContent.mimeType,
+      });
+
+      // Import the file at the current cursor position
+      handleFileImport({
+        files: [file],
+        sheetId: sheets.current,
+        insertAt: { x: sheets.sheet.cursor.position.x, y: sheets.sheet.cursor.position.y },
+        cursor: sheets.getCursorPosition(),
+        teamUuid,
+      });
+    }
+  };
 
   return (
     <MenubarMenu>
@@ -47,6 +83,10 @@ export const InsertMenubarMenu = () => {
             Data
           </MenubarSubTrigger>
           <MenubarSubContent>
+            <MenubarItem onClick={handleInsertFromDataCenter}>
+              <StorageIcon />
+              From Data Center…
+            </MenubarItem>
             <MenubarItemAction action={Action.InsertFile} actionArgs={undefined} />
 
             <MenubarSeparator />

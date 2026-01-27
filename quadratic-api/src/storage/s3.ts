@@ -8,6 +8,7 @@ import {
   AWS_S3_ACCESS_KEY_ID,
   AWS_S3_ANALYTICS_BUCKET_NAME,
   AWS_S3_BUCKET_NAME,
+  AWS_S3_DATA_BUCKET_NAME,
   AWS_S3_ENDPOINT,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
@@ -20,6 +21,7 @@ let s3Client: S3Client;
 export enum S3Bucket {
   FILES = 'files',
   ANALYTICS = 'analytics',
+  DATA = 'data',
 }
 
 export const getBucketName = (bucket: S3Bucket) => {
@@ -28,6 +30,8 @@ export const getBucketName = (bucket: S3Bucket) => {
       return AWS_S3_BUCKET_NAME;
     case S3Bucket.ANALYTICS:
       return AWS_S3_ANALYTICS_BUCKET_NAME;
+    case S3Bucket.DATA:
+      return AWS_S3_DATA_BUCKET_NAME;
     default:
       throw new Error(`Unsupported bucket in getBucketName(): ${bucket}`);
   }

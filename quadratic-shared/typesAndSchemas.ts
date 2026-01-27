@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { AILanguagePreferencesSchema, AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
+import { ApiSchemasData, DataAssetTypeSchema } from './typesAndSchemasData';
 import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
+
+// Re-export data types for convenience
+export { DataAssetTypeSchema };
+export type { DataAssetType } from './typesAndSchemasData';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -496,6 +501,11 @@ export const ApiSchemas = {
    * Scheduled Tasks (which are all under `/v0/files/:uuid/scheduled-tasks/*`)
    */
   ...ApiSchemasScheduledTasks,
+
+  /**
+   * Data Assets (which are all under `/v0/teams/:uuid/data/*`)
+   */
+  ...ApiSchemasData,
 
   /**
    * ===========================================================================
