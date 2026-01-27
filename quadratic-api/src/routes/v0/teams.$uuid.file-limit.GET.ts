@@ -30,7 +30,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   const { team } = await getTeam({ uuid, userId });
   const isPaidPlan = await getIsOnPaidPlan(team);
-  const { isOverLimit, totalFiles, maxEditableFiles } = await getFileLimitInfo(team);
+  const { isOverLimit, totalFiles, maxEditableFiles } = await getFileLimitInfo(team, isPaidPlan);
 
   return res.status(200).json({
     // Backward compatible field - now indicates if creating another file would exceed the editable limit

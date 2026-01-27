@@ -107,20 +107,23 @@ export const isFileEditRestricted = async (team: Team | DecryptedTeam, fileId: n
 /**
  * Get file limit information for a team.
  * Returns whether the team is over the editable file limit and related counts.
+ * @param team - The team to check
+ * @param isPaidPlan - Optional: pass in the result of getIsOnPaidPlan() to avoid redundant lookup
  */
 export const getFileLimitInfo = async (
-  team: Team | DecryptedTeam
+  team: Team | DecryptedTeam,
+  isPaidPlan?: boolean
 ): Promise<{
   isOverLimit: boolean;
   totalFiles: number;
   maxEditableFiles: number;
   editableFileIds: number[];
 }> => {
-  const isPaidPlan = await getIsOnPaidPlan(team);
+  const isPaid = isPaidPlan ?? (await getIsOnPaidPlan(team));
 
-  if (isPaidPlan) {
+  if (isPaid) {
     // Paid teams have no limit - single query to get all file IDs
-    const { editableFileIds, allFileIds } = await getEditableFileIdsInternal(team, isPaidPlan);
+    const { editableFileIds, allFileIds } = await getEditableFileIdsInternal(team, isPaid);
     return {
       isOverLimit: false,
       totalFiles: allFileIds!.length,
@@ -138,7 +141,7 @@ export const getFileLimitInfo = async (
         deleted: false,
       },
     }),
-    getEditableFileIdsInternal(team, isPaidPlan),
+    getEditableFileIdsInternal(team, isPaid),
   ]);
 
   const maxEditableFiles = getFreeEditableFileLimit();
