@@ -295,27 +295,67 @@ function convertCellValue(value, cellType) {{
     Ok(wrapped_code)
 }
 
-/// Automatically adds await before q.cells() calls if not already present
+/// Automatically wraps q.cells() calls with (await q.cells(...)) if not already awaited.
+/// This ensures method chaining like q.cells("A1").flat() works correctly.
 fn add_await_to_qcells(code: &str) -> String {
     let pattern = "q.cells(";
     let mut result = String::with_capacity(code.len() + 100);
+    let chars: Vec<char> = code.chars().collect();
     let mut i = 0;
 
-    while i < code.len() {
+    while i < chars.len() {
         // Check if we're at the start of "q.cells("
-        if i + pattern.len() <= code.len() && &code[i..i + pattern.len()] == pattern {
+        let remaining: String = chars[i..].iter().collect();
+        if remaining.starts_with(pattern) {
             // Look backwards to see if "await" is already there
             let before_start = result.trim_end();
             let has_await = before_start.ends_with("await");
 
-            if !has_await {
-                result.push_str("await ");
+            if has_await {
+                // Already has await, just copy as-is
+                result.push_str(pattern);
+                i += pattern.len();
+            } else {
+                // Find the matching closing parenthesis for q.cells(...)
+                let start_idx = i + pattern.len(); // Position after "q.cells("
+                let mut paren_depth = 1;
+                let mut end_idx = start_idx;
+
+                while end_idx < chars.len() && paren_depth > 0 {
+                    match chars[end_idx] {
+                        '(' => paren_depth += 1,
+                        ')' => paren_depth -= 1,
+                        '"' | '\'' | '`' => {
+                            // Skip string literals
+                            let quote = chars[end_idx];
+                            end_idx += 1;
+                            while end_idx < chars.len() {
+                                if chars[end_idx] == quote
+                                    && (end_idx == 0 || chars[end_idx - 1] != '\\')
+                                {
+                                    break;
+                                }
+                                end_idx += 1;
+                            }
+                        }
+                        _ => {}
+                    }
+                    end_idx += 1;
+                }
+
+                // Wrap with (await q.cells(...))
+                result.push_str("(await ");
+                result.push_str(pattern);
+                // Copy everything from start_idx to end_idx (including the closing paren)
+                for j in start_idx..end_idx {
+                    result.push(chars[j]);
+                }
+                result.push(')');
+                i = end_idx;
             }
-            result.push_str(pattern);
-            i += pattern.len();
         } else {
-            result.push(code.chars().nth(i).unwrap());
-            i += code.chars().nth(i).unwrap().len_utf8();
+            result.push(chars[i]);
+            i += 1;
         }
     }
 
@@ -644,12 +684,12 @@ mod tests {
 
     #[test]
     fn test_add_await_to_qcells() {
-        // Test: adds await when missing
+        // Test: adds await and wraps with parentheses when missing
         let code = "const x = q.cells('A1')";
         let result = add_await_to_qcells(code);
-        assert_eq!(result, "const x = await q.cells('A1')");
+        assert_eq!(result, "const x = (await q.cells('A1'))");
 
-        // Test: doesn't duplicate await
+        // Test: doesn't duplicate await (keeps existing await as-is)
         let code = "const x = await q.cells('A1')";
         let result = add_await_to_qcells(code);
         assert_eq!(result, "const x = await q.cells('A1')");
@@ -659,7 +699,7 @@ mod tests {
         let result = add_await_to_qcells(code);
         assert_eq!(
             result,
-            "const x = await q.cells('A1')\nconst y = await q.cells('B1')"
+            "const x = (await q.cells('A1'))\nconst y = (await q.cells('B1'))"
         );
 
         // Test: handles mixed await and non-await
@@ -667,13 +707,28 @@ mod tests {
         let result = add_await_to_qcells(code);
         assert_eq!(
             result,
-            "const x = await q.cells('A1')\nconst y = await q.cells('B1')"
+            "const x = await q.cells('A1')\nconst y = (await q.cells('B1'))"
         );
 
         // Test: start of line
         let code = "q.cells('A1')";
         let result = add_await_to_qcells(code);
-        assert_eq!(result, "await q.cells('A1')");
+        assert_eq!(result, "(await q.cells('A1'))");
+
+        // Test: method chaining works correctly
+        let code = "const x = q.cells('A1').flat()";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = (await q.cells('A1')).flat()");
+
+        // Test: nested parentheses in arguments
+        let code = "const x = q.cells(foo(bar()))";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = (await q.cells(foo(bar())))");
+
+        // Test: string with parentheses
+        let code = r#"const x = q.cells("A1:B(2)")"#;
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, r#"const x = (await q.cells("A1:B(2)"))"#);
     }
 
     #[tokio::test]
