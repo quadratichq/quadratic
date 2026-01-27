@@ -16,6 +16,7 @@ import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
 import { FloatingTopLeftPosition } from '@/app/ui/components/FloatingTopLeftPosition';
+import { OnboardingFileImportTip } from '@/app/ui/components/OnboardingFileImportTip';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
@@ -162,6 +163,7 @@ export default function QuadraticUI() {
       )}
       <ConnectionsMenu />
       {!isEmbed && <PermissionOverlay />}
+      <OnboardingFileImportTip />
       <UpdateAlertVersion />
       <UserMessage />
       <SettingsDialog />

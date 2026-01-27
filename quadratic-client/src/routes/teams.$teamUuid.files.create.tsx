@@ -94,6 +94,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     if (connectionName) {
       searchParamsToPass.set('connection-name', connectionName);
     }
+    const onboardingFileImport = searchParams.get('onboarding-file-import');
+    if (onboardingFileImport) {
+      searchParamsToPass.set('onboarding-file-import', onboardingFileImport);
+    }
 
     return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
   } catch (error) {

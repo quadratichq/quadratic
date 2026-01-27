@@ -203,6 +203,26 @@ export const Component = () => {
     }
   }, [showConnectionsDialog, latestConnections]);
 
+  // When in onboarding connections flow and a connection is selected, navigate to new file with auto-prompt
+  const connectionPrompt =
+    'Query my new connection to show me the first 15 records of a table from it that you think is interesting to look at first.';
+  useEffect(() => {
+    if (selectedDataPath === 'connections' && selectedConnection) {
+      trackEvent('[StartWithAI].onboardingConnectionComplete', {
+        connectionType: selectedConnection.type,
+      });
+      navigate(
+        ROUTES.CREATE_FILE(teamUuid, {
+          private: isPrivate,
+          prompt: connectionPrompt,
+          connectionUuid: selectedConnection.uuid,
+          connectionType: selectedConnection.type,
+          connectionName: selectedConnection.name,
+        })
+      );
+    }
+  }, [selectedDataPath, selectedConnection, teamUuid, isPrivate, navigate]);
+
   const handleOpenConnectionsDialog = useCallback((initialView: 'new' | 'list' = 'list') => {
     trackEvent('[StartWithAI].openConnectionsDialog', { initialView });
     setConnectionsDialogInitialView(initialView);
@@ -579,14 +599,14 @@ export const Component = () => {
                     <button
                       onClick={() => {
                         trackEvent('[StartWithAI].selectDataPath', { path: 'files' });
-                        setSelectedDataPath('files');
+                        // Navigate to a new sheet with file import guidance
+                        navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, onboardingFileImport: true }));
                       }}
-                      className="group flex flex-col items-center gap-3 rounded-lg border border-border px-4 py-8 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                      className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
                     >
                       <FileIcon size="lg" className="text-primary" />
-                      <span className="text-base">Import Files</span>
+                      <span className="text-sm">Import Files</span>
                       <span className="text-xs text-muted-foreground">Excel, CSV, PDF, Parquet</span>
-                      <ArrowRightIcon className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
 
                     <button
@@ -594,36 +614,25 @@ export const Component = () => {
                         trackEvent('[StartWithAI].selectDataPath', { path: 'connections' });
                         setSelectedDataPath('connections');
                       }}
-                      className="group flex flex-col items-center gap-3 rounded-lg border border-border px-4 py-8 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                      className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
                     >
                       <DatabaseIcon size="lg" className="text-primary" />
-                      <span className="text-base">Connect Data</span>
+                      <span className="text-sm">Connect Data</span>
                       <span className="text-xs text-muted-foreground">Databases & services</span>
-                      <ArrowRightIcon className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
 
                     <button
                       onClick={() => {
                         trackEvent('[StartWithAI].selectDataPath', { path: 'scratch' });
-                        setSelectedDataPath('scratch');
+                        // Navigate directly to a blank sheet
+                        navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate }));
                       }}
-                      className="group flex flex-col items-center gap-3 rounded-lg border border-border px-4 py-8 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
+                      className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
                     >
                       <AIIcon size="lg" className="text-primary" />
-                      <span className="text-base">Start Fresh</span>
+                      <span className="text-sm">Start Fresh</span>
                       <span className="text-xs text-muted-foreground">Build with AI</span>
-                      <ArrowRightIcon className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
-                  </div>
-
-                  <div className="mt-8 text-center">
-                    <a
-                      href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-                      className="text-sm text-muted-foreground hover:text-foreground"
-                      onClick={() => trackEvent('[StartWithAI].skipDataPath')}
-                    >
-                      Skip and open a blank spreadsheet →
-                    </a>
                   </div>
                 </>
               )}

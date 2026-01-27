@@ -38,6 +38,7 @@ export const ROUTES = {
       connectionUuid?: string | null;
       connectionType?: ConnectionType | null;
       connectionName?: string | null;
+      onboardingFileImport?: boolean;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -62,6 +63,9 @@ export const ROUTES = {
     }
     if (searchParams.connectionName) {
       url.searchParams.set('connection-name', searchParams.connectionName);
+    }
+    if (searchParams.onboardingFileImport) {
+      url.searchParams.set('onboarding-file-import', 'true');
     }
 
     return url.pathname + url.search;
