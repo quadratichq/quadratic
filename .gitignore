@@ -54,6 +54,7 @@ quadratic-api/node_modules/
 quadratic-api/.env
 quadratic-api/.env.local
 quadratic-api/dist
+quadratic-api/src/ai/tests/testResults.cache.json
 
 # Code Coverage
 quadratic-connection/coverage
