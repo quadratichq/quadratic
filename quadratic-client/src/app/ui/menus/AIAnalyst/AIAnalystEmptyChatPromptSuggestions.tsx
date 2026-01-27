@@ -1,9 +1,9 @@
-import {
-  useGetEmptyChatPromptSuggestions,
-  type CategorizedEmptyChatPromptSuggestions,
-  type SuggestionCategory,
+import { useEmptyChatSuggestionsSync } from '@/app/ai/hooks/useEmptyChatSuggestionsSync';
+import type {
+  CategorizedEmptyChatPromptSuggestions,
+  SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -17,7 +17,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
@@ -104,21 +104,17 @@ const CategorizedSuggestionsSection = memo(
 
 export const AIAnalystEmptyChatPromptSuggestions = memo(
   ({ submit, setContext }: AIAnalystEmptyChatPromptSuggestionsProps) => {
-    const [categorizedSuggestions, setCategorizedSuggestions] = useState<
-      CategorizedEmptyChatPromptSuggestions | undefined
-    >(undefined);
     const [activeCategory, setActiveCategory] = useState<SuggestionCategory>('enrich');
-    const [loading, setLoading] = useState(false);
-    const abortControllerRef = useRef<AbortController | undefined>(undefined);
     // Initialize to undefined to avoid flash - only show import section once we know sheet is empty
     const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
-    const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
-    const { getCategorizedEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
-    // Store in ref to avoid it being a dependency (it changes when connections/loading state changes)
-    const getCategorizedEmptyChatPromptSuggestionsRef = useRef(getCategorizedEmptyChatPromptSuggestions);
-    getCategorizedEmptyChatPromptSuggestionsRef.current = getCategorizedEmptyChatPromptSuggestions;
 
-    // Listen for sheet content changes to update suggestions when data is added/removed
+    // Get suggestions from centralized state
+    const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
+    const { suggestions: categorizedSuggestions, loading } = emptyChatSuggestions;
+
+    // Get the function to trigger initial fetch if needed
+    const { checkAndUpdateSuggestions } = useEmptyChatSuggestionsSync();
+
     const handleChooseFile = useCallback(async () => {
       trackEvent('[AIAnalyst].chooseFile');
       const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
@@ -187,25 +183,18 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       }
     }, []);
 
+    // Track whether file has data (for deciding which UI to show)
     useEffect(() => {
       let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
       const checkSheetData = (immediate = false) => {
-        // Debounce to avoid frequent fileHasData() calls on rapid hash changes
-        // But allow immediate check for initial load
         clearTimeout(debounceTimeout);
         if (immediate) {
           setSheetHasData(fileHasData());
         } else {
           debounceTimeout = setTimeout(() => {
             const hasData = fileHasData();
-            setSheetHasData((prev) => {
-              // Only trigger update if the data presence changed
-              if (prev !== hasData) {
-                return hasData;
-              }
-              return prev;
-            });
+            setSheetHasData((prev) => (prev !== hasData ? hasData : prev));
           }, 100);
         }
       };
@@ -221,56 +210,12 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       };
     }, []);
 
+    // Trigger initial fetch if we have data but no suggestions yet (first time / page refresh)
     useEffect(() => {
-      // Wait until we know if sheet has data
-      if (sheetHasData === undefined) {
-        return;
+      if (sheetHasData && !categorizedSuggestions && !loading) {
+        checkAndUpdateSuggestions();
       }
-
-      // If sheet is empty, use default suggestions (no API call needed)
-      if (!sheetHasData) {
-        setCategorizedSuggestions(undefined);
-        setLoading(false);
-        return;
-      }
-
-      // Sheet has data - fetch categorized suggestions
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-
-      const fetchCategorizedSuggestions = async () => {
-        setLoading(true);
-
-        try {
-          const newCategorizedSuggestions = await getCategorizedEmptyChatPromptSuggestionsRef.current({
-            abortController,
-          });
-          if (!abortController.signal.aborted && newCategorizedSuggestions) {
-            setCategorizedSuggestions(newCategorizedSuggestions);
-          }
-        } catch (error) {
-          if (!abortController.signal.aborted) {
-            console.warn('[AIAnalystEmptyChatPromptSuggestions] Error fetching categorized suggestions:', error);
-          }
-        }
-
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
-      };
-
-      fetchCategorizedSuggestions();
-
-      return () => {
-        abortController.abort();
-      };
-    }, [sheetHasData]);
-
-    useEffect(() => {
-      if (aiAnalystLoading) {
-        abortControllerRef.current?.abort();
-      }
-    }, [aiAnalystLoading]);
+    }, [sheetHasData, categorizedSuggestions, loading, checkAndUpdateSuggestions]);
 
     const connections = useConnectionsFetcher();
     const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);

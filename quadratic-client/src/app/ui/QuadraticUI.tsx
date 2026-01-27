@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { useEmptyChatSuggestionsSync } from '@/app/ai/hooks/useEmptyChatSuggestionsSync';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import {
@@ -67,6 +68,9 @@ export default function QuadraticUI() {
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
   // See if the aiAnalyst is running
   const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+
+  // Sync empty chat suggestions with sheet data changes
+  useEmptyChatSuggestionsSync();
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
