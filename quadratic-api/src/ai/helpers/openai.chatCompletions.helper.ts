@@ -13,11 +13,13 @@ import {
   createTextContent,
   getSystemPromptMessages,
   isAIPromptMessage,
+  isContentFireworksThinking,
   isContentImage,
   isContentText,
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
+import { isFireworksModel } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
@@ -96,6 +98,10 @@ export function getOpenAIChatCompletionsApiArgs(
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Extract fireworks_thinking content if present (for reasoning model conversation history)
+      const fireworksThinkingContent = message.content.find(isContentFireworksThinking);
+      const reasoningContent = fireworksThinkingContent?.text;
+
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content
@@ -112,7 +118,9 @@ export function getOpenAIChatCompletionsApiArgs(
                 },
               }))
             : undefined,
-      };
+        // Include reasoning_content for Fireworks reasoning models (interleaved thinking)
+        ...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+      } as ChatCompletionMessageParam;
       return [...acc, openaiMessage];
     } else if (isToolResultMessage(message)) {
       // Filter out tool results that reference non-existent tool call IDs
@@ -221,6 +229,9 @@ export async function parseOpenAIChatCompletionsStream(
     cacheWriteTokens: 0,
   };
 
+  // Track if this is a Fireworks reasoning model
+  const isFireworks = isFireworksModel(modelKey);
+
   for await (const chunk of chunks) {
     if (chunk.usage) {
       usage.inputTokens = Math.max(usage.inputTokens, chunk.usage.prompt_tokens);
@@ -231,11 +242,34 @@ export async function parseOpenAIChatCompletionsStream(
 
     if (!response?.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
+        const delta = chunk.choices[0].delta as OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta & {
+          reasoning_content?: string;
+        };
+
+        // Fireworks reasoning_content delta (thinking process)
+        if (isFireworks && delta.reasoning_content) {
+          let currentContent = responseMessage.content.find((c) => c.type === 'fireworks_thinking');
+          if (!currentContent) {
+            currentContent = { type: 'fireworks_thinking' as const, text: '' };
+            responseMessage.content.push(currentContent);
+          }
+          currentContent.text += delta.reasoning_content;
+
+          responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
+            ...toolCall,
+            loading: false,
+          }));
+        }
         // text delta
-        if (chunk.choices[0].delta.content) {
-          const currentContent = { ...(responseMessage.content.pop() ?? createTextContent('')) };
-          currentContent.text += chunk.choices[0].delta.content;
-          responseMessage.content.push(currentContent);
+        else if (delta.content) {
+          // Find the last text content, or create a new one
+          let currentContent = responseMessage.content.filter((c) => c.type === 'text').pop();
+          if (currentContent) {
+            currentContent.text += delta.content;
+          } else {
+            currentContent = createTextContent(delta.content);
+            responseMessage.content.push(currentContent);
+          }
 
           responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
             ...toolCall,
@@ -243,8 +277,8 @@ export async function parseOpenAIChatCompletionsStream(
           }));
         }
         // tool use delta
-        else if (chunk.choices[0].delta.tool_calls) {
-          chunk.choices[0].delta.tool_calls.forEach((tool_call) => {
+        else if (delta.tool_calls) {
+          delta.tool_calls.forEach((tool_call) => {
             const toolCall = responseMessage.toolCalls.pop();
             if (toolCall) {
               responseMessage.toolCalls.push({
@@ -328,7 +362,17 @@ export function parseOpenAIChatCompletionsResponse(
     exceededBillingLimit,
   };
 
-  const message = result.choices[0].message;
+  const message = result.choices[0].message as OpenAI.Chat.Completions.ChatCompletionMessage & {
+    reasoning_content?: string;
+  };
+
+  // Handle Fireworks reasoning_content (thinking process)
+  if (isFireworksModel(modelKey) && message.reasoning_content) {
+    responseMessage.content.push({
+      type: 'fireworks_thinking' as const,
+      text: message.reasoning_content,
+    });
+  }
 
   if (message.content) {
     responseMessage.content.push(createTextContent(message.content.trim()));

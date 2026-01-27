@@ -157,6 +157,8 @@ const FireworksModelKeySchema = z.enum([
   'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
   'fireworks:accounts/fireworks/models/deepseek-v3p1',
   'fireworks:accounts/fireworks/models/kimi-k2p5',
+  'fireworks:accounts/fireworks/models/kimi-k2p5:thinking-toggle-off',
+  'fireworks:accounts/fireworks/models/kimi-k2p5:thinking-toggle-on',
 ]);
 export type FireworksModelKey = z.infer<typeof FireworksModelKeySchema>;
 
@@ -189,6 +191,9 @@ const AIRatesSchema = z.object({
 export type AIRates = z.infer<typeof AIRatesSchema>;
 const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'others', 'default']);
 export type ModelMode = z.infer<typeof ModelModeSchema>;
+const ReasoningEffortSchema = z.enum(['low', 'medium', 'high']);
+export type ReasoningEffort = z.infer<typeof ReasoningEffortSchema>;
+
 export const AIModelConfigSchema = z
   .object({
     model: AIModelSchema,
@@ -206,6 +211,7 @@ export const AIModelConfigSchema = z
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
+    reasoningEffort: ReasoningEffortSchema.optional(), // Fireworks reasoning effort level
     imageSupport: z.boolean(),
     supportsReasoning: z.boolean().optional(),
     serviceTier: z.enum(['auto', 'default', 'flex', 'scale', 'priority']).optional(),
@@ -413,6 +419,12 @@ const OpenAIReasoningContentSchema = z
   );
 export type OpenAIReasoningContent = z.infer<typeof OpenAIReasoningContentSchema>;
 
+const FireworksThinkingContentSchema = z.object({
+  type: z.literal('fireworks_thinking'),
+  text: z.string().transform((val) => val.trim()),
+});
+export type FireworksThinkingContent = z.infer<typeof FireworksThinkingContentSchema>;
+
 const AIResponseThinkingContentSchema = z
   .object({
     type: z.literal('anthropic_thinking'),
@@ -432,7 +444,8 @@ const AIResponseThinkingContentSchema = z
       text: z.string().transform((val) => val.trim()),
     })
   )
-  .or(OpenAIReasoningContentSchema);
+  .or(OpenAIReasoningContentSchema)
+  .or(FireworksThinkingContentSchema);
 export type AIResponseThinkingContent = z.infer<typeof AIResponseThinkingContentSchema>;
 
 const AIResponseContentSchema = z.array(TextContentSchema.or(AIResponseThinkingContentSchema));

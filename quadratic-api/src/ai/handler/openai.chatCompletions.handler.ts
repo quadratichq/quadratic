@@ -1,18 +1,18 @@
 import type OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
-import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { getModelFromModelKey, getModelOptions, isFireworksModel } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-    AzureOpenAIModelKey,
-    BasetenModelKey,
-    FireworksModelKey,
-    OpenRouterModelKey,
-    ParsedAIResponse,
-    XAIModelKey,
+  AzureOpenAIModelKey,
+  BasetenModelKey,
+  FireworksModelKey,
+  OpenRouterModelKey,
+  ParsedAIResponse,
+  XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import {
-    getOpenAIChatCompletionsApiArgs,
-    parseOpenAIChatCompletionsResponse,
-    parseOpenAIChatCompletionsStream,
+  getOpenAIChatCompletionsApiArgs,
+  parseOpenAIChatCompletionsResponse,
+  parseOpenAIChatCompletionsStream,
 } from '../helpers/openai.chatCompletions.helper';
 import type { HandleAIRequestArgs } from './ai.handler';
 
@@ -51,6 +51,10 @@ export const handleOpenAIChatCompletionsRequest = async ({
     ...(options.top_k !== undefined ? { top_k: options.top_k } : {}),
     ...(options.min_p !== undefined ? { min_p: options.min_p } : {}),
     ...(options.repetition_penalty !== undefined ? { repetition_penalty: options.repetition_penalty } : {}),
+    // Fireworks-specific reasoning_effort parameter
+    ...(isFireworksModel(modelKey) && options.reasoningEffort !== undefined
+      ? { reasoning_effort: options.reasoningEffort }
+      : {}),
   };
 
   if (options.stream) {

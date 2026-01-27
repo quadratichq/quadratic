@@ -5,6 +5,7 @@ import type {
   AIResponseThinkingContent,
   ChatMessage,
   Content,
+  FireworksThinkingContent,
   GoogleSearchContent,
   GoogleSearchGroundingMetadata,
   ImageContent,
@@ -197,9 +198,19 @@ export const isContentText = (content: Content[number] | AIResponseContent[numbe
 export const isContentThinking = (
   content: Content[number] | AIResponseContent[number]
 ): content is AIResponseThinkingContent => {
-  return ['anthropic_thinking', 'google_thinking', 'openai_reasoning_summary', 'openai_reasoning_content'].includes(
-    content.type
-  );
+  return [
+    'anthropic_thinking',
+    'google_thinking',
+    'openai_reasoning_summary',
+    'openai_reasoning_content',
+    'fireworks_thinking',
+  ].includes(content.type);
+};
+
+export const isContentFireworksThinking = (
+  content: Content[number] | AIResponseContent[number]
+): content is FireworksThinkingContent => {
+  return content.type === 'fireworks_thinking';
 };
 
 export const isContentOpenAIReasoning = (

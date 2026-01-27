@@ -14,6 +14,7 @@ import type {
   OpenAIModelKey,
   OpenRouterModelKey,
   QuadraticModelKey,
+  ReasoningEffort,
   VertexAIAnthropicModelKey,
   VertexAIModelKey,
   XAIModelKey,
@@ -85,6 +86,7 @@ export const getModelOptions = (
   max_tokens: number;
   thinking?: boolean;
   thinkingBudget?: number;
+  reasoningEffort?: ReasoningEffort;
   promptCaching: boolean;
   strictParams: boolean;
   imageSupport: boolean;
@@ -113,6 +115,7 @@ export const getModelOptions = (
     max_tokens: config.max_tokens,
     thinking: config.thinking,
     thinkingBudget: config.thinkingBudget,
+    reasoningEffort: config.reasoningEffort,
     promptCaching: config.promptCaching,
     strictParams: !!config.strictParams,
     imageSupport: config.imageSupport,
