@@ -11,8 +11,7 @@ const sizes = {
   // xxs: '12',
   // xs: '16',
   sm: '20',
-  // As needed, we can add these as scaled sizes in icons.css
-  // md: '24',
+  md: '32',
   lg: '40',
   // xl: '48',
   '2xl': '64',

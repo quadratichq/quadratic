@@ -208,8 +208,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  // A/B test: 50% of users go to the AI create flow, 50% go directly to a new file
-  const useAiCreateFlow = Math.random() < 0.5;
+  // A/B test: 100% of users go to the AI create flow
+  const useAiCreateFlow = true;
   trackEvent('[Onboarding].postOnboardingFlow', { flow: useAiCreateFlow ? 'startWithAi' : 'newFile' });
 
   // Register as super property so we can filter/analyze sessions for users in the "Start with AI" cohort.
@@ -217,7 +217,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   // When running a new A/B test, create a new property with updated date (e.g., ab_onboarding_mar2025).
   registerEventAnalyticsData({ ab_onboarding_dec2024: useAiCreateFlow ? 'startWithAi' : 'newFile' });
   const newFilePath = useAiCreateFlow
-    ? ROUTES.TEAM_FILES_CREATE_AI(teamUuid)
+    ? `${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}?onboarding=true`
     : ROUTES.CREATE_FILE(teamUuid, { private: false });
 
   // If the user wants to upgrade to Pro, we'll send them to Stripe first

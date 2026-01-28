@@ -1,7 +1,7 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { events } from '@/app/events/events';
-import { getExtension } from '@/app/helpers/files';
+import { getExtension, uploadFile } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -277,6 +277,22 @@ export const AIUserMessageForm = memo(
         events.off('aiAnalystDroppedFiles', handleFiles);
       };
     }, [handleFiles, initialContent]);
+
+    // Listen for triggerFileImport event to open file picker
+    useEffect(() => {
+      if (initialContent === undefined && fileTypes.length > 0) {
+        const handleTriggerFileImport = async () => {
+          const files = await uploadFile(fileTypes);
+          if (files.length > 0) {
+            handleFiles(files);
+          }
+        };
+        events.on('triggerFileImport', handleTriggerFileImport);
+        return () => {
+          events.off('triggerFileImport', handleTriggerFileImport);
+        };
+      }
+    }, [fileTypes, handleFiles, initialContent]);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     useImperativeHandle(ref, () => textareaRef.current!);

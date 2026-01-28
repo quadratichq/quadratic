@@ -190,6 +190,7 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  triggerFileImport: () => void;
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;

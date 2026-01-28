@@ -47,6 +47,8 @@ type Props = {
   hideSidebar?: boolean;
   /** Open directly to the 'new' view */
   initialView?: 'new' | 'list';
+  /** Open directly to the create form for a specific connection type */
+  initialConnectionType?: ConnectionType;
 };
 
 export type NavigateToListView = () => void;
@@ -70,14 +72,18 @@ export const Connections = ({
   sshPublicKey,
   hideSidebar,
   initialView,
+  initialConnectionType,
 }: Props) => {
   const submit = useSubmit();
 
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
-  const initialConnectionState =
-    initialView === 'new' ? { view: 'new' as const } : getInitialConnectionState(searchParams);
+  const initialConnectionState = initialConnectionType
+    ? { view: 'create' as const, type: initialConnectionType }
+    : initialView === 'new'
+      ? { view: 'new' as const }
+      : getInitialConnectionState(searchParams);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
   const [activeConnectionState, setActiveConnectionState] = useState<ConnectionState>(initialConnectionState);
