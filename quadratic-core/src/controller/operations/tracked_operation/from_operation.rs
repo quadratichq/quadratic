@@ -354,6 +354,10 @@ impl TrackedOperation {
                 kind: kind.to_string(),
             }),
 
+            Operation::SetMergeCells { sheet_id, .. } => Some(Self::SetMergeCells {
+                sheet_name: get_sheet_name(*sheet_id, gc),
+            }),
+
             // Deprecated operations that we don't need to support
             Operation::SetChartSize { .. }
             | Operation::SetChartCellSize { .. }

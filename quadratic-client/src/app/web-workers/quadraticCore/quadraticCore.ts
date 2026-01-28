@@ -48,7 +48,7 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type {
@@ -97,6 +97,8 @@ import type {
   CoreClientInsertColumns,
   CoreClientInsertRows,
   CoreClientLoad,
+  CoreClientMergeCells,
+  CoreClientMergeCellsResponse,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
   CoreClientMoveCodeCellVertically,
@@ -119,6 +121,7 @@ import type {
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
   CoreClientUndoResponse,
+  CoreClientUnmergeCellsResponse,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -290,6 +293,11 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientStartupTimer') {
       events.emit('startupTimer', e.data.name, { start: e.data.start, end: e.data.end });
+      return;
+    } else if (e.data.type === 'coreClientMergeCells') {
+      const data = e.data as CoreClientMergeCells;
+      const mergeCells = JsMergeCells.createFromBytes(data.mergeCells);
+      events.emit('mergeCells', data.sheetId, mergeCells);
       return;
     }
 
@@ -1205,6 +1213,38 @@ class QuadraticCore {
         selection,
         borderSelection,
         style,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  mergeCells(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMergeCellsResponse) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreMergeCells',
+        id,
+        selection,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  unmergeCells(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUnmergeCellsResponse) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreUnmergeCells',
+        id,
+        selection,
         cursor: sheets.getCursorPosition(),
         isAi,
       });

@@ -118,6 +118,8 @@ extern "C" {
     pub fn jsCodeRunningState(transaction_id: String, code_operations: String);
 
     pub fn jsTimestamp() -> u64;
+
+    pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8> /* MergeCells */);
 }
 
 #[cfg(test)]
@@ -565,4 +567,10 @@ pub fn jsCodeRunningState(_transaction_id: String, _code_operations: String) {
 pub fn jsTimestamp() -> u64 {
     // Return a fixed timestamp for deterministic tests
     1234567890000 // Jan 13, 2009 23:31:30 GMT
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8> /* MergeCells */) {
+    js_call("jsMergeCells", format!("{sheet_id},{merge_cells:?}"));
 }

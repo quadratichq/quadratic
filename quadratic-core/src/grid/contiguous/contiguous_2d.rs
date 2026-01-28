@@ -216,6 +216,149 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         self.nondefault_rects_in_range(RefRangeBounds::new_relative_rect(rect))
     }
 
+    /// Returns a list of rectangles containing non-default values within a rect,
+    /// combining rects that have the same value into a single bounding rect.
+    ///
+    /// This is useful when the internal representation splits a contiguous region
+    /// into multiple rects (e.g., across column boundaries), and you want to
+    /// combine them back together.
+    pub fn nondefault_rects_in_rect_combined(&self, rect: Rect) -> Vec<(Rect, T)>
+    where
+        T: Eq + Hash,
+    {
+        self.nondefault_rects_in_range_combined(RefRangeBounds::new_relative_rect(rect))
+    }
+
+    /// Returns a list of rectangles containing non-default values within a range,
+    /// combining rects that have the same value into a single bounding rect.
+    ///
+    /// This is useful when the internal representation splits a contiguous region
+    /// into multiple rects (e.g., across column boundaries), and you want to
+    /// combine them back together.
+    ///
+    /// Note: This returns the FULL rects for values that appear in the range,
+    /// not just the portion that intersects with the range. This is useful for
+    /// cases like merged cells where you want the complete merged cell rect
+    /// even if only part of it intersects the search range.
+    pub fn nondefault_rects_in_range_combined(&self, range: RefRangeBounds) -> Vec<(Rect, T)>
+    where
+        T: Eq + Hash,
+    {
+        use std::collections::HashMap;
+
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
+        let default = T::default();
+
+        // Get blocks that touch the range (efficient - only touches relevant blocks)
+        // Use blocks_touching_range to get FULL blocks, not clipped ones
+        let mut value_to_rects: HashMap<T, Vec<Rect>> = HashMap::new();
+
+        for column_block in self.0.blocks_touching_range(x1, x2) {
+            for y_block in column_block.value.blocks_touching_range(y1, y2) {
+                // Skip default blocks - same pattern as unique_values_in_range
+                let value = y_block.value.clone();
+                if value != default {
+                    // Collect the FULL block rect (blocks_touching_range gives us full blocks)
+                    let full_block_rect = Rect::new(
+                        u64_to_i64(column_block.start),
+                        u64_to_i64(y_block.start),
+                        u64_to_i64(column_block.end.saturating_sub(1)),
+                        u64_to_i64(y_block.end.saturating_sub(1)),
+                    );
+                    value_to_rects
+                        .entry(value)
+                        .or_default()
+                        .push(full_block_rect);
+                }
+            }
+        }
+
+        if value_to_rects.is_empty() {
+            return Vec::new();
+        }
+
+        // Combine rects with the same value into bounding boxes
+        value_to_rects
+            .into_iter()
+            .map(|(value, rects)| {
+                if rects.is_empty() {
+                    return (Rect::new(0, 0, 0, 0), value);
+                }
+
+                let min_x = rects
+                    .iter()
+                    .map(|r| r.min.x)
+                    .min()
+                    .expect("min_x should exist since rects is not empty");
+                let min_y = rects
+                    .iter()
+                    .map(|r| r.min.y)
+                    .min()
+                    .expect("min_y should exist since rects is not empty");
+                let max_x = rects
+                    .iter()
+                    .map(|r| r.max.x)
+                    .max()
+                    .expect("max_x should exist since rects is not empty");
+                let max_y = rects
+                    .iter()
+                    .map(|r| r.max.y)
+                    .max()
+                    .expect("max_y should exist since rects is not empty");
+
+                (Rect::new(min_x, min_y, max_x, max_y), value)
+            })
+            .collect()
+    }
+
+    /// Returns an iterator over all non-default rectangles, combining rects that have
+    /// the same value into single bounding rects.
+    ///
+    /// This is optimized for iterating over the entire contiguous 2D structure by
+    /// directly iterating over all blocks and computing bounding boxes on the fly,
+    /// avoiding the overhead of range filtering and intermediate Vec allocations.
+    pub fn nondefault_rects_all_combined(&self) -> impl Iterator<Item = (Rect, T)>
+    where
+        T: Eq + Hash,
+    {
+        use std::collections::HashMap;
+
+        let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
+        let default = T::default();
+
+        // Iterate directly over all blocks and compute bounding boxes on the fly
+        let mut value_to_bounds: HashMap<T, (i64, i64, i64, i64)> = HashMap::new();
+
+        for column_block in self.0.iter() {
+            for y_block in column_block.value.iter() {
+                let value = y_block.value.clone();
+                if value != default {
+                    let rect_min_x = u64_to_i64(column_block.start);
+                    let rect_min_y = u64_to_i64(y_block.start);
+                    let rect_max_x = u64_to_i64(column_block.end.saturating_sub(1));
+                    let rect_max_y = u64_to_i64(y_block.end.saturating_sub(1));
+
+                    value_to_bounds
+                        .entry(value)
+                        .and_modify(|bounds| {
+                            bounds.0 = bounds.0.min(rect_min_x);
+                            bounds.1 = bounds.1.min(rect_min_y);
+                            bounds.2 = bounds.2.max(rect_max_x);
+                            bounds.3 = bounds.3.max(rect_max_y);
+                        })
+                        .or_insert((rect_min_x, rect_min_y, rect_max_x, rect_max_y));
+                }
+            }
+        }
+
+        value_to_bounds
+            .into_iter()
+            .map(|(value, (min_x, min_y, max_x, max_y))| {
+                (Rect::new(min_x, min_y, max_x, max_y), value)
+            })
+    }
+
     /// Returns a list of rectangles containing non-default values.
     pub fn nondefault_rects_in_range(
         &self,
@@ -254,6 +397,25 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         })()
         .cloned()
         .unwrap_or_default()
+    }
+
+    /// Returns the Y block bounds (min_y, max_y inclusive) and value for the
+    /// given position. This is useful for rectangular data like merged cells
+    /// where the Y extent is stored contiguously in a single block.
+    ///
+    /// Returns `(y_min, y_max, value)` or None if the position is invalid.
+    pub fn get_y_block_bounds(&self, pos: Pos) -> Option<(i64, i64, T)> {
+        let (x, y) = convert_pos(pos)?;
+        let x_block = self.0.get_block_containing(x)?;
+        let y_block = x_block.value.get_block_containing(y)?;
+
+        let y_min = y_block.start as i64;
+        let y_max = if y_block.end == u64::MAX {
+            i64::MAX
+        } else {
+            y_block.end.saturating_sub(1) as i64
+        };
+        Some((y_min, y_max, y_block.value.clone()))
     }
 
     /// Sets a single value and returns the old one, or `T::default()` if `pos`
@@ -1325,6 +1487,184 @@ mod tests {
     }
 
     #[test]
+    fn test_nondefault_rects_in_rect_combined() {
+        use std::collections::HashSet;
+
+        // Test empty case
+        let c = Contiguous2D::<u8>::new();
+        let r = Rect::new(5, 5, 10, 10);
+        assert_eq!(
+            Vec::<(Rect, u8)>::new(),
+            c.nondefault_rects_in_rect_combined(r)
+        );
+
+        // Test single rect - should return as-is
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(5), Some(5), 42);
+        let r = Rect::new(1, 1, 10, 10);
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], (Rect::new(2, 2, 5, 5), 42));
+
+        // Test multiple separate rects with different values - should not combine
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(3), Some(3), 42);
+        c.set_rect(5, 5, Some(6), Some(6), 99);
+        let r = Rect::new(1, 1, 10, 10);
+        let result: HashSet<_> = c.nondefault_rects_in_rect_combined(r).into_iter().collect();
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&(Rect::new(2, 2, 3, 3), 42)));
+        assert!(result.contains(&(Rect::new(5, 5, 6, 6), 99)));
+
+        // Test multiple rects with same value that should be combined
+        // This simulates a merged cell that spans multiple column blocks
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(3), Some(5), 42); // Column 2-3, rows 2-5
+        c.set_rect(4, 2, Some(5), Some(5), 42); // Column 4-5, rows 2-5 (same value)
+        let r = Rect::new(1, 1, 10, 10);
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        // Should combine into bounding box: columns 2-5, rows 2-5
+        assert_eq!(result[0], (Rect::new(2, 2, 5, 5), 42));
+
+        // Test rects that are split across column boundaries with same value
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(2), Some(3), 100);
+        c.set_rect(3, 1, Some(4), Some(3), 100);
+        c.set_rect(5, 1, Some(6), Some(3), 100);
+        let r = Rect::new(1, 1, 10, 10);
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        // Should combine all three into one bounding box
+        assert_eq!(result[0], (Rect::new(1, 1, 6, 3), 100));
+
+        // Test mixed: some values combine, some don't
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(2), Some(2), 10);
+        c.set_rect(3, 1, Some(4), Some(2), 10); // Same value as above, should combine
+        c.set_rect(5, 1, Some(6), Some(2), 20); // Different value, separate
+        let r = Rect::new(1, 1, 10, 10);
+        let result: HashSet<_> = c.nondefault_rects_in_rect_combined(r).into_iter().collect();
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&(Rect::new(1, 1, 4, 2), 10)));
+        assert!(result.contains(&(Rect::new(5, 1, 6, 2), 20)));
+
+        // Test with Option<Pos> (like merge cells)
+        let mut c = Contiguous2D::<Option<Pos>>::new();
+        let anchor1 = Pos { x: 1, y: 1 };
+        let anchor2 = Pos { x: 5, y: 5 };
+        c.set_rect(1, 1, Some(3), Some(3), Some(anchor1));
+        c.set_rect(4, 1, Some(5), Some(3), Some(anchor1)); // Same anchor, should combine
+        c.set_rect(6, 6, Some(8), Some(8), Some(anchor2)); // Different anchor, separate
+        let r = Rect::new(1, 1, 10, 10);
+        let result: HashSet<_> = c.nondefault_rects_in_rect_combined(r).into_iter().collect();
+        assert_eq!(result.len(), 2);
+        // First two should combine
+        assert!(result.contains(&(Rect::new(1, 1, 5, 3), Some(anchor1))));
+        assert!(result.contains(&(Rect::new(6, 6, 8, 8), Some(anchor2))));
+
+        // Test that full rects are returned even when search range only partially intersects
+        // This is the key behavior for merged cells - if a merged cell extends beyond
+        // the search range, we want the full merged cell rect, not just the intersection
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 3, Some(5), Some(3), 42); // Data at B3:E3
+        let r = Rect::new(2, 2, 3, 3); // Search B2:C3 (only partially intersects)
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        // Should return full rect B3:E3, not just the intersection B3:C3
+        assert_eq!(result[0], (Rect::new(2, 3, 5, 3), 42));
+    }
+
+    #[test]
+    fn test_nondefault_rects_all_combined() {
+        use std::collections::HashSet;
+
+        // Test empty case
+        let c = Contiguous2D::<u8>::new();
+        let result: Vec<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result, Vec::<(Rect, u8)>::new());
+
+        // Test single rect
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(5), Some(5), 42);
+        let result: Vec<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], (Rect::new(2, 2, 5, 5), 42));
+
+        // Test multiple separate rects with different values - should not combine
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(3), Some(3), 42);
+        c.set_rect(5, 5, Some(6), Some(6), 99);
+        let result: HashSet<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&(Rect::new(2, 2, 3, 3), 42)));
+        assert!(result.contains(&(Rect::new(5, 5, 6, 6), 99)));
+
+        // Test multiple rects with same value that should be combined
+        // This simulates a merged cell that spans multiple column blocks
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(3), Some(5), 42); // Column 2-3, rows 2-5
+        c.set_rect(4, 2, Some(5), Some(5), 42); // Column 4-5, rows 2-5 (same value)
+        let result: Vec<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 1);
+        // Should combine into bounding box: columns 2-5, rows 2-5
+        assert_eq!(result[0], (Rect::new(2, 2, 5, 5), 42));
+
+        // Test rects that are split across column boundaries with same value
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(2), Some(3), 100);
+        c.set_rect(3, 1, Some(4), Some(3), 100);
+        c.set_rect(5, 1, Some(6), Some(3), 100);
+        let result: Vec<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 1);
+        // Should combine all three into one bounding box
+        assert_eq!(result[0], (Rect::new(1, 1, 6, 3), 100));
+
+        // Test mixed: some values combine, some don't
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(2), Some(2), 10);
+        c.set_rect(3, 1, Some(4), Some(2), 10); // Same value as above, should combine
+        c.set_rect(5, 1, Some(6), Some(2), 20); // Different value, separate
+        let result: HashSet<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&(Rect::new(1, 1, 4, 2), 10)));
+        assert!(result.contains(&(Rect::new(5, 1, 6, 2), 20)));
+
+        // Test with Option<Pos> (like merge cells)
+        let mut c = Contiguous2D::<Option<Pos>>::new();
+        let anchor1 = Pos { x: 1, y: 1 };
+        let anchor2 = Pos { x: 5, y: 5 };
+        c.set_rect(1, 1, Some(3), Some(3), Some(anchor1));
+        c.set_rect(4, 1, Some(5), Some(3), Some(anchor1)); // Same anchor, should combine
+        c.set_rect(6, 6, Some(8), Some(8), Some(anchor2)); // Different anchor, separate
+        let result: HashSet<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 2);
+        // First two should combine
+        assert!(result.contains(&(Rect::new(1, 1, 5, 3), Some(anchor1))));
+        assert!(result.contains(&(Rect::new(6, 6, 8, 8), Some(anchor2))));
+
+        // Test that it produces same results as nondefault_rects_in_range_combined(RefRangeBounds::ALL)
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(3), Some(3), 42);
+        c.set_rect(5, 5, Some(7), Some(7), 99);
+        c.set_rect(10, 10, Some(12), Some(12), 42); // Same value as first, should combine
+        let all_result: HashSet<_> = c.nondefault_rects_all_combined().collect();
+        let range_result: HashSet<_> = c
+            .nondefault_rects_in_range_combined(RefRangeBounds::ALL)
+            .into_iter()
+            .collect();
+        assert_eq!(all_result, range_result);
+
+        // Test with infinite ranges
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, None, None, 42); // Infinite range
+        let result: Vec<_> = c.nondefault_rects_all_combined().collect();
+        assert_eq!(result.len(), 1);
+        // Should handle infinite ranges correctly
+        assert_eq!(result[0].1, 42);
+    }
+
+    #[test]
     fn test_bounding_rect() {
         // Test empty/all default case
         let c = Contiguous2D::<u8>::new();
@@ -1369,6 +1709,51 @@ mod tests {
         assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, 5, 5)));
         c.set_rect(1, 1, Some(5), Some(5), 0); // set to default
         assert_eq!(c.bounding_rect(), None);
+    }
+
+    #[test]
+    fn test_get_y_block_bounds() {
+        // Test single rect
+        let mut c = Contiguous2D::<Option<u8>>::new();
+        c.set_rect(2, 3, Some(5), Some(7), Some(42));
+
+        // Query within the rect - should return Y bounds and value
+        let result = c.get_y_block_bounds(pos![B3]);
+        assert_eq!(result, Some((3, 7, Some(42))));
+
+        let result = c.get_y_block_bounds(pos![E7]);
+        assert_eq!(result, Some((3, 7, Some(42))));
+
+        // Query outside the rect - returns default value bounds
+        let result = c.get_y_block_bounds(pos![A1]);
+        assert!(result.is_some());
+        let (_, _, value) = result.unwrap();
+        assert_eq!(value, None); // default value
+
+        // Test two adjacent rects with same Y range but different values
+        let mut c = Contiguous2D::<Option<u8>>::new();
+        c.set_rect(2, 2, Some(4), Some(4), Some(10)); // B2:D4
+        c.set_rect(5, 2, Some(7), Some(4), Some(20)); // E2:G4
+
+        // Query first rect
+        let result = c.get_y_block_bounds(pos![B2]);
+        assert_eq!(result, Some((2, 4, Some(10))));
+
+        let result = c.get_y_block_bounds(pos![D4]);
+        assert_eq!(result, Some((2, 4, Some(10))));
+
+        // Query second rect - should have different value
+        let result = c.get_y_block_bounds(pos![E2]);
+        assert_eq!(result, Some((2, 4, Some(20))));
+
+        let result = c.get_y_block_bounds(pos![G4]);
+        assert_eq!(result, Some((2, 4, Some(20))));
+
+        // Query gap between rects (column A)
+        let result = c.get_y_block_bounds(pos![A2]);
+        assert!(result.is_some());
+        let (_, _, value) = result.unwrap();
+        assert_eq!(value, None); // default value
     }
 
     #[test]

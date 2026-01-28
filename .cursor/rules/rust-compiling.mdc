@@ -1,0 +1,8 @@
+---
+globs: **/*.rs
+alwaysApply: true
+---
+
+Rust Compiling
+
+Unless specifically requested, don't compile code for purposes of running the app. That is handled by `node dev`, which has watchers.

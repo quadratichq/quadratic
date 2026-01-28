@@ -62,6 +62,7 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
   };
 
@@ -100,6 +101,7 @@ class CoreClient {
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
     self.sendContentCache = coreClient.sendContentCache;
+    self.sendMergeCells = coreClient.sendMergeCells;
     self.sendCodeRunningState = coreClient.sendCodeRunningState;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
@@ -416,6 +418,22 @@ class CoreClient {
           type: 'coreClientSetBorders',
           id: e.data.id,
           response: core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor, e.data.isAi),
+        });
+        return;
+
+      case 'clientCoreMergeCells':
+        this.send({
+          type: 'coreClientMergeCellsResponse',
+          id: e.data.id,
+          response: core.mergeCells(e.data.selection, e.data.cursor, e.data.isAi),
+        });
+        return;
+
+      case 'clientCoreUnmergeCells':
+        this.send({
+          type: 'coreClientUnmergeCellsResponse',
+          id: e.data.id,
+          response: core.unmergeCells(e.data.selection, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -1074,6 +1092,10 @@ class CoreClient {
 
   sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {
     this.send({ type: 'coreClientStartupTimer', name, ...data });
+  };
+
+  sendMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
+    this.send({ type: 'coreClientMergeCells', sheetId, mergeCells }, mergeCells.buffer);
   };
 }
 

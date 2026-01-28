@@ -11,6 +11,7 @@ mod csv;
 pub mod data_table;
 pub mod formats;
 pub mod import;
+pub mod merge_cells;
 pub mod operation;
 pub mod sheets;
 pub mod tracked_operation;

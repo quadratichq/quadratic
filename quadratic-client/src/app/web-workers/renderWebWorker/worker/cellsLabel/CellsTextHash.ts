@@ -125,8 +125,47 @@ export class CellsTextHash {
   }
 
   private createLabel(cell: JsRenderCell) {
-    const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
+    // Check if this cell is part of a merged cell
+    const mergeRect = this.cellsLabels.mergeCells.getMergeCellRect(Number(cell.x), Number(cell.y));
+    if (mergeRect) {
+      // Only render the anchor cell (top-left) of a merged cell
+      const isAnchor = Number(cell.x) === Number(mergeRect.min.x) && Number(cell.y) === Number(mergeRect.min.y);
+      if (!isAnchor) {
+        // Skip rendering non-anchor cells in merged cells
+        return;
+      }
+    }
+
+    let rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
+
+    // Calculate column/row bounds for the cell
+    let minCol = Number(cell.x);
+    let maxCol = Number(cell.x);
+    let minRow = Number(cell.y);
+    let maxRow = Number(cell.y);
+
+    // If this is the anchor of a merged cell, use the merged cell rectangle for alignment
+    if (mergeRect) {
+      // Calculate the screen rectangle for the entire merged cell
+      const mergeWidth = Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1;
+      const mergeHeight = Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1;
+      const screenRectStringified = this.cellsLabels.sheetOffsets.getRectCellOffsets(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        mergeWidth,
+        mergeHeight
+      );
+      const screenRect = JSON.parse(screenRectStringified);
+      rectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+
+      // Update column/row bounds for merged cell
+      minCol = Number(mergeRect.min.x);
+      maxCol = Number(mergeRect.max.x);
+      minRow = Number(mergeRect.min.y);
+      maxRow = Number(mergeRect.max.y);
+    }
+
+    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle, minCol, maxCol, minRow, maxRow);
     this.labels.set(this.getKey(cell), cellLabel);
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
@@ -397,6 +436,7 @@ export class CellsTextHash {
     this.overflowGridLines = [];
 
     const offsets = this.cellsLabels.sheetOffsets;
+    const mergeCells = this.cellsLabels.mergeCells;
 
     // calculate grid line overflow after clipping the hash
     this.labels.forEach((cellLabel) => {
@@ -405,9 +445,23 @@ export class CellsTextHash {
         // get the column from the textRight (which is in screen coordinates)
         const column = offsets.getXPlacement(cellLabel.textRight).index;
 
-        // we need to add all columns that are overlapped
-        for (let i = cellLabel.location.x + 1; i <= column; i++) {
-          this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
+        // we need to add all columns that are overlapped by overflow
+        // Start from the first column after the cell/merged cell ends
+        // For merged cells (either the overflowing cell or the target), add overflow
+        // grid lines for ALL rows in the merge range
+        for (let row = cellLabel.minRow; row <= cellLabel.maxRow; row++) {
+          for (let i = cellLabel.maxCol + 1; i <= column; i++) {
+            // Check if the target column contains a merged cell that spans multiple rows
+            const targetMerge = mergeCells.getMergeCellRect(i, row);
+            if (targetMerge) {
+              // Clear grid lines for all rows of the merged cell
+              for (let mergeRow = Number(targetMerge.min.y); mergeRow <= Number(targetMerge.max.y); mergeRow++) {
+                this.overflowGridLines.push({ x: i, y: mergeRow });
+              }
+            } else {
+              this.overflowGridLines.push({ x: i, y: row });
+            }
+          }
         }
       }
 
@@ -416,9 +470,23 @@ export class CellsTextHash {
         // get the column from the textLeft (which is in screen coordinates)
         const column = offsets.getXPlacement(cellLabel.textLeft).index;
 
-        // we need to add all columns that are overlapped
-        for (let i = column + 1; i <= cellLabel.location.x; i++) {
-          this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
+        // we need to add all columns that are overlapped by overflow
+        // End at the leftmost column of the cell/merged cell
+        // For merged cells (either the overflowing cell or the target), add overflow
+        // grid lines for ALL rows in the merge range
+        for (let row = cellLabel.minRow; row <= cellLabel.maxRow; row++) {
+          for (let i = column + 1; i <= cellLabel.minCol; i++) {
+            // Check if the target column contains a merged cell that spans multiple rows
+            const targetMerge = mergeCells.getMergeCellRect(i, row);
+            if (targetMerge) {
+              // Clear grid lines for all rows of the merged cell
+              for (let mergeRow = Number(targetMerge.min.y); mergeRow <= Number(targetMerge.max.y); mergeRow++) {
+                this.overflowGridLines.push({ x: i, y: mergeRow });
+              }
+            } else {
+              this.overflowGridLines.push({ x: i, y: row });
+            }
+          }
         }
       }
     });
@@ -427,45 +495,52 @@ export class CellsTextHash {
   private checkClip(label: CellLabel) {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return;
-    let column = label.location.x - 1;
-    let row = label.location.y;
-    let currentHash: CellsTextHash | undefined = this;
-    while (column >= bounds.x) {
-      if (column < currentHash.AABB.x) {
-        // find hash to the left of current hash (skip over empty hashes)
-        currentHash = this.cellsLabels.findPreviousHash(column, row);
-        if (!currentHash) break;
-      }
-      const neighborLabel = currentHash.getLabel(column, row);
-      if (neighborLabel) {
-        const clipRightResult = neighborLabel.checkRightClip(label.AABB.left, this.labelMeshes);
-        if (clipRightResult && currentHash !== this) {
-          currentHash.dirtyBuffers = true;
-        }
-        label.checkLeftClip(neighborLabel.AABB.right, this.labelMeshes);
-        break;
-      }
-      column--;
-    }
 
-    currentHash = this;
-    column = label.location.x + 1;
-    while (column <= bounds.x + bounds.width) {
-      if (column > currentHash.AABB.right) {
-        // find hash to the right of current hash (skip over empty hashes)
-        currentHash = this.cellsLabels.findNextHash(column, row);
-        if (!currentHash) return;
-      }
-      const neighborLabel = currentHash.getLabel(column, row);
-      if (neighborLabel) {
-        const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right, this.labelMeshes);
-        if (clipLeftResult && currentHash !== this) {
-          currentHash.dirtyBuffers = true;
+    // For merged cells, we need to check all rows in the range for neighbors
+    // A cell at D2 might overflow into merged cell A1:C3, so we need to check
+    // each row (1, 2, 3) for potential neighbors that could clip or be clipped
+    for (let row = label.minRow; row <= label.maxRow; row++) {
+      // Check left neighbors (start from column before the leftmost column of the cell)
+      let column = label.minCol - 1;
+      let currentHash: CellsTextHash | undefined = this;
+      while (column >= bounds.x) {
+        if (column < currentHash.AABB.x) {
+          // find hash to the left of current hash (skip over empty hashes)
+          currentHash = this.cellsLabels.findPreviousHash(column, row);
+          if (!currentHash) break;
         }
-        label.checkRightClip(neighborLabel.AABB.left, this.labelMeshes);
-        return;
+        const neighborLabel = currentHash.getLabel(column, row);
+        if (neighborLabel) {
+          const clipRightResult = neighborLabel.checkRightClip(label.AABB.left, this.labelMeshes);
+          if (clipRightResult && currentHash !== this) {
+            currentHash.dirtyBuffers = true;
+          }
+          label.checkLeftClip(neighborLabel.AABB.right, this.labelMeshes);
+          break;
+        }
+        column--;
       }
-      column++;
+
+      currentHash = this;
+      // Check right neighbors (start from column after the rightmost column of the cell)
+      column = label.maxCol + 1;
+      while (column <= bounds.x + bounds.width) {
+        if (column > currentHash.AABB.right) {
+          // find hash to the right of current hash (skip over empty hashes)
+          currentHash = this.cellsLabels.findNextHash(column, row);
+          if (!currentHash) break;
+        }
+        const neighborLabel = currentHash.getLabel(column, row);
+        if (neighborLabel) {
+          const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right, this.labelMeshes);
+          if (clipLeftResult && currentHash !== this) {
+            currentHash.dirtyBuffers = true;
+          }
+          label.checkRightClip(neighborLabel.AABB.left, this.labelMeshes);
+          break;
+        }
+        column++;
+      }
     }
   }
 

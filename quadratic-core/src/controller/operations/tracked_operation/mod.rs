@@ -184,4 +184,8 @@ pub enum TrackedOperation {
     ComputeCode {
         selection: String,
     },
+
+    SetMergeCells {
+        sheet_name: String,
+    },
 }

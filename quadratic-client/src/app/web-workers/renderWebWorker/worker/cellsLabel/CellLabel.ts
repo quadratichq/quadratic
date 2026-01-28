@@ -122,6 +122,14 @@ export class CellLabel {
   location: JsCoordinate;
   AABB: Rectangle;
 
+  // Column/row bounds for the cell (for merged cells, this is the full extent)
+  // For regular cells: minCol=x, maxCol=x, minRow=y, maxRow=y
+  // For merged cells: minCol=x, maxCol=x+w-1, minRow=y, maxRow=y+h-1
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
+
   clipLeft?: number;
   clipRight?: number;
 
@@ -243,7 +251,15 @@ export class CellLabel {
     return new Rectangle(this.textLeft, this.textTop, this.textRight - this.textLeft, this.textBottom - this.textTop);
   }
 
-  constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
+  constructor(
+    cellsLabels: CellsLabels,
+    cell: JsRenderCell,
+    screenRectangle: Rectangle,
+    minCol: number,
+    maxCol: number,
+    minRow: number,
+    maxRow: number
+  ) {
     this.cellsLabels = cellsLabels;
     this.originalText = cell.value;
     this.text = this.getText(cell);
@@ -282,6 +298,12 @@ export class CellLabel {
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
+
+    // Store column/row bounds
+    this.minCol = minCol;
+    this.maxCol = maxCol;
+    this.minRow = minRow;
+    this.maxRow = maxRow;
 
     // need to adjust the right side of the AABB to account for the dropdown indicator
     if (isDropdown) {

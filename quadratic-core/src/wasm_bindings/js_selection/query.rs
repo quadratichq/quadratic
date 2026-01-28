@@ -110,29 +110,25 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
-    pub fn finite_ref_range_bounds(&self, context: &JsA1Context) -> Result<JsValue, String> {
+    pub fn finite_ref_range_bounds(
+        &self,
+        context: &JsA1Context,
+        merge_cells: &crate::wasm_bindings::merge_cells::JsMergeCells,
+    ) -> Result<JsValue, String> {
         let ranges = self
             .selection
-            .ranges
-            .iter()
-            .filter(|r| r.is_finite())
-            .filter_map(|range| match range {
-                CellRefRange::Sheet { range } => Some(*range),
-                CellRefRange::Table { range } => {
-                    // we ignore charts because their selection needs to match
-                    // up with their pixel-perfect borders
-                    if context
-                        .get_context()
-                        .try_table(range.table_name.as_str())
-                        .is_some_and(|t| t.is_html_image)
-                    {
-                        return None;
-                    }
-                    range.convert_to_ref_range_bounds(false, context.get_context(), false, true)
-                }
-            })
-            .collect::<Vec<_>>();
+            .finite_ref_range_bounds(context.get_context(), Some(merge_cells.get_merge_cells()));
         serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "containsMergedCells")]
+    pub fn contains_merged_cells(
+        &self,
+        context: &JsA1Context,
+        merge_cells: &crate::wasm_bindings::merge_cells::JsMergeCells,
+    ) -> bool {
+        self.selection
+            .contains_merged_cells(context.get_context(), Some(merge_cells.get_merge_cells()))
     }
 
     #[wasm_bindgen(js_name = "getInfiniteRefRangeBounds")]

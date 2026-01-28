@@ -58,6 +58,8 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
+    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
   };
 
@@ -245,4 +247,10 @@ export const jsCodeRunningState = (transactionId: string, codeOperations: string
 
 export const jsTimestamp = (): bigint => {
   return BigInt(Date.now());
+};
+
+export const jsMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
+  const clientCopy = new Uint8Array(mergeCells);
+  self.sendMergeCells(sheetId, clientCopy);
+  self.sendMergeCellsRender(sheetId, mergeCells);
 };
