@@ -223,8 +223,12 @@ impl GridController {
                 return;
             };
 
-            let (language, code) = match sheet.code_run_at(&sheet_pos.into()) {
-                Some(code_run) => (code_run.language.to_owned(), code_run.code.to_owned()),
+            let (language, code, cached_ast) = match sheet.code_run_at(&sheet_pos.into()) {
+                Some(code_run) => (
+                    code_run.language.to_owned(),
+                    code_run.code.to_owned(),
+                    code_run.formula_ast.to_owned(),
+                ),
                 None => {
                     dbgjs!(format!("No code run found at {sheet_pos:?}"));
                     return;
@@ -248,7 +252,7 @@ impl GridController {
                 CodeCellLanguage::Formula => {
                     // Formulas execute synchronously, so notification happens before execution
                     // via notify_next_operation_if_code in the control loop
-                    self.run_formula(transaction, sheet_pos, code);
+                    self.run_formula_with_cached_ast(transaction, sheet_pos, code, cached_ast);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     // Notify client about all code operations (current + pending) BEFORE starting execution

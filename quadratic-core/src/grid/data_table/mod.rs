@@ -960,6 +960,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "Table 1".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -994,6 +995,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "Table 1".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -1034,6 +1036,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "Table 1".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -1077,6 +1080,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "Table 1".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -1200,6 +1204,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "Table 1".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -1452,6 +1457,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("B1:B2")"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

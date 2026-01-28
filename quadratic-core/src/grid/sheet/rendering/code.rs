@@ -289,6 +289,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -350,6 +351,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -395,6 +397,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "1 + 1".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -459,6 +462,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -496,6 +500,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

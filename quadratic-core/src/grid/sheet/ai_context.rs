@@ -372,6 +372,7 @@ mod tests {
         let code_run_1 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "abcd".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -399,6 +400,7 @@ mod tests {
         let code_run_2 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "abcd".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -426,6 +428,7 @@ mod tests {
         let code_run_3 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "[[1, 2], [3, 4]]".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

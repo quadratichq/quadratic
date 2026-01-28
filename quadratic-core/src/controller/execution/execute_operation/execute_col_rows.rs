@@ -410,6 +410,8 @@ mod tests {
                         kind: DataTableKind::CodeRun(CodeRun {
                             language: CodeCellLanguage::Formula,
                             code: "B$17 + $B18".to_string(),
+                            // formula_ast is cleared when code is adjusted so it gets re-parsed
+                            formula_ast: None,
                             ..old_code_run
                         }),
                         ..old_dt
@@ -501,6 +503,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("B1:B2")"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,
@@ -588,6 +591,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: r#"return q.cells("B1:B2");"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

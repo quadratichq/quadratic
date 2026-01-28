@@ -49,6 +49,7 @@ impl Sheet {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -102,6 +103,7 @@ impl Sheet {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -144,6 +146,7 @@ impl Sheet {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "code".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -172,6 +175,7 @@ impl Sheet {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "code".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -199,6 +203,7 @@ impl Sheet {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "code".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

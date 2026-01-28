@@ -233,6 +233,7 @@ mod tests {
         let code_run = CodeRun {
             language,
             code: code.to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -316,6 +317,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "test_code".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

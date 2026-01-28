@@ -352,6 +352,7 @@ impl GridController {
         let new_code_run = CodeRun {
             language: code_run.language.to_owned(),
             code: code_run.code.to_owned(),
+            formula_ast: None,
             error: Some(error.to_owned()),
             return_type: None,
             line_number: error
@@ -407,6 +408,7 @@ impl GridController {
             let code_run = CodeRun {
                 language,
                 code,
+                formula_ast: None,
                 error: Some(RunError {
                     span: None,
                     msg: RunErrorMsg::CodeRunError(
@@ -481,6 +483,7 @@ impl GridController {
         let code_run = CodeRun {
             language,
             code,
+            formula_ast: None,
             error,
             return_type,
             line_number: js_code_result.line_number,
@@ -554,6 +557,7 @@ mod test {
         let new_code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "delete me".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,
@@ -594,6 +598,7 @@ mod test {
         let new_code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "replace me".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

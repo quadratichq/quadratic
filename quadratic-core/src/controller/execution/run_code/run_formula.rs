@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    formulas::{Ctx, find_cell_references, parse_formula},
+    formulas::{Ctx, Formula, find_cell_references, parse_formula},
     grid::{
         CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
         data_table::DataTableTemplate,
@@ -11,15 +11,18 @@ use crate::{
 };
 
 impl GridController {
-    pub(crate) fn run_formula(
+    /// Runs a formula, using a cached AST if available, otherwise parsing the code.
+    pub(crate) fn run_formula_with_cached_ast(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
+        cached_ast: Option<Formula>,
     ) {
-        self.run_formula_with_template(transaction, sheet_pos, code, None);
+        self.run_formula_internal(transaction, sheet_pos, code, None, cached_ast);
     }
 
+    /// Runs a formula with a template, parsing fresh.
     pub(crate) fn run_formula_with_template(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -27,62 +30,80 @@ impl GridController {
         code: String,
         template: Option<&DataTableTemplate>,
     ) {
+        self.run_formula_internal(transaction, sheet_pos, code, template, None);
+    }
+
+    fn run_formula_internal(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
+        code: String,
+        template: Option<&DataTableTemplate>,
+        cached_ast: Option<Formula>,
+    ) {
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 
-        match parse_formula(&code, parse_ctx, sheet_pos) {
-            Ok(parsed) => {
-                let output = parsed.eval(&mut eval_ctx).into_non_tuple();
-                let errors = output.inner.errors();
-                let new_code_run = CodeRun {
-                    language: CodeCellLanguage::Formula,
-                    code,
-                    std_out: None,
-                    std_err: (!errors.is_empty())
-                        .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: eval_ctx.take_cells_accessed(),
-                    error: None,
-                    return_type: None,
-                    line_number: None,
-                    output_type: None,
-                };
-
-                // Apply template properties if provided, otherwise use defaults
-                let (show_name, show_columns, header_is_first_row, chart_output) =
-                    if let Some(t) = template {
-                        (
-                            t.show_name,
-                            t.show_columns,
-                            t.header_is_first_row,
-                            t.chart_output,
-                        )
-                    } else {
-                        (None, None, false, None)
-                    };
-
-                let mut new_data_table = DataTable::new(
-                    DataTableKind::CodeRun(new_code_run),
-                    "Formula1",
-                    output.inner,
-                    header_is_first_row,
-                    show_name,
-                    show_columns,
-                    chart_output,
-                );
-
-                // Apply additional template properties not in DataTable::new
-                if let Some(t) = template {
-                    new_data_table.alternating_colors = t.alternating_colors;
-                    new_data_table.chart_pixel_output = t.chart_pixel_output;
+        // Use cached AST if available, otherwise parse
+        let parsed = if let Some(ast) = cached_ast {
+            ast
+        } else {
+            match parse_formula(&code, parse_ctx, sheet_pos) {
+                Ok(p) => p,
+                Err(error) => {
+                    let _ = self.code_cell_sheet_error(transaction, &error);
+                    return;
                 }
+            }
+        };
 
-                self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
-            }
-            Err(error) => {
-                let _ = self.code_cell_sheet_error(transaction, &error);
-            }
+        let output = parsed.eval(&mut eval_ctx).into_non_tuple();
+        let errors = output.inner.errors();
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code,
+            formula_ast: Some(parsed), // Store the AST for future runs
+            std_out: None,
+            std_err: (!errors.is_empty())
+                .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+            cells_accessed: eval_ctx.take_cells_accessed(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        // Apply template properties if provided, otherwise use defaults
+        let (show_name, show_columns, header_is_first_row, chart_output) =
+            if let Some(t) = template {
+                (
+                    t.show_name,
+                    t.show_columns,
+                    t.header_is_first_row,
+                    t.chart_output,
+                )
+            } else {
+                (None, None, false, None)
+            };
+
+        let mut new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            "Formula1",
+            output.inner,
+            header_is_first_row,
+            show_name,
+            show_columns,
+            chart_output,
+        );
+
+        // Apply additional template properties not in DataTable::new
+        if let Some(t) = template {
+            new_data_table.alternating_colors = t.alternating_colors;
+            new_data_table.chart_pixel_output = t.chart_pixel_output;
         }
+
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
     }
 
     pub(crate) fn add_formula_without_eval(
