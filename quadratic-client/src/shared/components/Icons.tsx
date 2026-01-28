@@ -77,6 +77,9 @@ export const AddIcon: IconComponent = (props) => {
 export const AIIcon: IconComponent = (props) => {
   return <Icon {...props}>auto_awesome</Icon>;
 };
+export const AgentModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>robot_2</Icon>;
+};
 export const AppearanceLightModeIcon: IconComponent = (props) => {
   return <Icon {...props}>light_mode</Icon>;
 };
