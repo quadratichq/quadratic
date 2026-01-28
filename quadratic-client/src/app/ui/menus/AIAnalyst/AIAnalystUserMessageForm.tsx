@@ -2,7 +2,6 @@ import { Action } from '@/app/actions/actions';
 import {
   abortControllerAtom,
   aiStore,
-  currentChatMessagesAtom,
   currentChatUserMessagesCountAtom,
   importFilesToGridLoadingAtom,
   loadingAtom,

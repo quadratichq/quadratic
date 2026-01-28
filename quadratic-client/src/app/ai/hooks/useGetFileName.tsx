@@ -6,7 +6,6 @@ import { createTextContent, getPromptMessagesForAI } from 'quadratic-shared/ai/h
 import { DEFAULT_GET_CHAT_NAME_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useCallback } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 

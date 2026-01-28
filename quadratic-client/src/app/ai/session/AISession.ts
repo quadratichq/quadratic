@@ -2,34 +2,35 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import type { Connection } from './types';
 import { getLastAIPromptMessageIndex, getMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIModelKey,
   ChatMessage,
-  Content,
   Context,
   ToolResultMessage,
   UserMessagePrompt,
 } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
 import {
-  aiStore,
   abortControllerAtom,
+  aiStore,
   loadingAtom,
   pdfImportAtom,
-  promptSuggestionsAtom,
   showAIAnalystAtom,
   showChatHistoryAtom,
   waitingOnMessageIndexAtom,
   webSearchAtom,
 } from '../atoms/aiAnalystAtoms';
-import { AIAPIClient, aiAPIClient } from './AIAPIClient';
-import { ContextBuilder, contextBuilder } from './ContextBuilder';
-import { MessageManager, messageManager } from './MessageManager';
-import { ToolExecutor, toolExecutor } from './ToolExecutor';
-import type { AISessionRequest, AISessionResult, AISessionStatus, ImportFile } from './types';
+import type { AIAPIClient } from './AIAPIClient';
+import { aiAPIClient } from './AIAPIClient';
+import type { ContextBuilder } from './ContextBuilder';
+import { contextBuilder } from './ContextBuilder';
+import type { MessageManager } from './MessageManager';
+import { messageManager } from './MessageManager';
+import type { ToolExecutor } from './ToolExecutor';
+import { toolExecutor } from './ToolExecutor';
+import type { AISessionRequest, AISessionResult, AISessionStatus, Connection, ImportFile } from './types';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;

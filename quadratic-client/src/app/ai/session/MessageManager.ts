@@ -19,7 +19,6 @@ import {
   aiStore,
   currentChatAtom,
   currentChatMessagesAtom,
-  chatsAtom,
   promptSuggestionsAtom,
   showChatHistoryAtom,
 } from '../atoms/aiAnalystAtoms';

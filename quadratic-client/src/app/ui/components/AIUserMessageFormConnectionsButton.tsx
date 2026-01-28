@@ -24,7 +24,7 @@ import { useSetAtom } from 'jotai';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 const SYNCED_CONNECTION_POLL_INTERVAL_MS = 10000; // 10 seconds
 
