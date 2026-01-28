@@ -62,6 +62,9 @@ const ConnectionPortSchema = z
     { message: 'Port must be a valid number between 0 and 65535' }
   );
 export const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
+export const SyncedConnectionLatestLogStatusSchema = z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']);
+export type SyncedConnectionLatestLogStatus = z.infer<typeof SyncedConnectionLatestLogStatusSchema>;
+
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
@@ -73,6 +76,8 @@ const ConnectionSchema = z.object({
   typeDetails: ConnectionTypeDetailsSchema,
   syncedConnectionPercentCompleted: z.number().optional(),
   syncedConnectionUpdatedDate: z.string().datetime().optional(),
+  syncedConnectionLatestLogStatus: SyncedConnectionLatestLogStatusSchema.optional(),
+  syncedConnectionLatestLogError: z.string().optional(),
 });
 const ConnectionSshSchema = z.object({
   useSsh: z.boolean(),
@@ -189,6 +194,8 @@ export const ConnectionListSchema = z.array(
     isDemo: true,
     syncedConnectionPercentCompleted: true,
     syncedConnectionUpdatedDate: true,
+    syncedConnectionLatestLogStatus: true,
+    syncedConnectionLatestLogError: true,
   })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
