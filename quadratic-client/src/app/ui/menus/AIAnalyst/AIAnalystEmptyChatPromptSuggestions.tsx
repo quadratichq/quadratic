@@ -1,17 +1,17 @@
+import { loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import {
   useGetEmptyChatPromptSuggestions,
   type EmptyChatPromptSuggestions,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtomValue } from 'jotai';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
@@ -39,7 +39,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [abortController, setAbortController] = useState<AbortController | undefined>(undefined);
-    const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+    const aiAnalystLoading = useAtomValue(loadingAtom);
     const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
 
     useEffect(() => {

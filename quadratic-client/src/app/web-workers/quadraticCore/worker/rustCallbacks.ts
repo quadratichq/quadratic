@@ -183,7 +183,6 @@ export const jsRunPython = (
   chartPixelWidth: number | undefined,
   chartPixelHeight: number | undefined
 ) => {
-  console.log(`[jsRunPython] x=${x}, y=${y}, chartPixelWidth=${chartPixelWidth}, chartPixelHeight=${chartPixelHeight}`);
   self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth ?? null, chartPixelHeight ?? null);
 };
 

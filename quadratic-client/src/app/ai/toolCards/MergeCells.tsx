@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type MergeCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.MergeCells]['responseSchema']>;
+type MergeCellsResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.MergeCells]>;
 
 export const MergeCells = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -19,7 +19,7 @@ export const MergeCells = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.MergeCells].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.MergeCells].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[MergeCells] Failed to parse args: ', error);

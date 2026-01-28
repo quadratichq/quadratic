@@ -1,7 +1,7 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { showAIAnalystAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
@@ -39,7 +39,7 @@ const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
-  const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
+  const [showAIAnalyst, setShowAIAnalyst] = useAtom(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const [showScheduledTasks, setShowScheduledTasks] = useAtom(scheduledTasksAtom);

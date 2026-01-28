@@ -1,7 +1,7 @@
+import { aiStore, failingSqlConnectionsAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
-import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -44,7 +44,7 @@ export const useGetEmptyChatPromptSuggestions = () => {
           }
 
           let connectionSchemaMarkdown: string = '';
-          const failingSqlConnections = await snapshot.getPromise(aiAnalystFailingSqlConnectionsAtom);
+          const failingSqlConnections = aiStore.get(failingSqlConnectionsAtom);
           if (!!connection && !failingSqlConnections.uuids.includes(connection.uuid)) {
             try {
               const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);

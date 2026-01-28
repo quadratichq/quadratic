@@ -1,20 +1,21 @@
+import {
+  aiStore,
+  currentChatMessagesAtom,
+  currentChatMessagesCountAtom,
+  currentChatUserMessagesCountAtom,
+  loadingAtom,
+  pdfImportLoadingAtom,
+  promptSuggestionsAtom,
+  promptSuggestionsCountAtom,
+  promptSuggestionsLoadingAtom,
+  waitingOnMessageIndexAtom,
+  webSearchLoadingAtom,
+} from '@/app/ai/atoms/aiAnalystAtoms';
 import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
 import { GroupedCodeToolCards, isCodeTool } from '@/app/ai/toolCards/GroupedCodeToolCards';
 import { GroupedFormattingToolCards, isFormattingTool } from '@/app/ai/toolCards/GroupedFormattingToolCards';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
-import {
-  aiAnalystCurrentChatMessagesAtom,
-  aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystCurrentChatUserMessagesCountAtom,
-  aiAnalystLoadingAtom,
-  aiAnalystPDFImportLoadingAtom,
-  aiAnalystPromptSuggestionsAtom,
-  aiAnalystPromptSuggestionsCountAtom,
-  aiAnalystPromptSuggestionsLoadingAtom,
-  aiAnalystWaitingOnMessageIndexAtom,
-  aiAnalystWebSearchLoadingAtom,
-} from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
@@ -26,6 +27,7 @@ import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultA
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtom, useAtomValue } from 'jotai';
 import {
   createTextContent,
   getUserPromptMessages,
@@ -39,7 +41,6 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolCall, ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -61,9 +62,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     [debugFlags]
   );
 
-  const [messages, setMessages] = useRecoilState(aiAnalystCurrentChatMessagesAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-  const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [messages, setMessages] = useAtom(currentChatMessagesAtom);
+  const messagesCount = useAtomValue(currentChatMessagesCountAtom);
+  const loading = useAtomValue(loadingAtom);
 
   // Pre-process messages to identify groups of consecutive tool calls across messages
   // Returns a map of messageIndex -> { isGroupStart, groupToolCalls, skipToolCalls, isGroupComplete }
@@ -234,9 +235,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     [toolGroupInfo]
   );
 
-  const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
-  const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
-  const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
+  const waitingOnMessageIndex = useAtomValue(waitingOnMessageIndexAtom);
+  const promptSuggestionsCount = useAtomValue(promptSuggestionsCountAtom);
+  const promptSuggestionsLoading = useAtomValue(promptSuggestionsLoadingAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -508,29 +509,28 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
 const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
-  const handleClick = useRecoilCallback(
-    ({ snapshot }) =>
-      async (prompt: string) => {
-        const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
-        trackEvent('[AIAnalyst].submitPromptSuggestion', { userMessageCountUponSubmit: userMessagesCount });
+  const handleClick = useCallback(
+    (prompt: string) => {
+      const userMessagesCount = aiStore.get(currentChatUserMessagesCountAtom);
+      trackEvent('[AIAnalyst].submitPromptSuggestion', { userMessageCountUponSubmit: userMessagesCount });
 
-        const messages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
-        const lastContext = getUserPromptMessages(messages).at(-1)?.context;
-        submitPrompt({
-          messageSource: 'User',
-          content: [createTextContent(prompt)],
-          context: {
-            ...(lastContext ? { codeCell: lastContext.codeCell } : defaultAIAnalystContext),
-          },
-          messageIndex: messages.length,
-          importFiles: [],
-        });
-      },
+      const messages = aiStore.get(currentChatMessagesAtom);
+      const lastContext = getUserPromptMessages(messages).at(-1)?.context;
+      submitPrompt({
+        messageSource: 'User',
+        content: [createTextContent(prompt)],
+        context: {
+          ...(lastContext ? { codeCell: lastContext.codeCell } : defaultAIAnalystContext),
+        },
+        messageIndex: messages.length,
+        importFiles: [],
+      });
+    },
     [submitPrompt]
   );
 
-  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const promptSuggestions = useAtomValue(promptSuggestionsAtom);
+  const messagesCount = useAtomValue(currentChatMessagesCountAtom);
   if (!messagesCount || !promptSuggestions.suggestions.length) {
     return null;
   }
@@ -551,7 +551,7 @@ const PromptSuggestions = memo(() => {
 });
 
 const PDFImportLoading = memo(() => {
-  const pdfImportLoading = useRecoilValue(aiAnalystPDFImportLoadingAtom);
+  const pdfImportLoading = useAtomValue(pdfImportLoadingAtom);
 
   if (!pdfImportLoading) {
     return null;
@@ -567,7 +567,7 @@ const PDFImportLoading = memo(() => {
 });
 
 const WebSearchLoading = memo(() => {
-  const webSearchLoading = useRecoilValue(aiAnalystWebSearchLoadingAtom);
+  const webSearchLoading = useAtomValue(webSearchLoadingAtom);
 
   if (!webSearchLoading) {
     return null;
