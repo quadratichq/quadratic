@@ -31,7 +31,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { Link, redirect, useFetcher, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 type Step = 'connection' | 'describe';
-type DataPath = 'files' | 'connections' | 'scratch' | null;
+type DataPath = 'connections' | null;
 
 const getStepFromPath = (pathname: string, teamUuid: string): Step => {
   if (pathname === ROUTES.TEAM_FILES_CREATE_AI_CONNECTION(teamUuid)) return 'connection';
@@ -598,7 +598,7 @@ export const Component = () => {
           {/* Step 2: Describe Your Spreadsheet */}
           {step === 'describe' && (
             <>
-              {/* Onboarding: Data Path Selection */}
+              {/* Onboarding: Combined File and Connection Selection */}
               {isFromOnboarding && !selectedDataPath && (
                 <>
                   <div className="mb-8 text-center">
@@ -606,31 +606,81 @@ export const Component = () => {
                     <p className="text-lg text-muted-foreground">What kind of data will you work with in Quadratic?</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        trackEvent('[StartWithAI].selectDataPath', { path: 'files' });
-                        // Navigate to a new sheet and open the file import dialog
-                        navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, openFileImport: true }));
-                      }}
-                      className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
-                    >
-                      <FileIcon size="lg" className="text-primary" />
-                      <span className="text-sm">Import Files</span>
-                      <span className="text-xs text-muted-foreground">Excel, CSV, PDF, Parquet</span>
-                    </button>
+                  {/* File import options */}
+                  <div className="mb-6 space-y-3">
+                    <h3 className="text-sm font-medium text-muted-foreground">Import a file</h3>
+                    <div className="grid grid-cols-4 gap-2">
+                      <button
+                        onClick={() => {
+                          trackEvent('[StartWithAI].selectDataPath', { path: 'file', fileType: 'excel' });
+                          navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, openFileImport: true }));
+                        }}
+                        className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <img src="/images/icon-excel.svg" alt="Excel" className="h-8 w-8" />
+                        <span className="text-xs font-medium">Excel</span>
+                      </button>
 
-                    <button
-                      onClick={() => {
-                        trackEvent('[StartWithAI].selectDataPath', { path: 'connections' });
-                        setSelectedDataPath('connections');
-                      }}
-                      className="flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-5 font-medium shadow-sm transition-all hover:border-primary hover:shadow-md active:bg-accent"
-                    >
-                      <DatabaseIcon size="lg" className="text-primary" />
-                      <span className="text-sm">Connect Data</span>
-                      <span className="text-xs text-muted-foreground">Databases & services</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          trackEvent('[StartWithAI].selectDataPath', { path: 'file', fileType: 'csv' });
+                          navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, openFileImport: true }));
+                        }}
+                        className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <FileIcon className="text-green-600" />
+                        <span className="text-xs font-medium">CSV</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          trackEvent('[StartWithAI].selectDataPath', { path: 'file', fileType: 'pdf' });
+                          navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, openFileImport: true }));
+                        }}
+                        className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <img src="/images/icon-pdf.svg" alt="PDF" className="h-8 w-8" />
+                        <span className="text-xs font-medium">PDF</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          trackEvent('[StartWithAI].selectDataPath', { path: 'file', fileType: 'parquet' });
+                          navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, openFileImport: true }));
+                        }}
+                        className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <FileIcon className="text-orange-500" />
+                        <span className="text-xs font-medium">Parquet</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Connection options */}
+                  <div className="mb-6 space-y-3">
+                    <h3 className="text-sm font-medium text-muted-foreground">Connect to a data source</h3>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(
+                        Object.entries(connectionsByType) as [
+                          ConnectionType,
+                          (typeof connectionsByType)[ConnectionType],
+                        ][]
+                      ).map(([type, { name, Logo }]) => (
+                        <button
+                          key={type}
+                          onClick={() => {
+                            trackEvent('[StartWithAI].selectDataPath', { path: 'connection', connectionType: type });
+                            setSelectedDataPath('connections');
+                            // Small delay to ensure state is set, then open dialog
+                            setTimeout(() => handleOpenConnectionsDialog('new', type), 0);
+                          }}
+                          className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <Logo className="h-8 w-8" />
+                          <span className="text-xs font-medium">{name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="mt-6 text-center">
@@ -661,9 +711,7 @@ export const Component = () => {
                       <span className="text-sm text-muted-foreground">
                         You selected:{' '}
                         <span className="font-medium text-foreground">
-                          {selectedDataPath === 'files' && 'Import Files'}
                           {selectedDataPath === 'connections' && 'Connect Data'}
-                          {selectedDataPath === 'scratch' && 'Start Fresh'}
                         </span>
                       </span>
                       <Button
@@ -674,50 +722,6 @@ export const Component = () => {
                       >
                         Change
                       </Button>
-                    </div>
-                  )}
-
-                  {/* FILES PATH: Dedicated file type buttons */}
-                  {selectedDataPath === 'files' && (
-                    <div className="mb-6 space-y-3">
-                      <h3 className="text-sm font-medium text-muted-foreground">Choose a file type to import</h3>
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                        <button
-                          onClick={() => handleFileUpload(['.xlsx', '.xls'], false)}
-                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
-                        >
-                          <img src="/images/icon-excel.svg" alt="Excel" className="h-10 w-10" />
-                          <span className="text-sm font-medium">Excel</span>
-                          <span className="text-xs text-muted-foreground">.xlsx, .xls</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleFileUpload(['.csv'], false)}
-                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
-                        >
-                          <FileIcon size="lg" className="text-green-600" />
-                          <span className="text-sm font-medium">CSV</span>
-                          <span className="text-xs text-muted-foreground">.csv</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleFileUpload(['.pdf'], false)}
-                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
-                        >
-                          <img src="/images/icon-pdf.svg" alt="PDF" className="h-10 w-10" />
-                          <span className="text-sm font-medium">PDF</span>
-                          <span className="text-xs text-muted-foreground">.pdf</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleFileUpload(['.parquet', '.parq', '.pqt'], false)}
-                          className="group flex flex-col items-center gap-2 rounded-lg border border-border p-4 transition-all hover:border-primary hover:shadow-md"
-                        >
-                          <FileIcon size="lg" className="text-orange-500" />
-                          <span className="text-sm font-medium">Parquet</span>
-                          <span className="text-xs text-muted-foreground">.parquet</span>
-                        </button>
-                      </div>
                     </div>
                   )}
 
@@ -786,88 +790,87 @@ export const Component = () => {
                     </div>
                   )}
 
-                  {/* SCRATCH PATH or default: Show AI suggestions prominently */}
-                  {(selectedDataPath === 'scratch' || !isFromOnboarding) &&
-                    !selectedDataPath?.match(/files|connections/) && (
-                      <>
-                        {/* Data section - only show for non-onboarding or scratch path */}
-                        <div className="mb-6 space-y-2">
-                          <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              variant="outline"
-                              className="h-10 gap-2 px-4"
-                              onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                            >
-                              <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
-                              Import Excel
-                            </Button>
+                  {/* Default view for non-onboarding users */}
+                  {!isFromOnboarding && (
+                    <>
+                      {/* Data section */}
+                      <div className="mb-6 space-y-2">
+                        <h3 className="text-sm font-medium text-muted-foreground">Add your data</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            className="h-10 gap-2 px-4"
+                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                          >
+                            <img src="/images/icon-excel.svg" alt="Excel" className="h-5 w-5" />
+                            Import Excel
+                          </Button>
 
-                            <Button
-                              variant="outline"
-                              className="h-10 gap-2 px-4"
-                              onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                            >
-                              <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
-                              Import PDF
-                            </Button>
+                          <Button
+                            variant="outline"
+                            className="h-10 gap-2 px-4"
+                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                          >
+                            <img src="/images/icon-pdf.svg" alt="PDF" className="h-5 w-5" />
+                            Import PDF
+                          </Button>
 
-                            <Button
-                              variant="outline"
-                              className="h-10 gap-2 px-4"
-                              onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
-                            >
-                              <FileIcon size="sm" />
-                              Import CSV / Others
-                            </Button>
+                          <Button
+                            variant="outline"
+                            className="h-10 gap-2 px-4"
+                            onClick={() => handleFileUpload([...FILE_TYPES, ...PDF_TYPES], false)}
+                          >
+                            <FileIcon size="sm" />
+                            Import CSV / Others
+                          </Button>
 
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="h-10 gap-2 px-4">
-                                  <DatabaseIcon size="sm" />
-                                  Add connection
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                <DropdownMenuLabel>Connections</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
-                                  <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                                  <span className="truncate">Add connection</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
-                                  <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-                                  <span className="truncate">Manage connections</span>
-                                </DropdownMenuItem>
-                                {latestConnections.length > 0 && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    {latestConnections.map((connection) => (
-                                      <DropdownMenuItem
-                                        key={connection.uuid}
-                                        onClick={() => {
-                                          trackEvent('[StartWithAI].addConnection', {
-                                            connectionType: connection.type,
-                                          });
-                                          setSelectedConnection({
-                                            uuid: connection.uuid,
-                                            name: connection.name,
-                                            type: connection.type,
-                                          });
-                                        }}
-                                        className="gap-4"
-                                      >
-                                        <LanguageIcon language={connection.type} className="flex-shrink-0" />
-                                        <span className="truncate">{connection.name}</span>
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="h-10 gap-2 px-4">
+                                <DatabaseIcon size="sm" />
+                                Add connection
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuLabel>Connections</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => handleOpenConnectionsDialog('new')} className="gap-4">
+                                <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                                <span className="truncate">Add connection</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenConnectionsDialog()} className="gap-4">
+                                <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+                                <span className="truncate">Manage connections</span>
+                              </DropdownMenuItem>
+                              {latestConnections.length > 0 && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  {latestConnections.map((connection) => (
+                                    <DropdownMenuItem
+                                      key={connection.uuid}
+                                      onClick={() => {
+                                        trackEvent('[StartWithAI].addConnection', {
+                                          connectionType: connection.type,
+                                        });
+                                        setSelectedConnection({
+                                          uuid: connection.uuid,
+                                          name: connection.name,
+                                          type: connection.type,
+                                        });
+                                      }}
+                                      className="gap-4"
+                                    >
+                                      <LanguageIcon language={connection.type} className="flex-shrink-0" />
+                                      <span className="truncate">{connection.name}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                      </>
-                    )}
+                      </div>
+                    </>
+                  )}
 
                   {/* Uploaded files and selected connection pills - show for all paths */}
                   {(uploadedFiles.length > 0 || selectedConnection) && (
