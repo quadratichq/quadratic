@@ -545,6 +545,10 @@ export const MoreHorizIcon: IconComponent = (props) => {
   return <Icon {...props}>more_horiz</Icon>;
 };
 
+export const MoveItemIcon: IconComponent = (props) => {
+  return <Icon {...props}>move_item</Icon>;
+};
+
 export const Number123Icon: IconComponent = (props) => {
   // This icon is just too small, so we make it more readable within its container
   // by increasing its size and adjusting its position
