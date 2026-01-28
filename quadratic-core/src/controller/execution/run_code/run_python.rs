@@ -33,11 +33,6 @@ impl GridController {
                 })
                 .unwrap_or((DEFAULT_CHART_PIXEL_WIDTH, DEFAULT_CHART_PIXEL_HEIGHT));
 
-            dbgjs!(format!(
-                "[run_python] sheet_pos: {:?}, passing: ({}, {})",
-                sheet_pos, chart_pixel_width, chart_pixel_height
-            ));
-
             if let Some(f) = self.run_python_callback.as_mut() {
                 f(
                     transaction.id.to_string(),

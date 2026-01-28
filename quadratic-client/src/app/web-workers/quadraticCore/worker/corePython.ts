@@ -120,9 +120,6 @@ class CorePython {
     chartPixelWidth: number | null,
     chartPixelHeight: number | null
   ) => {
-    console.log(
-      `[corePython sendRunPython] x=${x}, y=${y}, chartPixelWidth=${chartPixelWidth}, chartPixelHeight=${chartPixelHeight}`
-    );
     this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',

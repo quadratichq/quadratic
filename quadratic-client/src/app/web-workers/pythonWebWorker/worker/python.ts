@@ -235,9 +235,6 @@ class Python {
   };
 
   runPython = async (message: CorePythonRun): Promise<void> => {
-    console.log(
-      `[python.ts runPython] x=${message.x}, y=${message.y}, chartPixelWidth=${message.chartPixelWidth}, chartPixelHeight=${message.chartPixelHeight}`
-    );
     if (!this.pyodide || this.state !== 'ready' || this.transactionId) {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       // Send state update - Rust handles code running state via coreClientCodeRunningState
