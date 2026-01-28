@@ -1,8 +1,8 @@
 //! User-focused URL parameters (default behavior)
 
+import { getAIAnalystInitialized } from '@/app/ai/atoms/aiAnalystAtoms';
 import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { filesFromIframe, IMPORT_FILE_EXTENSIONS } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
-import { getAIAnalystInitialized } from '@/app/ai/atoms/aiAnalystAtoms';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -117,11 +117,6 @@ export class UrlParamsUser {
 
     if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
-    const { submitAIAnalystPrompt } = pixiAppSettings;
-    if (!submitAIAnalystPrompt) {
-      throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
-    }
-
     const chatId = this.chatId;
     this.chatId = undefined;
 
@@ -143,8 +138,8 @@ export class UrlParamsUser {
     }
     filesFromIframe.dbFiles = [];
 
-    // submit the prompt and files to the ai analyst
-    submitAIAnalystPrompt({
+    // Emit event for React to handle the prompt submission
+    events.emit('aiAnalystSubmitPrompt', {
       content: [...files, createTextContent(prompt)],
       messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
       context: { codeCell: undefined, connection: undefined },

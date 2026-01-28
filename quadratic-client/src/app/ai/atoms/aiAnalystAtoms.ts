@@ -1,6 +1,7 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { atom, getDefaultStore } from 'jotai';
 import {
   isAIPromptMessage,
   isToolResultMessage,
@@ -9,7 +10,6 @@ import {
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { atom, getDefaultStore } from 'jotai';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
 
@@ -415,6 +415,32 @@ export async function initializeAIAnalyst(userEmail: string, fileUuid: string, s
     aiAnalystInitialized = true;
     events.emit('aiAnalystInitialized');
   }
+}
+
+// ============================================================================
+// Vanilla JS Helper Functions (for use outside React)
+// ============================================================================
+
+/**
+ * Get whether the AI Analyst is currently shown
+ */
+export function getShowAIAnalyst(): boolean {
+  return aiStore.get(showAIAnalystAtom);
+}
+
+/**
+ * Set whether the AI Analyst is shown (with side effects like abort/focus)
+ */
+export function setShowAIAnalyst(show: boolean): void {
+  aiStore.set(showAIAnalystWithEffectsAtom, show);
+}
+
+/**
+ * Toggle the AI Analyst visibility
+ */
+export function toggleShowAIAnalyst(): void {
+  const current = aiStore.get(showAIAnalystAtom);
+  aiStore.set(showAIAnalystWithEffectsAtom, !current);
 }
 
 // ============================================================================
