@@ -38,7 +38,10 @@ export const TopBarMenus = () => {
       <Button
         size={agentMode ? 'default' : 'icon'}
         variant={'default'}
-        className={cn(`mr-1 h-8 rounded-full bg-gradient-to-r ${AI_GRADIENT}`, agentMode ? 'pl-2' : 'w-8')}
+        className={cn(
+          `mr-1 h-8 rounded-full`,
+          agentMode ? `bg-gradient-to-r ${AI_GRADIENT} pl-2` : 'w-8 bg-purple-600 hover:bg-purple-500'
+        )}
         onClick={() => setAgentMode((prev) => !prev)}
         disabled={aiLoading}
       >

@@ -24,4 +24,4 @@ export const VERSION = import.meta.env.VITE_VERSION;
 export const FONT_VERSION = '1.0.1';
 
 // AI gradient colors used for AI-related UI elements
-export const AI_GRADIENT = 'from-indigo-600 via-purple-600 to-pink-600';
+export const AI_GRADIENT = 'from-indigo-500 via-purple-600 to-fuchsia-600';
