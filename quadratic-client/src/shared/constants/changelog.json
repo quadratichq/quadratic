@@ -2,8 +2,13 @@
   {
     "version": "0.23.8",
     "date": "2026-01-28",
-    "changes": ["Onboarding flow improvements"],
-    "details": "<h2>Onboarding flow improvements</h2>\n<p>Simplified the new user onboarding experience. All users now go directly to creating a new file after completing onboarding, providing a more streamlined path to get started with Quadratic.</p>"
+    "changes": [
+      "Streamlined onboarding",
+      "Synced connections improvements",
+      "JavaScript autocomplete enhancement",
+      "Bug fixes"
+    ],
+    "details": "<h2>Streamlined onboarding</h2>\n<p>New users are now taken directly to create their first file after completing onboarding, making it faster to get started with Quadratic.</p>\n\n<h2>Synced connections improvements</h2>\n<p>We've made several improvements to synced connections:</p>\n<ul>\n<li>Added semantic layers support for Google Analytics, Mixpanel, and Plaid connections</li>\n<li>Improved sync status display in the code editor</li>\n<li>Simplified sync state UI with better error messaging</li>\n<li>Better handling of synced connection errors</li>\n</ul>\n\n<h2>JavaScript autocomplete enhancement</h2>\n<p>Improved JavaScript autocomplete so that <code>(await q.cells())</code> now properly supports dot notation for method chaining.</p>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed hyperlink popup positioning issues</li>\n<li>Fixed template display bug and user filter in dashboard</li>\n<li>Fixed bug with improperly deleting tables after spills</li>\n<li>Fixed favicons in QA environment</li>\n<li>Updated Plaid connection branding from Coinbase to Fidelity</li>\n</ul>"
   },
   {
     "version": "0.23.7",
