@@ -16,6 +16,7 @@ pub enum TransactionName {
     SetDataTableAt,
     CutClipboard,
     PasteClipboard,
+    FormatPainter,
 
     SetCode,
     RunCode,

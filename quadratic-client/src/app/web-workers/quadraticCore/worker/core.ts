@@ -764,6 +764,25 @@ class Core {
     }
   }
 
+  applyFormatPainter({
+    sourceSelection,
+    targetSelection,
+    cursor,
+    isAi,
+  }: {
+    sourceSelection: string;
+    targetSelection: string;
+    cursor: string;
+    isAi: boolean;
+  }) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.applyFormatPainter(sourceSelection, targetSelection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('applyFormatPainter', e);
+    }
+  }
+
   //#endregion
 
   setBorders(

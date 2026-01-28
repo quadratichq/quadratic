@@ -18,6 +18,7 @@ import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
 import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { UICopy } from '@/app/gridGL/UI/UICopy';
+import { UIFormatPainter } from '@/app/gridGL/UI/UIFormatPainter';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
 import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
@@ -49,6 +50,7 @@ export class Content extends Container {
   cellImages = new UICellImages();
   validations = new UIValidations();
   copy = new UICopy();
+  formatPainter = new UIFormatPainter();
   private singleCellOutlines = new UISingleCellOutlines();
 
   debug = new Graphics();
@@ -73,6 +75,7 @@ export class Content extends Container {
 
       this.uiCursor,
       this.copy,
+      this.formatPainter,
       this.cellHighlights,
       this.cellMoving,
       this.hoverTableHeaders,
@@ -127,6 +130,7 @@ export class Content extends Container {
     this.boxCells.visible = false;
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
+    this.formatPainter.visible = false;
     this.cellsSheets.cull(options.cull);
     if (options.thumbnail) {
       this.cellsSheet.tables.forceUpdate(options.cull);
@@ -144,6 +148,7 @@ export class Content extends Container {
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
     this.copy.visible = true;
+    this.formatPainter.visible = true;
     this.cellsSheets.cull(bounds);
     this.cellsSheet.tables.forceUpdate(bounds);
     this.copying = false;
@@ -182,6 +187,7 @@ export class Content extends Container {
       this.cellMoving.dirty ||
       this.validations.dirty ||
       this.copy.dirty ||
+      this.formatPainter.dirty ||
       this.singleCellOutlines.dirty ||
       this.cellImages.dirty;
 
@@ -198,6 +204,7 @@ export class Content extends Container {
           this.cellMoving.dirty && 'cellMoving',
           this.validations.dirty && 'validations',
           this.copy.dirty && 'copy',
+          this.formatPainter.dirty && 'formatPainter',
           this.singleCellOutlines.dirty && 'singleCellOutlines',
           this.cellImages.dirty && 'cellImages',
         ]
@@ -231,6 +238,8 @@ export class Content extends Container {
     debugTimeCheck('[Update] backgrounds');
     this.copy.update();
     debugTimeCheck('[Update] copy');
+    this.formatPainter.update();
+    debugTimeCheck('[Update] formatPainter');
     this.singleCellOutlines.update(viewportChanged);
     debugTimeCheck('[Update] singleCellOutlines');
     this.cellImages.update();
