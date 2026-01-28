@@ -8,10 +8,9 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
-import { EmptyChatSection } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
+import { EmptyChatSection, SuggestionButton } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { PromptIcon, SpinnerIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
+import { PromptIcon } from '@/shared/components/Icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -59,17 +58,13 @@ interface CategorizedSuggestionsSectionProps {
 const CategorizedSuggestionsSection = memo(
   ({ suggestions, activeCategory, setActiveCategory, loading, submit }: CategorizedSuggestionsSectionProps) => {
     return (
-      <div className="relative flex w-full max-w-lg flex-col gap-3">
-        <h2 className="flex h-6 items-center gap-2 text-xs font-semibold text-muted-foreground">
-          Suggestions
-          {loading && <SpinnerIcon className="text-primary" />}
-        </h2>
+      <EmptyChatSection header="Suggestions" isLoading={loading}>
         <Tabs
           value={activeCategory}
           onValueChange={(value) => setActiveCategory(value as SuggestionCategory)}
-          className="w-full"
+          className="relative w-full"
         >
-          <TabsList className="absolute -top-1.5 right-0 w-full justify-end">
+          <TabsList className="absolute -top-9 right-1 w-full justify-end">
             {SUGGESTION_CATEGORIES.map(({ key, label }) => (
               <TabsTrigger key={key} value={key} className="h-7 px-2 text-xs">
                 {label}
@@ -77,25 +72,22 @@ const CategorizedSuggestionsSection = memo(
             ))}
           </TabsList>
           {SUGGESTION_CATEGORIES.map(({ key }) => (
-            <TabsContent key={key} value={key} className="-mx-1 mt-0 flex flex-col">
+            <TabsContent key={key} value={key} className="mt-0 flex flex-col">
               {suggestions[key].map(({ label, prompt }, index) => (
-                <Button
+                <SuggestionButton
                   key={`${index}-${prompt}`}
-                  variant="ghost"
-                  className="h-auto w-full justify-start gap-2 whitespace-normal px-1 text-left text-sm font-normal text-foreground hover:text-foreground"
+                  icon={<PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />}
+                  text={label}
                   onClick={() => {
                     trackEvent('[AIAnalyst].submitCategorizedExamplePrompt', { category: key });
                     submit(prompt);
                   }}
-                >
-                  <PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />
-                  <span>{label}</span>
-                </Button>
+                />
               ))}
             </TabsContent>
           ))}
         </Tabs>
-      </div>
+      </EmptyChatSection>
     );
   }
 );
@@ -247,19 +239,19 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             submit={submit}
           />
         ) : (
-          <EmptyChatSection
-            header="Suggestions"
-            isLoading={sheetHasData && loading}
-            items={defaultPromptSuggestions.map(({ prompt }, index) => ({
-              key: `${index}-${prompt}`,
-              icon: <PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />,
-              text: prompt,
-              onClick: () => {
-                trackEvent('[AIAnalyst].submitExamplePrompt');
-                submit(prompt);
-              },
-            }))}
-          />
+          <EmptyChatSection header="Suggestions" isLoading={sheetHasData && loading}>
+            {defaultPromptSuggestions.map(({ prompt }, index) => (
+              <SuggestionButton
+                key={`${index}-${prompt}`}
+                icon={<PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />}
+                text={prompt}
+                onClick={() => {
+                  trackEvent('[AIAnalyst].submitExamplePrompt');
+                  submit(prompt);
+                }}
+              />
+            ))}
+          </EmptyChatSection>
         )}
       </div>
     );
