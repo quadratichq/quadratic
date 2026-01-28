@@ -83,18 +83,23 @@ impl DatafusionConnection {
         SessionContext::new_with_config(config)
     }
 
-    /// Get the parquet path for a table in the object store (format: s3://bucket/{connection_id}/{table}/)
-    /// Returns the full URL path that DataFusion expects for register_parquet
+    /// Get the parquet path for a table in the object store
+    /// For S3: full URL path (s3://bucket/{connection_id}/{table}/)
+    /// For FileSystem: relative path (/{connection_id}/{table}/) since LocalFileSystem adds its prefix
     pub fn object_store_parquet_path(&self, table: &str) -> Result<String> {
         let connection_id = self
             .connection_id
             .ok_or_else(|| connect_error("Connection ID is required"))?;
 
-        // DataFusion's register_parquet expects a full URL path
-        Ok(format!(
-            "{}/{}/{}/",
-            self.object_store_url, connection_id, table
-        ))
+        // For file:// URLs, use relative path since LocalFileSystem::new_with_prefix
+        // already handles the base path. For S3, use the full URL.
+        let path = if self.object_store_url.scheme() == "file" {
+            format!("/{}/{}/", connection_id, table)
+        } else {
+            format!("{}/{}/{}/", self.object_store_url, connection_id, table)
+        };
+
+        Ok(path)
     }
 }
 
