@@ -28,5 +28,4 @@ mod binding_power;
 mod iterative_parser;
 mod stack_frame;
 
-pub use binding_power::{infix_binding_power, postfix_binding_power, prefix_binding_power};
 pub use iterative_parser::parse_expression_iterative;

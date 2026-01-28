@@ -362,4 +362,18 @@ mod tests {
             "Deep nesting should not cause stack overflow"
         );
     }
+
+    #[test]
+    fn test_deeply_nested_function_calls() {
+        // Test deeply nested function calls like ABS(ABS(ABS(...)))
+        // Each function call adds Rust stack frames for FunctionCall parsing,
+        // so this tests the practical limit of function nesting.
+        let depth = 100;
+        let formula = format!("{}1{}", "ABS(".repeat(depth), ")".repeat(depth));
+        let result = test_parse(&formula);
+        assert!(
+            result.is_ok(),
+            "Deeply nested function calls should parse successfully"
+        );
+    }
 }

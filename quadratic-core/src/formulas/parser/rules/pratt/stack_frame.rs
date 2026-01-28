@@ -76,6 +76,7 @@ impl ValueSlot {
 
     /// Stores a value in the slot.
     pub fn set(&mut self, value: AstNode) {
+        debug_assert!(self.value.is_none(), "ValueSlot already contains a value");
         self.value = Some(value);
     }
 
