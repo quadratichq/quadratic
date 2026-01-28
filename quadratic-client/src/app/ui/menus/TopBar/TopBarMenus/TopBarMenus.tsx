@@ -15,6 +15,7 @@ import { AI_GRADIENT } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import './styles.css';
@@ -42,7 +43,14 @@ export const TopBarMenus = () => {
           `mr-1 h-8 rounded-full`,
           agentMode ? `bg-gradient-to-r ${AI_GRADIENT} pl-2` : 'w-8 bg-purple-600 hover:bg-purple-500'
         )}
-        onClick={() => setAgentMode((prev) => !prev)}
+        onClick={() => {
+          if (agentMode) {
+            trackEvent('[AgentMode].exit');
+          } else {
+            trackEvent('[AgentMode].enter');
+          }
+          setAgentMode((prev) => !prev);
+        }}
         disabled={aiLoading}
       >
         <AgentModeIcon className={cn(agentMode ? 'mr-1' : '')} />
