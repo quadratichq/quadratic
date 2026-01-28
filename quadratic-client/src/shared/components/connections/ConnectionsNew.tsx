@@ -9,8 +9,8 @@ import AmexLogo from './logo-plaid-amex.svg?react';
 import BOALogo from './logo-plaid-boa.svg?react';
 import ChaseLogo from './logo-plaid-chase.svg?react';
 import CitiLogo from './logo-plaid-citi.svg?react';
-import CoinbaseLogo from './logo-plaid-coinbase.svg?react';
 import DiscoverLogo from './logo-plaid-discover.svg?react';
+import FidelityLogo from './logo-plaid-fidelity.svg?react';
 import RobinhoodLogo from './logo-plaid-robinhood.svg?react';
 import VanguardLogo from './logo-plaid-vanguard.svg?react';
 import PlaidLogo from './logo-plaid.svg?react';
@@ -20,7 +20,7 @@ const plaidConnections = [
 
   {
     name: 'Brokerages',
-    logos: [VanguardLogo, RobinhoodLogo, CoinbaseLogo],
+    logos: [RobinhoodLogo, FidelityLogo, VanguardLogo],
   },
   {
     name: 'Credit Cards',
