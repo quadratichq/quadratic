@@ -5,6 +5,7 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -16,8 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import type { Dispatch, SetStateAction } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 export const TopBarFileNameAndLocationMenu = () => {
@@ -61,6 +62,7 @@ export const TopBarFileNameAndLocationMenu = () => {
 };
 
 function FileLocation() {
+  const { uuid } = useParams() as { uuid: string };
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     file: { ownerUserId },
@@ -70,7 +72,38 @@ function FileLocation() {
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;
-  const [fileType, setFileType] = useState<'team' | 'personal'>('team');
+
+  // Determine current file location based on ownerUserId:
+  // - If ownerUserId === userId, it's the user's personal file
+  // - If ownerUserId === undefined, it's a team file
+  const isPersonalFile = ownerUserId !== undefined && ownerUserId === userId;
+  const [fileType, setFileType] = useState<'team' | 'personal'>(isPersonalFile ? 'personal' : 'team');
+
+  const moveFile = useCallback(
+    async (newFileType: 'team' | 'personal') => {
+      if (!userId) return;
+
+      const previousFileType = fileType;
+
+      // Optimistically update the UI
+      setFileType(newFileType);
+
+      try {
+        if (newFileType === 'personal') {
+          // Move to personal: set ownerUserId to current user
+          await apiClient.files.update(uuid, { ownerUserId: userId });
+        } else {
+          // Move to team: set ownerUserId to null
+          await apiClient.files.update(uuid, { ownerUserId: null });
+        }
+      } catch (error) {
+        // Revert on failure
+        setFileType(previousFileType);
+        console.error('Failed to move file:', error);
+      }
+    },
+    [uuid, userId, fileType]
+  );
 
   const linkProps = {
     reloadDocument: true,
@@ -145,7 +178,9 @@ function FileLocation() {
                 disabled={fileType === 'team'}
                 checked={fileType === 'team'}
                 onCheckedChange={(checked) => {
-                  setFileType(checked ? 'team' : 'personal');
+                  if (checked) {
+                    moveFile('team');
+                  }
                 }}
               >
                 Team file
@@ -154,7 +189,9 @@ function FileLocation() {
                 disabled={fileType === 'personal'}
                 checked={fileType === 'personal'}
                 onCheckedChange={(checked) => {
-                  setFileType(checked ? 'personal' : 'team');
+                  if (checked) {
+                    moveFile('personal');
+                  }
                 }}
               >
                 Personal file
