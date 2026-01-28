@@ -108,7 +108,7 @@ jobs:
 
       - name: Install pkg-config, OpenSSL, and CA certificates
         run: |
-          sudo apt-get update
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y pkg-config libssl-dev ca-certificates
           sudo update-ca-certificates
 
@@ -127,7 +127,7 @@ jobs:
       - name: Install Python development headers for core-cloud
         if: matrix.package == 'core-cloud'
         run: |
-          sudo apt-get update
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y python3-dev libpython3.12-dev
 
       - name: Install Python packages for core-cloud tests
@@ -270,7 +270,7 @@ jobs:
 
       - name: Install build-essential, llvm, and clang
         run: |
-          sudo apt-get update
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - name: Setup Node
@@ -438,9 +438,7 @@ jobs:
 
       - name: Install build-essential, llvm, and clang
         run: |
-          sudo apt-get update
-
-
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - name: Setup Node

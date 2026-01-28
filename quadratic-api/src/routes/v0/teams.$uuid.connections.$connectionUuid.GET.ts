@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { SyncedConnectionLatestLogStatus } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
 import { getTeamConnection } from '../../middleware/getTeamConnection';
 import { userMiddleware } from '../../middleware/user';
@@ -41,6 +42,7 @@ async function handler(
   }
 
   const typeDetails = JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8')));
+  const latestLog = syncedConnection?.SyncedConnectionLog?.[0];
 
   return res.status(200).json({
     uuid: connection.uuid,
@@ -52,5 +54,7 @@ async function handler(
     typeDetails,
     syncedConnectionPercentCompleted: syncedConnection?.percentCompleted ?? undefined,
     syncedConnectionUpdatedDate: syncedConnection?.updatedDate?.toISOString() ?? undefined,
+    syncedConnectionLatestLogStatus: (latestLog?.status as SyncedConnectionLatestLogStatus) ?? undefined,
+    syncedConnectionLatestLogError: latestLog?.error ?? undefined,
   });
 }
