@@ -17,10 +17,10 @@
 //! track what the parser is currently doing:
 //!
 //! 1. **ParseExpr**: Start parsing an expression with a minimum binding power
-//! 2. **ParsePrefix**: Handle prefix operators
-//! 3. **ParseAtom**: Parse atomic expressions (literals, function calls, etc.)
-//! 4. **AfterLhs**: After parsing the left-hand side, check for operators
-//! 5. **AfterRhs**: After parsing the right-hand side, build the binary node
+//! 2. **AfterPrefix**: After parsing a prefix operator, waiting for the operand
+//! 3. **AfterLhs**: After parsing the left-hand side, check for infix operators
+//! 4. **AfterRhs**: After parsing both sides, build the binary operator node
+//! 5. **AfterParen**: After parsing a parenthesized expression
 //!
 //! This approach guarantees O(1) Rust stack usage regardless of nesting depth.
 
