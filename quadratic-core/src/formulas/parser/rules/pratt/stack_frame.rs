@@ -5,7 +5,7 @@
 //! we push these frames onto an explicit stack.
 
 use crate::formulas::ast::AstNode;
-use crate::{Span, Spanned};
+use crate::{CodeResult, RunErrorMsg, Span, Spanned};
 
 /// A stack frame representing the current parsing state.
 ///
@@ -76,11 +76,15 @@ impl ValueSlot {
 
     /// Stores a value in the slot.
     pub fn set(&mut self, value: AstNode) {
+        debug_assert!(self.value.is_none(), "ValueSlot already contains a value");
         self.value = Some(value);
     }
 
-    /// Takes the value from the slot, panicking if empty.
-    pub fn take(&mut self) -> AstNode {
-        self.value.take().expect("ValueSlot was empty")
+    /// Takes the value from the slot, returning an error if empty.
+    pub fn take(&mut self) -> CodeResult<AstNode> {
+        self.value.take().ok_or_else(|| {
+            RunErrorMsg::InternalError("Parser state error: ValueSlot was empty".into())
+                .without_span()
+        })
     }
 }
