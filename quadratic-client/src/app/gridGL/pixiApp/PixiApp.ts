@@ -59,6 +59,11 @@ export class PixiApp {
     this.momentumDetector = new MomentumScrollDetector();
 
     events.on('debugFlags', this.setViewportDirty);
+    events.on('setDirty', (dirty) => {
+      if (dirty.viewport) {
+        this.setViewportDirty();
+      }
+    });
   }
 
   init = (): Promise<void> => {

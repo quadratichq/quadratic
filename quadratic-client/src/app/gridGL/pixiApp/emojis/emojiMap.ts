@@ -1832,5 +1832,16 @@ export const emojiMap = {
   open_for_business: '🈺',
 };
 
+// Normalize emoji by stripping variation selectors (U+FE0F, U+FE0E)
+function normalizeEmoji(emoji: string): string {
+  return emoji.replace(/[\uFE0E\uFE0F]/g, '');
+}
+
 // Set of all unique emoji strings for quick character lookup
-export const emojiStrings: Set<string> = new Set(Object.values(emojiMap));
+// Includes both original forms (with variation selectors) and normalized forms (without)
+export const emojiStrings: Set<string> = new Set(
+  Object.values(emojiMap).flatMap((emoji) => {
+    const normalized = normalizeEmoji(emoji);
+    return normalized !== emoji ? [emoji, normalized] : [emoji];
+  })
+);

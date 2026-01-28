@@ -29,11 +29,17 @@ html,
   src: url('/fonts/opensans/OpenSans-BoldItalic.ttf');
 }
 
+@font-face {
+  font-family: 'NotoColorEmoji';
+  src: url('/fonts/NotoColorEmoji.woff2') format('woff2');
+  font-display: swap;
+}
+
 body {
   margin: 0;
   font-family:
-    system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol';
+    system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'NotoColorEmoji', 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
