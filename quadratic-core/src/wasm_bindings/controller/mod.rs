@@ -141,6 +141,17 @@ impl GridController {
         }
     }
 
+    /// Exports a [`GridController`] to a JSON string for debugging.
+    #[wasm_bindgen(js_name = "exportOpenGridToJson")]
+    pub fn js_export_open_grid_to_json(&self) -> Result<String, JsValue> {
+        match file::export_json(self.grid().clone()) {
+            Ok(bytes) => {
+                String::from_utf8(bytes).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
+            Err(e) => Err(JsValue::from_str(&e.to_string())),
+        }
+    }
+
     /// Exports a [`string`]
     #[wasm_bindgen(js_name = "getVersion")]
     pub fn js_file_version(&self) -> String {

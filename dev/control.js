@@ -242,11 +242,11 @@ export class Control {
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
         this.cli.options.functionTimer = false;
-        this.restartCore();
+        this.runCore(true);
     }
     toggleFunctionTimer() {
         this.cli.options.functionTimer = !this.cli.options.functionTimer;
-        this.restartCore();
+        this.runCore(true);
     }
     async runCore(restart) {
         if (this.cli.options.noRust)

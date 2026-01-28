@@ -425,7 +425,8 @@ pub(crate) mod tests {
         let _ = gc.import_excel(&file, "all_excel_functions.xlsx", None, false);
         let sheet_id = gc.grid.sheets()[0].id;
 
-        print_table_at(&gc, sheet_id, pos![A1]);
+        // Note: print_table_at expects a DataTable, but 1x1 formulas are now CellValue::Code
+        // print_table_at(&gc, sheet_id, pos![A1]);
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let (y_start, y_end) = sheet.column_bounds(1, true).unwrap();
@@ -434,14 +435,13 @@ pub(crate) mod tests {
         for y in y_start..=y_end {
             let pos = Pos { x: 1, y };
             // all cells should be formula code cells
-            let code_cell = sheet
+            let code_run = sheet
                 .code_run_at(&pos)
                 .unwrap_or_else(|| panic!("expected code cell"));
-            assert_eq!(code_cell.language, CodeCellLanguage::Formula);
+            assert_eq!(code_run.language, CodeCellLanguage::Formula);
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
-            let code_run = sheet.data_table_at(&pos).unwrap().code_run().unwrap();
             if let Some(error) = &code_run.error
                 && error.msg == RunErrorMsg::BadFunctionName
             {

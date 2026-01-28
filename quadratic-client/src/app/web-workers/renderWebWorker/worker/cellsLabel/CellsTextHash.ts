@@ -40,6 +40,9 @@ export class CellsTextHash {
 
   private drawRects: DrawRects[] = [];
 
+  // tracks single-cell code cell rectangles that need code outlines
+  private codeCellRects: Rectangle[] = [];
+
   // tracks which cells have links
   private links: Link[] = [];
 
@@ -167,6 +170,12 @@ export class CellsTextHash {
 
     const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle, minCol, maxCol, minRow, maxRow);
     this.labels.set(this.getKey(cell), cellLabel);
+
+    // Track single-cell code cells for outline rendering
+    if (cell.language) {
+      this.codeCellRects.push(rectangle);
+    }
+
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
         Number(cell.x),
@@ -196,6 +205,7 @@ export class CellsTextHash {
       this.links = [];
       this.drawRects = [];
       this.overflowGridLines = [];
+      this.codeCellRects = [];
     }
   };
 
@@ -214,7 +224,8 @@ export class CellsTextHash {
       this.viewRectangle,
       this.overflowGridLines,
       this.links,
-      this.drawRects
+      this.drawRects,
+      this.codeCellRects
     );
   };
 

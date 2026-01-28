@@ -9,7 +9,8 @@ use ts_rs::TS;
 
 use super::currency;
 use super::number::decimal_from_str;
-use super::{Duration, Instant, IsBlank};
+use super::{CodeCell, Duration, Instant, IsBlank};
+use crate::grid::CodeCellLanguage;
 use crate::grid::formats::FormatUpdate;
 use crate::{
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
@@ -216,6 +217,10 @@ pub enum CellValue {
     /// Rich text with inline formatting (links, bold, italic, etc. per span).
     #[cfg_attr(test, proptest(skip))]
     RichText(Vec<TextSpan>),
+    /// Single-cell code (1x1 output, no table UI).
+    /// Contains the code run and its computed output value.
+    #[cfg_attr(test, proptest(skip))]
+    Code(Box<CodeCell>),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -239,6 +244,7 @@ impl fmt::Display for CellValue {
                 }
                 Ok(())
             }
+            CellValue::Code(code_cell) => write!(f, "{}", code_cell.output),
         }
     }
 }
@@ -267,6 +273,7 @@ impl CellValue {
             CellValue::Time(_) => "time",
             CellValue::DateTime(_) => "date time",
             CellValue::RichText(_) => "rich text",
+            CellValue::Code(_) => "code",
         }
     }
 
@@ -285,6 +292,7 @@ impl CellValue {
             CellValue::Time(_) => 10,
             CellValue::Instant(_) | CellValue::DateTime(_) => 11,
             CellValue::RichText(_) => 12,
+            CellValue::Code(_) => 13,
         }
     }
 
@@ -308,6 +316,7 @@ impl CellValue {
                 // Return the concatenated text for repr
                 spans.iter().map(|s| s.text.as_str()).collect()
             }
+            CellValue::Code(code_cell) => code_cell.output.repr(),
         }
     }
 
@@ -352,6 +361,7 @@ impl CellValue {
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
             CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
             CellValue::RichText(spans) => spans.iter().map(|s| s.text.as_str()).collect(),
+            CellValue::Code(code_cell) => code_cell.output.to_display(),
 
             // these should not render
             CellValue::Image(_) => String::new(),
@@ -365,6 +375,7 @@ impl CellValue {
             CellValue::Number(n) => n.to_f64(),
             CellValue::Logical(true) => Some(1.0),
             CellValue::Logical(false) => Some(0.0),
+            CellValue::Code(code_cell) => code_cell.output.to_number(),
             _ => None,
         }
     }
@@ -468,6 +479,15 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::RichText(spans) => spans.iter().map(|s| s.text.as_str()).collect(),
 
+            // For code cells, return the code string (for formula editing)
+            CellValue::Code(code_cell) => {
+                if code_cell.code_run.language == CodeCellLanguage::Formula {
+                    format!("={}", code_cell.code_run.code)
+                } else {
+                    code_cell.output.to_edit()
+                }
+            }
+
             // this should not be editable
             CellValue::Image(_) => String::new(),
         }
@@ -489,6 +509,7 @@ impl CellValue {
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::RichText(spans) => spans.iter().map(|s| s.text.as_str()).collect(),
+            CellValue::Code(code_cell) => code_cell.output.to_get_cells(),
 
             // these should not return a value
             CellValue::Image(_) => String::new(),
@@ -572,6 +593,7 @@ impl CellValue {
     pub fn error(&self) -> Option<&RunError> {
         match self {
             CellValue::Error(e) => Some(e),
+            CellValue::Code(code_cell) => code_cell.output.error(),
             _ => None,
         }
     }
@@ -579,6 +601,14 @@ impl CellValue {
     pub fn into_non_error_value(self) -> CodeResult<Self> {
         match self {
             CellValue::Error(e) => Err(*e),
+            CellValue::Code(code_cell) => {
+                // Check if output is an error
+                if let CellValue::Error(e) = *code_cell.output {
+                    Err(*e)
+                } else {
+                    Ok(CellValue::Code(code_cell))
+                }
+            }
             other => Ok(other),
         }
     }
@@ -586,6 +616,14 @@ impl CellValue {
     pub fn as_non_error_value(&self) -> CodeResult<&Self> {
         match self {
             CellValue::Error(e) => Err((**e).clone()),
+            CellValue::Code(code_cell) => {
+                // Check if output is an error
+                if let CellValue::Error(e) = code_cell.output.as_ref() {
+                    Err((**e).clone())
+                } else {
+                    Ok(self)
+                }
+            }
             other => Ok(other),
         }
     }
@@ -736,6 +774,7 @@ impl CellValue {
             CellValue::Html(_) => 9,
             CellValue::Image(_) => 11,
             CellValue::RichText(_) => 12,
+            CellValue::Code(code_cell) => code_cell.output.type_id(),
         }
     }
 
@@ -796,6 +835,7 @@ impl CellValue {
             CellValue::Text(s) => s.is_empty(),
             CellValue::Number(n) => n.is_zero(),
             CellValue::Logical(b) => !b,
+            CellValue::Code(code_cell) => code_cell.output.eq_blank(),
             _ => false,
         }
     }
@@ -934,6 +974,35 @@ impl CellValue {
         matches!(self, CellValue::Image(_))
     }
 
+    pub fn is_code(&self) -> bool {
+        matches!(self, CellValue::Code(_))
+    }
+
+    /// Returns a reference to the CodeCell if this is a Code value.
+    pub fn as_code_cell(&self) -> Option<&CodeCell> {
+        match self {
+            CellValue::Code(code_cell) => Some(code_cell),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the CodeCell if this is a Code value.
+    pub fn as_code_cell_mut(&mut self) -> Option<&mut CodeCell> {
+        match self {
+            CellValue::Code(code_cell) => Some(code_cell),
+            _ => None,
+        }
+    }
+
+    /// Returns the output value of a code cell, or self if not a code cell.
+    /// This is useful for getting the "display" value of any cell.
+    pub fn output_value(&self) -> &CellValue {
+        match self {
+            CellValue::Code(code_cell) => &code_cell.output,
+            _ => self,
+        }
+    }
+
     /// Returns the contained error, or panics the value is not an error.
     #[cfg(test)]
     #[track_caller]
@@ -959,6 +1028,7 @@ impl CellValue {
                 CellValueHash::Duration(*months, seconds.to_ne_bytes())
             }
             CellValue::Error(e) => CellValueHash::Error(e.msg.clone()),
+            CellValue::Code(code_cell) => code_cell.output.hash(),
             _ => CellValueHash::Unknown(self.type_id()),
         }
     }

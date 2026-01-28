@@ -186,6 +186,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Image(_) => Ok(String::new()),
             CellValue::RichText(spans) => Ok(spans.iter().map(|s| s.text.as_str()).collect()),
+            CellValue::Code(code_cell) => String::try_from(code_cell.output.as_ref()),
         }
     }
 }
@@ -226,6 +227,7 @@ impl<'a> TryFrom<&'a CellValue> for Decimal {
                 expected: "number".into(),
                 got: Some(value.type_name().into()),
             }),
+            CellValue::Code(code_cell) => Decimal::try_from(code_cell.output.as_ref()),
         }
     }
 }

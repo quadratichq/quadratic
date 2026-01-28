@@ -40,7 +40,6 @@ export interface DirtyObject {
   cellHighlights?: boolean;
   multiplayerCursor?: boolean;
   boxCells?: boolean;
-  singleCellOutlines?: boolean;
   cellMoving?: boolean;
   cellImages?: boolean;
 }

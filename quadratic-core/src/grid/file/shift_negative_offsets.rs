@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    CopyFormats, Pos, RefAdjust,
+    CellValue, CopyFormats, Pos, RefAdjust,
     a1::A1Context,
     grid::{Grid, GridBounds, Sheet, sheet::validations::Validations},
 };
@@ -76,32 +76,23 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
     // translate code runs's cells_accessed
     for sheet in grid.sheets.values_mut() {
+        // Translate cells_accessed in data_tables
         for (_, code_run) in sheet.data_tables.migration_iter_code_runs_mut() {
-            let cells = &mut code_run.cells_accessed.cells;
-            for (sheet_id, ranges) in cells {
-                // Get shift values for the referenced sheet, skip if not found
-                let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id) else {
-                    continue;
-                };
+            translate_cells_accessed(
+                &mut code_run.cells_accessed.cells,
+                &shifted_offsets_sheet_id,
+            );
+        }
 
-                // Skip translation if no shift is needed
-                if x_shift == 0 && y_shift == 0 {
-                    continue;
+        // Translate cells_accessed in CellValue::Code cells
+        for (_, column) in sheet.columns.iter_mut() {
+            for (_, cell_value) in column.values.iter_mut() {
+                if let CellValue::Code(code_cell) = cell_value {
+                    translate_cells_accessed(
+                        &mut code_cell.code_run.cells_accessed.cells,
+                        &shifted_offsets_sheet_id,
+                    );
                 }
-
-                // Translate all ranges and collect into new HashSet
-                *ranges = std::mem::take(ranges)
-                    .into_iter()
-                    .filter_map(|r| {
-                        r.adjust(RefAdjust::new_translate_with_start(
-                            x_shift,
-                            y_shift,
-                            i64::MIN,
-                            i64::MIN,
-                        ))
-                        .ok()
-                    })
-                    .collect();
             }
         }
     }
@@ -125,6 +116,40 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     }
 
     shifted_offsets_sheet_name
+}
+
+fn translate_cells_accessed(
+    cells: &mut std::collections::HashMap<
+        crate::grid::ids::SheetId,
+        std::collections::HashSet<crate::a1::CellRefRange>,
+    >,
+    shifted_offsets_sheet_id: &HashMap<crate::grid::ids::SheetId, (i64, i64)>,
+) {
+    for (sheet_id, ranges) in cells {
+        // Get shift values for the referenced sheet, skip if not found
+        let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id) else {
+            continue;
+        };
+
+        // Skip translation if no shift is needed
+        if x_shift == 0 && y_shift == 0 {
+            continue;
+        }
+
+        // Translate all ranges and collect into new HashSet
+        *ranges = std::mem::take(ranges)
+            .into_iter()
+            .filter_map(|r| {
+                r.adjust(RefAdjust::new_translate_with_start(
+                    x_shift,
+                    y_shift,
+                    i64::MIN,
+                    i64::MIN,
+                ))
+                .ok()
+            })
+            .collect();
+    }
 }
 
 /// Private functions just required for shift_negative_offsets for v1.7.1 A1 migration

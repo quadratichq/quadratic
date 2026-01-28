@@ -1058,6 +1058,7 @@ class InlineEditorHandler {
           pos: { x, y },
           language: 'Formula',
           lastModified: 0,
+          isSingleCell: true,
         },
         showCellTypeMenu: false,
         initialCode: inlineEditorMonaco.get().slice(1),

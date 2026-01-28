@@ -89,6 +89,7 @@ export class CellsLabels extends Container {
     }
     cellsTextHash.links = message.links;
     cellsTextHash.newDrawRects = message.drawRects;
+    cellsTextHash.newCodeOutlines = message.codeOutlines;
   }
 
   // received a new LabelMeshEntry to add to a CellsTextHash

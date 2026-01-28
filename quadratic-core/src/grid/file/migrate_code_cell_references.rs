@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    Pos, Rect,
+    CellValue, Pos, Rect,
     a1::CellRefRange,
     formulas::convert_a1_to_rc,
     grid::{CodeCellLanguage, CodeRun, Grid},
@@ -52,6 +52,7 @@ lazy_static! {
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
     let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.values_mut() {
+        // Migrate code runs in data_tables
         for (pos, code_run) in sheet.data_tables.migration_iter_code_runs_mut() {
             if code_run.language == CodeCellLanguage::Formula {
                 code_run.code = convert_a1_to_rc(
@@ -59,6 +60,21 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                     &a1_context,
                     crate::SheetPos::new(sheet.id, pos.x + 1, pos.y),
                 );
+            }
+        }
+
+        // Migrate CellValue::Code cells in columns
+        for (x, column) in sheet.columns.iter_mut() {
+            for (y, cell_value) in column.values.iter_mut() {
+                if let CellValue::Code(code_cell) = cell_value
+                    && code_cell.code_run.language == CodeCellLanguage::Formula
+                {
+                    code_cell.code_run.code = convert_a1_to_rc(
+                        &code_cell.code_run.code,
+                        &a1_context,
+                        crate::SheetPos::new(sheet.id, *x + 1, *y),
+                    );
+                }
             }
         }
     }
@@ -70,25 +86,46 @@ pub fn migrate_code_cell_references(
 ) {
     for sheet in grid.sheets.values_mut() {
         let sheet_name = sheet.name.clone();
+
+        // Migrate code runs in data_tables
         for (pos, code_run) in sheet.data_tables.migration_iter_code_runs_mut() {
-            match code_run.language {
-                CodeCellLanguage::Python => {
-                    migrate_python_c_cell_getcell(code_run, &sheet_name, shifted_offsets);
-                    migrate_python_cells_getcells(code_run, &sheet_name, shifted_offsets);
-                    migrate_python_rc_relcell(code_run, pos);
-                    migrate_python_relcells(code_run, pos);
-                    migrate_python_javascript_pos(code_run);
+            migrate_code_run(code_run, pos, &sheet_name, shifted_offsets);
+        }
+
+        // Migrate CellValue::Code cells in columns
+        for (x, column) in sheet.columns.iter_mut() {
+            for (y, cell_value) in column.values.iter_mut() {
+                if let CellValue::Code(code_cell) = cell_value {
+                    let pos = Pos { x: *x, y: *y };
+                    migrate_code_run(&mut code_cell.code_run, pos, &sheet_name, shifted_offsets);
                 }
-                CodeCellLanguage::Javascript => {
-                    migrate_javascript_c_cell_getcell(code_run, &sheet_name, shifted_offsets);
-                    migrate_javascript_cells_getcells(code_run, &sheet_name, shifted_offsets);
-                    migrate_javascript_rc_relcell(code_run, pos);
-                    migrate_javascript_relcells(code_run, pos);
-                    migrate_python_javascript_pos(code_run);
-                }
-                _ => {}
             }
         }
+    }
+}
+
+fn migrate_code_run(
+    code_run: &mut CodeRun,
+    pos: Pos,
+    sheet_name: &str,
+    shifted_offsets: &HashMap<String, (i64, i64)>,
+) {
+    match code_run.language {
+        CodeCellLanguage::Python => {
+            migrate_python_c_cell_getcell(code_run, sheet_name, shifted_offsets);
+            migrate_python_cells_getcells(code_run, sheet_name, shifted_offsets);
+            migrate_python_rc_relcell(code_run, pos);
+            migrate_python_relcells(code_run, pos);
+            migrate_python_javascript_pos(code_run);
+        }
+        CodeCellLanguage::Javascript => {
+            migrate_javascript_c_cell_getcell(code_run, sheet_name, shifted_offsets);
+            migrate_javascript_cells_getcells(code_run, sheet_name, shifted_offsets);
+            migrate_javascript_rc_relcell(code_run, pos);
+            migrate_javascript_relcells(code_run, pos);
+            migrate_python_javascript_pos(code_run);
+        }
+        _ => {}
     }
 }
 

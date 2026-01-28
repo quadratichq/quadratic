@@ -94,16 +94,35 @@ impl GridController {
 
     /// gets an editable string for a cell
     ///
-    /// returns a string
+    /// returns a JsEditCell with text and optional code_cell info
     #[wasm_bindgen(js_name = "getEditCell")]
-    pub fn js_get_cell_edit(&self, sheet_id: String, pos: String) -> Result<String, JsValue> {
-        let pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
+    pub fn js_get_cell_edit(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
+        use crate::grid::js_types::{JsEditCell, JsEditCellCodeCell};
+
+        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self
             .try_sheet_from_string_id(&sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-        let val = sheet.get_cell_for_formula(pos);
 
-        Ok(val.to_edit())
+        // Check if this is a CellValue::Code (single-cell code cell)
+        if let Some(crate::CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
+            let result = JsEditCell {
+                text: code_cell.output.to_edit(),
+                code_cell: Some(JsEditCellCodeCell {
+                    language: code_cell.code_run.language.clone(),
+                    code: code_cell.code_run.code.clone(),
+                }),
+            };
+            return serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED);
+        }
+
+        // Otherwise, return the normal cell value for editing
+        let val = sheet.get_cell_for_formula(pos);
+        let result = JsEditCell {
+            text: val.to_edit(),
+            code_cell: None,
+        };
+        serde_wasm_bindgen::to_value(&result).map_err(|_| JsValue::UNDEFINED)
     }
 
     /// gets the display value for a cell

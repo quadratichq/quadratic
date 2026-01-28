@@ -167,6 +167,7 @@ impl Sheet {
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
 
+        // Note: DataTable cells don't have language set (border drawn from table struct)
         if data_table.has_spill() {
             cells.push(Self::get_render_cell(
                 code_rect.min.x,
@@ -176,7 +177,7 @@ impl Sheet {
                     msg: RunErrorMsg::Spill,
                 })),
                 Format::default(),
-                Some(data_table.get_language()),
+                None,
                 Some(JsRenderCellSpecial::SpillError),
             ));
         } else if let Some(error) = data_table.get_error() {
@@ -185,7 +186,7 @@ impl Sheet {
                 code_rect.min.y,
                 &CellValue::Error(Box::new(error)),
                 Format::default(),
-                Some(data_table.get_language()),
+                None,
                 None,
             ));
         } else if let Some(intersection) = code_rect.intersection(render_rect) {
@@ -221,11 +222,10 @@ impl Sheet {
                             table_format.combine(&sheet_format)
                         };
 
-                        let language = if x == code_rect.min.x && y == code_rect.min.y {
-                            Some(data_table.get_language())
-                        } else {
-                            None
-                        };
+                        // Note: language is not populated for DataTable cells because
+                        // the table border is rendered based on the table struct itself.
+                        // Only CellValue::Code cells need language for border rendering.
+                        let language = None;
 
                         let special = self
                             .validations
@@ -278,12 +278,19 @@ impl Sheet {
             .filter_map(|x| Some((x, self.get_column(x)?)))
             .for_each(|(x, column)| {
                 column.values.range(rect.y_range()).for_each(|(&y, value)| {
-                    // ignore code cells when rendering since they will be taken care in the next part
+                    // For CellValue::Code, we need to get the language and output value
+                    let (render_value, language) = if let CellValue::Code(code_cell) = value {
+                        // Use the output value for rendering, but pass the language for code border
+                        (code_cell.output.as_ref(), Some(code_cell.code_run.language.clone()))
+                    } else {
+                        (value, None)
+                    };
+
                     let special = self
                         .validations
                         .render_special_pos(Pos { x, y }, a1_context)
                         .or({
-                            if matches!(value, CellValue::Logical(_)) {
+                            if matches!(render_value, CellValue::Logical(_)) {
                                 Some(JsRenderCellSpecial::Logical)
                             } else {
                                 None
@@ -294,7 +301,7 @@ impl Sheet {
 
                     Self::ensure_lists_are_clipped(&mut format, &special);
 
-                    render_cells.push(Self::get_render_cell(x, y, value, format, None, special));
+                    render_cells.push(Self::get_render_cell(x, y, render_value, format, language, special));
                 });
             });
 
@@ -548,6 +555,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
+        // Note: 1x1 formulas are stored as CellValue::Code and DO populate
+        // language in JsRenderCell (for drawing code cell border).
         gc.set_code_cell(
             SheetPos {
                 x: 1,
@@ -567,10 +576,9 @@ mod tests {
                 x: 1,
                 y: 2,
                 value: "2".to_string(),
-                language: Some(CodeCellLanguage::Formula),
+                language: Some(CodeCellLanguage::Formula), // CellValue::Code cells DO populate language
                 align: Some(CellAlign::Right),
                 number: Some(JsNumber::default()),
-                wrap: Some(CellWrap::Clip),
                 ..Default::default()
             }]
         );
@@ -620,12 +628,13 @@ mod tests {
             None,
             false,
         );
+        // Note: DataTable cells don't populate language (table border drawn from table struct)
         let expected = vec![
             JsRenderCell {
                 x: 1,
                 y: 1,
                 value: "true".to_string(),
-                language: Some(CodeCellLanguage::Formula),
+                language: None,
                 wrap: Some(CellWrap::Clip),
                 special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
@@ -890,5 +899,89 @@ mod tests {
         // Plain text spans should not create any link_spans or format_spans
         assert!(cell.link_spans.is_empty());
         assert!(cell.format_spans.is_empty());
+    }
+
+    #[test]
+    fn test_render_code_cell_value() {
+        use crate::grid::CodeRun;
+        use crate::CodeCell;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a CodeCell directly in the sheet's columns (simulating migrated data)
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "1 + 1".to_string(),
+            ..Default::default()
+        };
+        let code_cell = CodeCell::new(code_run, CellValue::Number(2.into()));
+        gc.sheet_mut(sheet_id)
+            .set_value(Pos { x: 1, y: 1 }, CellValue::Code(Box::new(code_cell)));
+
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render.len(), 1);
+        let cell = &render[0];
+
+        // Should render the output value
+        assert_eq!(cell.value, "2");
+        // Should have the language set for code border rendering
+        assert_eq!(cell.language, Some(CodeCellLanguage::Formula));
+        // Numbers should be right-aligned
+        assert_eq!(cell.align, Some(CellAlign::Right));
+    }
+
+    #[test]
+    fn test_render_code_cell_value_with_error() {
+        use crate::grid::CodeRun;
+        use crate::CodeCell;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a CodeCell with an error output
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "invalid".to_string(),
+            error: Some(RunError {
+                span: None,
+                msg: RunErrorMsg::DivideByZero,
+            }),
+            ..Default::default()
+        };
+        let code_cell = CodeCell::with_error(
+            code_run,
+            RunError {
+                span: None,
+                msg: RunErrorMsg::DivideByZero,
+            },
+        );
+        gc.sheet_mut(sheet_id)
+            .set_value(Pos { x: 2, y: 2 }, CellValue::Code(Box::new(code_cell)));
+
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 2, y: 2 },
+                max: Pos { x: 2, y: 2 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render.len(), 1);
+        let cell = &render[0];
+
+        // Should have the language set for code border rendering
+        assert_eq!(cell.language, Some(CodeCellLanguage::Python));
+        // Should show as a run error
+        assert_eq!(cell.special, Some(JsRenderCellSpecial::RunError));
     }
 }

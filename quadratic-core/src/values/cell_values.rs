@@ -53,7 +53,7 @@ impl CellValues {
             .and_then(|col| col.get(&(y as u64)))
     }
 
-    pub fn get_owned(&mut self, x: u32, y: u32) -> anyhow::Result<&mut CellValue> {
+    pub fn get_mut(&mut self, x: u32, y: u32) -> anyhow::Result<&mut CellValue> {
         let column = self
             .columns
             .get_mut(x as usize)

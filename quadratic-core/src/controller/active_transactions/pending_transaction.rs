@@ -126,6 +126,9 @@ pub struct PendingTransaction {
 
     /// sheets that need updated MergeCells
     pub(crate) merge_cells_updates: HashSet<SheetId>,
+
+    /// Track positions with pending ComputeCode operations for O(1) duplicate checking
+    pub(crate) pending_compute_positions: HashSet<SheetPos>,
 }
 
 impl Default for PendingTransaction {
@@ -164,6 +167,7 @@ impl Default for PendingTransaction {
             sheet_content_cache: HashSet::new(),
             sheet_data_tables_cache: HashSet::new(),
             merge_cells_updates: HashSet::new(),
+            pending_compute_positions: HashSet::new(),
         }
     }
 }

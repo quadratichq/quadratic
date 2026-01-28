@@ -34,9 +34,9 @@ function getTablesInRect(rect: Rectangle): TableBounds[] {
   const tables = content.cellsSheet.tables;
   const result: TableBounds[] = [];
 
-  // Get large tables (multi-cell tables with UI)
-  const largeTables = tables.getLargeTablesInRect(rect);
-  for (const table of largeTables) {
+  // Get tables (DataTables with UI)
+  const dataTables = tables.getTablesInRect(rect);
+  for (const table of dataTables) {
     result.push({
       x: table.codeCell.x,
       y: table.codeCell.y,
@@ -48,7 +48,7 @@ function getTablesInRect(rect: Rectangle): TableBounds[] {
     });
   }
 
-  // Get single cell tables - these can be overwritten by anything
+  // Get single cell code cells (CellValue::Code) - these can be overwritten by anything
   const singleCellTables = tables.getSingleCellTablesInRectangle(rect);
   for (const codeCell of singleCellTables) {
     result.push({

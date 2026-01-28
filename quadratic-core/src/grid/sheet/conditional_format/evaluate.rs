@@ -630,6 +630,7 @@ fn is_cell_value_truthy(value: &CellValue) -> bool {
         CellValue::Duration(_) => true,
         CellValue::RichText(_) => true,
         CellValue::Instant(_) => true,
+        CellValue::Code(code_cell) => is_cell_value_truthy(&code_cell.output),
     }
 }
 
