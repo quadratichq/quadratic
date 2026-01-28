@@ -184,7 +184,7 @@ export const Component = () => {
   // When a new connection is added, auto-select it and close the dialog (for onboarding flow)
   const prevConnectionsLengthRef = useRef(connections.length);
   const connectionPrompt =
-    'Query my new connection to show me the first 15 records of a table from it that you think is interesting to look at first.';
+    'Show me the schema of this connection so I know what I can ask. Also inform me that if I want to open the schema viewer I can press the database icon in the AI chat.';
 
   useEffect(() => {
     if (latestConnections.length > prevConnectionsLengthRef.current) {
@@ -605,7 +605,7 @@ export const Component = () => {
 
                   {/* File import options */}
                   <div className="mb-6 space-y-3">
-                    <h3 className="text-sm font-medium text-muted-foreground">Import a file</h3>
+                    <h3 className="text-sm font-medium">Import a file</h3>
                     <div className="grid grid-cols-4 gap-2">
                       <button
                         onClick={() => {
@@ -655,7 +655,7 @@ export const Component = () => {
 
                   {/* Connection options */}
                   <div className="mb-6 space-y-3">
-                    <h3 className="text-sm font-medium text-muted-foreground">Connect to a data source</h3>
+                    <h3 className="text-sm font-medium">Connect to a data source</h3>
                     <div className="grid grid-cols-4 gap-2">
                       {(
                         Object.entries(connectionsByType) as [
@@ -671,7 +671,9 @@ export const Component = () => {
                           }}
                           className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 transition-all hover:border-primary hover:shadow-md"
                         >
-                          <Logo className="h-8 w-8" />
+                          <div className="flex h-8 w-full items-center justify-center">
+                            <Logo className="h-full max-h-8 w-auto max-w-[80px]" />
+                          </div>
                           <span className="text-xs font-medium">{name}</span>
                         </button>
                       ))}
