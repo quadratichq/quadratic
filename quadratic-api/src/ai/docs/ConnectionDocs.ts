@@ -81,10 +81,21 @@ DataFusion handles timestamps differently than PostgreSQL or MySQL. This is a co
 * **to_timestamp_nanos()** converts Unix timestamps in nanoseconds to a timestamp
 * **No FROM_UNIXTIME()** - this common function does not exist in DataFusion
 
+**Known Quirk with to_timestamp_seconds():**
+In some cases, \`to_timestamp_seconds(CAST(column AS BIGINT))\` may unexpectedly produce 1970 dates even with valid Unix timestamps. If you encounter this issue, use \`to_timestamp_nanos()\` with manual conversion as a reliable workaround:
+
+\`\`\`sql
+-- Recommended workaround for Unix timestamps in seconds
+to_timestamp_nanos(CAST("time" AS BIGINT) * 1000000000)
+\`\`\`
+
 To convert a Unix timestamp column:
 \`\`\`sql
 -- If your column is in SECONDS (e.g., 1704067200)
+-- Try this first:
 to_timestamp_seconds(CAST("unixTimestamp" AS BIGINT))
+-- If that produces 1970 dates, use this workaround:
+to_timestamp_nanos(CAST("unixTimestamp" AS BIGINT) * 1000000000)
 
 -- If your column is in MILLISECONDS (e.g., 1704067200000)
 to_timestamp_millis(CAST("timestampMs" AS BIGINT))
