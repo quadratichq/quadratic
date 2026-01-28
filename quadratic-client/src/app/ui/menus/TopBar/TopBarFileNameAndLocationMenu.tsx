@@ -88,7 +88,6 @@ function FileLocation() {
           ? 'shared-invite'
           : 'shared-link'
   );
-  console.log('fileType', fileType, ownerUserId, userId, teamRole, fileRole);
 
   const moveFile = useCallback(
     async (newFileType: 'team' | 'personal') => {
