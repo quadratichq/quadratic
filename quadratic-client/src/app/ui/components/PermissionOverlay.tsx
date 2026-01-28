@@ -55,11 +55,12 @@ export function PermissionOverlay() {
   }
 
   // If you can't edit the file due to file limit, show upgrade message
+  // This is distinct from "View only" (permission-based) - this is billing-restricted
   if (!permissions.includes(FILE_EDIT) && isFileEditRestricted && isOpen) {
     return (
       <FixedBottomAlert>
         <Type>
-          <strong>View-only.</strong> This file exceeds your plan's limit. Upgrade for unlimited editable files.
+          <strong>Upgrade to edit.</strong> This file exceeds your plan's limit. Upgrade for unlimited editable files.
         </Type>
         <div className="flex flex-shrink-0 gap-2">
           <Button onClick={() => showUpgradeDialog('fileLimitReached')}>Upgrade</Button>
@@ -71,12 +72,13 @@ export function PermissionOverlay() {
     );
   }
 
-  // If you can't edit the file for other reasons, show standard message
+  // If you can't edit the file for other reasons (permission-based), show standard message
+  // This is distinct from "Upgrade to edit" (billing-restricted)
   if (!permissions.includes(FILE_EDIT)) {
     return (
       <FixedBottomAlert>
         <Type>
-          <strong>Read-only.</strong> Duplicate or ask the owner for permission to edit.
+          <strong>View only.</strong> Duplicate or ask the owner for permission to edit.
         </Type>
         <Button onClick={handleDuplicate}>{duplicateFileAction.label}</Button>
       </FixedBottomAlert>

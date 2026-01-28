@@ -103,7 +103,16 @@ const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
 });
 const TeamUserMakingRequestSchema = z.object({
   filePermissions: z.array(FilePermissionSchema),
-  // Whether this file has edit restrictions due to soft file limit (free teams only)
+  /**
+   * Whether this file has edit restrictions due to billing limits (soft file limit for free teams).
+   *
+   * IMPORTANT: This is distinct from permission-based "View only" access:
+   * - "View only" (permission-based): User doesn't have FILE_EDIT permission due to sharing settings
+   * - "Upgrade to edit" (billing-based): User would have FILE_EDIT permission, but it's restricted
+   *   because the team is on a free plan and this file exceeds the editable file limit
+   *
+   * When true, the UI should show "Upgrade to edit" messaging rather than "View only"
+   */
   isFileEditRestricted: z.boolean().optional(),
 });
 
@@ -201,7 +210,16 @@ export const ApiSchemas = {
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
       restrictedModel: z.boolean(),
-      // Whether this file has edit restrictions due to soft file limit (free teams only)
+      /**
+       * Whether this file has edit restrictions due to billing limits (soft file limit for free teams).
+       *
+       * IMPORTANT: This is distinct from permission-based "View only" access:
+       * - "View only" (permission-based): User doesn't have FILE_EDIT permission due to sharing settings
+       * - "Upgrade to edit" (billing-based): User would have FILE_EDIT permission, but it's restricted
+       *   because the team is on a free plan and this file exceeds the editable file limit
+       *
+       * When true, the UI should show "Upgrade to edit" messaging rather than "View only"
+       */
       isFileEditRestricted: z.boolean().optional(),
     }),
     license: LicenseSchema,

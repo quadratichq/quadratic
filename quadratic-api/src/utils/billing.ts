@@ -91,8 +91,15 @@ export const getEditableFileIds = async (team: Team | DecryptedTeam): Promise<nu
 };
 
 /**
- * Check if a specific file has edit restrictions due to billing limits.
+ * Check if a specific file has edit restrictions due to billing limits (soft file limit).
  * Returns true if the file is NOT in the top N most recently created files for free teams.
+ *
+ * IMPORTANT: This is distinct from permission-based "View only" access:
+ * - "View only" (permission-based): User doesn't have FILE_EDIT permission due to sharing settings
+ * - "Upgrade to edit" (billing-based): User would have FILE_EDIT permission, but it's restricted
+ *   because the team is on a free plan and this file exceeds the editable file limit
+ *
+ * When this returns true, the UI should show "Upgrade to edit" messaging rather than "View only"
  */
 export const isFileEditRestricted = async (team: Team | DecryptedTeam, fileId: number): Promise<boolean> => {
   const isPaidPlan = await getIsOnPaidPlan(team);

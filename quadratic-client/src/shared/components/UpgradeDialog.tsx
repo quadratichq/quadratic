@@ -45,7 +45,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
   const reasonText = useMemo(() => {
     switch (state.eventSource) {
       case 'fileLimitReached':
-        return 'Some of your files are view-only due to the free plan limit.';
+        return 'Some of your files require an upgrade to edit due to the free plan limit.';
       default:
         return undefined;
     }

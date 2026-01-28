@@ -18,7 +18,8 @@ import { useCallback } from 'react';
 
 /**
  * Dialog shown when a user tries to create a file while over the soft file limit.
- * Allows them to either upgrade or create the file anyway (which will make older files read-only).
+ * Allows them to either upgrade or create the file anyway (which will make older files
+ * require an upgrade to edit - this is distinct from "View only" which is permission-based).
  */
 export function FileLimitDialog() {
   const [state] = useAtom(fileLimitDialogAtom);
@@ -50,7 +51,7 @@ export function FileLimitDialog() {
           <DialogTitle>You've reached the {maxFiles} file limit</DialogTitle>
           <DialogDescription>
             Free teams can edit up to {maxFiles} files. You can still create this file, but your oldest files will
-            become view-only.
+            require an upgrade to edit.
           </DialogDescription>
         </DialogHeader>
 
@@ -58,8 +59,8 @@ export function FileLimitDialog() {
           <WarningIcon />
           <AlertTitle>What happens if you continue?</AlertTitle>
           <AlertDescription>
-            Only your {maxFiles} most recently created files will be editable. Older files will be view-only until you
-            upgrade or delete newer files.
+            Only your {maxFiles} most recently created files will be editable. Older files will require an upgrade to
+            edit until you upgrade or delete newer files.
           </AlertDescription>
         </Alert>
 

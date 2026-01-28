@@ -4,7 +4,8 @@ import { WarningIcon } from '@/shared/components/Icons';
 import { useMemo } from 'react';
 
 /**
- * Banner shown when the team has files that are view-only due to billing limits.
+ * Banner shown when the team has files that require upgrade to edit (billing-restricted).
+ * This is distinct from "View only" which is permission-based.
  * This is non-dismissable and prompts the user to upgrade.
  */
 export function FileLimitBanner() {
@@ -38,8 +39,7 @@ export function FileLimitBanner() {
         <WarningIcon className="h-5 w-5 text-warning" />
       </div>
       <p className="text-sm">
-        You can edit your <strong>{editableFileCount} most recently created</strong> Quadratic files and the rest are
-        view-only.{' '}
+        You can edit your <strong>{editableFileCount} most recently created</strong> Quadratic files.{' '}
         <button
           className="text-primary underline hover:text-primary/80"
           onClick={() => showUpgradeDialog('fileLimitReached')}

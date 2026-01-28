@@ -15,6 +15,7 @@ import {
 } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MoreVertIcon } from '@/shared/components/Icons';
@@ -324,15 +325,25 @@ function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
   );
 }
 
+/**
+ * Badge/button shown on files that are not editable due to billing limits (soft file limit).
+ * This is distinct from "View only" which is permission-based.
+ * Clicking opens the upgrade dialog.
+ */
 function FileEditRestrictedBadge() {
   return (
-    <div
+    <button
       className={
-        'flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-xs text-muted-foreground shadow-sm'
+        'flex items-center gap-1 rounded border border-warning bg-background/90 px-2 py-1 text-xs font-medium text-warning shadow-sm transition-colors hover:bg-warning hover:text-warning-foreground'
       }
-      title="View-only due to file limit. Upgrade to edit."
+      title="This file exceeds your plan's limit. Upgrade for unlimited editable files."
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showUpgradeDialog('fileLimitReached');
+      }}
     >
-      View-only
-    </div>
+      Upgrade to edit
+    </button>
   );
 }
