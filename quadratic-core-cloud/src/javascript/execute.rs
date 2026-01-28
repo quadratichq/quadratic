@@ -334,7 +334,7 @@ fn add_await_to_qcells(code: &str) -> String {
                     // Need to wrap with parentheses: await q.cells(...).flat() -> (await q.cells(...)).flat()
                     // Remove the trailing "await" and whitespace from result, then add "(await "
                     let trimmed = result.trim_end();
-                    let await_start = trimmed.len() - 5; // "await" is 5 chars
+                    let await_start = trimmed.len() - "await".len();
                     result.truncate(await_start);
                     // Preserve the whitespace before "await"
                     result.push_str("(await ");
