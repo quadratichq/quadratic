@@ -12,6 +12,7 @@ import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 
 export class UrlParamsUser {
   private pixiAppSettingsInitialized = false;
@@ -109,9 +110,17 @@ export class UrlParamsUser {
     const prompt = params.get('prompt');
     if (!prompt) return;
 
-    // Remove the `prompt` param when we're done
+    // Read connection params if present
+    const connectionUuid = params.get('connection-uuid');
+    const connectionType = params.get('connection-type');
+    const connectionName = params.get('connection-name');
+
+    // Remove the URL params when we're done
     const url = new URL(window.location.href);
     params.delete('prompt');
+    params.delete('connection-uuid');
+    params.delete('connection-type');
+    params.delete('connection-name');
     url.search = params.toString();
     window.history.replaceState(null, '', url.toString());
 
@@ -143,11 +152,18 @@ export class UrlParamsUser {
     }
     filesFromIframe.dbFiles = [];
 
+    // Build connection context if connection params are present and connection type is valid
+    const parsedConnectionType = connectionType ? ConnectionTypeSchema.safeParse(connectionType) : null;
+    const connection =
+      connectionUuid && parsedConnectionType?.success && connectionName
+        ? { id: connectionUuid, type: parsedConnectionType.data, name: connectionName }
+        : undefined;
+
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
       content: [...files, createTextContent(prompt)],
       messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
-      context: { codeCell: undefined, connection: undefined },
+      context: { codeCell: undefined, connection },
       messageIndex: 0,
       importFiles,
     });

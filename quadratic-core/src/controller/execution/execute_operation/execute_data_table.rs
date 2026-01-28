@@ -1068,7 +1068,8 @@ impl GridController {
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let mut cell_values = sheet_values_array.into_cell_values_vec().into_vec();
 
-                    // Check for DataTables or CellValue::Code cells in the rect
+                    // Check for DataTables or CellValue::Code cells in the rect.
+                    // TODO: Remove has_code_cell_in_rect check once we support code cells inside tables.
                     if sheet
                         .data_tables
                         .has_content_except(values_rect, data_table_pos)
@@ -1494,10 +1495,11 @@ impl GridController {
                 let mut format_update = None;
 
                 if swallow && values.is_none() {
-                    // check for code cells in neighboring cells
+                    // check for code cells or data tables in neighboring cells
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                    // Check for DataTables or CellValue::Code cells in the rect
+                    // Check for DataTables or CellValue::Code cells in the rect.
+                    // TODO: Remove has_code_cell_in_rect check once we support code cells inside tables.
                     if sheet
                         .data_tables
                         .has_content_except(values_rect, data_table_pos)
