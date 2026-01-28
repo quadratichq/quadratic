@@ -96,7 +96,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
 
   // Abort the request if the client disconnects
   const abortController = new AbortController();
-  req.socket.on('close', () => {
+  res.on('close', () => {
     abortController.abort();
   });
 

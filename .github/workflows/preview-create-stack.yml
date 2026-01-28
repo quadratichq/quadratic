@@ -2,7 +2,7 @@ name: Preview Create
 
 on:
   pull_request:
-    types: [opened, reopened, unlabeled]
+    types: [labeled, reopened]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-stack
@@ -17,8 +17,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
-      !contains(github.event.pull_request.labels.*.name, 'no-preview') &&
-      (github.event.action == 'opened' || github.event.action == 'reopened' || (github.event.action == 'unlabeled' && github.event.label.name == 'no-preview'))
+      ((github.event.action == 'labeled' && github.event.label.name == 'preview') ||
+       (github.event.action == 'reopened' && contains(github.event.pull_request.labels.*.name, 'preview')))
     timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
