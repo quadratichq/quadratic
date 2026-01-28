@@ -603,34 +603,32 @@ impl GridController {
             };
 
             // Get mutable reference and adjust in place
-            if let Ok(cell_value) = cells.get_owned(col_x, col_y) {
-                if let CellValue::Code(code_cell) = cell_value {
-                    match clipboard.operation {
-                        ClipboardOperation::Cut => {
-                            // For cut, keep references as-is but update sheet context
-                            code_cell.code_run.adjust_references(
-                                start_pos.sheet_id,
-                                &self.a1_context,
-                                source_pos.to_sheet_pos(clipboard.origin.sheet_id),
-                                RefAdjust::NO_OP,
-                            );
-                        }
-                        ClipboardOperation::Copy => {
-                            // For copy, adjust relative references
-                            code_cell.code_run.adjust_references(
-                                start_pos.sheet_id,
-                                &self.a1_context,
-                                target_pos.to_sheet_pos(start_pos.sheet_id),
-                                RefAdjust {
-                                    sheet_id: None,
-                                    dx: target_pos.x - source_pos.x,
-                                    dy: target_pos.y - source_pos.y,
-                                    relative_only: true,
-                                    x_start: 0,
-                                    y_start: 0,
-                                },
-                            );
-                        }
+            if let Ok(CellValue::Code(code_cell)) = cells.get_mut(col_x, col_y) {
+                match clipboard.operation {
+                    ClipboardOperation::Cut => {
+                        // For cut, keep references as-is but update sheet context
+                        code_cell.code_run.adjust_references(
+                            start_pos.sheet_id,
+                            &self.a1_context,
+                            source_pos.to_sheet_pos(clipboard.origin.sheet_id),
+                            RefAdjust::NO_OP,
+                        );
+                    }
+                    ClipboardOperation::Copy => {
+                        // For copy, adjust relative references
+                        code_cell.code_run.adjust_references(
+                            start_pos.sheet_id,
+                            &self.a1_context,
+                            target_pos.to_sheet_pos(start_pos.sheet_id),
+                            RefAdjust {
+                                sheet_id: None,
+                                dx: target_pos.x - source_pos.x,
+                                dy: target_pos.y - source_pos.y,
+                                relative_only: true,
+                                x_start: 0,
+                                y_start: 0,
+                            },
+                        );
                     }
                 }
             }
