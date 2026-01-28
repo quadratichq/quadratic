@@ -72,7 +72,7 @@ function FileLocation() {
   } = useFileRouteLoaderData();
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
-  const teamName = (teamData?.activeTeam?.team.name ?? team.name) + ' test really long name team name';
+  const teamName = teamData?.activeTeam?.team.name ?? team.name;
 
   // Determine current file location based on ownerUserId:
   //   1. You have access to the team and its your file: personal
