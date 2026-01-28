@@ -21,7 +21,7 @@ pub mod environment;
 
 pub mod error;
 
-// #[cfg(feature = "intrinio")]
+#[cfg(feature = "intrinio")]
 pub mod intrinio;
 
 #[cfg(feature = "multiplayer")]

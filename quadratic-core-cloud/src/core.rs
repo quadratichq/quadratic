@@ -140,7 +140,7 @@ pub async fn process_transaction(
                         Box::new(create_get_cells()),
                         &token,
                         &team_id,
-                        Some(connection_url.clone()),
+                        connection_url.clone(),
                     )
                     .await?;
                 }

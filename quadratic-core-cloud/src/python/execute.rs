@@ -30,7 +30,7 @@ pub(crate) async fn run_python(
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
     token: &str,
     team_id: &str,
-    connection_url: Option<String>,
+    connection_url: String,
 ) -> Result<()> {
     tracing::info!(
         "[Python] Starting execution for transaction: {}",
@@ -59,7 +59,7 @@ pub(crate) fn execute(
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
     token: &str,
     team_id: &str,
-    connection_url: Option<String>,
+    connection_url: String,
 ) -> Result<JsCodeResult> {
     let result: std::result::Result<JsCodeResult, PyErr> = Python::with_gil(|py| {
         let empty_result = empty_js_code_result(transaction_id);
@@ -87,7 +87,6 @@ pub(crate) fn execute(
         globals.set_item("rust_pos", wrap_pyfunction!(pos, py)?)?;
 
         // create stock_prices function that calls the connection service
-        let connection_url = connection_url.unwrap_or_else(|| "http://localhost:3003".to_string());
         let stock_prices_py = create_stock_prices_function(
             py,
             token.to_string(),
@@ -334,7 +333,7 @@ mod tests {
             Box::new(test_get_cells),
             "M2M_AUTH_TOKEN",
             "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05",
-            None,
+            "http://localhost:3003".to_string(),
         )
         .unwrap();
         let end = Instant::now();

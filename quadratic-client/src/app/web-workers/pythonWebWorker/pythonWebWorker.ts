@@ -57,6 +57,7 @@ class PythonWebWorker {
         {
           const data = message.data as PythonClientStockPrices;
           const teamUuid = quadraticCore.getTeamUuid();
+
           if (!teamUuid) {
             this.send({
               type: 'clientPythonStockPrices',
@@ -66,6 +67,7 @@ class PythonWebWorker {
             });
             break;
           }
+          
           connectionClient.financial
             .stockPrices(teamUuid, {
               identifier: data.identifier,

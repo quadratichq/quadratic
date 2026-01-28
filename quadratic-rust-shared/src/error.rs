@@ -42,7 +42,7 @@ pub enum SharedError {
     #[error("{0}")]
     Generic(String),
 
-    // #[cfg(feature = "intrinio")]
+    #[cfg(feature = "intrinio")]
     #[error("Error with Intrinio: {0}")]
     Intrinio(crate::intrinio::error::Intrinio),
 

@@ -172,6 +172,23 @@ impl StockHistoryParams {
     }
 }
 
+// =============================================================================
+// Manual Formula Parsing
+// =============================================================================
+//
+// TODO: The functions below duplicate logic from the formula parser. This is
+// necessary because STOCKHISTORY is intercepted in run_formula.rs BEFORE the
+// formula parser runs, in order to route it through the async connection
+// infrastructure. The formula system is synchronous, so we can't easily use it
+// for API calls.
+//
+// A cleaner approach would be to:
+// 1. Make formula evaluation async-aware, OR
+// 2. Let the parser run first, then intercept the parsed AST
+//
+// For now, this manual parsing works and the performance cost is negligible.
+// =============================================================================
+
 /// Check if a formula string is a STOCKHISTORY call
 pub fn is_stock_history_formula(code: &str) -> bool {
     let mut trimmed = code.trim();
@@ -264,11 +281,16 @@ pub fn parse_stock_history_formula(code: &str) -> Option<StockHistoryParams> {
 
 /// Process stock history JSON response into an Array.
 /// This is called from connection_complete when handling StockHistory connections.
+///
+/// TODO: This re-parses the formula to get headers/properties, even though they
+/// were already parsed in run_formula.rs. We could avoid this by passing the
+/// params through the connection flow or storing them in the transaction.
 pub fn process_stock_history_json(
     json_data: &serde_json::Value,
     formula_code: &str,
 ) -> Result<Array, String> {
-    // Parse the original formula to get headers and properties settings
+    // Re-parse the formula to get headers and properties settings
+    // (see TODO above for why this is necessary)
     let params = parse_stock_history_formula(formula_code).ok_or_else(|| {
         format!(
             "Failed to parse STOCKHISTORY formula parameters from: {:?}",

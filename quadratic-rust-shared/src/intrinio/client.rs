@@ -69,6 +69,7 @@ impl IntrinioClient {
         if let Some(start) = start_date {
             request = request.start_date(start);
         }
+
         if let Some(end) = end_date {
             request = request.end_date(end);
         }

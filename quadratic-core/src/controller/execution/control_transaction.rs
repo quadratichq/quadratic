@@ -7,6 +7,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
+use crate::formulas::functions::financial::stock_history::process_stock_history_json;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_array;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
@@ -255,31 +256,28 @@ impl GridController {
 
                     let (mut return_type, value) = if is_stock_history {
                         // StockHistory receives JSON data
-                        match std_err {
-                            Some(ref err) => parse_error(err),
-                            None => {
-                                match String::from_utf8(data.clone()) {
-                                    Ok(json_str) => {
-                                        match serde_json::from_str::<serde_json::Value>(&json_str) {
-                                            Ok(json_data) => {
-                                                // Process stock history JSON using the helper
-                                                match crate::formulas::functions::financial::stock_history::process_stock_history_json(&json_data, &code.code) {
-                                                    Ok(array) => {
-                                                        let return_type = format!(
-                                                            "{}×{} Array",
-                                                            array.width(),
-                                                            array.height().saturating_sub(1) // subtract header
-                                                        );
-                                                        (return_type, Value::Array(array))
-                                                    }
-                                                    Err(e) => parse_error(&e),
-                                                }
-                                            }
-                                            Err(e) => parse_error(&e.to_string()),
-                                        }
-                                    }
-                                    Err(e) => parse_error(&e.to_string()),
+                        if let Some(ref err) = std_err {
+                            parse_error(err)
+                        } else {
+                            let parse_json = || -> std::result::Result<crate::Array, String> {
+                                let json_str =
+                                    String::from_utf8(data.clone()).map_err(|e| e.to_string())?;
+                                let json_data: serde_json::Value =
+                                    serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+
+                                process_stock_history_json(&json_data, &code.code)
+                            };
+
+                            match parse_json() {
+                                Ok(array) => {
+                                    let return_type = format!(
+                                        "{}×{} Array",
+                                        array.width(),
+                                        array.height().saturating_sub(1)
+                                    );
+                                    (return_type, Value::Array(array))
                                 }
+                                Err(e) => parse_error(&e),
                             }
                         }
                     } else {

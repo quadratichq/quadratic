@@ -1,6 +1,6 @@
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyTuple};
 use quadratic_core::controller::execution::run_code::get_cells::{
     JsCellsA1Error, JsCellsA1Response,
 };
@@ -11,6 +11,27 @@ use crate::connection::fetch_stock_prices;
 use crate::error::Result;
 
 static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
+
+/// Extract an optional string argument from positional args or kwargs
+fn extract_optional_arg(
+    args: &Bound<'_, PyTuple>,
+    kwargs: Option<&Bound<'_, PyDict>>,
+    index: usize,
+    name: &str,
+) -> Option<String> {
+    // Try positional arg first
+    if args.len() > index {
+        if let Ok(item) = args.get_item(index) {
+            if let Ok(value) = item.extract::<String>() {
+                return Some(value);
+            }
+        }
+    }
+    // Fall back to kwargs
+    kwargs
+        .and_then(|kw| kw.get_item(name).ok().flatten())
+        .and_then(|v| v.extract().ok())
+}
 
 /// Rust function to handle q.pos() calls from Python  
 #[pyfunction]
@@ -132,44 +153,10 @@ pub(crate) fn create_stock_prices_function(
             // Extract identifier (required)
             let identifier: String = args.get_item(0)?.extract()?;
 
-            // Extract optional start_date
-            let start_date: Option<String> = if args.len() > 1 {
-                args.get_item(1)?.extract().ok()
-            } else if let Some(kwargs) = kwargs {
-                kwargs
-                    .get_item("start_date")
-                    .ok()
-                    .flatten()
-                    .and_then(|v| v.extract().ok())
-            } else {
-                None
-            };
-
-            // Extract optional end_date
-            let end_date: Option<String> = if args.len() > 2 {
-                args.get_item(2)?.extract().ok()
-            } else if let Some(kwargs) = kwargs {
-                kwargs
-                    .get_item("end_date")
-                    .ok()
-                    .flatten()
-                    .and_then(|v| v.extract().ok())
-            } else {
-                None
-            };
-
-            // Extract optional frequency (defaults to "daily" if not provided)
-            let frequency: Option<String> = if args.len() > 3 {
-                args.get_item(3)?.extract().ok()
-            } else if let Some(kwargs) = kwargs {
-                kwargs
-                    .get_item("frequency")
-                    .ok()
-                    .flatten()
-                    .and_then(|v| v.extract().ok())
-            } else {
-                None
-            };
+            // Extract optional arguments
+            let start_date = extract_optional_arg(&args, kwargs, 1, "start_date");
+            let end_date = extract_optional_arg(&args, kwargs, 2, "end_date");
+            let frequency = extract_optional_arg(&args, kwargs, 3, "frequency");
 
             let token = token.borrow().clone();
             let team_id = team_id.borrow().clone();
