@@ -1,6 +1,7 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 
@@ -38,6 +39,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   }
 
   // Otherwise, start a new file by redirecting them to the file creation route
+  // Validate connection type from URL params
+  const connectionTypeParam = url.searchParams.get('connection-type');
+  const parsedConnectionType = connectionTypeParam ? ConnectionTypeSchema.safeParse(connectionTypeParam) : null;
   const redirectUrl = ROUTES.CREATE_FILE(activeTeamUuid, {
     // Are they creating a new file with a prompt?
     prompt: url.searchParams.get('prompt'),
@@ -45,6 +49,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     private: url.searchParams.get('private') === 'false' ? false : true,
     // File to be fetched from iframe indexeddb for this chat-id from marketing site
     chatId: url.searchParams.get('chat-id') || null,
+    // Connection context for AI analyst
+    connectionUuid: url.searchParams.get('connection-uuid'),
+    connectionType: parsedConnectionType?.success ? parsedConnectionType.data : null,
+    connectionName: url.searchParams.get('connection-name'),
   });
   return redirect(redirectUrl);
 };

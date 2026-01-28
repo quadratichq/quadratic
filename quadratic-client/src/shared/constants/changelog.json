@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.23.8",
+    "date": "2026-01-28",
+    "changes": [
+      "Streamlined onboarding",
+      "Synced connections improvements",
+      "JavaScript autocomplete enhancement",
+      "Bug fixes"
+    ],
+    "details": "<h2>Streamlined onboarding</h2>\n<p>New users are now taken directly to create their first file after completing onboarding, making it faster to get started with Quadratic.</p>\n\n<h2>Synced connections improvements</h2>\n<p>We've made several improvements to synced connections:</p>\n<ul>\n<li>Added semantic layers support for Google Analytics, Mixpanel, and Plaid connections</li>\n<li>Improved sync status display in the code editor</li>\n<li>Simplified sync state UI with better error messaging</li>\n<li>Better handling of synced connection errors</li>\n</ul>\n\n<h2>JavaScript autocomplete enhancement</h2>\n<p>Improved JavaScript autocomplete so that <code>(await q.cells())</code> now properly supports dot notation for method chaining.</p>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed hyperlink popup positioning issues</li>\n<li>Fixed template display bug and user filter in dashboard</li>\n<li>Fixed bug with improperly deleting tables after spills</li>\n<li>Fixed favicons in QA environment</li>\n<li>Updated Plaid connection branding from Coinbase to Fidelity</li>\n</ul>"
+  },
+  {
+    "version": "0.23.7",
+    "date": "2026-01-26",
+    "changes": ["AI connection bug fixes", "File checkpoint improvements", "Internal improvements"],
+    "details": "<h2>AI connection bug fixes</h2>\n<p>Fixed a bug where starting a new file with an AI connection would fail to properly initialize. We also improved AI stability by filtering out empty tool calls that could cause errors.</p>\n\n<h2>File checkpoint improvements</h2>\n<p>Fixed an issue where file checkpoint update timestamps were not being properly recorded, ensuring more accurate file history tracking.</p>\n\n<h2>Internal improvements</h2>\n<p>Various internal improvements including:</p>\n<ul>\n<li>Fixed scheduled tasks links</li>\n<li>Improved CI reliability with retry logic</li>\n<li>Enhanced preview deployment workflows</li>\n</ul>"
+  },
+  {
     "version": "0.23.5",
     "date": "2026-01-16",
     "changes": ["Connections list UI improvements", "AI chat improvements", "Rich text fixes", "Bug fixes"],

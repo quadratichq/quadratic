@@ -1,5 +1,6 @@
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
@@ -33,7 +34,11 @@ import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
-const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
+
+const stateToInsertAndRun = {
+  codeString: SNIPPET_PY_API,
+  language: 'Python' as CodeCellLanguage,
+};
 
 export function NewFileButton() {
   const {
@@ -76,7 +81,7 @@ export function NewFileButton() {
 
       <Button
         data-testid="files-list-new-file-button"
-        variant="outline"
+        variant="default"
         onClick={async (e) => {
           e.preventDefault();
           const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
@@ -114,6 +119,28 @@ export function NewFileButton() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={async () => {
+                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(
+                  teamUuid,
+                  isPrivate
+                );
+                const navigateToAIPrompt = () =>
+                  navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+                if (isOverLimit && !isPaidPlan) {
+                  showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, navigateToAIPrompt);
+                  return;
+                }
+                navigateToAIPrompt();
+              }}
+            >
+              <AIIcon className="mr-3" />
+              <span className="flex flex-col">
+                Start with AI
+                <span className="text-xs text-muted-foreground">Import data starting with AI</span>
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
               <FileIcon className="mr-3" />
