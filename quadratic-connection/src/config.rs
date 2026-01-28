@@ -50,10 +50,11 @@ pub(crate) struct Config {
 
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
-    let filename = if cfg!(test) { ".env.test" } else { ".env" };
-    // let filename = ".env";
+    dotenv::from_filename(".env").ok();
 
-    dotenv::from_filename(filename).ok();
+    #[cfg(test)]
+    dotenv::from_filename(".env.test").ok();
+
     dotenv().ok();
 
     // Try prefixed first, fall back to non-prefixed if that fails

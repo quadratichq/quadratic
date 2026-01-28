@@ -89,34 +89,38 @@ impl IntrinioClient {
     }
 }
 
-// For testing
-#[cfg(test)]
+// For testing - tries INTRINIO_API first, then falls back to INTRINIO_CREDENTIALS (JSON format)
 use std::sync::{LazyLock, Mutex};
-
-#[cfg(test)]
-pub static INTRINIO_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+pub static INTRINIO_API_KEY: LazyLock<Mutex<String>> = LazyLock::new(|| {
     let _path = dotenv::from_filename(".env.test").ok();
-    let credentials =
-        std::env::var("INTRINIO_CREDENTIALS").expect("INTRINIO_CREDENTIALS must be set");
 
-    Mutex::new(credentials)
+    // Try INTRINIO_API first (plain API key)
+    if let Ok(api_key) = std::env::var("INTRINIO_API") {
+        return Mutex::new(api_key);
+    }
+
+    // Fall back to INTRINIO_CREDENTIALS (JSON format: {"api_key": "..."})
+    if let Ok(credentials) = std::env::var("INTRINIO_CREDENTIALS") {
+        #[derive(Deserialize)]
+        struct IntrinioConfig {
+            api_key: String,
+        }
+        if let Ok(config) = serde_json::from_str::<IntrinioConfig>(&credentials) {
+            return Mutex::new(config.api_key);
+        }
+    }
+
+    panic!("INTRINIO_API or INTRINIO_CREDENTIALS must be set");
 });
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct IntrinioConfigFromEnv {
-    pub api_key: String,
-}
 
 #[cfg(test)]
 pub fn new_intrinio_client() -> IntrinioClient {
-    let credentials = INTRINIO_CREDENTIALS
+    let api_key = INTRINIO_API_KEY
         .lock()
-        .expect("Failed to lock INTRINIO_CREDENTIALS")
-        .to_string();
-    let config = serde_json::from_str::<IntrinioConfigFromEnv>(&credentials)
-        .expect("Failed to parse INTRINIO_CREDENTIALS");
+        .expect("Failed to lock INTRINIO_API_KEY")
+        .clone();
 
-    IntrinioClient::new(&config.api_key)
+    IntrinioClient::new(&api_key)
 }
 
 #[cfg(test)]

@@ -20,13 +20,11 @@ fn extract_optional_arg(
     name: &str,
 ) -> Option<String> {
     // Try positional arg first
-    if args.len() > index {
-        if let Ok(item) = args.get_item(index) {
-            if let Ok(value) = item.extract::<String>() {
+    if args.len() > index
+        && let Ok(item) = args.get_item(index)
+            && let Ok(value) = item.extract::<String>() {
                 return Some(value);
             }
-        }
-    }
     // Fall back to kwargs
     kwargs
         .and_then(|kw| kw.get_item(name).ok().flatten())
@@ -154,9 +152,9 @@ pub(crate) fn create_stock_prices_function(
             let identifier: String = args.get_item(0)?.extract()?;
 
             // Extract optional arguments
-            let start_date = extract_optional_arg(&args, kwargs, 1, "start_date");
-            let end_date = extract_optional_arg(&args, kwargs, 2, "end_date");
-            let frequency = extract_optional_arg(&args, kwargs, 3, "frequency");
+            let start_date = extract_optional_arg(args, kwargs, 1, "start_date");
+            let end_date = extract_optional_arg(args, kwargs, 2, "end_date");
+            let frequency = extract_optional_arg(args, kwargs, 3, "frequency");
 
             let token = token.borrow().clone();
             let team_id = team_id.borrow().clone();

@@ -67,7 +67,7 @@ class PythonWebWorker {
             });
             break;
           }
-          
+
           connectionClient.financial
             .stockPrices(teamUuid, {
               identifier: data.identifier,

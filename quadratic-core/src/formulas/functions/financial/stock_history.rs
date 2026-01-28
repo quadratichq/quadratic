@@ -139,18 +139,18 @@ pub struct StockHistoryParams {
 impl StockHistoryParams {
     /// Parse properties from optional arguments
     /// Default is [Date, Close] if no properties specified
-    pub fn parse_properties(props: &[Option<i64>]) -> Result<Vec<StockProperty>, ()> {
+    pub fn parse_properties(props: &[Option<i64>]) -> Option<Vec<StockProperty>> {
         let filtered: Vec<i64> = props.iter().filter_map(|p| *p).collect();
 
         if filtered.is_empty() {
             // Default: Date and Close
-            return Ok(vec![StockProperty::Date, StockProperty::Close]);
+            return Some(vec![StockProperty::Date, StockProperty::Close]);
         }
 
         filtered
             .into_iter()
-            .map(StockProperty::try_from)
-            .collect::<Result<Vec<_>, _>>()
+            .map(|i| StockProperty::try_from(i).ok())
+            .collect()
     }
 
     /// Convert properties to a Vec<i32> for the callback
@@ -267,7 +267,7 @@ pub fn parse_stock_history_formula(code: &str) -> Option<StockHistoryParams> {
         .map(|i| args.get(i).and_then(|s| s.trim().parse::<i64>().ok()))
         .collect();
 
-    let properties = StockHistoryParams::parse_properties(&property_args).ok()?;
+    let properties = StockHistoryParams::parse_properties(&property_args)?;
 
     Some(StockHistoryParams {
         stock,
@@ -394,12 +394,11 @@ fn parse_string_arg(arg: &str) -> Option<String> {
     let trimmed = arg.trim();
 
     // Handle quoted strings
-    if (trimmed.starts_with('"') && trimmed.ends_with('"'))
-        || (trimmed.starts_with('\'') && trimmed.ends_with('\''))
+    if ((trimmed.starts_with('"') && trimmed.ends_with('"'))
+        || (trimmed.starts_with('\'') && trimmed.ends_with('\'')))
+        && trimmed.len() >= 2
     {
-        if trimmed.len() >= 2 {
-            return Some(trimmed[1..trimmed.len() - 1].to_string());
-        }
+        return Some(trimmed[1..trimmed.len() - 1].to_string());
     }
 
     // Not a quoted string
@@ -497,7 +496,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 property0, property1, property2, property3, property4, property5,
             ];
             let _properties = StockHistoryParams::parse_properties(&props)
-                .map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))?;
+                .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?;
 
             // Validate stock symbol (basic validation)
             if stock.is_empty() {
