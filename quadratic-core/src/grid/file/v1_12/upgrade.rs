@@ -170,7 +170,8 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_13::SheetSchema {
                 let column_entry = columns.iter_mut().find(|(col_x, _)| *col_x == x);
 
                 if let Some((_, column)) = column_entry {
-                    // Add to existing column
+                    // Add to existing column. The order doesn't matter since this
+                    // is serialization and the order is already set.
                     column.push((y, v1_13::CellValueSchema::Code(Box::new(code_cell))));
                 } else {
                     // Create new column
