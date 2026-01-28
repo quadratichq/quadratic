@@ -110,6 +110,28 @@ async fn update_connection_status(
     Ok(())
 }
 
+async fn failed_connection_status(
+    state: Arc<State>,
+    connection_id: Uuid,
+    synced_connection_id: u64,
+    run_id: Uuid,
+    dates_processed: Vec<NaiveDate>,
+    error: String,
+) -> Result<()> {
+    state.synced_connection_cache.delete(connection_id).await;
+
+    send_synced_connection_log(
+        state,
+        synced_connection_id,
+        run_id,
+        dates_processed,
+        SyncedConnectionLogStatus::FAILED,
+        Some(error),
+    )
+    .await?;
+    Ok(())
+}
+
 /// Complete a connection status, which deletes the connection from the cache.
 async fn complete_connection_status(
     state: Arc<State>,
@@ -133,6 +155,7 @@ async fn complete_connection_status(
     Ok(())
 }
 
+/// Send a synced connection log.
 pub async fn send_synced_connection_log(
     state: Arc<State>,
     synced_connection_id: u64,

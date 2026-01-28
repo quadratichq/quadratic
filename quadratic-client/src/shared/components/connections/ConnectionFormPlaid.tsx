@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { SpinnerIcon } from '@/shared/components/Icons';
@@ -8,13 +9,18 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
+  ConnectionTypeSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const ConnectionFormPlaidSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.PLAID),
   access_token: z.string().min(1, { message: 'You must connect a bank account' }),
   start_date: z.string().date(),
@@ -29,6 +35,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
+    semanticDescription: String(connection?.semanticDescription || ''),
     type: 'PLAID',
     access_token: connection?.typeDetails?.access_token || '',
     start_date: connection?.typeDetails?.start_date || defaultStartDate,
@@ -196,12 +203,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           />
         </div>
 
-        {/* Hidden fields */}
-        <FormField control={form.control} name="access_token" render={() => <input type="hidden" />} />
-        <FormField control={form.control} name="institution_name" render={() => <input type="hidden" />} />
+        <ConnectionFormSemantic form={form} />
 
         {connection && (
-          <div className="flex items-center gap-2 pt-2 text-sm">
+          <div className="flex items-start gap-2 pt-2 text-sm">
             <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
@@ -210,6 +215,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             />
           </div>
         )}
+
+        {/* Hidden fields */}
+        <FormField control={form.control} name="access_token" render={() => <input type="hidden" />} />
+        <FormField control={form.control} name="institution_name" render={() => <input type="hidden" />} />
 
         {children}
       </form>
