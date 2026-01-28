@@ -1,5 +1,11 @@
 [
   {
+    "version": "0.23.8",
+    "date": "2026-01-28",
+    "changes": ["Onboarding flow improvements"],
+    "details": "<h2>Onboarding flow improvements</h2>\n<p>Simplified the new user onboarding experience. All users now go directly to creating a new file after completing onboarding, providing a more streamlined path to get started with Quadratic.</p>"
+  },
+  {
     "version": "0.23.7",
     "date": "2026-01-26",
     "changes": ["AI connection bug fixes", "File checkpoint improvements", "Internal improvements"],
