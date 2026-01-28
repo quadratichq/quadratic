@@ -97,10 +97,18 @@ pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
 #[cfg(test)]
 pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
     let sheet = gc.sheet(sheet_id);
+    // handle CellValue::Code first
+    if let Some(CellValue::Code(code_cell)) = sheet.cell_value(Pos { x, y }) {
+        assert_eq!(
+            value, code_cell.code_run.code,
+            "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
+            x, y, value, code_cell.code_run.code
+        );
+        return;
+    }
     let Some(cell_value) = sheet.edit_code_value(Pos { x, y }, gc.a1_context()) else {
         panic!("Expected code cell at {}", Pos { x, y });
     };
-
     assert_eq!(
         value, cell_value.code_string,
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
