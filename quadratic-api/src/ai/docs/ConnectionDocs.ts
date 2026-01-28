@@ -73,34 +73,68 @@ DataFusion connections use Apache DataFusion's SQL dialect, which is similar to 
 * Some PostgreSQL-specific functions may not be available
 
 ### Converting Unix Timestamps (Critical!)
-DataFusion's timestamp functions are **misleadingly named** and do NOT work as their names suggest. This is a major documentation gap:
+
+**WARNING:** Some DataFusion timestamp functions are **misleadingly named**:
 
 | Function | What the name suggests | What it actually expects |
 |----------|----------------------|-------------------------|
 | to_timestamp_seconds() | Unix timestamp in seconds | A date STRING like "2025-08-01" |
 | to_timestamp_millis() | Unix timestamp in milliseconds | A date STRING |
 | to_timestamp_nanos() | Unix timestamp in nanoseconds | **Actually works with BIGINT!** ✓ |
+| TO_TIMESTAMP() | - | **Works with BIGINT (as seconds) or STRING** ✓ |
 
-**DO NOT use to_timestamp_seconds() or to_timestamp_millis() with Unix timestamps** - they will produce incorrect 1970 dates.
+**DO NOT use to_timestamp_seconds() or to_timestamp_millis() with Unix timestamps** - they expect strings and will produce incorrect 1970 dates with numeric input.
 
-**The reliable solution:** Always use \`to_timestamp_nanos()\` and convert your timestamps to nanoseconds:
+**Recommended approaches:**
 
 \`\`\`sql
--- For Unix timestamps in SECONDS (e.g., 1704067200):
--- Multiply by 1,000,000,000 to convert to nanoseconds
-to_timestamp_nanos(CAST("unixSeconds" AS BIGINT) * 1000000000)
+-- For Unix timestamps in SECONDS (simplest approach):
+TO_TIMESTAMP(CAST("unixSeconds" AS BIGINT))
 
--- For Unix timestamps in MILLISECONDS (e.g., 1704067200000):
--- Multiply by 1,000,000 to convert to nanoseconds
+-- For Unix timestamps in MILLISECONDS (divide to get seconds):
+TO_TIMESTAMP(CAST("unixMillis" AS BIGINT) / 1000)
+
+-- Alternative for MILLISECONDS using to_timestamp_nanos:
 to_timestamp_nanos(CAST("unixMillis" AS BIGINT) * 1000000)
 
--- For Unix timestamps already in NANOSECONDS:
+-- For Unix timestamps in NANOSECONDS:
 to_timestamp_nanos(CAST("unixNanos" AS BIGINT))
 \`\`\`
 
-**Other timestamp functions:**
-* **TO_TIMESTAMP()** expects a STRING input, not an integer (e.g., \`TO_TIMESTAMP('2025-01-01 12:00:00')\`)
+**Important:** Always CAST to BIGINT first! Float64 columns (like Mixpanel's \`time\` field) will silently fail and return 1970 dates.
+
 * **No FROM_UNIXTIME()** - this common function does not exist in DataFusion
+
+### Mixpanel Timestamp Handling
+
+Mixpanel has a specific quirk that causes timestamp conversions to fail silently:
+
+* **The \`time\` field is Unix timestamp in SECONDS** (not milliseconds - do NOT divide by 1000)
+* **The \`time\` field is stored as Float64**, not an integer type
+* **TO_TIMESTAMP() expects an integer type** - Float64 fails silently and returns 1970 dates
+
+**Solution:** Always cast Mixpanel's \`time\` field to BIGINT:
+
+\`\`\`sql
+-- Correct: Cast Float64 to BIGINT before timestamp conversion
+TO_TIMESTAMP(CAST(time AS BIGINT))
+
+-- WRONG: Using time directly (Float64) produces 1970 dates
+TO_TIMESTAMP(time)  -- Don't do this!
+\`\`\`
+
+**Complete Mixpanel timestamp query example:**
+
+\`\`\`sql
+-- Mixpanel time field is in seconds as Float64, must cast to BIGINT
+SELECT 
+    DATE_TRUNC('month', TO_TIMESTAMP(CAST(time AS BIGINT))) AS month,
+    COUNT(*) AS event_count
+FROM events
+WHERE event LIKE '%signup%'
+GROUP BY DATE_TRUNC('month', TO_TIMESTAMP(CAST(time AS BIGINT)))
+ORDER BY month
+\`\`\`
 
 ### DataFusion Examples
 
@@ -130,13 +164,16 @@ WHERE CAST("eventTime" AS DATE) >= '2024-01-01'
 
 \`\`\`sql
 -- Converting Unix timestamp (milliseconds) to readable timestamp
--- IMPORTANT: Use to_timestamp_nanos() with conversion, NOT to_timestamp_millis()
+-- Option 1: Convert milliseconds to seconds and use TO_TIMESTAMP()
 SELECT 
   "event",
-  to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000) as event_time,
-  date_trunc('day', to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000)) as event_date
+  TO_TIMESTAMP(CAST("mp_processing_time_ms" AS BIGINT) / 1000) as event_time,
+  date_trunc('day', TO_TIMESTAMP(CAST("mp_processing_time_ms" AS BIGINT) / 1000)) as event_date
 FROM events
-WHERE to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000) >= '2024-01-01'
+WHERE TO_TIMESTAMP(CAST("mp_processing_time_ms" AS BIGINT) / 1000) >= '2024-01-01'
+
+-- Option 2: Convert milliseconds to nanoseconds
+-- to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000) as event_time
 \`\`\`
 
 In PostgreSQL, identifiers like table names and column names that contain spaces or are reserved keywords need to be enclosed in double quotes.
