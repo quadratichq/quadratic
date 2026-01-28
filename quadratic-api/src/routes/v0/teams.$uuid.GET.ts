@@ -65,6 +65,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
             select: {
               percentCompleted: true,
               updatedDate: true,
+              SyncedConnectionLog: {
+                select: { status: true, error: true },
+                orderBy: { createdDate: 'desc' },
+                take: 1,
+              },
             },
           },
         },

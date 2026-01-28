@@ -182,20 +182,18 @@ export function CodeEditorHeaderLabel() {
       </div>
 
       {!isRenaming && (
-        <div className="flex min-w-0 max-w-full flex-initial text-xs leading-4 text-muted-foreground">
+        <div className="flex min-w-0 max-w-full flex-initial flex-wrap text-xs leading-4 text-muted-foreground">
           {currentConnection && (
             <span className="truncate px-1 after:ml-1 after:content-['·']">{currentConnection.name}</span>
           )}
-          <button className="max-w-full rounded text-left hover:cursor-pointer hover:bg-accent" onClick={focusCellRef}>
+          <button className="rounded text-left hover:cursor-pointer hover:bg-accent" onClick={focusCellRef}>
             {cellRef}
-
-            {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
-              <span className="ml-1">
-                {`· `}
-                <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
-              </span>
-            )}
           </button>
+          {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
+            <span className="px-1">
+              · <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
+            </span>
+          )}
         </div>
       )}
     </div>
