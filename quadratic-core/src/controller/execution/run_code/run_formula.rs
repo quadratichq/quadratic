@@ -4,7 +4,10 @@ use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, find_cell_references, parse_formula},
-    grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+    grid::{
+        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
+        data_table::DataTableTemplate,
+    },
 };
 
 impl GridController {
@@ -13,6 +16,16 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
+    ) {
+        self.run_formula_with_template(transaction, sheet_pos, code, None);
+    }
+
+    pub(crate) fn run_formula_with_template(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
+        code: String,
+        template: Option<&DataTableTemplate>,
     ) {
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
@@ -28,21 +41,42 @@ impl GridController {
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: eval_ctx.cells_accessed,
+                    cells_accessed: eval_ctx.take_cells_accessed(),
                     error: None,
                     return_type: None,
                     line_number: None,
                     output_type: None,
                 };
-                let new_data_table = DataTable::new(
+
+                // Apply template properties if provided, otherwise use defaults
+                let (show_name, show_columns, header_is_first_row, chart_output) =
+                    if let Some(t) = template {
+                        (
+                            t.show_name,
+                            t.show_columns,
+                            t.header_is_first_row,
+                            t.chart_output,
+                        )
+                    } else {
+                        (None, None, false, None)
+                    };
+
+                let mut new_data_table = DataTable::new(
                     DataTableKind::CodeRun(new_code_run),
                     "Formula1",
                     output.inner,
-                    false,
-                    None,
-                    None,
-                    None,
+                    header_is_first_row,
+                    show_name,
+                    show_columns,
+                    chart_output,
                 );
+
+                // Apply additional template properties not in DataTable::new
+                if let Some(t) = template {
+                    new_data_table.alternating_colors = t.alternating_colors;
+                    new_data_table.chart_pixel_output = t.chart_pixel_output;
+                }
+
                 self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
             }
             Err(error) => {

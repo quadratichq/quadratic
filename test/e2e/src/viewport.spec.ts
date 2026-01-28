@@ -11,6 +11,11 @@ test('Table floating headers', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_viewport` });
 
+  // Clean up any existing files first to avoid hitting the 3 file limit
+  await cleanUpFiles(page, { fileName, skipFilterClear: true });
+  await page.locator('[data-testid="files-list-search-input"]').fill('');
+  await page.waitForTimeout(1000);
+
   // Import file
   await uploadFile(page, { fileName, fileType });
 

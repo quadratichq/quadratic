@@ -1,0 +1,719 @@
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { openLink } from '@/app/helpers/links';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { CopyIcon } from '@/shared/components/Icons';
+import { Rectangle } from 'pixi.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLinkMetadata } from './useLinkMetadata';
+import { FADE_OUT_DELAY, type PopupMode, usePopupVisibility } from './usePopupVisibility';
+
+const HOVER_DELAY = 500;
+
+export interface LinkData {
+  x: number;
+  y: number;
+  url: string;
+  rect: Rectangle;
+  source: 'hover' | 'cursor' | 'inline';
+  isFormula: boolean;
+  // For inline editor: whether there was a text selection
+  hasSelection?: boolean;
+  // For partial hyperlinks: the text of the link span
+  linkText?: string;
+  // True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink)
+  isNakedUrl?: boolean;
+  // Character start position of this hyperlink span within the cell text
+  spanStart?: number;
+  // Character end position of this hyperlink span within the cell text
+  spanEnd?: number;
+}
+
+const FADE_DURATION = 150; // Match CSS transition duration
+
+export function useHyperlinkPopup() {
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+
+  // Link data state - this is the "source of truth" for what popup to show
+  const [linkData, setLinkData] = useState<LinkData | undefined>();
+  const linkDataRef = useRef<LinkData | undefined>(undefined);
+
+  // Display data - persists during fade-out so we keep showing content
+  const [displayData, setDisplayData] = useState<LinkData | undefined>();
+  const [isVisible, setIsVisible] = useState(false);
+  const fadeTimeoutRef = useRef<number | undefined>(undefined);
+
+  // Edit form state
+  const [mode, setMode] = useState<PopupMode>('view');
+  const [editUrl, setEditUrl] = useState('');
+  const [editText, setEditText] = useState('');
+
+  // Metadata - use displayData for consistent display during fade
+  const { pageTitle } = useLinkMetadata(displayData?.url);
+
+  // Visibility management
+  const visibility = usePopupVisibility();
+
+  // Keep a stable ref to visibility callbacks to avoid re-running useEffects when hovering state changes
+  const visibilityRef = useRef(visibility);
+  visibilityRef.current = visibility;
+
+  // Keep refs in sync
+  useEffect(() => {
+    linkDataRef.current = linkData;
+  }, [linkData]);
+
+  // Sync displayData and visibility with linkData
+  useEffect(() => {
+    if (linkData) {
+      // Show popup with new data
+      clearTimeout(fadeTimeoutRef.current);
+      setDisplayData(linkData);
+      setIsVisible(true);
+    } else {
+      // Fade out - keep displayData during fade, then clear it
+      setIsVisible(false);
+      fadeTimeoutRef.current = window.setTimeout(() => {
+        setDisplayData(undefined);
+      }, FADE_DURATION);
+    }
+  }, [linkData]);
+
+  useEffect(() => {
+    visibilityRef.current.setModeRef(mode);
+  }, [mode]);
+
+  // Register cursor recheck after cooldown
+  const checkCursorRef = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => {
+    visibilityRef.current.setAfterCooldown(() => {
+      setMode('view');
+      checkCursorRef.current?.();
+    });
+  }, []); // No dependencies - use visibilityRef
+
+  // Close popup helper
+  const closePopup = useCallback((instant = false) => {
+    setLinkData(undefined);
+    if (!instant) setMode('view');
+    setEditUrl('');
+    setEditText('');
+    visibilityRef.current.triggerClose(instant);
+  }, []); // No dependencies - use visibilityRef
+
+  // Handle cursor position changes
+  useEffect(() => {
+    const checkCursorForHyperlink = () => {
+      const v = visibilityRef.current;
+      if (v.isEditMode()) return;
+      if (v.isJustClosed()) return;
+      if (inlineEditorHandler.isOpen()) return;
+
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      if (cursor.isMultiCursor()) {
+        v.clearTimeouts();
+        return;
+      }
+
+      const { x, y } = cursor.position;
+
+      // Close cursor-sourced popup if cursor moved to a different cell
+      const current = linkDataRef.current;
+      if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
+        setLinkData(undefined);
+        setMode('view');
+      }
+
+      // Clear any existing timeout and set a new one with delay
+      v.clearTimeouts();
+      v.setHoverTimeout(async () => {
+        // Re-check conditions after delay
+        if (v.isEditMode()) return;
+        if (v.isJustClosed()) return;
+        if (inlineEditorHandler.isOpen()) return;
+
+        // Verify cursor is still at the same position
+        const currentCursor = sheets.sheet.cursor;
+        if (currentCursor.isMultiCursor()) return;
+        const currentPos = currentCursor.position;
+        if (currentPos.x !== x || currentPos.y !== y) return;
+
+        const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
+
+        if (cellValue?.kind === 'RichText' && cellValue.spans) {
+          // Only show popup from cursor if the entire cell is a single hyperlink span.
+          // For partial hyperlinks (multiple spans with only some having links),
+          // rely on hover detection which knows the exact mouse position.
+          const linkSpan = cellValue.spans.length === 1 ? cellValue.spans[0] : undefined;
+          const linkUrl = linkSpan?.link;
+          if (linkSpan && linkUrl) {
+            const offsets = sheet.getCellOffsets(x, y);
+            const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+            const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
+            const isFormula = codeCell?.language === 'Formula';
+
+            setLinkData({ x, y, url: linkUrl, rect, source: 'cursor', isFormula, linkText: linkSpan.text });
+            setMode('view');
+            setEditUrl(linkUrl);
+          }
+        }
+      }, HOVER_DELAY);
+    };
+
+    checkCursorRef.current = checkCursorForHyperlink;
+    events.on('cursorPosition', checkCursorForHyperlink);
+    return () => {
+      events.off('cursorPosition', checkCursorForHyperlink);
+      visibilityRef.current.clearTimeouts();
+    };
+  }, []); // No dependencies - use visibilityRef
+
+  // Handle insert link event
+  useEffect(() => {
+    const handleInsertLink = () => {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      if (cursor.isMultiCursor()) return;
+
+      const { x, y } = cursor.position;
+      const offsets = sheet.getCellOffsets(x, y);
+      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+
+      setLinkData({ x, y, url: '', rect, source: 'cursor', isFormula: false });
+      setMode('edit');
+      setEditUrl('');
+      setEditText('');
+    };
+
+    events.on('insertLink', handleInsertLink);
+    return () => {
+      events.off('insertLink', handleInsertLink);
+    };
+  }, []);
+
+  // Handle inline hyperlink input (Ctrl+K in inline editor)
+  useEffect(() => {
+    const handleShowInlineHyperlinkInput = (data: { selectedText: string }) => {
+      // Get the inline editor's position to use for the popup
+      const location = inlineEditorHandler.location;
+      if (!location) return;
+
+      const sheet = sheets.sheet;
+      const offsets = sheet.getCellOffsets(location.x, location.y);
+      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+
+      setLinkData({
+        x: location.x,
+        y: location.y,
+        url: '',
+        rect,
+        source: 'inline',
+        isFormula: false,
+        hasSelection: !!data.selectedText,
+      });
+      setMode('edit');
+      setEditUrl('');
+      setEditText(data.selectedText);
+    };
+
+    events.on('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
+    return () => {
+      events.off('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
+    };
+  }, []);
+
+  // Handle cursor position on hyperlinks in inline editor (show popup when cursor is on link)
+  useEffect(() => {
+    const handleInlineEditorCursorOnHyperlink = (
+      data?: { url: string; rect: Rectangle; linkText: string } | undefined
+    ) => {
+      const v = visibilityRef.current;
+      // Don't interfere with edit mode
+      if (v.isEditMode()) return;
+
+      if (data) {
+        const location = inlineEditorHandler.location;
+        if (!location) return;
+
+        // Check if we're already showing this link from inline source
+        const current = linkDataRef.current;
+        if (current?.source === 'inline' && current?.url === data.url) return;
+
+        // Show popup immediately (no delay for cursor-based navigation)
+        setLinkData({
+          x: location.x,
+          y: location.y,
+          url: data.url,
+          rect: data.rect,
+          source: 'inline',
+          isFormula: false,
+          linkText: data.linkText,
+        });
+        setMode('view');
+        setEditUrl(data.url);
+      } else {
+        // Cursor left link - hide popup if it was from inline source
+        const source = linkDataRef.current?.source;
+        if (source === 'inline') {
+          setLinkData(undefined);
+          setMode('view');
+        }
+      }
+    };
+
+    events.on('inlineEditorCursorOnHyperlink', handleInlineEditorCursorOnHyperlink);
+    return () => {
+      events.off('inlineEditorCursorOnHyperlink', handleInlineEditorCursorOnHyperlink);
+    };
+  }, []);
+
+  // Handle hover link events
+  // Scenarios:
+  // 1. Hovering over link → popup shows after delay
+  // 2. Moving from link to popup → popup stays open (handleMouseEnter clears timeouts)
+  // 3. Leaving link without going to popup → popup fades out (hoverLink undefined)
+  // 4. Leaving popup → popup fades out (handleMouseLeave sets timeout, hoverLink doesn't interfere)
+  useEffect(() => {
+    const handleHoverLink = (link?: {
+      x: number;
+      y: number;
+      url: string;
+      rect: Rectangle;
+      linkText?: string;
+      isNakedUrl?: boolean;
+      spanStart?: number;
+      spanEnd?: number;
+    }) => {
+      const v = visibilityRef.current;
+      if (v.isEditMode()) return;
+      if (v.isJustClosed()) return;
+      if (v.isHovering()) return;
+      if (inlineEditorHandler.isOpen()) return;
+
+      if (link) {
+        // Clear timeouts when hovering a new link
+        v.clearTimeouts();
+
+        const current = linkDataRef.current;
+        if (current?.x === link.x && current?.y === link.y && current?.url === link.url) return;
+
+        v.setHoverTimeout(async () => {
+          const sheet = sheets.sheet;
+          const offsets = sheet.getCellOffsets(link.x, link.y);
+          const cellRect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+          const codeCell = await quadraticCore.getCodeCell(sheet.id, link.x, link.y);
+          const isFormula = codeCell?.language === 'Formula';
+
+          setLinkData({
+            x: link.x,
+            y: link.y,
+            url: link.url,
+            rect: cellRect,
+            source: 'hover',
+            isFormula,
+            linkText: link.linkText,
+            isNakedUrl: link.isNakedUrl,
+            spanStart: link.spanStart,
+            spanEnd: link.spanEnd,
+          });
+          setMode('view');
+          setEditUrl(link.url);
+        }, HOVER_DELAY);
+      } else {
+        // Mouse left link area (hoverLink event with undefined)
+        // Always clear hover timeout to prevent popup from showing after mouse left
+        v.clearTimeouts();
+
+        const source = linkDataRef.current?.source;
+
+        // Don't hide popups from cursor or inline sources via hoverLink events
+        if (source === 'cursor' || source === 'inline') return;
+
+        // Scenario 2: If popup is currently being hovered, don't interfere
+        // handleMouseLeave will handle hiding when mouse leaves the popup (scenario 4)
+        if (v.isHovering()) return;
+
+        // For 'hover' source popups, set fade out timeout
+        // This handles both scenario 3 (never hovered popup) and scenario 4 (hovered then left)
+        // handleMouseLeave also sets a timeout, but that's okay - both will try to hide it
+        if (source === 'hover' && linkDataRef.current) {
+          v.setFadeOutTimeout(() => {
+            // Hide if still from hover source and not being hovered
+            const currentSource = linkDataRef.current?.source;
+            if (currentSource === 'hover' && !visibilityRef.current.isHovering()) {
+              setLinkData(undefined);
+              setMode('view');
+            }
+          }, FADE_OUT_DELAY);
+          return;
+        }
+
+        // Edge case: Popup doesn't exist yet (shouldn't happen often)
+        v.setFadeOutTimeout(() => {
+          if (!linkDataRef.current) return; // Popup was already hidden
+          const currentSource = linkDataRef.current.source;
+          if (!visibilityRef.current.isHovering() && currentSource !== 'cursor' && currentSource !== 'inline') {
+            setLinkData(undefined);
+            setMode('view');
+          }
+        }, FADE_OUT_DELAY);
+      }
+    };
+
+    events.on('hoverLink', handleHoverLink);
+    return () => {
+      events.off('hoverLink', handleHoverLink);
+      visibilityRef.current.clearTimeouts();
+    };
+  }, []); // No dependencies - use visibilityRef to access current visibility
+
+  // Hide on viewport changes
+  useEffect(() => {
+    const hide = () => {
+      if (visibilityRef.current.isEditMode()) return;
+      setLinkData(undefined);
+      setMode('view');
+    };
+
+    pixiApp.viewport.on('moved', hide);
+    pixiApp.viewport.on('zoomed', hide);
+    return () => {
+      pixiApp.viewport.off('moved', hide);
+      pixiApp.viewport.off('zoomed', hide);
+    };
+  }, []); // No dependencies - use visibilityRef
+
+  // Hide when inline editor opens or closes (for inline-sourced popups)
+  useEffect(() => {
+    const handleChangeInput = (input: boolean) => {
+      if (input) {
+        // Inline editor opened - hide any existing popup
+        setLinkData(undefined);
+        setMode('view');
+      } else {
+        // Inline editor closed - hide popup if it was from inline source
+        if (linkDataRef.current?.source === 'inline') {
+          setLinkData(undefined);
+          setMode('view');
+        }
+      }
+    };
+
+    events.on('changeInput', handleChangeInput);
+    return () => {
+      events.off('changeInput', handleChangeInput);
+    };
+  }, []);
+
+  // Hide when the cell's hyperlink is deleted
+  useEffect(() => {
+    const handleHashContentChanged = async (sheetId: string) => {
+      const current = linkDataRef.current;
+      if (!current) return;
+      // Don't interfere with edit mode
+      if (visibilityRef.current.isEditMode()) return;
+      // Only check cells on the current sheet
+      if (sheetId !== sheets.sheet.id) return;
+
+      // Re-check if the cell still has a hyperlink
+      const cellValue = await quadraticCore.getCellValue(sheetId, current.x, current.y);
+
+      // Check if cell still has a hyperlink
+      const hasHyperlink = cellValue?.kind === 'RichText' && cellValue.spans?.some((span) => span.link);
+
+      if (!hasHyperlink) {
+        // Hyperlink was removed or cell was deleted - close popup
+        setLinkData(undefined);
+        setMode('view');
+      }
+    };
+
+    events.on('hashContentChanged', handleHashContentChanged);
+    return () => {
+      events.off('hashContentChanged', handleHashContentChanged);
+    };
+  }, []);
+
+  // Mouse handlers - use useCallback with visibilityRef to avoid re-creating when hovering changes
+  const handleMouseEnter = useCallback(() => {
+    visibilityRef.current.handleMouseEnter();
+  }, []);
+
+  const handleMouseMove = useCallback(() => {
+    visibilityRef.current.handleMouseMove();
+  }, []);
+  const handleMouseLeave = useCallback(() => {
+    visibilityRef.current.handleMouseLeave(() => {
+      const source = linkDataRef.current?.source;
+      // Don't auto-hide for cursor or inline sources
+      if (source !== 'cursor' && source !== 'inline') {
+        setLinkData(undefined);
+        setMode('view');
+      }
+    });
+  }, []); // No dependencies - use visibilityRef
+
+  // Close popup when focus leaves the popup container
+  const handleBlur = useCallback(
+    (e: React.FocusEvent) => {
+      // Check if the new focus target is outside the popup
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
+        // Focus is still within the popup, don't close
+        return;
+      }
+      // Don't close if focus moved to null (e.g., window blur) while in edit mode
+      if (!relatedTarget && mode === 'edit') {
+        return;
+      }
+      closePopup(true);
+    },
+    [closePopup, mode]
+  );
+
+  // Close popup on wheel scroll (user likely wants to zoom/scroll the viewport)
+  const handleWheel = useCallback(() => {
+    if (visibilityRef.current.isEditMode()) return;
+    closePopup(true);
+  }, [closePopup]);
+
+  // Action handlers
+  const handleOpenLink = useCallback(() => {
+    if (linkData?.url) openLink(linkData.url);
+  }, [linkData]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (linkData?.url) {
+      await navigator.clipboard.writeText(linkData.url);
+      addGlobalSnackbar(
+        <span className="flex items-center gap-1">
+          <CopyIcon />
+          Copied link to clipboard.
+        </span>
+      );
+      closePopup(true);
+      // Focus grid after a short delay to ensure the popup is closed
+      focusGrid();
+    }
+  }, [linkData, addGlobalSnackbar, closePopup]);
+
+  const handleEditMode = useCallback(async () => {
+    if (!linkData) return;
+
+    if (linkData.isFormula) {
+      // Close popup immediately before any async operations
+      closePopup(true);
+      sheets.sheet.cursor.moveTo(linkData.x, linkData.y);
+      const codeCell = await quadraticCore.getCodeCell(sheets.current, linkData.x, linkData.y);
+      if (codeCell?.code_string) {
+        pixiAppSettings.changeInput(true, '=' + codeCell.code_string);
+      }
+      return;
+    }
+
+    // Use linkText if available (for partial hyperlinks), otherwise fall back to full cell display
+    const displayValue =
+      linkData.linkText ?? (await quadraticCore.getDisplayCell(sheets.current, linkData.x, linkData.y));
+    setEditText(displayValue && displayValue !== linkData.url ? displayValue : '');
+    setEditUrl(linkData.url);
+    setMode('edit');
+  }, [linkData, closePopup]);
+
+  const handleRemoveLink = useCallback(async () => {
+    if (!linkData) return;
+
+    if (linkData.source === 'inline') {
+      // Remove hyperlink from inline editor's span tracking
+      inlineEditorSpans.removeHyperlinkAtCursor();
+      inlineEditorMonaco.focus();
+      closePopup(true);
+      return;
+    }
+
+    // Get the current cell value to access its spans
+    const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
+
+    if (cellValue?.kind === 'RichText' && cellValue.spans) {
+      // Find the span at the matching character position and remove the link property
+      // We use character position (spanStart/spanEnd) to uniquely identify the span
+      let charPos = 0;
+      const modifiedSpans = cellValue.spans.map((span) => {
+        const spanStart = charPos;
+        const spanEnd = charPos + span.text.length;
+        charPos = spanEnd;
+
+        // Match by character position if available, otherwise fall back to URL + text
+        const matches =
+          linkData.spanStart !== undefined && linkData.spanEnd !== undefined
+            ? spanStart === linkData.spanStart && spanEnd === linkData.spanEnd
+            : span.link === linkData.url && span.text === linkData.linkText;
+
+        if (matches) {
+          // Set link to null to remove the hyperlink, keep everything else
+          // Ensure all required TextSpan fields are present
+          return {
+            text: span.text,
+            link: null,
+            bold: span.bold ?? null,
+            italic: span.italic ?? null,
+            underline: span.underline ?? null,
+            strike_through: span.strike_through ?? null,
+            text_color: span.text_color ?? null,
+            font_size: span.font_size ?? null,
+          };
+        }
+        return span;
+      });
+
+      // Save the modified spans back as RichText
+      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, modifiedSpans);
+    }
+
+    closePopup(true);
+    focusGrid();
+  }, [linkData, closePopup]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!linkData || !editUrl.trim()) return;
+
+    const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
+    const text = editText.trim() || normalizedUrl;
+    const hasCustomTitle = text !== normalizedUrl;
+
+    if (linkData.source === 'inline') {
+      // Check if we're editing an existing hyperlink or inserting a new one
+      if (inlineEditorSpans.hasPendingHyperlink()) {
+        // Inserting a new hyperlink (via Ctrl+K)
+        // Inherit current formatting from cursor position
+        const formatting = inlineEditorHandler.getFormattingStateForHyperlink();
+        inlineEditorSpans.completePendingHyperlink(normalizedUrl, text, formatting);
+      } else {
+        // Editing an existing hyperlink - update in place
+        inlineEditorSpans.updateHyperlinkAtCursor(normalizedUrl, text);
+      }
+      inlineEditorMonaco.focus();
+    } else if (linkData.isNakedUrl && !hasCustomTitle) {
+      // For naked URLs without a custom title, keep as plain text
+      quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
+    } else {
+      // Get the current cell value to check if it has multiple spans
+      const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
+
+      if (cellValue?.kind === 'RichText' && cellValue.spans && cellValue.spans.length > 1) {
+        // Cell has multiple spans - update only the matching hyperlink span
+        // We use character position (spanStart/spanEnd) to uniquely identify the span
+        let charPos = 0;
+        const modifiedSpans = cellValue.spans.map((span) => {
+          const spanStart = charPos;
+          const spanEnd = charPos + span.text.length;
+          charPos = spanEnd;
+
+          // Match by character position if available, otherwise fall back to URL + text
+          const matches =
+            linkData.spanStart !== undefined && linkData.spanEnd !== undefined
+              ? spanStart === linkData.spanStart && spanEnd === linkData.spanEnd
+              : span.link === linkData.url && span.text === linkData.linkText;
+
+          if (matches) {
+            // Update this span's text and link
+            return {
+              text,
+              link: normalizedUrl,
+              bold: span.bold ?? null,
+              italic: span.italic ?? null,
+              underline: span.underline ?? null,
+              strike_through: span.strike_through ?? null,
+              text_color: span.text_color ?? null,
+              font_size: span.font_size ?? null,
+            };
+          }
+          return span;
+        });
+        quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, modifiedSpans);
+      } else {
+        // Single span or simple case - replace the entire cell
+        quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+          {
+            text,
+            link: normalizedUrl,
+            bold: null,
+            italic: null,
+            underline: null,
+            strike_through: null,
+            text_color: null,
+            font_size: null,
+          },
+        ]);
+      }
+    }
+    closePopup(true);
+  }, [linkData, editUrl, editText, closePopup]);
+
+  const handleCancelEdit = useCallback(() => {
+    if (linkData?.source === 'inline') {
+      inlineEditorSpans.cancelPendingHyperlink();
+      inlineEditorMonaco.focus();
+    }
+    closePopup(true);
+  }, [linkData, closePopup]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // Stop propagation to prevent grid from capturing keyboard events
+      e.stopPropagation();
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSaveEdit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancelEdit();
+      }
+    },
+    [handleSaveEdit, handleCancelEdit]
+  );
+
+  const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
+    // Stop propagation to prevent grid from capturing keyboard events
+    e.stopPropagation();
+  }, []);
+
+  // When editing in inline mode with a text selection, hide the text field
+  const hideTextField = displayData?.source === 'inline' && displayData?.hasSelection;
+
+  return {
+    // Use displayData for rendering (persists during fade-out)
+    linkData: displayData,
+    mode,
+    editUrl,
+    editText,
+    pageTitle,
+    isVisible,
+    skipFade: visibility.skipFade,
+    hideTextField,
+    setEditUrl,
+    setEditText,
+    handleMouseEnter,
+    handleMouseMove,
+    handleMouseLeave,
+    handleBlur,
+    handleWheel,
+    handleOpenLink,
+    handleCopyLink,
+    handleEditMode,
+    handleRemoveLink,
+    handleSaveEdit,
+    handleCancelEdit,
+    handleKeyDown,
+    handleKeyUp,
+    closePopup,
+  };
+}

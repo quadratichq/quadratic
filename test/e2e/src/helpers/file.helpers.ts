@@ -1,5 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import path from 'path';
+import { dismissUpgradeToProDialog } from './auth.helpers';
+import { upgradeToProPlan } from './billing.helpers';
 import { waitForAppReady, waitForNetworkIdle } from './wait.helpers';
 
 type CreateFileOptions = {
@@ -9,6 +11,21 @@ type CreateFileOptions = {
 export const createFile = async (page: Page, { fileName, skipNavigateBack = false }: CreateFileOptions) => {
   // Click New File
   await page.locator(`button:text-is("New file")`).click({ timeout: 30 * 1000 });
+
+  // Wait for the network call to complete
+  await page.waitForTimeout(5000);
+
+  // If you hit the file limit dialog, go subscribe
+  if (await page.locator('[data-testid="upgrade-to-pro-dialog"]').isVisible()) {
+    // Store where we are
+    const currentUrl = page.url();
+
+    await dismissUpgradeToProDialog(page);
+    await upgradeToProPlan(page);
+
+    // when done, navigate back to where you were
+    await page.goto(currentUrl, { waitUntil: 'networkidle' });
+  }
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
@@ -38,17 +55,13 @@ type CleanUpFilesOptions = {
   skipFilterClear?: boolean;
 };
 export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = false }: CleanUpFilesOptions) => {
-  // filter file by name
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
-  await page.waitForTimeout(2500);
+  // Dismiss the "Upgrade to Pro" dialog if it appears
+  await dismissUpgradeToProDialog(page);
 
-  // setup dialog alerts to be yes
-  page.on('dialog', (dialog) => {
-    dialog.accept().catch((error) => {
-      console.error('Failed to accept the dialog:', error);
-    });
-  });
+  // filter file by name
+  await page.locator('[data-testid="files-list-search-input"]').waitFor();
+  await page.locator('[data-testid="files-list-search-input"]').fill(fileName);
+  await page.waitForTimeout(2500);
 
   // loop through and delete all the files
   const fileCount = await page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).count();
@@ -57,13 +70,12 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
       .locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`)
       .first()
       .click({ timeout: 60 * 1000 });
-    await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
-    await page.locator('[role="alertdialog"] button:has-text("Delete")').click({ timeout: 60 * 1000 });
-    await page.waitForTimeout(5 * 1000);
+    await page.locator('[data-testid="dashboard-file-actions-delete"]').click({ timeout: 60 * 1000 });
+    await page.waitForTimeout(2 * 1000);
   }
 
   // once complete clear out search bar
-  if (!skipFilterClear) await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
+  if (!skipFilterClear) await page.locator('[data-testid="files-list-search-input"]').fill('');
 };
 
 type NavigateIntoFileOptions = {
@@ -71,10 +83,13 @@ type NavigateIntoFileOptions = {
   skipClose?: boolean;
 };
 export const navigateIntoFile = async (page: Page, { fileName, skipClose = false }: NavigateIntoFileOptions) => {
+  // Dismiss the "Upgrade to Pro" dialog if it appears
+  await dismissUpgradeToProDialog(page);
+
   // Search for the file
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
+  await page.locator('[data-testid="files-list-search-input"]').fill(fileName);
   await waitForNetworkIdle(page); // Wait for filter results instead of fixed 2s
-  await page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
+  await page.locator(`h2:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);

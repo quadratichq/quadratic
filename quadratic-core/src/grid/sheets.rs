@@ -56,24 +56,24 @@ impl Grid {
     ///
     /// This runs in O(n) time.
     ///
-    /// `name` is automatically case-folded.
+    /// `name` is automatically case-folded and trimmed.
     pub fn try_sheet_from_name(&self, name: &str) -> Option<&Sheet> {
         let name = case_fold(name.trim());
         self.sheets
             .values()
-            .find(|sheet| case_fold(&sheet.name) == name)
+            .find(|sheet| case_fold(sheet.name.trim()) == name)
     }
 
     /// Returns a mutable reference to the sheet with the given name.
     ///
     /// This runs in O(n) time.
     ///
-    /// `name` is automatically case-folded.
+    /// `name` is automatically case-folded and trimmed.
     pub fn try_sheet_mut_from_name(&mut self, name: &str) -> Option<&mut Sheet> {
         let name = case_fold(name.trim());
         self.sheets
             .values_mut()
-            .find(|sheet| case_fold(&sheet.name) == name)
+            .find(|sheet| case_fold(sheet.name.trim()) == name)
     }
 
     /// Parses `id` to a `SheetId` and returns the sheet with that ID.
@@ -115,17 +115,18 @@ impl Grid {
     }
 
     /// Returns a unique sheet name for a given name.
+    /// The input name is trimmed before processing.
     pub fn unique_sheet_name(&self, name: &str) -> String {
-        let mut unique_name = name.to_owned();
+        let mut unique_name = name.trim().to_owned();
         let mut index = 1;
         loop {
             let folded_new_name = case_fold(&unique_name);
             if self
                 .sheets
                 .values()
-                .any(|old_sheet| case_fold(&old_sheet.name) == folded_new_name)
+                .any(|old_sheet| case_fold(old_sheet.name.trim()) == folded_new_name)
             {
-                unique_name = format!("{}({})", unique_name, index);
+                unique_name = format!("{}({})", name.trim(), index);
                 index += 1;
             } else {
                 break;
@@ -379,5 +380,36 @@ mod test {
             grid.sheets[1].name,
             format!("{}1(1)", SHEET_NAME.to_owned())
         );
+    }
+
+    #[test]
+    fn test_try_sheet_from_name_trims_whitespace() {
+        let mut grid = Grid::new();
+
+        // Simulate Excel import with whitespace in sheet name
+        grid.sheets[0].name = "  Sales  ".to_string();
+
+        // All of these should find the sheet
+        assert!(grid.try_sheet_from_name("Sales").is_some());
+        assert!(grid.try_sheet_from_name("  Sales  ").is_some());
+        assert!(grid.try_sheet_from_name("sales").is_some()); // case insensitive
+        assert!(grid.try_sheet_from_name("  SALES  ").is_some());
+
+        // Mutable version should also work
+        assert!(grid.try_sheet_mut_from_name("Sales").is_some());
+    }
+
+    #[test]
+    fn test_unique_sheet_name_trims_whitespace() {
+        let mut grid = Grid::new();
+        grid.sheets[0].name = "  Data  ".to_string();
+
+        // Should detect collision even with trimmed input
+        let unique = grid.unique_sheet_name("Data");
+        assert_eq!(unique, "Data(1)");
+
+        // And with whitespace input
+        let unique2 = grid.unique_sheet_name("  Data  ");
+        assert_eq!(unique2, "Data(1)");
     }
 }

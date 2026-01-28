@@ -1,6 +1,6 @@
 import { exec, spawn, } from "node:child_process";
 import treeKill from "tree-kill";
-import { killPort } from './utils.js';
+import { killPort } from "./utils.js";
 export class Control {
     cli;
     ui;
@@ -543,7 +543,14 @@ export class Control {
         this.ui.printOutput("connection", (data) => {
             this.handleResponse("connection", data, {
                 success: "listening on",
-                error: ["error[", "error:", "failed to compile", "npm ERR!", "Compiling failed", "Exit status: 1"],
+                error: [
+                    "error[",
+                    "error:",
+                    "failed to compile",
+                    "npm ERR!",
+                    "Compiling failed",
+                    "Exit status: 1",
+                ],
                 start: "    Compiling",
             });
         });

@@ -208,7 +208,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
+const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
 
   // If the user wants to upgrade to Pro, we'll send them to Stripe first
   if (result.data && result.data['team-plan'] === 'pro') {

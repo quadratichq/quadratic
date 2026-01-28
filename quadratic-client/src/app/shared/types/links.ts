@@ -4,4 +4,26 @@ import type { Rectangle } from 'pixi.js';
 export interface Link {
   pos: JsCoordinate;
   textRectangle: Rectangle;
+  /** The hyperlink URL for RichText hyperlinks. If undefined, the cell's display value is the URL. */
+  url?: string;
+  /** The text of the hyperlink span. */
+  linkText?: string;
+  /** True if this is a naked URL (plain text auto-detected as URL, not a RichText hyperlink). */
+  isNakedUrl?: boolean;
+  /** Character start position of this hyperlink span within the cell text. */
+  spanStart?: number;
+  /** Character end position of this hyperlink span within the cell text. */
+  spanEnd?: number;
+}
+
+/** A hyperlink span within a cell, with character range and URL. */
+export interface LinkSpan {
+  /** Start character index (inclusive). */
+  start: number;
+  /** End character index (exclusive). */
+  end: number;
+  /** The hyperlink URL. */
+  url: string;
+  /** Pixel rectangle for this span (calculated after text layout). */
+  textRectangle?: Rectangle;
 }

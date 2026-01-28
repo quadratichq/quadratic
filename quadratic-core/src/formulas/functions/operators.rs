@@ -117,7 +117,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, formulas::tests::*};
+    use crate::{controller::GridController, formulas::tests::*, values::Duration};
 
     #[test]
     fn test_formula_comparison_ops() {
@@ -162,13 +162,13 @@ mod tests {
         assert_all_compare_ops_work("'abc'", "'DEF'");
         assert_all_compare_ops_work("'ABC'", "'DEF'");
 
-        // Test duration (`+0` coerces to duration)
-        assert_all_compare_ops_work("('2 months'+0)", "('1 year'+0)");
-        assert_all_compare_ops_work("('300 days'+0)", "('1 year'+0)");
-        assert_all_compare_ops_work("('300 days'+0)", "('301 days'+0)");
+        // Test duration (using DURATION.YMD formula function)
+        assert_all_compare_ops_work("DURATION.YMD(0, 2, 0)", "DURATION.YMD(1, 0, 0)"); // 2 months < 1 year
+        assert_all_compare_ops_work("DURATION.YMD(0, 0, 300)", "DURATION.YMD(1, 0, 0)"); // 300 days < 1 year
+        assert_all_compare_ops_work("DURATION.YMD(0, 0, 300)", "DURATION.YMD(0, 0, 301)"); // 300 days < 301 days
         // Any number of days is always considered less than one month. This is
         // a little weird, but I don't know what else to do.
-        assert_all_compare_ops_work("('300 days'+0)", "('1 month'+0)");
+        assert_all_compare_ops_work("DURATION.YMD(0, 0, 300)", "DURATION.YMD(0, 1, 0)"); // 300 days < 1 month
     }
 
     #[test]
@@ -221,17 +221,32 @@ mod tests {
             (val("10"), val("51"), Ok("61")),
             (val("10"), val("-51"), Ok("-41")),
             (val("oh"), val("dear"), Err(false)),
-            (val("1000d"), val("250 ms"), Ok("1000d 0h 0m 0.25s")),
-            (date("1983-09-26"), val("41y"), Ok("2024-09-26")),
+            (
+                dur(Duration::from_days(1000.0)),
+                dur(Duration::from_milliseconds(250.0)),
+                Ok("1000d 0h 0m 0.25s"),
+            ),
             (
                 date("1983-09-26"),
-                val("41y6mo4h"),
+                dur(Duration::from_years(41)),
+                Ok("2024-09-26"),
+            ),
+            (
+                date("1983-09-26"),
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
                 Ok("2025-03-26 04:00:00"),
             ),
-            (date("1983-09-26"), val("2024-01-01"), Err(true)),
             (date("1983-09-26"), date("2024-01-01"), Err(true)),
             (time("2:30"), time("1:30"), Err(true)),
-            (time("2:30"), val("41y6mo4h"), Ok("06:30:00")),
+            (
+                time("2:30"),
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                Ok("06:30:00"),
+            ),
             (date("1983-09-26"), time("2:30"), Ok("1983-09-26 02:30:00")),
             (datetime("2024-01-01T12:00:00"), time("3:00"), Err(true)),
             (
@@ -241,7 +256,7 @@ mod tests {
             ),
             (
                 datetime("2024-01-01T12:00:00"),
-                val("30m"),
+                dur(Duration::from_minutes(30.0)),
                 Ok("2024-01-01 12:30:00"),
             ),
             // casting numbers to days or hours
@@ -253,7 +268,7 @@ mod tests {
                 Ok("2024-01-01 04:30:00"),
             ),
             (time("12:30"), val("-16.5"), Ok("20:00:00")),
-            (val("12h"), val("4"), Ok("4d 12h")),
+            (dur(Duration::from_hours(12.0)), val("4"), Ok("4d 12h")),
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
@@ -275,7 +290,10 @@ mod tests {
         let sheet_id = g.sheet_ids()[0];
 
         // Test error message formatting
-        g.sheet_mut(sheet_id).set_value(pos![A1], val("41y6mo4h"));
+        g.sheet_mut(sheet_id).set_value(
+            pos![A1],
+            dur(Duration::from_years(41) + Duration::from_months(6) + Duration::from_hours(4.0)),
+        );
         g.sheet_mut(sheet_id)
             .set_value(pos![A2], date("1983-09-26"));
         assert_eq!(
@@ -292,22 +310,56 @@ mod tests {
             (val("10"), val("51"), Ok("-41")),
             (val("10"), val("-51"), Ok("61")),
             (val("oh"), val("dear"), Err(false)),
-            (val("1000d"), val("250 ms"), Ok("999d 23h 59m 59.75s")),
-            (val("250 ms"), val("1000d"), Ok("-999d -23h -59m -59.75s")),
-            (date("1983-09-26"), val("-41y"), Ok("2024-09-26")),
-            (date("2024-09-26"), val("41y"), Ok("1983-09-26")),
+            (
+                dur(Duration::from_days(1000.0)),
+                dur(Duration::from_milliseconds(250.0)),
+                Ok("999d 23h 59m 59.75s"),
+            ),
+            (
+                dur(Duration::from_milliseconds(250.0)),
+                dur(Duration::from_days(1000.0)),
+                Ok("-999d -23h -59m -59.75s"),
+            ),
+            (
+                date("1983-09-26"),
+                dur(-Duration::from_years(41)),
+                Ok("2024-09-26"),
+            ),
+            (
+                date("2024-09-26"),
+                dur(Duration::from_years(41)),
+                Ok("1983-09-26"),
+            ),
             (
                 datetime("2025-03-26T04:00:00"),
                 date("1983-09-26"),
                 Ok("15157d 4h"),
             ),
-            (val("41y6mo4h"), date("1983-09-26"), Err(false)),
+            (
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                date("1983-09-26"),
+                Err(false),
+            ),
             (date("1983-09-26"), date("2024-01-01"), Ok("-14707")),
             (date("2024-01-01"), date("1983-09-26"), Ok("14707")),
             (time("2:30"), time("1:30"), Ok("1h")),
             (time("1:30"), time("2:30"), Ok("-1h")),
-            (time("2:30"), val("41y6mo4h"), Ok("22:30:00")),
-            (val("41y6mo4h"), time("2:30"), Err(false)),
+            (
+                time("2:30"),
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                Ok("22:30:00"),
+            ),
+            (
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                time("2:30"),
+                Err(false),
+            ),
             (date("1983-09-26"), time("2:30"), Err(true)),
             (time("2:30"), date("1983-09-26"), Err(true)),
             (datetime("2024-01-01T12:00:00"), time("3:00"), Err(true)),
@@ -324,10 +376,14 @@ mod tests {
             ),
             (
                 datetime("2024-01-01T12:00:00"),
-                val("30m"),
+                dur(Duration::from_minutes(30.0)),
                 Ok("2024-01-01 11:30:00"),
             ),
-            (val("30m"), datetime("2024-01-01T12:00:00"), Err(false)),
+            (
+                dur(Duration::from_minutes(30.0)),
+                datetime("2024-01-01T12:00:00"),
+                Err(false),
+            ),
             // casting numbers to days or hours
             (date("2024-01-17"), val("16"), Ok("2024-01-01")),
             (val("16"), date("2024-01-01"), Err(false)),
@@ -341,8 +397,8 @@ mod tests {
             (val("-16.5"), datetime("2024-01-01T04:30:00"), Err(false)),
             (time("12:30"), val("16.5"), Ok("20:00:00")),
             (val("16.5"), time("12:30"), Err(false)),
-            (val("12h"), val("4"), Ok("-3d -12h")),
-            (val("4"), val("12h"), Ok("3d 12h")),
+            (dur(Duration::from_hours(12.0)), val("4"), Ok("-3d -12h")),
+            (val("4"), dur(Duration::from_hours(12.0)), Ok("3d 12h")),
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
@@ -363,13 +419,32 @@ mod tests {
 
         for (a, b, expected) in [
             (val("oh"), val("dear"), Err(false)),
-            (val("1000d"), val("250 ms"), Err(false)),
-            (date("1983-09-26"), val("41y"), Err(false)),
-            (date("1983-09-26"), val("41y6mo4h"), Err(false)),
-            (date("1983-09-26"), val("2024-01-01"), Err(false)),
+            (
+                dur(Duration::from_days(1000.0)),
+                dur(Duration::from_milliseconds(250.0)),
+                Err(false),
+            ),
+            (
+                date("1983-09-26"),
+                dur(Duration::from_years(41)),
+                Err(false),
+            ),
+            (
+                date("1983-09-26"),
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                Err(false),
+            ),
             (date("1983-09-26"), date("2024-01-01"), Err(false)),
             (time("2:30"), time("1:30"), Err(false)),
-            (time("2:30"), val("41y6mo4h"), Err(false)),
+            (
+                time("2:30"),
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                Err(false),
+            ),
             (date("1983-09-26"), time("2:30"), Err(false)),
             (datetime("2024-01-01T12:00:00"), time("3:00"), Err(false)),
             (
@@ -377,14 +452,26 @@ mod tests {
                 date("2001-01-01"),
                 Err(false),
             ),
-            (datetime("2024-01-01T12:00:00"), val("30m"), Err(false)),
+            (
+                datetime("2024-01-01T12:00:00"),
+                dur(Duration::from_minutes(30.0)),
+                Err(false),
+            ),
             // multiplying date/time/datetime/duration types by numbers
             (date("2024-01-01"), val("16"), Err(true)),
             (date("2024-01-17"), val("-16"), Err(true)),
             (datetime("2024-01-17T16:30:00"), val("-16.5"), Err(true)),
             (time("12:30"), val("-16.5"), Err(true)),
-            (val("12h30m"), val("4"), Ok("2d 2h")),
-            (val("4"), val("12h30m"), Ok("2d 2h")),
+            (
+                dur(Duration::from_hours(12.0) + Duration::from_minutes(30.0)),
+                val("4"),
+                Ok("2d 2h"),
+            ),
+            (
+                val("4"),
+                dur(Duration::from_hours(12.0) + Duration::from_minutes(30.0)),
+                Ok("2d 2h"),
+            ),
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
@@ -407,22 +494,56 @@ mod tests {
 
         for (a, b, expected) in [
             (val("oh"), val("dear"), Err(false)),
-            (val("1000d"), val("250 ms"), Err(false)),
-            (val("250 ms"), val("1000d"), Err(false)),
-            (date("1983-09-26"), val("-41y"), Err(false)),
-            (date("2024-09-26"), val("41y"), Err(false)),
+            (
+                dur(Duration::from_days(1000.0)),
+                dur(Duration::from_milliseconds(250.0)),
+                Err(false),
+            ),
+            (
+                dur(Duration::from_milliseconds(250.0)),
+                dur(Duration::from_days(1000.0)),
+                Err(false),
+            ),
+            (
+                date("1983-09-26"),
+                dur(-Duration::from_years(41)),
+                Err(false),
+            ),
+            (
+                date("2024-09-26"),
+                dur(Duration::from_years(41)),
+                Err(false),
+            ),
             (
                 datetime("2025-03-26T04:00:00"),
                 date("1983-09-26"),
                 Err(false),
             ),
-            (val("41y6mo4h"), date("1983-09-26"), Err(false)),
+            (
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                date("1983-09-26"),
+                Err(false),
+            ),
             (date("1983-09-26"), date("2024-01-01"), Err(false)),
             (date("2024-01-01"), date("1983-09-26"), Err(false)),
             (time("2:30"), time("1:30"), Err(false)),
             (time("1:30"), time("2:30"), Err(false)),
-            (time("2:30"), val("41y6mo4h"), Err(false)),
-            (val("41y6mo4h"), time("2:30"), Err(false)),
+            (
+                time("2:30"),
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                Err(false),
+            ),
+            (
+                dur(Duration::from_years(41)
+                    + Duration::from_months(6)
+                    + Duration::from_hours(4.0)),
+                time("2:30"),
+                Err(false),
+            ),
             (date("1983-09-26"), time("2:30"), Err(false)),
             (time("2:30"), date("1983-09-26"), Err(false)),
             (datetime("2024-01-01T12:00:00"), time("3:00"), Err(false)),
@@ -437,8 +558,16 @@ mod tests {
                 datetime("2024-01-01T12:00:00"),
                 Err(false),
             ),
-            (datetime("2024-01-01T12:00:00"), val("30m"), Err(false)),
-            (val("30m"), datetime("2024-01-01T12:00:00"), Err(false)),
+            (
+                datetime("2024-01-01T12:00:00"),
+                dur(Duration::from_minutes(30.0)),
+                Err(false),
+            ),
+            (
+                dur(Duration::from_minutes(30.0)),
+                datetime("2024-01-01T12:00:00"),
+                Err(false),
+            ),
             // dividing date/time/datetime/duration types by numbers
             (date("2024-01-17"), val("16"), Err(true)),
             (val("16"), date("2024-01-01"), Err(false)),
@@ -448,8 +577,8 @@ mod tests {
             (val("-16.5"), datetime("2024-01-01T04:30:00"), Err(false)),
             (time("12:30"), val("16.5"), Err(true)),
             (val("16.5"), time("12:30"), Err(false)),
-            (val("12h"), val("4"), Ok("3h")),
-            (val("4"), val("12h"), Err(false)),
+            (dur(Duration::from_hours(12.0)), val("4"), Ok("3h")),
+            (val("4"), dur(Duration::from_hours(12.0)), Err(false)),
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
@@ -463,7 +592,7 @@ mod tests {
         }
 
         // Test division by zero
-        let a = val("12h");
+        let a = dur(Duration::from_hours(12.0));
         let b = val("0");
         println!("A1 = {a}");
         println!("A2 = {b}");
@@ -472,10 +601,15 @@ mod tests {
         assert_eq!(eval_to_err(&g, "=A1/A2").msg, RunErrorMsg::DivideByZero);
     }
 
-    /// Parses a cell value from a string such as `hello` (string), `31`
-    /// (number), or `1y 10d` (duration).
+    /// Parses a cell value from a string such as `hello` (string) or `31`
+    /// (number). Does not parse durations.
     fn val(s: &str) -> CellValue {
         CellValue::parse_from_str(s)
+    }
+
+    /// Creates a duration CellValue directly.
+    fn dur(d: Duration) -> CellValue {
+        CellValue::Duration(d)
     }
 
     #[track_caller]

@@ -96,6 +96,9 @@ pub enum RunErrorMsgSchema {
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
+
+    /// Formula is too deeply nested or complex to parse
+    FormulaTooComplex,
 }
 
 impl From<v1_7_1::RunErrorMsgSchema> for RunErrorMsgSchema {
@@ -287,6 +290,8 @@ impl RunErrorSchema {
 
                 crate::RunErrorMsg::NotANumber => RunErrorMsgSchema::NotANumber,
                 crate::RunErrorMsg::Infinity => RunErrorMsgSchema::Infinity,
+
+                crate::RunErrorMsg::FormulaTooComplex => RunErrorMsgSchema::FormulaTooComplex,
             },
         }
     }
@@ -402,6 +407,8 @@ impl From<RunErrorSchema> for crate::RunError {
                 RunErrorMsgSchema::IndexOutOfBounds => crate::RunErrorMsg::IndexOutOfBounds,
                 RunErrorMsgSchema::NoMatch => crate::RunErrorMsg::NoMatch,
                 RunErrorMsgSchema::InvalidArgument => crate::RunErrorMsg::InvalidArgument,
+
+                RunErrorMsgSchema::FormulaTooComplex => crate::RunErrorMsg::FormulaTooComplex,
             },
         }
     }

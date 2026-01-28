@@ -6,6 +6,7 @@ import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAto
 import { ArrowRightIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useAtomValue } from 'jotai';
@@ -36,7 +37,13 @@ const EmptyScheduledTasksList = () => {
         </a>
       </p>
       {teamPermissions?.includes('TEAM_EDIT') ? (
-        <Button className="mt-4" onClick={() => newScheduledTask()}>
+        <Button
+          className="mt-4"
+          onClick={() => {
+            trackEvent('[ScheduledTasks].createNewTask');
+            newScheduledTask();
+          }}
+        >
           Schedule a task
         </Button>
       ) : (
@@ -82,7 +89,13 @@ const ScheduledTasksListBody = () => {
           <button
             key={task.uuid}
             className="relative -mx-2 flex h-fit flex-col items-start justify-between rounded px-2 py-2 hover:bg-accent"
-            onClick={() => showScheduledTasks(task.uuid)}
+            onClick={() => {
+              trackEvent('[ScheduledTasks].viewTask', {
+                taskUuid: task.uuid,
+                cronExpression: task.cronExpression,
+              });
+              showScheduledTasks(task.uuid);
+            }}
             autoFocus={i === 0}
           >
             <span className="font-medium">{getScheduledTaskName(task.operations)}</span>

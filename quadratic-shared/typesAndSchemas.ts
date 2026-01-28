@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
+import { AILanguagePreferencesSchema, AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
@@ -268,15 +268,19 @@ export const ApiSchemas = {
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),
-        id: z.number(),
+        sequenceNumber: z.number(),
         timestamp: z.string().datetime(),
         version: z.string(),
       })
     ),
+    userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id,
+      filePermissions: z.array(FilePermissionSchema),
+      teamPermissions: z.array(TeamPermissionSchema),
+    }),
   }),
-  '/v0/files/:uuid/checkpoints/:checkpointId.GET.response': z.object({
+  '/v0/files/:uuid/checkpoints/sequences/:sequenceNumber.GET.response': z.object({
     dataUrl: z.string().url(),
-    id: z.number(),
     sequenceNumber: z.number(),
     timestamp: z.string().datetime(),
     version: z.string(),
@@ -523,6 +527,15 @@ export const ApiSchemas = {
   '/v0/user/ai-rules.GET.response': z.object({
     aiRules: z.string().nullable(),
   }),
+  '/v0/user/ai-languages.PATCH.request': z.object({
+    aiLanguages: AILanguagePreferencesSchema,
+  }),
+  '/v0/user/ai-languages.PATCH.response': z.object({
+    aiLanguages: AILanguagePreferencesSchema,
+  }),
+  '/v0/user/ai-languages.GET.response': z.object({
+    aiLanguages: AILanguagePreferencesSchema,
+  }),
 
   /**
    *
@@ -702,6 +715,15 @@ export const ApiSchemas = {
   }),
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
+  }),
+
+  /**
+   * ===========================================================================
+   * URL Metadata
+   * ===========================================================================
+   */
+  '/v0/url-metadata.GET.response': z.object({
+    title: z.string().optional(),
   }),
 };
 
