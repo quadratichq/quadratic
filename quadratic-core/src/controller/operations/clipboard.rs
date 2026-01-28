@@ -581,18 +581,18 @@ impl GridController {
     ) -> Vec<SheetPos> {
         let mut code_cell_positions = Vec::new();
 
-        // Find all CellValue::Code cells
-        let mut code_cells_to_adjust: Vec<(u32, u32, Box<crate::CodeCell>)> = Vec::new();
+        // First pass: collect positions of code cells
+        let mut positions_to_adjust: Vec<(u32, u32)> = Vec::new();
         for (col_x, column) in cells.columns.iter().enumerate() {
             for (&col_y, cell_value) in column.iter() {
-                if let CellValue::Code(code_cell) = cell_value {
-                    code_cells_to_adjust.push((col_x as u32, col_y as u32, code_cell.clone()));
+                if matches!(cell_value, CellValue::Code(_)) {
+                    positions_to_adjust.push((col_x as u32, col_y as u32));
                 }
             }
         }
 
-        // Adjust references and track positions
-        for (col_x, col_y, mut code_cell) in code_cells_to_adjust {
+        // Second pass: adjust references in place
+        for (col_x, col_y) in positions_to_adjust {
             let source_pos = Pos {
                 x: clipboard.origin.x + col_x as i64,
                 y: clipboard.origin.y + col_y as i64,
@@ -602,37 +602,38 @@ impl GridController {
                 y: start_pos.y + col_y as i64,
             };
 
-            // Adjust references based on operation type
-            match clipboard.operation {
-                ClipboardOperation::Cut => {
-                    // For cut, keep references as-is but update sheet context
-                    code_cell.code_run.adjust_references(
-                        start_pos.sheet_id,
-                        &self.a1_context,
-                        source_pos.to_sheet_pos(clipboard.origin.sheet_id),
-                        RefAdjust::NO_OP,
-                    );
-                }
-                ClipboardOperation::Copy => {
-                    // For copy, adjust relative references
-                    code_cell.code_run.adjust_references(
-                        start_pos.sheet_id,
-                        &self.a1_context,
-                        target_pos.to_sheet_pos(start_pos.sheet_id),
-                        RefAdjust {
-                            sheet_id: None,
-                            dx: target_pos.x - source_pos.x,
-                            dy: target_pos.y - source_pos.y,
-                            relative_only: true,
-                            x_start: 0,
-                            y_start: 0,
-                        },
-                    );
+            // Get mutable reference and adjust in place
+            if let Ok(cell_value) = cells.get_owned(col_x, col_y) {
+                if let CellValue::Code(code_cell) = cell_value {
+                    match clipboard.operation {
+                        ClipboardOperation::Cut => {
+                            // For cut, keep references as-is but update sheet context
+                            code_cell.code_run.adjust_references(
+                                start_pos.sheet_id,
+                                &self.a1_context,
+                                source_pos.to_sheet_pos(clipboard.origin.sheet_id),
+                                RefAdjust::NO_OP,
+                            );
+                        }
+                        ClipboardOperation::Copy => {
+                            // For copy, adjust relative references
+                            code_cell.code_run.adjust_references(
+                                start_pos.sheet_id,
+                                &self.a1_context,
+                                target_pos.to_sheet_pos(start_pos.sheet_id),
+                                RefAdjust {
+                                    sheet_id: None,
+                                    dx: target_pos.x - source_pos.x,
+                                    dy: target_pos.y - source_pos.y,
+                                    relative_only: true,
+                                    x_start: 0,
+                                    y_start: 0,
+                                },
+                            );
+                        }
+                    }
                 }
             }
-
-            // Update the cell value in cells with the adjusted code cell
-            cells.set(col_x, col_y, CellValue::Code(code_cell));
 
             // Track this position for compute operations
             code_cell_positions.push(target_pos.to_sheet_pos(start_pos.sheet_id));
