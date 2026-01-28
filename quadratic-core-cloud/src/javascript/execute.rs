@@ -339,8 +339,8 @@ fn add_await_to_qcells(code: &str) -> String {
                     // Preserve the whitespace before "await"
                     result.push_str("(await ");
                     result.push_str(pattern);
-                    for _ in start_idx..end_idx {
-                        result.push(chars[j]);
+                    for ch in chars.iter().take(end_idx).skip(start_idx) {
+                        result.push(*ch);
                     }
                     result.push(')');
                     i = end_idx;
@@ -353,8 +353,8 @@ fn add_await_to_qcells(code: &str) -> String {
                 // No await present, wrap with (await q.cells(...))
                 result.push_str("(await ");
                 result.push_str(pattern);
-                for _ in start_idx..end_idx {
-                    result.push(chars[j]);
+                for ch in chars.iter().take(end_idx).skip(start_idx) {
+                    result.push(*ch);
                 }
                 result.push(')');
                 i = end_idx;
