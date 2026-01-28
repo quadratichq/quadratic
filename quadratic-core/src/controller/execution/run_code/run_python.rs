@@ -27,7 +27,12 @@ impl GridController {
                     let data_table = sheet.data_table_at(&sheet_pos.into())?;
                     let (cols, rows) = data_table.chart_output?;
                     let pos: Pos = sheet_pos.into();
-                    let rect = Rect::new(pos.x, pos.y, pos.x + cols as i64 - 1, pos.y + rows as i64 - 1);
+                    let rect = Rect::new(
+                        pos.x,
+                        pos.y,
+                        pos.x + cols as i64 - 1,
+                        pos.y + rows as i64 - 1,
+                    );
                     let screen_rect = sheet.offsets.screen_rect_cell_offsets(rect);
                     Some((screen_rect.w as f32, screen_rect.h as f32))
                 })
