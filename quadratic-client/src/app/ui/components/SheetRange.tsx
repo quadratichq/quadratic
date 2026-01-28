@@ -64,18 +64,19 @@ export const SheetRange = (props: Props) => {
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     const jsSelection = sheets.sheet.cursor.jsSelection;
-    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
+    // Pass a1SheetId to hide sheet name when it matches (unless forceSheetName is true)
+    setInput(jsSelection.toA1String(forceSheetName ? undefined : a1SheetId, sheets.jsA1Context));
     onChangeSelection(jsSelection);
     setRangeError(undefined);
   }, [a1SheetId, onChangeSelection, forceSheetName]);
 
   const updateValue = useCallback(
-    (value: string) => {
+    (value: string, changeSelection = true) => {
       try {
         const selection = sheets.stringToSelection(value, a1SheetId);
         onChangeSelection(selection);
         setRangeError(undefined);
-        if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+        if (changeSelection && selection && selection.save() !== sheets.sheet.cursor.save()) {
           isFocusingRef.current = true;
           sheets.changeSelection(selection);
 
@@ -105,7 +106,8 @@ export const SheetRange = (props: Props) => {
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       const value = e.currentTarget.value;
-      updateValue(value);
+      // Don't change selection or refocus on blur - let the user click away
+      updateValue(value, false);
     },
     [updateValue]
   );
@@ -117,9 +119,10 @@ export const SheetRange = (props: Props) => {
     }
 
     const jsSelection = sheets.A1SelectionToJsSelection(initial);
-    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
-    jsSelection.free();
-  }, [changeCursor, a1SheetId, initial, forceSheetName]);
+    // Pass a1SheetId to hide sheet name when it matches (unless forceSheetName is true)
+    setInput(jsSelection.toA1String(forceSheetName ? undefined : a1SheetId, sheets.jsA1Context));
+    onChangeSelection(jsSelection);
+  }, [changeCursor, a1SheetId, initial, forceSheetName, onChangeSelection]);
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;

@@ -1,5 +1,5 @@
 use crate::{
-    grid::js_types::JsHashRenderFills,
+    grid::js_types::{JsHashRenderFills, JsRenderFill},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 
@@ -19,8 +19,13 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return vec![];
         };
+        let sheet_id_parsed = sheet.id;
         sheet.send_validation_warnings_rect(rect, true);
-        let output = sheet.get_render_cells(rect, self.a1_context());
+        let mut output = sheet.get_render_cells(rect, self.a1_context());
+
+        // Apply conditional formatting to render cells
+        self.apply_conditional_formatting_to_cells(sheet_id_parsed, rect, &mut output);
+
         serde_json::to_vec(&output).unwrap_or_default()
     }
 
@@ -40,6 +45,7 @@ impl GridController {
             return vec![];
         };
 
+        let a1_context = self.a1_context();
         let mut result = Vec::new();
         for hash in hashes {
             let rect = Rect::from_numbers(
@@ -48,10 +54,24 @@ impl GridController {
                 CELL_SHEET_WIDTH as i64,
                 CELL_SHEET_HEIGHT as i64,
             );
+            let mut fills = sheet.get_render_fills_in_rect(rect);
+
+            // Add conditional format fills
+            let cf_fills = self.get_conditional_format_fills(sheet_id, rect, a1_context);
+            for (fill_rect, color) in cf_fills {
+                fills.push(JsRenderFill {
+                    x: fill_rect.min.x,
+                    y: fill_rect.min.y,
+                    w: fill_rect.width(),
+                    h: fill_rect.height(),
+                    color,
+                });
+            }
+
             result.push(JsHashRenderFills {
                 sheet_id,
                 hash,
-                fills: sheet.get_render_fills_in_rect(rect),
+                fills,
             });
         }
 

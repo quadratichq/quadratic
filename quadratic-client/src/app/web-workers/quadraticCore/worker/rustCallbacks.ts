@@ -49,6 +49,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendSheetConditionalFormats: (sheetId: string, conditionalFormats: Uint8Array) => void;
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     sendMultiplayerSynced: () => void;
@@ -199,6 +200,10 @@ export const jsSendImage = (sheetId: string, x: number, y: number, image?: strin
 
 export const jsSheetValidations = (sheetId: string, sheetValidations: Uint8Array) => {
   self.sendSheetValidations(sheetId, sheetValidations);
+};
+
+export const jsSheetConditionalFormats = (sheetId: string, conditionalFormats: Uint8Array) => {
+  self.sendSheetConditionalFormats(sheetId, conditionalFormats);
 };
 
 export const jsValidationWarnings = (warnings: Uint8Array) => {

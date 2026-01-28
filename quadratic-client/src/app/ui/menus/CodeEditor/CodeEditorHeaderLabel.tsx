@@ -21,8 +21,6 @@ export function CodeEditorHeaderLabel() {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const { connections } = useConnectionsFetcher();
 
-  console.log('connections', connections);
-
   useEffect(() => {
     const updateCellRef = () => {
       if (!codeCellState.sheetId) return;

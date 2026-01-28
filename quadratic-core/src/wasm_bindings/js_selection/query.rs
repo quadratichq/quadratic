@@ -379,4 +379,18 @@ impl JsSelection {
     pub fn is_1d_range(&self, context: &JsA1Context) -> bool {
         self.selection.is_1d_range(context.get_context())
     }
+
+    /// Returns the first cell position of the first range in the selection.
+    /// This is different from the cursor position, which may be elsewhere.
+    /// For table column selections, this returns the first data cell of that column.
+    #[wasm_bindgen(js_name = "getFirstRangeStart")]
+    pub fn get_first_range_start(&self, context: &JsA1Context) -> Option<JsCoordinate> {
+        use crate::grid::sheet::conditional_format::ConditionalFormatRule;
+
+        ConditionalFormatRule::get_first_cell_from_selection(&self.selection, context.get_context())
+            .map(|pos| JsCoordinate {
+                x: pos.x as u32,
+                y: pos.y as u32,
+            })
+    }
 }

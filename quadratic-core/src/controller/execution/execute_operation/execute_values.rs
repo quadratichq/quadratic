@@ -31,6 +31,7 @@ impl GridController {
             self.check_deleted_data_tables(transaction, &sheet_rect);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
             self.check_validations(transaction, sheet_rect);
+            self.check_conditional_format_fills(transaction, sheet_rect);
             self.add_compute_operations(transaction, sheet_rect, None);
             self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 

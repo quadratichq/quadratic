@@ -12,6 +12,7 @@ impl_display!(for StringLiteral, "string literal");
 impl SyntaxRule for StringLiteral {
     type Output = String;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::StringLiteral)
     }
@@ -31,9 +32,11 @@ impl_display!(for NumericLiteral, "numeric literal such as '42' or '6.022e23'");
 impl SyntaxRule for NumericLiteral {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::NumericLiteral)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         match p.next() {
             Some(Token::NumericLiteral) => {
@@ -58,6 +61,7 @@ impl_display!(for SheetRefPrefix, "sheet reference such as 'MySheet!' or '\"Shee
 impl SyntaxRule for SheetRefPrefix {
     type Output = SheetId;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         match p.next() {
             Some(Token::UnquotedSheetReference) => true,
@@ -101,6 +105,7 @@ impl_display!(for CellReference, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
     type Output = Spanned<Result<(Option<SheetId>, RefRangeBounds), RefError>>;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         is_table_ref(p) == Some(false)
     }
@@ -130,6 +135,7 @@ impl_display!(for CellRangeReference, "cell range reference such as 'A6:D10' or 
 impl SyntaxRule for CellRangeReference {
     type Output = Spanned<Result<SheetCellRefRange, RefError>>;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         CellReference.prefix_matches(p)
     }
@@ -191,10 +197,12 @@ impl_display!(for BoolExpression, "boolean such as 'TRUE' or 'FALSE'");
 impl SyntaxRule for BoolExpression {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         matches!(p.next(), Some(Token::False | Token::True))
     }
 
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let b = match p.next() {
             Some(Token::False) => false,
@@ -214,6 +222,7 @@ impl_display!(for ErrorExpression, "error such as '#N/A' or '#REF!'");
 impl SyntaxRule for ErrorExpression {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         matches!(p.next(), Some(Token::Error))
     }

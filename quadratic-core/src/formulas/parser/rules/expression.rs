@@ -21,11 +21,13 @@ impl Default for OpPrecedence {
 }
 impl OpPrecedence {
     /// Returns the lowest precedence level.
+    #[inline]
     pub const fn lowest() -> Self {
         Self::Comparison
     }
     /// Returns the next-highest precedence level. Panics if given
     /// `OpPrecedence::Atom`.
+    #[inline]
     pub fn next(self) -> Self {
         match self {
             Self::Comparison => Self::Concat,
@@ -42,6 +44,7 @@ impl OpPrecedence {
     }
 
     /// Returns a list of binary operators at this precedence level.
+    #[inline]
     pub fn binary_ops(self) -> &'static [Token] {
         use Token::*;
         match self {
@@ -59,6 +62,7 @@ impl OpPrecedence {
     }
 
     /// Returns a list of unary prefix operators at this precedence level.
+    #[inline]
     pub fn prefix_ops(self) -> &'static [Token] {
         use Token::*;
         match self {
@@ -68,6 +72,7 @@ impl OpPrecedence {
     }
 
     /// Returns a list of unary suffix operators at this precedence level.
+    #[inline]
     pub fn suffix_ops(self) -> &'static [Token] {
         use Token::*;
         match self {
@@ -78,6 +83,7 @@ impl OpPrecedence {
 
     /// Returns whether the binary operators at this precedence level are
     /// right-associative.
+    #[inline]
     pub fn is_right_associative(self) -> bool {
         match self {
             OpPrecedence::Pow => true,
@@ -93,6 +99,7 @@ impl_display!(for TupleExpression, "expression or nothing");
 impl SyntaxRule for TupleExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Expression.prefix_matches(p) // also matches start of tuple (left paren)
             || EmptyExpression.prefix_matches(p)
@@ -137,9 +144,11 @@ impl_display!(for OptionalExpression, "expression or nothing");
 impl SyntaxRule for OptionalExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Expression.prefix_matches(p) || EmptyExpression.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         parse_one_of!(p, [Expression, EmptyExpression])
     }
@@ -152,9 +161,11 @@ impl_display!(for Expression, "expression");
 impl SyntaxRule for Expression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         ExpressionWithPrecedence::default().prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(ExpressionWithPrecedence::default())
     }
@@ -167,6 +178,7 @@ impl_display!(for ExpressionWithPrecedence, "expression");
 impl SyntaxRule for ExpressionWithPrecedence {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         if let Some(t) = p.next() {
             // There are so many tokens that might match, it's more reliable to
@@ -415,6 +427,7 @@ impl_display!(for FunctionCall, "function call");
 impl SyntaxRule for FunctionCall {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::FunctionCall)
     }
@@ -454,9 +467,11 @@ impl_display!(for CellReferenceExpression, "cell reference such as 'A6' or '$ZB$
 impl SyntaxRule for CellReferenceExpression {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         CellReference.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(p.parse(CellReference)?.map(|result| match result {
             Ok((sheet_id, range)) => ast::AstNodeContents::CellRef(sheet_id, range),
@@ -472,9 +487,11 @@ impl_display!(for TableReferenceExpression, "table reference such as 'MyTable' o
 impl SyntaxRule for TableReferenceExpression {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         SheetTableReference.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(p.parse(SheetTableReference)?
             .map(ast::AstNodeContents::RangeRef))
@@ -488,6 +505,7 @@ impl_display!(for ParenExpression, "{}", Surround::paren(Expression));
 impl SyntaxRule for ParenExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Surround::paren(Expression).prefix_matches(p)
     }
@@ -505,6 +523,7 @@ impl_display!(for ArrayLiteral, "array literal such as '{{1, 2; 3, 4}}'");
 impl SyntaxRule for ArrayLiteral {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::LBrace)
     }
@@ -556,9 +575,11 @@ impl_display!(for StringLiteralExpression, "string literal");
 impl SyntaxRule for StringLiteralExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         StringLiteral.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let inner = ast::AstNodeContents::String(p.parse(StringLiteral)?);
         let span = p.span();
@@ -574,6 +595,7 @@ impl_display!(for EmptyExpression, "empty expression");
 impl SyntaxRule for EmptyExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         match p.next() {
             None => true,
@@ -583,6 +605,7 @@ impl SyntaxRule for EmptyExpression {
         }
     }
 
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(Spanned {
             span: Span::empty(p.cursor.unwrap_or(0) as u32),

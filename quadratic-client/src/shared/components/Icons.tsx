@@ -245,6 +245,14 @@ export const CropFreeIcon: IconComponent = (props) => {
   return <Icon {...props}>crop_free</Icon>;
 };
 
+export const ColorizeIcon: IconComponent = (props) => {
+  return <Icon {...props}>colorize</Icon>;
+};
+
+export const PaletteIcon: IconComponent = (props) => {
+  return <Icon {...props}>palette</Icon>;
+};
+
 export const CancelIcon: IconComponent = (props) => {
   return <Icon {...props}>cancel</Icon>;
 };

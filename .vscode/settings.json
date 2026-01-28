@@ -280,6 +280,7 @@
     "LEFTBS",
     "LENB",
     "LENBS",
+    "lerp",
     "LINEST",
     "linkify",
     "localdev",

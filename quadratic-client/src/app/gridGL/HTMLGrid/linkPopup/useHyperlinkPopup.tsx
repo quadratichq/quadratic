@@ -149,6 +149,7 @@ export function useHyperlinkPopup() {
       }
 
       // Close cursor-sourced popup if cursor moved to a different cell
+      // Close cursor-sourced popup if cursor moved to a different cell
       const current = linkDataRef.current;
       if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
         setLinkData(undefined);

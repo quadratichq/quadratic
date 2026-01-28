@@ -70,6 +70,7 @@ export class CellsFills extends Container {
     events.on('hashRenderFills', this.handleHashRenderFills);
     events.on('hashesDirtyFills', this.handleHashesDirtyFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
+    events.on('sheetConditionalFormats', this.handleSheetConditionalFormats);
     events.on('sheetOffsetsUpdated', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
@@ -84,6 +85,7 @@ export class CellsFills extends Container {
     events.off('hashRenderFills', this.handleHashRenderFills);
     events.off('hashesDirtyFills', this.handleHashesDirtyFills);
     events.off('sheetMetaFills', this.handleSheetMetaFills);
+    events.off('sheetConditionalFormats', this.handleSheetConditionalFormats);
     events.off('sheetOffsetsUpdated', this.drawSheetCells);
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
@@ -155,6 +157,22 @@ export class CellsFills extends Container {
         this.sheetFills = fills;
         this.setDirty();
       }
+    }
+  };
+
+  // When conditional formats change, clear all cached fills and re-request them.
+  // This is necessary because conditional format changes (like apply_to_blank)
+  // can affect cells outside the data bounds that the server doesn't know to
+  // mark as dirty.
+  private handleSheetConditionalFormats = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      // Clear all cached fills and loaded flags
+      this.fillsByHash.clear();
+      this.loadedHashes.clear();
+      this.lastViewportHashBounds = undefined;
+      // Re-request hashes for the current viewport (needed for blank cells
+      // that may now have fills due to apply_to_blank option)
+      this.updateViewportHashes();
     }
   };
 
@@ -260,10 +278,10 @@ export class CellsFills extends Container {
     const topLeft = this.sheet.getColumnRowFromScreen(viewport.left, viewport.top);
     const bottomRight = this.sheet.getColumnRowFromScreen(viewport.right, viewport.bottom);
 
-    // Calculate hash coordinates with padding
-    const minHashX = Math.floor(topLeft.column / sheetHashWidth) - VIEWPORT_PADDING;
+    // Calculate hash coordinates with padding (clamped to non-negative since there's no content in negative hashes)
+    const minHashX = Math.max(0, Math.floor(topLeft.column / sheetHashWidth) - VIEWPORT_PADDING);
     const maxHashX = Math.floor(bottomRight.column / sheetHashWidth) + VIEWPORT_PADDING;
-    const minHashY = Math.floor(topLeft.row / sheetHashHeight) - VIEWPORT_PADDING;
+    const minHashY = Math.max(0, Math.floor(topLeft.row / sheetHashHeight) - VIEWPORT_PADDING);
     const maxHashY = Math.floor(bottomRight.row / sheetHashHeight) + VIEWPORT_PADDING;
 
     // Check if viewport hash bounds changed

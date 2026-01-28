@@ -57,6 +57,7 @@ declare var self: WorkerGlobalScope &
       pixel_height?: number
     ) => void;
     sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendSheetConditionalFormats: (sheetId: string, conditionalFormats: Uint8Array) => void;
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
@@ -96,6 +97,7 @@ class CoreClient {
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
+    self.sendSheetConditionalFormats = coreClient.sendSheetConditionalFormats;
     self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
@@ -580,6 +582,38 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreUpdateConditionalFormat':
+        this.send({
+          type: 'coreClientUpdateConditionalFormat',
+          id: e.data.id,
+          response: core.updateConditionalFormat(e.data.conditionalFormat, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreRemoveConditionalFormat':
+        core.removeConditionalFormat(e.data.sheetId, e.data.conditionalFormatId, e.data.cursor);
+        return;
+
+      case 'clientCoreBatchUpdateConditionalFormats':
+        this.send({
+          type: 'coreClientBatchUpdateConditionalFormats',
+          id: e.data.id,
+          response: core.batchUpdateConditionalFormats(e.data.sheetId, e.data.updates, e.data.deleteIds, e.data.cursor),
+        });
+        return;
+
+      case 'clientCorePreviewConditionalFormat':
+        this.send({
+          type: 'coreClientPreviewConditionalFormat',
+          id: e.data.id,
+          response: core.previewConditionalFormat(e.data.conditionalFormat),
+        });
+        return;
+
+      case 'clientCoreClearPreviewConditionalFormat':
+        core.clearPreviewConditionalFormat(e.data.sheetId);
+        return;
+
       case 'clientCoreGetValidations':
         this.send({
           type: 'coreClientGetValidations',
@@ -1051,6 +1085,10 @@ class CoreClient {
 
   sendSheetValidations = (sheetId: string, sheetValidations: Uint8Array) => {
     this.send({ type: 'coreClientSheetValidations', sheetId, sheetValidations }, sheetValidations.buffer);
+  };
+
+  sendSheetConditionalFormats = (sheetId: string, conditionalFormats: Uint8Array) => {
+    this.send({ type: 'coreClientSheetConditionalFormats', sheetId, conditionalFormats }, conditionalFormats.buffer);
   };
 
   sendValidationWarnings = (warnings: Uint8Array) => {

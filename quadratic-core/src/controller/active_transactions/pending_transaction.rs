@@ -77,6 +77,9 @@ pub struct PendingTransaction {
     /// sheets w/updated validations warnings
     pub(crate) validations_warnings: HashMap<SheetId, SheetValidationsWarnings>,
 
+    /// sheets w/updated conditional formats
+    pub(crate) conditional_formats: HashSet<SheetId>,
+
     /// sheets w/updated rows to resize
     pub(crate) resize_rows: HashMap<SheetId, HashSet<i64>>,
 
@@ -144,6 +147,7 @@ impl Default for PendingTransaction {
             cursor_undo_redo: None,
             validations: HashSet::new(),
             validations_warnings: HashMap::new(),
+            conditional_formats: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             sheet_borders: HashSet::new(),
@@ -551,6 +555,27 @@ impl PendingTransaction {
 
         let hashes = rect.to_sheet_rect(sheet_id).to_hashes();
         self.fill_cells.entry(sheet_id).or_default().extend(hashes);
+    }
+
+    /// Adds dirty fill hashes from a list of selections.
+    /// Uses finitize_selection to handle unbounded selections (like column "A").
+    pub fn add_fill_cells_from_selections(
+        &mut self,
+        sheet: &Sheet,
+        a1_context: &A1Context,
+        selections: Vec<A1Selection>,
+    ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        selections.iter().for_each(|selection| {
+            let fill_hashes = selection.rects_to_hashes(sheet, a1_context);
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(fill_hashes);
+        });
     }
 
     /// Marks all fills for a sheet as dirty (for operations like add sheet that affect entire sheet).

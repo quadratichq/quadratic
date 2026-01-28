@@ -29,6 +29,7 @@ use crate::{
 
 pub use lookup::IndexFunctionArgs;
 
+#[inline]
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
     ALL_FUNCTIONS.get(
         excel::remove_excel_function_prefix(name)
@@ -82,6 +83,7 @@ pub struct FormulaFnArgs {
 }
 impl FormulaFnArgs {
     /// Constructs a list of arguments values.
+    #[inline]
     pub fn new(
         values: impl Into<VecDeque<Spanned<Value>>>,
         span: Span,
@@ -95,10 +97,12 @@ impl FormulaFnArgs {
         }
     }
     /// Returns whether there is another argument.
+    #[inline]
     pub fn has_next(&self) -> bool {
         !self.values.is_empty()
     }
     /// Takes the next argument.
+    #[inline]
     fn take_next(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
             self.args_popped += 1;
@@ -107,11 +111,13 @@ impl FormulaFnArgs {
     }
     /// Takes the next argument, or returns `None` if there is none or the
     /// argument is blank˙.
+    #[inline]
     pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
         self.take_next()
             .filter(|v| v.inner != Value::Single(CellValue::Blank))
     }
     /// Takes the next argument, or returns an error if there is none.
+    #[inline]
     pub fn take_next_required(
         &mut self,
         arg_name: impl Into<Cow<'static, str>>,
@@ -125,11 +131,13 @@ impl FormulaFnArgs {
         })
     }
     /// Takes the rest of the arguments and iterates over them.
+    #[inline]
     pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> + use<> {
         std::mem::take(&mut self.values).into_iter()
     }
 
     /// Returns an error if there are no more arguments.
+    #[inline]
     pub fn error_if_no_more_args(&self, arg_name: impl Into<Cow<'static, str>>) -> CodeResult<()> {
         if !self.values.is_empty() {
             Ok(())
@@ -143,6 +151,7 @@ impl FormulaFnArgs {
     }
 
     /// Returns an error if there are any arguments that have not been taken.
+    #[inline]
     pub fn error_if_more_args(&self) -> CodeResult<()> {
         if let Some(next_arg) = self.values.front() {
             Err(RunErrorMsg::TooManyArguments {

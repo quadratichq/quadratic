@@ -16,6 +16,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatUpdate,
   DataTableSort,
   FormatUpdate,
   JsCellValue,
@@ -1114,6 +1115,61 @@ class Core {
     } catch (e) {
       this.handleCoreError('getValidationFromPos', e);
       return undefined;
+    }
+  }
+
+  updateConditionalFormat(conditionalFormat: ConditionalFormatUpdate, cursor: string): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.updateConditionalFormat(JSON.stringify(conditionalFormat), cursor);
+    } catch (e) {
+      this.handleCoreError('updateConditionalFormat', e);
+    }
+  }
+
+  removeConditionalFormat(sheetId: string, conditionalFormatId: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.removeConditionalFormat(sheetId, conditionalFormatId, cursor);
+    } catch (e) {
+      this.handleCoreError('removeConditionalFormat', e);
+    }
+  }
+
+  batchUpdateConditionalFormats(
+    sheetId: string,
+    updates: ConditionalFormatUpdate[],
+    deleteIds: string[],
+    cursor: string
+  ): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.batchUpdateConditionalFormats(
+        sheetId,
+        JSON.stringify(updates),
+        JSON.stringify(deleteIds),
+        cursor
+      );
+    } catch (e) {
+      this.handleCoreError('batchUpdateConditionalFormats', e);
+    }
+  }
+
+  previewConditionalFormat(conditionalFormat: ConditionalFormatUpdate): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.previewConditionalFormat(JSON.stringify(conditionalFormat));
+    } catch (e) {
+      this.handleCoreError('previewConditionalFormat', e);
+    }
+  }
+
+  clearPreviewConditionalFormat(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.clearPreviewConditionalFormat(sheetId);
+    } catch (e) {
+      this.handleCoreError('clearPreviewConditionalFormat', e);
     }
   }
 

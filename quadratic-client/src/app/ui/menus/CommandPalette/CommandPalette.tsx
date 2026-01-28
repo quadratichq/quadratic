@@ -11,6 +11,7 @@ import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPal
 import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
 import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
 import { columnCommandGroup, rowCommandGroup } from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
+import conditionalFormatCommandGroup from '@/app/ui/menus/CommandPalette/commands/ConditionalFormat';
 import connectionsCommandGroup from '@/app/ui/menus/CommandPalette/commands/Connections';
 import dataTableCommandGroup from '@/app/ui/menus/CommandPalette/commands/DataTable';
 import editCommandGroup from '@/app/ui/menus/CommandPalette/commands/Edit';
@@ -76,6 +77,7 @@ export const CommandPalette = memo(() => {
       rowCommandGroup,
       dataTableCommandGroup,
       validationCommandGroup,
+      conditionalFormatCommandGroup,
     ],
     [borderCommandGroup, sheetsCommandGroup]
   );

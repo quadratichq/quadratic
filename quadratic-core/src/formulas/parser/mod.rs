@@ -299,6 +299,7 @@ impl<'a> Parser<'a> {
 
     /// Checks if the recursion depth limit has been exceeded and returns an
     /// error if so.
+    #[inline]
     pub fn check_depth(&self) -> CodeResult<()> {
         if self.depth >= MAX_PARSE_DEPTH {
             Err(RunErrorMsg::FormulaTooComplex.with_span(self.span()))
@@ -309,22 +310,26 @@ impl<'a> Parser<'a> {
 
     /// Increments the recursion depth, returning an error if the limit is
     /// exceeded.
+    #[inline]
     pub fn enter_depth(&mut self) -> CodeResult<()> {
         self.depth += 1;
         self.check_depth()
     }
 
     /// Decrements the recursion depth.
+    #[inline]
     pub fn exit_depth(&mut self) {
         self.depth = self.depth.saturating_sub(1);
     }
 
     /// Returns the token at the cursor.
+    #[inline]
     pub fn current(self) -> Option<Token> {
         Some(self.tokens.get(self.cursor?)?.inner)
     }
     /// Returns the span of the current token. If there is no current token,
     /// returns an empty span at the beginning or end of the input appropriately.
+    #[inline]
     pub fn span(&self) -> Span {
         if let Some(idx) = self.cursor {
             if let Some(token) = self.tokens.get(idx) {
@@ -343,6 +348,7 @@ impl<'a> Parser<'a> {
     }
     /// Returns the source string of the current token. If there is no current
     /// token, returns an empty string.
+    #[inline]
     pub fn token_str(&self) -> &'a str {
         let Span { start, end } = self.span();
         &self.source_str[start as usize..end as usize]
@@ -350,6 +356,7 @@ impl<'a> Parser<'a> {
 
     /// Moves the cursor forward without skipping whitespace/comments and then
     /// returns the token at the cursor.
+    #[inline]
     pub fn next_noskip(&mut self) -> Option<Token> {
         // Add 1 or set to zero.
         self.cursor = Some(self.cursor.map(|idx| idx + 1).unwrap_or(0));
@@ -357,12 +364,14 @@ impl<'a> Parser<'a> {
     }
     /// Moves the cursor back without skipping whitespace/comments and then
     /// returns the token at the cursor.
+    #[inline]
     pub fn prev_noskip(&mut self) -> Option<Token> {
         // Subtract 1 if possible.
         self.cursor = self.cursor.and_then(|idx| idx.checked_sub(1));
         self.current()
     }
     /// Returns whether the current token would normally be skipped.
+    #[inline]
     pub fn is_skip(self) -> bool {
         if let Some(t) = self.current() {
             t.is_skip()
@@ -371,11 +380,13 @@ impl<'a> Parser<'a> {
         }
     }
     /// Returns whether the end of the input has been reached.
+    #[inline]
     pub fn is_done(self) -> bool {
         self.cursor.is_some() && self.current().is_none()
     }
 
     /// Moves the cursor forward and then returns the token at the cursor.
+    #[inline]
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Token> {
         loop {
@@ -386,6 +397,7 @@ impl<'a> Parser<'a> {
         }
     }
     /// Moves the cursor back and then returns the token at the cursor.
+    #[inline]
     pub fn prev(&mut self) -> Option<Token> {
         loop {
             self.prev_noskip();
@@ -397,6 +409,7 @@ impl<'a> Parser<'a> {
 
     /// Returns the token after the one at the cursor, without mutably moving
     /// the cursor.
+    #[inline]
     pub fn peek_next(self) -> Option<Token> {
         let mut tmp = self;
         tmp.next()
@@ -404,6 +417,7 @@ impl<'a> Parser<'a> {
 
     /// Returns the span of the token after the one at the cursor, without
     /// mutably moving the cursor.
+    #[inline]
     pub fn peek_next_span(self) -> Span {
         let mut tmp = self;
         tmp.next();
@@ -414,12 +428,14 @@ impl<'a> Parser<'a> {
     /// error if it fails. This should only be used when this syntax rule
     /// represents the only valid parse; if there are other options,
     /// `try_parse()` is preferred.
+    #[inline]
     pub fn parse<R: SyntaxRule>(&mut self, rule: R) -> CodeResult<R::Output> {
         self.try_parse(&rule).unwrap_or_else(|| self.expected(rule))
     }
     /// Applies a syntax rule starting at the cursor, returning `None` if the
     /// syntax rule definitely doesn't match (i.e., its `might_match()`
     /// implementation returned false).
+    #[inline]
     pub fn try_parse<R: SyntaxRule>(&mut self, rule: R) -> Option<CodeResult<R::Output>> {
         rule.prefix_matches(*self).then(|| {
             let old_state = *self; // Save state.

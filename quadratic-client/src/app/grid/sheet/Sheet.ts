@@ -4,6 +4,7 @@ import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import type {
   ColumnRow,
+  ConditionalFormatClient,
   GridBounds,
   JsCoordinate,
   JsResponse,
@@ -35,6 +36,7 @@ export class Sheet {
   gridOverflowLines: GridOverflowLines;
 
   validations: Validation[] = [];
+  conditionalFormats: ConditionalFormatClient[] = [];
 
   // clamp is the area that the cursor can move around in
   clamp: Rectangle;
@@ -60,6 +62,7 @@ export class Sheet {
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
+    events.on('sheetConditionalFormats', this.sheetConditionalFormats);
     events.on('contentCache', this.updateContentCache);
     events.on('dataTablesCache', this.updateTablesCache);
     events.on('mergeCells', this.updateMergeCells);
@@ -69,6 +72,7 @@ export class Sheet {
     this.contentCache.free();
     events.off('sheetBounds', this.updateBounds);
     events.off('sheetValidations', this.sheetValidations);
+    events.off('sheetConditionalFormats', this.sheetConditionalFormats);
     events.off('contentCache', this.updateContentCache);
     events.off('dataTablesCache', this.updateTablesCache);
     this._mergeCells.free();
@@ -139,6 +143,12 @@ export class Sheet {
   private sheetValidations = (sheetId: string, sheetValidations: Validation[]) => {
     if (sheetId === this.id) {
       this.validations = sheetValidations;
+    }
+  };
+
+  private sheetConditionalFormats = (sheetId: string, conditionalFormats: ConditionalFormatClient[]) => {
+    if (sheetId === this.id) {
+      this.conditionalFormats = conditionalFormats;
     }
   };
 

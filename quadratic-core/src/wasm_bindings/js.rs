@@ -102,6 +102,11 @@ extern "C" {
         sheet_validations: Vec<u8>, /* Vec<Validation> */
     );
 
+    pub fn jsSheetConditionalFormats(
+        sheet_id: String,
+        conditional_formats: Vec<u8>, /* Vec<ConditionalFormat> */
+    );
+
     pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
     pub fn jsMultiplayerSynced();
@@ -495,6 +500,18 @@ pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Va
     js_call(
         "jsSheetValidations",
         format!("{sheet_id},{sheet_validations:?}"),
+    );
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetConditionalFormats(
+    sheet_id: String,
+    conditional_formats: Vec<u8>, /* Vec<ConditionalFormat> */
+) {
+    js_call(
+        "jsSheetConditionalFormats",
+        format!("{sheet_id},{conditional_formats:?}"),
     );
 }
 
