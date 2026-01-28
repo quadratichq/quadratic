@@ -1,5 +1,5 @@
 // These constants are calculated based on the font metrics for Noto Color Emoji
-// SCALE_EMOJI: height ratio (1200/1024 = 1.172, inverted for scaling: 16/14 / 1.172 ≈ 0.918)
+// SCALE_EMOJI: based on experimentation
 export const SCALE_EMOJI = 0.918;
 // EMOJI_ADVANCE_RATIO: advance width / height ratio (1275/1200 = 1.0625)
 export const EMOJI_ADVANCE_RATIO = 1.0625;
