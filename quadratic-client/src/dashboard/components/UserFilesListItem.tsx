@@ -252,7 +252,7 @@ export function UserFilesListItem({
                             });
                           }}
                         >
-                          Move to Private
+                          Move to personal files
                         </DropdownMenuItem>
                       )}
                       {isFilePrivate && (
@@ -269,7 +269,7 @@ export function UserFilesListItem({
                             });
                           }}
                         >
-                          Move to Team
+                          Move to team files
                         </DropdownMenuItem>
                       )}
                     </>
