@@ -169,6 +169,7 @@ impl Validations {
         })
     }
 
+    /// Returns validations that intersect with a rect, unbounded.
     pub fn in_rect_unbounded(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
