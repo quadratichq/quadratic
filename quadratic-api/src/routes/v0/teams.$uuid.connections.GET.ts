@@ -42,7 +42,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       teamId,
     },
     include: {
-      SyncedConnection: { select: { percentCompleted: true, updatedDate: true } },
+      SyncedConnection: {
+        select: {
+          percentCompleted: true,
+          updatedDate: true,
+          SyncedConnectionLog: {
+            select: { status: true, error: true },
+            orderBy: { createdDate: 'desc' },
+            take: 1,
+          },
+        },
+      },
     },
     orderBy: {
       createdDate: 'desc',

@@ -26,12 +26,12 @@ import {
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   createTextContent,
@@ -54,6 +54,7 @@ import type {
   ToolResultMessage,
   UserMessagePrompt,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -182,16 +183,22 @@ export function useSubmitAIAnalystPrompt() {
           });
         }
 
+        // Look up connection from connections array if available, otherwise use the context directly
+        // (context.connection may already have complete info from URL params)
         const connectionInContext = connections.find((connection) => connection.uuid === context.connection?.id);
+        const resolvedConnection = connectionInContext
+          ? {
+              type: connectionInContext.type,
+              id: connectionInContext.uuid,
+              name: connectionInContext.name,
+            }
+          : context.connection && ConnectionTypeSchema.safeParse(context.connection.type).success
+            ? context.connection
+            : undefined; // Only use fallback if connection type is valid
+
         context = {
           codeCell: context.codeCell,
-          connection: connectionInContext
-            ? {
-                type: connectionInContext.type,
-                id: connectionInContext.uuid,
-                name: connectionInContext.name,
-              }
-            : undefined,
+          connection: resolvedConnection,
           importFiles:
             importFiles.length > 0
               ? {
