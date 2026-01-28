@@ -2,12 +2,15 @@ import { events } from '@/app/events/events';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
   ClientPythonMessage,
+  PythonClientCaptureChartImage,
   PythonClientGetJwt,
   PythonClientMessage,
 } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient } from '@/auth/auth';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+
+const CHART_IMAGE_TIMEOUT_MS = 10000;
 
 class PythonWebWorker {
   state: LanguageState = 'loading';
@@ -42,9 +45,124 @@ class PythonWebWorker {
         });
         break;
 
+      case 'pythonClientCaptureChartImage':
+        this.captureChartImage(message.data as PythonClientCaptureChartImage);
+        break;
+
       default:
         throw new Error(`Unhandled message type ${message.type}`);
     }
+  };
+
+  private captureChartImage = async (data: PythonClientCaptureChartImage) => {
+    const { id, html, width, height } = data;
+    let image: string | null = null;
+
+    try {
+      image = await this.renderChartToImage(html, width, height);
+    } catch (e) {
+      console.error('[pythonWebWorker] Failed to capture chart image:', e);
+    }
+
+    this.send({ type: 'clientPythonChartImage', id, image });
+  };
+
+  private renderChartToImage = (html: string, width: number, height: number): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = `${width}px`;
+      iframe.style.height = `${height}px`;
+      iframe.style.border = 'none';
+      iframe.style.visibility = 'hidden';
+
+      let resolved = false;
+      const cleanup = () => {
+        if (iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      };
+
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve(null);
+        }
+      }, CHART_IMAGE_TIMEOUT_MS);
+
+      iframe.onload = async () => {
+        try {
+          const contentWindow = iframe.contentWindow;
+          if (!contentWindow) {
+            throw new Error('No content window');
+          }
+
+          const plotly = await this.waitForPlotly(contentWindow, CHART_IMAGE_TIMEOUT_MS);
+          if (!plotly) {
+            throw new Error('Plotly not available');
+          }
+
+          const plotElement = contentWindow.document.querySelector('.js-plotly-plot');
+          if (!plotElement) {
+            throw new Error('No Plotly element found');
+          }
+
+          const dataUrl = await plotly.toImage(plotElement, {
+            format: 'webp',
+            width,
+            height,
+          });
+
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeoutId);
+            cleanup();
+            resolve(dataUrl);
+          }
+        } catch (e) {
+          console.error('[pythonWebWorker] Error capturing chart:', e);
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeoutId);
+            cleanup();
+            resolve(null);
+          }
+        }
+      };
+
+      console.log('[pythonWebWorker] Setting iframe srcdoc and appending to body');
+      iframe.srcdoc = html;
+      document.body.appendChild(iframe);
+    });
+  };
+
+  private waitForPlotly = (
+    contentWindow: Window,
+    timeoutMs: number
+  ): Promise<{ toImage: (el: Element, opts: object) => Promise<string> } | null> => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+
+      const check = () => {
+        const plotly = (contentWindow as any).Plotly;
+        if (plotly && typeof plotly.toImage === 'function') {
+          resolve(plotly);
+          return;
+        }
+
+        if (Date.now() - startTime > timeoutMs) {
+          resolve(null);
+          return;
+        }
+
+        setTimeout(check, 50);
+      };
+
+      check();
+    });
   };
 
   initWorker() {

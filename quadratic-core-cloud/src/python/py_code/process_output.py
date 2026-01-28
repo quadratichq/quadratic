@@ -72,6 +72,18 @@ def to_html_with_cdn(self):
     )
     return html
 
+def generate_chart_image(fig, width=800, height=600):
+    """
+    Generate a base64-encoded WebP image from a Plotly figure using kaleido.
+    Returns a data URL string or None if generation fails.
+    """
+    try:
+        import base64
+        img_bytes = fig.to_image(format='webp', width=width, height=height)
+        return 'data:image/webp;base64,' + base64.b64encode(img_bytes).decode('utf-8')
+    except Exception:
+        return None
+
 def setup_plotly_patch():
     """
     Patch Plotly to prevent browser opening and capture HTML output instead.
@@ -102,6 +114,7 @@ def process_output_value(output_value):
     output_type = type(output_value).__name__
     output_size = None
     has_headers = False
+    chart_image = None
 
     # TODO(ddimaria): figure out if we need to covert back to a list for array_output
     # We should have a single output
@@ -139,6 +152,8 @@ def process_output_value(output_value):
         import plotly
 
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
+            # Generate chart image before converting to HTML
+            chart_image = generate_chart_image(output_value)
             output_value = to_html_with_cdn(output_value)
             output_type = "Chart"
     except:
@@ -200,4 +215,5 @@ def process_output_value(output_value):
         "output_type": output_type,
         "output_size": output_size,
         "has_headers": has_headers,
+        "chart_image": chart_image,
     }
