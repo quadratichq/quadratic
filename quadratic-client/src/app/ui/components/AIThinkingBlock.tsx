@@ -79,7 +79,7 @@ export const AIThinkingBlock = memo(
         </div>
 
         {isExpanded && (
-          <div className="mt-1 italic text-muted-foreground">
+          <div className="mt-1 italic text-muted-foreground [&_blockquote]:border-0 [&_blockquote]:pl-0">
             <Markdown text={thinkingContent.text} onChange={onContentChange && handleContentChange} />
           </div>
         )}
