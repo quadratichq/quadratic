@@ -7,7 +7,7 @@ import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
-import { AIIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
+import { AgentModeIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -309,6 +309,15 @@ function UserAvatar({
 }) {
   return (
     <div data-testid={`top-bar-user-avatar-${email}`} className="relative">
+      <div
+        className="flex h-6 w-6 items-center justify-center rounded-full"
+        style={{
+          backgroundColor: highlightColor,
+          boxShadow: false ? `0 0 0 2px ${highlightColor}` : undefined,
+        }}
+      >
+        <AgentModeIcon className="relative top-[1px] text-white" />
+      </div>
       {isAI ? (
         <div
           className="flex h-6 w-6 items-center justify-center rounded-full"
@@ -317,7 +326,7 @@ function UserAvatar({
             boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
           }}
         >
-          <AIIcon className="relative top-[1px] text-white" />
+          <AgentModeIcon className="relative top-[1px] text-white" />
         </div>
       ) : (
         <Avatar
@@ -331,13 +340,11 @@ function UserAvatar({
           {initials}
         </Avatar>
       )}
-
       {isScheduledRun && (
         <div className="absolute inset-0 flex items-center justify-center rounded-full bg-border">
           <ScheduledTasksIcon className="text-foreground" />
         </div>
       )}
-
       {!isScheduledRun &&
         (isFollowingYou || isBeingFollowedByYou ? (
           <svg
