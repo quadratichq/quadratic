@@ -3,9 +3,9 @@ import type {
   AIResponseContent,
   AISource,
   AIToolCall,
+  ChatMessage,
   Content,
   Context,
-  ChatMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 
@@ -58,7 +58,7 @@ export enum AISessionStatus {
 export interface ImportFile {
   name: string;
   size: number;
-  data?: ArrayBuffer;
+  data: ArrayBuffer;
   type?: string;
 }
 

@@ -30,7 +30,13 @@ import type { MessageManager } from './MessageManager';
 import { messageManager } from './MessageManager';
 import type { ToolExecutor } from './ToolExecutor';
 import { toolExecutor } from './ToolExecutor';
-import type { AISessionRequest, AISessionResult, AISessionStatus, Connection, ImportFile } from './types';
+import {
+  AISessionStatus,
+  type AISessionRequest,
+  type AISessionResult,
+  type Connection,
+  type ImportFile,
+} from './types';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
@@ -46,7 +52,7 @@ export class AISession {
   private messageManager: MessageManager;
   private apiClient: AIAPIClient;
 
-  private status: AISessionStatus = 'idle' as AISessionStatus;
+  private status: AISessionStatus = AISessionStatus.Idle;
 
   constructor() {
     this.contextBuilder = contextBuilder;
@@ -170,16 +176,16 @@ export class AISession {
 
     // Create and add user message
     const userMessage: UserMessagePrompt = {
-      role: 'user' as const,
+      role: 'user',
       content: [...content],
-      contextType: 'userPrompt' as const,
+      contextType: 'userPrompt',
       context: { ...resolvedContext },
     };
     this.messageManager.addUserMessage(userMessage);
 
     // Set loading state
     this.store.set(loadingAtom, true);
-    this.status = 'running' as AISessionStatus;
+    this.status = AISessionStatus.Running;
 
     // Initialize AI cursor
     try {
@@ -239,7 +245,13 @@ export class AISession {
             signal: abortController.signal,
             onMessage: (msg) => {
               const messages = this.messageManager.getMessages();
-              this.messageManager.setMessages([...messages.slice(0, -1), msg]);
+              const lastMessage = messages.at(-1);
+              // If last message is user, add new assistant message; otherwise update existing assistant message
+              if (lastMessage?.role === 'user') {
+                this.messageManager.setMessages([...messages, msg]);
+              } else {
+                this.messageManager.setMessages([...messages.slice(0, -1), msg]);
+              }
             },
             onExceededBillingLimit,
           }
@@ -332,12 +344,12 @@ export class AISession {
         }
       }
 
-      this.status = 'completed' as AISessionStatus;
+      this.status = AISessionStatus.Completed;
       return { success: true, chatId };
     } catch (error) {
       this.messageManager.handleError(modelKey);
       console.error(error);
-      this.status = 'failed' as AISessionStatus;
+      this.status = AISessionStatus.Failed;
       return { success: false, error: String(error), chatId };
     } finally {
       this.store.set(abortControllerAtom, undefined);
@@ -351,7 +363,7 @@ export class AISession {
   abort(): void {
     const controller = this.store.get(abortControllerAtom);
     controller?.abort();
-    this.status = 'aborted' as AISessionStatus;
+    this.status = AISessionStatus.Aborted;
   }
 }
 

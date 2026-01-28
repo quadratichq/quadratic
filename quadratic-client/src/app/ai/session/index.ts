@@ -10,16 +10,16 @@ export { ContextBuilder, contextBuilder } from './ContextBuilder';
 export { MessageManager, messageManager } from './MessageManager';
 export { ToolExecutor, toolExecutor } from './ToolExecutor';
 
-// Types
+// Types and enums
+export { AISessionStatus } from './types';
 export type {
+  AIAPIResponse,
   AISessionRequest,
   AISessionResult,
-  AISessionStatus,
-  ImportFile,
-  ContextOptions,
-  ToolExecutionOptions,
   APIRequestOptions,
-  AIAPIResponse,
-  StreamingMessageCallback,
+  ContextOptions,
   ExceededBillingLimitCallback,
+  ImportFile,
+  StreamingMessageCallback,
+  ToolExecutionOptions,
 } from './types';

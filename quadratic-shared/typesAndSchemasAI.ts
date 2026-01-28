@@ -1,4 +1,4 @@
-import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ConnectionType, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 
@@ -44,7 +44,12 @@ export type BedrockModel = 'us.deepseek.r1-v1:0';
 
 export type AnthropicModel = 'claude-sonnet-4-5-20250929' | 'claude-haiku-4-5-20251001' | 'claude-opus-4-5-20251101';
 
-export type OpenAIModel = 'gpt-5-codex' | 'gpt-5.2-2025-12-12' | 'gpt-4.1-2025-04-14' | 'o4-mini-2025-04-16' | 'o3-2025-04-16';
+export type OpenAIModel =
+  | 'gpt-5-codex'
+  | 'gpt-5.2-2025-12-12'
+  | 'gpt-4.1-2025-04-14'
+  | 'o4-mini-2025-04-16'
+  | 'o3-2025-04-16';
 
 export type AzureOpenAIModel = 'gpt-5-codex' | 'gpt-5.2' | 'gpt-4.1' | 'gpt-4.1-mini' | 'o3';
 
@@ -460,6 +465,7 @@ export interface AIToolArgs {
   properties: Record<string, AIToolArgsPrimitive | AIToolArgsArray | AIToolArgs>;
   required: string[];
   additionalProperties: boolean;
+  [key: string]: unknown;
 }
 
 // ----------------------------------------------------------------------------
@@ -500,7 +506,7 @@ export interface AIRequestBody {
   modelKey: AIModelKey;
   messages: ChatMessage[];
   useStream: boolean;
-  toolName?: string;
+  toolName?: AITool;
   useToolsPrompt: boolean;
   language?: CodeCellType;
   useQuadraticContext: boolean;
@@ -731,13 +737,7 @@ const AIModelKeySchema = z.union([
 // Model Configuration Schemas
 // ----------------------------------------------------------------------------
 
-const ModelModeSchema = z.enum([
-  'disabled',
-  'fast',
-  'max',
-  'others',
-  'default',
-]) satisfies z.ZodType<ModelMode>;
+const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'others', 'default']) satisfies z.ZodType<ModelMode>;
 
 const AIRatesSchema = z.object({
   rate_per_million_input_tokens: z.number(),
