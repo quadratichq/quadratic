@@ -152,7 +152,9 @@ impl Grid {
             );
 
             // Update CellValue::Code cells
-            sheet.replace_column_name_in_code_value_cells(table_name, old_name, new_name, a1_context);
+            sheet.replace_column_name_in_code_value_cells(
+                table_name, old_name, new_name, a1_context,
+            );
         }
     }
 
@@ -391,7 +393,9 @@ impl DataTable {
             return false;
         };
 
-        // Must not have an error (either runtime error or std_err)
+        // Must not have an error. For Python/JS, errors set code_run.error.
+        // For formulas, errors only set std_err (error is always None).
+        // Both checks are needed to catch errors from all code cell types.
         if code_run.error.is_some() || code_run.std_err.is_some() {
             return false;
         }

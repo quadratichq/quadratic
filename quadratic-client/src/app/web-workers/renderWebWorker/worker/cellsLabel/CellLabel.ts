@@ -8,9 +8,13 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
-import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecialConstants';
+import {
+  EMOJI_ADVANCE_RATIO,
+  EMOJI_X_OFFSET_RATIO,
+  EMOJI_Y_OFFSET_RATIO,
+} from '@/app/gridGL/pixiApp/emojis/emojiConstants';
 import { emojiStrings } from '@/app/gridGL/pixiApp/emojis/emojiMap';
-import { EMOJI_ADVANCE_RATIO, EMOJI_X_OFFSET_RATIO, EMOJI_Y_OFFSET_RATIO } from '@/app/gridGL/pixiApp/emojis/emojis';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
 import type {
