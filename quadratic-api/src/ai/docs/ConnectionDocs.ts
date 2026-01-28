@@ -60,7 +60,7 @@ DataFusion connections use Apache DataFusion's SQL dialect, which is similar to 
 ### Common Functions
 * **Aggregates:** COUNT, SUM, AVG, MIN, MAX, MEDIAN, array_agg, string_agg
 * **String:** concat, upper, lower, trim, substring, length, replace, split_part
-* **Date/Time:** now(), date_trunc, date_part, extract, to_timestamp, to_timestamp_seconds, to_timestamp_millis
+* **Date/Time:** now(), date_trunc, date_part, extract, to_timestamp, to_timestamp_nanos
 * **Math:** abs, round, ceil, floor, power, sqrt, log, ln
 * **Null handling:** coalesce, nullif, nvl
 
@@ -72,40 +72,35 @@ DataFusion connections use Apache DataFusion's SQL dialect, which is similar to 
 * FROM_UNIXTIME() - this common function does not exist in DataFusion
 * Some PostgreSQL-specific functions may not be available
 
-### Timestamp Handling (Important!)
-DataFusion handles timestamps differently than PostgreSQL or MySQL. This is a common gotcha:
+### Converting Unix Timestamps (Critical!)
+DataFusion's timestamp functions are **misleadingly named** and do NOT work as their names suggest. This is a major documentation gap:
 
-* **TO_TIMESTAMP()** expects a STRING input, not an integer Unix timestamp
-* **to_timestamp_seconds()** converts Unix timestamps in seconds to a timestamp
-* **to_timestamp_millis()** converts Unix timestamps in milliseconds to a timestamp
-* **to_timestamp_nanos()** converts Unix timestamps in nanoseconds to a timestamp
+| Function | What the name suggests | What it actually expects |
+|----------|----------------------|-------------------------|
+| to_timestamp_seconds() | Unix timestamp in seconds | A date STRING like "2025-08-01" |
+| to_timestamp_millis() | Unix timestamp in milliseconds | A date STRING |
+| to_timestamp_nanos() | Unix timestamp in nanoseconds | **Actually works with BIGINT!** ✓ |
+
+**DO NOT use to_timestamp_seconds() or to_timestamp_millis() with Unix timestamps** - they will produce incorrect 1970 dates.
+
+**The reliable solution:** Always use \`to_timestamp_nanos()\` and convert your timestamps to nanoseconds:
+
+\`\`\`sql
+-- For Unix timestamps in SECONDS (e.g., 1704067200):
+-- Multiply by 1,000,000,000 to convert to nanoseconds
+to_timestamp_nanos(CAST("unixSeconds" AS BIGINT) * 1000000000)
+
+-- For Unix timestamps in MILLISECONDS (e.g., 1704067200000):
+-- Multiply by 1,000,000 to convert to nanoseconds
+to_timestamp_nanos(CAST("unixMillis" AS BIGINT) * 1000000)
+
+-- For Unix timestamps already in NANOSECONDS:
+to_timestamp_nanos(CAST("unixNanos" AS BIGINT))
+\`\`\`
+
+**Other timestamp functions:**
+* **TO_TIMESTAMP()** expects a STRING input, not an integer (e.g., \`TO_TIMESTAMP('2025-01-01 12:00:00')\`)
 * **No FROM_UNIXTIME()** - this common function does not exist in DataFusion
-
-**Known Quirk with to_timestamp_seconds():**
-In some cases, \`to_timestamp_seconds(CAST(column AS BIGINT))\` may unexpectedly produce 1970 dates even with valid Unix timestamps. If you encounter this issue, use \`to_timestamp_nanos()\` with manual conversion as a reliable workaround:
-
-\`\`\`sql
--- Recommended workaround for Unix timestamps in seconds
-to_timestamp_nanos(CAST("time" AS BIGINT) * 1000000000)
-\`\`\`
-
-To convert a Unix timestamp column:
-\`\`\`sql
--- If your column is in SECONDS (e.g., 1704067200)
--- Try this first:
-to_timestamp_seconds(CAST("unixTimestamp" AS BIGINT))
--- If that produces 1970 dates, use this workaround:
-to_timestamp_nanos(CAST("unixTimestamp" AS BIGINT) * 1000000000)
-
--- If your column is in MILLISECONDS (e.g., 1704067200000)
-to_timestamp_millis(CAST("timestampMs" AS BIGINT))
-
--- If your column is in NANOSECONDS
-to_timestamp_nanos(CAST("timestampNs" AS BIGINT))
-
--- Alternative: convert milliseconds to nanoseconds manually
-to_timestamp_nanos(CAST("timestampMs" AS BIGINT) * 1000000)
-\`\`\`
 
 ### DataFusion Examples
 
@@ -135,12 +130,13 @@ WHERE CAST("eventTime" AS DATE) >= '2024-01-01'
 
 \`\`\`sql
 -- Converting Unix timestamp (milliseconds) to readable timestamp
+-- IMPORTANT: Use to_timestamp_nanos() with conversion, NOT to_timestamp_millis()
 SELECT 
   "event",
-  to_timestamp_millis(CAST("mp_processing_time_ms" AS BIGINT)) as event_time,
-  date_trunc('day', to_timestamp_millis(CAST("mp_processing_time_ms" AS BIGINT))) as event_date
+  to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000) as event_time,
+  date_trunc('day', to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000)) as event_date
 FROM events
-WHERE to_timestamp_millis(CAST("mp_processing_time_ms" AS BIGINT)) >= '2024-01-01'
+WHERE to_timestamp_nanos(CAST("mp_processing_time_ms" AS BIGINT) * 1000000) >= '2024-01-01'
 \`\`\`
 
 In PostgreSQL, identifiers like table names and column names that contain spaces or are reserved keywords need to be enclosed in double quotes.
