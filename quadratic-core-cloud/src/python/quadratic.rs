@@ -116,8 +116,12 @@ pub(crate) fn create_get_cells_function(
 /// Creates a Python function that wraps the Rust fetch_stock_prices function
 pub(crate) fn create_stock_prices_function(
     py: Python,
+    token: String,
+    team_id: String,
     connection_url: String,
 ) -> PyResult<PyObject> {
+    let token = RefCell::new(token);
+    let team_id = RefCell::new(team_id);
     let connection_url = RefCell::new(connection_url);
 
     let function = pyo3::types::PyCFunction::new_closure(
@@ -154,6 +158,21 @@ pub(crate) fn create_stock_prices_function(
                 None
             };
 
+            // Extract optional frequency (defaults to "daily" if not provided)
+            let frequency: Option<String> = if args.len() > 3 {
+                args.get_item(3)?.extract().ok()
+            } else if let Some(kwargs) = kwargs {
+                kwargs
+                    .get_item("frequency")
+                    .ok()
+                    .flatten()
+                    .and_then(|v| v.extract().ok())
+            } else {
+                None
+            };
+
+            let token = token.borrow().clone();
+            let team_id = team_id.borrow().clone();
             let url = connection_url.borrow().clone();
 
             // Use tokio runtime to call async function
@@ -162,10 +181,13 @@ pub(crate) fn create_stock_prices_function(
                     PyErr::new::<PyException, _>(format!("Failed to create runtime: {}", e))
                 })?
                 .block_on(fetch_stock_prices(
+                    &token,
+                    &team_id,
                     &url,
                     &identifier,
                     start_date.as_deref(),
                     end_date.as_deref(),
+                    frequency.as_deref(),
                 ))
                 .map_err(|e| PyErr::new::<PyException, _>(e.to_string()))?;
 
@@ -277,7 +299,12 @@ mod tests {
     #[test]
     fn test_create_stock_prices_function() {
         Python::with_gil(|py| {
-            let func = create_stock_prices_function(py, "http://localhost:3003".to_string());
+            let func = create_stock_prices_function(
+                py,
+                "M2M_AUTH_TOKEN".to_string(),
+                "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string(),
+                "http://localhost:3003".to_string(),
+            );
             assert!(func.is_ok(), "Should create stock prices function");
         });
     }
@@ -285,12 +312,16 @@ mod tests {
     #[tokio::test]
     async fn test_fetch_stock_prices() {
         // This test requires the connection service to be running
-        // Skip if not available
+        let token = "M2M_AUTH_TOKEN".to_string();
+        let team_id = "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string();
         let result = fetch_stock_prices(
+            &token,
+            &team_id,
             "http://localhost:3003",
             "AAPL",
             Some("2025-01-01"),
             Some("2025-01-31"),
+            None, // defaults to daily
         )
         .await;
 

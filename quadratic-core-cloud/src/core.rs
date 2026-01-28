@@ -138,6 +138,8 @@ pub async fn process_transaction(
                         &code_run.code,
                         &transaction_id,
                         Box::new(create_get_cells()),
+                        &token,
+                        &team_id,
                         Some(connection_url.clone()),
                     )
                     .await?;

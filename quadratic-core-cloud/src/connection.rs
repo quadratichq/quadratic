@@ -1,15 +1,27 @@
-use std::sync::Arc;
-
 use bytes::Bytes;
 use quadratic_core::{
     controller::{GridController, transaction_types::JsConnectionResult},
     grid::{ConnectionKind, SheetId},
 };
-use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::error::{CoreCloudError, Result};
+
+pub(crate) fn build_request(
+    url: &str,
+    token: &str,
+    team_id: &str,
+    body: &serde_json::Value,
+) -> reqwest::RequestBuilder {
+    let client = reqwest::Client::new();
+    client
+        .post(url)
+        .header("Authorization", format!("Bearer {token}"))
+        .header("x-team-id", team_id)
+        .json(body)
+}
 
 /// Parameters for running a connection
 pub(crate) struct ConnectionParams<'a> {
@@ -105,15 +117,11 @@ pub(crate) async fn execute(
         "[Connection] Executing query to {url} (connection_id: {connection_id}, team_id: {team_id}, transaction_id: {transaction_id})",
     );
 
-    let client = reqwest::Client::new();
-    let request = client
-        .post(&url)
-        .header("Authorization", format!("Bearer {token}"))
-        .header("x-team-id", team_id)
-        .json(&json!({
-            "query": query,
-            "connection_id": connection_id,
-        }));
+    let body = json!({
+        "query": query,
+        "connection_id": connection_id,
+    });
+    let request = build_request(&url, token, team_id, &body);
 
     let (response, std_error) = match request.send().await {
         Ok(resp) => match resp.bytes().await {
@@ -142,46 +150,28 @@ pub(crate) async fn execute(
     Ok((result, std_error))
 }
 
-/// Request body for stock prices API.
-#[derive(Debug, Serialize)]
-pub(crate) struct StockPricesRequest {
-    pub identifier: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_date: Option<String>,
-}
-
-/// Response from stock prices API.
-#[derive(Debug, Deserialize)]
-pub(crate) struct StockPricesResponse {
-    #[serde(flatten)]
-    pub data: serde_json::Value,
-}
-
 /// Fetches stock prices from the connection service.
 pub(crate) async fn fetch_stock_prices(
+    token: &str,
+    team_id: &str,
     connection_url: &str,
     identifier: &str,
     start_date: Option<&str>,
     end_date: Option<&str>,
+    frequency: Option<&str>,
 ) -> Result<serde_json::Value> {
     let url = format!("{connection_url}/financial/stock-prices");
 
-    tracing::info!(
-        "[Connection] Fetching stock prices for {identifier} from {url}",
-    );
+    tracing::info!("[Connection] Fetching stock prices for {identifier} from {url}",);
 
-    let request = StockPricesRequest {
-        identifier: identifier.to_string(),
-        start_date: start_date.map(String::from),
-        end_date: end_date.map(String::from),
-    };
-
-    let client = reqwest::Client::new();
-    let response = client
-        .post(&url)
-        .json(&request)
+    let body = json!({
+        "identifier": identifier,
+        "start_date": start_date,
+        "end_date": end_date,
+        "frequency": frequency,
+    });
+    let request = build_request(&url, token, team_id, &body);
+    let response = request
         .send()
         .await
         .map_err(|e| CoreCloudError::Connection(format!("HTTP request failed: {}", e)))?;

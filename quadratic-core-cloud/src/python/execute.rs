@@ -28,6 +28,8 @@ pub(crate) async fn run_python(
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    token: &str,
+    team_id: &str,
     connection_url: Option<String>,
 ) -> Result<()> {
     tracing::info!(
@@ -35,7 +37,14 @@ pub(crate) async fn run_python(
         transaction_id
     );
 
-    let js_code_result = execute(code, transaction_id, get_cells, connection_url)?;
+    let js_code_result = execute(
+        code,
+        transaction_id,
+        get_cells,
+        token,
+        team_id,
+        connection_url,
+    )?;
 
     grid.lock()
         .await
@@ -48,6 +57,8 @@ pub(crate) fn execute(
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    token: &str,
+    team_id: &str,
     connection_url: Option<String>,
 ) -> Result<JsCodeResult> {
     let result: std::result::Result<JsCodeResult, PyErr> = Python::with_gil(|py| {
@@ -77,7 +88,12 @@ pub(crate) fn execute(
 
         // create stock_prices function that calls the connection service
         let connection_url = connection_url.unwrap_or_else(|| "http://localhost:3003".to_string());
-        let stock_prices_py = create_stock_prices_function(py, connection_url)?;
+        let stock_prices_py = create_stock_prices_function(
+            py,
+            token.to_string(),
+            team_id.to_string(),
+            connection_url,
+        )?;
         globals.set_item("rust_stock_prices", stock_prices_py)?;
 
         // quadratic (`q`) module
@@ -312,7 +328,15 @@ mod tests {
 
     fn test_execute(code: &str) -> JsCodeResult {
         let start = Instant::now();
-        let result = execute(code, "test", Box::new(test_get_cells), None).unwrap();
+        let result = execute(
+            code,
+            "test",
+            Box::new(test_get_cells),
+            "M2M_AUTH_TOKEN",
+            "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05",
+            None,
+        )
+        .unwrap();
         let end = Instant::now();
         println!("time: {:?}", end.duration_since(start));
         println!("result: {:#?}", result);

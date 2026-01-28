@@ -1,11 +1,49 @@
 from typing import Tuple
 
 import getCellsA1
+import getStockPrices
 from pandas import DataFrame
 
 from ..utils import result_to_value, to_python_type_df
 
 results = None
+
+
+class Financial:
+    """Financial data module for accessing stock prices and other financial data."""
+
+    async def stock_prices(self, identifier: str, start_date: str = None, end_date: str = None, frequency: str = None) -> dict:
+        """
+        Get historical stock prices for a security.
+
+        Args:
+            identifier: Stock ticker symbol (e.g., "AAPL")
+            start_date: Optional start date in YYYY-MM-DD format
+            end_date: Optional end date in YYYY-MM-DD format
+            frequency: Optional frequency for price data ("daily", "weekly", "monthly", "quarterly", "yearly"). Defaults to "daily".
+
+        Returns:
+            Dictionary containing stock price data
+
+        Typical usage example:
+            prices = await q.financial.stock_prices("AAPL", "2025-01-01", "2025-01-31")
+            weekly_prices = await q.financial.stock_prices("AAPL", "2025-01-01", "2025-01-31", "weekly")
+        """
+        # getStockPrices is a JS async function, await the promise
+        result = await getStockPrices(identifier, start_date, end_date, frequency)
+
+        # Convert JsProxy to Python dict if needed
+        if hasattr(result, 'to_py'):
+            result = result.to_py()
+
+        # Check for errors
+        error = result.get('error') if isinstance(result, dict) else getattr(result, 'error', None)
+        if error:
+            raise Exception(error)
+
+        data = result.get('data') if isinstance(result, dict) else getattr(result, 'data', None)
+        return data
+
 
 # Code in this file is used to generate typeshed stubs for Pyright (Python LSP)
 #
@@ -127,6 +165,12 @@ def rc(x: int, y: int) -> int | float | str | bool | None:
 class q:
     def __init__(self, pos):
         self._pos = pos
+        self._financial = Financial()
+
+    @property
+    def financial(self) -> Financial:
+        """Access financial data functions."""
+        return self._financial
 
     def cells(self, a1: str, first_row_header: bool = False):
         """
@@ -215,3 +259,7 @@ class q:
             raise Exception(output)
         else:
             print(output)
+
+
+# Instance declaration for type stubs - actual instance created in run_python.py
+q: q

@@ -11,7 +11,7 @@ mod database;
 mod datetime;
 mod engineering;
 pub mod excel;
-mod financial;
+pub mod financial;
 mod logic;
 mod lookup;
 mod mathematics;

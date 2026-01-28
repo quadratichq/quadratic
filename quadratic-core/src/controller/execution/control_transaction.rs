@@ -226,27 +226,76 @@ impl GridController {
                             ConnectionKind::Mixpanel => "Mixpanel1",
                             ConnectionKind::GoogleAnalytics => "GoogleAnalytics1",
                             ConnectionKind::Plaid => "Plaid1",
+                            ConnectionKind::StockHistory => "StockHistory",
                         },
+                        // Formula-based connections (like STOCKHISTORY)
+                        CodeCellLanguage::Formula
+                            if crate::formulas::functions::financial::stock_history::is_stock_history_formula(&code.code) =>
+                        {
+                            "StockHistory"
+                        }
                         // this should not happen
-                        _ => "Connection 1",
+                        _ => "Connection1",
                     };
 
-                    let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
+                    // Handle StockHistory specially - it receives JSON, not Parquet
+                    let is_stock_history = matches!(
+                        code.language,
+                        CodeCellLanguage::Connection {
+                            kind: ConnectionKind::StockHistory,
+                            ..
+                        }
+                    ) || (matches!(code.language, CodeCellLanguage::Formula)
+                        && crate::formulas::functions::financial::stock_history::is_stock_history_formula(&code.code));
+
                     let parse_error = |e: &String| {
-                        dbgjs!(format!("Error parsing Parquet file {}: {}", name, e));
+                        dbgjs!(format!("Error parsing data for {}: {}", name, e));
                         ("0x0 Array".to_string(), Value::default())
                     };
 
-                    let (mut return_type, value) = match (array, &std_err) {
-                        (Ok(array), None) => {
-                            // subtract 1 from the length to account for the header row
-                            let return_type =
-                                format!("{}×{} Array", array.width(), array.height() - 1);
-
-                            (return_type, Value::Array(array))
+                    let (mut return_type, value) = if is_stock_history {
+                        // StockHistory receives JSON data
+                        match std_err {
+                            Some(ref err) => parse_error(err),
+                            None => {
+                                match String::from_utf8(data.clone()) {
+                                    Ok(json_str) => {
+                                        match serde_json::from_str::<serde_json::Value>(&json_str) {
+                                            Ok(json_data) => {
+                                                // Process stock history JSON using the helper
+                                                match crate::formulas::functions::financial::stock_history::process_stock_history_json(&json_data, &code.code) {
+                                                    Ok(array) => {
+                                                        let return_type = format!(
+                                                            "{}×{} Array",
+                                                            array.width(),
+                                                            array.height().saturating_sub(1) // subtract header
+                                                        );
+                                                        (return_type, Value::Array(array))
+                                                    }
+                                                    Err(e) => parse_error(&e),
+                                                }
+                                            }
+                                            Err(e) => parse_error(&e.to_string()),
+                                        }
+                                    }
+                                    Err(e) => parse_error(&e.to_string()),
+                                }
+                            }
                         }
-                        (Err(e), None) => parse_error(&e.to_string()),
-                        (_, Some(std_err)) => parse_error(std_err),
+                    } else {
+                        // Standard connections receive Parquet data
+                        let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
+                        match (array, &std_err) {
+                            (Ok(array), None) => {
+                                // subtract 1 from the length to account for the header row
+                                let return_type =
+                                    format!("{}×{} Array", array.width(), array.height() - 1);
+
+                                (return_type, Value::Array(array))
+                            }
+                            (Err(e), None) => parse_error(&e.to_string()),
+                            (_, Some(std_err)) => parse_error(std_err),
+                        }
                     };
 
                     if let Some(extra) = extra {
