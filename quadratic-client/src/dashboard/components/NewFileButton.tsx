@@ -56,24 +56,8 @@ export function NewFileButton() {
   return (
     <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
-        variant="default"
-        className="gap-2"
-        onClick={async () => {
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
-            return;
-          }
-          navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
-        }}
-      >
-        <AIIcon className="mr-0" />
-        Start with AI
-      </Button>
-
-      <Button
         data-testid="files-list-new-file-button"
-        variant="outline"
+        variant="default"
         onClick={async (e) => {
           e.preventDefault();
           const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
@@ -108,6 +92,23 @@ export function NewFileButton() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={async () => {
+                const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+                if (hasReachedLimit) {
+                  showUpgradeDialog('fileLimitReached');
+                  return;
+                }
+                navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+              }}
+            >
+              <AIIcon className="mr-3" />
+              <span className="flex flex-col">
+                Start with AI
+                <span className="text-xs text-muted-foreground">Import data starting with AI</span>
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
               <FileIcon className="mr-3" />
