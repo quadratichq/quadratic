@@ -1,15 +1,21 @@
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
+  ConnectionTypeSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const ConnectionFormMixpanelSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.MIXPANEL),
   api_secret: z.string().min(1, { message: 'Required' }),
   project_id: z.string().min(1, { message: 'Required' }),
@@ -24,6 +30,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
+    semanticDescription: String(connection?.semanticDescription || ''),
     type: 'MIXPANEL',
     api_secret: connection?.typeDetails?.api_secret || '',
     project_id: connection?.typeDetails?.project_id || '',
@@ -102,8 +109,11 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             )}
           />
         </div>
+
+        <ConnectionFormSemantic form={form} />
+
         {connection && (
-          <div className="flex items-center gap-2 pt-2 text-sm">
+          <div className="flex items-start gap-2 pt-2 text-sm">
             <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
