@@ -65,13 +65,21 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                                     }
                                 }
                                 b"scaleW" => {
-                                    if let Ok(w) = String::from_utf8_lossy(&attr.value).parse() {
-                                        scale_w = w;
+                                    if let Ok(w) =
+                                        String::from_utf8_lossy(&attr.value).parse::<f32>()
+                                    {
+                                        if w > 0.0 {
+                                            scale_w = w;
+                                        }
                                     }
                                 }
                                 b"scaleH" => {
-                                    if let Ok(h) = String::from_utf8_lossy(&attr.value).parse() {
-                                        scale_h = h;
+                                    if let Ok(h) =
+                                        String::from_utf8_lossy(&attr.value).parse::<f32>()
+                                    {
+                                        if h > 0.0 {
+                                            scale_h = h;
+                                        }
                                     }
                                 }
                                 b"pages" => {

@@ -201,7 +201,7 @@ impl TextHash {
         self.dirty = false;
 
         // Cache the render data and return a reference to avoid cloning
-        self.cached_render_data = Some(HashRenderData {
+        self.cached_render_data.insert(HashRenderData {
             hash_x: self.hash_x,
             hash_y: self.hash_y,
             world_x: self.world_x,
@@ -213,9 +213,7 @@ impl TextHash {
             horizontal_lines,
             emoji_sprites: HashMap::new(), // TODO: emoji support
             sprite_dirty: true,
-        });
-
-        self.cached_render_data.as_ref().unwrap()
+        })
     }
 
     /// Get cached render data without rebuilding
@@ -318,8 +316,8 @@ fn merge_text_buffers(buffers: Vec<TextBuffer>) -> Vec<TextBuffer> {
 /// Compute hash coordinates for a cell position
 #[inline]
 pub fn hash_coords(col: i64, row: i64) -> (i64, i64) {
-    let hash_x = (col - 1) / HASH_WIDTH;
-    let hash_y = (row - 1) / HASH_HEIGHT;
+    let hash_x = (col - 1).div_euclid(HASH_WIDTH);
+    let hash_y = (row - 1).div_euclid(HASH_HEIGHT);
     (hash_x, hash_y)
 }
 

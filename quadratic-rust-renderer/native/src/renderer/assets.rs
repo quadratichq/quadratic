@@ -20,7 +20,7 @@ impl NativeRenderer {
             // Decode the image to get actual dimensions
             let (rgba_data, width, height) = chart.decode_image()?;
 
-            log::info!(
+            log::debug!(
                 "Uploading chart image {} at ({}, {}): {}x{} -> texture UID {}",
                 i,
                 chart.x,
@@ -71,10 +71,38 @@ impl NativeRenderer {
         // Color is white (1, 1, 1, 1) to show image as-is
         let vertices = vec![
             // Top-left
-            x, y, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, // Top-right
-            x + w, y, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, // Bottom-right
-            x + w, y + h, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // Bottom-left
-            x, y + h, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            x,
+            y,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0, // Top-right
+            x + w,
+            y,
+            1.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0, // Bottom-right
+            x + w,
+            y + h,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0, // Bottom-left
+            x,
+            y + h,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
         ];
 
         // Two triangles: 0-1-2 and 0-2-3
@@ -130,7 +158,7 @@ impl NativeRenderer {
                 let uid = self.next_language_icon_id;
                 self.next_language_icon_id += 1;
 
-                log::info!(
+                log::debug!(
                     "Uploading language icon '{}': {}x{} -> texture UID {}",
                     language_key,
                     width,
@@ -177,10 +205,38 @@ impl NativeRenderer {
         // Color is white (1, 1, 1, 1) to show icon as-is
         let vertices = vec![
             // Top-left
-            x, y, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, // Top-right
-            x + w, y, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, // Bottom-right
-            x + w, y + h, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // Bottom-left
-            x, y + h, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            x,
+            y,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0, // Top-right
+            x + w,
+            y,
+            1.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0, // Bottom-right
+            x + w,
+            y + h,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0, // Bottom-left
+            x,
+            y + h,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
         ];
 
         // Two triangles: 0-1-2 and 0-2-3

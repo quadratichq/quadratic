@@ -132,7 +132,7 @@ impl NativeRenderer {
                     request.selection.end_row,
                 );
                 if !border_quads.vertices.is_empty() {
-                    log::info!("Drawing {} border quads", border_quads.vertices.len() / 36);
+                    log::debug!("Drawing {} border quads", border_quads.vertices.len() / 36);
                     self.wgpu
                         .draw_triangles(&mut pass, &border_quads.vertices, &matrix);
                 }
@@ -143,7 +143,7 @@ impl NativeRenderer {
                 if self.wgpu.has_texture(chart_info.texture_uid) {
                     let (vertices, indices) =
                         self.create_chart_sprite_from_info(chart_info, request);
-                    log::info!(
+                    log::debug!(
                         "Drawing chart image at ({}, {}): {}x{} pixels",
                         chart_info.x,
                         chart_info.y,
@@ -167,21 +167,21 @@ impl NativeRenderer {
 
                 // Draw name backgrounds first (under text)
                 if !name_bgs.vertices.is_empty() {
-                    log::info!("Drawing table name backgrounds");
+                    log::debug!("Drawing table name backgrounds");
                     self.wgpu
                         .draw_triangles(&mut pass, &name_bgs.vertices, &matrix);
                 }
 
                 // Draw column header backgrounds
                 if !col_bgs.vertices.is_empty() {
-                    log::info!("Drawing table column header backgrounds");
+                    log::debug!("Drawing table column header backgrounds");
                     self.wgpu
                         .draw_triangles(&mut pass, &col_bgs.vertices, &matrix);
                 }
 
                 // Draw outline lines
                 if !outline_lines.vertices.is_empty() {
-                    log::info!(
+                    log::debug!(
                         "Drawing {} table outline lines",
                         outline_lines.vertices.len() / 12
                     );
@@ -192,7 +192,7 @@ impl NativeRenderer {
 
             // Draw text (meshes were pre-computed above)
             if !text_meshes.is_empty() {
-                log::info!(
+                log::debug!(
                     "Text geometry: {} meshes, {} emojis, atlas_font_size={}, distance_range={}, viewport_scale={}",
                     text_meshes.len(),
                     emojis_to_render.len(),

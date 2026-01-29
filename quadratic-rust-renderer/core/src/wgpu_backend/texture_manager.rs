@@ -25,6 +25,17 @@ impl TextureManager {
         height: u32,
         data: &[u8],
     ) -> Result<(), anyhow::Error> {
+        let expected_size = (width * height * 4) as usize;
+        if data.len() != expected_size {
+            return Err(anyhow::anyhow!(
+                "Texture data size mismatch: expected {} bytes for {}x{} RGBA, got {}",
+                expected_size,
+                width,
+                height,
+                data.len()
+            ));
+        }
+
         // Remove existing texture if present to avoid GPU memory leak
         self.remove(id);
 

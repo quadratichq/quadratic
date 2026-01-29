@@ -26,14 +26,10 @@ impl NativeRenderer {
         crate::image_export::encode(&pixels, self.width, self.height, ImageFormat::Jpeg(quality))
     }
 
-    /// Render and export to WebP
-    pub fn render_to_webp(
-        &mut self,
-        request: &RenderRequest,
-        quality: u8,
-    ) -> anyhow::Result<Vec<u8>> {
+    /// Render and export to WebP (lossless)
+    pub fn render_to_webp(&mut self, request: &RenderRequest) -> anyhow::Result<Vec<u8>> {
         let pixels = self.render(request)?;
-        crate::image_export::encode(&pixels, self.width, self.height, ImageFormat::Webp(quality))
+        crate::image_export::encode(&pixels, self.width, self.height, ImageFormat::Webp)
     }
 
     /// Render and export to the specified format
