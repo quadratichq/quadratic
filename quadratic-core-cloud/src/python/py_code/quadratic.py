@@ -1,9 +1,34 @@
 import sys
 import types
 
+
+class Financial:
+    """Financial data module for accessing stock prices and other financial data."""
+    
+    def stock_prices(self, identifier, start_date=None, end_date=None, frequency=None):
+        """
+        Get historical stock prices for a security.
+        
+        Args:
+            identifier: Stock ticker symbol (e.g., "AAPL")
+            start_date: Optional start date in YYYY-MM-DD format
+            end_date: Optional end date in YYYY-MM-DD format
+            frequency: Optional frequency for price data ("daily", "weekly", "monthly", "quarterly", "yearly"). Defaults to "daily".
+            
+        Returns:
+            Dictionary containing stock price data
+        """
+        return rust_stock_prices(identifier, start_date, end_date, frequency)
+
+
 class Q:
     def __init__(self):
-        pass
+        self._financial = Financial()
+    
+    @property
+    def financial(self):
+        """Access financial data functions."""
+        return self._financial
     
     def cells(self, a1, first_row_header=False):
         # Call the Rust function with first_row_header parameter

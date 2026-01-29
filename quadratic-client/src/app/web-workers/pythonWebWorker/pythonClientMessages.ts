@@ -39,6 +39,44 @@ export interface PythonClientGetJwt {
   id: number;
 }
 
-export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit | PythonClientGetJwt;
+export interface ClientPythonGetTeamUuid {
+  type: 'clientPythonGetTeamUuid';
+  id: number;
+  teamUuid: string | null;
+}
 
-export type ClientPythonMessage = ClientPythonInit | ClientPythonCoreChannel | ClientPythonGetJwt;
+export interface PythonClientGetTeamUuid {
+  type: 'pythonClientGetTeamUuid';
+  id: number;
+}
+
+export interface ClientPythonStockPrices {
+  type: 'clientPythonStockPrices';
+  id: number;
+  data: unknown;
+  error: string | null;
+}
+
+export interface PythonClientStockPrices {
+  type: 'pythonClientStockPrices';
+  id: number;
+  identifier: string;
+  startDate: string | null;
+  endDate: string | null;
+  frequency: string | null;
+}
+
+export type PythonClientMessage =
+  | PythonClientLoadError
+  | PythonClientState
+  | PythonClientInit
+  | PythonClientGetJwt
+  | PythonClientGetTeamUuid
+  | PythonClientStockPrices;
+
+export type ClientPythonMessage =
+  | ClientPythonInit
+  | ClientPythonCoreChannel
+  | ClientPythonGetJwt
+  | ClientPythonGetTeamUuid
+  | ClientPythonStockPrices;

@@ -38,6 +38,15 @@ const StaticIpsSchema = z.object({
 });
 type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 
+const StockPricesRequestSchema = z.object({
+  identifier: z.string(),
+  start_date: z.string().nullable().optional(),
+  end_date: z.string().nullable().optional(),
+  frequency: z.string().nullable().optional(),
+});
+
+export type StockPricesRequest = z.infer<typeof StockPricesRequestSchema>;
+
 export const connectionClient = {
   schemas: {
     // ignore case of connection type
@@ -141,6 +150,40 @@ export const connectionClient = {
       } catch (err) {
         console.error('Failed to get the static ips from the connection service', err);
         return null;
+      }
+    },
+  },
+  financial: {
+    stockPrices: async (
+      teamUuid: string,
+      request: StockPricesRequest
+    ): Promise<{ data: unknown; error: string | null }> => {
+      try {
+        const headers = new Headers(await jwtHeader());
+        headers.set('X-Team-Id', teamUuid);
+
+        const res = await fetch(`${API_URL}/financial/stock-prices`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(request),
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          return {
+            data: null,
+            error: `Stock prices request failed with status ${res.status}: ${errorText}`,
+          };
+        }
+
+        const data = await res.json();
+        return { data, error: null };
+      } catch (err) {
+        console.error('Failed to fetch stock prices from connection service', err);
+        return {
+          data: null,
+          error: err instanceof Error ? err.message : 'Unknown error fetching stock prices',
+        };
       }
     },
   },
