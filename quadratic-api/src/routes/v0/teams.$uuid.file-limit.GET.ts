@@ -14,10 +14,6 @@ const schema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
-  query: z.object({
-    // Note: 'private' query param is kept for backward compatibility but no longer used
-    private: z.enum(['true', 'false']).transform((val) => val === 'true').optional(),
-  }),
 });
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid/file-limit.GET.response']>) {

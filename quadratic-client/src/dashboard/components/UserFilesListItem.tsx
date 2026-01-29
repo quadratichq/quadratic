@@ -144,10 +144,7 @@ export function UserFilesListItem({
   };
 
   const handleDuplicate = async () => {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(
-      activeTeamUuid,
-      isFilePrivate
-    );
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(activeTeamUuid);
     const doDuplicate = () => {
       trackEvent('[Files].duplicateFile', { id: uuid });
       const data = getActionFileDuplicate({

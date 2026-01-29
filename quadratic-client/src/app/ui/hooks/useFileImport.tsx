@@ -260,11 +260,11 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
 
   const handleImport = useCallback(
     async (props: FileImportProps) => {
-      const { isPrivate = true, teamUuid } = props;
+      const { teamUuid } = props;
 
       // Only check file limit when creating new files (teamUuid must be defined)
       if (teamUuid !== undefined) {
-        const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+        const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
         if (isOverLimit && !isPaidPlan) {
           // Show dialog with callback that captures props directly
           showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, () => {

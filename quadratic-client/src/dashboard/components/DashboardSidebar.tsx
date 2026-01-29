@@ -250,7 +250,7 @@ function SidebarNavLinkCreateButton({
   teamUuid: string;
 }) {
   const handleClick = async () => {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
     const createFile = () => {
       window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
     };

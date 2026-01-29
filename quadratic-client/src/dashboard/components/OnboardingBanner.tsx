@@ -65,7 +65,7 @@ export function OnboardingBanner() {
   const handleCreateBlankFile = async () => {
     trackEvent('[OnboardingBanner].newFileBlank');
     // Onboarding creates team files (not private)
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, false);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
     const createFile = () => {
       window.location.href = ROUTES.CREATE_FILE(teamUuid);
     };
@@ -79,7 +79,7 @@ export function OnboardingBanner() {
   const handleFetchFromApi = async () => {
     trackEvent('[OnboardingBanner].newFileFromApi');
     // Onboarding creates team files (not private)
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, false);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
     const createFile = () => {
       window.location.href = newApiFileToLink;
     };

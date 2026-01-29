@@ -43,7 +43,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   // If over limit, show the UI so user can see the dialog
   if (data.teams.length === 1) {
     const teamUuid = data.teams[0].team.uuid;
-    const { isOverLimit, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, true);
+    const { isOverLimit, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
 
     // If not over limit or on paid plan, duplicate directly
     if (!isOverLimit || isPaidPlan) {
@@ -84,7 +84,7 @@ export const Component = () => {
 
   const handleSubmit = useCallback(async () => {
     // Check file limit before duplicating
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(selectedTeamUuid, true);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(selectedTeamUuid);
     if (isOverLimit && !isPaidPlan) {
       showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, selectedTeamUuid, () =>
         doDuplicate(selectedTeamUuid)
@@ -102,7 +102,7 @@ export const Component = () => {
     if (singleTeamUuid) {
       // We're here because single team was over limit
       // Show the dialog with option to duplicate anyway
-      apiClient.teams.fileLimit(singleTeamUuid, true).then(({ maxEditableFiles }) => {
+      apiClient.teams.fileLimit(singleTeamUuid).then(({ maxEditableFiles }) => {
         showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, singleTeamUuid, () =>
           doDuplicate(singleTeamUuid)
         );

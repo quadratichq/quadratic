@@ -71,7 +71,7 @@ export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ teamUuid }: { teamUuid: string }) {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, true);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
     const createFile = () => {
       window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
     };
@@ -90,7 +90,7 @@ export const duplicateFileAction = {
   isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
     isAuthenticated && filePermissions.includes('FILE_VIEW'),
   async run({ fileUuid, teamUuid }: { fileUuid: string; teamUuid: string }) {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, true);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
     const duplicateFile = () => {
       window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
     };

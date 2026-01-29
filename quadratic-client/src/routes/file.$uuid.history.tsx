@@ -90,7 +90,7 @@ export const Component = () => {
   const handleDuplicateVersion = useCallback(async () => {
     if (!activeCheckpoint || !teamUuid) return;
 
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, true);
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
     const doDuplicate = () => {
       trackEvent('[FileVersionHistory].duplicateVersion', {
         uuid,

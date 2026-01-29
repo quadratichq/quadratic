@@ -65,7 +65,7 @@ export function NewFileButton() {
         variant="default"
         className="gap-2"
         onClick={async () => {
-          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
           const navigateToAI = () =>
             navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
           if (isOverLimit && !isPaidPlan) {
@@ -84,7 +84,7 @@ export function NewFileButton() {
         variant="default"
         onClick={async (e) => {
           e.preventDefault();
-          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
           const createFile = () => {
             window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
           };
@@ -121,10 +121,7 @@ export function NewFileButton() {
           <DropdownMenuContent>
             <DropdownMenuItem
               onClick={async () => {
-                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(
-                  teamUuid,
-                  isPrivate
-                );
+                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
                 const navigateToAIPrompt = () =>
                   navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
                 if (isOverLimit && !isPaidPlan) {
@@ -152,10 +149,7 @@ export function NewFileButton() {
 
             <DropdownMenuItem
               onClick={async () => {
-                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(
-                  teamUuid,
-                  isPrivate
-                );
+                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
                 const createApiFile = () => {
                   window.location.href = ROUTES.CREATE_FILE(teamUuid, {
                     state: stateToInsertAndRun,
