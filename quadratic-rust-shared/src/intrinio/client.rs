@@ -90,7 +90,10 @@ impl IntrinioClient {
 }
 
 // For testing - tries INTRINIO_API first, then falls back to INTRINIO_CREDENTIALS (JSON format)
+#[cfg(test)]
 use std::sync::{LazyLock, Mutex};
+
+#[cfg(test)]
 pub static INTRINIO_API_KEY: LazyLock<Mutex<String>> = LazyLock::new(|| {
     let _path = dotenv::from_filename(".env.test").ok();
 
