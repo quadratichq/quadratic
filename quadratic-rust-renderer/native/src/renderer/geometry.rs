@@ -1,6 +1,7 @@
 //! Matrix and geometry helper methods
 
 use glam::Mat4;
+use std::cmp::Ordering;
 
 use quadratic_renderer_core::types::FillBuffer;
 use quadratic_renderer_core::GRID_LINE_COLOR;
@@ -210,7 +211,7 @@ impl NativeRenderer {
             buffer.add_line(x, y_start, x, y_end, GRID_LINE_COLOR);
         } else {
             // Sort gaps by start position and merge overlapping gaps
-            gaps.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+            gaps.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
             let merged_gaps = Self::merge_overlapping_ranges(&gaps);
 
             // Draw line segments between gaps

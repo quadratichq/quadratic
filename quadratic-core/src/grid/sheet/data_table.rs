@@ -126,7 +126,8 @@ impl Sheet {
             .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 
-    /// Returns true if there is a data table or CellValue::Code intersecting a rect, excluding a specific position
+    /// Returns true if there is a data table or CellValue::Code intersecting a rect, excluding a specific position.
+    /// TODO: Remove CellValue::Code check once we support code cells inside tables.
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         // Check for DataTables
         if self

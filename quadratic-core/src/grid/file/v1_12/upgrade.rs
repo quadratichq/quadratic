@@ -13,8 +13,14 @@ use crate::grid::file::v1_13;
 /// Returns true if the table has 1x1 output and no visible table UI.
 fn is_single_cell_code(table: &current::DataTableSchema) -> bool {
     // Must be a CodeRun (not an Import)
-    let is_code_run = matches!(table.kind, current::DataTableKindSchema::CodeRun(_));
-    if !is_code_run {
+    let current::DataTableKindSchema::CodeRun(code_run) = &table.kind else {
+        return false;
+    };
+
+    // Must not have an error. For Python/JS, errors set code_run.error.
+    // For formulas, errors only set std_err (error is always None).
+    // Both checks are needed to catch errors from all code cell types.
+    if code_run.error.is_some() || code_run.std_err.is_some() {
         return false;
     }
 
@@ -171,7 +177,8 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_13::SheetSchema {
                 let column_entry = columns.iter_mut().find(|(col_x, _)| *col_x == x);
 
                 if let Some((_, column)) = column_entry {
-                    // Add to existing column
+                    // Add to existing column. The order doesn't matter since this
+                    // is serialization and the order is already set.
                     column.push((y, v1_13::CellValueSchema::Code(Box::new(code_cell))));
                 } else {
                     // Create new column
@@ -338,6 +345,84 @@ mod tests {
                 file_name: "test.csv".to_string(),
             }),
             name: "test.csv".to_string(),
+            value: current::OutputValueSchema::Single(current::CellValueSchema::Blank),
+            last_modified: None,
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            columns: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            alternating_colors: false,
+            formats: None,
+            borders: None,
+            chart_pixel_output: None,
+            chart_output: None,
+        };
+        assert!(!is_single_cell_code(&table));
+    }
+
+    #[test]
+    fn test_is_not_single_cell_with_error() {
+        // A formula with an error is not single-cell (matches runtime behavior)
+        let table = current::DataTableSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
+                language: current::CodeCellLanguageSchema::Formula,
+                code: "1/0".to_string(),
+                formula_ast: None,
+                std_out: None,
+                std_err: Some("Error: DivideByZero".to_string()), // Has error!
+                cells_accessed: vec![],
+                error: None,
+                return_type: None,
+                line_number: None,
+                output_type: None,
+            })),
+            name: "Formula1".to_string(),
+            value: current::OutputValueSchema::Single(current::CellValueSchema::Error(
+                current::RunErrorSchema {
+                    span: None,
+                    msg: current::RunErrorMsgSchema::DivideByZero,
+                },
+            )),
+            last_modified: None,
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            columns: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            alternating_colors: false,
+            formats: None,
+            borders: None,
+            chart_pixel_output: None,
+            chart_output: None,
+        };
+        assert!(!is_single_cell_code(&table));
+    }
+
+    #[test]
+    fn test_is_not_single_cell_with_code_run_error() {
+        // A Python/JS code cell with code_run.error is not single-cell
+        let table = current::DataTableSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
+                language: current::CodeCellLanguageSchema::Python,
+                code: "invalid code".to_string(),
+                formula_ast: None,
+                std_out: None,
+                std_err: None,
+                cells_accessed: vec![],
+                error: Some(current::RunErrorSchema {
+                    span: None,
+                    msg: current::RunErrorMsgSchema::CodeRunError("SyntaxError".into()),
+                }), // Has error!
+                return_type: None,
+                line_number: None,
+                output_type: None,
+            })),
+            name: "Python1".to_string(),
             value: current::OutputValueSchema::Single(current::CellValueSchema::Blank),
             last_modified: None,
             header_is_first_row: false,

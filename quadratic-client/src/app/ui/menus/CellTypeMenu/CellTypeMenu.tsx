@@ -4,6 +4,7 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -23,7 +24,7 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -172,14 +173,16 @@ interface ConnectionCommandItemProps {
 }
 
 const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: ConnectionCommandItemProps) => {
-  const [percentCompleted, setPercentCompleted] = useState<number | undefined>(
-    connection.syncedConnectionPercentCompleted
-  );
+  const [syncData, setSyncData] = useState({
+    percentCompleted: connection.syncedConnectionPercentCompleted,
+    latestLogStatus: connection.syncedConnectionLatestLogStatus,
+  });
 
-  // Poll for updated syncedConnectionPercentCompleted when the connection has sync data
+  const isSyncedConnection = isSyncedConnectionType(connection.type);
+
+  // Poll for updated sync data when this is a synced connection type
   useEffect(() => {
-    // Only poll if this is a synced connection
-    if (connection.syncedConnectionUpdatedDate === undefined) {
+    if (!isSyncedConnection) {
       return;
     }
 
@@ -189,9 +192,12 @@ const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: C
           connectionUuid: connection.uuid,
           teamUuid,
         });
-        setPercentCompleted(fetchedConnection?.syncedConnectionPercentCompleted);
+        setSyncData({
+          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted,
+          latestLogStatus: fetchedConnection?.syncedConnectionLatestLogStatus,
+        });
       } catch {
-        // Silently fail - keep using existing percentCompleted value
+        // Silently fail - keep using existing sync data
       }
     };
 
@@ -202,14 +208,21 @@ const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: C
     const interval = setInterval(fetchConnection, SYNCED_CONNECTION_POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [connection.uuid, connection.syncedConnectionUpdatedDate, teamUuid]);
+  }, [connection.uuid, isSyncedConnection, teamUuid]);
 
-  const isSyncedConnection = connection.syncedConnectionUpdatedDate !== undefined;
-  const isDisabled = isSyncedConnection && percentCompleted !== undefined && percentCompleted < 100;
+  const syncState = isSyncedConnection
+    ? deriveSyncStateFromConnectionList({
+        syncedConnectionPercentCompleted: syncData.percentCompleted,
+        syncedConnectionLatestLogStatus: syncData.latestLogStatus,
+      })
+    : null;
+
+  // Disable if syncing or not yet synced
+  const isSyncing = syncState === 'syncing' || syncState === 'not_synced';
 
   return (
     <CommandItem
-      disabled={isDisabled}
+      disabled={isSyncing}
       onSelect={onSelect}
       value={`${connection.name}__${index}`}
       onPointerDown={(e) => {
@@ -223,7 +236,7 @@ const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: C
       <div className="flex flex-col truncate">
         <span className="flex items-center">
           {connection.name}
-          {isDisabled && <time className="ml-2 text-xs text-muted-foreground">(syncing, {percentCompleted}%)</time>}
+          {isSyncing && <span className="ml-2 text-xs text-muted-foreground">(syncing)</span>}
         </span>
       </div>
     </CommandItem>

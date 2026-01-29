@@ -64,7 +64,7 @@ struct Args {
     #[arg(long, default_value = "png")]
     format: String,
 
-    /// Quality for JPEG (0-100). WebP is always lossless.
+    /// Quality for JPEG format (0-100, ignored for PNG and WebP)
     #[arg(short = 'q', long, default_value = "90")]
     quality: u8,
 
@@ -123,9 +123,9 @@ fn main() -> anyhow::Result<()> {
         );
     }
     let sheet_id = sheet_ids[args.sheet];
-    let sheet = gc.try_sheet(sheet_id).ok_or_else(|| {
-        anyhow::anyhow!("Sheet with id {:?} not found", sheet_id)
-    })?;
+    let sheet = gc
+        .try_sheet(sheet_id)
+        .ok_or_else(|| anyhow::anyhow!("Sheet with id {:?} not found", sheet_id))?;
     println!("Using sheet: {}", sheet.name());
 
     // Get sheet offsets for column/row sizes
@@ -146,12 +146,15 @@ fn main() -> anyhow::Result<()> {
             "Thumbnail mode: auto-calculated range (columns 0-{}, rows 0-{})",
             thumbnail_rect.max.x, thumbnail_rect.max.y
         );
-        println!(
-            "Output: {}x{} PNG",
-            THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT
-        );
+        println!("Output: {}x{} PNG", THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
 
-        (selection, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, true, ImageFormat::Png)
+        (
+            selection,
+            THUMBNAIL_WIDTH,
+            THUMBNAIL_HEIGHT,
+            true,
+            ImageFormat::Png,
+        )
     } else {
         // Parse the range in A1 notation (e.g., "A1:J20")
         let (start_pos, end_pos) = parse_a1_range(&args.range)?;
@@ -159,7 +162,11 @@ fn main() -> anyhow::Result<()> {
 
         println!(
             "Rendering range: {} (columns {}-{}, rows {}-{})",
-            args.range, selection.start_col, selection.end_col, selection.start_row, selection.end_row
+            args.range,
+            selection.start_col,
+            selection.end_col,
+            selection.start_row,
+            selection.end_row
         );
 
         // Calculate the selection's world bounds to determine aspect ratio
@@ -190,14 +197,20 @@ fn main() -> anyhow::Result<()> {
         let image_format = match args.format.to_lowercase().as_str() {
             "png" => ImageFormat::Png,
             "jpeg" | "jpg" => ImageFormat::Jpeg(args.quality),
-            "webp" => ImageFormat::Webp(args.quality),
+            "webp" => ImageFormat::Webp,
             _ => anyhow::bail!(
                 "Unsupported format: '{}'. Use png, jpeg, or webp.",
                 args.format
             ),
         };
 
-        (selection, base_width, base_height, args.grid_lines, image_format)
+        (
+            selection,
+            base_width,
+            base_height,
+            args.grid_lines,
+            image_format,
+        )
     };
 
     // Apply DPR for higher resolution rendering
@@ -551,11 +564,11 @@ fn main() -> anyhow::Result<()> {
         match image_format {
             ImageFormat::Png => "PNG",
             ImageFormat::Jpeg(_) => "JPEG",
-            ImageFormat::Webp(_) => "WEBP",
+            ImageFormat::Webp => "WEBP",
         },
         match image_format {
             ImageFormat::Jpeg(q) => format!(" (quality: {})", q),
-            ImageFormat::Webp(_) => " (lossless)".to_string(),
+            ImageFormat::Webp => " (lossless)".to_string(),
             ImageFormat::Png => String::new(),
         }
     );
@@ -651,7 +664,10 @@ fn find_fonts_directory(explicit_path: Option<&PathBuf>) -> anyhow::Result<PathB
 fn parse_a1_range(range: &str) -> anyhow::Result<(Pos, Pos)> {
     let parts: Vec<&str> = range.split(':').collect();
     if parts.len() != 2 {
-        anyhow::bail!("Invalid range format: '{}'. Expected format like 'A1:J20'", range);
+        anyhow::bail!(
+            "Invalid range format: '{}'. Expected format like 'A1:J20'",
+            range
+        );
     }
 
     let start = Pos::try_a1_string(parts[0])

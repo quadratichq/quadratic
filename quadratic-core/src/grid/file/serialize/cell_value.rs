@@ -152,7 +152,10 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
             CellValue::RichText(spans.into_iter().map(import_text_span).collect())
         }
         current::CellValueSchema::Code(code_cell) => {
-            import_code_cell(*code_cell).unwrap_or(CellValue::Blank)
+            import_code_cell(*code_cell).unwrap_or_else(|e| {
+                dbgjs!(format!("Failed to import code cell: {e}"));
+                CellValue::Blank
+            })
         }
     }
 }
@@ -164,7 +167,13 @@ fn import_code_cell(code_cell: current::SingleCodeCellSchema) -> Result<CellValu
     let last_modified = Utc
         .timestamp_millis_opt(code_cell.last_modified)
         .single()
-        .unwrap_or_else(Utc::now);
+        .unwrap_or_else(|| {
+            dbgjs!(format!(
+                "Failed to parse last_modified timestamp: {}",
+                code_cell.last_modified
+            ));
+            Utc::now()
+        });
     Ok(CellValue::Code(Box::new(CodeCell {
         code_run,
         output: Box::new(output),
