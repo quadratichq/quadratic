@@ -441,6 +441,11 @@ export const ApiSchemas = {
     license: LicenseSchema,
     connections: ConnectionListSchema,
     clientDataKv: TeamClientDataKvSchema,
+    fileLimit: z.object({
+      isOverLimit: z.boolean(),
+      totalFiles: z.number(),
+      maxEditableFiles: z.number().optional(),
+    }),
   }),
   '/v0/teams/:uuid.PATCH.request': z
     .object({

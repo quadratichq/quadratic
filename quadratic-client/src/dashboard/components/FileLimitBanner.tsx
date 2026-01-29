@@ -1,7 +1,6 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { WarningIcon } from '@/shared/components/Icons';
-import { useMemo } from 'react';
 
 /**
  * Banner shown when the team has files that require upgrade to edit (billing-restricted).
@@ -11,25 +10,13 @@ import { useMemo } from 'react';
 export function FileLimitBanner() {
   const {
     activeTeam: {
-      files: teamFiles,
-      filesPrivate,
       billing: { status: billingStatus },
+      fileLimit: { isOverLimit, maxEditableFiles },
     },
   } = useDashboardRouteLoaderData();
 
-  // Check if any files are edit-restricted and count editable files
-  const { hasEditRestrictedFiles, editableFileCount } = useMemo(() => {
-    const allFiles = [...teamFiles, ...filesPrivate];
-    const restrictedCount = allFiles.filter(({ userMakingRequest }) => userMakingRequest.isFileEditRestricted).length;
-    const editableCount = allFiles.length - restrictedCount;
-    return {
-      hasEditRestrictedFiles: restrictedCount > 0,
-      editableFileCount: editableCount,
-    };
-  }, [teamFiles, filesPrivate]);
-
-  // Don't show banner if on paid plan or no restricted files
-  if (billingStatus === 'ACTIVE' || !hasEditRestrictedFiles) {
+  // Don't show banner if on paid plan or team is not over file limit
+  if (billingStatus === 'ACTIVE' || !isOverLimit) {
     return null;
   }
 
@@ -39,7 +26,7 @@ export function FileLimitBanner() {
         <WarningIcon className="h-5 w-5 text-warning" />
       </div>
       <p className="text-sm">
-        Free file limit exceeded. You can only edit your <strong>{editableFileCount} most recently created</strong>{' '}
+        Free file limit exceeded. You can only edit the <strong>{maxEditableFiles} most recently created</strong>{' '}
         Quadratic files.{' '}
         <button
           className="text-primary underline hover:text-primary/80"

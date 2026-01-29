@@ -16,7 +16,7 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
-import { getEditableFileIds } from '../../utils/billing';
+import { getFileLimitInfo, getFreeEditableFileLimit, getIsOnPaidPlan } from '../../utils/billing';
 import { getFilePermissions } from '../../utils/permissions';
 import { getDecryptedTeam } from '../../utils/teams';
 
@@ -169,9 +169,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
-  // Get the list of file IDs that are editable (for soft file limit)
+  // Get file limit info (includes editable file IDs and whether team is over limit)
   // For free teams, only the N most recently created files are editable
-  const editableFileIds = await getEditableFileIds(team);
+  const isPaidPlan = await getIsOnPaidPlan(team);
+  const { editableFileIds, isOverLimit, totalFiles } = await getFileLimitInfo(team, isPaidPlan);
 
   // Helper to apply edit restriction to file permissions
   const applyEditRestriction = (fileId: number, permissions: FilePermission[]): FilePermission[] => {
@@ -265,6 +266,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     license: { ...license },
     connections: getTeamConnectionsList({ dbConnections, settingShowConnectionDemo: team.settingShowConnectionDemo }),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
+    fileLimit: {
+      isOverLimit,
+      totalFiles,
+      maxEditableFiles: isPaidPlan ? undefined : getFreeEditableFileLimit(),
+    },
   };
 
   return res.status(200).json(response);
