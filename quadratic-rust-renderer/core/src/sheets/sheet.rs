@@ -167,23 +167,15 @@ impl Sheet {
     /// Find next cell with content to the left
     pub fn find_content_left(&self, col: i64, row: i64) -> Option<i64> {
         let min_col = (col - 100).max(1);
-        for search_col in (min_col..col).rev() {
-            if self.content_cache.contains(&(search_col, row)) {
-                return Some(search_col);
-            }
-        }
-        None
+        (min_col..col)
+            .rev()
+            .find(|&search_col| self.content_cache.contains(&(search_col, row)))
     }
 
     /// Find next cell with content to the right
     pub fn find_content_right(&self, col: i64, row: i64) -> Option<i64> {
         let max_col = col + 100;
-        for search_col in (col + 1)..=max_col {
-            if self.content_cache.contains(&(search_col, row)) {
-                return Some(search_col);
-            }
-        }
-        None
+        ((col + 1)..=max_col).find(|&search_col| self.content_cache.contains(&(search_col, row)))
     }
 
     // ========================================================================

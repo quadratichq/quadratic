@@ -15,34 +15,9 @@ import type { Point } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 export class CellsTextHashSpecial extends Container<SpecialSprite> {
-  // Store emoji data for re-rendering when spritesheets load
-  private cachedEmojis: RenderEmoji[] = [];
-
-  constructor() {
-    super();
-    events.on('emojiSpritesheetsLoaded', this.onEmojiSpritesheetsLoaded);
-  }
-
-  destroy() {
-    events.off('emojiSpritesheetsLoaded', this.onEmojiSpritesheetsLoaded);
-    super.destroy();
-  }
-
   clear() {
     this.removeChildren();
   }
-
-  private onEmojiSpritesheetsLoaded = () => {
-    // Re-render emojis with spritesheet textures
-    if (this.cachedEmojis.length > 0) {
-      // Remove old emoji sprites
-      this.children
-        .filter((child) => (child as SpecialSprite).type === 'emoji')
-        .forEach((child) => this.removeChild(child));
-      // Redraw with new textures
-      this.drawEmojis(this.cachedEmojis);
-    }
-  };
 
   private drawEmojis(emojis: RenderEmoji[]) {
     for (const emoji of emojis) {
@@ -50,8 +25,6 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
       if (emojiSprite) {
         this.addChild(emojiSprite);
       }
-      // If sprite is undefined, emoji is either still loading or not in spritesheet
-      // It will be re-rendered when emojiSpritesheetsLoaded event fires
     }
   }
 
@@ -70,12 +43,9 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
   update(special?: RenderSpecial) {
     this.clear();
     if (special) {
-      this.cachedEmojis = special.emojis;
       this.drawCheckboxes(special.checkboxes);
       this.drawDropdowns(special.dropdowns);
       this.drawEmojis(special.emojis);
-    } else {
-      this.cachedEmojis = [];
     }
   }
 

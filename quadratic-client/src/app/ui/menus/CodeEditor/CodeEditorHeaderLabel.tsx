@@ -187,7 +187,7 @@ export function CodeEditorHeaderLabel() {
       {!isRenaming && (
         <div
           className={cn(
-            'flex min-w-0 max-w-full flex-initial leading-4',
+            'flex min-w-0 max-w-full flex-initial flex-wrap leading-4',
             // Use larger styling when there's no table name (single-cell code cells)
             showTableName ? 'text-xs text-muted-foreground' : tableNameDisplayClasses
           )}
@@ -200,14 +200,12 @@ export function CodeEditorHeaderLabel() {
             onClick={focusCellRef}
           >
             {cellRef}
-
-            {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
-              <span className="ml-1">
-                {`· `}
-                <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
-              </span>
-            )}
           </button>
+          {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
+            <span className="px-1">
+              · <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
+            </span>
+          )}
         </div>
       )}
     </div>

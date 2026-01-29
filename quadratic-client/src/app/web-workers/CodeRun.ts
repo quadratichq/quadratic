@@ -4,6 +4,6 @@ export interface CodeRun {
   transactionId: string;
   sheetPos: SheetPosTS;
   code: string;
-  chartPixelWidth: number | null;
-  chartPixelHeight: number | null;
+  chartPixelWidth: number;
+  chartPixelHeight: number;
 }

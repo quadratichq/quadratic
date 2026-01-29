@@ -24,6 +24,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ArrowRightIcon, ChevronLeftIcon, Cross1Icon, UploadIcon } from '@radix-ui/react-icons';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Link, redirect, useFetcher, useLoaderData, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -46,7 +47,7 @@ interface UploadedFile {
 interface SelectedConnection {
   uuid: string;
   name: string;
-  type: string;
+  type: ConnectionType;
 }
 
 interface SuggestedPrompt {
@@ -448,6 +449,9 @@ export const Component = () => {
           prompt: promptText,
           private: isPrivate,
           chatId,
+          connectionUuid: selectedConnection?.uuid,
+          connectionType: selectedConnection?.type,
+          connectionName: selectedConnection?.name,
         })
       );
     },
@@ -810,7 +814,11 @@ export const Component = () => {
                   </div>
                 </div>
                 <div className="mt-3 text-center">
-                  <a href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} className="text-sm">
+                  <a
+                    href={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
+                    className="text-sm"
+                    onClick={() => trackEvent('[StartWithAI].skip')}
+                  >
                     Skip and open the spreadsheet →
                   </a>
                 </div>

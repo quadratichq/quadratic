@@ -53,8 +53,7 @@ pub struct GridController {
 
     // callbacks for running python and javascript code
     #[allow(clippy::type_complexity)]
-    run_python_callback:
-        Option<Box<dyn FnMut(String, i32, i32, String, String, Option<f32>, Option<f32>) + Send>>,
+    run_python_callback: Option<Box<dyn FnMut(String, i32, i32, String, String, f32, f32) + Send>>,
 
     #[allow(clippy::type_complexity)]
     run_javascript_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,

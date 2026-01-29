@@ -145,8 +145,8 @@ impl TextHash {
     /// Rebuild all labels and generate render data
     ///
     /// This layouts all labels, collects their meshes, and produces HashRenderData
-    /// that can be sent to the renderer.
-    pub fn rebuild(&mut self, fonts: &BitmapFonts) -> HashRenderData {
+    /// that can be sent to the renderer. Returns a reference to the cached data.
+    pub fn rebuild(&mut self, fonts: &BitmapFonts) -> &HashRenderData {
         // Clear auto-size caches
         self.columns_max_cache.clear();
         self.rows_max_cache.clear();
@@ -200,7 +200,8 @@ impl TextHash {
 
         self.dirty = false;
 
-        let render_data = HashRenderData {
+        // Cache the render data and return a reference to avoid cloning
+        self.cached_render_data.insert(HashRenderData {
             hash_x: self.hash_x,
             hash_y: self.hash_y,
             world_x: self.world_x,
@@ -212,12 +213,7 @@ impl TextHash {
             horizontal_lines,
             emoji_sprites: HashMap::new(), // TODO: emoji support
             sprite_dirty: true,
-        };
-
-        // Cache the render data
-        self.cached_render_data = Some(render_data.clone());
-
-        render_data
+        })
     }
 
     /// Get cached render data without rebuilding
@@ -320,8 +316,8 @@ fn merge_text_buffers(buffers: Vec<TextBuffer>) -> Vec<TextBuffer> {
 /// Compute hash coordinates for a cell position
 #[inline]
 pub fn hash_coords(col: i64, row: i64) -> (i64, i64) {
-    let hash_x = (col - 1) / HASH_WIDTH;
-    let hash_y = (row - 1) / HASH_HEIGHT;
+    let hash_x = (col - 1).div_euclid(HASH_WIDTH);
+    let hash_y = (row - 1).div_euclid(HASH_HEIGHT);
     (hash_x, hash_y)
 }
 

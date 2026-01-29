@@ -35,6 +35,9 @@ export const ROUTES = {
       prompt?: string | null;
       private?: boolean;
       chatId?: string | null;
+      connectionUuid?: string | null;
+      connectionType?: ConnectionType | null;
+      connectionName?: string | null;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -50,6 +53,15 @@ export const ROUTES = {
     }
     if (searchParams.chatId) {
       url.searchParams.set('chat-id', searchParams.chatId);
+    }
+    if (searchParams.connectionUuid) {
+      url.searchParams.set('connection-uuid', searchParams.connectionUuid);
+    }
+    if (searchParams.connectionType) {
+      url.searchParams.set('connection-type', searchParams.connectionType);
+    }
+    if (searchParams.connectionName) {
+      url.searchParams.set('connection-name', searchParams.connectionName);
     }
 
     return url.pathname + url.search;

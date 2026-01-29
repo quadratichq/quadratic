@@ -50,7 +50,7 @@ impl NativeRenderer {
 
         // Lazy-load emoji textures that are needed
         if !emojis_to_render.is_empty() {
-            if let Some(ref spritesheet) = self.emoji_spritesheet.clone() {
+            if let Some(ref spritesheet) = self.emoji_spritesheet {
                 // Collect unique texture UIDs needed
                 let mut needed_pages: std::collections::HashSet<u32> =
                     std::collections::HashSet::new();

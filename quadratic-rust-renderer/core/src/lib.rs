@@ -20,11 +20,10 @@
 //! - `native`: Server-side rendering for thumbnails/exports/screenshots
 
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
-#![allow(dead_code)] // Some scaffolding not yet used
 
 // Core rendering abstractions
-pub mod render_context;
 pub mod primitives;
+pub mod render_context;
 
 // Data and layout
 pub mod layout;
@@ -45,18 +44,20 @@ pub mod font_loader;
 // Re-exports for convenience
 
 // Core rendering
-pub use render_context::{CommandBuffer, DrawCommand, RenderContext, RenderError, TextureId};
 pub use primitives::{
-    colors, from_hex, from_rgba, parse_color, parse_color_opt, Color, Lines, LineScaling,
+    colors, from_hex, from_rgba, parse_color, parse_color_opt, Color, LineScaling, Lines,
     NativeLines, Rect, Rects, TextureInfo, TextureRegistry, DEFAULT_COLOR,
 };
+pub use render_context::{CommandBuffer, DrawCommand, RenderContext, RenderError, TextureId};
 
 // Sheets and hashing
-pub use sheets::{
-    BitmapFonts, HorizontalLine, Sheet, Sheets, TextCache, TextCacheEntry, TextCacheKey, TextHash,
-    VisibleHashBounds, render_horizontal_lines, render_text_hash,
+pub use sheets::hash::{
+    get_hash_coords, hash_key, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH, SPRITE_SCALE_THRESHOLD,
 };
-pub use sheets::hash::{get_hash_coords, hash_key, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH, SPRITE_SCALE_THRESHOLD};
+pub use sheets::{
+    render_horizontal_lines, render_text_hash, BitmapFonts, HorizontalLine, Sheet, Sheets,
+    TextCache, TextCacheEntry, TextCacheKey, TextHash, VisibleHashBounds,
+};
 
 // Cell label layout
 pub use sheets::text::{
@@ -86,16 +87,36 @@ pub use tables::{
 
 // Types
 pub use types::{
-    BorderLineStyle, CursorRenderData, EmojiSpriteData, FillBuffer,
-    HashRenderData, HeadingsRenderData, HorizontalBorder, HorizontalLineData, LineBuffer,
-    RenderBatch, SheetBorders, SheetBordersRender, TableRenderData, TextBuffer, VerticalBorder,
-    // Render types with Rgba colors
-    RenderCell, RenderCellFormatSpan, RenderCellLinkSpan, RenderCellSpecial,
-    RenderCodeCell, RenderCodeCellState, RenderFill,
     // Color parsing for conditional formats
     parse_color as parse_color_to_rgba,
+    BorderLineStyle,
+    CursorRenderData,
+    EmojiSpriteData,
+    FillBuffer,
     // Re-exports from quadratic-core
-    GridBounds, Pos, SheetId, SheetOffsets,
+    GridBounds,
+    HashRenderData,
+    HeadingsRenderData,
+    HorizontalBorder,
+    HorizontalLineData,
+    LineBuffer,
+    Pos,
+    RenderBatch,
+    // Render types with Rgba colors
+    RenderCell,
+    RenderCellFormatSpan,
+    RenderCellLinkSpan,
+    RenderCellSpecial,
+    RenderCodeCell,
+    RenderCodeCellState,
+    RenderFill,
+    SheetBorders,
+    SheetBordersRender,
+    SheetId,
+    SheetOffsets,
+    TableRenderData,
+    TextBuffer,
+    VerticalBorder,
 };
 
 // UI and viewport

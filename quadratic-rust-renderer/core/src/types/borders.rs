@@ -8,6 +8,16 @@ use quadratic_core::sheet_offsets::SheetOffsets;
 // Re-export the render types
 pub use super::render_types::SheetBorders;
 
+/// Fix alpha if it's suspiciously low - old grid files have a bug where
+/// alpha was set to 1 (instead of 255) due to TypeScript/Rust type mismatch
+fn fix_alpha_if_needed(color: [f32; 4]) -> [f32; 4] {
+    if color[3] > 0.0 && color[3] < 0.1 {
+        [color[0], color[1], color[2], 1.0]
+    } else {
+        color
+    }
+}
+
 /// Extension trait for SheetBorders to add rendering functionality
 pub trait SheetBordersRender {
     /// Convert borders to a FillBuffer for rendering (quads with thickness)
@@ -72,13 +82,7 @@ impl SheetBordersRender for SheetBorders {
             let rect_w = (x2 - x1) + thickness;
             let rect_h = thickness;
 
-            // Fix alpha if it's suspiciously low - old grid files have a bug where
-            // alpha was set to 1 (instead of 255) due to TypeScript/Rust type mismatch
-            let color = if border.color[3] > 0.0 && border.color[3] < 0.1 {
-                [border.color[0], border.color[1], border.color[2], 1.0]
-            } else {
-                border.color
-            };
+            let color = fix_alpha_if_needed(border.color);
             buffer.add_rect(rect_x, rect_y, rect_w, rect_h, color);
         }
 
@@ -119,13 +123,7 @@ impl SheetBordersRender for SheetBorders {
             let rect_w = thickness;
             let rect_h = (y2 - y1) + thickness;
 
-            // Fix alpha if it's suspiciously low - old grid files have a bug where
-            // alpha was set to 1 (instead of 255) due to TypeScript/Rust type mismatch
-            let color = if border.color[3] > 0.0 && border.color[3] < 0.1 {
-                [border.color[0], border.color[1], border.color[2], 1.0]
-            } else {
-                border.color
-            };
+            let color = fix_alpha_if_needed(border.color);
             buffer.add_rect(rect_x, rect_y, rect_w, rect_h, color);
         }
 

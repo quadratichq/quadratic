@@ -120,15 +120,22 @@ impl Sheet {
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
         // First check for CellValue::Code
         if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+            let state = if code_cell.code_run.error.is_some()
+                || matches!(*code_cell.output, CellValue::Error(_))
+            {
+                JsRenderCodeCellState::RunError
+            } else {
+                JsRenderCodeCellState::Success
+            };
             return Some(JsRenderCodeCell {
                 x: pos.x as i32,
                 y: pos.y as i32,
                 w: 1,
                 h: 1,
                 language: code_cell.code_run.language.clone(),
-                state: JsRenderCodeCellState::Success,
+                state,
                 spill_error: None,
-                name: format!("{}1", code_cell.code_run.language.as_string()),
+                name: String::new(),
                 columns: Vec::new(),
                 first_row_header: false,
                 show_name: false,

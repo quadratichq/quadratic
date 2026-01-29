@@ -7,6 +7,7 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 
 export function FilesListItemCore({
   name,
@@ -33,6 +34,7 @@ export function FilesListItemCore({
   actions?: ReactNode;
   children?: ReactNode;
 }) {
+  const navigate = useNavigate();
   const isGrid = viewPreferences.layout === Layout.Grid;
   const displayName = nameFilter ? highlightMatchingString(name, nameFilter) : name;
 
@@ -55,10 +57,12 @@ export function FilesListItemCore({
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        window.location.href = ROUTES.FILE({
-                          uuid: fileUuid,
-                          searchParams: SEARCH_PARAMS.SCHEDULED_TASKS.KEY,
-                        });
+                        navigate(
+                          ROUTES.FILE({
+                            uuid: fileUuid,
+                            searchParams: SEARCH_PARAMS.SCHEDULED_TASKS.KEY,
+                          })
+                        );
                       }}
                     >
                       <ScheduledTasksIcon className="h-3 w-3" />

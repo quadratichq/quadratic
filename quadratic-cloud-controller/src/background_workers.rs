@@ -2,7 +2,7 @@ use chrono::Timelike;
 use futures::StreamExt;
 use std::{sync::Arc, time::Duration};
 use tokio::time::{MissedTickBehavior, interval, sleep};
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 use uuid::Uuid;
 
 use crate::{
@@ -161,7 +161,7 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
                 while let Some(Ok(log_result)) = logs.next().await {
                     let log_line = log_result.to_string().trim().to_string();
                     if !log_line.is_empty() {
-                        eprintln!("[CloudWorker] {}", log_line);
+                        println!("[CloudWorker] {}", log_line);
                     }
                 }
             }

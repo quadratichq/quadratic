@@ -50,11 +50,17 @@ pub enum DrawCommand {
 
     /// Draw triangles
     /// Vertex format: [x, y, r, g, b, a] (6 floats per vertex)
-    Triangles { vertices: Vec<f32>, matrix: [f32; 16] },
+    Triangles {
+        vertices: Vec<f32>,
+        matrix: [f32; 16],
+    },
 
     /// Draw lines (native line primitives)
     /// Vertex format: [x, y, r, g, b, a] (6 floats per vertex, 2 per line)
-    Lines { vertices: Vec<f32>, matrix: [f32; 16] },
+    Lines {
+        vertices: Vec<f32>,
+        matrix: [f32; 16],
+    },
 
     /// Draw MSDF text
     /// Vertex format: [x, y, u, v, r, g, b, a] (8 floats per vertex)
@@ -147,6 +153,7 @@ pub trait RenderContext {
 
     /// Draw text using MSDF rendering
     /// Vertex format: [x, y, u, v, r, g, b, a, ...] (8 floats per vertex)
+    #[allow(clippy::too_many_arguments)]
     fn draw_text(
         &mut self,
         vertices: &[f32],

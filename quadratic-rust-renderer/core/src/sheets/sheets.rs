@@ -57,10 +57,9 @@ impl Sheets {
         }
 
         // Create placeholder if it doesn't exist
-        if !self.sheets.contains_key(&sheet_id) {
-            let sheet = Sheet::with_offsets(sheet_id, SheetOffsets::default(), GridBounds::Empty);
-            self.sheets.insert(sheet_id, sheet);
-        }
+        self.sheets.entry(sheet_id).or_insert_with(|| {
+            Sheet::with_offsets(sheet_id, SheetOffsets::default(), GridBounds::Empty)
+        });
 
         self.current = Some(sheet_id);
         true
