@@ -331,7 +331,7 @@ function FileEditRestrictedBadge() {
   return (
     <button
       className={
-        'flex items-center gap-1 rounded border border-warning bg-background/90 px-2 py-1 text-xs font-medium text-warning shadow-sm transition-colors hover:bg-warning hover:text-warning-foreground'
+        'flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground'
       }
       title="This file exceeds your plan's limit. Upgrade for unlimited editable files."
       onClick={(e) => {
