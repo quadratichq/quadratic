@@ -1,3 +1,9 @@
+import {
+  MAX_CELL_HEIGHT,
+  MAX_CELL_WIDTH,
+  MIN_CELL_HEIGHT,
+  MIN_CELL_WIDTH,
+} from 'quadratic-shared/constants/gridConstants';
 import type {
   AIModelKey,
   AISource,
@@ -424,20 +430,20 @@ export const AIToolsArgsSchema = {
   [AITool.ResizeColumns]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    size: z.union([z.enum(['auto', 'default']), z.number().min(20).max(2000)]),
+    size: z.union([z.enum(['auto', 'default']), z.number().min(MIN_CELL_WIDTH).max(MAX_CELL_WIDTH)]),
   }),
   [AITool.ResizeRows]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    size: z.union([z.enum(['auto', 'default']), z.number().min(10).max(2000)]),
+    size: z.union([z.enum(['auto', 'default']), z.number().min(MIN_CELL_HEIGHT).max(MAX_CELL_HEIGHT)]),
   }),
   [AITool.SetDefaultColumnWidth]: z.object({
     sheet_name: z.string().nullable().optional(),
-    size: z.number().min(20).max(2000),
+    size: z.number().min(MIN_CELL_WIDTH).max(MAX_CELL_WIDTH),
   }),
   [AITool.SetDefaultRowHeight]: z.object({
     sheet_name: z.string().nullable().optional(),
-    size: z.number().min(10).max(2000),
+    size: z.number().min(MIN_CELL_HEIGHT).max(MAX_CELL_HEIGHT),
   }),
   [AITool.SetBorders]: z.object({
     sheet_name: z.string().nullable().optional(),
@@ -1499,7 +1505,24 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
                   'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
               },
             },
-            required: ['sheet_name', 'selection', 'bold', 'italic', 'underline', 'strike_through', 'text_color', 'fill_color', 'align', 'vertical_align', 'wrap', 'numeric_commas', 'number_type', 'currency_symbol', 'date_time', 'font_size'],
+            required: [
+              'sheet_name',
+              'selection',
+              'bold',
+              'italic',
+              'underline',
+              'strike_through',
+              'text_color',
+              'fill_color',
+              'align',
+              'vertical_align',
+              'wrap',
+              'numeric_commas',
+              'number_type',
+              'currency_symbol',
+              'date_time',
+              'font_size',
+            ],
             additionalProperties: false,
           },
         },

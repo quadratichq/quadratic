@@ -1187,9 +1187,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       if (resizing.length) {
-        // When AI uses size 'auto', set clientResized to false so rows auto-recalculate on font changes
+        // When AI uses 'auto' or 'default', set clientResized to false so rows auto-recalculate on font changes
         // When AI specifies a pixel value, set clientResized to true since it's a deliberate size
-        const clientResized = size !== 'auto';
+        const clientResized = size !== 'auto' && size !== 'default';
         const response = await quadraticCore.resizeRows(sheetId, resizing, true, clientResized);
         if (response?.result) {
           return [createTextContent('Resize rows tool executed successfully.')];
