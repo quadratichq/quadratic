@@ -65,7 +65,10 @@ fn is_naked_url(text: &str) -> bool {
     }
 
     // Must not contain whitespace or disallowed characters
-    if text.chars().any(|c| c.is_whitespace() || "<>'\"".contains(c)) {
+    if text
+        .chars()
+        .any(|c| c.is_whitespace() || "<>'\"".contains(c))
+    {
         return false;
     }
 
@@ -312,7 +315,6 @@ pub struct CellLabel {
     mesh_dirty: bool,
 
     // === Overflow and clipping for neighbor content ===
-
     /// How much text overflows to the left of the cell bounds
     overflow_left: f32,
 
@@ -425,9 +427,10 @@ impl CellLabel {
         label.is_table_name = is_table_name;
 
         // Check if this table name has a language with an icon (Import tables have no icon)
-        let language_has_icon = cell.language.as_ref().is_some_and(|lang| {
-            !matches!(lang, CodeCellLanguage::Import)
-        });
+        let language_has_icon = cell
+            .language
+            .as_ref()
+            .is_some_and(|lang| !matches!(lang, CodeCellLanguage::Import));
         label.has_table_icon = is_table_name && language_has_icon;
 
         // Store table columns for width calculation
@@ -531,7 +534,12 @@ impl CellLabel {
         // - All table names get base padding (TABLE_NAME_PADDING)
         // - Table names with icons get additional icon padding (TABLE_NAME_ICON_EXTRA)
         let left_padding = if self.is_table_name {
-            TABLE_NAME_PADDING + if self.has_table_icon { TABLE_NAME_ICON_EXTRA } else { 0.0 }
+            TABLE_NAME_PADDING
+                + if self.has_table_icon {
+                    TABLE_NAME_ICON_EXTRA
+                } else {
+                    0.0
+                }
         } else {
             0.0
         };
@@ -708,12 +716,8 @@ impl CellLabel {
 
             // Get the font for this character (may vary due to format spans)
             let char_font = if has_spans {
-                let (bold, italic) = Self::get_style_for_char_static(
-                    i,
-                    self.bold,
-                    self.italic,
-                    &self.format_spans,
-                );
+                let (bold, italic) =
+                    Self::get_style_for_char_static(i, self.bold, self.italic, &self.format_spans);
                 let font_name = BitmapFonts::get_font_name(bold, italic);
                 fonts.get(&font_name).unwrap_or(base_font)
             } else {
@@ -777,11 +781,7 @@ impl CellLabel {
                         i
                     };
 
-                    let chars_to_remove = if last_break_pos >= 0 {
-                        i - break_at
-                    } else {
-                        1
-                    };
+                    let chars_to_remove = if last_break_pos >= 0 { i - break_at } else { 1 };
 
                     for _ in 0..chars_to_remove {
                         self.chars.pop();
@@ -1249,12 +1249,14 @@ impl CellLabel {
             } else if (!has_underline || char_line != current_underline_line)
                 && current_underline_start.is_some()
             {
-                runs.push(LineRun {
-                    start_char_idx: current_underline_start.unwrap(),
-                    end_char_idx: i - 1,
-                    line: current_underline_line,
-                    is_underline: true,
-                });
+                if let Some(start) = current_underline_start {
+                    runs.push(LineRun {
+                        start_char_idx: start,
+                        end_char_idx: i - 1,
+                        line: current_underline_line,
+                        is_underline: true,
+                    });
+                }
                 current_underline_start = if has_underline { Some(i) } else { None };
                 current_underline_line = char_line;
             }
@@ -1333,7 +1335,10 @@ impl CellLabel {
             } else {
                 STRIKE_THROUGH_OFFSET
             };
-            let y = self.text_y + (run.line as f32 * line_height) + (y_offset * scale) + OPEN_SANS_FIX_Y;
+            let y = self.text_y
+                + (run.line as f32 * line_height)
+                + (y_offset * scale)
+                + OPEN_SANS_FIX_Y;
 
             let color = start_char.color;
 

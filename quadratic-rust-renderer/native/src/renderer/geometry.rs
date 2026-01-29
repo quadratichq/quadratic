@@ -258,7 +258,7 @@ impl NativeRenderer {
             buffer.add_line(x_start, y, x_end, y, GRID_LINE_COLOR);
         } else {
             // Sort gaps by start position and merge overlapping gaps
-            gaps.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+            gaps.sort_by(|a, b| a.0.total_cmp(&b.0));
             let merged_gaps = Self::merge_overlapping_ranges(&gaps);
 
             // Draw line segments between gaps

@@ -90,7 +90,7 @@ impl NativeRenderer {
         let buffer_slice = staging_buffer.slice(..);
         let (tx, rx) = std::sync::mpsc::channel();
         buffer_slice.map_async(MapMode::Read, move |result| {
-            tx.send(result).unwrap();
+            let _ = tx.send(result);
         });
 
         self.wgpu.device().poll(Maintain::Wait);
