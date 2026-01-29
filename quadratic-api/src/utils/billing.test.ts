@@ -1,7 +1,7 @@
 import type { Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../tests/testDataGenerator';
-import { getEditableFileIds, getFileLimitInfo, getFreeEditableFileLimit, isFileEditRestricted } from './billing';
+import { getEditableFileIds, getFileLimitInfo, getFreeEditableFileLimit, requiresUpgradeToEdit } from './billing';
 import type { DecryptedTeam } from './teams';
 
 // Mock FREE_EDITABLE_FILE_LIMIT for testing
@@ -141,7 +141,7 @@ describe('getEditableFileIds', () => {
   });
 });
 
-describe('isFileEditRestricted', () => {
+describe('requiresUpgradeToEdit', () => {
   it('returns false for all files on paid teams', async () => {
     let team: DecryptedTeam | Team | null = await createTeam({
       team: { uuid: '00000000-0000-0000-0000-000000000010' },
@@ -168,7 +168,7 @@ describe('isFileEditRestricted', () => {
 
     // All files should be editable
     for (const file of files) {
-      expect(await isFileEditRestricted(team, file.id)).toBe(false);
+      expect(await requiresUpgradeToEdit(team, file.id)).toBe(false);
     }
   });
 
@@ -194,15 +194,15 @@ describe('isFileEditRestricted', () => {
     }
 
     // Oldest 2 files (files[0], files[1]) should be restricted
-    expect(await isFileEditRestricted(team, files[0].id)).toBe(true);
-    expect(await isFileEditRestricted(team, files[1].id)).toBe(true);
+    expect(await requiresUpgradeToEdit(team, files[0].id)).toBe(true);
+    expect(await requiresUpgradeToEdit(team, files[1].id)).toBe(true);
 
     // Newest 5 files (files[2], files[3], files[4], files[5], files[6]) should NOT be restricted
-    expect(await isFileEditRestricted(team, files[2].id)).toBe(false);
-    expect(await isFileEditRestricted(team, files[3].id)).toBe(false);
-    expect(await isFileEditRestricted(team, files[4].id)).toBe(false);
-    expect(await isFileEditRestricted(team, files[5].id)).toBe(false);
-    expect(await isFileEditRestricted(team, files[6].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[2].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[3].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[4].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[5].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[6].id)).toBe(false);
   });
 
   it('returns false for all files when under the limit', async () => {
@@ -227,7 +227,7 @@ describe('isFileEditRestricted', () => {
 
     // All files should be editable
     for (const file of files) {
-      expect(await isFileEditRestricted(team, file.id)).toBe(false);
+      expect(await requiresUpgradeToEdit(team, file.id)).toBe(false);
     }
   });
 });
@@ -277,7 +277,7 @@ describe('getFileLimitInfo', () => {
     }
 
     const info = await getFileLimitInfo(team);
-    expect(info.isOverLimit).toBe(true); // At limit counts as "at or over"
+    expect(info.isOverLimit).toBe(false); // At limit (not over) - all 5 files are editable
     expect(info.totalFiles).toBe(5);
     expect(info.maxEditableFiles).toBe(5);
     expect(info.editableFileIds).toHaveLength(5);

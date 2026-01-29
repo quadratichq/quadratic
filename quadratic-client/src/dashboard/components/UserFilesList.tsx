@@ -43,7 +43,7 @@ export type UserFilesListFile = {
   creator?: FileCreator;
   fileType: 'team' | 'private' | 'shared';
   /** Whether this file has edit restrictions due to soft file limit (free teams only). */
-  isFileEditRestricted?: boolean;
+  requiresUpgradeToEdit?: boolean;
 };
 
 export function UserFilesList({

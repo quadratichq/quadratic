@@ -325,8 +325,8 @@ describe('DELETE - DELETE /v0/files/:uuid with scheduled tasks', () => {
   });
 });
 
-describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
-  it('returns isFileEditRestricted=false for files within the soft limit', async () => {
+describe('READ - GET /v0/files/:uuid requiresUpgradeToEdit field', () => {
+  it('returns requiresUpgradeToEdit=false for files within the soft limit', async () => {
     // The test setup creates only 2 files, which is under the limit of 5
     await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000001')
@@ -335,13 +335,13 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
       .expect('Content-Type', /json/)
       .expect(200)
       .expect((res) => {
-        expect(res.body.userMakingRequest).toHaveProperty('isFileEditRestricted');
-        expect(res.body.userMakingRequest.isFileEditRestricted).toBe(false);
+        expect(res.body.userMakingRequest).toHaveProperty('requiresUpgradeToEdit');
+        expect(res.body.userMakingRequest.requiresUpgradeToEdit).toBe(false);
         expect(res.body.userMakingRequest.filePermissions).toContain('FILE_EDIT');
       });
   });
 
-  it('returns isFileEditRestricted=true and removes FILE_EDIT for files beyond the soft limit', async () => {
+  it('returns requiresUpgradeToEdit=true and removes FILE_EDIT for files beyond the soft limit', async () => {
     const user = await dbClient.user.findFirst({ where: { auth0Id: 'test_user_1' } });
     const team = await dbClient.team.findFirst();
 
@@ -388,12 +388,12 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
       .expect('Content-Type', /json/)
       .expect(200)
       .expect((res) => {
-        expect(res.body.userMakingRequest.isFileEditRestricted).toBe(true);
+        expect(res.body.userMakingRequest.requiresUpgradeToEdit).toBe(true);
         expect(res.body.userMakingRequest.filePermissions).not.toContain('FILE_EDIT');
       });
   });
 
-  it('returns isFileEditRestricted=false for all files on paid teams', async () => {
+  it('returns requiresUpgradeToEdit=false for all files on paid teams', async () => {
     const user = await dbClient.user.findFirst({ where: { auth0Id: 'test_user_1' } });
     const team = await dbClient.team.findFirst();
 
@@ -437,7 +437,7 @@ describe('READ - GET /v0/files/:uuid isFileEditRestricted field', () => {
         .expect('Content-Type', /json/)
         .expect(200)
         .expect((res) => {
-          expect(res.body.userMakingRequest.isFileEditRestricted).toBe(false);
+          expect(res.body.userMakingRequest.requiresUpgradeToEdit).toBe(false);
           expect(res.body.userMakingRequest.filePermissions).toContain('FILE_EDIT');
         });
     }

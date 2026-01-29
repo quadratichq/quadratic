@@ -101,7 +101,7 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         });
     });
 
-    it('returns hasReachedLimit=true when team has reached the limit', async () => {
+    it('returns hasReachedLimit=true but isOverLimit=false when team is at exactly the limit', async () => {
       // Add one more team file to reach the limit of 5 (we already have 4 total: 3 team + 1 private)
       // So now we'll have 5 total files
       const team = await dbClient.team.findUniqueOrThrow({
@@ -125,10 +125,52 @@ describe('GET /v0/teams/:uuid/file-limit', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
+          // hasReachedLimit=true: can't create more files (at limit)
+          // isOverLimit=false: all 5 files are still editable (not over limit)
+          expect(res.body.hasReachedLimit).toBe(true);
+          expect(res.body.isOverLimit).toBe(false);
+          expect(res.body.isPaidPlan).toBe(false);
+          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.maxEditableFiles).toBe(5);
+        });
+    });
+
+    it('returns both hasReachedLimit=true and isOverLimit=true when team is over the limit', async () => {
+      // Add 2 more files to exceed the limit (we already have 4 total: 3 team + 1 private)
+      // So now we'll have 6 total files (over limit of 5)
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: TEAM_UUID },
+      });
+      const user = await dbClient.user.findUniqueOrThrow({
+        where: { auth0Id: 'team_1_owner' },
+      });
+
+      await createFile({
+        data: {
+          name: 'Team File 4',
+          ownerTeamId: team.id,
+          creatorUserId: user.id,
+          ownerUserId: null,
+        },
+      });
+      await createFile({
+        data: {
+          name: 'Team File 5',
+          ownerTeamId: team.id,
+          creatorUserId: user.id,
+          ownerUserId: null,
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/${TEAM_UUID}/file-limit`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
           expect(res.body.hasReachedLimit).toBe(true);
           expect(res.body.isOverLimit).toBe(true);
           expect(res.body.isPaidPlan).toBe(false);
-          expect(res.body.totalFiles).toBe(5);
+          expect(res.body.totalFiles).toBe(6);
           expect(res.body.maxEditableFiles).toBe(5);
         });
     });

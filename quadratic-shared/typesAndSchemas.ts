@@ -113,7 +113,7 @@ const TeamUserMakingRequestSchema = z.object({
    *
    * When true, the UI should show "Upgrade to edit" messaging rather than "View only"
    */
-  isFileEditRestricted: z.boolean().optional(),
+  requiresUpgradeToEdit: z.boolean().optional(),
 });
 
 export const TeamClientDataKvSchema = z.record(z.any());
@@ -220,7 +220,7 @@ export const ApiSchemas = {
        *
        * When true, the UI should show "Upgrade to edit" messaging rather than "View only"
        */
-      isFileEditRestricted: z.boolean().optional(),
+      requiresUpgradeToEdit: z.boolean().optional(),
     }),
     license: LicenseSchema,
   }),

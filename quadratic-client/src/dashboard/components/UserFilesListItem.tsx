@@ -179,7 +179,7 @@ export function UserFilesListItem({
           viewPreferences={viewPreferences}
           thumbnail={thumbnail}
           lazyLoad={lazyLoad}
-          overlay={file.isFileEditRestricted ? <FileEditRestrictedBadge /> : undefined}
+          overlay={file.requiresUpgradeToEdit ? <FileEditRestrictedBadge /> : undefined}
         >
           <FilesListItemCore
             key={uuid}

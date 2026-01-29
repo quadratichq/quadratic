@@ -232,7 +232,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           },
           userMakingRequest: {
             filePermissions: applyEditRestriction(file.id, basePermissions),
-            isFileEditRestricted: isEditRestricted,
+            requiresUpgradeToEdit: isEditRestricted,
           },
         };
       }),
@@ -259,7 +259,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           },
           userMakingRequest: {
             filePermissions: applyEditRestriction(file.id, basePermissions),
-            isFileEditRestricted: isEditRestricted,
+            requiresUpgradeToEdit: isEditRestricted,
           },
         };
       }),

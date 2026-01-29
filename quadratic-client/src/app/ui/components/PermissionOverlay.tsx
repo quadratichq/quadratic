@@ -22,7 +22,7 @@ export function PermissionOverlay() {
   const {
     file: { uuid: fileUuid },
     team: { uuid: teamUuid },
-    userMakingRequest: { isFileEditRestricted },
+    userMakingRequest: { requiresUpgradeToEdit },
   } = useFileRouteLoaderData();
   const location = useLocation();
 
@@ -56,7 +56,7 @@ export function PermissionOverlay() {
 
   // If you can't edit the file due to file limit, show upgrade message
   // This is distinct from "View only" (permission-based) - this is billing-restricted
-  if (!permissions.includes(FILE_EDIT) && isFileEditRestricted && isOpen) {
+  if (!permissions.includes(FILE_EDIT) && requiresUpgradeToEdit && isOpen) {
     return (
       <FixedBottomAlert>
         <Type>

@@ -11,7 +11,7 @@ import { getFileUrl } from '../../storage/storage';
 import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getIsOnPaidPlan, isFileEditRestricted } from '../../utils/billing';
+import { getIsOnPaidPlan, requiresUpgradeToEdit } from '../../utils/billing';
 import { isRestrictedModelCountry } from '../../utils/geolocation';
 import { getDecryptedTeam } from '../../utils/teams';
 import { getUserClientDataKv } from '../../utils/userClientData';
@@ -65,7 +65,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
 
   // Check if this file is edit-restricted due to billing limits (soft file limit)
   // For free teams, only the N most recently created files are editable
-  const isEditRestricted = await isFileEditRestricted(ownerTeam, id);
+  const isEditRestricted = await requiresUpgradeToEdit(ownerTeam, id);
 
   // Apply edit restriction to permissions if necessary
   let finalFilePermissions: FilePermission[] = filePermissions;
@@ -151,7 +151,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       teamRole,
       teamPermissions,
       restrictedModel: isRestrictedModelCountry(req, isOnPaidPlan),
-      isFileEditRestricted: isEditRestricted,
+      requiresUpgradeToEdit: isEditRestricted,
     },
     license,
   };

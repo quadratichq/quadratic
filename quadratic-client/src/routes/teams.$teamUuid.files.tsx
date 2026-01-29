@@ -80,7 +80,7 @@ export const Component = () => {
         permissions: userMakingRequest.filePermissions,
         creator,
         fileType: 'team',
-        isFileEditRestricted: userMakingRequest.isFileEditRestricted,
+        requiresUpgradeToEdit: userMakingRequest.requiresUpgradeToEdit,
       });
     });
 
@@ -97,7 +97,7 @@ export const Component = () => {
         permissions: userMakingRequest.filePermissions,
         creator: currentUser,
         fileType: 'private',
-        isFileEditRestricted: userMakingRequest.isFileEditRestricted,
+        requiresUpgradeToEdit: userMakingRequest.requiresUpgradeToEdit,
       });
     });
 

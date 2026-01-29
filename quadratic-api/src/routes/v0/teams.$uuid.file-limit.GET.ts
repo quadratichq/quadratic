@@ -28,9 +28,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const isPaidPlan = await getIsOnPaidPlan(team);
   const { isOverLimit, totalFiles, maxEditableFiles } = await getFileLimitInfo(team, isPaidPlan);
 
+  // hasReachedLimit: true when at or over limit (can't create more files)
+  // isOverLimit: true when over limit (some files are not editable, show banner)
+  const hasReachedLimit = isPaidPlan ? false : totalFiles >= maxEditableFiles;
+
   return res.status(200).json({
-    // Backward compatible field - now indicates if creating another file would exceed the editable limit
-    hasReachedLimit: isOverLimit,
+    // Backward compatible field - indicates if creating another file would exceed the editable limit
+    hasReachedLimit,
     // New fields for soft limit behavior
     isOverLimit,
     totalFiles,
