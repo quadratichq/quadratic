@@ -1,4 +1,6 @@
+import type { CategorizedEmptyChatPromptSuggestions } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
@@ -18,6 +20,13 @@ import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
 
+export interface EmptyChatSuggestionsState {
+  suggestions: CategorizedEmptyChatPromptSuggestions | undefined;
+  contextHash: string | undefined;
+  loading: boolean;
+  abortController: AbortController | undefined;
+}
+
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   activeSchemaConnectionUuid: string | undefined;
@@ -30,6 +39,7 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
   };
+  emptyChatSuggestions: EmptyChatSuggestionsState;
   pdfImport: {
     abortController: AbortController | undefined;
     loading: boolean;
@@ -61,6 +71,12 @@ export const defaultAIAnalystState: AIAnalystState = {
   promptSuggestions: {
     abortController: undefined,
     suggestions: [],
+  },
+  emptyChatSuggestions: {
+    suggestions: undefined,
+    contextHash: undefined,
+    loading: false,
+    abortController: undefined,
   },
   pdfImport: {
     abortController: undefined,
@@ -162,7 +178,12 @@ export const aiAnalystActiveSchemaConnectionUuidAtom = createSelector('activeSch
 
 export const showAIAnalystAtom = selector<boolean>({
   key: 'showAIAnalystAtom',
-  get: ({ get }) => get(aiAnalystAtom).showAIAnalyst,
+  get: ({ get }) => {
+    // If agent mode is enabled, always show AI Analyst
+    const agentMode = get(agentModeAtom);
+    if (agentMode) return true;
+    return get(aiAnalystAtom).showAIAnalyst;
+  },
   set: ({ set, get }, newValue) => {
     const currentState = get(aiAnalystAtom);
     const isShowing = currentState.showAIAnalyst;
@@ -447,4 +468,31 @@ export const aiAnalystFailingSqlConnectionsAtom = selector<{ uuids: string[]; la
       return { ...prev, failingSqlConnections: newValue };
     });
   },
+});
+
+export const aiAnalystEmptyChatSuggestionsAtom = selector<EmptyChatSuggestionsState>({
+  key: 'aiAnalystEmptyChatSuggestionsAtom',
+  get: ({ get }) => get(aiAnalystAtom).emptyChatSuggestions,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      // Abort any in-flight request when setting new state
+      if (
+        prev.emptyChatSuggestions.abortController &&
+        newValue.abortController !== prev.emptyChatSuggestions.abortController
+      ) {
+        prev.emptyChatSuggestions.abortController.abort();
+      }
+
+      return { ...prev, emptyChatSuggestions: newValue };
+    });
+  },
+});
+
+export const aiAnalystEmptyChatSuggestionsLoadingAtom = selector<boolean>({
+  key: 'aiAnalystEmptyChatSuggestionsLoadingAtom',
+  get: ({ get }) => get(aiAnalystEmptyChatSuggestionsAtom).loading,
 });

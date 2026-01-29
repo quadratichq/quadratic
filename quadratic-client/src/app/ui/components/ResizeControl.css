@@ -51,6 +51,10 @@
   transition: 0.2s ease background-color 300ms;
 }
 
+.resize-control--invisible {
+  background-color: transparent;
+}
+
 /* When control is being dragged, applies styles to prevent text
    selection and try to keep correct cursor displayed */
 body:has(.resize-control--is-dragging) * {

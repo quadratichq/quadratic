@@ -28,6 +28,7 @@ export enum AITool {
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
   EmptyChatPromptSuggestions = 'empty_chat_prompt_suggestions',
+  CategorizedEmptyChatPromptSuggestions = 'categorized_empty_chat_prompt_suggestions',
   PDFImport = 'pdf_import',
   GetCellData = 'get_cell_data',
   HasCellData = 'has_cell_data',
@@ -84,6 +85,7 @@ export const AIToolSchema = z.enum([
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
   AITool.EmptyChatPromptSuggestions,
+  AITool.CategorizedEmptyChatPromptSuggestions,
   AITool.PDFImport,
   AITool.GetCellData,
   AITool.HasCellData,
@@ -311,6 +313,32 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.EmptyChatPromptSuggestions]: z.object({
     prompt_suggestions: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+  }),
+  [AITool.CategorizedEmptyChatPromptSuggestions]: z.object({
+    enrich: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    clean: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    visualize: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    analyze: z.array(
       z.object({
         label: stringSchema,
         prompt: stringSchema,
@@ -1492,7 +1520,7 @@ Completion is the delta that will be inserted at the cursor position in the code
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
@@ -1508,7 +1536,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
             properties: {
               label: {
                 type: 'string',
-                description: 'The label of the follow up prompt, maximum 40 characters',
+                description: 'The label of the follow up prompt, maximum 7 words',
               },
               prompt: {
                 type: 'string',
@@ -1528,7 +1556,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
     prompt: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
@@ -1541,7 +1569,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
     description: `
 This tool provides prompt suggestions for the user for an empty chat when user attaches a file or adds a connection or code cell to context, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
 `,
@@ -1555,7 +1583,7 @@ Always maintain strong correlation between the context, the files, the connectio
             properties: {
               label: {
                 type: 'string',
-                description: 'The label of the follow up prompt, maximum 25 characters',
+                description: 'The label of the follow up prompt, maximum 7 words',
               },
               prompt: {
                 type: 'string',
@@ -1575,9 +1603,109 @@ Always maintain strong correlation between the context, the files, the connectio
     prompt: `
 This tool provides prompt suggestions for the user when they attach a file or add a connection to an empty chat. It requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
+`,
+  },
+  [AITool.CategorizedEmptyChatPromptSuggestions]: {
+    sources: ['GetEmptyChatPromptSuggestions'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool provides categorized prompt suggestions for the user when there is data on the spreadsheet. It requires four arrays of three prompt suggestions each, organized by category.\n
+Categories are: enrich (add new data based on existing), clean (fix or standardize data), visualize (create charts or visual representations), analyze (derive insights from data).\n
+Each prompt suggestion is an object with a label and a prompt.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
+The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
+Always maintain strong correlation between the suggestions and the actual data present on the spreadsheet.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        enrich: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for enriching the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        clean: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for cleaning the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        visualize: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for visualizing the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        analyze: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for analyzing the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['enrich', 'clean', 'visualize', 'analyze'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.CategorizedEmptyChatPromptSuggestions],
+    prompt: `
+This tool provides categorized prompt suggestions when the spreadsheet contains data. Generate three suggestions for each of the four categories.\n
+- enrich: Suggestions to add new data columns, combine fields, look up related information, or calculate derived values based on existing data.\n
+- clean: Suggestions to fix formatting issues, remove duplicates, standardize values, handle missing data, or improve data quality.\n
+- visualize: Suggestions to create charts, graphs, pivot tables, or other visual representations of the data.\n
+- analyze: Suggestions to calculate statistics, find trends, identify patterns, compare values, or derive business insights.\n
+Each suggestion should be specific to the actual data present on the spreadsheet.\n
 `,
   },
   [AITool.PDFImport]: {

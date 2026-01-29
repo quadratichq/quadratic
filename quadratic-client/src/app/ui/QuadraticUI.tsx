@@ -1,4 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { useEmptyChatSuggestionsSync } from '@/app/ai/hooks/useEmptyChatSuggestionsSync';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
@@ -40,9 +43,11 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { SettingsDialog } from '@/shared/components/SettingsDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
+import { AI_GRADIENT } from '@/shared/constants/appConstants';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -55,11 +60,17 @@ export default function QuadraticUI() {
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+  // See if the aiAnalyst is running
+  const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+
+  // Sync empty chat suggestions with sheet data changes
+  useEmptyChatSuggestionsSync();
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
@@ -117,10 +128,10 @@ export default function QuadraticUI() {
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {!presentationMode && !isEmbed && <QuadraticSidebar />}
+      {!agentMode && !presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
-        {!presentationMode && !isEmbed && <Toolbar />}
+        {!agentMode && !presentationMode && !isEmbed && <Toolbar />}
 
         <div
           style={{
@@ -133,16 +144,38 @@ export default function QuadraticUI() {
         >
           {canEditFile && isAuthenticated && <AIAnalyst />}
           {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
-          <FileDragDropWrapper>
-            <QuadraticGrid />
-            {!presentationMode && <SheetBar />}
-            <FloatingFPS />
-            <FloatingTopLeftPosition />
-            <Coordinates />
-          </FileDragDropWrapper>
-          <CodeEditor />
-          <ValidationPanel />
-          <ScheduledTasks />
+
+          <div className={cn('flex h-full w-full overflow-hidden', agentMode && 'pb-2 pr-2')}>
+            <div
+              className={cn(
+                'flex h-full w-full',
+                agentMode && 'rounded-lg p-0.5 shadow-lg',
+                // TODO: play with colors
+                // 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500',
+                // aiAnalystLoading ? 'bg-gradient-to-r from-primary via-primary/50 to-primary' : 'bg-border'
+                aiAnalystLoading ? `bg-gradient-to-r ${AI_GRADIENT}` : 'bg-border',
+                aiAnalystLoading ? 'shadow-purple-100' : ''
+              )}
+              // When AI is running
+              style={{
+                backgroundSize: '200% 200%',
+                animation: 'shimmer 3s ease-in-out infinite',
+              }}
+            >
+              <div className={cn('flex h-full w-full overflow-hidden', agentMode && 'rounded-md')}>
+                <FileDragDropWrapper>
+                  <QuadraticGrid />
+                  {!presentationMode && <SheetBar />}
+                  <FloatingFPS />
+                  <FloatingTopLeftPosition />
+                  <Coordinates />
+                </FileDragDropWrapper>
+                <CodeEditor />
+                <ValidationPanel />
+                <ScheduledTasks />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       {/* Global overlay menus */}

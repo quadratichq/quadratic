@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
@@ -36,7 +37,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
     [debugFlags]
   );
-
+  const agentMode = useRecoilValue(agentModeAtom);
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
@@ -49,7 +50,8 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     [currentUserMessagesCount, showChatHistory]
   );
   const showHistoryMsg = useMemo(
-    () => currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
+    // TODO: enable this by removing false
+    () => false && currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
     [currentUserMessagesCount, showChatHistory, loading, chatsCount]
   );
 
@@ -135,18 +137,20 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
             </Button>
           </TooltipPopover>
 
-          <TooltipPopover label="Close" side="bottom">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-muted-foreground hover:text-foreground"
-              disabled={loading}
-              onClick={() => setShowAIAnalyst(false)}
-              data-testid="close-ai-analyst"
-            >
-              <CloseIcon />
-            </Button>
-          </TooltipPopover>
+          {!agentMode && (
+            <TooltipPopover label="Close" side="bottom">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground"
+                disabled={loading}
+                onClick={() => setShowAIAnalyst(false)}
+                data-testid="close-ai-analyst"
+              >
+                <CloseIcon />
+              </Button>
+            </TooltipPopover>
+          )}
         </div>
       </div>
 
@@ -174,7 +178,7 @@ function RenamableHeaderTitle({ showChatHistory }: { showChatHistory: boolean })
 
   const headerTitle = useMemo(() => {
     if (showChatHistory) {
-      return `${defaultLabel} history`;
+      return `Chat history`;
     }
     return currentChatName.trim() || defaultLabel;
   }, [showChatHistory, currentChatName, defaultLabel]);

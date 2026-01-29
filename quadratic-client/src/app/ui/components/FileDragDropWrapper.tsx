@@ -177,18 +177,13 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
       {props.children}
       {userMessage && (
         <div
+          className="flex items-center justify-center border-4 border-dashed border-primary bg-background/80"
           style={{
             position: 'absolute',
             width: userMessage.targetRectangle.width,
             height: userMessage.targetRectangle.height,
             top: userMessage.targetRectangle.top,
             left: userMessage.targetRectangle.left,
-            border: '4px dashed #000',
-            opacity: 0.75,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#fff',
           }}
         >
           <div className="padding-2 rounded-md bg-white p-2 text-2xl font-bold">{userMessage.message}</div>
