@@ -133,7 +133,10 @@ impl SheetBordersRender for SheetBorders {
 
 #[cfg(test)]
 mod tests {
-    use super::BorderLineStyle;
+    use quadratic_core::sheet_offsets::SheetOffsets;
+
+    use super::SheetBordersRender;
+    use crate::{BorderLineStyle, SheetBorders};
 
     #[test]
     fn test_sheet_borders_to_fill_buffer() {

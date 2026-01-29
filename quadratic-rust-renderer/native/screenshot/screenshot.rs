@@ -64,7 +64,7 @@ struct Args {
     #[arg(long, default_value = "png")]
     format: String,
 
-    /// Quality for JPEG (0-100)
+    /// Quality for JPEG format (0-100, ignored for PNG and WebP)
     #[arg(short = 'q', long, default_value = "90")]
     quality: u8,
 
