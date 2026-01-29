@@ -570,6 +570,20 @@ mod tests {
 
     #[test]
     fn test_formula_deep_nesting() {
+        use ast::AstNodeContents;
+
+        /// Counts the nesting depth of Paren nodes and returns the innermost
+        /// non-Paren content. Returns (depth, innermost_content).
+        fn count_paren_depth(node: &ast::AstNode) -> (usize, &AstNodeContents) {
+            match &node.inner {
+                AstNodeContents::Paren(contents) if contents.len() == 1 => {
+                    let (inner_depth, innermost) = count_paren_depth(&contents[0]);
+                    (1 + inner_depth, innermost)
+                }
+                other => (0, other),
+            }
+        }
+
         // A reasonably nested formula should parse fine
         let formula = "((((1 + 2) * 3) / 4) - 5)";
         assert!(simple_parse_formula(formula).is_ok());
@@ -579,16 +593,24 @@ mod tests {
 
         // Very deep nesting (100 levels) works fine
         let deep_nested = format!("{}1{}", "(".repeat(100), ")".repeat(100));
+        let formula = simple_parse_formula(&deep_nested)
+            .expect("Formula with 100 levels of nesting should parse successfully");
+        let (depth, innermost) = count_paren_depth(&formula.ast);
+        assert_eq!(depth, 100, "Should have exactly 100 levels of Paren nodes");
         assert!(
-            simple_parse_formula(&deep_nested).is_ok(),
-            "Formula with 100 levels of nesting should parse successfully"
+            matches!(innermost, AstNodeContents::Number(n) if *n == 1.0),
+            "Innermost value should be the number 1"
         );
 
         // Much deeper nesting (300 levels) also works
         let deeper_nested = format!("{}1{}", "(".repeat(300), ")".repeat(300));
+        let formula = simple_parse_formula(&deeper_nested)
+            .expect("Formula with 300 levels of nesting should parse successfully");
+        let (depth, innermost) = count_paren_depth(&formula.ast);
+        assert_eq!(depth, 300, "Should have exactly 300 levels of Paren nodes");
         assert!(
-            simple_parse_formula(&deeper_nested).is_ok(),
-            "Formula with 300 levels of nesting should parse successfully"
+            matches!(innermost, AstNodeContents::Number(n) if *n == 1.0),
+            "Innermost value should be the number 1"
         );
     }
 

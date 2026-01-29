@@ -133,7 +133,6 @@ class PythonWebWorker {
         }
       };
 
-      console.log('[pythonWebWorker] Setting iframe srcdoc and appending to body');
       iframe.srcdoc = html;
       document.body.appendChild(iframe);
     });

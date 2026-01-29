@@ -141,7 +141,8 @@ impl Sheet {
         positions
     }
 
-    /// Returns true if there's any CellValue::Code in the given rect
+    /// Returns true if there's any CellValue::Code in the given rect.
+    /// TODO: Remove this once we support code cells inside tables.
     pub fn has_code_cell_in_rect(&self, rect: Rect) -> bool {
         for y in rect.y_range() {
             for x in rect.x_range() {
@@ -166,8 +167,9 @@ impl Sheet {
             if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
                 let mut new_code_run = code_cell.code_run.clone();
                 let sheet_pos = pos.to_sheet_pos(self.id);
-                new_code_run
-                    .replace_table_name_in_cell_references(a1_context, sheet_pos, old_name, new_name);
+                new_code_run.replace_table_name_in_cell_references(
+                    a1_context, sheet_pos, old_name, new_name,
+                );
                 if new_code_run.code != code_cell.code_run.code {
                     let new_code_cell = crate::CodeCell {
                         code_run: new_code_run,
@@ -193,8 +195,9 @@ impl Sheet {
             if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
                 let mut new_code_run = code_cell.code_run.clone();
                 let sheet_pos = pos.to_sheet_pos(self.id);
-                new_code_run
-                    .replace_column_name_in_cell_references(a1_context, sheet_pos, table_name, old_name, new_name);
+                new_code_run.replace_column_name_in_cell_references(
+                    a1_context, sheet_pos, table_name, old_name, new_name,
+                );
                 if new_code_run.code != code_cell.code_run.code {
                     let new_code_cell = crate::CodeCell {
                         code_run: new_code_run,
@@ -268,7 +271,7 @@ impl Sheet {
                 spill_error: None, // CellValue::Code never spills
                 return_info,
                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
-                last_modified: chrono::Utc::now().timestamp_millis(), // Single-cell codes don't track last_modified yet
+                last_modified: code_cell.last_modified.timestamp_millis(),
             });
         }
 

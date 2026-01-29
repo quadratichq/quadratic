@@ -7,10 +7,9 @@ import type {
   RenderEmoji,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Assets, MIPMAP_MODES, Rectangle, Sprite, Texture } from 'pixi.js';
+import { CHECKBOX_SIZE, DROPDOWN_PADDING, DROPDOWN_SIZE } from './drawSpecialConstants';
 
-export const CHECKBOX_SIZE = 15;
-export const DROPDOWN_SIZE = [8, 6];
-export const DROPDOWN_PADDING = [5, 8];
+export { CHECKBOX_SIZE, DROPDOWN_PADDING, DROPDOWN_SIZE };
 
 export interface SpecialSprite extends Sprite {
   column: number;

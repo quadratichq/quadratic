@@ -80,14 +80,14 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
                 }
 
                 // No prefix operator or paren, parse an atom
-                let atom = parse_atom(p, &mut stack)?;
+                let atom = parse_atom(p)?;
                 // Push frame to handle infix/postfix after atom
                 stack.push(StackFrame::AfterLhs { lhs: atom, min_bp });
             }
 
             StackFrame::AfterPrefix { op, outer_min_bp } => {
                 // We finished parsing the operand for a prefix operator
-                let operand = value_slot.take();
+                let operand = value_slot.take()?;
                 let result = AstNode {
                     span: Span::merge(op.span, operand.span),
                     inner: AstNodeContents::FunctionCall {
@@ -109,7 +109,7 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
                 outer_min_bp,
             } => {
                 // We finished parsing the inner expression, now consume ')'
-                let inner_expr = value_slot.take();
+                let inner_expr = value_slot.take()?;
                 p.parse(Token::RParen)?;
                 let end_span = p.span();
 
@@ -211,7 +211,7 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
 
             StackFrame::AfterRhs { lhs, op, min_bp } => {
                 // Build the binary operator node
-                let rhs = value_slot.take();
+                let rhs = value_slot.take()?;
                 let result = AstNode {
                     span: Span::merge(lhs.span, rhs.span),
                     inner: AstNodeContents::FunctionCall {
@@ -229,7 +229,7 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
     }
 
     // The final value should be in the slot
-    Ok(value_slot.take())
+    value_slot.take()
 }
 
 /// Parse an atomic expression (the smallest unit of an expression).
@@ -245,7 +245,7 @@ pub fn parse_expression_iterative(p: &mut Parser<'_>, min_bp: u8) -> CodeResult<
 /// - Error values: `#REF!`
 ///
 /// Note: Parenthesized expressions are handled in the main loop, not here.
-fn parse_atom(p: &mut Parser<'_>, _stack: &mut [StackFrame]) -> CodeResult<AstNode> {
+fn parse_atom(p: &mut Parser<'_>) -> CodeResult<AstNode> {
     // Try each atom type in order of likelihood/specificity
 
     // Function call: NAME(
@@ -360,6 +360,20 @@ mod tests {
         assert!(
             result.is_ok(),
             "Deep nesting should not cause stack overflow"
+        );
+    }
+
+    #[test]
+    fn test_deeply_nested_function_calls() {
+        // Test deeply nested function calls like ABS(ABS(ABS(...)))
+        // Each function call adds Rust stack frames for FunctionCall parsing,
+        // so this tests the practical limit of function nesting.
+        let depth = 100;
+        let formula = format!("{}1{}", "ABS(".repeat(depth), ")".repeat(depth));
+        let result = test_parse(&formula);
+        assert!(
+            result.is_ok(),
+            "Deeply nested function calls should parse successfully"
         );
     }
 }
