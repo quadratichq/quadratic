@@ -39,7 +39,8 @@ export function FileLimitBanner() {
         <WarningIcon className="h-5 w-5 text-warning" />
       </div>
       <p className="text-sm">
-        You can edit your <strong>{editableFileCount} most recently created</strong> Quadratic files.{' '}
+        Free file limit exceeded. You can only edit your <strong>{editableFileCount} most recently created</strong>{' '}
+        Quadratic files.{' '}
         <button
           className="text-primary underline hover:text-primary/80"
           onClick={() => showUpgradeDialog('fileLimitReached')}
