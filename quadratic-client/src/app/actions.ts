@@ -1,7 +1,8 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { getActionFileDelete } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -70,12 +71,16 @@ export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ teamUuid }: { teamUuid: string }) {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+    const createFile = () => {
+      window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
+    };
+
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
-    window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
+    createFile();
   },
 };
 
@@ -85,12 +90,16 @@ export const duplicateFileAction = {
   isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
     isAuthenticated && filePermissions.includes('FILE_VIEW'),
   async run({ fileUuid, teamUuid }: { fileUuid: string; teamUuid: string }) {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+    const duplicateFile = () => {
+      window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
+    };
+
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, duplicateFile);
       return;
     }
-    window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
+    duplicateFile();
   },
 };
 

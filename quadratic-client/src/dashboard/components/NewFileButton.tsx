@@ -1,10 +1,21 @@
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { AddIcon, AIIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
+import {
+  AddIcon,
+  AIIcon,
+  ApiIcon,
+  ArrowDropDownIcon,
+  DatabaseIcon,
+  ExamplesIcon,
+  FileIcon,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -23,6 +34,11 @@ import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
+
+const stateToInsertAndRun = {
+  codeString: SNIPPET_PY_API,
+  language: 'Python' as CodeCellLanguage,
+};
 
 export function NewFileButton() {
   const {
@@ -46,16 +62,37 @@ export function NewFileButton() {
   return (
     <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
+        variant="default"
+        className="gap-2"
+        onClick={async () => {
+          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+          const navigateToAI = () =>
+            navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+          if (isOverLimit && !isPaidPlan) {
+            showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, navigateToAI);
+            return;
+          }
+          navigateToAI();
+        }}
+      >
+        <AIIcon className="mr-0" />
+        Start with AI
+      </Button>
+
+      <Button
         data-testid="files-list-new-file-button"
         variant="default"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
+          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+          const createFile = () => {
+            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          };
+          if (isOverLimit && !isPaidPlan) {
+            showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
             return;
           }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
+          createFile();
         }}
       >
         New file
@@ -84,12 +121,14 @@ export function NewFileButton() {
           <DropdownMenuContent>
             <DropdownMenuItem
               onClick={async () => {
-                const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-                if (hasReachedLimit) {
-                  showUpgradeDialog('fileLimitReached');
+                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+                const navigateToAIPrompt = () =>
+                  navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+                if (isOverLimit && !isPaidPlan) {
+                  showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, navigateToAIPrompt);
                   return;
                 }
-                navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+                navigateToAIPrompt();
               }}
             >
               <AIIcon className="mr-3" />
@@ -108,10 +147,32 @@ export function NewFileButton() {
               </span>
             </DropdownMenuItem>
 
+            <DropdownMenuItem
+              onClick={async () => {
+                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+                const createApiFile = () => {
+                  window.location.href = ROUTES.CREATE_FILE(teamUuid, {
+                    state: stateToInsertAndRun,
+                    private: isPrivate,
+                  });
+                };
+                if (isOverLimit && !isPaidPlan) {
+                  showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createApiFile);
+                  return;
+                }
+                createApiFile();
+              }}
+            >
+              <ApiIcon className="mr-3" />
+              <span className="flex flex-col">
+                API
+                <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
+              </span>
+            </DropdownMenuItem>
+
             <DropdownMenuItem asChild>
               <Link to={ROUTES.TEMPLATES} className="flex items-center">
-                <ExamplesIcon className="mr-3" />
-
+                <ExamplesIcon className="mr-3 text-primary" />
                 <span className="flex flex-col">
                   Templates
                   <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>

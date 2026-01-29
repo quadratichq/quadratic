@@ -3,6 +3,7 @@ import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import type { UserFilesListFile } from '@/dashboard/components/UserFilesList';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
@@ -13,6 +14,7 @@ import {
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -63,7 +65,7 @@ export function UserFilesListItem({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const { name, thumbnail, uuid, permissions } = file;
   let { fileType } = file;
 
   const actionUrl = ROUTES.API.FILE(uuid);
@@ -142,18 +144,22 @@ export function UserFilesListItem({
   };
 
   const handleDuplicate = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isFilePrivate);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(activeTeamUuid);
+    const doDuplicate = () => {
+      trackEvent('[Files].duplicateFile', { id: uuid });
+      const data = getActionFileDuplicate({
+        redirect: false,
+        isPrivate: isFilePrivate,
+        teamUuid: activeTeamUuid,
+      });
+      fetcherDuplicate.submit(data, fetcherSubmitOpts);
+    };
+
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, activeTeamUuid, doDuplicate);
       return;
     }
-    trackEvent('[Files].duplicateFile', { id: uuid });
-    const data = getActionFileDuplicate({
-      redirect: false,
-      isPrivate: isFilePrivate,
-      teamUuid: activeTeamUuid,
-    });
-    fetcherDuplicate.submit(data, fetcherSubmitOpts);
+    doDuplicate();
   };
 
   const handleShare = () => {
@@ -169,7 +175,12 @@ export function UserFilesListItem({
         reloadDocument
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
       >
-        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
+        <ListItemView
+          viewPreferences={viewPreferences}
+          thumbnail={thumbnail}
+          lazyLoad={lazyLoad}
+          overlay={file.isFileEditRestricted ? <FileEditRestrictedBadge /> : undefined}
+        >
           <FilesListItemCore
             key={uuid}
             creator={file.creator}
@@ -177,9 +188,8 @@ export function UserFilesListItem({
             nameFilter={filters.fileName}
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
-            isShared={publicLinkAccess !== 'NOT_SHARED'}
-            children={<FileTypeBadge type={fileType} />}
             viewPreferences={viewPreferences}
+            children={<FileTypeBadge type={fileType} />}
             onCreatorClick={(creator) => {
               if (creator.email) {
                 setFilters((prev) => ({
@@ -309,5 +319,28 @@ function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
     <div className={'flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground'}>
       {label}
     </div>
+  );
+}
+
+/**
+ * Badge/button shown on files that are not editable due to billing limits (soft file limit).
+ * This is distinct from "View only" which is permission-based.
+ * Clicking opens the upgrade dialog.
+ */
+function FileEditRestrictedBadge() {
+  return (
+    <button
+      className={
+        'flex items-center gap-1 rounded border border-warning bg-background/90 px-2 py-1 text-xs font-medium text-warning shadow-sm transition-colors hover:bg-warning hover:text-warning-foreground'
+      }
+      title="This file exceeds your plan's limit. Upgrade for unlimited editable files."
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showUpgradeDialog('fileLimitReached');
+      }}
+    >
+      Upgrade to edit
+    </button>
   );
 }

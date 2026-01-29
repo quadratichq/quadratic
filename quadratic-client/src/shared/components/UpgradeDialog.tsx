@@ -36,7 +36,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
   const upgradeTitle = useMemo(() => {
     switch (state.eventSource) {
       case 'fileLimitReached':
-        return 'Upgrade to Pro to create more files';
+        return 'Upgrade to Pro for unlimited file editing';
       default:
         return 'Upgrade to Pro';
     }
@@ -45,7 +45,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
   const reasonText = useMemo(() => {
     switch (state.eventSource) {
       case 'fileLimitReached':
-        return 'You have reached the maximum number of files allowed for your team.';
+        return 'Some of your files require an upgrade to edit due to the free plan limit.';
       default:
         return undefined;
     }

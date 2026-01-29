@@ -1,11 +1,13 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -129,33 +131,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               Settings
             </SidebarNavLink>
           )}
-          {!isOnPaidPlan && !isSettingsPage && (
-            <div className="mt-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
-              <div className="flex gap-2">
-                <RocketIcon className="h-5 w-5 text-primary" />
-                <div className="flex flex-col">
-                  <span className="font-semibold">Upgrade to Quadratic Pro</span>
-                  <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
-                </div>
-              </div>
-
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
-                    team_uuid: activeTeamUuid,
-                  });
-                  setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
-                }}
-              >
-                Upgrade to Pro
-              </Button>
-            </div>
-          )}
         </div>
       </div>
-      <div className="-mb-3 mt-auto flex flex-col gap-1 bg-accent px-3">
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEMPLATES}>
@@ -176,6 +154,29 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
+        {!isOnPaidPlan && !isSettingsPage && (
+          <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
+            <div className="flex gap-2">
+              <RocketIcon className="h-5 w-5 text-primary" />
+              <div className="flex flex-col">
+                <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                <span className="text-muted-foreground">Get more AI messages, unlimited files, and more.</span>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                trackEvent('[DashboardSidebar].upgradeToProClicked', {
+                  team_uuid: activeTeamUuid,
+                });
+                setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
+              }}
+            >
+              Upgrade to Pro
+            </Button>
+          </div>
+        )}
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -249,12 +250,15 @@ function SidebarNavLinkCreateButton({
   teamUuid: string;
 }) {
   const handleClick = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
+    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
+    const createFile = () => {
+      window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    };
+    if (isOverLimit && !isPaidPlan) {
+      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
       return;
     }
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    createFile();
   };
 
   return (

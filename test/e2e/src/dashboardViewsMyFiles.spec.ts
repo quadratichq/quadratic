@@ -758,7 +758,7 @@ test('Filter Files by Name - Private Files', async ({ page }) => {
   // const teamName = `Filter Files - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
-  // Use 2 files instead of 3 to stay under free user limit
+  // Use 2 files to stay under free user limit
   const string1 = 'Test';
   const string2 = 'Random';
   const file1 = `${string1}_file_1`;
