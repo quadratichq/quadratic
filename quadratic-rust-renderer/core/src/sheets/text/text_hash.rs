@@ -145,8 +145,8 @@ impl TextHash {
     /// Rebuild all labels and generate render data
     ///
     /// This layouts all labels, collects their meshes, and produces HashRenderData
-    /// that can be sent to the renderer.
-    pub fn rebuild(&mut self, fonts: &BitmapFonts) -> HashRenderData {
+    /// that can be sent to the renderer. Returns a reference to the cached data.
+    pub fn rebuild(&mut self, fonts: &BitmapFonts) -> &HashRenderData {
         // Clear auto-size caches
         self.columns_max_cache.clear();
         self.rows_max_cache.clear();
@@ -200,7 +200,8 @@ impl TextHash {
 
         self.dirty = false;
 
-        let render_data = HashRenderData {
+        // Cache the render data and return a reference to avoid cloning
+        self.cached_render_data = Some(HashRenderData {
             hash_x: self.hash_x,
             hash_y: self.hash_y,
             world_x: self.world_x,
@@ -212,12 +213,9 @@ impl TextHash {
             horizontal_lines,
             emoji_sprites: HashMap::new(), // TODO: emoji support
             sprite_dirty: true,
-        };
+        });
 
-        // Cache the render data
-        self.cached_render_data = Some(render_data.clone());
-
-        render_data
+        self.cached_render_data.as_ref().unwrap()
     }
 
     /// Get cached render data without rebuilding

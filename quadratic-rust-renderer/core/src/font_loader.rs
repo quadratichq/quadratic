@@ -119,6 +119,15 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                             }
                         }
 
+                        // Validate texture dimensions to avoid division by zero
+                        if scale_w <= 0.0 || scale_h <= 0.0 {
+                            return Err(anyhow::anyhow!(
+                                "Invalid font texture dimensions: {}x{}",
+                                scale_w,
+                                scale_h
+                            ));
+                        }
+
                         // Calculate UV coordinates
                         let u0 = x / scale_w;
                         let v0 = y / scale_h;

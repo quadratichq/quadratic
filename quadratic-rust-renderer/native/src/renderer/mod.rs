@@ -79,6 +79,14 @@ pub struct NativeRenderer {
 impl NativeRenderer {
     /// Create a new headless renderer with the given output size
     pub fn new(width: u32, height: u32) -> anyhow::Result<Self> {
+        if width == 0 || height == 0 {
+            return Err(anyhow::anyhow!(
+                "Invalid renderer dimensions: {}x{}",
+                width,
+                height
+            ));
+        }
+
         // Create wgpu instance with all available backends
         let instance = Instance::new(InstanceDescriptor {
             backends: Backends::all(),
@@ -156,7 +164,7 @@ impl NativeRenderer {
 
     /// Resize the render target
     pub fn resize(&mut self, width: u32, height: u32) {
-        if width == self.width && height == self.height {
+        if width == 0 || height == 0 || (width == self.width && height == self.height) {
             return;
         }
 

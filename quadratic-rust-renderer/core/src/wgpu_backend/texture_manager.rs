@@ -25,6 +25,9 @@ impl TextureManager {
         height: u32,
         data: &[u8],
     ) -> Result<(), anyhow::Error> {
+        // Remove existing texture if present to avoid GPU memory leak
+        self.remove(id);
+
         let size = wgpu::Extent3d {
             width,
             height,
