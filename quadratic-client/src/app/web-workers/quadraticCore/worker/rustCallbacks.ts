@@ -40,8 +40,8 @@ declare var self: WorkerGlobalScope &
       y: number,
       sheetId: string,
       code: string,
-      chartPixelWidth: number | null,
-      chartPixelHeight: number | null
+      chartPixelWidth: number,
+      chartPixelHeight: number
     ) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
@@ -183,8 +183,10 @@ export const jsRunPython = (
   chartPixelWidth: number | undefined,
   chartPixelHeight: number | undefined
 ) => {
-  console.log(`[jsRunPython] x=${x}, y=${y}, chartPixelWidth=${chartPixelWidth}, chartPixelHeight=${chartPixelHeight}`);
-  self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth ?? null, chartPixelHeight ?? null);
+  if (chartPixelWidth === undefined || chartPixelHeight === undefined) {
+    throw new Error('chartPixelWidth and chartPixelHeight must be provided');
+  }
+  self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth, chartPixelHeight);
 };
 
 export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {

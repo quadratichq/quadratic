@@ -23,15 +23,25 @@ router.put(
       body: { thumbnailKey },
     } = req;
 
-    await dbClient.file.update({
-      where: {
-        uuid: fileUuid,
-      },
-      data: {
-        thumbnail: thumbnailKey,
-        updatedDate: new Date(),
-      },
-    });
+    // Validate that thumbnailKey matches the expected format for this file
+    const expectedKey = `${fileUuid}-thumbnail.png`;
+    if (thumbnailKey !== expectedKey) {
+      return res.status(400).json({ error: 'Invalid thumbnail key' });
+    }
+
+    try {
+      await dbClient.file.update({
+        where: {
+          uuid: fileUuid,
+        },
+        data: {
+          thumbnail: thumbnailKey,
+          updatedDate: new Date(),
+        },
+      });
+    } catch (error) {
+      return res.status(404).json({ error: 'File not found' });
+    }
 
     return res.status(200).json({ success: true });
   }
