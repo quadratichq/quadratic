@@ -29,7 +29,7 @@ const getViewCharacteristics = async (page: Page) => {
   };
 };
 
-test('Dashboard Views - My Files', async ({ page }) => {
+test('Dashboard Views - Private Files', async ({ page }) => {
   //--------------------------------
   // Grid View
   //--------------------------------
@@ -38,7 +38,8 @@ test('Dashboard Views - My Files', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_dashboard_my_files' });
 
   // Navigate to My files page (the new Home page shows all files combined)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="files-list-file-type-private"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // // Create new team
@@ -55,10 +56,10 @@ test('Dashboard Views - My Files', async ({ page }) => {
 
   // Create test files (navigate back to My Files after each to ensure files are private)
   await createFile(page, { fileName: testFile1 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="files-list-file-type-private"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await createFile(page, { fileName: testFile2 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="files-list-file-type-private"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Locate the grid button
@@ -157,7 +158,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Navigate back to My files page (nav click goes to Home page)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="dashboard-sidebar-team-files-link"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   //--------------------------------
@@ -406,9 +407,9 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   await sharedUserPage.bringToFront();
 
+  await sharedUserPage.reload();
   await sharedUserPage.waitForTimeout(5000);
-
-  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await sharedUserPage.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   // Locate the grid button
   const gridButton = sharedUserPage.locator('button:has(span:text-is("grid_view"))');
@@ -501,12 +502,11 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   await sharedUserPage.keyboard.press('ArrowDown');
   await sharedUserPage.keyboard.type('test', { delay: 250 });
   await sharedUserPage.keyboard.press('Enter');
+  await sharedUserPage.waitForTimeout(60 * 1000);
 
   await sharedUserPage.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
-  await sharedUserPage.waitForTimeout(3000);
-
-  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await sharedUserPage.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -743,15 +743,15 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
 });
 
-test('Filter Files by Name - My Files', async ({ page }) => {
+test('Filter Files by Name - Private Files', async ({ page }) => {
   //--------------------------------
-  // Filter Files by Name - My Files
+  // Filter Files by Name - Private Files
   //--------------------------------
   // Login
   await logIn(page, { emailPrefix: 'e2e_dashboard_filter_files_my' });
 
   // Navigate to My files page (the new Home page shows all files combined)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // // Create new team
@@ -770,10 +770,10 @@ test('Filter Files by Name - My Files', async ({ page }) => {
 
   // Create files (navigate back to My Files after each to ensure files are private)
   await createFile(page, { fileName: file1 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await createFile(page, { fileName: file2 });
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   //--------------------------------
@@ -781,7 +781,7 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   //--------------------------------
 
   // Filter by file 1
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file1);
+  await page.locator('[data-testid="files-list-search-input"]').fill(file1);
   await page.waitForTimeout(2500);
 
   //--------------------------------
@@ -791,23 +791,23 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 2 and assert file 2 is visible
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
+  await page.locator('[data-testid="files-list-search-input"]').fill(file2);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (both files)
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
+  await page.locator('[data-testid="files-list-search-input"]').fill(string1);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string2 and assert file2 (which contains string2) is visible
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
+  await page.locator('[data-testid="files-list-search-input"]').fill(string2);
   await page.waitForTimeout(2500);
   await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up files
-  await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
+  await page.locator('[data-testid="files-list-search-input"]').fill('');
   await page.waitForTimeout(2500);
 
   await cleanUpFiles(page, { fileName: file1, skipFilterClear: true });
@@ -860,14 +860,17 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   // Bring user 1 to the front and navigate to Shared with me files
   await user1Page.bringToFront();
   await user1Page.waitForTimeout(2000);
-  await user1Page.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
+  await user1Page.reload({ waitUntil: 'networkidle' });
+  await user1Page.waitForTimeout(2000);
+  await user1Page.waitForLoadState('domcontentloaded');
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Filter by file 1
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file1);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(file1);
   await user1Page.waitForTimeout(2500);
 
   //--------------------------------
@@ -878,18 +881,18 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 2 and assert file 2 is visible
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(file2);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (both files)
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(string1);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string2 and assert file2 (which contains string2) is visible
-  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
+  await user1Page.locator('[data-testid="files-list-search-input"]').fill(string2);
   await user1Page.waitForTimeout(2500);
   await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
@@ -915,12 +918,12 @@ test('Import Files', async ({ page }) => {
   // Login with dedicated user
   await logIn(page, { emailPrefix: 'e2e_dashboard_import_files' });
 
-  // Navigate to My files page (the new Home page shows all files combined)
-  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  // Navigate to Private files page
+  await page.locator(`[data-testid="files-list-file-type-private"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Wait for load
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await page.locator('[data-testid="files-list-search-input"]').waitFor();
 
   // Clean up files
   await cleanUpFiles(page, { fileName: gridFileName });
@@ -981,7 +984,7 @@ test('Import Files', async ({ page }) => {
   await cleanUpFiles(page, { fileName: excelFileName });
 });
 
-test('Resources Examples - Dashboard Views', async ({ page }) => {
+test('Dashboard Views - Resources Examples', async ({ page }) => {
   //--------------------------------
   // List View
   //--------------------------------
@@ -1074,7 +1077,7 @@ test.skip('Search - Search File Examples', async ({ page }) => {
   //--------------------------------
 
   // Search for an example file
-  await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleFile);
+  await page.locator('[data-testid="files-list-search-input"]').fill(exampleFile);
 
   //--------------------------------
   // Assert:

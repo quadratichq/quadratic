@@ -75,7 +75,7 @@ docker/postgres/data
 docker/redis/data
 docker/static/html
 docker/file-storage
-docker/file-storage-synced-data
+docker/synced-data
 docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data

@@ -15,9 +15,10 @@ const SOLICIT_UPGRADE_INTERVAL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 interface UpgradeDialogProps {
   teamUuid: string;
+  canManageBilling: boolean;
 }
 
-export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
+export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps) {
   const [state, setState] = useAtom(showUpgradeDialogAtom);
 
   const navigation = useNavigation();
@@ -52,7 +53,10 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
 
   return (
     <Dialog open={state.open} onOpenChange={() => setState({ open: false, eventSource: null })}>
-      <DialogContent className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}>
+      <DialogContent
+        className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}
+        data-testid="upgrade-to-pro-dialog"
+      >
         <DialogHeader>
           <DialogTitle>{upgradeTitle}</DialogTitle>
           <DialogDescription>Be sure to unlock all the individual and team features of Quadratic.</DialogDescription>
@@ -66,9 +70,8 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
           )}
           <BillingPlans
             teamUuid={teamUuid}
-            // We hard-code these because we should only ever show this dialog if the right criteria are met.
             isOnPaidPlan={false}
-            canManageBilling={true}
+            canManageBilling={canManageBilling}
             eventSource={`UpgradeDialog-${state.eventSource}`}
           />
         </div>
@@ -88,11 +91,13 @@ export const UpgradeDialogWithPeriodicReminder = ({
   userMakingRequestTeamRole,
   lastSolicitationForProUpgrade,
   billingStatus,
+  canManageBilling,
 }: {
   teamUuid: string;
   userMakingRequestTeamRole: UserTeamRole;
   lastSolicitationForProUpgrade: any;
   billingStatus: TeamSubscriptionStatus | undefined;
+  canManageBilling: boolean;
 }) => {
   const ranAlready = useRef<boolean>(false);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
@@ -134,5 +139,5 @@ export const UpgradeDialogWithPeriodicReminder = ({
     }
   }, [userMakingRequestTeamRole, lastSolicitationForProUpgrade, teamUuid, billingStatus, setShowUpgradeDialog]);
 
-  return <UpgradeDialog teamUuid={teamUuid} />;
+  return <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />;
 };

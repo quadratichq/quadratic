@@ -1,6 +1,8 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import type { Pos } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
@@ -90,6 +92,12 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
     [codeCell.pos.x, codeCell.pos.y, onClick, updateCodeEditor]
   );
 
+  const handleCloseAutoFocus = useCallback((e: Event) => {
+    e.preventDefault();
+    focusGrid();
+    events.emit('setDirty', { cursor: true });
+  }, []);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -98,7 +106,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" onCloseAutoFocus={handleCloseAutoFocus}>
         <DropdownMenuItem onClick={() => handleModeCodeCellDown(false)}>
           <SpillErrorMoveIcon className="mr-2" /> Move down to nearest free space
         </DropdownMenuItem>

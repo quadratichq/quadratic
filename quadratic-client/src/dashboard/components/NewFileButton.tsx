@@ -1,11 +1,10 @@
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import { AddIcon, AIIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -20,12 +19,12 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRef } from 'react';
+import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
-const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
 
-export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
+export function NewFileButton() {
   const {
     activeTeam: {
       connections,
@@ -37,36 +36,31 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
 
+  // Sets the creation of new files as private by default
+  const isPrivate = true;
+
+  if (isMobile) {
+    return null;
+  }
+
   return (
-    <div className="flex gap-2">
+    <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
+        data-testid="files-list-new-file-button"
         variant="default"
-        className="gap-2"
-        onClick={async () => {
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
-            return;
-          }
-          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
-        }}
-      >
-        Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
-      </Button>
-      <Button
-        variant="outline"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
           if (hasReachedLimit) {
             showUpgradeDialog('fileLimitReached');
             return;
           }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
         }}
       >
         New file
       </Button>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -88,9 +82,26 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={async () => {
+                const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+                if (hasReachedLimit) {
+                  showUpgradeDialog('fileLimitReached');
+                  return;
+                }
+                navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+              }}
+            >
+              <AIIcon className="mr-3" />
+              <span className="flex flex-col">
+                Start with AI
+                <span className="text-xs text-muted-foreground">Import data starting with AI</span>
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <FileIcon className="mr-3 text-primary" />
+              <FileIcon className="mr-3" />
               <span className="flex flex-col">
                 Local file
                 <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid</span>
@@ -98,21 +109,8 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
-              <Link
-                reloadDocument
-                to={ROUTES.CREATE_FILE(teamUuid, { state: stateToInsertAndRun, private: isPrivate })}
-              >
-                <ApiIcon className="mr-3 text-primary" />
-                <span className="flex flex-col">
-                  API
-                  <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
-                </span>
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem asChild>
               <Link to={ROUTES.TEMPLATES} className="flex items-center">
-                <ExamplesIcon className="mr-3 text-primary" />
+                <ExamplesIcon className="mr-3" />
 
                 <span className="flex flex-col">
                   Templates

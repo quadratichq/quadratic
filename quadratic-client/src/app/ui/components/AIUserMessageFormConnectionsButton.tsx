@@ -1,6 +1,11 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowConnectionsMenuAtom,
+  editorInteractionStateTeamUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { apiClient } from '@/shared/api/apiClient';
 import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -17,8 +22,76 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback } from 'react';
-import { useRecoilCallback, useSetRecoilState } from 'recoil';
+import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';
+
+const SYNCED_CONNECTION_POLL_INTERVAL_MS = 10000; // 10 seconds
+
+interface ConnectionMenuItemProps {
+  connection: ConnectionList[number];
+  teamUuid: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: ConnectionMenuItemProps) => {
+  const [syncData, setSyncData] = useState({
+    percentCompleted: connection.syncedConnectionPercentCompleted,
+    latestLogStatus: connection.syncedConnectionLatestLogStatus,
+  });
+
+  const isSyncedConnection = isSyncedConnectionType(connection.type);
+
+  // Poll for updated sync data when this is a synced connection type
+  useEffect(() => {
+    if (!isSyncedConnection) {
+      return;
+    }
+
+    const fetchConnection = async () => {
+      try {
+        const fetchedConnection = await apiClient.connections.get({
+          connectionUuid: connection.uuid,
+          teamUuid,
+        });
+        setSyncData({
+          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted,
+          latestLogStatus: fetchedConnection?.syncedConnectionLatestLogStatus,
+        });
+      } catch {
+        // Silently fail - keep using existing sync data
+      }
+    };
+
+    // Fire immediately to get fresh data
+    fetchConnection();
+
+    // Then poll every interval
+    const interval = setInterval(fetchConnection, SYNCED_CONNECTION_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [connection.uuid, isSyncedConnection, teamUuid]);
+
+  const syncState = isSyncedConnection
+    ? deriveSyncStateFromConnectionList({
+        syncedConnectionPercentCompleted: syncData.percentCompleted,
+        syncedConnectionLatestLogStatus: syncData.latestLogStatus,
+      })
+    : null;
+
+  // Disable if syncing or not yet synced
+  const isSyncing = syncState === 'syncing' || syncState === 'not_synced';
+
+  return (
+    <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isSyncing}>
+      <LanguageIcon language={connection.type} className="flex-shrink-0" />
+      <span className="truncate">{connection.name}</span>
+      {isSyncing && <span className="ml-2 text-xs text-muted-foreground">(syncing)</span>}
+      <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
+    </DropdownMenuItem>
+  );
+});
 
 interface AIUserMessageFormConnectionsButtonProps {
   disabled: boolean;
@@ -29,6 +102,7 @@ interface AIUserMessageFormConnectionsButtonProps {
 export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
+    const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
     const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
     const handleOnClickButton = useCallback(() => {
@@ -86,14 +160,13 @@ export const AIUserMessageFormConnectionsButton = memo(
         <TooltipPopover label="Chat with a connected data source" fastMode={true}>
           <DropdownMenuTrigger asChild>
             <Button
-              size="sm"
-              className="h-7 w-7 gap-1.5 rounded-full px-0 shadow-none hover:bg-border @[450px]:w-auto @[450px]:px-2"
+              size="icon-sm"
+              className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
               variant="ghost"
               disabled={disabled}
               onClick={handleOnClickButton}
             >
-              <DatabaseIcon className="" />
-              <span className="hidden text-xs @[450px]:inline">Connections</span>
+              <DatabaseIcon />
             </Button>
           </DropdownMenuTrigger>
         </TooltipPopover>
@@ -109,20 +182,15 @@ export const AIUserMessageFormConnectionsButton = memo(
             <>
               <DropdownMenuSeparator />
 
-              {connections.map((connection) => {
-                const isActive = context.connection?.id === connection.uuid;
-                return (
-                  <DropdownMenuItem
-                    key={connection.uuid}
-                    onClick={() => handleClickConnection(connection.uuid)}
-                    className={`gap-4`}
-                  >
-                    <LanguageIcon language={connection.type} className="flex-shrink-0" />
-                    <span className="truncate">{connection.name}</span>
-                    <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
-                  </DropdownMenuItem>
-                );
-              })}
+              {connections.map((connection) => (
+                <ConnectionMenuItem
+                  key={connection.uuid}
+                  connection={connection}
+                  teamUuid={teamUuid}
+                  isActive={context.connection?.id === connection.uuid}
+                  onClick={() => handleClickConnection(connection.uuid)}
+                />
+              ))}
             </>
           )}
         </DropdownMenuContent>

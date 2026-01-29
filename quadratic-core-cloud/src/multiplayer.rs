@@ -17,6 +17,10 @@ use quadratic_rust_shared::{
 
 use crate::error::Result;
 
+/// Default maximum WebSocket message size (1GB)
+/// This matches the multiplayer server configuration
+pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 1024 * 1024 * 1000;
+
 type AsyncWebsocketSender = Arc<Mutex<WebSocketSender>>;
 
 /// Connect to the Multiplayer server
@@ -25,7 +29,13 @@ pub(crate) async fn connect(
     jwt: &str,
 ) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
     let headers = vec![("authorization".into(), format!("Bearer {}", jwt))];
-    let websocket = WebsocketClient::connect_with_headers(multiplayer_url, headers).await?;
+    // Use 1GB max message size to match multiplayer server configuration
+    let websocket = WebsocketClient::connect_with_headers(
+        multiplayer_url,
+        headers,
+        Some(DEFAULT_MAX_MESSAGE_SIZE),
+    )
+    .await?;
 
     Ok(websocket)
 }

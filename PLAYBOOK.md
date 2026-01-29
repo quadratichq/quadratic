@@ -43,9 +43,14 @@
 6. Add a message to Slack in the `#engineering` channel about the changes
 7. For `preview`:
    1. Log into the `Quadratic Development` AWS account (`us-west-2`)
-   2. Navigate to the `Paramater Store` service
+   2. Navigate to the `Parameter Store` service
    3. Create or locate the environment variable (e.g. `/quadratic-development/ANTHROPIC_API_KEY`)
    4. Set the value and save
+   5. Update `infra/aws-cloudformation/quadratic-preview.yml` to fetch the variable from SSM Parameter Store in the UserData section:
+      ```yaml
+      MY_VAR=$(aws ssm get-parameter --name "/quadratic-development/MY_VAR" --with-decryption --query "Parameter.Value" --output text)
+      ```
+   6. Existing preview branches will need to be recreated (close and reopen PR) to pick up the CloudFormation changes
 8. For `qa` and `prod`:
    1. Log into Pulumi (likely through the Github SSO) (https://app.pulumi.com/quadratic)
    1. Click on the `Environments` link in the left-hand sidebar

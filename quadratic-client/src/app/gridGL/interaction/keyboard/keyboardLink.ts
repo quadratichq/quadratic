@@ -1,9 +1,15 @@
 import { Action } from '@/app/actions/actions';
+import { events } from '@/app/events/events';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 
 export function keyboardLink(event: React.KeyboardEvent<HTMLElement>): boolean {
+  if (matchShortcut(Action.InsertHyperlink, event)) {
+    events.emit('insertLink');
+    return true;
+  }
+
   if (matchShortcut(Action.CmdClick, event)) {
     if (!content.cellsSheets.current) {
       throw new Error('Expected cellsSheets.current to be defined in PointerLink');

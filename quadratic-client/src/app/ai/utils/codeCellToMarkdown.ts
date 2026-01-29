@@ -67,7 +67,7 @@ ${
     ? 'When generating BigQuery queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
     : ''
 }
-${language === 'MIXPANEL' ? 'When generating Mixpanel queries, do not include the schema name in the query.' : ''}
+${language === 'MIXPANEL' || language === 'GOOGLE_ANALYTICS' || language === 'PLAID' ? 'When generating Mixpanel, Google Analytics, or Plaid queries, do not include the schema name in the query.  Only quote column names and tables names if they have reserved words.  Table names are not requires in select statemnts where only one table is being selected.' : ''}
 \n`
     : `Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n
 Use any functions that are part of the ${language} library.\n

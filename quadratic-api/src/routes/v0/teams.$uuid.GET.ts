@@ -1,3 +1,4 @@
+import type { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
@@ -18,6 +19,9 @@ import { ApiError } from '../../utils/ApiError';
 import { getFilePermissions } from '../../utils/permissions';
 import { getDecryptedTeam } from '../../utils/teams';
 
+// Status when checkout is in progress but webhook hasn't been received yet
+const INCOMPLETE_STATUS: SubscriptionStatus = 'INCOMPLETE';
+
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
@@ -36,8 +40,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
   // Update billing info to ensure we have the latest subscription status
-  // Only do this if we're checking for a subscription update after checkout
-  if (req.query.updateBilling === 'true') {
+  // Do this if: 1) explicitly requested, or 2) status is INCOMPLETE (checkout in progress, webhook may be delayed)
+  const shouldUpdateBilling = req.query.updateBilling === 'true' || team.stripeSubscriptionStatus === INCOMPLETE_STATUS;
+
+  if (shouldUpdateBilling) {
     await updateBilling(team);
   }
 
@@ -53,6 +59,19 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
         },
         orderBy: {
           createdDate: 'desc',
+        },
+        include: {
+          SyncedConnection: {
+            select: {
+              percentCompleted: true,
+              updatedDate: true,
+              SyncedConnectionLog: {
+                select: { status: true, error: true },
+                orderBy: { createdDate: 'desc' },
+                take: 1,
+              },
+            },
+          },
         },
       },
       UserTeamRole: {

@@ -334,13 +334,15 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   }, [promptSuggestionsCount, scrollToBottom]);
 
   if (messagesCount === 0) {
-    return null;
+    // Return an empty placeholder to maintain grid layout structure
+    // This ensures the form stays at the bottom in the correct grid row
+    return <div />;
   }
 
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-4 overflow-y-auto px-2 pb-8 outline-none"
+      className="flex select-text flex-col gap-2 overflow-y-auto px-2 pb-8 outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -383,7 +385,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           <div
             key={`${index}-${message.role}-${message.contextType}-${message.content}`}
             className={cn(
-              'flex flex-col gap-3',
+              'flex flex-col gap-2',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
               ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
@@ -446,7 +448,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
-                      expandedDefault={false}
                       onContentChange={
                         debugAIAnalystChatEditing &&
                         ((newItem) => {

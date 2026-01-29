@@ -1,18 +1,23 @@
 import type { AnalyticsAIChat } from '@prisma/client';
 import type { Response } from 'express';
 import {
-  getLastAIPromptMessageIndex,
-  getLastUserMessage,
-  getLastUserMessageType,
-  isContentText,
+    getLastAIPromptMessageIndex,
+    getLastUserMessage,
+    getLastUserMessageType,
+    isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { AILanguagePreferencesSchema, type AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
-import { getAIRulesContext, getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import {
+    getAILanguagesContext,
+    getAIRulesContext,
+    getQuadraticContext,
+    getToolUseContext,
+} from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
@@ -54,11 +59,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  // Fetch user and team AI rules
+  // Fetch user and team AI rules and language preferences
   const [user, team] = await Promise.all([
     dbClient.user.findUnique({
       where: { id: userId },
-      select: { aiRules: true },
+      select: { aiRules: true, aiLanguages: true },
     }),
     dbClient.team.findUnique({
       where: { id: ownerTeam.id },
@@ -119,7 +124,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
 
   // Abort the request if the client disconnects or aborts the request
   const abortController = new AbortController();
-  req.socket.on('close', () => {
+  res.on('close', () => {
     abortController.abort();
   });
 
@@ -143,8 +148,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...toolUseContext, ...args.messages];
   }
 
+  // Get the user's preferred AI response language(s)
+  const result = AILanguagePreferencesSchema.safeParse(user?.aiLanguages);
+  const userAiLanguagePreferences = result.success ? result.data : [];
+
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(source, args.language);
+    const quadraticContext = getQuadraticContext(
+      source,
+      args.language,
+      userAiLanguagePreferences.includes('Javascript')
+    );
     args.messages = [...quadraticContext, ...args.messages];
   }
 
@@ -152,6 +165,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const aiRulesContext = getAIRulesContext(user?.aiRules ?? null, team?.aiRules ?? null);
   if (aiRulesContext.length > 0) {
     args.messages = [...aiRulesContext, ...args.messages];
+  }
+
+  // Add AI language preferences context
+  if (userAiLanguagePreferences.length > 0) {
+    const aiLanguagesContext = getAILanguagesContext(userAiLanguagePreferences);
+    args.messages = [...aiLanguagesContext, ...args.messages];
   }
 
   const parsedResponse = await handleAIRequest({
