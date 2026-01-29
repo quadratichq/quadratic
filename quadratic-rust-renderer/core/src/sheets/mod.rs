@@ -8,6 +8,7 @@
 //! - Platform-agnostic rendering via RenderContext
 
 mod sheet;
+#[allow(clippy::module_inception)]
 mod sheets;
 
 pub mod fills;

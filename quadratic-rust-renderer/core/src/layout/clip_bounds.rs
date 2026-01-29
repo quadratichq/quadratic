@@ -65,7 +65,7 @@ pub fn calculate_clip_bounds(labels: &mut [CellLabel]) {
     for info in &label_infos {
         row_map
             .entry(info.row)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((info.col, info.index));
     }
 

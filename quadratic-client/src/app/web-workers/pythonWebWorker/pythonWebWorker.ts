@@ -188,7 +188,7 @@ class PythonWebWorker {
       }
 
       // Otherwise wait for the afterplot event with a fallback timeout
-      const RENDER_TIMEOUT_MS = 2000;
+      const RENDER_TIMEOUT_MS = 5000;
       let resolved = false;
 
       const onAfterPlot = () => {

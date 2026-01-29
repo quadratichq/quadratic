@@ -452,14 +452,12 @@ impl CellLabel {
 
         // Detect naked URLs (plain text cells containing a URL)
         // Only check if there are no existing link spans and no special cell type
-        if label.link_spans.is_empty() && cell.special.is_none() {
-            if is_naked_url(&cell.value) {
-                label.link_spans.push(RenderCellLinkSpan {
-                    start: 0,
-                    end: cell.value.chars().count() as u32,
-                    url: cell.value.clone(),
-                });
-            }
+        if label.link_spans.is_empty() && cell.special.is_none() && is_naked_url(&cell.value) {
+            label.link_spans.push(RenderCellLinkSpan {
+                start: 0,
+                end: cell.value.chars().count() as u32,
+                url: cell.value.clone(),
+            });
         }
 
         label

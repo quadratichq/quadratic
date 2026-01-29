@@ -180,12 +180,9 @@ export const jsRunPython = (
   y: number,
   sheetId: string,
   code: string,
-  chartPixelWidth: number | undefined,
-  chartPixelHeight: number | undefined
+  chartPixelWidth: number,
+  chartPixelHeight: number
 ) => {
-  if (chartPixelWidth === undefined || chartPixelHeight === undefined) {
-    throw new Error('chartPixelWidth and chartPixelHeight must be provided');
-  }
   self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth, chartPixelHeight);
 };
 
