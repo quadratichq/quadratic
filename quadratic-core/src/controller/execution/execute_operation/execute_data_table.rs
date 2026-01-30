@@ -228,11 +228,19 @@ impl GridController {
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_result(sheet_id)?;
 
-            // Gracefully handle case where data table was already deleted
-            // (can happen with duplicate DeleteDataTable operations)
-            let Some(data_table_pos) = sheet.data_tables.get_pos_contains(pos) else {
-                return Ok(());
+            // Find the data table that contains this position
+            let data_table_pos = match sheet.data_table_pos_that_contains(pos) {
+                Some(p) => p,
+                None => return Ok(()), // No table at this position, nothing to delete
             };
+
+            // Only delete if the table's anchor matches the requested position.
+            // This prevents deleting the wrong table when:
+            // 1. The table was already deleted (e.g., by check_deleted_data_tables)
+            // 2. Another table's spill cleared and now contains this position
+            if data_table_pos != pos {
+                return Ok(());
+            }
 
             // mark the data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;

@@ -580,7 +580,7 @@ pub(crate) fn export_data_tables(
                 borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
-                chart_image: data_table.chart_image.clone(),
+                chart_image: data_table.chart_image,
             };
 
             (current::PosSchema::from(pos), data_table)
