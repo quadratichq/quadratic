@@ -139,11 +139,11 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
         </PopoverTrigger>
 
         <PopoverContent
-          className="flex w-auto gap-0 p-0"
+          className="relative w-72 p-0"
           id="ai-model-popover-content"
           onMouseLeave={() => setHoveredModel(null)}
         >
-          <form className="w-72">
+          <form>
             <RadioGroup
               value={radioGroupValue}
               className="flex flex-col gap-0"
@@ -204,9 +204,9 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
             </RadioGroup>
           </form>
 
-          {/* Model Details Panel */}
+          {/* Model Details Panel - positioned absolutely to the right */}
           {hoveredModel && (
-            <div className="w-64 border-l border-border bg-muted/30 p-4">
+            <div className="absolute left-full top-0 ml-2 w-64 rounded-md border border-border bg-popover p-4 shadow-md">
               <div className="mb-3">
                 <h4 className="font-medium">{hoveredModel.config.displayName}</h4>
                 <span className="text-xs text-muted-foreground">{hoveredModel.config.displayProvider}</span>
