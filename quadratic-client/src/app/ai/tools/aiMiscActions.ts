@@ -73,7 +73,7 @@ export const miscToolsActions: MiscToolActions = {
   },
   [AITool.TextSearch]: async (args) => {
     try {
-      const { query, case_sensitive, whole_cell, search_code, sheet_name } = args;
+      const { query, case_sensitive, whole_cell, search_code, sheet_name, regex } = args;
       let sheet_id = null;
       if (sheet_name) {
         sheet_id = sheets.getSheetIdFromName(sheet_name) ?? null;
@@ -87,6 +87,7 @@ export const miscToolsActions: MiscToolActions = {
         whole_cell: whole_cell ?? null,
         search_code: search_code ?? null,
         sheet_id,
+        regex: regex ?? null,
       });
 
       const sortedResults: Record<string, JsSheetPosText[]> = {};

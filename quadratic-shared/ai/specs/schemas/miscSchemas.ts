@@ -48,6 +48,7 @@ export const miscToolsArgsSchemas = {
     whole_cell: booleanSchema,
     search_code: booleanSchema,
     sheet_name: z.string().nullable().optional(),
+    regex: booleanSchema,
   }),
   [AITool.Undo]: z.object({
     count: numberSchema.nullable().optional(),
@@ -333,13 +334,15 @@ It requires the query to search for.\n
 This tool searches for text in cells within a specific sheet or the entire file.\n
 Use this tool when looking for a specific piece of output in the file.\n
 This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
+Supports regex patterns for advanced matching when the regex option is enabled.\n
 `,
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'The query to search for',
+          description:
+            'The query to search for. Can be a plain text string or a regex pattern if the regex option is enabled.',
         },
         case_sensitive: {
           type: 'boolean',
@@ -358,8 +361,13 @@ This tool can only search for outputs that exist in cells within the file. This 
           type: ['string', 'null'],
           description: 'The sheet name to search in. If not provided, then it searches all sheets.',
         },
+        regex: {
+          type: 'boolean',
+          description:
+            'Whether to treat the query as a regular expression pattern. When true, the query is interpreted as a regex (e.g., "\\d+" to match numbers, "^hello" to match cells starting with "hello").',
+        },
       },
-      required: ['query', 'case_sensitive', 'whole_cell', 'search_code', 'sheet_name'],
+      required: ['query', 'case_sensitive', 'whole_cell', 'search_code', 'sheet_name', 'regex'],
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.TextSearch],
@@ -367,6 +375,12 @@ This tool can only search for outputs that exist in cells within the file. This 
 This tool searches for text in cells within a specific sheet or the entire file.\n
 Use this tool when looking for a specific piece of output in the file.\n
 This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
+Supports regex patterns for advanced matching when the regex option is enabled. Common patterns include:\n
+- "\\d+" to match one or more digits\n
+- "^hello" to match cells starting with "hello"\n
+- "world$" to match cells ending with "world"\n
+- "[A-Z]+" to match uppercase letters\n
+- "foo|bar" to match either "foo" or "bar"\n
 `,
   },
   [AITool.Undo]: {
