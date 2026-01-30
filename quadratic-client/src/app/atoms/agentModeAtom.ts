@@ -1,7 +1,7 @@
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { atom } from 'recoil';
 
-const AGENT_MODE_KEY = 'agentMode';
+export const AGENT_MODE_KEY = 'agentMode';
 
 const DEFAULT_AGENT_MODE = false;
 
