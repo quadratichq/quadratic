@@ -295,31 +295,169 @@ function convertCellValue(value, cellType) {{
     Ok(wrapped_code)
 }
 
-/// Automatically adds await before q.cells() calls if not already present
+/// Automatically wraps q.cells() calls with (await q.cells(...)) if not already awaited.
+/// This ensures method chaining like q.cells("A1").flat() works correctly.
+///
+/// Handles:
+/// - Adding `(await ...)` around q.cells() calls
+/// - Wrapping existing `await q.cells(...)` with parentheses when method chaining is detected
+/// - Properly skipping string literals (including escaped quotes and template literals)
 fn add_await_to_qcells(code: &str) -> String {
     let pattern = "q.cells(";
+    let pattern_chars: Vec<char> = pattern.chars().collect();
     let mut result = String::with_capacity(code.len() + 100);
+    let chars: Vec<char> = code.chars().collect();
     let mut i = 0;
 
-    while i < code.len() {
-        // Check if we're at the start of "q.cells("
-        if i + pattern.len() <= code.len() && &code[i..i + pattern.len()] == pattern {
+    while i < chars.len() {
+        // Check if we're at the start of "q.cells(" (efficient pattern matching)
+        let matches_pattern = i + pattern_chars.len() <= chars.len()
+            && chars[i..i + pattern_chars.len()]
+                .iter()
+                .zip(pattern_chars.iter())
+                .all(|(a, b)| a == b);
+
+        if matches_pattern {
             // Look backwards to see if "await" is already there
             let before_start = result.trim_end();
             let has_await = before_start.ends_with("await");
 
-            if !has_await {
-                result.push_str("await ");
+            // Find the matching closing parenthesis for q.cells(...)
+            let start_idx = i + pattern_chars.len(); // Position after "q.cells("
+            let end_idx = find_matching_paren(&chars, start_idx);
+
+            if has_await {
+                // Check if there's method chaining after the q.cells(...) call
+                let has_chaining = end_idx < chars.len() && chars[end_idx] == '.';
+
+                if has_chaining {
+                    // Need to wrap with parentheses: await q.cells(...).flat() -> (await q.cells(...)).flat()
+                    // Remove the trailing "await" and whitespace from result, then add "(await "
+                    let trimmed = result.trim_end();
+                    let await_start = trimmed.len() - "await".len();
+                    result.truncate(await_start);
+                    // Preserve the whitespace before "await"
+                    result.push_str("(await ");
+                    result.push_str(pattern);
+                    for ch in chars.iter().take(end_idx).skip(start_idx) {
+                        result.push(*ch);
+                    }
+                    result.push(')');
+                    i = end_idx;
+                } else {
+                    // No chaining, keep as-is
+                    result.push_str(pattern);
+                    i += pattern_chars.len();
+                }
+            } else {
+                // No await present, wrap with (await q.cells(...))
+                result.push_str("(await ");
+                result.push_str(pattern);
+                for ch in chars.iter().take(end_idx).skip(start_idx) {
+                    result.push(*ch);
+                }
+                result.push(')');
+                i = end_idx;
             }
-            result.push_str(pattern);
-            i += pattern.len();
         } else {
-            result.push(code.chars().nth(i).unwrap());
-            i += code.chars().nth(i).unwrap().len_utf8();
+            result.push(chars[i]);
+            i += 1;
         }
     }
 
     result
+}
+
+/// Find the matching closing parenthesis, properly handling nested parens and string literals.
+fn find_matching_paren(chars: &[char], start_idx: usize) -> usize {
+    let mut paren_depth = 1;
+    let mut idx = start_idx;
+
+    while idx < chars.len() && paren_depth > 0 {
+        match chars[idx] {
+            '(' => paren_depth += 1,
+            ')' => paren_depth -= 1,
+            '"' | '\'' => {
+                // Skip regular string literals
+                let quote = chars[idx];
+                idx += 1;
+                while idx < chars.len() {
+                    if chars[idx] == quote && !is_escaped(chars, idx) {
+                        break;
+                    }
+                    idx += 1;
+                }
+            }
+            '`' => {
+                // Skip template literals, handling ${...} expressions
+                idx += 1;
+                idx = skip_template_literal(chars, idx);
+                continue; // Don't increment idx again
+            }
+            _ => {}
+        }
+        idx += 1;
+    }
+
+    idx
+}
+
+/// Check if the character at `idx` is escaped by counting preceding backslashes.
+/// A character is escaped if preceded by an odd number of backslashes.
+fn is_escaped(chars: &[char], idx: usize) -> bool {
+    let mut backslash_count = 0;
+    let mut check_idx = idx;
+    while check_idx > 0 && chars[check_idx - 1] == '\\' {
+        backslash_count += 1;
+        check_idx -= 1;
+    }
+    backslash_count % 2 == 1
+}
+
+/// Skip a template literal, handling nested ${...} expressions.
+/// Returns the index after the closing backtick.
+fn skip_template_literal(chars: &[char], start_idx: usize) -> usize {
+    let mut idx = start_idx;
+
+    while idx < chars.len() {
+        if chars[idx] == '`' && !is_escaped(chars, idx) {
+            // End of template literal
+            return idx;
+        } else if idx + 1 < chars.len() && chars[idx] == '$' && chars[idx + 1] == '{' {
+            // Start of template expression ${...}
+            idx += 2; // Skip "${"
+            let mut brace_depth = 1;
+            while idx < chars.len() && brace_depth > 0 {
+                match chars[idx] {
+                    '{' => brace_depth += 1,
+                    '}' => brace_depth -= 1,
+                    '"' | '\'' => {
+                        // Skip string inside expression
+                        let quote = chars[idx];
+                        idx += 1;
+                        while idx < chars.len() {
+                            if chars[idx] == quote && !is_escaped(chars, idx) {
+                                break;
+                            }
+                            idx += 1;
+                        }
+                    }
+                    '`' => {
+                        // Nested template literal inside expression
+                        idx += 1;
+                        idx = skip_template_literal(chars, idx);
+                        continue;
+                    }
+                    _ => {}
+                }
+                idx += 1;
+            }
+        } else {
+            idx += 1;
+        }
+    }
+
+    idx
 }
 
 fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Result<JsCodeResult> {
@@ -648,22 +786,35 @@ mod tests {
 
     #[test]
     fn test_add_await_to_qcells() {
-        // Test: adds await when missing
+        // Test: adds await and wraps with parentheses when missing
         let code = "const x = q.cells('A1')";
         let result = add_await_to_qcells(code);
-        assert_eq!(result, "const x = await q.cells('A1')");
+        assert_eq!(result, "const x = (await q.cells('A1'))");
 
-        // Test: doesn't duplicate await
+        // Test: doesn't duplicate await when no chaining (keeps existing await as-is)
         let code = "const x = await q.cells('A1')";
         let result = add_await_to_qcells(code);
         assert_eq!(result, "const x = await q.cells('A1')");
+
+        // Test: wraps existing await with parentheses when method chaining is detected
+        let code = "const x = await q.cells('A1').flat()";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = (await q.cells('A1')).flat()");
+
+        // Test: existing await with multiple chained methods
+        let code = "const x = await q.cells('A1:B2').flat().map(x => x * 2)";
+        let result = add_await_to_qcells(code);
+        assert_eq!(
+            result,
+            "const x = (await q.cells('A1:B2')).flat().map(x => x * 2)"
+        );
 
         // Test: handles multiple calls
         let code = "const x = q.cells('A1')\nconst y = q.cells('B1')";
         let result = add_await_to_qcells(code);
         assert_eq!(
             result,
-            "const x = await q.cells('A1')\nconst y = await q.cells('B1')"
+            "const x = (await q.cells('A1'))\nconst y = (await q.cells('B1'))"
         );
 
         // Test: handles mixed await and non-await
@@ -671,13 +822,48 @@ mod tests {
         let result = add_await_to_qcells(code);
         assert_eq!(
             result,
-            "const x = await q.cells('A1')\nconst y = await q.cells('B1')"
+            "const x = await q.cells('A1')\nconst y = (await q.cells('B1'))"
         );
 
         // Test: start of line
         let code = "q.cells('A1')";
         let result = add_await_to_qcells(code);
-        assert_eq!(result, "await q.cells('A1')");
+        assert_eq!(result, "(await q.cells('A1'))");
+
+        // Test: method chaining works correctly
+        let code = "const x = q.cells('A1').flat()";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = (await q.cells('A1')).flat()");
+
+        // Test: nested parentheses in arguments
+        let code = "const x = q.cells(foo(bar()))";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = (await q.cells(foo(bar())))");
+
+        // Test: string with parentheses
+        let code = r#"const x = q.cells("A1:B(2)")"#;
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, r#"const x = (await q.cells("A1:B(2)"))"#);
+
+        // Test: escaped backslash before quote (the backslash is escaped, so quote ends string)
+        let code = r#"const x = q.cells("test\\")"#;
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, r#"const x = (await q.cells("test\\"))"#);
+
+        // Test: template literal with expression
+        let code = r#"const x = q.cells(`${sheetName}:A1`)"#;
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, r#"const x = (await q.cells(`${sheetName}:A1`))"#);
+
+        // Test: template literal with nested template literal in expression
+        let code = r#"const x = q.cells(`${foo(`nested`)}`)"#;
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, r#"const x = (await q.cells(`${foo(`nested`)}`))"#);
+
+        // Test: template literal with parentheses in expression
+        let code = r#"const x = q.cells(`${func(a, b)}:A1`)"#;
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, r#"const x = (await q.cells(`${func(a, b)}:A1`))"#);
     }
 
     #[tokio::test]

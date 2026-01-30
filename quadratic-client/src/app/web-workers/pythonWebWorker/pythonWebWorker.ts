@@ -69,6 +69,7 @@ class PythonWebWorker {
 
   private renderChartToImage = (html: string, width: number, height: number): Promise<string | null> => {
     return new Promise((resolve) => {
+      const startTime = Date.now();
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
@@ -100,7 +101,8 @@ class PythonWebWorker {
             throw new Error('No content window');
           }
 
-          const plotly = await this.waitForPlotly(contentWindow, CHART_IMAGE_TIMEOUT_MS);
+          const remainingTimeout = Math.max(0, CHART_IMAGE_TIMEOUT_MS - (Date.now() - startTime));
+          const plotly = await this.waitForPlotly(contentWindow, remainingTimeout);
           if (!plotly) {
             throw new Error('Plotly not available');
           }
@@ -139,6 +141,16 @@ class PythonWebWorker {
             cleanup();
             resolve(null);
           }
+        }
+      };
+
+      iframe.onerror = (e) => {
+        console.error('[pythonWebWorker] Iframe failed to load:', e);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          cleanup();
+          resolve(null);
         }
       };
 

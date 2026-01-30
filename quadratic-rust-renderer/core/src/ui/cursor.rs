@@ -127,3 +127,127 @@ impl Default for Cursor {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cursor_new() {
+        let cursor = Cursor::new();
+        assert!(cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_cursor_default() {
+        let cursor = Cursor::default();
+        assert!(cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_set_selected_cell() {
+        let mut cursor = Cursor::new();
+        cursor.mark_clean();
+        assert!(!cursor.is_dirty());
+
+        cursor.set_selected_cell(5, 10);
+        assert!(cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_set_selection() {
+        let mut cursor = Cursor::new();
+        cursor.mark_clean();
+
+        cursor.set_selection(1, 1, 10, 10);
+        assert!(cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_clear_selection() {
+        let mut cursor = Cursor::new();
+        cursor.set_selection(1, 1, 10, 10);
+        cursor.mark_clean();
+
+        cursor.clear_selection();
+        assert!(cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_mark_clean_dirty() {
+        let mut cursor = Cursor::new();
+
+        cursor.mark_clean();
+        assert!(!cursor.is_dirty());
+
+        cursor.mark_dirty();
+        assert!(cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_update_clears_dirty() {
+        let mut cursor = Cursor::new();
+        let viewport = Viewport::new();
+        let offsets = quadratic_core::sheet_offsets::SheetOffsets::default();
+
+        assert!(cursor.is_dirty());
+
+        cursor.update(&viewport, &offsets);
+        assert!(!cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_update_generates_render_data() {
+        let mut cursor = Cursor::new();
+        let viewport = Viewport::new();
+        let offsets = quadratic_core::sheet_offsets::SheetOffsets::default();
+
+        assert!(cursor.get_render_data().is_none());
+
+        cursor.update(&viewport, &offsets);
+        assert!(cursor.get_render_data().is_some());
+    }
+
+    #[test]
+    fn test_update_skipped_when_clean() {
+        let mut cursor = Cursor::new();
+        let viewport = Viewport::new();
+        let offsets = quadratic_core::sheet_offsets::SheetOffsets::default();
+
+        cursor.update(&viewport, &offsets);
+        cursor.mark_clean();
+
+        // This update should be skipped
+        cursor.update(&viewport, &offsets);
+        assert!(!cursor.is_dirty());
+    }
+
+    #[test]
+    fn test_get_fill_vertices() {
+        let mut cursor = Cursor::new();
+        let viewport = Viewport::new();
+        let offsets = quadratic_core::sheet_offsets::SheetOffsets::default();
+
+        // Before update, no vertices
+        assert!(cursor.get_fill_vertices().is_none());
+
+        cursor.update(&viewport, &offsets);
+
+        // After update, should have vertices
+        let vertices = cursor.get_fill_vertices();
+        assert!(vertices.is_some());
+    }
+
+    #[test]
+    fn test_get_border_vertices() {
+        let mut cursor = Cursor::new();
+        let viewport = Viewport::new();
+        let offsets = quadratic_core::sheet_offsets::SheetOffsets::default();
+
+        cursor.update(&viewport, &offsets);
+
+        // Should have border data (may be empty)
+        let vertices = cursor.get_border_vertices(1.0);
+        assert!(vertices.is_some());
+    }
+}

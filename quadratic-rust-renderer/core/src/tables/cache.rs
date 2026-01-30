@@ -202,3 +202,232 @@ impl TableCache {
         self.dirty = true;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::{CodeCellLanguage, RenderCodeCellState};
+
+    fn create_test_code_cell(x: i32, y: i32, name: &str) -> RenderCodeCell {
+        RenderCodeCell {
+            x,
+            y,
+            w: 3,
+            h: 5,
+            language: CodeCellLanguage::Python,
+            state: RenderCodeCellState::Success,
+            spill_error: None,
+            name: name.to_string(),
+            columns: vec![],
+            first_row_header: false,
+            sort: None,
+            sort_dirty: false,
+            alternating_colors: false,
+            is_code: true,
+            is_html: false,
+            is_html_image: false,
+            show_name: true,
+            show_columns: true,
+            last_modified: 0,
+        }
+    }
+
+    #[test]
+    fn test_table_cache_new() {
+        let cache = TableCache::new();
+        assert!(cache.is_empty());
+        assert_eq!(cache.len(), 0);
+    }
+
+    #[test]
+    fn test_table_cache_default() {
+        let cache = TableCache::default();
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_add_table() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        let code_cell = create_test_code_cell(1, 1, "Table1");
+
+        cache.add_table(code_cell, &offsets);
+
+        assert_eq!(cache.len(), 1);
+        assert!(!cache.is_empty());
+        assert!(cache.get(1, 1).is_some());
+    }
+
+    #[test]
+    fn test_add_table_no_headers() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        let mut code_cell = create_test_code_cell(1, 1, "Table1");
+        code_cell.show_name = false;
+        code_cell.show_columns = false;
+
+        // Table without visible headers should not be cached
+        cache.add_table(code_cell, &offsets);
+
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_get_by_name() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "MyTable"), &offsets);
+
+        assert!(cache.get_by_name("MyTable").is_some());
+        assert!(cache.get_by_name("NonExistent").is_none());
+    }
+
+    #[test]
+    fn test_remove_table() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+
+        assert_eq!(cache.len(), 1);
+
+        cache.remove_table(Pos { x: 1, y: 1 });
+
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+        cache.add_table(create_test_code_cell(5, 5, "Table2"), &offsets);
+
+        assert_eq!(cache.len(), 2);
+
+        cache.clear();
+
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_set_tables() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+
+        let tables = vec![
+            create_test_code_cell(1, 1, "Table1"),
+            create_test_code_cell(5, 5, "Table2"),
+            create_test_code_cell(10, 10, "Table3"),
+        ];
+
+        cache.set_tables(tables, &offsets);
+
+        assert_eq!(cache.len(), 3);
+    }
+
+    #[test]
+    fn test_set_active_table() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+        cache.add_table(create_test_code_cell(5, 5, "Table2"), &offsets);
+
+        cache.mark_clean();
+
+        cache.set_active_table(Some(Pos { x: 1, y: 1 }));
+        assert!(cache.is_dirty());
+        assert!(cache.get(1, 1).unwrap().is_active());
+        assert!(!cache.get(5, 5).unwrap().is_active());
+
+        cache.mark_clean();
+
+        cache.set_active_table(Some(Pos { x: 5, y: 5 }));
+        assert!(cache.is_dirty());
+        assert!(!cache.get(1, 1).unwrap().is_active());
+        assert!(cache.get(5, 5).unwrap().is_active());
+    }
+
+    #[test]
+    fn test_set_active_table_none() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+
+        cache.set_active_table(Some(Pos { x: 1, y: 1 }));
+        assert!(cache.get(1, 1).unwrap().is_active());
+
+        cache.set_active_table(None);
+        assert!(!cache.get(1, 1).unwrap().is_active());
+    }
+
+    #[test]
+    fn test_update_table() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+
+        // Update with new code cell
+        cache.update_table(Pos { x: 1, y: 1 }, Some(create_test_code_cell(1, 1, "UpdatedTable")), &offsets);
+        assert!(cache.get_by_name("UpdatedTable").is_some());
+
+        // Remove by passing None
+        cache.update_table(Pos { x: 1, y: 1 }, None, &offsets);
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_iter() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+        cache.add_table(create_test_code_cell(5, 5, "Table2"), &offsets);
+
+        let count = cache.iter().count();
+        assert_eq!(count, 2);
+    }
+
+    #[test]
+    fn test_dirty_tracking() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+
+        assert!(!cache.is_dirty()); // Default is not dirty
+
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+        assert!(cache.is_dirty());
+
+        cache.mark_clean();
+        assert!(!cache.is_dirty());
+
+        cache.mark_dirty();
+        assert!(cache.is_dirty());
+    }
+
+    #[test]
+    fn test_update_bounds() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+
+        cache.mark_clean();
+        cache.update_bounds(&offsets);
+
+        assert!(cache.is_dirty());
+    }
+
+    #[test]
+    fn test_get_visible_tables() {
+        let mut cache = TableCache::new();
+        let offsets = SheetOffsets::default();
+        cache.add_table(create_test_code_cell(1, 1, "Table1"), &offsets);
+        cache.add_table(create_test_code_cell(100, 100, "Table2"), &offsets);
+
+        // Large viewport should include both
+        let visible: Vec<_> = cache.get_visible_tables(0.0, 0.0, 10000.0, 10000.0).collect();
+        assert_eq!(visible.len(), 2);
+
+        // Small viewport at origin might include only first table
+        let visible: Vec<_> = cache.get_visible_tables(0.0, 0.0, 200.0, 200.0).collect();
+        assert!(!visible.is_empty());
+    }
+}

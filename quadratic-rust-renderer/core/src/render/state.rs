@@ -226,3 +226,190 @@ impl Default for CoreState {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_core_state_new() {
+        let state = CoreState::new();
+        assert!(state.show_headings);
+        assert!(!state.debug_show_text_updates);
+        assert!(state.is_dirty());
+        assert!(state.current_sheet_id().is_none());
+    }
+
+    #[test]
+    fn test_core_state_default() {
+        let state = CoreState::default();
+        assert!(state.show_headings);
+        assert!(state.is_dirty());
+    }
+
+    #[test]
+    fn test_set_viewport() {
+        let mut state = CoreState::new();
+        state.mark_clean();
+
+        state.set_viewport(100.0, 200.0, 2.0);
+        assert!(state.is_dirty());
+        assert_eq!(state.viewport.x(), 100.0);
+        assert_eq!(state.viewport.y(), 200.0);
+        assert_eq!(state.viewport.scale(), 2.0);
+    }
+
+    #[test]
+    fn test_resize_viewport() {
+        let mut state = CoreState::new();
+        state.mark_clean();
+
+        state.resize_viewport(1024.0, 768.0, 2.0);
+        assert!(state.is_dirty());
+        assert_eq!(state.viewport.width(), 1024.0);
+        assert_eq!(state.viewport.height(), 768.0);
+        assert_eq!(state.viewport.dpr(), 2.0);
+    }
+
+    #[test]
+    fn test_set_current_sheet() {
+        let mut state = CoreState::new();
+        state.mark_clean();
+
+        let sheet_id = SheetId::TEST;
+        state.set_current_sheet(sheet_id);
+
+        assert!(state.is_dirty());
+        assert_eq!(state.current_sheet_id(), Some(sheet_id));
+    }
+
+    #[test]
+    fn test_has_fonts_initially_false() {
+        let state = CoreState::new();
+        assert!(!state.has_fonts());
+    }
+
+    #[test]
+    fn test_set_show_headings() {
+        let mut state = CoreState::new();
+        state.mark_clean();
+
+        state.set_show_headings(false);
+        assert!(!state.show_headings);
+        assert!(state.is_dirty());
+
+        state.mark_clean();
+        state.set_show_headings(false); // No change
+        assert!(!state.is_dirty());
+
+        state.set_show_headings(true);
+        assert!(state.show_headings);
+        assert!(state.is_dirty());
+    }
+
+    #[test]
+    fn test_get_heading_dimensions() {
+        let mut state = CoreState::new();
+
+        // When headings are visible
+        let (width, height) = state.get_heading_dimensions();
+        assert!(width > 0.0);
+        assert!(height > 0.0);
+
+        // When headings are hidden
+        state.set_show_headings(false);
+        let (width, height) = state.get_heading_dimensions();
+        assert_eq!(width, 0.0);
+        assert_eq!(height, 0.0);
+    }
+
+    #[test]
+    fn test_set_cursor() {
+        let mut state = CoreState::new();
+        state.set_cursor(5, 10);
+        // Just verify it doesn't panic - cursor state is internal
+    }
+
+    #[test]
+    fn test_set_cursor_selection() {
+        let mut state = CoreState::new();
+        state.set_cursor_selection(1, 1, 10, 10);
+        // Just verify it doesn't panic
+    }
+
+    #[test]
+    fn test_mark_dirty_flags() {
+        let mut state = CoreState::new();
+
+        state.mark_clean();
+        assert!(!state.is_dirty());
+
+        state.set_viewport_dirty();
+        assert!(state.is_dirty());
+
+        state.mark_clean();
+        state.set_grid_lines_dirty();
+        assert!(state.is_dirty());
+
+        state.mark_clean();
+        state.set_cursor_dirty();
+        assert!(state.is_dirty());
+
+        state.mark_clean();
+        state.set_headings_dirty();
+        assert!(state.is_dirty());
+    }
+
+    #[test]
+    fn test_get_sheet_offsets_no_sheet() {
+        let state = CoreState::new();
+        let offsets = state.get_sheet_offsets();
+        // Should return default offsets
+        assert!(offsets.column_width(1) > 0.0);
+    }
+
+    #[test]
+    fn test_get_sheet_offsets_with_sheet() {
+        let mut state = CoreState::new();
+        let sheet_id = SheetId::TEST;
+        state.set_current_sheet(sheet_id);
+
+        let offsets = state.get_sheet_offsets();
+        assert!(offsets.column_width(1) > 0.0);
+    }
+
+    #[test]
+    fn test_get_text_params() {
+        let state = CoreState::new();
+        let (atlas_size, distance_range) = state.get_text_params();
+
+        // Should return reasonable values
+        assert!(atlas_size >= 0.0);
+        assert!(distance_range > 0.0);
+    }
+
+    #[test]
+    fn test_get_heading_text_params() {
+        let state = CoreState::new();
+        let (atlas_size, distance_range) = state.get_heading_text_params();
+
+        // Should return reasonable values
+        assert!(atlas_size >= 0.0);
+        assert!(distance_range > 0.0);
+    }
+
+    #[test]
+    fn test_get_required_texture_uids_empty() {
+        let state = CoreState::new();
+        let uids = state.get_required_texture_uids();
+        // No fonts loaded, should be empty
+        assert!(uids.is_empty());
+    }
+
+    #[test]
+    fn test_update_content() {
+        let mut state = CoreState::new();
+        // Just verify update_content doesn't panic
+        state.update_content();
+    }
+}

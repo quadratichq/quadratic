@@ -60,8 +60,9 @@ export const HyperlinkPopup = () => {
     <div
       ref={ref}
       className={cn(
-        'absolute z-50 min-w-48 max-w-80 rounded-md border bg-popover p-3 text-popover-foreground shadow-md outline-none transition-opacity duration-150 ease-in-out',
-        isVisible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        'absolute z-50 rounded-md border bg-popover p-3 text-popover-foreground shadow-md outline-none transition-opacity duration-150 ease-in-out',
+        isVisible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+        mode === 'edit' ? 'w-80' : 'min-w-48 max-w-80'
       )}
       style={{
         top,

@@ -64,3 +64,184 @@ impl Default for FontManager {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    fn create_test_font(name: &str) -> BitmapFont {
+        BitmapFont {
+            font: name.to_string(),
+            size: 32.0,
+            line_height: 36.0,
+            distance_range: 4.0,
+            chars: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn test_font_manager_new() {
+        let manager = FontManager::new();
+        assert!(!manager.has_fonts());
+        assert_eq!(manager.font_count(), 0);
+    }
+
+    #[test]
+    fn test_font_manager_default() {
+        let manager = FontManager::default();
+        assert!(!manager.has_fonts());
+    }
+
+    #[test]
+    fn test_add_font() {
+        let mut manager = FontManager::new();
+        let font = create_test_font("TestFont");
+
+        manager.add(font);
+
+        assert!(manager.has_fonts());
+        assert_eq!(manager.font_count(), 1);
+    }
+
+    #[test]
+    fn test_add_multiple_fonts() {
+        let mut manager = FontManager::new();
+        manager.add(create_test_font("Regular"));
+        manager.add(create_test_font("Bold"));
+        manager.add(create_test_font("Italic"));
+
+        assert_eq!(manager.font_count(), 3);
+    }
+
+    #[test]
+    fn test_get_font_regular() {
+        let mut manager = FontManager::new();
+        manager.add(create_test_font("OpenSans"));
+
+        let font = manager.get_font(false, false);
+        assert!(font.is_some());
+    }
+
+    #[test]
+    fn test_get_font_bold() {
+        let mut manager = FontManager::new();
+        manager.add(create_test_font("OpenSans"));
+        manager.add(create_test_font("OpenSans-Bold"));
+
+        let font = manager.get_font(true, false);
+        assert!(font.is_some());
+        assert!(font.unwrap().name().contains("Bold"));
+    }
+
+    #[test]
+    fn test_get_font_italic() {
+        let mut manager = FontManager::new();
+        manager.add(create_test_font("OpenSans"));
+        manager.add(create_test_font("OpenSans-Italic"));
+
+        let font = manager.get_font(false, true);
+        assert!(font.is_some());
+        assert!(font.unwrap().name().contains("Italic"));
+    }
+
+    #[test]
+    fn test_get_font_fallback() {
+        let mut manager = FontManager::new();
+        manager.add(create_test_font("Regular"));
+
+        // Requesting bold but only regular available - should fallback
+        let font = manager.get_font(true, false);
+        assert!(font.is_some());
+        assert_eq!(font.unwrap().name(), "Regular");
+    }
+
+    #[test]
+    fn test_get_font_empty() {
+        let manager = FontManager::new();
+        assert!(manager.get_font(false, false).is_none());
+    }
+
+    #[test]
+    fn test_default_font() {
+        let mut manager = FontManager::new();
+        manager.add(create_test_font("TestFont"));
+
+        let font = manager.default_font();
+        assert!(font.is_some());
+    }
+
+    #[test]
+    fn test_default_font_empty() {
+        let manager = FontManager::new();
+        assert!(manager.default_font().is_none());
+    }
+
+    #[test]
+    fn test_atlas_font_size() {
+        let mut manager = FontManager::new();
+
+        // Default when no fonts
+        assert_eq!(manager.atlas_font_size(), 14.0);
+
+        manager.add(create_test_font("TestFont"));
+        assert_eq!(manager.atlas_font_size(), 32.0); // From our test font
+    }
+
+    #[test]
+    fn test_required_texture_uids_empty() {
+        let manager = FontManager::new();
+        assert!(manager.required_texture_uids().is_empty());
+    }
+
+    #[test]
+    fn test_required_texture_uids() {
+        use super::super::bitmap_font::{BitmapChar, CharFrame};
+
+        let mut manager = FontManager::new();
+
+        let mut chars = HashMap::new();
+        chars.insert(
+            65,
+            BitmapChar {
+                texture_uid: 1,
+                x_advance: 10.0,
+                x_offset: 0.0,
+                y_offset: 0.0,
+                orig_width: 10.0,
+                texture_height: 32.0,
+                kerning: HashMap::new(),
+                uvs: [0.0; 8],
+                frame: CharFrame::default(),
+            },
+        );
+        chars.insert(
+            66,
+            BitmapChar {
+                texture_uid: 2,
+                x_advance: 10.0,
+                x_offset: 0.0,
+                y_offset: 0.0,
+                orig_width: 10.0,
+                texture_height: 32.0,
+                kerning: HashMap::new(),
+                uvs: [0.0; 8],
+                frame: CharFrame::default(),
+            },
+        );
+
+        let font = BitmapFont {
+            font: "TestFont".to_string(),
+            size: 32.0,
+            line_height: 36.0,
+            distance_range: 4.0,
+            chars,
+        };
+
+        manager.add(font);
+
+        let uids = manager.required_texture_uids();
+        assert!(uids.contains(&1));
+        assert!(uids.contains(&2));
+    }
+}

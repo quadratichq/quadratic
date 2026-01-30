@@ -1,0 +1,9 @@
+{
+  "name": "quadratic-rust-renderer",
+  "description": "Rust renderer for Quadratic - supports native (cloud) targets",
+  "scripts": {
+    "test": "cd core && cargo test && cd ../native && cargo test",
+    "lint": "cd core && cargo clippy --all-targets --all-features -- -D warnings && cd ../native && cargo clippy --all-targets --all-features -- -D warnings",
+    "lint:fix": "cd core && cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings && cd ../native && cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings"
+  }
+}

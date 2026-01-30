@@ -131,3 +131,197 @@ pub struct EmojiSpriteData {
     /// UV coordinates [u0, v0, u1, v1]
     pub uvs: [f32; 4],
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // =========================================================================
+    // TextBuffer tests
+    // =========================================================================
+
+    #[test]
+    fn test_text_buffer_new() {
+        let buffer = TextBuffer::new(1, 32.0);
+        assert_eq!(buffer.texture_uid, 1);
+        assert_eq!(buffer.font_size, 32.0);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.vertex_count(), 0);
+    }
+
+    #[test]
+    fn test_text_buffer_default() {
+        let buffer = TextBuffer::default();
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_text_buffer_vertex_count() {
+        let mut buffer = TextBuffer::new(1, 32.0);
+        // 8 floats per vertex
+        buffer.vertices = vec![0.0; 8 * 4]; // 4 vertices
+        assert_eq!(buffer.vertex_count(), 4);
+    }
+
+    // =========================================================================
+    // FillBuffer tests
+    // =========================================================================
+
+    #[test]
+    fn test_fill_buffer_new() {
+        let buffer = FillBuffer::new();
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_fill_buffer_default() {
+        let buffer = FillBuffer::default();
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_fill_buffer_add_rect() {
+        let mut buffer = FillBuffer::new();
+        buffer.add_rect(10.0, 20.0, 100.0, 50.0, [1.0, 0.0, 0.0, 1.0]);
+
+        assert!(!buffer.is_empty());
+        // 2 triangles * 3 vertices * 6 floats = 36 floats
+        assert_eq!(buffer.vertices.len(), 36);
+    }
+
+    #[test]
+    fn test_fill_buffer_reserve() {
+        let mut buffer = FillBuffer::new();
+        buffer.reserve(10);
+        // Should have capacity but still be empty
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_fill_buffer_multiple_rects() {
+        let mut buffer = FillBuffer::new();
+        buffer.add_rect(0.0, 0.0, 100.0, 50.0, [1.0, 1.0, 1.0, 1.0]);
+        buffer.add_rect(100.0, 0.0, 100.0, 50.0, [0.0, 0.0, 1.0, 1.0]);
+
+        // 2 rects * 36 floats = 72 floats
+        assert_eq!(buffer.vertices.len(), 72);
+    }
+
+    #[test]
+    fn test_fill_buffer_vertex_format() {
+        let mut buffer = FillBuffer::new();
+        buffer.add_rect(10.0, 20.0, 100.0, 50.0, [0.5, 0.6, 0.7, 0.8]);
+
+        let v = &buffer.vertices;
+
+        // First vertex: x, y, r, g, b, a
+        assert_eq!(v[0], 10.0);
+        assert_eq!(v[1], 20.0);
+        assert_eq!(v[2], 0.5);
+        assert_eq!(v[3], 0.6);
+        assert_eq!(v[4], 0.7);
+        assert_eq!(v[5], 0.8);
+    }
+
+    // =========================================================================
+    // LineBuffer tests
+    // =========================================================================
+
+    #[test]
+    fn test_line_buffer_new() {
+        let buffer = LineBuffer::new();
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_line_buffer_default() {
+        let buffer = LineBuffer::default();
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_line_buffer_add_line() {
+        let mut buffer = LineBuffer::new();
+        buffer.add_line(0.0, 0.0, 100.0, 100.0, [1.0, 1.0, 1.0, 1.0]);
+
+        assert!(!buffer.is_empty());
+        // 2 vertices * 6 floats = 12 floats
+        assert_eq!(buffer.vertices.len(), 12);
+    }
+
+    #[test]
+    fn test_line_buffer_multiple_lines() {
+        let mut buffer = LineBuffer::new();
+        buffer.add_line(0.0, 0.0, 100.0, 0.0, [1.0, 1.0, 1.0, 1.0]);
+        buffer.add_line(0.0, 0.0, 0.0, 100.0, [1.0, 0.0, 0.0, 1.0]);
+        buffer.add_line(100.0, 0.0, 100.0, 100.0, [0.0, 1.0, 0.0, 1.0]);
+
+        // 3 lines * 12 floats = 36 floats
+        assert_eq!(buffer.vertices.len(), 36);
+    }
+
+    #[test]
+    fn test_line_buffer_vertex_format() {
+        let mut buffer = LineBuffer::new();
+        buffer.add_line(10.0, 20.0, 30.0, 40.0, [0.5, 0.6, 0.7, 0.8]);
+
+        let v = &buffer.vertices;
+
+        // First vertex: x1, y1, r, g, b, a
+        assert_eq!(v[0], 10.0);
+        assert_eq!(v[1], 20.0);
+        assert_eq!(v[2], 0.5);
+        assert_eq!(v[3], 0.6);
+        assert_eq!(v[4], 0.7);
+        assert_eq!(v[5], 0.8);
+
+        // Second vertex: x2, y2, r, g, b, a
+        assert_eq!(v[6], 30.0);
+        assert_eq!(v[7], 40.0);
+        assert_eq!(v[8], 0.5);
+        assert_eq!(v[9], 0.6);
+        assert_eq!(v[10], 0.7);
+        assert_eq!(v[11], 0.8);
+    }
+
+    // =========================================================================
+    // HorizontalLineData tests
+    // =========================================================================
+
+    #[test]
+    fn test_horizontal_line_data() {
+        let line = HorizontalLineData {
+            x: 10.0,
+            y: 20.0,
+            width: 100.0,
+            height: 2.0,
+            color: [1.0, 0.0, 0.0, 1.0],
+        };
+
+        assert_eq!(line.x, 10.0);
+        assert_eq!(line.y, 20.0);
+        assert_eq!(line.width, 100.0);
+        assert_eq!(line.height, 2.0);
+    }
+
+    // =========================================================================
+    // EmojiSpriteData tests
+    // =========================================================================
+
+    #[test]
+    fn test_emoji_sprite_data() {
+        let sprite = EmojiSpriteData {
+            x: 50.0,
+            y: 100.0,
+            width: 20.0,
+            height: 20.0,
+            uvs: [0.0, 0.0, 1.0, 1.0],
+        };
+
+        assert_eq!(sprite.x, 50.0);
+        assert_eq!(sprite.y, 100.0);
+        assert_eq!(sprite.width, 20.0);
+        assert_eq!(sprite.height, 20.0);
+        assert_eq!(sprite.uvs, [0.0, 0.0, 1.0, 1.0]);
+    }
+}
