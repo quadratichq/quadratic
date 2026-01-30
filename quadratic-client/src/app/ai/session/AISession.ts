@@ -3,15 +3,15 @@ import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { getLastAIPromptMessageIndex, getMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIModelKey,
   ChatMessage,
   Context,
+  ToolResultContent,
   ToolResultMessage,
   UserMessagePrompt,
 } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 import {
   abortControllerAtom,
   aiStore,
@@ -78,8 +78,13 @@ export class AISession {
       fileUuid: string;
       teamUuid: string;
       importFilesToGrid?: (args: { importFiles: ImportFile[]; userMessage: UserMessagePrompt }) => Promise<void>;
-      importPDF?: (args: { pdfImportArgs: any; chatMessages: ChatMessage[] }) => Promise<any>;
-      search?: (args: { searchArgs: any }) => Promise<{ toolResultContent: any; internal?: ChatMessage }>;
+      importPDF?: (args: {
+        pdfImportArgs: AIToolsArgs[AITool.PDFImport];
+        chatMessages: ChatMessage[];
+      }) => Promise<ToolResultContent>;
+      search?: (args: {
+        searchArgs: AIToolsArgs[AITool.WebSearch];
+      }) => Promise<{ toolResultContent: ToolResultContent; internal?: ChatMessage }>;
       getUserPromptSuggestions?: () => void;
     }
   ): Promise<AISessionResult> {
@@ -136,13 +141,12 @@ export class AISession {
     };
 
     // Set up billing limit callback
-    let currentMessageIndex = messageIndex;
     const onExceededBillingLimit = (exceededBillingLimit: boolean) => {
       if (!exceededBillingLimit) return;
 
       const messages = this.messageManager.getMessages();
       messages.pop();
-      currentMessageIndex = messages.length - 1;
+      const currentMessageIndex = messages.length - 1;
       this.messageManager.setMessages(messages);
       this.store.set(waitingOnMessageIndexAtom, currentMessageIndex);
 
@@ -154,24 +158,27 @@ export class AISession {
 
     // Set up abort controller
     const abortController = new AbortController();
-    abortController.signal.addEventListener('abort', () => {
-      let prevWaitingOnMessageIndex: number | undefined = undefined;
-      prevWaitingOnMessageIndex = this.store.get(waitingOnMessageIndexAtom);
-      this.store.set(waitingOnMessageIndexAtom, undefined);
+    abortController.signal.addEventListener(
+      'abort',
+      () => {
+        const prevWaitingOnMessageIndex = this.store.get(waitingOnMessageIndexAtom);
+        this.store.set(waitingOnMessageIndexAtom, undefined);
 
-      // Abort sub-operations
-      const pdfImport = this.store.get(pdfImportAtom);
-      pdfImport.abortController?.abort();
-      this.store.set(pdfImportAtom, { abortController: undefined, loading: false });
+        // Abort sub-operations
+        const pdfImport = this.store.get(pdfImportAtom);
+        pdfImport.abortController?.abort();
+        this.store.set(pdfImportAtom, { abortController: undefined, loading: false });
 
-      const webSearchState = this.store.get(webSearchAtom);
-      webSearchState.abortController?.abort();
-      this.store.set(webSearchAtom, { abortController: undefined, loading: false });
+        const webSearchState = this.store.get(webSearchAtom);
+        webSearchState.abortController?.abort();
+        this.store.set(webSearchAtom, { abortController: undefined, loading: false });
 
-      // Handle abort in message manager
-      this.messageManager.handleAbort(modelKey, prevWaitingOnMessageIndex);
-      this.store.set(waitingOnMessageIndexAtom, undefined);
-    });
+        // Handle abort in message manager
+        this.messageManager.handleAbort(modelKey, prevWaitingOnMessageIndex);
+        this.store.set(waitingOnMessageIndexAtom, undefined);
+      },
+      { once: true }
+    );
     this.store.set(abortControllerAtom, abortController);
 
     // Create and add user message
@@ -289,8 +296,7 @@ export class AISession {
         });
 
         // Check for prompt suggestions
-        let promptSuggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'] =
-          [];
+        let promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'] = [];
         for (const toolCall of response.toolCalls) {
           if (this.toolExecutor.isPromptSuggestionsTool(toolCall)) {
             const parsed = this.toolExecutor.parsePromptSuggestions(toolCall);

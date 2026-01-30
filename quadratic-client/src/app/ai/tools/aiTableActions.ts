@@ -3,14 +3,12 @@ import { content } from '@/app/gridGL/pixiApp/Content';
 import type { JsDataTableColumnHeader } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 type TableToolActions = {
   [K in AITool.ConvertToTable | AITool.TableMeta | AITool.TableColumnSettings]: (
-    args: z.infer<(typeof AIToolsArgsSchema)[K]>
+    args: AIToolsArgs[K]
   ) => Promise<ToolResultContent>;
 };
 

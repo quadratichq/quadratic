@@ -1,0 +1,7 @@
+---
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+Do **not** use `any` types if possible.
+
+Always derive the correct type. `any` should only be used as a last resort.

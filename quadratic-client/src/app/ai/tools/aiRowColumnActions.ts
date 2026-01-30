@@ -13,10 +13,8 @@ import {
   MIN_CELL_WIDTH,
 } from '@/shared/constants/gridConstants';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 type RowColumnToolActions = {
   [K in
@@ -27,7 +25,7 @@ type RowColumnToolActions = {
     | AITool.InsertColumns
     | AITool.InsertRows
     | AITool.DeleteColumns
-    | AITool.DeleteRows]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
+    | AITool.DeleteRows]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
 };
 
 export const rowColumnToolsActions: RowColumnToolActions = {

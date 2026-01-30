@@ -7,25 +7,23 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIRequestBody, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import type { AIAPIResponse, ExceededBillingLimitCallback, StreamingMessageCallback } from './types';
 
+const IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY = 'isOnPaidPlan';
+
 /**
  * AIAPIClient handles communication with the AI API.
  * This is a pure class with no React dependencies.
  */
 export class AIAPIClient {
-  private isOnPaidPlan = false;
-
   /**
-   * Set the paid plan status (used for request tracking)
+   * Read paid plan status from localStorage (shared with useIsOnPaidPlan hook)
    */
-  setIsOnPaidPlan(isPaid: boolean): void {
-    this.isOnPaidPlan = isPaid;
-  }
-
-  /**
-   * Get the paid plan status
-   */
-  getIsOnPaidPlan(): boolean {
-    return this.isOnPaidPlan;
+  private getIsOnPaidPlan(): boolean {
+    try {
+      const stored = localStorage.getItem(IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY);
+      return stored ? JSON.parse(stored) === true : false;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -48,7 +46,7 @@ export class AIAPIClient {
       contextType: 'userPrompt',
       toolCalls: [],
       modelKey: args.modelKey,
-      isOnPaidPlan: this.isOnPaidPlan,
+      isOnPaidPlan: this.getIsOnPaidPlan(),
       exceededBillingLimit: false,
     };
 
@@ -93,9 +91,6 @@ export class AIAPIClient {
       }
 
       onMessage?.({ ...responseMessage });
-
-      // Update paid plan status
-      this.isOnPaidPlan = responseMessage.isOnPaidPlan;
       onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
       return {
@@ -177,24 +172,28 @@ export class AIAPIClient {
     const decoder = new TextDecoder();
     let responseMessage = initialMessage;
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(line.slice(6)));
-            onMessage?.({ ...newResponseMessage });
-            responseMessage = newResponseMessage;
-          } catch (error) {
-            console.warn('Error parsing AI response: ', { error, line });
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(line.slice(6)));
+              onMessage?.({ ...newResponseMessage });
+              responseMessage = newResponseMessage;
+            } catch (error) {
+              console.warn('Error parsing AI response: ', { error, line });
+            }
           }
         }
       }
+    } finally {
+      reader.releaseLock();
     }
 
     return responseMessage;

@@ -2,12 +2,12 @@
 //! the state of the grid).
 
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type z from 'zod';
 
-type WebSearchResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.WebSearch]>;
+type WebSearchResponse = AIToolsArgs[AITool.WebSearch];
 
 export const WebSearch = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {

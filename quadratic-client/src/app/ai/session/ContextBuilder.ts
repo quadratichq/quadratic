@@ -1,6 +1,6 @@
 import { MAX_ROWS } from '@/app/ai/constants/context';
-import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { getConnectionMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -91,28 +91,30 @@ export class ContextBuilder {
         this.store.set(failingSqlConnectionsAtom, failingSqlConnections);
       }
 
-      let contextText = '';
-      await Promise.all(
+      const results = await Promise.all(
         connections
           .filter((conn) => !context.connection || context.connection.id === conn.uuid)
           .map(async (connection) => {
             try {
               if (failingSqlConnections.uuids.includes(connection.uuid)) {
-                return;
+                return '';
               }
 
               const connectionTableInfo = await getConnectionTableInfo(connection, this.teamUuid!);
-              contextText += getConnectionMarkdown(connectionTableInfo);
+              return getConnectionMarkdown(connectionTableInfo);
             } catch (error) {
-              this.store.set(failingSqlConnectionsAtom, (prev) => ({
+              const prev = this.store.get(failingSqlConnectionsAtom);
+              this.store.set(failingSqlConnectionsAtom, {
                 ...prev,
                 uuids: [...prev.uuids.filter((uuid) => uuid !== connection.uuid), connection.uuid],
-              }));
+              });
 
               console.warn(`[ContextBuilder] Failed to get table names for connection ${connection.uuid}:`, error);
+              return '';
             }
           })
       );
+      const contextText = results.join('');
 
       if (!context.connection && !contextText) {
         return [];
@@ -658,62 +660,97 @@ This is the user's current sheet.
   }
 
   private operationToMessage(operation: TrackedOperation): string {
-    const messageMap: Record<string, (op: TrackedOperation) => string> = {
-      SetCellValues: (op) => `- set or delete values in the range of ${(op as any).selection}`,
-      AddSheet: (op) => `- added sheet ${(op as any).sheet_name}`,
-      DeleteSheet: (op) => `- deleted sheet ${(op as any).sheet_name}`,
-      DuplicateSheet: (op) => `- duplicated sheet ${(op as any).sheet_name} to ${(op as any).duplicated_sheet_name}`,
-      SetSheetName: (op) => `- renamed sheet ${(op as any).old_sheet_name} to '${(op as any).new_sheet_name}'`,
-      SetSheetColor: (op) => `- set sheet ${(op as any).sheet_name} color to ${(op as any).color ?? 'default'}`,
-      ReorderSheet: (op) => `- reordered sheet ${(op as any).sheet_name} to order ${(op as any).order}`,
-      ReplaceSheet: (op) => `- replaced sheet ${(op as any).sheet_name} with a new one on import from Excel file`,
-      SetDataTable: (op) =>
-        `- ${(op as any).deleted ? 'deleted' : 'set'} data table at ${(op as any).selection}${(op as any).name ? ` named '${(op as any).name}'` : ''}`,
-      DeleteDataTable: (op) => `- deleted data table at ${(op as any).selection}`,
-      FlattenDataTable: (op) => `- flattened data table at ${(op as any).selection}`,
-      GridToDataTable: (op) => `- converted grid to data table at ${(op as any).selection}`,
-      DataTableColumnsChanged: (op) => `- changed data table columns at ${(op as any).selection}`,
-      DataTableRowsChanged: (op) => `- changed data table rows at ${(op as any).selection}`,
-      DataTableSorted: (op) => `- sorted data table at ${(op as any).selection}`,
-      DataTableHeaderToggled: (op) =>
-        `- ${(op as any).first_row_is_header ? 'enabled' : 'disabled'} first row as header at ${(op as any).selection}`,
-      FormatsChanged: (op) => `- changed formats in sheet ${(op as any).sheet_name} at ${(op as any).selection}`,
-      ResizeColumn: (op) =>
-        `- resized column ${(op as any).column} in sheet ${(op as any).sheet_name} to ${(op as any).new_size}`,
-      ResizeRow: (op) =>
-        `- resized row ${(op as any).row} in sheet ${(op as any).sheet_name} to ${(op as any).new_size}`,
-      ColumnsResized: (op) => `- resized ${(op as any).count} columns in sheet ${(op as any).sheet_name}`,
-      RowsResized: (op) => `- resized ${(op as any).count} rows in sheet ${(op as any).sheet_name}`,
-      DefaultRowSize: (op) => `- set default row size to ${(op as any).size} in sheet ${(op as any).sheet_name}`,
-      DefaultColumnSize: (op) => `- set default column size to ${(op as any).size} in sheet ${(op as any).sheet_name}`,
-      CursorChanged: (op) => `- moved cursor to ${(op as any).selection}`,
-      MoveCells: (op) => `- moved cells from ${(op as any).from} to ${(op as any).to}`,
-      ValidationSet: (op) => `- set validation rules at ${(op as any).selection}`,
-      ValidationRemoved: (op) =>
-        `- removed validation rule ${(op as any).validation_id} in sheet ${(op as any).sheet_name}`,
-      ValidationRemovedSelection: (op) =>
-        `- removed validation rules at ${(op as any).selection} in sheet ${(op as any).sheet_name}`,
-      ConditionalFormatSet: (op) => `- set conditional format at ${(op as any).selection}`,
-      ConditionalFormatRemoved: (op) =>
-        `- removed conditional format ${(op as any).conditional_format_id} in sheet ${(op as any).sheet_name}`,
-      ColumnInserted: (op) => `- inserted column at ${(op as any).column} in sheet ${(op as any).sheet_name}`,
-      ColumnDeleted: (op) => `- deleted column at ${(op as any).column} in sheet ${(op as any).sheet_name}`,
-      RowInserted: (op) => `- inserted row at ${(op as any).row} in sheet ${(op as any).sheet_name}`,
-      RowDeleted: (op) => `- deleted row at ${(op as any).row} in sheet ${(op as any).sheet_name}`,
-      ColumnsDeleted: (op) => `- deleted columns ${(op as any).columns.join(', ')} in sheet ${(op as any).sheet_name}`,
-      RowsDeleted: (op) => `- deleted rows ${(op as any).rows.join(', ')} in sheet ${(op as any).sheet_name}`,
-      ColumnsMoved: (op) =>
-        `- moved columns ${(op as any).from_range[0]}-${(op as any).from_range[1]} to ${(op as any).to} in sheet ${(op as any).sheet_name}`,
-      RowsMoved: (op) =>
-        `- moved rows ${(op as any).from_range[0]}-${(op as any).from_range[1]} to ${(op as any).to} in sheet ${(op as any).sheet_name}`,
-      ComputeCode: (op) => `- computed code at ${(op as any).selection}`,
-      MoveDataTable: (op) => `- moved data table from ${(op as any).from} to ${(op as any).to}`,
-      SwitchDataTableKind: (op) => `- switched data table at ${(op as any).selection} to ${(op as any).kind}`,
-      SetMergeCells: (op) => `- set merge cells at ${(op as any).sheet_name}`,
-    };
-
-    const handler = messageMap[operation.type];
-    return handler ? handler(operation) : `- unknown operation: ${operation.type}`;
+    switch (operation.type) {
+      case 'SetCellValues':
+        return `- set or delete values in the range of ${operation.selection}`;
+      case 'AddSheet':
+        return `- added sheet ${operation.sheet_name}`;
+      case 'DeleteSheet':
+        return `- deleted sheet ${operation.sheet_name}`;
+      case 'DuplicateSheet':
+        return `- duplicated sheet ${operation.sheet_name} to ${operation.duplicated_sheet_name}`;
+      case 'SetSheetName':
+        return `- renamed sheet ${operation.old_sheet_name} to '${operation.new_sheet_name}'`;
+      case 'SetSheetColor':
+        return `- set sheet ${operation.sheet_name} color to ${operation.color ?? 'default'}`;
+      case 'ReorderSheet':
+        return `- reordered sheet ${operation.sheet_name} to order ${operation.order}`;
+      case 'ReplaceSheet':
+        return `- replaced sheet ${operation.sheet_name} with a new one on import from Excel file`;
+      case 'SetDataTable':
+        return `- ${operation.deleted ? 'deleted' : 'set'} data table at ${operation.selection}${operation.name ? ` named '${operation.name}'` : ''}`;
+      case 'DeleteDataTable':
+        return `- deleted data table at ${operation.selection}`;
+      case 'FlattenDataTable':
+        return `- flattened data table at ${operation.selection}`;
+      case 'GridToDataTable':
+        return `- converted grid to data table at ${operation.selection}`;
+      case 'DataTableColumnsChanged':
+        return `- changed data table columns at ${operation.selection}`;
+      case 'DataTableRowsChanged':
+        return `- changed data table rows at ${operation.selection}`;
+      case 'DataTableSorted':
+        return `- sorted data table at ${operation.selection}`;
+      case 'DataTableHeaderToggled':
+        return `- ${operation.first_row_is_header ? 'enabled' : 'disabled'} first row as header at ${operation.selection}`;
+      case 'FormatsChanged':
+        return `- changed formats in sheet ${operation.sheet_name} at ${operation.selection}`;
+      case 'ResizeColumn':
+        return `- resized column ${operation.column} in sheet ${operation.sheet_name} to ${operation.new_size}`;
+      case 'ResizeRow':
+        return `- resized row ${operation.row} in sheet ${operation.sheet_name} to ${operation.new_size}`;
+      case 'ColumnsResized':
+        return `- resized ${operation.count} columns in sheet ${operation.sheet_name}`;
+      case 'RowsResized':
+        return `- resized ${operation.count} rows in sheet ${operation.sheet_name}`;
+      case 'DefaultRowSize':
+        return `- set default row size to ${operation.size} in sheet ${operation.sheet_name}`;
+      case 'DefaultColumnSize':
+        return `- set default column size to ${operation.size} in sheet ${operation.sheet_name}`;
+      case 'CursorChanged':
+        return `- moved cursor to ${operation.selection}`;
+      case 'MoveCells':
+        return `- moved cells from ${operation.from} to ${operation.to}`;
+      case 'ValidationSet':
+        return `- set validation rules at ${operation.selection}`;
+      case 'ValidationRemoved':
+        return `- removed validation rule ${operation.validation_id} in sheet ${operation.sheet_name}`;
+      case 'ValidationRemovedSelection':
+        return `- removed validation rules at ${operation.selection} in sheet ${operation.sheet_name}`;
+      case 'ConditionalFormatSet':
+        return `- set conditional format at ${operation.selection}`;
+      case 'ConditionalFormatRemoved':
+        return `- removed conditional format ${operation.conditional_format_id} in sheet ${operation.sheet_name}`;
+      case 'ColumnInserted':
+        return `- inserted column at ${operation.column} in sheet ${operation.sheet_name}`;
+      case 'ColumnDeleted':
+        return `- deleted column at ${operation.column} in sheet ${operation.sheet_name}`;
+      case 'RowInserted':
+        return `- inserted row at ${operation.row} in sheet ${operation.sheet_name}`;
+      case 'RowDeleted':
+        return `- deleted row at ${operation.row} in sheet ${operation.sheet_name}`;
+      case 'ColumnsDeleted':
+        return `- deleted columns ${operation.columns.join(', ')} in sheet ${operation.sheet_name}`;
+      case 'RowsDeleted':
+        return `- deleted rows ${operation.rows.join(', ')} in sheet ${operation.sheet_name}`;
+      case 'ColumnsMoved':
+        return `- moved columns ${operation.from_range[0]}-${operation.from_range[1]} to ${operation.to} in sheet ${operation.sheet_name}`;
+      case 'RowsMoved':
+        return `- moved rows ${operation.from_range[0]}-${operation.from_range[1]} to ${operation.to} in sheet ${operation.sheet_name}`;
+      case 'ComputeCode':
+        return `- computed code at ${operation.selection}`;
+      case 'MoveDataTable':
+        return `- moved data table from ${operation.from} to ${operation.to}`;
+      case 'SwitchDataTableKind':
+        return `- switched data table at ${operation.selection} to ${operation.kind}`;
+      case 'SetMergeCells':
+        return `- set merge cells at ${operation.sheet_name}`;
+      default: {
+        // This exhaustive check ensures all cases are handled
+        const _exhaustiveCheck: never = operation;
+        return `- unknown operation: ${(_exhaustiveCheck as TrackedOperation).type}`;
+      }
+    }
   }
 }
 

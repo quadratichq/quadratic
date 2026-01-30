@@ -14,10 +14,8 @@ import { userDateToNumber, userTimeToNumber } from '@/app/quadratic-core/quadrat
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgs, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 // Helper functions for converting validations to text
 
@@ -567,7 +565,7 @@ type ValidationToolActions = {
     | AITool.AddTextValidation
     | AITool.AddNumberValidation
     | AITool.AddDateTimeValidation
-    | AITool.RemoveValidations]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
+    | AITool.RemoveValidations]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
 };
 
 // Exported action handlers

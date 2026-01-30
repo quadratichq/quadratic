@@ -15,7 +15,7 @@
 export { aiStore } from './store';
 
 // Types
-export { defaultChat } from './types';
+export { createDefaultChat } from './types';
 export type {
   FailingSqlConnectionsState,
   ImportFilesToGridState,

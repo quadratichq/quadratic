@@ -3,17 +3,16 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { createTextContent, getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
-import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { v4 } from 'uuid';
-import type { z } from 'zod';
 
 export const useGetUserPromptSuggestions = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
 
   const getUserPromptSuggestions = useCallback(async () => {
-    let suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'] = [];
+    let suggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'] = [];
     try {
       const chatMessages = aiStore.get(currentChatMessagesAtom);
       const chatPromptMessages = getPromptMessagesForAI(chatMessages);

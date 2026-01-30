@@ -10,23 +10,21 @@ import { convertTableToSheetPos, xyToA1 } from '@/app/quadratic-core/quadratic_c
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 type CodeToolActions = {
   [K in AITool.GetCodeCellValue | AITool.SetCodeCellValue | AITool.SetFormulaCellValue | AITool.RerunCode]: (
-    args: z.infer<(typeof AIToolsArgsSchema)[K]>,
+    args: AIToolsArgs[K],
     messageMetaData: AIToolMessageMetaData
   ) => Promise<ToolResultContent>;
 } & {
   [K in AITool.UpdateCodeCell]: (
-    args: z.infer<(typeof AIToolsArgsSchema)[K]>,
+    args: AIToolsArgs[K],
     messageMetaData: AIToolMessageMetaData
   ) => Promise<ToolResultContent>;
 } & {
-  [K in AITool.CodeEditorCompletions]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
+  [K in AITool.CodeEditorCompletions]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
 };
 
 export const codeToolsActions: CodeToolActions = {

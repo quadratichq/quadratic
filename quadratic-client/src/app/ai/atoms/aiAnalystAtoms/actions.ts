@@ -1,20 +1,15 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { events } from '@/app/events/events';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { currentChatNameAtom } from './chatAtoms';
 import {
-  abortControllerAtom,
-  activeSchemaConnectionUuidAtom,
-  chatsAtom,
-  currentChatBaseAtom,
-  loadingAtom,
-  promptSuggestionsAtom,
-  showAIAnalystAtom,
-  showChatHistoryAtom,
-} from './primitives';
+  chatsWithPersistenceAtom,
+  loadingWithPersistenceAtom,
+  showAIAnalystWithEffectsAtom,
+  showChatHistoryWithEffectsAtom,
+} from './effectAtoms';
+import { chatsAtom, currentChatBaseAtom, showAIAnalystAtom } from './primitives';
 import { aiStore } from './store';
-import { defaultChat } from './types';
 
 // ============================================================================
 // AI Analyst Visibility Actions
@@ -23,20 +18,11 @@ import { defaultChat } from './types';
 /**
  * Show or hide the AI Analyst panel.
  * Handles cleanup (abort, focus grid) when hiding.
+ *
+ * Delegates to showAIAnalystWithEffectsAtom for the actual logic.
  */
 export function setShowAIAnalyst(show: boolean): void {
-  const wasShowing = aiStore.get(showAIAnalystAtom);
-
-  if (wasShowing && !show) {
-    // Abort any pending request
-    aiStore.get(abortControllerAtom)?.abort();
-    // Focus back to grid
-    focusGrid();
-    // Clear schema connection
-    aiStore.set(activeSchemaConnectionUuidAtom, undefined);
-  }
-
-  aiStore.set(showAIAnalystAtom, show);
+  aiStore.set(showAIAnalystWithEffectsAtom, show);
 }
 
 /**
@@ -60,16 +46,11 @@ export function getShowAIAnalyst(): boolean {
 /**
  * Show or hide the chat history view.
  * Aborts any pending request when showing history.
+ *
+ * Delegates to showChatHistoryWithEffectsAtom for the actual logic.
  */
 export function setShowChatHistory(show: boolean): void {
-  const wasHidden = !aiStore.get(showChatHistoryAtom);
-
-  if (wasHidden && show) {
-    // Abort any pending request when showing history
-    aiStore.get(abortControllerAtom)?.abort();
-  }
-
-  aiStore.set(showChatHistoryAtom, show);
+  aiStore.set(showChatHistoryWithEffectsAtom, show);
 }
 
 // ============================================================================
@@ -95,79 +76,25 @@ export async function saveChatName(newName: string): Promise<void> {
 /**
  * Update chats list with persistence.
  * Handles saving new/changed chats and deleting removed chats.
+ *
+ * Delegates to chatsWithPersistenceAtom for the actual logic.
+ * Note: The effect atom handles persistence asynchronously with .catch(),
+ * so this function no longer needs to be async.
  */
-export async function updateChatsWithPersistence(newChats: Chat[]): Promise<void> {
-  const prevChats = aiStore.get(chatsAtom);
-  const prevSuggestions = aiStore.get(promptSuggestionsAtom);
-  prevSuggestions.abortController?.abort();
-
-  // Find deleted chats
-  const deletedChatIds = prevChats
-    .filter((chat) => !newChats.some((newChat) => newChat.id === chat.id))
-    .map((chat) => chat.id);
-
-  // Delete from offline storage
-  if (deletedChatIds.length > 0) {
-    try {
-      await aiAnalystOfflineChats.deleteChats(deletedChatIds);
-    } catch (error) {
-      console.error('[AIAnalystOfflineChats]: ', error);
-    }
-  }
-
-  // Find changed chats
-  const changedChats = newChats.filter((chat) => {
-    const prevChat = prevChats.find((p) => p.id === chat.id);
-    if (!prevChat) return true;
-    return prevChat.name !== chat.name || prevChat.lastUpdated !== chat.lastUpdated;
-  });
-
-  // Save changed chats
-  if (changedChats.length > 0) {
-    try {
-      await aiAnalystOfflineChats.saveChats(changedChats);
-    } catch (error) {
-      console.error('[AIAnalystOfflineChats]: ', error);
-    }
-  }
-
-  // Update current chat if it was deleted
-  const currentChat = aiStore.get(currentChatBaseAtom);
-  if (deletedChatIds.includes(currentChat.id)) {
-    aiStore.set(currentChatBaseAtom, defaultChat);
-  } else if (currentChat.id) {
-    // Check if current chat was updated
-    const updatedChat = newChats.find((chat) => chat.id === currentChat.id);
-    if (updatedChat) {
-      aiStore.set(currentChatBaseAtom, updatedChat);
-    }
-  }
-
-  aiStore.set(chatsAtom, newChats);
-  aiStore.set(showChatHistoryAtom, newChats.length > 0 ? aiStore.get(showChatHistoryAtom) : false);
-  aiStore.set(promptSuggestionsAtom, { abortController: undefined, suggestions: [] });
+export function updateChatsWithPersistence(newChats: Chat[]): void {
+  aiStore.set(chatsWithPersistenceAtom, newChats);
 }
 
 /**
  * Set loading state with persistence on completion.
  * When loading transitions from true to false, saves the current chat.
+ *
+ * Delegates to loadingWithPersistenceAtom for the actual logic.
+ * Note: The effect atom handles persistence asynchronously with .catch(),
+ * so this function no longer needs to be async.
  */
-export async function setLoadingWithPersistence(newLoading: boolean): Promise<void> {
-  const prevLoading = aiStore.get(loadingAtom);
-
-  // Save chat when loading completes
-  if (prevLoading && !newLoading) {
-    const currentChat = aiStore.get(currentChatBaseAtom);
-    if (currentChat.id) {
-      try {
-        await aiAnalystOfflineChats.saveChats([currentChat]);
-      } catch (error) {
-        console.error('[AIAnalystOfflineChats]: ', error);
-      }
-    }
-  }
-
-  aiStore.set(loadingAtom, newLoading);
+export function setLoadingWithPersistence(newLoading: boolean): void {
+  aiStore.set(loadingWithPersistenceAtom, newLoading);
 }
 
 // ============================================================================

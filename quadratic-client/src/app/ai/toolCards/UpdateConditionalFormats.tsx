@@ -4,13 +4,13 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { FormatPaintIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import type { z } from 'zod';
 
-type UpdateConditionalFormatsResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.UpdateConditionalFormats]>;
+type UpdateConditionalFormatsResponse = AIToolsArgs[AITool.UpdateConditionalFormats];
 type RuleEntry = UpdateConditionalFormatsResponse['rules'][number];
 
 // Get action badge color

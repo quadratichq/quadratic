@@ -1,10 +1,14 @@
 /**
  * Effect Atoms - Atoms with side effects in their setters
  *
- * These atoms wrap primitive atoms with additional side effects.
- * They're used for React component integration where useSetAtom is preferred.
+ * These atoms wrap primitive atoms with additional side effects and serve as
+ * the single source of truth for the associated logic. They can be used in:
  *
- * For vanilla JS usage, prefer the action functions in actions.ts.
+ * - React components: via useAtom/useSetAtom hooks
+ * - Vanilla JS: via aiStore.set() or the wrapper functions in actions.ts
+ *
+ * The action functions in actions.ts are thin wrappers that delegate to these
+ * atoms, providing a convenient imperative API for non-React code.
  */
 
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
@@ -21,7 +25,7 @@ import {
   showAIAnalystAtom,
   showChatHistoryAtom,
 } from './primitives';
-import { defaultChat } from './types';
+import { createDefaultChat } from './types';
 
 // ============================================================================
 // Show AI Analyst with side effects
@@ -90,7 +94,7 @@ export const chatsWithPersistenceAtom = atom(
     // Delete from offline storage
     if (deletedChatIds.length > 0) {
       aiAnalystOfflineChats.deleteChats(deletedChatIds).catch((error) => {
-        console.error('[AIAnalystOfflineChats]: ', error);
+        console.warn('[AIAnalystOfflineChats] Failed to delete chats from offline storage:', error);
       });
     }
 
@@ -104,14 +108,14 @@ export const chatsWithPersistenceAtom = atom(
     // Save changed chats
     if (changedChats.length > 0) {
       aiAnalystOfflineChats.saveChats(changedChats).catch((error) => {
-        console.error('[AIAnalystOfflineChats]: ', error);
+        console.warn('[AIAnalystOfflineChats] Failed to save chats to offline storage:', error);
       });
     }
 
     // Update current chat if it was deleted
     const currentChat = get(currentChatBaseAtom);
     if (deletedChatIds.includes(currentChat.id)) {
-      set(currentChatBaseAtom, defaultChat);
+      set(currentChatBaseAtom, createDefaultChat());
     } else if (currentChat.id) {
       const updatedChat = newChats.find((chat) => chat.id === currentChat.id);
       if (updatedChat) {
@@ -142,7 +146,7 @@ export const loadingWithPersistenceAtom = atom(
       const currentChat = get(currentChatBaseAtom);
       if (currentChat.id) {
         aiAnalystOfflineChats.saveChats([currentChat]).catch((error) => {
-          console.error('[AIAnalystOfflineChats]: ', error);
+          console.warn('[AIAnalystOfflineChats] Failed to save current chat to offline storage:', error);
         });
       }
     }

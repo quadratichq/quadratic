@@ -2,10 +2,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 type SheetToolActions = {
   [K in
@@ -14,7 +12,7 @@ type SheetToolActions = {
     | AITool.RenameSheet
     | AITool.DeleteSheet
     | AITool.MoveSheet
-    | AITool.ColorSheets]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
+    | AITool.ColorSheets]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
 };
 
 export const sheetToolsActions: SheetToolActions = {

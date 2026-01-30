@@ -4,9 +4,8 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 export const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
@@ -115,8 +114,5 @@ export type AIToolMessageMetaData = {
 };
 
 export type AIToolActionsRecord = {
-  [K in AITool]: (
-    args: z.infer<(typeof AIToolsArgsSchema)[K]>,
-    messageMetaData: AIToolMessageMetaData
-  ) => Promise<ToolResultContent>;
+  [K in AITool]: (args: AIToolsArgs[K], messageMetaData: AIToolMessageMetaData) => Promise<ToolResultContent>;
 };

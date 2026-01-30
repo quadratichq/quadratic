@@ -14,14 +14,12 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FONT_SIZE_DISPLAY_ADJUSTMENT } from '@/shared/constants/gridConstants';
 import Color from 'color';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 type FormatToolActions = {
   [K in AITool.SetTextFormats | AITool.GetTextFormats | AITool.SetBorders | AITool.MergeCells | AITool.UnmergeCells]: (
-    args: z.infer<(typeof AIToolsArgsSchema)[K]>
+    args: AIToolsArgs[K]
   ) => Promise<ToolResultContent>;
 };
 

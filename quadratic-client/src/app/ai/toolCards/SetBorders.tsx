@@ -1,12 +1,12 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { FormatPaintIcon } from '@/shared/components/Icons';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type SetBordersResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.SetBorders]>;
+type SetBordersResponse = AIToolsArgs[AITool.SetBorders];
 
 export const SetBorders = memo(
   ({

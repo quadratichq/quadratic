@@ -14,11 +14,8 @@ import type {
 import { conditionalFormatRuleToFormula } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 // Helper functions
 
@@ -405,7 +402,7 @@ const updateConditionalFormatsToolCall = async (
 
 type ConditionalFormatToolActions = {
   [K in AITool.GetConditionalFormats | AITool.UpdateConditionalFormats]: (
-    args: z.infer<(typeof AIToolsArgsSchema)[K]>
+    args: AIToolsArgs[K]
   ) => Promise<ToolResultContent>;
 };
 

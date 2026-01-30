@@ -6,15 +6,12 @@ import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractio
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
-import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
-import type z from 'zod';
 
-export type EmptyChatPromptSuggestions = z.infer<
-  (typeof AIToolsArgsSchema)[AITool.EmptyChatPromptSuggestions]
->['prompt_suggestions'];
+export type EmptyChatPromptSuggestions = AIToolsArgs[AITool.EmptyChatPromptSuggestions]['prompt_suggestions'];
 
 export const useGetEmptyChatPromptSuggestions = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();

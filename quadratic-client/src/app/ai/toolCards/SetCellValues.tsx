@@ -2,12 +2,12 @@ import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { TableRowsIcon } from '@/shared/components/Icons';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type SetCellValuesResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.SetCellValues]>;
+type SetCellValuesResponse = AIToolsArgs[AITool.SetCellValues];
 
 export const SetCellValues = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {

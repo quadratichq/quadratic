@@ -6,10 +6,8 @@ import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
-import type { z } from 'zod';
 
 type CellDataToolActions = {
   [K in
@@ -18,7 +16,7 @@ type CellDataToolActions = {
     | AITool.GetCellData
     | AITool.HasCellData
     | AITool.MoveCells
-    | AITool.DeleteCells]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
+    | AITool.DeleteCells]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
 };
 
 export const cellDataToolsActions: CellDataToolActions = {

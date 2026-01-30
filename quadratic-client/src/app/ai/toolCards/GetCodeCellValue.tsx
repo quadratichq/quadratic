@@ -1,10 +1,10 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type GetCodeCellValueResponse = z.infer<(typeof AIToolsArgsSchema)[AITool.GetCodeCellValue]>;
+type GetCodeCellValueResponse = AIToolsArgs[AITool.GetCodeCellValue];
 
 export const GetCodeCellValue = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {

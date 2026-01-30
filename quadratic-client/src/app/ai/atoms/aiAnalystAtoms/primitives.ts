@@ -7,7 +7,7 @@ import type {
   PromptSuggestionsState,
   WebSearchState,
 } from './types';
-import { defaultChat } from './types';
+import { createDefaultChat } from './types';
 
 // ============================================================================
 // UI State Atoms
@@ -43,7 +43,7 @@ export const waitingOnMessageIndexAtom = atom<number | undefined>(undefined);
 export const chatsAtom = atom<Chat[]>([]);
 
 /** Current active chat (internal base atom) */
-export const currentChatBaseAtom = atom<Chat>(defaultChat);
+export const currentChatBaseAtom = atom<Chat>(createDefaultChat());
 
 // ============================================================================
 // Feature State Atoms
