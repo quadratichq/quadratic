@@ -1,12 +1,13 @@
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { AIIcon, DatabaseIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ZoomInIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMatches } from 'react-router';
 import { useRecoilState } from 'recoil';
 
 interface WalkthroughStep {
@@ -52,11 +53,35 @@ const ALL_WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
 ];
 
-const STORAGE_KEY = 'quadratic-feature-walkthrough-completed';
+type RouteDataWithClientDataKv =
+  | {
+      userMakingRequest?: { clientDataKv?: { featureWalkthroughCompleted?: boolean } };
+    }
+  | null
+  | undefined;
 
 export function FeatureWalkthrough() {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const [completed, setCompleted] = useLocalStorage(STORAGE_KEY, false);
+  const matches = useMatches();
+
+  // Optimistic state - when user completes/skips, immediately hide the walkthrough
+  const [optimisticCompleted, setOptimisticCompleted] = useState(false);
+
+  // Get clientDataKv from route loaders using useMatches to safely access data
+  const fileMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.FILE);
+  const dashboardMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.DASHBOARD);
+
+  const fileRouteData = fileMatch?.data as RouteDataWithClientDataKv | undefined;
+  const dashboardRouteData = dashboardMatch?.data as RouteDataWithClientDataKv | undefined;
+
+  // Get completed status from route loader data (prefer file route, fallback to dashboard)
+  const serverCompleted =
+    fileRouteData?.userMakingRequest?.clientDataKv?.featureWalkthroughCompleted ??
+    dashboardRouteData?.userMakingRequest?.clientDataKv?.featureWalkthroughCompleted ??
+    false;
+
+  const completed = optimisticCompleted || serverCompleted;
+
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -64,7 +89,7 @@ export function FeatureWalkthrough() {
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
 
   // Only show walkthrough for authenticated users who haven't completed it
-  // For testing: clear localStorage key 'quadratic-feature-walkthrough-completed' and refresh
+  // For testing: reset via resetFeatureWalkthrough() or API
   const shouldShow = isAuthenticated && !completed;
 
   // Determine which steps are available based on visible elements
@@ -128,6 +153,21 @@ export function FeatureWalkthrough() {
     };
   }, [updateTargetRect, shouldShow, availableSteps.length, currentStepIndex, isVisible]);
 
+  const markAsCompleted = async () => {
+    // Optimistically mark as completed immediately
+    setOptimisticCompleted(true);
+
+    try {
+      const { apiClient } = await import('@/shared/api/apiClient');
+      await apiClient.user.clientDataKv.update({
+        featureWalkthroughCompleted: true,
+      });
+    } catch (error) {
+      console.warn('Failed to save walkthrough completion:', error);
+      // Keep optimistic update - user shouldn't see walkthrough again even if save failed
+    }
+  };
+
   const handleNext = () => {
     if (currentStepIndex < availableSteps.length - 1) {
       trackEvent('[FeatureWalkthrough].next', { step: currentStep.target, stepIndex: currentStepIndex });
@@ -135,13 +175,13 @@ export function FeatureWalkthrough() {
     } else {
       // Complete the walkthrough
       trackEvent('[FeatureWalkthrough].completed', { totalSteps: availableSteps.length });
-      setCompleted(true);
+      markAsCompleted();
     }
   };
 
   const handleSkip = () => {
     trackEvent('[FeatureWalkthrough].skipped', { atStep: currentStep.target, stepIndex: currentStepIndex });
-    setCompleted(true);
+    markAsCompleted();
   };
 
   if (!shouldShow || !isVisible || availableSteps.length === 0 || !currentStep) {
@@ -230,7 +270,8 @@ export function FeatureWalkthrough() {
       return { display: 'none' };
     }
 
-    const padding = currentStep.position === 'center' ? 16 : 8;
+    // Use no padding for center (grid canvas) to tightly wrap the visible area
+    const padding = currentStep.position === 'center' ? 0 : 8;
     const borderRadius = currentStep.position === 'center' ? 12 : 8;
 
     return {
@@ -263,10 +304,10 @@ export function FeatureWalkthrough() {
             currentStep.position === 'center' ? 'rounded-xl' : 'rounded-lg'
           )}
           style={{
-            left: targetRect.left - (currentStep.position === 'center' ? 16 : 8),
-            top: targetRect.top - (currentStep.position === 'center' ? 16 : 8),
-            width: targetRect.width + (currentStep.position === 'center' ? 32 : 16),
-            height: targetRect.height + (currentStep.position === 'center' ? 32 : 16),
+            left: targetRect.left - (currentStep.position === 'center' ? 0 : 8),
+            top: targetRect.top - (currentStep.position === 'center' ? 0 : 8),
+            width: targetRect.width + (currentStep.position === 'center' ? 0 : 16),
+            height: targetRect.height + (currentStep.position === 'center' ? 0 : 16),
           }}
         />
       )}
@@ -318,7 +359,14 @@ export function FeatureWalkthrough() {
 }
 
 // Export a function to reset the walkthrough (useful for testing)
-export function resetFeatureWalkthrough() {
-  localStorage.removeItem(STORAGE_KEY);
-  window.location.reload();
+export async function resetFeatureWalkthrough() {
+  try {
+    const { apiClient } = await import('@/shared/api/apiClient');
+    await apiClient.user.clientDataKv.update({
+      featureWalkthroughCompleted: false,
+    });
+    window.location.reload();
+  } catch (error) {
+    console.error('Failed to reset walkthrough:', error);
+  }
 }
