@@ -186,8 +186,6 @@ Make all suggestions specific to the actual data columns and values shown above.
             },
           ];
 
-          console.log('[getCategorizedEmptyChatPromptSuggestions] Making API request...');
-
           const response = await handleAIRequestToAPI({
             chatId: v4(),
             source: 'GetEmptyChatPromptSuggestions',
@@ -202,27 +200,14 @@ Make all suggestions specific to the actual data columns and values shown above.
             useQuadraticContext: true,
           });
 
-          console.log('[getCategorizedEmptyChatPromptSuggestions] Response:', response);
-          console.log('[getCategorizedEmptyChatPromptSuggestions] Tool calls:', response.toolCalls);
-          console.log(
-            '[getCategorizedEmptyChatPromptSuggestions] Looking for tool:',
-            AITool.CategorizedEmptyChatPromptSuggestions
-          );
-
           const categorizedToolCall = response.toolCalls.find(
             (toolCall) => toolCall.name === AITool.CategorizedEmptyChatPromptSuggestions
           );
 
-          console.log('[getCategorizedEmptyChatPromptSuggestions] Found tool call:', categorizedToolCall);
-
           if (categorizedToolCall) {
             const argsObject = JSON.parse(categorizedToolCall.arguments);
-            console.log('[getCategorizedEmptyChatPromptSuggestions] Parsed args:', argsObject);
             const args = aiToolsSpec[AITool.CategorizedEmptyChatPromptSuggestions].responseSchema.parse(argsObject);
-            console.log('[getCategorizedEmptyChatPromptSuggestions] Validated args:', args);
             return args;
-          } else {
-            console.warn('[getCategorizedEmptyChatPromptSuggestions] No matching tool call found in response');
           }
         } catch (error) {
           console.error('[getCategorizedEmptyChatPromptSuggestions] error: ', error);
