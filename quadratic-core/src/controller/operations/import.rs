@@ -423,6 +423,7 @@ impl GridController {
                 anyhow!("Failed to read formulas from sheet '{sheet_name}' in '{file_name}': {e}")
             })?;
             let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
@@ -432,22 +433,21 @@ impl GridController {
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
-                        sheet.data_table_insert_full(
-                            sheet_pos.into(),
-                            DataTable::new(
-                                DataTableKind::CodeRun(CodeRun {
-                                    language: CodeCellLanguage::Formula,
-                                    code: cell.to_string(),
-                                    ..Default::default()
-                                }),
-                                &formula_start_name,
-                                Value::Single(CellValue::Blank),
-                                false,
-                                None,
-                                None,
-                                None,
-                            ),
+                        let data_table = DataTable::new(
+                            DataTableKind::CodeRun(CodeRun {
+                                language: CodeCellLanguage::Formula,
+                                code: cell.to_string(),
+                                ..Default::default()
+                            }),
+                            &formula_start_name,
+                            Value::Single(CellValue::Blank),
+                            false,
+                            None,
+                            None,
+                            None,
                         );
+
+                        sheet.data_table_insert_full(sheet_pos.into(), data_table);
 
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
@@ -484,6 +484,7 @@ impl GridController {
             let style_insert_at = style_range
                 .start()
                 .map_or_else(|| pos![A1], xlsx_range_to_pos);
+
             for (y, x, style) in style_range.cells() {
                 let pos = Pos {
                     x: style_insert_at.x + x as i64,
@@ -511,6 +512,12 @@ impl GridController {
                             None
                         }
                     });
+                    if let Some(size) = font.size {
+                        // Only set font size if it's not the default size
+                        if size != 11.0 {
+                            sheet.formats.font_size.set(pos, Some(size as i16));
+                        }
+                    }
 
                     // fill color
                     style
@@ -2019,6 +2026,10 @@ mod test {
         assert_eq!(sheet.formats.italic.get((1, 10).into()), None);
         assert_eq!(sheet.formats.text_color.get((1, 10).into()), None);
         assert_eq!(sheet.formats.fill_color.get((1, 10).into()), None);
+        assert_eq!(sheet.formats.font_size.get((1, 15).into()), None);
+        assert_eq!(sheet.formats.font_size.get((1, 16).into()), Some(14));
+        assert_eq!(sheet.formats.font_size.get((1, 17).into()), Some(8));
+        assert_eq!(sheet.formats.font_size.get((1, 18).into()), Some(36));
     }
 
     #[test]
