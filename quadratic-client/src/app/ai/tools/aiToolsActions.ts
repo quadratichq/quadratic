@@ -1207,7 +1207,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, size } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const sheetName = sheets.getSheetByName(sheet_name ?? '')?.name ?? sheets.sheet.name;
+      const sheetName = sheets.getById(sheetId)?.name ?? sheets.sheet.name;
 
       const clampedSize = Math.max(MIN_CELL_WIDTH, Math.min(MAX_CELL_WIDTH, size));
       quadraticCore.resizeAllColumns(sheetId, clampedSize, true);
@@ -1225,7 +1225,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, size } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const sheetName = sheets.getSheetByName(sheet_name ?? '')?.name ?? sheets.sheet.name;
+      const sheetName = sheets.getById(sheetId)?.name ?? sheets.sheet.name;
 
       const clampedSize = Math.max(MIN_CELL_HEIGHT, Math.min(MAX_CELL_HEIGHT, size));
       quadraticCore.resizeAllRows(sheetId, clampedSize, true);

@@ -69,7 +69,7 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
     let render_height = THUMBNAIL_HEIGHT * THUMBNAIL_DPR;
 
     // Create render request
-    let mut request = RenderRequest::new(selection.clone(), render_width, render_height);
+    let mut request = RenderRequest::new(selection, render_width, render_height);
     request.show_grid_lines = true;
     request.offsets = offsets.clone();
 
