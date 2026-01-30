@@ -304,7 +304,7 @@ impl GridController {
                 return Err(anyhow!(
                     "Cannot detect file format for '{file_name}' (extension: {:?})",
                     extension
-                ))
+                ));
             }
         };
 
@@ -478,93 +478,93 @@ impl GridController {
             }
 
             // styles
-            let range = workbook.worksheet_style(sheet_name).map_err(|e| {
+            let style_range = workbook.worksheet_style(sheet_name).map_err(|e| {
                 anyhow!("Failed to read styles from sheet '{sheet_name}' in '{file_name}': {e}")
             })?;
-            let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
-            for (y, row) in range.rows().enumerate() {
-                for (x, style) in row.iter().enumerate() {
-                    let pos = Pos {
-                        x: style_insert_at.x + x as i64,
-                        y: style_insert_at.y + y as i64,
-                    };
+            let style_insert_at = style_range
+                .start()
+                .map_or_else(|| pos![A1], xlsx_range_to_pos);
+            for (y, x, style) in style_range.cells() {
+                let pos = Pos {
+                    x: style_insert_at.x + x as i64,
+                    y: style_insert_at.y + y as i64,
+                };
 
-                    if let Some(font) = style.get_font() {
-                        let sheet = gc.try_sheet_mut_result(sheet_id)?;
+                if let Some(font) = style.get_font() {
+                    let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
-                        // font formatting
-                        font.is_bold()
-                            .then(|| sheet.formats.bold.set(pos, Some(true)));
-                        font.is_italic()
-                            .then(|| sheet.formats.italic.set(pos, Some(true)));
-                        font.has_underline()
-                            .then(|| sheet.formats.underline.set(pos, Some(true)));
-                        font.has_strikethrough()
-                            .then(|| sheet.formats.strike_through.set(pos, Some(true)));
-                        font.color.and_then(|color| {
-                            // Only set text color if it's not the default black color
-                            // Default black (0,0,0) is likely returned by calamine even when no explicit color is set
-                            if !color.is_black() {
-                                sheet.formats.text_color.set(pos, Some(color.to_string()))
-                            } else {
-                                None
-                            }
+                    // font formatting
+                    font.is_bold()
+                        .then(|| sheet.formats.bold.set(pos, Some(true)));
+                    font.is_italic()
+                        .then(|| sheet.formats.italic.set(pos, Some(true)));
+                    font.has_underline()
+                        .then(|| sheet.formats.underline.set(pos, Some(true)));
+                    font.has_strikethrough()
+                        .then(|| sheet.formats.strike_through.set(pos, Some(true)));
+                    font.color.and_then(|color| {
+                        // Only set text color if it's not the default black color
+                        // Default black (0,0,0) is likely returned by calamine even when no explicit color is set
+                        if !color.is_black() {
+                            sheet.formats.text_color.set(pos, Some(color.to_string()))
+                        } else {
+                            None
+                        }
+                    });
+
+                    // fill color
+                    style
+                        .get_fill()
+                        .and_then(|fill| fill.get_color())
+                        .and_then(|color| {
+                            sheet.formats.fill_color.set(pos, Some(color.to_string()))
                         });
 
-                        // fill color
-                        style
-                            .get_fill()
-                            .and_then(|fill| fill.get_color())
-                            .and_then(|color| {
-                                sheet.formats.fill_color.set(pos, Some(color.to_string()))
-                            });
+                    // alignment
+                    if let Some(alignment) = style.get_alignment() {
+                        // horizontal alignment
+                        sheet.formats.align.set(
+                            pos,
+                            match alignment.horizontal {
+                                HorizontalAlignment::Left => Some(CellAlign::Left),
+                                HorizontalAlignment::Center => Some(CellAlign::Center),
+                                HorizontalAlignment::Right => Some(CellAlign::Right),
+                                _ => None,
+                            },
+                        );
 
-                        // alignment
-                        if let Some(alignment) = style.get_alignment() {
-                            // horizontal alignment
-                            sheet.formats.align.set(
-                                pos,
-                                match alignment.horizontal {
-                                    HorizontalAlignment::Left => Some(CellAlign::Left),
-                                    HorizontalAlignment::Center => Some(CellAlign::Center),
-                                    HorizontalAlignment::Right => Some(CellAlign::Right),
-                                    _ => None,
-                                },
-                            );
+                        // vertical alignment
+                        sheet.formats.vertical_align.set(
+                            pos,
+                            match alignment.vertical {
+                                VerticalAlignment::Top => Some(CellVerticalAlign::Top),
+                                VerticalAlignment::Center => Some(CellVerticalAlign::Middle),
+                                VerticalAlignment::Bottom => Some(CellVerticalAlign::Bottom),
+                                _ => None,
+                            },
+                        );
 
-                            // vertical alignment
-                            sheet.formats.vertical_align.set(
-                                pos,
-                                match alignment.vertical {
-                                    VerticalAlignment::Top => Some(CellVerticalAlign::Top),
-                                    VerticalAlignment::Center => Some(CellVerticalAlign::Middle),
-                                    VerticalAlignment::Bottom => Some(CellVerticalAlign::Bottom),
-                                    _ => None,
-                                },
-                            );
-
-                            // wrap text
-                            if alignment.wrap_text {
-                                sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-                            }
-
-                            // shrink to fit
-                            if alignment.shrink_to_fit {
-                                sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
-                            }
+                        // wrap text
+                        if alignment.wrap_text {
+                            sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
                         }
 
-                        // number formats
-                        if let Some(number_format) = style.get_number_format() {
-                            import_excel_number_format(sheet, pos, number_format);
+                        // shrink to fit
+                        if alignment.shrink_to_fit {
+                            sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
                         }
+                    }
 
-                        // borders
-                        if let Some(border) = style.get_borders() {
-                            let border_style_cell = convert_excel_borders_to_quadratic(border);
-                            if !border_style_cell.is_empty() {
-                                sheet.borders.set_style_cell(pos, border_style_cell);
-                            }
+                    // number formats
+                    if let Some(number_format) = style.get_number_format() {
+                        import_excel_number_format(sheet, pos, number_format);
+                    }
+
+                    // borders
+                    if let Some(border) = style.get_borders() {
+                        let border_style_cell = convert_excel_borders_to_quadratic(border);
+                        if !border_style_cell.is_empty() {
+                            sheet.borders.set_style_cell(pos, border_style_cell);
                         }
                     }
                 }
@@ -576,14 +576,14 @@ impl GridController {
             })?;
             let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
-            for column_width in layout.column_widths.iter() {
+            for (_, column_width) in layout.column_widths.iter() {
                 let column = column_width.column as i64 + 1;
                 sheet
                     .offsets
                     .set_column_width(column, column_width.width * COLUMN_WIDTH_MULTIPLIER);
             }
 
-            for row_height in layout.row_heights.iter() {
+            for (_, row_height) in layout.row_heights.iter() {
                 let row = row_height.row as i64 + 1;
                 sheet
                     .offsets
