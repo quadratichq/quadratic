@@ -139,6 +139,7 @@ export const editActionsSpec: EditActionSpec = {
           search_code: null,
           sheet_id: null,
           case_sensitive: null,
+          regex: null,
         },
       }));
     },
