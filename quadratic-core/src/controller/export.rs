@@ -271,6 +271,11 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
         format = format.set_font_color(color.as_rgb_hex().as_str());
     }
 
+    if let Some(font_size) = cell_format.font_size {
+        // font_size is stored as the Excel font size value (from import)
+        format = format.set_font_size(font_size as f64);
+    }
+
     if let Some(fill_color) = cell_format.fill_color
         && let Ok(color) = Rgba::try_from(fill_color.as_str())
     {
@@ -697,6 +702,25 @@ mod tests {
         assert_eq!(
             gc_1.sheet(sheet_id_1).formats,
             gc_2.sheet(sheet_id_2).formats
+        );
+
+        // Explicit font_size checks for round-trip verification
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).formats.font_size,
+            gc_2.sheet(sheet_id_2).formats.font_size
+        );
+        // Verify specific font sizes from styles.xlsx are preserved
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).formats.font_size.get((1, 16).into()),
+            Some(14)
+        );
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).formats.font_size.get((1, 17).into()),
+            Some(8)
+        );
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).formats.font_size.get((1, 18).into()),
+            Some(36)
         );
     }
 
