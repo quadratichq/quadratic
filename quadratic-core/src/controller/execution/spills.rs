@@ -694,6 +694,43 @@ mod tests {
         );
     }
 
+    /// Test: deleting cells that include the full range of a code table with
+    /// multi-cell output should delete the table.
+    #[test]
+    fn test_delete_full_code_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create code table at C3 with 3x3 output (outputs C3:E5)
+        test_create_code_table(&mut gc, sheet_id, pos![C3], 3, 3);
+
+        // Verify table exists
+        assert!(
+            gc.sheet(sheet_id).data_table_at(&pos![C3]).is_some(),
+            "Code table at C3 should exist before delete"
+        );
+
+        // Delete the full table range
+        gc.delete_cells(
+            &A1Selection::test_a1_sheet_id("C3:E5", sheet_id),
+            None,
+            false,
+        );
+
+        // Table should be deleted
+        assert!(
+            gc.sheet(sheet_id).data_table_at(&pos![C3]).is_none(),
+            "Code table at C3 should be deleted after deleting full range"
+        );
+
+        // Undo should restore the table
+        gc.undo(1, None, false);
+        assert!(
+            gc.sheet(sheet_id).data_table_at(&pos![C3]).is_some(),
+            "Code table at C3 should be restored after undo"
+        );
+    }
+
     /// Test: copying and pasting a data table to a location whose output overlaps
     /// with an existing table should cause the pasted table to spill, NOT delete
     /// the original table.
@@ -768,6 +805,101 @@ mod tests {
         assert!(
             !table_at_a1.unwrap().has_spill(),
             "Pasted table at A1 should no longer have spill after C3 is deleted"
+        );
+    }
+
+    /// Test: copying and pasting a code table where the paste output covers the
+    /// anchor of an existing code table should delete the original table.
+    #[test]
+    fn test_spill_copied_code_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create original code table at C3 with 3x3 output (outputs C3:E5)
+        test_create_code_table(&mut gc, sheet_id, pos![C3], 3, 3);
+
+        let a1_context = gc.a1_context();
+
+        // Copy the table and paste at A1
+        // The pasted table would output A1:C3, which covers C3 (the anchor of the original)
+        let clipboard = gc.sheet(sheet_id).copy_to_clipboard(
+            &A1Selection::test_a1("C3:E5"),
+            a1_context,
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("A1"),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // The original table at C3 should be deleted because the paste output covers its anchor
+        let table_at_a1 = gc.sheet(sheet_id).data_table_at(&pos![A1]);
+        let table_at_c3 = gc.sheet(sheet_id).data_table_at(&pos![C3]);
+
+        assert!(
+            table_at_c3.is_none(),
+            "Original code table at C3 should be deleted because paste covers its anchor"
+        );
+        assert!(
+            table_at_a1.is_some(),
+            "Pasted code table at A1 should exist"
+        );
+
+        // The pasted table should NOT have a spill (the blocking table was deleted)
+        assert!(
+            !table_at_a1.unwrap().has_spill(),
+            "Pasted code table at A1 should NOT have spill since C3 was deleted"
+        );
+    }
+
+    /// Test: deleting a code table that has a spill error should still delete the table.
+    #[test]
+    fn test_delete_spilled_code_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create first table at C3 with 3x3 output (C3:E5)
+        test_create_code_table(&mut gc, sheet_id, pos![C3], 3, 3);
+
+        // Create second code table at A1 that would output A1:C3
+        // This will cause a spill error because C3 is occupied by the first table
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        // Verify both tables exist
+        let table_at_a1 = gc.sheet(sheet_id).data_table_at(&pos![A1]);
+        let table_at_c3 = gc.sheet(sheet_id).data_table_at(&pos![C3]);
+        assert!(table_at_a1.is_some(), "Table at A1 should exist");
+        assert!(table_at_c3.is_some(), "Table at C3 should exist");
+
+        // Verify A1 has a spill error
+        assert!(
+            table_at_a1.unwrap().has_spill(),
+            "Table at A1 should have a spill error"
+        );
+
+        // Delete the spilled code table at A1
+        gc.delete_cells(
+            &A1Selection::test_a1_sheet_id("A1", sheet_id),
+            None,
+            false,
+        );
+
+        // The spilled table at A1 should be deleted
+        let table_at_a1 = gc.sheet(sheet_id).data_table_at(&pos![A1]);
+        let table_at_c3 = gc.sheet(sheet_id).data_table_at(&pos![C3]);
+
+        assert!(
+            table_at_a1.is_none(),
+            "Table at A1 should be deleted after delete_cells"
+        );
+        assert!(
+            table_at_c3.is_some(),
+            "Table at C3 should still exist after deleting A1"
         );
     }
 }
