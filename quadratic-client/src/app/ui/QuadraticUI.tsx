@@ -150,13 +150,8 @@ export default function QuadraticUI() {
               className={cn(
                 'flex h-full w-full',
                 agentMode && 'rounded-lg p-0.5 shadow-lg',
-                // TODO: play with colors
-                // 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500',
-                // aiAnalystLoading ? 'bg-gradient-to-r from-primary via-primary/50 to-primary' : 'bg-border'
-                aiAnalystLoading ? `bg-gradient-to-r ${AI_GRADIENT}` : 'bg-border',
-                aiAnalystLoading ? 'shadow-purple-100' : ''
+                aiAnalystLoading ? `bg-gradient-to-r ${AI_GRADIENT} shadow-purple-100` : 'bg-border'
               )}
-              // When AI is running
               style={{
                 backgroundSize: '200% 200%',
                 animation: 'shimmer 3s ease-in-out infinite',
