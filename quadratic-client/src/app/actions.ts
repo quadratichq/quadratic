@@ -1,8 +1,5 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { getActionFileDelete } from '@/routes/api.files.$uuid';
-import { apiClient } from '@/shared/api/apiClient';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -70,17 +67,8 @@ export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
 export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  async run({ teamUuid }: { teamUuid: string }) {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-    const createFile = () => {
-      window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
-    };
-
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
-      return;
-    }
-    createFile();
+  run({ teamUuid }: { teamUuid: string }) {
+    window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
   },
 };
 
@@ -89,17 +77,8 @@ export const duplicateFileAction = {
   // If you're logged in and you can see the file, you can duplicate it
   isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
     isAuthenticated && filePermissions.includes('FILE_VIEW'),
-  async run({ fileUuid, teamUuid }: { fileUuid: string; teamUuid: string }) {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-    const duplicateFile = () => {
-      window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
-    };
-
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, duplicateFile);
-      return;
-    }
-    duplicateFile();
+  run({ fileUuid }: { fileUuid: string }) {
+    window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
   },
 };
 

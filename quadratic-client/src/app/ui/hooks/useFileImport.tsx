@@ -4,10 +4,9 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
+
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -258,26 +257,5 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
     [addGlobalSnackbar, location.pathname, navigate, setFilesImportProgressListState, setFilesImportProgressState]
   );
 
-  const handleImport = useCallback(
-    async (props: FileImportProps) => {
-      const { teamUuid } = props;
-
-      // Only check file limit when creating new files (teamUuid must be defined)
-      if (teamUuid !== undefined) {
-        const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-        if (isOverLimit && !isPaidPlan) {
-          // Show dialog with callback that captures props directly
-          showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, () => {
-            doImport(props);
-          });
-          return;
-        }
-      }
-
-      doImport(props);
-    },
-    [doImport]
-  );
-
-  return handleImport;
+  return doImport;
 }

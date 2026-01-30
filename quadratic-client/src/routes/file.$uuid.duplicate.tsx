@@ -1,12 +1,8 @@
 import { requireAuth } from '@/auth/auth';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
-import { FileLimitDialog } from '@/shared/components/FileLimitDialog';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
-import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -28,7 +24,6 @@ import {
 type LoaderData = {
   teams: Awaited<ReturnType<typeof apiClient.teams.list>>['teams'];
   fileUuid: string;
-  singleTeamUuid?: string;
 };
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
@@ -39,23 +34,14 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   const fileUuid = loaderArgs.params.uuid as string;
   const data = await apiClient.teams.list();
 
-  // If the user only has access to one team, check file limit first
-  // If over limit, show the UI so user can see the dialog
+  // If the user only has access to one team, duplicate directly
   if (data.teams.length === 1) {
     const teamUuid = data.teams[0].team.uuid;
-    const { isOverLimit, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-
-    // If not over limit or on paid plan, duplicate directly
-    if (!isOverLimit || isPaidPlan) {
-      const { uuid: newFileUuid } = await apiClient.files.duplicate(fileUuid, {
-        teamUuid,
-        isPrivate: true,
-      });
-      return redirectDocument(ROUTES.FILE({ uuid: newFileUuid, searchParams: '' }));
-    }
-
-    // If over limit, return data so we can show the dialog in the component
-    return { teams: data.teams, fileUuid, singleTeamUuid: teamUuid };
+    const { uuid: newFileUuid } = await apiClient.files.duplicate(fileUuid, {
+      teamUuid,
+      isPrivate: true,
+    });
+    return redirectDocument(ROUTES.FILE({ uuid: newFileUuid, searchParams: '' }));
   }
 
   // If there's more than one team, return teams and show ui to pick a team
@@ -64,7 +50,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
 
 export const Component = () => {
   const { uuid: fileUuid } = useParams() as { uuid: string };
-  const { teams, singleTeamUuid } = useLoaderData() as LoaderData;
+  const { teams } = useLoaderData() as LoaderData;
   const [selectedTeamUuid, setSelectedTeamUuid] = useState<string>(teams[0].team.uuid);
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -82,61 +68,14 @@ export const Component = () => {
     [fileUuid, submit]
   );
 
-  const handleSubmit = useCallback(async () => {
-    // Check file limit before duplicating
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(selectedTeamUuid);
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, selectedTeamUuid, () =>
-        doDuplicate(selectedTeamUuid)
-      );
-      return;
-    }
+  const handleSubmit = useCallback(() => {
     doDuplicate(selectedTeamUuid);
   }, [selectedTeamUuid, doDuplicate]);
 
-  // If single team and over limit, show the dialog immediately
   useRemoveInitialLoadingUI();
-
-  // Handle single team over limit case - show dialog on mount
-  useMemo(() => {
-    if (singleTeamUuid) {
-      // We're here because single team was over limit
-      // Show the dialog with option to duplicate anyway
-      apiClient.teams.fileLimit(singleTeamUuid).then(({ maxEditableFiles }) => {
-        showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, singleTeamUuid, () =>
-          doDuplicate(singleTeamUuid)
-        );
-      });
-    }
-  }, [singleTeamUuid, doDuplicate]);
-
-  // For single team over limit, show minimal UI with dialogs
-  if (singleTeamUuid) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <FileLimitDialog />
-        <UpgradeDialog teamUuid={singleTeamUuid} canManageBilling={true} />
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Duplicate file</CardTitle>
-            <CardDescription>Duplicating to your personal files.</CardDescription>
-          </CardHeader>
-          <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline" asChild>
-              <Link to={ROUTES.FILE({ uuid: fileUuid, searchParams: '' })} reloadDocument>
-                Back to file
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-full items-center justify-center">
-      <FileLimitDialog />
-      <UpgradeDialog teamUuid={selectedTeamUuid} canManageBilling={true} />
       <Card className="w-96">
         <CardHeader>
           <CardTitle>Duplicate file</CardTitle>

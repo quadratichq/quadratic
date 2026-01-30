@@ -1,12 +1,10 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
@@ -249,16 +247,8 @@ function SidebarNavLinkCreateButton({
   isPrivate: boolean;
   teamUuid: string;
 }) {
-  const handleClick = async () => {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-    const createFile = () => {
-      window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
-    };
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
-      return;
-    }
-    createFile();
+  const handleClick = () => {
+    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
   };
 
   return (

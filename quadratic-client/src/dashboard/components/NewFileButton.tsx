@@ -3,10 +3,7 @@ import { supportedFileTypes } from '@/app/helpers/files';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { apiClient } from '@/shared/api/apiClient';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import {
   AddIcon,
   AIIcon,
@@ -64,15 +61,8 @@ export function NewFileButton() {
       <Button
         variant="default"
         className="gap-2"
-        onClick={async () => {
-          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-          const navigateToAI = () =>
-            navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
-          if (isOverLimit && !isPaidPlan) {
-            showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, navigateToAI);
-            return;
-          }
-          navigateToAI();
+        onClick={() => {
+          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
         }}
       >
         <AIIcon className="mr-0" />
@@ -82,17 +72,9 @@ export function NewFileButton() {
       <Button
         data-testid="files-list-new-file-button"
         variant="default"
-        onClick={async (e) => {
+        onClick={(e) => {
           e.preventDefault();
-          const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-          const createFile = () => {
-            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
-          };
-          if (isOverLimit && !isPaidPlan) {
-            showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
-            return;
-          }
-          createFile();
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
         }}
       >
         New file
@@ -120,15 +102,8 @@ export function NewFileButton() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem
-              onClick={async () => {
-                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-                const navigateToAIPrompt = () =>
-                  navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
-                if (isOverLimit && !isPaidPlan) {
-                  showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, navigateToAIPrompt);
-                  return;
-                }
-                navigateToAIPrompt();
+              onClick={() => {
+                navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
               }}
             >
               <AIIcon className="mr-3" />
@@ -148,19 +123,11 @@ export function NewFileButton() {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={async () => {
-                const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-                const createApiFile = () => {
-                  window.location.href = ROUTES.CREATE_FILE(teamUuid, {
-                    state: stateToInsertAndRun,
-                    private: isPrivate,
-                  });
-                };
-                if (isOverLimit && !isPaidPlan) {
-                  showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createApiFile);
-                  return;
-                }
-                createApiFile();
+              onClick={() => {
+                window.location.href = ROUTES.CREATE_FILE(teamUuid, {
+                  state: stateToInsertAndRun,
+                  private: isPrivate,
+                });
               }}
             >
               <ApiIcon className="mr-3" />

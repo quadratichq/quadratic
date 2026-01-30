@@ -1,10 +1,8 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -62,32 +60,16 @@ export function OnboardingBanner() {
   const tabContentClassName = 'flex flex-col gap-2';
   const contentBtnClassName = 'min-w-40 flex-shrink-0';
 
-  const handleCreateBlankFile = async () => {
+  const handleCreateBlankFile = () => {
     trackEvent('[OnboardingBanner].newFileBlank');
     // Onboarding creates team files (not private)
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-    const createFile = () => {
-      window.location.href = ROUTES.CREATE_FILE(teamUuid);
-    };
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
-      return;
-    }
-    createFile();
+    window.location.href = ROUTES.CREATE_FILE(teamUuid);
   };
 
-  const handleFetchFromApi = async () => {
+  const handleFetchFromApi = () => {
     trackEvent('[OnboardingBanner].newFileFromApi');
     // Onboarding creates team files (not private)
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(teamUuid);
-    const createFile = () => {
-      window.location.href = newApiFileToLink;
-    };
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, teamUuid, createFile);
-      return;
-    }
-    createFile();
+    window.location.href = newApiFileToLink;
   };
 
   const tabs = [

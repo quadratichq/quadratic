@@ -3,7 +3,6 @@ import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import type { UserFilesListFile } from '@/dashboard/components/UserFilesList';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
@@ -13,8 +12,6 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
-import { apiClient } from '@/shared/api/apiClient';
-import { showFileLimitDialog } from '@/shared/atom/fileLimitDialogAtom';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -143,23 +140,14 @@ export function UserFilesListItem({
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
-  const handleDuplicate = async () => {
-    const { isOverLimit, maxEditableFiles, isPaidPlan } = await apiClient.teams.fileLimit(activeTeamUuid);
-    const doDuplicate = () => {
-      trackEvent('[Files].duplicateFile', { id: uuid });
-      const data = getActionFileDuplicate({
-        redirect: false,
-        isPrivate: isFilePrivate,
-        teamUuid: activeTeamUuid,
-      });
-      fetcherDuplicate.submit(data, fetcherSubmitOpts);
-    };
-
-    if (isOverLimit && !isPaidPlan) {
-      showFileLimitDialog(maxEditableFiles ?? VITE_MAX_EDITABLE_FILES, activeTeamUuid, doDuplicate);
-      return;
-    }
-    doDuplicate();
+  const handleDuplicate = () => {
+    trackEvent('[Files].duplicateFile', { id: uuid });
+    const data = getActionFileDuplicate({
+      redirect: false,
+      isPrivate: isFilePrivate,
+      teamUuid: activeTeamUuid,
+    });
+    fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
   const handleShare = () => {
