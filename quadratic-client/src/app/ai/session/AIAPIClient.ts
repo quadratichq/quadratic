@@ -266,9 +266,7 @@ export class AIAPIClient {
    * Create content message for filtered tool calls
    */
   private createFilteredToolsContent(filteredTools: Array<{ name: string; reason: string }>): string {
-    const toolDescriptions = filteredTools
-      .map((tool) => `- ${tool.name}: ${tool.reason}`)
-      .join('\n');
+    const toolDescriptions = filteredTools.map((tool) => `- ${tool.name}: ${tool.reason}`).join('\n');
     return `The following tool calls failed validation and were not executed:\n${toolDescriptions}`;
   }
 }
