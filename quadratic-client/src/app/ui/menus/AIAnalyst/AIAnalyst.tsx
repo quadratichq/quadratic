@@ -108,7 +108,7 @@ export const AIAnalyst = memo(() => {
                 )}
               >
                 <AIPendingChanges />
-                <div className="px-2 pb-2">
+                <div className="px-2 pb-2" data-walkthrough="ai-chat-input">
                   <AIAnalystUserMessageForm
                     ref={textareaRef}
                     autoFocusRef={autoFocusRef}
