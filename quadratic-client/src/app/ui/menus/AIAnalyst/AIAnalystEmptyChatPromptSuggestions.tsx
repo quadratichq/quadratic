@@ -7,15 +7,16 @@ import { aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
-import { getExtension, getFileTypeFromName, supportedFileTypesFromGrid, uploadFile } from '@/app/helpers/files';
+import { aiAnalystImportFileTypes, importFilesToSheet, uploadFile } from '@/app/helpers/files';
 import { EmptyChatSection, SuggestionButton } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { PromptIcon } from '@/shared/components/Icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
 const defaultPromptSuggestions = [
@@ -32,9 +33,6 @@ const defaultPromptSuggestions = [
     prompt: 'Search the web for the top 10 tech companies by market cap and add them to my sheet.',
   },
 ];
-
-// All file types supported by the AI Analyst for import
-const ALL_IMPORT_FILE_TYPES = ['image/*', '.pdf', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
 
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
@@ -97,6 +95,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     const [activeCategory, setActiveCategory] = useState<SuggestionCategory>('enrich');
     // Initialize to undefined to avoid flash - only show import section once we know sheet is empty
     const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
+    const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
 
     // Get suggestions from centralized state
     const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
@@ -107,71 +106,25 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     const handleChooseFile = useCallback(async () => {
       trackEvent('[AIAnalyst].chooseFile');
-      const selectedFiles = await uploadFile(ALL_IMPORT_FILE_TYPES);
+      const selectedFiles = await uploadFile(aiAnalystImportFileTypes);
       if (selectedFiles.length === 0) return;
 
-      // Split files: direct import for spreadsheet files, AI for PDFs/images
-      const directImportFiles: File[] = [];
-      const aiFiles: File[] = [];
+      const currentSheet = sheets.sheet;
 
-      for (const file of selectedFiles) {
-        const extension = `.${getExtension(file.name)}`;
-        if (supportedFileTypesFromGrid.includes(extension)) {
-          directImportFiles.push(file);
-        } else {
-          // PDFs and images need AI to extract data
-          aiFiles.push(file);
-        }
-      }
-
-      // Import spreadsheet files directly - each placed to the right of existing content
-      if (directImportFiles.length > 0) {
-        const currentSheet = sheets.sheet;
-
-        // Sort: push Excel files to the end (they create new sheets, so order matters less)
-        directImportFiles.sort((a, b) => {
-          const extA = getExtension(a.name);
-          const extB = getExtension(b.name);
-          if (['xls', 'xlsx'].includes(extA)) return 1;
-          if (['xls', 'xlsx'].includes(extB)) return -1;
-          return 0;
-        });
-
-        // Import files one at a time, calculating position based on current bounds
-        for (const file of directImportFiles) {
-          const fileType = getFileTypeFromName(file.name);
-          if (!fileType || fileType === 'Grid') continue;
-
-          const arrayBuffer = await file.arrayBuffer();
-
-          // Calculate insert position: to the right of existing content
-          const sheetBounds = currentSheet.bounds;
-          const insertAt = {
-            x: sheetBounds.type === 'empty' ? 1 : Number(sheetBounds.max.x) + 2,
-            y: 1,
-          };
-
-          try {
-            await quadraticCore.importFile({
-              file: arrayBuffer,
-              fileName: file.name,
-              fileType,
-              sheetId: currentSheet.id,
-              location: insertAt,
-              cursor: currentSheet.cursor.position.toString(),
-              isAi: false,
-            });
-          } catch (error) {
-            console.error('[AIAnalyst] Error importing file:', file.name, error);
-          }
-        }
-      }
+      const aiFiles = await importFilesToSheet({
+        files: selectedFiles,
+        sheetId: currentSheet.id,
+        getBounds: () => currentSheet.bounds,
+        getCursorPosition: () => currentSheet.cursor.position.toString(),
+        setProgressState: setFilesImportProgressState,
+        importFile: quadraticCore.importFile,
+      });
 
       // Send PDFs/images to AI for processing
       if (aiFiles.length > 0) {
         events.emit('aiAnalystDroppedFiles', aiFiles);
       }
-    }, []);
+    }, [setFilesImportProgressState]);
 
     // Track whether file has data (for deciding which UI to show)
     useEffect(() => {
