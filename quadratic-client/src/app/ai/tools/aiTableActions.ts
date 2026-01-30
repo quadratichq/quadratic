@@ -61,14 +61,10 @@ export const tableToolsActions: TableToolActions = {
         }
       }
       if (
-        new_table_name !== undefined ||
-        new_table_name !== null ||
-        show_name !== undefined ||
-        show_name !== null ||
-        show_columns !== undefined ||
-        show_columns !== null ||
-        alternating_row_colors !== undefined ||
-        alternating_row_colors !== null
+        (new_table_name !== undefined && new_table_name !== null) ||
+        (show_name !== undefined && show_name !== null) ||
+        (show_columns !== undefined && show_columns !== null) ||
+        (alternating_row_colors !== undefined && alternating_row_colors !== null)
       ) {
         const response = await quadraticCore.dataTableMeta(
           sheetId,

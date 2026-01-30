@@ -92,6 +92,9 @@ export class AISession {
       return { success: false, error: 'Already loading', chatId: '' };
     }
 
+    // Set loading state immediately to prevent concurrent calls
+    this.store.set(loadingAtom, true);
+
     // Get current message count
     const currentChat = this.messageManager.getCurrentChat();
     const currentMessageCount = currentChat.messages.length;
@@ -160,7 +163,6 @@ export class AISession {
 
         // Handle abort in message manager
         this.messageManager.handleAbort(modelKey, prevWaitingOnMessageIndex);
-        this.store.set(waitingOnMessageIndexAtom, undefined);
       },
       { once: true }
     );
@@ -174,9 +176,6 @@ export class AISession {
       context: { ...resolvedContext },
     };
     this.messageManager.addUserMessage(userMessage);
-
-    // Set loading state
-    this.store.set(loadingAtom, true);
 
     // Initialize AI cursor
     try {

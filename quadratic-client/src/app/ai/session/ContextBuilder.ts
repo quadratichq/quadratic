@@ -91,10 +91,12 @@ export class ContextBuilder {
               return getConnectionMarkdown(connectionTableInfo);
             } catch (error) {
               const prev = this.store.get(failingSqlConnectionsAtom);
-              this.store.set(failingSqlConnectionsAtom, {
-                ...prev,
-                uuids: [...prev.uuids.filter((uuid) => uuid !== connection.uuid), connection.uuid],
-              });
+              if (!prev.uuids.includes(connection.uuid)) {
+                this.store.set(failingSqlConnectionsAtom, {
+                  ...prev,
+                  uuids: [...prev.uuids, connection.uuid],
+                });
+              }
 
               console.warn(`[ContextBuilder] Failed to get table names for connection ${connection.uuid}:`, error);
               return '';

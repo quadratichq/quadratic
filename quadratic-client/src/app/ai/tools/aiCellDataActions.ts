@@ -60,7 +60,7 @@ export const cellDataToolsActions: CellDataToolActions = {
         return [createTextContent('data_table values are empty, cannot add data table without values')];
       }
     } catch (e) {
-      return [createTextContent(`Error executing set cell values tool: ${e}`)];
+      return [createTextContent(`Error executing add data table tool: ${e}`)];
     }
   },
   [AITool.SetCellValues]: async (args) => {

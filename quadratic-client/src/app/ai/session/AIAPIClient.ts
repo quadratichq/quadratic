@@ -239,10 +239,10 @@ export class AIAPIClient {
         return true;
       } catch (error) {
         const reason =
-          error instanceof Error
-            ? error.message
-            : error instanceof SyntaxError
-              ? 'Invalid JSON in arguments'
+          error instanceof SyntaxError
+            ? 'Invalid JSON in arguments'
+            : error instanceof Error
+              ? error.message
               : 'Unknown validation error';
 
         console.error('[AI Tool Filter] Filtering out invalid tool call:', {

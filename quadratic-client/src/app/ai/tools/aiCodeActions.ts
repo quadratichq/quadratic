@@ -83,7 +83,7 @@ export const codeToolsActions: CodeToolActions = {
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
     try {
-      let { sheet_name, code_cell_name, code_cell_language, code_cell_position, code_string } = args;
+      const { sheet_name, code_cell_name, code_cell_language, code_cell_position, code_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
