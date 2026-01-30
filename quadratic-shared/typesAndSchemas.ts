@@ -116,6 +116,7 @@ export const UserClientDataKvSchema = z
   .object({
     knowsAboutModelPicker: z.boolean().optional(),
     lastSeenChangelogVersion: z.string().optional(),
+    featureWalkthroughCompleted: z.boolean().optional(),
   })
   .strip();
 export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;
