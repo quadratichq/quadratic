@@ -5,6 +5,7 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { getLastAIPromptMessageIndex, getMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
+  AIMessagePrompt,
   AIModelKey,
   ChatMessage,
   Context,
@@ -30,13 +31,7 @@ import type { MessageManager } from './MessageManager';
 import { messageManager } from './MessageManager';
 import type { ToolExecutor } from './ToolExecutor';
 import { toolExecutor } from './ToolExecutor';
-import {
-  AISessionStatus,
-  type AISessionRequest,
-  type AISessionResult,
-  type Connection,
-  type ImportFile,
-} from './types';
+import { type AISessionRequest, type AISessionResult, type Connection, type ImportFile } from './types';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
@@ -52,8 +47,6 @@ export class AISession {
   private messageManager: MessageManager;
   private apiClient: AIAPIClient;
 
-  private status: AISessionStatus = AISessionStatus.Idle;
-
   constructor() {
     this.contextBuilder = contextBuilder;
     this.toolExecutor = toolExecutor;
@@ -62,14 +55,9 @@ export class AISession {
   }
 
   /**
-   * Get the current session status
-   */
-  getStatus(): AISessionStatus {
-    return this.status;
-  }
-
-  /**
-   * Execute an AI session with the given request
+   * Execute an AI session with the given request.
+   * Note: This class uses a singleton pattern and is not intended for concurrent
+   * executions. The loadingAtom check prevents concurrent calls.
    */
   async execute(
     request: AISessionRequest,
@@ -90,9 +78,6 @@ export class AISession {
   ): Promise<AISessionResult> {
     const { messageSource, content, context, messageIndex, importFiles, connections } = request;
     const { modelKey, fileUuid, teamUuid, importFilesToGrid, importPDF, search, getUserPromptSuggestions } = options;
-
-    // Set team UUID for context building
-    this.contextBuilder.setTeamUuid(teamUuid);
 
     // Show AI panel and hide chat history
     this.store.set(showAIAnalystAtom, true);
@@ -144,7 +129,7 @@ export class AISession {
     const onExceededBillingLimit = (exceededBillingLimit: boolean) => {
       if (!exceededBillingLimit) return;
 
-      const messages = this.messageManager.getMessages();
+      const messages = [...this.messageManager.getMessages()];
       messages.pop();
       const currentMessageIndex = messages.length - 1;
       this.messageManager.setMessages(messages);
@@ -192,7 +177,6 @@ export class AISession {
 
     // Set loading state
     this.store.set(loadingAtom, true);
-    this.status = AISessionStatus.Running;
 
     // Initialize AI cursor
     try {
@@ -227,6 +211,7 @@ export class AISession {
           connections,
           context: resolvedContext,
           chatMessages,
+          teamUuid,
         });
         this.messageManager.setMessages(chatMessages);
 
@@ -350,12 +335,30 @@ export class AISession {
         }
       }
 
-      this.status = AISessionStatus.Completed;
+      // Check if we hit the max iterations limit
+      if (toolCallIterations >= MAX_TOOL_CALL_ITERATIONS) {
+        console.warn(`[AISession] Max tool call iterations (${MAX_TOOL_CALL_ITERATIONS}) reached`);
+        // Add an assistant message to inform the user
+        const messages = this.messageManager.getMessages();
+        const warningMessage: AIMessagePrompt = {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'I reached the maximum number of operations for a single request. You can continue by sending another message.',
+            },
+          ],
+          contextType: 'userPrompt',
+          modelKey,
+          toolCalls: [],
+        };
+        this.messageManager.setMessages([...messages, warningMessage]);
+      }
+
       return { success: true, chatId };
     } catch (error) {
       this.messageManager.handleError(modelKey);
       console.error(error);
-      this.status = AISessionStatus.Failed;
       return { success: false, error: String(error), chatId };
     } finally {
       this.store.set(abortControllerAtom, undefined);
@@ -369,7 +372,6 @@ export class AISession {
   abort(): void {
     const controller = this.store.get(abortControllerAtom);
     controller?.abort();
-    this.status = AISessionStatus.Aborted;
   }
 }
 

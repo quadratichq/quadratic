@@ -8,7 +8,7 @@ import {
   showAIAnalystWithEffectsAtom,
   showChatHistoryWithEffectsAtom,
 } from './effectAtoms';
-import { chatsAtom, currentChatBaseAtom, showAIAnalystAtom } from './primitives';
+import { aiAnalystInitializedAtom, chatsAtom, currentChatBaseAtom, showAIAnalystAtom } from './primitives';
 import { aiStore } from './store';
 
 // ============================================================================
@@ -101,13 +101,19 @@ export function setLoadingWithPersistence(newLoading: boolean): void {
 // Initialization
 // ============================================================================
 
-let aiAnalystInitialized = false;
-
 /**
  * Check if the AI Analyst has been initialized.
  */
 export function getAIAnalystInitialized(): boolean {
-  return aiAnalystInitialized;
+  return aiStore.get(aiAnalystInitializedAtom);
+}
+
+/**
+ * Reset the AI Analyst initialization state.
+ * Useful when switching files or logging out.
+ */
+export function resetAIAnalystInitialized(): void {
+  aiStore.set(aiAnalystInitializedAtom, false);
 }
 
 /**
@@ -124,7 +130,7 @@ export async function initializeAIAnalyst(userEmail: string, fileUuid: string, s
   } catch (error) {
     console.error('[AIAnalystOfflineChats]: ', error);
   } finally {
-    aiAnalystInitialized = true;
+    aiStore.set(aiAnalystInitializedAtom, true);
     events.emit('aiAnalystInitialized');
   }
 }

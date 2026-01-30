@@ -32,14 +32,6 @@ const MAX_TRANSACTIONS = 20;
  */
 export class ContextBuilder {
   private store = aiStore;
-  private teamUuid: string | undefined;
-
-  /**
-   * Set the team UUID for connection context
-   */
-  setTeamUuid(teamUuid: string | undefined): void {
-    this.teamUuid = teamUuid;
-  }
 
   /**
    * Build complete context for an AI request
@@ -47,7 +39,7 @@ export class ContextBuilder {
   async buildContext(options: ContextOptions): Promise<ChatMessage[]> {
     const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext, aiTransactions] =
       await Promise.all([
-        this.getSqlContext(options.connections, options.context),
+        this.getSqlContext(options.connections, options.context, options.teamUuid),
         this.getFilesContext(options.chatMessages),
         this.getVisibleContext(),
         this.getSummaryContext(),
@@ -72,13 +64,8 @@ export class ContextBuilder {
   /**
    * Get SQL/database connection context
    */
-  async getSqlContext(connections: ConnectionList, context: Context): Promise<ChatMessage[]> {
+  async getSqlContext(connections: ConnectionList, context: Context, teamUuid: string): Promise<ChatMessage[]> {
     try {
-      if (!this.teamUuid) {
-        console.warn('[ContextBuilder] No team UUID available');
-        return [];
-      }
-
       if (!connections || connections.length === 0) {
         return [];
       }
@@ -100,7 +87,7 @@ export class ContextBuilder {
                 return '';
               }
 
-              const connectionTableInfo = await getConnectionTableInfo(connection, this.teamUuid!);
+              const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
               return getConnectionMarkdown(connectionTableInfo);
             } catch (error) {
               const prev = this.store.get(failingSqlConnectionsAtom);
@@ -231,8 +218,6 @@ How can I help you?`
     const sheetName = sheets.sheet.name;
     const visibleRect = pixiApp.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
-    const jsSelection = sheets.A1SelectionStringToSelection(visibleRectSelection);
-    jsSelection.free();
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const isVisibleEmpty = sheetBounds.type === 'empty' || !intersects.rectRect(sheetBounds, visibleRect);

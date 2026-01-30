@@ -79,8 +79,18 @@ export class AIAPIClient {
         responseMessage = await this.handleNonStreamingResponse(response, onMessage);
       }
 
-      // Filter out invalid tool calls
-      responseMessage = this.filterInvalidToolCalls(responseMessage);
+      // Filter out invalid tool calls and track which ones failed
+      const { message: filteredMessage, filteredTools } = this.filterInvalidToolCalls(responseMessage);
+      responseMessage = filteredMessage;
+
+      // Add feedback about filtered tool calls if any were removed
+      if (filteredTools.length > 0) {
+        const filteredContent = this.createFilteredToolsContent(filteredTools);
+        responseMessage = {
+          ...responseMessage,
+          content: [...responseMessage.content, createTextContent(filteredContent)],
+        };
+      }
 
       // Ensure we have content or tool calls
       if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
@@ -213,29 +223,53 @@ export class AIAPIClient {
   }
 
   /**
-   * Filter out invalid tool calls
+   * Filter out invalid tool calls and track which ones failed
    */
-  private filterInvalidToolCalls(
-    message: ApiTypes['/v0/ai/chat.POST.response']
-  ): ApiTypes['/v0/ai/chat.POST.response'] {
+  private filterInvalidToolCalls(message: ApiTypes['/v0/ai/chat.POST.response']): {
+    message: ApiTypes['/v0/ai/chat.POST.response'];
+    filteredTools: Array<{ name: string; reason: string }>;
+  } {
+    const filteredTools: Array<{ name: string; reason: string }> = [];
+
+    const validToolCalls = message.toolCalls.filter((toolCall) => {
+      try {
+        const aiTool = AIToolSchema.parse(toolCall.name);
+        const argsObject = JSON.parse(toolCall.arguments);
+        aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+        return true;
+      } catch (error) {
+        const reason =
+          error instanceof Error
+            ? error.message
+            : error instanceof SyntaxError
+              ? 'Invalid JSON in arguments'
+              : 'Unknown validation error';
+
+        console.error('[AI Tool Filter] Filtering out invalid tool call:', {
+          name: toolCall.name,
+          arguments: toolCall.arguments,
+          error,
+        });
+
+        filteredTools.push({ name: toolCall.name, reason });
+        return false;
+      }
+    });
+
     return {
-      ...message,
-      toolCalls: message.toolCalls.filter((toolCall) => {
-        try {
-          const aiTool = AIToolSchema.parse(toolCall.name);
-          const argsObject = JSON.parse(toolCall.arguments);
-          aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-          return true;
-        } catch (error) {
-          console.error('[AI Tool Filter] Filtering out invalid tool call:', {
-            name: toolCall.name,
-            arguments: toolCall.arguments,
-            error,
-          });
-          return false;
-        }
-      }),
+      message: { ...message, toolCalls: validToolCalls },
+      filteredTools,
     };
+  }
+
+  /**
+   * Create content message for filtered tool calls
+   */
+  private createFilteredToolsContent(filteredTools: Array<{ name: string; reason: string }>): string {
+    const toolDescriptions = filteredTools
+      .map((tool) => `- ${tool.name}: ${tool.reason}`)
+      .join('\n');
+    return `The following tool calls failed validation and were not executed:\n${toolDescriptions}`;
   }
 }
 

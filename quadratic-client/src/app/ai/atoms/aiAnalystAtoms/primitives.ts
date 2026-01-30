@@ -10,6 +10,13 @@ import type {
 import { createDefaultChat } from './types';
 
 // ============================================================================
+// Initialization State
+// ============================================================================
+
+/** Whether the AI Analyst has been initialized */
+export const aiAnalystInitializedAtom = atom(false);
+
+// ============================================================================
 // UI State Atoms
 // ============================================================================
 

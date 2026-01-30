@@ -10,8 +10,7 @@ export { ContextBuilder, contextBuilder } from './ContextBuilder';
 export { MessageManager, messageManager } from './MessageManager';
 export { ToolExecutor, toolExecutor } from './ToolExecutor';
 
-// Types and enums
-export { AISessionStatus } from './types';
+// Types
 export type {
   AIAPIResponse,
   AISessionRequest,

@@ -42,17 +42,6 @@ export interface AISessionResult {
 }
 
 /**
- * Status of the AI session
- */
-export enum AISessionStatus {
-  Idle = 'idle',
-  Running = 'running',
-  Aborted = 'aborted',
-  Completed = 'completed',
-  Failed = 'failed',
-}
-
-/**
  * File to import to the grid
  */
 export interface ImportFile {
@@ -72,6 +61,8 @@ export interface ContextOptions {
   context: Context;
   /** Current chat messages */
   chatMessages: ChatMessage[];
+  /** Team UUID for connection context */
+  teamUuid: string;
 }
 
 /**

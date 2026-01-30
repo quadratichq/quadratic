@@ -29,6 +29,7 @@ export type {
 export {
   abortControllerAtom,
   activeSchemaConnectionUuidAtom,
+  aiAnalystInitializedAtom,
   chatsAtom,
   currentChatBaseAtom,
   failingSqlConnectionsAtom,
@@ -70,6 +71,7 @@ export {
   getAIAnalystInitialized,
   getShowAIAnalyst,
   initializeAIAnalyst,
+  resetAIAnalystInitialized,
   saveChatName,
   setLoadingWithPersistence,
   setShowAIAnalyst,

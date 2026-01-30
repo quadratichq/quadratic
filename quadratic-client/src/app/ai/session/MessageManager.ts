@@ -177,16 +177,14 @@ export class MessageManager {
 
     if (lastMessage && isAIPromptMessage(lastMessage)) {
       const newLastMessage = { ...lastMessage };
-      let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
-
-      if (currentContent?.type !== 'text') {
-        currentContent = createTextContent('');
-      }
+      const lastContent = newLastMessage.content.at(-1);
+      let currentContent = lastContent?.type === 'text' ? { ...lastContent } : createTextContent('');
 
       currentContent.text += '\n\nRequest aborted by the user.';
       currentContent.text = currentContent.text.trim();
       newLastMessage.toolCalls = [];
-      newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+      newLastMessage.content =
+        lastContent !== undefined ? [...newLastMessage.content.slice(0, -1), currentContent] : [currentContent];
 
       this.setMessages([...messages.slice(0, -1), newLastMessage]);
     } else if (lastMessage?.role === 'user') {
@@ -214,16 +212,14 @@ export class MessageManager {
 
     if (lastMessage && isAIPromptMessage(lastMessage)) {
       const newLastMessage = { ...lastMessage };
-      let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
-
-      if (currentContent?.type !== 'text') {
-        currentContent = createTextContent('');
-      }
+      const lastContent = newLastMessage.content.at(-1);
+      let currentContent = lastContent?.type === 'text' ? { ...lastContent } : createTextContent('');
 
       currentContent.text += '\n\nLooks like there was a problem. Please try again.';
       currentContent.text = currentContent.text.trim();
       newLastMessage.toolCalls = [];
-      newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+      newLastMessage.content =
+        lastContent !== undefined ? [...newLastMessage.content.slice(0, -1), currentContent] : [currentContent];
 
       this.setMessages([...messages.slice(0, -1), newLastMessage]);
     } else if (lastMessage?.role === 'user') {

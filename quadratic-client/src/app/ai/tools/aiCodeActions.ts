@@ -44,7 +44,9 @@ export const codeToolsActions: CodeToolActions = {
           codePos = { x: Number(tableSheetPos.x), y: Number(tableSheetPos.y) };
           sheetId = tableSheetPos.sheet_id.id;
         }
-      } catch (e) {}
+      } catch (e) {
+        // empty catch since the table no longer exist
+      }
     }
     if (!codePos && args.code_cell_position) {
       try {
