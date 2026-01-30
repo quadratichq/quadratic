@@ -77,6 +77,9 @@ export const AddIcon: IconComponent = (props) => {
 export const AIIcon: IconComponent = (props) => {
   return <Icon {...props}>auto_awesome</Icon>;
 };
+export const AgentModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>robot_2</Icon>;
+};
 export const AppearanceLightModeIcon: IconComponent = (props) => {
   return <Icon {...props}>light_mode</Icon>;
 };
@@ -582,6 +585,10 @@ export const PDFIcon: IconComponent = (props) => {
 
 export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
+};
+
+export const PromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>chat_paste_go</Icon>;
 };
 
 export const PersonAddIcon: IconComponent = (props) => {

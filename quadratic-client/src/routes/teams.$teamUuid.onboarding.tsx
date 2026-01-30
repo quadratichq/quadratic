@@ -1,10 +1,11 @@
+import { AGENT_MODE_KEY } from '@/app/atoms/agentModeAtom';
 import { authClient } from '@/auth/auth';
 import { OnboardingResponseV2Schema } from '@/dashboard/onboarding/onboardingSchema';
 import { Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureException, flush } from '@sentry/react';
 import { useEffect } from 'react';
 import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
@@ -207,6 +208,21 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (sentryPromises.length > 0) {
     await Promise.all(sentryPromises).catch(console.error);
   }
+
+  // A/B test: 50% of new users start with agent mode ON, 50% with agent mode OFF
+  const startWithAgentModeOn = Math.random() < 0.5;
+  trackEvent('[Onboarding].postOnboardingFlow', {
+    flow: startWithAgentModeOn ? 'startWithAgentModeOn' : 'startWithAgentModeOff',
+  });
+
+  // Register as super property so we can filter/analyze sessions for users in the agent mode cohort.
+  // Naming convention: ab_<test-name>_<month><year> with values for each variant.
+  registerEventAnalyticsData({
+    ab_agent_mode_jan2026: startWithAgentModeOn ? 'startWithAgentModeOn' : 'startWithAgentModeOff',
+  });
+
+  // Set agent mode in localStorage before redirecting
+  localStorage.setItem(AGENT_MODE_KEY, String(startWithAgentModeOn));
 
   const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
 
