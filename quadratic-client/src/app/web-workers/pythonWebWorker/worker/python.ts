@@ -22,6 +22,10 @@ function isEmpty(value: JsCellValueResult | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
 
+function isHtmlString(value: unknown): value is string {
+  return typeof value === 'string' && value.includes('<html');
+}
+
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
@@ -303,24 +307,25 @@ class Python {
       pythonRun.array_output = [];
     }
 
-    // Capture chart image if output is a Plotly chart
+    // Capture chart image if output is a Plotly chart.
+    // The Python side explicitly sets output_type = "Chart" for Plotly figures,
+    // so we rely on that as the primary detection method.
     let chartImage: string | null = null;
-    const outputStr = pythonRun.output ? String(pythonRun.output) : '';
-    const looksLikePlotly = outputStr.includes('plotly') || outputStr.includes('Plotly');
-    const isChart = pythonRun.output_type === 'Chart' || looksLikePlotly;
+    const isChart = pythonRun.output_type === 'Chart';
 
     if (isChart && pythonRun.output) {
       const outputTuple = pythonRun.output as unknown as [string, number | string];
       let htmlString = outputTuple[0];
 
       // If the first element isn't a string with HTML, try using the stringified output
-      if (!htmlString || typeof htmlString !== 'string' || !htmlString.includes('<html')) {
-        if (outputStr.includes('<html')) {
+      if (!isHtmlString(htmlString)) {
+        const outputStr = String(pythonRun.output);
+        if (isHtmlString(outputStr)) {
           htmlString = outputStr;
         }
       }
 
-      if (htmlString && typeof htmlString === 'string' && htmlString.includes('<html')) {
+      if (isHtmlString(htmlString)) {
         try {
           chartImage = await pythonClient.captureChartImage(htmlString, DEFAULT_CHART_WIDTH, DEFAULT_CHART_HEIGHT);
         } catch (e) {
