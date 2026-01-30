@@ -199,6 +199,7 @@ export function useEmptyChatSuggestionsSync() {
     }
   }, [setEmptyChatSuggestions]);
 
+  // Listen to hashContentChanged events and debounce updates
   useEffect(() => {
     let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -219,5 +220,11 @@ export function useEmptyChatSuggestionsSync() {
     };
   }, [checkAndUpdateSuggestions]);
 
-  return { checkAndUpdateSuggestions };
+  // Initial fetch on mount (if file has data but no suggestions yet)
+  useEffect(() => {
+    const { suggestions, loading } = emptyChatSuggestionsRef.current;
+    if (!suggestions && !loading) {
+      checkAndUpdateSuggestions();
+    }
+  }, [checkAndUpdateSuggestions]);
 }

@@ -1,4 +1,3 @@
-import { useEmptyChatSuggestionsSync } from '@/app/ai/hooks/useEmptyChatSuggestionsSync';
 import type {
   CategorizedEmptyChatPromptSuggestions,
   SuggestionCategory,
@@ -94,12 +93,9 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
 
-  // Get suggestions from centralized state
+  // Get suggestions from centralized state (synced by useEmptyChatSuggestionsSync in QuadraticUI)
   const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
   const { suggestions: categorizedSuggestions, loading } = emptyChatSuggestions;
-
-  // Get the function to trigger initial fetch if needed
-  const { checkAndUpdateSuggestions } = useEmptyChatSuggestionsSync();
 
   const handleChooseFile = useCallback(async () => {
     trackEvent('[AIAnalyst].chooseFile');
@@ -149,13 +145,6 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
       clearTimeout(debounceTimeout);
     };
   }, []);
-
-  // Trigger initial fetch if we have data but no suggestions yet (first time / page refresh)
-  useEffect(() => {
-    if (sheetHasData && !categorizedSuggestions && !loading) {
-      checkAndUpdateSuggestions();
-    }
-  }, [sheetHasData, categorizedSuggestions, loading, checkAndUpdateSuggestions]);
 
   return (
     <div className="absolute -left-1 -right-1 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
