@@ -78,7 +78,11 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
-            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+            <SidebarToggle
+              pressed={showAIAnalyst}
+              onPressedChange={() => setShowAIAnalyst((prev) => !prev)}
+              data-walkthrough="ai-assistant"
+            >
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -97,7 +101,11 @@ export const QuadraticSidebar = () => {
 
         {canDoTeamsStuff && (
           <SidebarTooltip label="Connections">
-            <SidebarToggle pressed={false} onPressedChange={() => setShowCellTypeMenu('connections')}>
+            <SidebarToggle
+              pressed={false}
+              onPressedChange={() => setShowCellTypeMenu('connections')}
+              data-walkthrough="connections"
+            >
               <DatabaseIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -112,6 +120,7 @@ export const QuadraticSidebar = () => {
               onPressedChange={() => {
                 setShowScheduledTasks((prev) => ({ ...prev, show: !prev.show, currentTaskId: null }));
               }}
+              data-walkthrough="scheduled-tasks"
             >
               <ScheduledTasksIcon />
             </SidebarToggle>
