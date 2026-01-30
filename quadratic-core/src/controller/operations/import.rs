@@ -39,6 +39,7 @@ use super::{
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 pub const COLUMN_WIDTH_MULTIPLIER: f64 = 7.0;
 pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
+pub const DEFAULT_FONT_SIZE: f64 = 11.0;
 
 impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
@@ -514,8 +515,8 @@ impl GridController {
                     });
                     if let Some(size) = font.size {
                         // Only set font size if it's not the default size
-                        if size != 11.0 {
-                            sheet.formats.font_size.set(pos, Some(size as i16));
+                        if size != DEFAULT_FONT_SIZE {
+                            sheet.formats.font_size.set(pos, Some(size.round() as i16));
                         }
                     }
 
