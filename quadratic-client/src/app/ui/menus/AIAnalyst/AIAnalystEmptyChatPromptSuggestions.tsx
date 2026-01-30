@@ -56,7 +56,7 @@ const CategorizedSuggestionsSection = memo(
       <Tabs
         value={activeCategory}
         onValueChange={(value) => setActiveCategory(value as SuggestionCategory)}
-        className="w-full"
+        className="flex w-full flex-col items-center"
       >
         <EmptyChatSection
           header="Suggestions"
