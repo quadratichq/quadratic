@@ -53,19 +53,24 @@ interface CategorizedSuggestionsSectionProps {
 const CategorizedSuggestionsSection = memo(
   ({ suggestions, activeCategory, setActiveCategory, loading, submit }: CategorizedSuggestionsSectionProps) => {
     return (
-      <EmptyChatSection header="Suggestions" isLoading={loading}>
-        <Tabs
-          value={activeCategory}
-          onValueChange={(value) => setActiveCategory(value as SuggestionCategory)}
-          className="relative w-full"
+      <Tabs
+        value={activeCategory}
+        onValueChange={(value) => setActiveCategory(value as SuggestionCategory)}
+        className="w-full"
+      >
+        <EmptyChatSection
+          header="Suggestions"
+          headerRight={
+            <TabsList>
+              {SUGGESTION_CATEGORIES.map(({ key, label }) => (
+                <TabsTrigger key={key} value={key} className="h-7 px-2 text-xs">
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          }
+          isLoading={loading}
         >
-          <TabsList className="absolute -top-9 right-1 w-full justify-end">
-            {SUGGESTION_CATEGORIES.map(({ key, label }) => (
-              <TabsTrigger key={key} value={key} className="h-7 px-2 text-xs">
-                {label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
           {SUGGESTION_CATEGORIES.map(({ key }) => (
             <TabsContent key={key} value={key} className="mt-0 flex flex-col">
               {suggestions[key].map(({ label, prompt }, index) => (
@@ -81,8 +86,8 @@ const CategorizedSuggestionsSection = memo(
               ))}
             </TabsContent>
           ))}
-        </Tabs>
-      </EmptyChatSection>
+        </EmptyChatSection>
+      </Tabs>
     );
   }
 );
